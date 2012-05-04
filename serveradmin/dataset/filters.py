@@ -1,6 +1,8 @@
 from adminapi.utils import IP
 from serveradmin.dataset.base import lookups
 
+_filter_classes = {}
+
 class ExactMatch(object):
     def __init__(self, value):
         self.value = value
@@ -11,6 +13,11 @@ class ExactMatch(object):
     def as_sql_expr(self, attr_name, field):
         return '{0} = {1}'.format(field, _prepare_value(attr_name, self.value))
 
+    @classmethod
+    def from_obj(cls, obj):
+        pass
+_filter_classes['exactmatch'] = ExactMatch
+
 class Regexp(object):
     def __init__(self, regexp):
         self.regexp = regexp
@@ -19,7 +26,15 @@ class Regexp(object):
         return 'Regexp({0!r})'.format(self.regexp)
 
     def as_sql_expr(self, attr_name, field):
-        return '{0} REGEXP {1}'.format(field, _sql_escape(self.regexp))
+        if lookups.attr_names[attr_name].type == 'ip':
+            return 'NTOA({0}) REGEXP {1}'.format(field, _sql_escape(self.regexp))
+        else:
+            return '{0} REGEXP {1}'.format(field, _sql_escape(self.regexp))
+
+    @classmethod
+    def from_obj(cls, obj):
+        pass
+_filter_classes['regexp'] = Regexp
 
 class Comparism(object):
     def __init__(self, comparator, value):
@@ -35,6 +50,11 @@ class Comparism(object):
         return '{0} {1} {2}'.format(field, self.comparator,
                 _prepare_value(attr_name, self.value))
 
+    @classmethod
+    def from_obj(cls, obj):
+        pass
+_filter_classes['comparism'] = Comparism
+
 class Any(object):
     def __init__(self, *values):
         self.values = values
@@ -48,6 +68,11 @@ class Any(object):
         else:
             return 'IN({0})'.format(', '.join(_prepare_value(attr_name, value)
                     for value in self.values))
+    
+    @classmethod
+    def from_obj(cls, obj):
+        pass
+_filter_classes['any'] = Any
 
 class _AndOr(object):
     def __init__(self, *filters):
@@ -62,11 +87,17 @@ class _AndOr(object):
         return '({0})'.format(joiner.join([filter.as_sql_expr(field)
                 for filter in self.filters]))
 
+    @classmethod
+    def from_obj(obj):
+        pass
+
 class And(_AndOr):
     name = 'and'
+_filter_classes['and'] = And
 
 class Or(_AndOr):
     name = 'or'
+_filter_classes['or'] = Or
 
 class Between(object):
     def __init__(self, a, b):
@@ -81,6 +112,11 @@ class Between(object):
         b_prepared = _prepare_value(attr_name, self.b)
         return '{0} BETWEEN {1} AND {2}'.format(field, a_prepared, b_prepared)
 
+    @classmethod
+    def from_obj(obj):
+        pass
+_filter_classes['between'] = Between
+
 class Optional(object):
     def __init__(self, filter):
         self.filter = _prepare_filter(filter)
@@ -90,6 +126,11 @@ class Optional(object):
 
     def as_sql_expr(self, field):
         return self.filter.as_sql_expr(field)
+
+    @classmethod
+    def from_obj(obj):
+        pass
+_filter_classes['optional'] = Optional
 
 def _prepare_filter(filter):
     return (ExactMatch(filter) if isinstance(filter, (int, basestring, bool))
@@ -110,9 +151,14 @@ def _sql_escape(value):
     if isinstance(value, basestring):
         # FIXME: Prevent SQL Injections using real database escaping
         return "'{0}'".format(value.replace('\\', '\\\\'))
-    elif isinstance(value, (int, float)):
+    elif isinstance(value, (int, long, float)):
         return str(value)
     elif isinstance(value, bool):
         return '1' if value else '0'
     else:
-        raise ValueError('Value can not be used in SQL')
+        raise ValueError('Value of type {0} can not be used in SQL'.format(
+                type(value)))
+
+def filter_from_obj(obj):
+    pass
+    
