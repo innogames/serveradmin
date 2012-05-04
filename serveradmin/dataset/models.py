@@ -36,3 +36,6 @@ class AttributeValue(models.Model):
     server = models.ForeignKey(ServerObject)
     attrib = models.ForeignKey(Attribute)
     value = models.CharField(max_length=1024)
+
+    class Meta:
+        db_table = 'attrib_values'
