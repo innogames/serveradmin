@@ -59,13 +59,12 @@ class QuerySet(BaseQuerySet):
                 'GROUP BY adms.server_id'
         ])
 
-        servertype_lookup = dict((stype.pk, stype.name) for stype in
-                ServerType.objects.all())
-
         c = connection.cursor()
         
         c.execute(sql_stmt)
         server_data = {}
+        servertype_lookup = dict((k, v.name) for k, v in
+                lookups.stype_ids.iteritems())
         for server_id, hostname, intern_ip, segment, stype in c.fetchall():
             server_data[server_id] = ServerObject({
                 u'object_id': server_id,
@@ -84,15 +83,14 @@ class QuerySet(BaseQuerySet):
                     'WHERE server_id IN({0})').format(server_ids)
         
         if self._restrict:
-            attr_lookup_names = dict((v.name, k) for k, v in
-                    attr_lookup.iteritems())
-            restrict_ids = ', '.join(str(attr_lookup_names[attr_name])
+            restrict_ids = ', '.join(str(lookups.attr_names[attr_name].pk)
                     for attr_name in self._restrict)
             sql_stmt += ' AND attrib_id IN({0})'.format(restrict_ids)
 
         c.execute(sql_stmt)
+        attr_ids = lookups.attr_ids
         for server_id, attr_id, value in c.fetchall():
-            attr = attr_lookup[attr_id]
+            attr = attr_ids[attr_id]
             attr_type = attr.type
             if attr_type == 'integer':
                 value = int(value)
