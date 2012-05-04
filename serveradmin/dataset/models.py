@@ -6,7 +6,7 @@ class Attribute(models.Model):
     type = models.CharField(max_length=64)
     base = models.BooleanField(default=False)
     multi = models.BooleanField(default=False)
-    modifier = models.CharField(max_length=64)
+    modifier = models.CharField(max_length=64, null=True, blank=True)
 
     class Meta:
         db_table = 'attrib'
