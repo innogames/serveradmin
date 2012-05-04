@@ -26,23 +26,24 @@ class QuerySet(BaseQuerySet):
                 attr_field = attr
                 if isinstance(f, _Optional):
                     sql_where.append('({0} IS NULL OR {1})'.format(attr_field,
-                        f.as_sql_expr(attr_field)))
+                        f.as_sql_expr(attr, attr_field)))
                 else:
-                    sql_where.append(f.as_sql_expr(attr_field))
+                    sql_where.append(f.as_sql_expr(attr, attr_field))
             else:
                 attr_field = 'av{0}.value'.format(i)
                 if isinstance(f, _Optional):
                     join = ('LEFT JOIN attrib_values AS av{0} '
                             'ON av{0}.server_id = adms.server_id AND '
                             'av{0}.attrib_id = {1} AND {2}').format(i,
-                                attr_names[attr].pk, f.as_sql_expr(attr_field))
+                                attr_names[attr].pk,
+                                f.as_sql_expr(attr, attr_field))
                     sql_left_joins.append(join)
                 else:
                     sql_from.append('attrib_values AS av{0}'.format(i))
                     sql_where += [
                         'av{0}.server_id = adms.server_id'.format(i),
                         'av{0}.attrib_id = {1}'.format(i, attr_names[attr].pk),
-                        f.as_sql_expr(attr_field)
+                        f.as_sql_expr(attr, attr_field)
                     ]
         
                 i += 1
