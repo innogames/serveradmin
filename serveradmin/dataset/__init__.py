@@ -15,7 +15,13 @@ class QuerySet(BaseQuerySet):
         return self._results
 
     def _fetch_results(self):
-        attr_exceptions = frozenset(['hostname', 'intern_ip', 'segment'])
+        # XXX: Dirty hack for the old database structure
+        attr_exceptions = {
+                'hostname': 'hostname', 
+                'intern_ip': 'intern_ip',
+                'segment': 'segment',
+                'servertype': 'servertype_id'
+        }
         i = 0
         sql_left_joins = []
         sql_from = ['admin_server AS adms']
@@ -23,7 +29,7 @@ class QuerySet(BaseQuerySet):
         attr_names = lookups.attr_names
         for attr, f in self._filters.iteritems():
             if attr in attr_exceptions:
-                attr_field = attr
+                attr_field = attr_exceptions[attr]
                 if isinstance(f, _Optional):
                     sql_where.append('({0} IS NULL OR {1})'.format(attr_field,
                         f.as_sql_expr(attr, attr_field)))
@@ -60,7 +66,7 @@ class QuerySet(BaseQuerySet):
         ])
 
         c = connection.cursor()
-        
+        print sql_stmt    
         c.execute(sql_stmt)
         server_data = {}
         servertype_lookup = dict((k, v.name) for k, v in
