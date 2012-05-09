@@ -1,13 +1,14 @@
 import json
 
 from adminapi import BASE_URL, _api_settings
+from adminapi.utils import IP
 from adminapi.request import send_request
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject, \
         DatasetException, NonExistingAttribute
 from adminapi.dataset.filters import _prepare_filter
 
 COMMIT_URL = BASE_URL + '/dataset/commit'
-REQUEST_URL = BASE_URL + '/dataset/request'
+QUERY_URL = BASE_URL + '/dataset/query'
 
 class QuerySet(BaseQuerySet):
     def __init__(self, filters, auth_token):
@@ -17,7 +18,7 @@ class QuerySet(BaseQuerySet):
     def __repr__(self):
         # QuerySet is not used directly but through query function
         kwargs = ', '.join('{0}={1!r}'.format(k, v) for k, v in
-                self.filters.iteritems())
+                self._filters.iteritems())
         return 'query({0})'.format(kwargs)
 
     def commit(self):
@@ -49,23 +50,31 @@ class QuerySet(BaseQuerySet):
         serialized_filters = dict((k, v._serialize()) for k, v in
                 self._filters.iteritems())
         
-        request_data = json.dumps({
+        request_data = {
             'filters': serialized_filters,
             'restrict': self._restrict,
             'augmentations': self._augmentations
-        })
-        result_json = send_request(REQUEST_URL, request_data, self.auth_token)
-        result = json.loads(result_json)
-        
+        }
+        result = send_request(QUERY_URL, request_data, self.auth_token)
         if result['status'] == 'success':
             # The attributes in convert_set must be converted to sets
-            convert_set = result['convert_set']
+            # and attributes in convert_ip musst be converted to ips
+            convert_set = frozenset(result['convert_set'])
+            convert_ip = frozenset(result['convert_ip'])
             servers = {}
-            for server in result['servers']:
-                object_id = int(server['object_id'])
-                del server['object_id']
+            for object_id, server in result['servers'].iteritems():
+                object_id = int(object_id)
                 for attr in convert_set:
-                    server[attr] = set(server[attr])
+                    if attr not in server:
+                        continue
+                    if attr in convert_ip:
+                        server[attr] = set(IP(x) for x in server[attr])
+                    else:
+                        server[attr] = set(server[attr])
+                for attr in convert_ip:
+                    if attr not in server or attr in convert_set:
+                        continue
+                    server[attr] = IP(server[attr])
                 servers[object_id] = ServerObject(server, object_id, self,
                         self.auth_token)
             return servers
@@ -96,5 +105,5 @@ class ServerObject(BaseServerObject):
         pass
 
 def query(**kwargs):
-    filters = dict((k, _prepare_filter(v)) for k, v in kwargs.iteritems)
+    filters = dict((k, _prepare_filter(v)) for k, v in kwargs.iteritems())
     return QuerySet(filters=filters, auth_token=_api_settings['auth_token'])
