@@ -10,7 +10,7 @@ def _read_lookups(sender=None, **kwargs):
     special_attributes = [
         Attribute(name='hostname', type='string', base=True, multi=False),
         Attribute(name='servertype', type='string', base=True, multi=False),
-        Attribute(name='internal_ip', type='ip', base=True, multi=False)
+        Attribute(name='intern_ip', type='ip', base=True, multi=False)
     ]
     lookups.attr_ids = {}
     lookups.attr_names = {}
