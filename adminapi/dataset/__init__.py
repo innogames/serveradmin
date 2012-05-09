@@ -4,7 +4,7 @@ from adminapi import BASE_URL, _api_settings
 from adminapi.utils import IP
 from adminapi.request import send_request
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject, \
-        DatasetException, NonExistingAttribute
+        DatasetException, NonExistingAttribute, MultiAttr
 from adminapi.dataset.filters import _prepare_filter
 
 COMMIT_URL = BASE_URL + '/dataset/commit'
@@ -19,9 +19,16 @@ class QuerySet(BaseQuerySet):
         # QuerySet is not used directly but through query function
         kwargs = ', '.join('{0}={1!r}'.format(k, v) for k, v in
                 self._filters.iteritems())
-        return 'query({0})'.format(kwargs)
+        query_repr = 'query({0})'.format(kwargs)
+        if self._restrict:
+            query_repr += '.restrict({0})'.format(', '.join(self._restrict))
+        return query_repr
+
+    def augment(self, *attrs):
+        raise NotImplementedError('Augmenting is not available yet!')
 
     def commit(self):
+        raise NotImplementedError("Committing is not available yet!")
         commit = {
             'deleted': [],
             'changes': {}
@@ -64,27 +71,28 @@ class QuerySet(BaseQuerySet):
             servers = {}
             for object_id, server in result['servers'].iteritems():
                 object_id = int(object_id)
+                server_obj = ServerObject(object_id, self, self.auth_token)
                 for attr in convert_set:
                     if attr not in server:
                         continue
                     if attr in convert_ip:
-                        server[attr] = set(IP(x) for x in server[attr])
+                        server[attr] = MultiAttr((IP(x) for x in server[attr]),
+                                server_obj, attr)
                     else:
-                        server[attr] = set(server[attr])
+                        server[attr] = MultiAttr(server[attr], server_obj, attr)
                 for attr in convert_ip:
                     if attr not in server or attr in convert_set:
                         continue
                     server[attr] = IP(server[attr])
-                servers[object_id] = ServerObject(server, object_id, self,
-                        self.auth_token)
+                dict.update(server_obj, server)
+                servers[object_id] = server_obj
             return servers
         else:
             raise DatasetException(result['exception_msg'])
 
 class ServerObject(BaseServerObject):
-    def __init__(self, attributes, object_id=None, queryset=None,
-                 auth_token=None):
-        BaseServerObject.__init__(self, attributes, object_id, queryset)
+    def __init__(self, object_id=None, queryset=None, auth_token=None):
+        BaseServerObject.__init__(self, None, object_id, queryset)
         self.auth_token = auth_token
 
     def _serialize_changes(self):
@@ -102,7 +110,7 @@ class ServerObject(BaseServerObject):
         return changes
 
     def commit(self):
-        pass
+        raise NotImplementedError("Committing is not available yet!")
 
 def query(**kwargs):
     filters = dict((k, _prepare_filter(v)) for k, v in kwargs.iteritems())
