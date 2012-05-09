@@ -25,11 +25,11 @@ class BaseQuerySet(object):
         return len(self._results)
 
     def augment(self, *augmentations):
-        self._augmentations = augmentations
+        self._augmentations = set(augmentations)
         return self
 
     def restrict(self, *attrs):
-        self._restrict = attrs
+        self._restrict = set(attrs)
         return self
 
     def count(self):
@@ -59,7 +59,7 @@ class BaseQuerySet(object):
         for obj in self:
             if not obj.is_deleted():
                 obj.update(attrs)
-        self.commit()
+        return self
 
     def print_list(self, attr='hostname', file=sys.stdout):
         for obj in self:
