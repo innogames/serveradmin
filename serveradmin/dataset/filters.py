@@ -1,3 +1,5 @@
+import re
+
 from adminapi.utils import IP
 from serveradmin.dataset.base import lookups
 
@@ -15,7 +17,9 @@ class ExactMatch(object):
 
     @classmethod
     def from_obj(cls, obj):
-        pass
+        if 'value' in obj:
+            return cls(obj['value'])
+        raise ValueError('Invalid object for ExactMatch')
 _filter_classes['exactmatch'] = ExactMatch
 
 class Regexp(object):
@@ -26,14 +30,30 @@ class Regexp(object):
         return 'Regexp({0!r})'.format(self.regexp)
 
     def as_sql_expr(self, attr_name, field):
-        if lookups.attr_names[attr_name].type == 'ip':
+        # XXX Dirty hack for servertype regexp checking
+        if attr_name == 'servertype':
+            try:
+                regexp = re.compile(self.regexp)
+            except re.error:
+                return '0=1'
+            stype_ids = []
+            for stype in lookups.stype_ids.itervalues():
+                if regexp.search(stype.name):
+                    stype_ids.append(stype.pk)
+            if stype_ids:
+                return '{0} IN({1})'.format(field, ', '.join(stype_ids))
+            else:
+                return '0=1'
+        elif lookups.attr_names[attr_name].type == 'ip':
             return 'NTOA({0}) REGEXP {1}'.format(field, _sql_escape(self.regexp))
         else:
             return '{0} REGEXP {1}'.format(field, _sql_escape(self.regexp))
 
     @classmethod
     def from_obj(cls, obj):
-        pass
+        if 'regexp' in obj and isinstance(obj['regexp'], basestring):
+            return cls(obj['regexp'])
+        raise ValueError('Invalid object for Regexp')
 _filter_classes['regexp'] = Regexp
 
 class Comparism(object):
@@ -52,7 +72,9 @@ class Comparism(object):
 
     @classmethod
     def from_obj(cls, obj):
-        pass
+        if 'comparator' in obj and 'value' in obj:
+            return cls(obj['comparator'], obj['value'])
+        raise ValueError('Invalid object for Comparism')
 _filter_classes['comparism'] = Comparism
 
 class Any(object):
@@ -71,7 +93,9 @@ class Any(object):
     
     @classmethod
     def from_obj(cls, obj):
-        pass
+        if 'values' in obj and isinstance(obj['values'], list):
+            return cls(*obj['values'])
+        raise ValueError('Invalid object for Any')
 _filter_classes['any'] = Any
 
 class _AndOr(object):
@@ -88,8 +112,11 @@ class _AndOr(object):
                 for filter in self.filters]))
 
     @classmethod
-    def from_obj(obj):
-        pass
+    def from_obj(cls, obj):
+        if 'filters' in obj and isinstance(obj['filters'], list):
+            return cls(*[filter_from_obj for filter in obj['filters']])
+        raise ValueError('Invalid object for {0}'.format(
+                cls.__name__.capitalize()))
 
 class And(_AndOr):
     name = 'and'
@@ -113,8 +140,10 @@ class Between(object):
         return '{0} BETWEEN {1} AND {2}'.format(field, a_prepared, b_prepared)
 
     @classmethod
-    def from_obj(obj):
-        pass
+    def from_obj(cls, obj):
+        if 'a' in obj and 'b' in obj:
+            return cls(obj['a'], obj['b'])
+        raise ValueError('Invalid object for Between')
 _filter_classes['between'] = Between
 
 class Optional(object):
@@ -128,8 +157,10 @@ class Optional(object):
         return self.filter.as_sql_expr(field)
 
     @classmethod
-    def from_obj(obj):
-        pass
+    def from_obj(cls, obj):
+        if 'filter' in obj:
+            return cls(filter_from_obj(obj['filter']))
+        raise ValueError('Invalid object for Optional')
 _filter_classes['optional'] = Optional
 
 def _prepare_filter(filter):
@@ -160,5 +191,10 @@ def _sql_escape(value):
                 type(value)))
 
 def filter_from_obj(obj):
-    pass
-    
+    if not (isinstance(obj, dict) and 'name' in obj and
+            isinstance(obj['name'], basestring)):
+        raise ValueError('Invalid filter object')
+    try:
+        return _filter_classes[obj['name']].from_obj(obj)
+    except KeyError:
+        raise ValueError('No such filter: {0}').format(obj['name'])
