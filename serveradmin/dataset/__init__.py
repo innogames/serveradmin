@@ -82,13 +82,13 @@ class QuerySet(BaseQuerySet):
             else:
                 attrs = {}
                 if 'hostname' in restrict:
-                    attrs['hostname'] = hostname
+                    attrs[u'hostname'] = hostname
                 if 'intern_ip' in restrict:
-                    attrs['intern_ip'] = IP(intern_ip)
+                    attrs[u'intern_ip'] = IP(intern_ip)
                 if 'segment' in restrict:
-                    attrs['segment'] = segment
+                    attrs[u'segment'] = segment
                 if 'servertype' in restrict:
-                    attrs['servertype'] = servertype_lookup[stype]
+                    attrs[u'servertype'] = servertype_lookup[stype]
 
             server_data[server_id] = ServerObject(attrs, server_id, self)
         
