@@ -8,19 +8,12 @@ from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbid
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
-from adminapi.utils import IP
+from adminapi.utils import json_encode_extra
 from serveradmin.apps.models import Application
 
 def _calc_security_token(auth_token, timestamp, content):
     message = ':'.join((str(timestamp), content))
     return hmac.new(auth_token, message, hashlib.sha1).hexdigest()
-
-def _encode_extra(obj):
-    if isinstance(obj, set):
-        return list(obj)
-    elif isinstance(obj, IP):
-        return obj.ip
-    raise TypeError()
 
 def api_view(view):
     @csrf_exempt
@@ -41,9 +34,8 @@ def api_view(view):
         if real_security_token != security_token or expired:
             return HttpResponseForbidden('Invalid or expired security token',
                     mimetype='text/plain')
-        
         return_value = view(request, app, json.loads(request.body))
-        return HttpResponse(json.dumps(return_value, default=_encode_extra),
+        return HttpResponse(json.dumps(return_value, default=json_encode_extra),
                 mimetype='application/x-json')
 
     return update_wrapper(_wrapper, view)
