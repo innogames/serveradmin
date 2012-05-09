@@ -146,6 +146,27 @@ class Between(object):
         raise ValueError('Invalid object for Between')
 _filter_classes['between'] = Between
 
+class Not(object):
+    def __init__(self, filter):
+        self.filter = _prepare_filter(filter)
+
+    def __repr__(self):
+        return 'Not({0!})'.format(self.filter)
+
+    def as_sql_expr(self, attr_name, field):
+        if isinstance(self.filter, ExactMatch):
+            return '{0} != {1}'.format(field, _prepare_value(attr_name,
+                    self.filter.value))
+        else:
+            return 'NOT {0}'.format(self.filter.as_sql_expr(attr_name, field))
+
+    @classmethod
+    def from_obj(cls, obj):
+        if 'filter' in obj:
+            return cls(filter_from_obj(obj['filter']))
+        raise ValueError('Invalid object for Not')
+_filter_classes['not'] = Not
+
 class Optional(object):
     def __init__(self, filter):
         self.filter = _prepare_filter(filter)
@@ -153,8 +174,8 @@ class Optional(object):
     def __repr__(self):
         return 'Optional({0!r})'.format(self.filter)
 
-    def as_sql_expr(self, field):
-        return self.filter.as_sql_expr(field)
+    def as_sql_expr(self, attr_name, field):
+        return self.filter.as_sql_expr(attr_name, field)
 
     @classmethod
     def from_obj(cls, obj):

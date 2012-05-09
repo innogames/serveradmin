@@ -71,6 +71,16 @@ class Between(object):
     def _serialize(self):
         return {'name': 'between', 'a': self.a, 'b': self.b}
 
+class Not(object):
+    def __init__(self, filter):
+        self.filter = _prepare_filter(filter)
+
+    def __repr__(self):
+        return 'Not({0!r})'.format(self.filter)
+    
+    def _serialize(self):
+        return {'name': 'not', 'filter': self.filter._serialize()}
+
 class Optional(object):
     def __init__(self, filter):
         self.filter = _prepare_filter(filter)
