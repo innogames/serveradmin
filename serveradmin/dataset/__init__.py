@@ -1,6 +1,6 @@
 from django.db import connection
 
-from adminapi.dataset.base import BaseQuerySet, BaseServerObject
+from adminapi.dataset.base import BaseQuerySet, BaseServerObject, MultiAttr
 from adminapi.utils import IP
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.filters import Optional as _Optional, _prepare_filter
@@ -20,13 +20,16 @@ class QuerySet(BaseQuerySet):
                 'hostname': 'hostname', 
                 'intern_ip': 'intern_ip',
                 'segment': 'segment',
-                'servertype': 'servertype_id'
+                'servertype': 'servertype_id',
         }
         i = 0
         sql_left_joins = []
         sql_from = ['admin_server AS adms']
         sql_where = []
         attr_names = lookups.attr_names
+        all_ips = self._filters.get('all_ips')
+        if all_ips:
+            del self._filters['all_ips']
         for attr, f in self._filters.iteritems():
             if attr in attr_exceptions:
                 attr_field = attr_exceptions[attr]
@@ -40,10 +43,12 @@ class QuerySet(BaseQuerySet):
                 if isinstance(f, _Optional):
                     join = ('LEFT JOIN attrib_values AS av{0} '
                             'ON av{0}.server_id = adms.server_id AND '
-                            'av{0}.attrib_id = {1} AND {2}').format(i,
-                                attr_names[attr].pk,
-                                f.as_sql_expr(attr, attr_field))
+                            'av{0}.attrib_id = {1}').format(i,
+                                attr_names[attr].pk)
                     sql_left_joins.append(join)
+                    sql_where.append('({0} IS NULL OR {1})'.format(attr_field,
+                            f.as_sql_expr(attr, attr_field)))
+
                 else:
                     sql_from.append('attrib_values AS av{0}'.format(i))
                     sql_where += [
@@ -53,6 +58,17 @@ class QuerySet(BaseQuerySet):
                     ]
         
                 i += 1
+
+        if all_ips:
+            attr_field = 'av{0}.value'.format(i)
+            attr_id = attr_names['additional_ips'].pk
+            join = ('LEFT JOIN attrib_values AS av{0} '
+                    'ON av{0}.server_id = adms.server_id AND '
+                    'av{0}.attrib_id = {1}').format(i, attr_id)
+            sql_left_joins.append(join)
+            cond1 = all_ips.as_sql_expr('additional_ips', attr_field)
+            cond2 = all_ips.as_sql_expr('intern_ip', 'intern_ip')
+            sql_where.append('(({0}) OR {1})'.format(cond1, cond2))
         
         sql_stmt = '\n'.join([
                 'SELECT adms.server_id, adms.hostname, adms.intern_ip, '
@@ -125,11 +141,14 @@ class QuerySet(BaseQuerySet):
                 value = value == '1'
             elif attr_type == 'ip':
                 value = IP(value)
+
+            server_obj = server_data[server_id]
             
             # Using dict-methods to bypass ServerObject's special properties
             if attr.multi:
-                values = dict.setdefault(server_data[server_id], attr.name, set())
-                values.add(value)
+                values = dict.setdefault(server_obj, attr.name, MultiAttr((),
+                        server_obj, attr.name))
+                set.add(values, value) # Bypass MultiAttr
             else:
                 dict.__setitem__(server_data[server_id], attr.name, value)
         
