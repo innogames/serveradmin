@@ -66,33 +66,54 @@ class QuerySet(BaseQuerySet):
         ])
 
         c = connection.cursor()
-        print sql_stmt    
         c.execute(sql_stmt)
         server_data = {}
         servertype_lookup = dict((k, v.name) for k, v in
                 lookups.stype_ids.iteritems())
+        restrict = self._restrict
         for server_id, hostname, intern_ip, segment, stype in c.fetchall():
-            server_data[server_id] = ServerObject({
-                u'object_id': server_id,
-                u'hostname': hostname,
-                u'intern_ip': IP(intern_ip),
-                u'segment': segment,
-                u'servertype': servertype_lookup[stype]
-            }, server_id, self)
+            if not restrict:
+                attrs = {
+                    u'hostname': hostname,
+                    u'intern_ip': IP(intern_ip),
+                    u'segment': segment,
+                    u'servertype': servertype_lookup[stype]
+                }
+            else:
+                attrs = {}
+                if 'hostname' in restrict:
+                    attrs['hostname'] = hostname
+                if 'intern_ip' in restrict:
+                    attrs['intern_ip'] = IP(intern_ip)
+                if 'segment' in restrict:
+                    attrs['segment'] = segment
+                if 'servertype' in restrict:
+                    attrs['servertype'] = servertype_lookup[stype]
+
+            server_data[server_id] = ServerObject(attrs, server_id, self)
         
         # Return early if there are no servers (= empty dict)
         if not server_data:
             return server_data
         
+        # Remove attributes from adm_server from the restrict set
+        if restrict:
+            restrict = restrict - set(attr_exceptions.iterkeys())
+            # if restrict is empty now, there are no attributes to fetch
+            # from the attrib_values table, but just attributes from
+            # admin_server table. We can return early
+            if not restrict:
+                return server_data
+
         server_ids = ', '.join(map(str, server_data.iterkeys()))
         sql_stmt = ('SELECT server_id, attrib_id, value FROM attrib_values '
                     'WHERE server_id IN({0})').format(server_ids)
         
-        if self._restrict:
+        if restrict:
             restrict_ids = ', '.join(str(lookups.attr_names[attr_name].pk)
-                    for attr_name in self._restrict)
+                    for attr_name in restrict)
             sql_stmt += ' AND attrib_id IN({0})'.format(restrict_ids)
-
+        
         c.execute(sql_stmt)
         attr_ids = lookups.attr_ids
         for server_id, attr_id, value in c.fetchall():
