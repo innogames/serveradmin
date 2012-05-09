@@ -89,3 +89,10 @@ PRIVATE_IP_BLOCKS = [
     (IP('172.16.0.0').as_int(), IP('172.31.255.255').as_int()),
     (IP('192.168.0.0').as_int(), IP('192.168.255.255').as_int())
 ]
+
+def json_encode_extra(obj):
+    if isinstance(obj, set):
+        return list(obj)
+    elif isinstance(obj, IP):
+        return obj.ip
+    raise TypeError()

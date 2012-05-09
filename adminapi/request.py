@@ -4,12 +4,14 @@ import hashlib
 import hmac
 import time
 
+from adminapi.utils import json_encode_extra
+
 def _calc_security_token(auth_token, timestamp, content):
     message = ':'.join((str(timestamp), content))
     return hmac.new(auth_token, message, hashlib.sha1).hexdigest()
 
 def send_request(url, data, auth_token):
-    data_json = json.dumps(data)
+    data_json = json.dumps(data, default=json_encode_extra)
     timestamp = int(time.time())
     application_id = hashlib.sha1(auth_token).hexdigest()
     security_token = _calc_security_token(auth_token, timestamp, data_json)
