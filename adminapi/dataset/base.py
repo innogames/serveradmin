@@ -33,7 +33,7 @@ class BaseQuerySet(object):
         return self
 
     def count(self):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def get(self):
         self._get_results()
@@ -45,7 +45,7 @@ class BaseQuerySet(object):
         return bool(self._num_dirty)
 
     def commit(self):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def rollback(self):
         for obj in self:
@@ -83,7 +83,7 @@ class BaseQuerySet(object):
             self._results = self._fetch_results()
 
     def _fetch_results(self):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def _confirm_changes(self):
         for obj in self:
@@ -91,12 +91,13 @@ class BaseQuerySet(object):
 
 
 class BaseServerObject(dict):
-    def __init__(self, attributes, object_id=None, queryset=None):
+    def __init__(self, attributes=None, object_id=None, queryset=None):
         self.object_id = object_id
         self._deleted = False
         self._queryset = queryset
         self.old_values = {}
-        dict.update(self, attributes)
+        if attributes:
+            dict.update(self, attributes)
 
     def __repr__(self):
         if self.object_id:
@@ -112,7 +113,7 @@ class BaseServerObject(dict):
         return self._deleted
     
     def commit(self):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def rollback(self):
         if self._queryset and self.is_dirty():
@@ -224,6 +225,64 @@ class BaseServerObject(dict):
         for k in F:
             self[k] = F[k]
     update.__doc__ = dict.update.__doc__
+
+class MultiAttr(set):
+    def __init__(self, iterable, server_obj, attr_name):
+        if iterable is not None:
+            set.__init__(self, iterable)
+        self._server_obj = server_obj
+        self._attr_name = attr_name
+
+    def add(self, elem):
+        self._tell_change()
+        set.add(self, elem)
+    add.__doc__ = set.add.__doc__
+
+    def clear(self):
+        self._tell_change()
+        set.clear(self)
+    clear.__doc__ = set.clear.__doc__
+    
+    def difference_update(self, other_set):
+        self._tell_change()
+        set.difference_update(self, other_set)
+    difference_update.__doc__ = set.difference_update.__doc__
+    __isub__ = difference_update
+
+    def discard(self, elem):
+        self._tell_change()
+        set.discard(self, elem)
+    discard.__doc__ = set.discard.__doc__
+
+    def intersection_update(self, other_set):
+        self._tell_change()
+        set.intersection_update(self, other_set)
+    intersection_update.__doc__ = set.intersection_update.__doc__
+    __iand__ = intersection_update
+
+    def pop(self, elem):
+        self._tell_change()
+        set.pop(self, elem)
+    pop.__doc__ = set.pop.__doc__
+
+    def remove(self, elem):
+        self._tell_change()
+        set.remove(self, elem)
+    remove.__doc__ = set.remove.__doc__
+
+    def symmetric_difference_update(self, other_set):
+        self._tell_change()
+        set.symmetric_difference_update(self, other_set)
+    symmetric_difference_update.__doc__ = set.symmetric_difference_update.__doc__
+    __ixor__ = symmetric_difference_update
+
+    def update(self, other_set):
+        self._tell_change()
+        set.update(self, other_set)
+    update.__doc__ = set.update.__doc__
+
+    def _tell_change(self):
+        self._server_obj._save_old_value(self._attr_name)
 
 def _format_value(value):
     if not value:
