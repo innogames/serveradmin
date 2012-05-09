@@ -20,13 +20,17 @@ def dataset_query(request, app, data):
     if data['augmentations']:
         q.augment(*data['augmentations'])
 
+    attributes = {}
+    for attr in lookups.attr_ids.itervalues():
+        attributes[attr.name] = {
+            'multi': attr.multi,
+            'type': attr.type
+        }
+
     return {
         'status': 'success',
         'servers': q.get_raw_results(),
-        'convert_set': [attr.name for attr in lookups.attr_ids.itervalues()
-                        if attr.multi],
-        'convert_ip': [attr.name for attr in lookups.attr_ids.itervalues()
-                        if attr.type == 'ip']
+        'attributes': attributes
     }
 
 @api_view

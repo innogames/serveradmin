@@ -1,7 +1,7 @@
 from __future__ import print_function
 import sys
 
-from adminapi.utils import print_table, print_heading
+from adminapi.utils import IP, print_table, print_heading
 
 NonExistingAttribute = object()
 
@@ -179,6 +179,8 @@ class BaseServerObject(dict):
     def __setitem__(self, k, v):
         if self._deleted:
             raise DatasetException('Can not set attributes on deleted servers')
+        if self._queryset.attributes[k]['type'] == 'ip':
+            v = IP(v)
         self._save_old_value(k)
         return dict.__setitem__(self, k, v)
     __setitem__.__doc__ = dict.__setitem__.__doc__

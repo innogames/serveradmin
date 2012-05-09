@@ -14,6 +14,7 @@ class QuerySet(BaseQuerySet):
     def __init__(self, filters, auth_token):
         BaseQuerySet.__init__(self, filters)
         self.auth_token = auth_token
+        self.attributes = {}
 
     def __repr__(self):
         # QuerySet is not used directly but through query function
@@ -37,7 +38,7 @@ class QuerySet(BaseQuerySet):
             if obj.is_deleted():
                 commit['deleted'].append(obj.object_id)
             elif obj.is_dirty():
-                commit[obj.object_id] = obj._serialize_changes()
+                commit['changes'][obj.object_id] = obj._serialize_changes()
         
         result_json = send_request(COMMIT_URL, commit, self.auth_token)
         result = json.loads(result_json)
@@ -64,10 +65,13 @@ class QuerySet(BaseQuerySet):
         }
         result = send_request(QUERY_URL, request_data, self.auth_token)
         if result['status'] == 'success':
+            self.attributes = result['attributes']
             # The attributes in convert_set must be converted to sets
             # and attributes in convert_ip musst be converted to ips
-            convert_set = frozenset(result['convert_set'])
-            convert_ip = frozenset(result['convert_ip'])
+            convert_set = frozenset(attr_name for attr_name, attr in
+                    self.attributes if attr['multi'])
+            convert_ip = frozenset(attr_name for attr_name, attr in
+                    self.attributes if attr['type'] == 'ip')
             servers = {}
             for object_id, server in result['servers'].iteritems():
                 object_id = int(object_id)
@@ -97,15 +101,15 @@ class ServerObject(BaseServerObject):
 
     def _serialize_changes(self):
         changes = {}
-        for key, old_value in self.old_values:
+        for key, old_value in self.old_values.iteritems():
             new_value = self.get(key, NonExistingAttribute)
             old_plain = old_value if old_value != NonExistingAttribute else None
             new_plain = new_value if new_value != NonExistingAttribute else None
             changes[key] = {
-                'old_value': old_plain,
-                'new_value': new_plain,
-                'deleted': new_value == NonExistingAttribute,
-                'new': old_value == NonExistingAttribute
+                'old': old_plain,
+                'new': new_plain,
+                'is_del': new_value == NonExistingAttribute,
+                'is_new': old_value == NonExistingAttribute
             }
         return changes
 
