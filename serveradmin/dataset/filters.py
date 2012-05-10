@@ -158,7 +158,8 @@ class Not(object):
             return '{0} != {1}'.format(field, _prepare_value(attr_name,
                     self.filter.value))
         else:
-            return 'NOT {0}'.format(self.filter.as_sql_expr(attr_name, field))
+            return '{0} NOT {1}'.format(field, self.filter.as_sql_expr(
+                    attr_name, field))
 
     @classmethod
     def from_obj(cls, obj):
