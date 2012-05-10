@@ -1,7 +1,4 @@
-try:
-    import json
-except ImportError:
-    import simplejson as json
+import json
 import urllib2
 import hashlib
 import hmac
