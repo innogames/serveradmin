@@ -8,7 +8,7 @@ from django.db.models.signals import pre_save, pre_delete, post_save
 from django.contrib.auth.models import User
 
 class Application(models.Model):
-    name = models.CharField(max_length=24)
+    name = models.CharField(max_length=80)
     app_id = models.CharField(max_length=64, unique=True, editable=False)
     auth_token = models.CharField(max_length=64, unique=True, editable=False)
     author = models.ForeignKey(User)
