@@ -179,8 +179,14 @@ class BaseServerObject(dict):
     def __setitem__(self, k, v):
         if self._deleted:
             raise DatasetException('Can not set attributes on deleted servers')
+        if k not in self._queryset.attributes:
+            raise DatasetException('No such attribute')
         if self._queryset.attributes[k]['type'] == 'ip':
             v = IP(v)
+        if self._queryset.attributes[k]['multi']:
+            if not isinstance(v, set):
+                raise DatasetException('Multi attributes must be sets')
+            v = MultiAttr(v, self, k)
         self._save_old_value(k)
         return dict.__setitem__(self, k, v)
     __setitem__.__doc__ = dict.__setitem__.__doc__
