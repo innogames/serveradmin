@@ -69,9 +69,9 @@ class QuerySet(BaseQuerySet):
             # The attributes in convert_set must be converted to sets
             # and attributes in convert_ip musst be converted to ips
             convert_set = frozenset(attr_name for attr_name, attr in
-                    self.attributes if attr['multi'])
+                    self.attributes.iteritems() if attr['multi'])
             convert_ip = frozenset(attr_name for attr_name, attr in
-                    self.attributes if attr['type'] == 'ip')
+                    self.attributes.iteritems() if attr['type'] == 'ip')
             servers = {}
             for object_id, server in result['servers'].iteritems():
                 object_id = int(object_id)
