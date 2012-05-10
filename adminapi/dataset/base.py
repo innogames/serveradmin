@@ -61,6 +61,9 @@ class BaseQuerySet(object):
                 obj.update(attrs)
         return self
 
+    def iterattrs(self, attr='hostname'):
+        return (obj[attr] for obj in self)
+
     def print_list(self, attr='hostname', file=sys.stdout):
         for obj in self:
             print('* {0}'.format(obj[attr]), file=file)
@@ -74,9 +77,14 @@ class BaseQuerySet(object):
         print_table(table, file=file)
 
     def print_changes(self, title=lambda x: x['hostname'], file=sys.stdout):
+        num_dirty = 0
         for obj in self:
-            obj.print_changes(title, file=file)
-            file.write("\n")
+            if obj.is_dirty():
+                num_dirty += 1
+                obj.print_changes(title, file=file)
+                file.write('\n')
+        file.write('\n{0} changed and {1} unchanged.\n'.format(num_dirty,
+                len(self) - num_dirty))
 
     def _get_results(self):
         if self._results is None:
