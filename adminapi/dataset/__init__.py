@@ -1,5 +1,3 @@
-import json
-
 from adminapi import BASE_URL, _api_settings
 from adminapi.utils import IP
 from adminapi.request import send_request
@@ -40,8 +38,7 @@ class QuerySet(BaseQuerySet):
             elif obj.is_dirty():
                 commit['changes'][obj.object_id] = obj._serialize_changes()
         
-        result_json = send_request(COMMIT_URL, commit, self.auth_token)
-        result = json.loads(result_json)
+        result = send_request(COMMIT_URL, commit, self.auth_token)
 
         if result['status'] == 'success':
             self.num_dirty = 0
