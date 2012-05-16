@@ -21,6 +21,17 @@ class ServerType(models.Model):
     class Meta:
         db_table = 'servertype'
 
+class ServerTypeAttributes(models.Model):
+    servertype = models.ForeignKey(ServerType)
+    attrib = models.ForeignKey(Attribute)
+    required = models.BooleanField(default=False)
+    attrib_default = models.CharField(max_length=255, null=True, blank=True)
+    regex = models.CharField(max_length=255)
+    default_visible = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'servertype_attributes'
+
 class ServerObject(models.Model):
     server_id = models.IntegerField(primary_key=True)
     hostname = models.CharField(max_length=64)
