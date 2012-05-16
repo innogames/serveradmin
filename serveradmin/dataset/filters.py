@@ -88,8 +88,10 @@ class Any(object):
         if not self.values:
             return '0=1'
         else:
-            return 'IN({0})'.format(', '.join(_prepare_value(attr_name, value)
-                    for value in self.values))
+            prepared_values = ', '.join(_prepare_value(attr_name, value)
+                    for value in self.values)
+            return '{0} IN({1})'.format(field, prepared_values)
+                    
     
     @classmethod
     def from_obj(cls, obj):
