@@ -5,7 +5,8 @@ from django.db import connection
 from serveradmin.dataset import query, filters
 from serveradmin.dataset.models import ServerTypeAttributes
 from serveradmin.dataset.base import lookups
-from adminapi.dataset.base import CommitValidationFailed, CommitNewerData
+from adminapi.dataset.base import CommitValidationFailed, CommitNewerData, \
+        CommitError
 
 def commit_changes(commit, skip_validation=False, force_changes=False):
     """Commit server changes to the database after validation.
@@ -25,7 +26,10 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
     stype_attrs = list(ServerTypeAttributes.objects.select_related())
     c = connection.cursor()
     #c.execute('LOCK TABLES attrib_values WRITE, admin_server WRITE')
+    c.execute("SELECT GET_LOCK('serverobject_commit', 10)")
     try:
+        if not c.fetchone()[0]:
+            raise CommitError('Could not get lock')
         servers = _fetch_servers(changed_servers)
         if not skip_validation:
             violations_regexp = _validate_regexp(changed_servers, servers,
@@ -46,7 +50,7 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
         _apply_changes(changed_servers, servers)
     finally:
         c.execute('COMMIT')
-        #c.execute('UNLOCK TABLES')
+        c.execute("SELECT RELEASE_LOCK('serverobject_commit')")
 
 def _fetch_servers(changed_servers):
     # Only load attributes that will be changed (for performance reasons)
@@ -146,7 +150,6 @@ def _validate_commit(changed_servers, servers):
             elif action == 'update' or action == 'delete':
                 try:
                     if server[attr] != change['old']:
-                        print server[attr], change['old']
                         newer.append((server_id, attr, server[attr]))
                 except KeyError:
                     newer.append((server_id, attr, None))
