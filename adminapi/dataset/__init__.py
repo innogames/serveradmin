@@ -2,7 +2,7 @@ from adminapi import BASE_URL, _api_settings
 from adminapi.utils import IP
 from adminapi.request import send_request
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject, \
-        DatasetException, NonExistingAttribute, MultiAttr
+        DatasetError, NonExistingAttribute, MultiAttr
 from adminapi.dataset.filters import _prepare_filter
 
 COMMIT_URL = BASE_URL + '/dataset/commit'
@@ -46,7 +46,7 @@ class QuerySet(BaseQuerySet):
                 obj._confirm_changes()
             return True
         else:
-            raise DatasetException(result['exception_msg'])
+            raise DatasetError(result['exception_msg'])
 
     def count(self):
         return 1
@@ -89,7 +89,7 @@ class QuerySet(BaseQuerySet):
                 servers[object_id] = server_obj
             return servers
         else:
-            raise DatasetException(result['exception_msg'])
+            raise DatasetError(result['exception_msg'])
 
 class ServerObject(BaseServerObject):
     def __init__(self, object_id=None, queryset=None, auth_token=None):
