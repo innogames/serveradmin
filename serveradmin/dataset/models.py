@@ -22,8 +22,8 @@ class ServerType(models.Model):
         db_table = 'servertype'
 
 class ServerTypeAttributes(models.Model):
-    servertype = models.ForeignKey(ServerType)
-    attrib = models.ForeignKey(Attribute)
+    servertype = models.ForeignKey(ServerType, primary_key=True)
+    attrib = models.ForeignKey(Attribute, primary_key=True)
     required = models.BooleanField(default=False)
     attrib_default = models.CharField(max_length=255, null=True, blank=True)
     regex = models.CharField(max_length=255)
