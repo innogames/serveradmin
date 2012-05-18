@@ -65,6 +65,19 @@ class IP(object):
     def __repr__(self):
         return 'IP({0!r})'.format(self.as_ip())
 
+    def __eq__(self, other):
+        if isinstance(other, IP):
+            return self.ip == other.ip
+        else:
+            try:
+                other = IP(other)
+                return self.ip == other.ip
+            except ValueError:
+                return False
+
+    def __hash__(self):
+        return hash(self.ip)
+
     def as_ip(self):
         ip = [0] * 4
         ip_int = self.ip
