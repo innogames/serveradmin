@@ -51,8 +51,6 @@ class IP(object):
     
     def __init__(self, ip):
         if isinstance(ip, basestring):
-            if ip.count('.') != 3:
-                raise ValueError('Invalid IP')
             ip_int = 0
             for seg in ip.split('.'):
                 ip_int = ip_int << 8
