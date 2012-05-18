@@ -8,6 +8,7 @@ from serveradmin.dataset.models import Attribute, ServerType
 lookups = local()
 def _read_lookups(sender=None, **kwargs):
     special_attributes = [
+        Attribute(name='object_id', type='integer', base=True, multi=False),
         Attribute(name='hostname', type='string', base=True, multi=False),
         Attribute(name='servertype', type='string', base=True, multi=False),
         Attribute(name='intern_ip', type='ip', base=True, multi=False)
