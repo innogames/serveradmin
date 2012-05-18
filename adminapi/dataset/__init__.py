@@ -97,17 +97,30 @@ class ServerObject(BaseServerObject):
         self.auth_token = auth_token
 
     def _serialize_changes(self):
+        # FIXME: Put into base
         changes = {}
         for key, old_value in self.old_values.iteritems():
             new_value = self.get(key, NonExistingAttribute)
-            old_plain = old_value if old_value != NonExistingAttribute else None
-            new_plain = new_value if new_value != NonExistingAttribute else None
-            changes[key] = {
-                'old': old_plain,
-                'new': new_plain,
-                'is_del': new_value == NonExistingAttribute,
-                'is_new': old_value == NonExistingAttribute
-            }
+            if new_value == NonExistingAttribute:
+                action = 'delete'
+            elif old_value == NonExistingAttribute:
+                action = 'new'
+            elif self.queryset.attributes[key]['multi']:
+                action = 'multi'
+            else:
+                action = 'update'
+
+            change = {'action': action}
+            if action == 'update':
+                change['old'] = old_value
+                change['new'] = new_value
+            elif action == 'new':
+                change['new'] = new_value
+            elif action == 'multi':
+                change['remove'] = old_value.difference(new_value)
+                change['add'] = new_value.difference(old_value)
+            
+            changes[key] = change
         return changes
 
     def commit(self):
