@@ -21,6 +21,7 @@ class QuerySet(BaseQuerySet):
                 'intern_ip': 'intern_ip',
                 'segment': 'segment',
                 'servertype': 'servertype_id',
+                'object_id': 'server_id'
         }
         i = 0
         sql_left_joins = []
