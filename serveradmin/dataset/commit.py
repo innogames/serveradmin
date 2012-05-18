@@ -3,7 +3,7 @@ import re
 from django.db import connection
 
 from serveradmin.dataset import query, filters
-from serveradmin.dataset.models import ServerObject, ServerTypeAttributes
+from serveradmin.dataset.models import ServerTypeAttributes
 from serveradmin.dataset.base import lookups
 from adminapi.dataset.base import CommitValidationFailed, CommitNewerData
 
@@ -17,17 +17,14 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
     deleted_servers = commit.get('deleted', [])
     changed_servers = commit.get('changes', {})
 
-    for server_id in deleted_servers:
-        ServerObject.objects.delete(server_id=server_id)
-    
     if not changed_servers:
         return
     
     _validate_structure(deleted_servers, changed_servers) 
     
-    stype_attrs = list(ServerTypeAttributes.objects.selected_related())
+    stype_attrs = list(ServerTypeAttributes.objects.select_related())
     c = connection.cursor()
-    c.execute('LOCK TABLE attrib_values, admin_server WRITE')
+    #c.execute('LOCK TABLES attrib_values WRITE, admin_server WRITE')
     try:
         servers = _fetch_servers(changed_servers)
         if not skip_validation:
@@ -44,10 +41,12 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
             if newer:
                 raise CommitNewerData('Newer data available', newer)
         
-        _delete_servers(deleted_servers)
+        if deleted_servers:
+            _delete_servers(deleted_servers)
         _apply_changes(changed_servers, servers)
     finally:
-        c.execute('UNLOCK TABLES')
+        c.execute('COMMIT')
+        #c.execute('UNLOCK TABLES')
 
 def _fetch_servers(changed_servers):
     # Only load attributes that will be changed (for performance reasons)
@@ -56,7 +55,7 @@ def _fetch_servers(changed_servers):
         for attr in changes:
             changed_attrs.add(attr)
     return query(object_id=filters.Any(*changed_servers.keys())).restrict(
-            *changed_attrs).get_raw_data()
+            *changed_attrs).get_raw_results()
 
 def _get_attr_regexps(stype_attrs):
     stype_attr_regexps = {}
@@ -64,7 +63,7 @@ def _get_attr_regexps(stype_attrs):
         stype_name = stype_attr.servertype.name
         try:
             regexp = re.compile(stype_attr.regex)
-        except re.error:
+        except (TypeError, re.error):
             regexp = None
         attr_regexps = stype_attr_regexps.setdefault(stype_name, {})
         attr_regexps[stype_attr.attrib.name] = regexp
@@ -74,8 +73,8 @@ def _get_attr_required(stype_attrs):
     stype_attr_required = {}
     for stype_attr in ServerTypeAttributes.objects.select_related():
         stype_name = stype_attr.servertype.name
-        stype_attr_required = stype_attr_required.setdefault(stype_name, {})
-        stype_attr_required[stype_attr.attrib.name] = stype_attr.required
+        attr_required = stype_attr_required.setdefault(stype_name, {})
+        attr_required[stype_attr.attrib.name] = stype_attr.required
     return stype_attr_required
 
 def _validate_structure(deleted_servers, changed_servers):
@@ -122,6 +121,7 @@ def _validate_regexp(changed_servers, servers, stype_attrs):
                     if regexp and not regexp.match(value):
                         violations.append((server_id, attr))
                         break
+    return violations
 
 def _validate_required(changed_servers, servers, stype_attrs):
     stype_attr_required = _get_attr_required(stype_attrs)
@@ -146,6 +146,7 @@ def _validate_commit(changed_servers, servers):
             elif action == 'update' or action == 'delete':
                 try:
                     if server[attr] != change['old']:
+                        print server[attr], change['old']
                         newer.append((server_id, attr, server[attr]))
                 except KeyError:
                     newer.append((server_id, attr, None))
@@ -170,7 +171,7 @@ def _apply_changes(changed_servers, servers):
     for server_id, changes in changed_servers.iteritems():
         server = servers[server_id]
         for attr, change in changes.iteritems():
-            attr_id = lookups.attr_names[attr].name
+            attr_id = lookups.attr_names[attr].pk
             action = change['action']
 
             if action == 'new' or action == 'update':
