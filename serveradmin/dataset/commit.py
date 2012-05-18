@@ -50,7 +50,7 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
         c.execute('UNLOCK TABLES')
 
 def _fetch_servers(changed_servers):
-    # Only load attributes that will be changed for performance reasons
+    # Only load attributes that will be changed (for performance reasons)
     changed_attrs = set(['servertype'])
     for changes in changed_servers.itervalues():
         for attr in changes:
