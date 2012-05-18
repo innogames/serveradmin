@@ -22,8 +22,8 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
     
     if not changed_servers:
         return
-
-    _validate_structure(changed_servers) 
+    
+    _validate_structure(deleted_servers, changed_servers) 
     
     stype_attrs = list(ServerTypeAttributes.objects.selected_related())
     c = connection.cursor()
@@ -43,8 +43,9 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
             newer = _validate_commit(changed_servers, servers)
             if newer:
                 raise CommitNewerData('Newer data available', newer)
-
-        # FIXME: Apply changes
+        
+        _delete_servers(deleted_servers)
+        _apply_changes(changed_servers, servers)
     finally:
         c.execute('UNLOCK TABLES')
 
@@ -77,7 +78,12 @@ def _get_attr_required(stype_attrs):
         stype_attr_required[stype_attr.attrib.name] = stype_attr.required
     return stype_attr_required
 
-def _validate_structure(changed_servers):
+def _validate_structure(deleted_servers, changed_servers):
+    if not isinstance(deleted_servers, (list, set)):
+        raise ValueError('Invalid deleted servers')
+    if not all(isinstance(x, (int, long)) for x in deleted_servers):
+        raise ValueError('Invalid deleted servers')
+
     # FIXME: Validation of the inner structure
     for server_id, changes in changed_servers.iteritems():
         for attr, change in changes.iteritems():
@@ -144,3 +150,39 @@ def _validate_commit(changed_servers, servers):
                 except KeyError:
                     newer.append((server_id, attr, None))
     return newer
+
+def _delete_servers(deleted_servers):
+    ids = ', '.join(str(x) for x in deleted_servers)
+    c = connection.cursor()
+    c.execute('DELETE FROM attrib_values WHERE server_id IN({0})'.format(ids))
+    c.execute('DELETE FROM admin_server WHERE server_id IN({0})'.format(ids))
+
+def _apply_changes(changed_servers, servers):
+    c = connection.cursor()
+    query_update = ('UPDATE attrib_values SET value=%s WHERE server_id = %s '
+            'AND attrib_id = %s')
+    query_insert = ('INSERT INTO attrib_values (server_id, attrib_id, value) '
+            'VALUES (%s, %s, %s)')
+    query_remove = ('DELETE FROM attrib_values WHERE server_id = %s AND '
+            'attrib_id = %s AND value=%s')
+    query_remove_all = ('DELETE FROM attrib_values WHERE server_id = %s AND '
+            'attrib_id = %s')
+    for server_id, changes in changed_servers.iteritems():
+        server = servers[server_id]
+        for attr, change in changes.iteritems():
+            attr_id = lookups.attr_names[attr].name
+            action = change['action']
+
+            if action == 'new' or action == 'update':
+                if attr in server:
+                    c.execute(query_update, (change['new'], server_id, attr_id))
+                else:
+                    c.execute(query_insert, (server_id, attr_id, change['new']))
+            elif action == 'delete':
+                c.execute(query_remove_all, (server_id, attr_id))
+            elif action == 'multi':
+                for value in change['remove']:
+                    c.execute(query_remove, (server_id, attr_id, value))
+                for value in change['add']:
+                    c.execute(query_insert, (value, server_id, attr_id))
+
