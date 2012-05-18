@@ -5,8 +5,25 @@ from adminapi.utils import IP, print_table, print_heading
 
 NonExistingAttribute = object()
 
-class DatasetException(Exception):
+class DatasetError(Exception):
     pass
+
+class CommitError(Exception):
+    pass
+
+class CommitValidationFailed(CommitError):
+    def __init__(self, message, violations=None):
+        CommitError.__init__(self, message)
+        if violations is None:
+            violations = []
+        self.violations = violations
+
+class CommitNewerData(CommitError):
+    def __init__(self, message, newer=None):
+        CommitError.__init__(self, message)
+        if newer is None:
+            newer = []
+        self.newer = newer
 
 class BaseQuerySet(object):
     def __init__(self, filters):
@@ -38,7 +55,7 @@ class BaseQuerySet(object):
     def get(self):
         self._get_results()
         if len(self._results) != 1:
-            raise DatasetException('get() requires exactly 1 matched object')
+            raise DatasetError('get() requires exactly 1 matched object')
         return self._results.itervalues().next()
     
     def is_dirty(self):
@@ -186,14 +203,14 @@ class BaseServerObject(dict):
 
     def __setitem__(self, k, v):
         if self._deleted:
-            raise DatasetException('Can not set attributes on deleted servers')
+            raise DatasetError('Can not set attributes on deleted servers')
         if k not in self._queryset.attributes:
-            raise DatasetException('No such attribute')
+            raise DatasetError('No such attribute')
         if self._queryset.attributes[k]['type'] == 'ip':
             v = IP(v)
         if self._queryset.attributes[k]['multi']:
             if not isinstance(v, set):
-                raise DatasetException('Multi attributes must be sets')
+                raise DatasetError('Multi attributes must be sets')
             v = MultiAttr(v, self, k)
         self._save_old_value(k)
         return dict.__setitem__(self, k, v)
