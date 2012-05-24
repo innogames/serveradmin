@@ -188,5 +188,7 @@ def _apply_changes(changed_servers, servers):
                 for value in change['remove']:
                     c.execute(query_remove, (server_id, attr_id, value))
                 for value in change['add']:
-                    c.execute(query_insert, (value, server_id, attr_id))
+                    if value in server[attr]:
+                        continue # Avoid duplicate entries
+                    c.execute(query_insert, (server_id, attr_id, value))
 
