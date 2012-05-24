@@ -1,3 +1,4 @@
+from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
 from serveradmin.api.decorators import api_view
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset import QuerySet
@@ -64,6 +65,31 @@ def dataset_commit(request, app, data):
             'status': 'success'
         }
     except (ValueError, CommitError), e:
+        return {
+            'status': 'error',
+            'type': e.__class__.__name__,
+            'message': e.message
+        }
+
+@api_view
+def api_call(request, app, data):
+    try:
+        if not all(x in data for x in ('group', 'name', 'args', 'kwargs')):
+            raise ValueError('Invalid API call')
+        
+        try:
+            fn = AVAILABLE_API_FUNCTIONS[data['group']][data['name']]
+        except KeyError:
+            raise ValueError('No such function')
+
+        retval = fn(*data['args'], **data['kwargs'])
+        print 'retval', retval
+        return {
+            'status': 'success',
+            'retval': retval
+        }
+
+    except (ValueError, TypeError, ApiError), e:
         return {
             'status': 'error',
             'type': e.__class__.__name__,

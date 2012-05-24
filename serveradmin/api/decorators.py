@@ -10,6 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from adminapi.utils import json_encode_extra
 from serveradmin.apps.models import Application
+from serveradmin.api import AVAILABLE_API_FUNCTIONS
 
 def _calc_security_token(auth_token, timestamp, content):
     message = ':'.join((str(timestamp), content))
@@ -39,3 +40,11 @@ def api_view(view):
                 mimetype='application/x-json')
 
     return update_wrapper(_wrapper, view)
+
+def api_function(group, name=None):
+    def inner_decorator(fn):
+        group_dict = AVAILABLE_API_FUNCTIONS.setdefault(group, {})
+        fn_name = fn.__name__ if name is None else name
+        group_dict[fn_name] = fn
+        return fn
+    return inner_decorator
