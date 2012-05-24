@@ -204,7 +204,7 @@ class BaseServerObject(dict):
                 action = 'delete'
             elif old_value == NonExistingAttribute:
                 action = 'new'
-            elif self.queryset.attributes[key].multi:
+            elif self._queryset.attributes[key].multi:
                 action = 'multi'
             else:
                 action = 'update'
@@ -231,7 +231,7 @@ class BaseServerObject(dict):
     def _build_commit_object(self):
         changes = {}
         if self.is_dirty():
-            changes[self.object_id] = self.serialize_changes()
+            changes[self.object_id] = self._serialize_changes()
         return {
             'deleted': [self.object_id] if self.is_deleted() else [],
             'changes': changes
