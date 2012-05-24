@@ -8,6 +8,12 @@ from adminapi.dataset.filters import _prepare_filter
 COMMIT_URL = BASE_URL + '/dataset/commit'
 QUERY_URL = BASE_URL + '/dataset/query'
 
+class Attribute(object):
+    def __init__(self, name, type, multi):
+        self.name = name
+        self.type = type
+        self.multi = multi
+
 class QuerySet(BaseQuerySet):
     def __init__(self, filters, auth_token):
         BaseQuerySet.__init__(self, filters)
@@ -53,7 +59,11 @@ class QuerySet(BaseQuerySet):
         }
         result = send_request(QUERY_URL, request_data, self.auth_token)
         if result['status'] == 'success':
-            self.attributes = result['attributes']
+            attributes = {}
+            for attr_name, attr in result['attributes']:
+                attributes[attr_name] = Attribute(attr_name, attr['type'],
+                        attr['multi'])
+            self.attributes = attributes
             # The attributes in convert_set must be converted to sets
             # and attributes in convert_ip musst be converted to ips
             convert_set = frozenset(attr_name for attr_name, attr in

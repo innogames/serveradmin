@@ -12,6 +12,7 @@ class QuerySet(BaseQuerySet):
             if attr not in lookups.attr_names:
                 raise ValueError('Invalid attribute: {0}'.format(attr))
         BaseQuerySet.__init__(self, filters)
+        self.attributes = lookups.attr_names
 
     def commit(self):
         commit = self._build_commit_object()
