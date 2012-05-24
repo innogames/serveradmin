@@ -6,6 +6,12 @@ from serveradmin.dataset.base import lookups
 from serveradmin.dataset.filters import Optional as _Optional, _prepare_filter
 
 class QuerySet(BaseQuerySet):
+    def __init__(self, filters):
+        for attr in filters:
+            if attr not in lookups.attr_names:
+                raise ValueError('Invalid attribute: {0}'.format(attr))
+        BaseQuerySet.__init__(self, filters)
+
     def commit(self):
         print 'I am not implemented yet, but would normally commit changes'
         self._confirm_changes()

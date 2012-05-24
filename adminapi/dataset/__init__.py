@@ -88,8 +88,11 @@ class QuerySet(BaseQuerySet):
                 dict.update(server_obj, server)
                 servers[object_id] = server_obj
             return servers
-        else:
-            raise DatasetError(result['exception_msg'])
+        elif result['status'] == 'error':
+            exception_class = {
+                'ValueError': ValueError
+            }.get(result['type'], DatasetError)
+            raise exception_class(result['message'])
 
 class ServerObject(BaseServerObject):
     def __init__(self, object_id=None, queryset=None, auth_token=None):
