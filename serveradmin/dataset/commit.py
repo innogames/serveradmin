@@ -2,7 +2,6 @@ import re
 
 from django.db import connection
 
-from serveradmin.dataset import query, filters
 from serveradmin.dataset.models import ServerTypeAttributes
 from serveradmin.dataset.base import lookups
 from adminapi.dataset.base import CommitValidationFailed, CommitNewerData, \
@@ -53,6 +52,8 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
         c.execute("SELECT RELEASE_LOCK('serverobject_commit')")
 
 def _fetch_servers(changed_servers):
+    # Import here to break cyclic import
+    from serveradmin.dataset import query, filters
     # Only load attributes that will be changed (for performance reasons)
     changed_attrs = set(['servertype'])
     for changes in changed_servers.itervalues():

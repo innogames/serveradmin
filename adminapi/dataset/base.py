@@ -114,6 +114,18 @@ class BaseQuerySet(object):
         for obj in self:
             obj._confirm_changes()
 
+    def _build_commit_object(self):
+        commit = {
+            'deleted': [],
+            'changes': {}
+        }
+        for obj in self:
+            if obj.is_deleted():
+                commit['deleted'].append(obj.object_id)
+            elif obj.is_dirty():
+                commit['changes'][obj.object_id] = obj._serialize_changes()
+        return commit
+
 
 class BaseServerObject(dict):
     def __init__(self, attributes=None, object_id=None, queryset=None):
@@ -192,7 +204,7 @@ class BaseServerObject(dict):
                 action = 'delete'
             elif old_value == NonExistingAttribute:
                 action = 'new'
-            elif self.queryset.attributes[key]['multi']:
+            elif self.queryset.attributes[key].multi:
                 action = 'multi'
             else:
                 action = 'update'
@@ -215,6 +227,15 @@ class BaseServerObject(dict):
         if self._deleted:
             self.object_id = None
             self._deleted = False
+    
+    def _build_commit_object(self):
+        changes = {}
+        if self.is_dirty():
+            changes[self.object_id] = self.serialize_changes()
+        return {
+            'deleted': [self.object_id] if self.is_deleted() else [],
+            'changes': changes
+        }
 
     def _save_old_value(self, attr):
         was_dirty_before = self.is_dirty()
@@ -232,9 +253,9 @@ class BaseServerObject(dict):
             raise DatasetError('Can not set attributes on deleted servers')
         if k not in self._queryset.attributes:
             raise DatasetError('No such attribute')
-        if self._queryset.attributes[k]['type'] == 'ip':
+        if self._queryset.attributes[k].type == 'ip':
             v = IP(v)
-        if self._queryset.attributes[k]['multi']:
+        if self._queryset.attributes[k].multi:
             if not isinstance(v, set):
                 raise DatasetError('Multi attributes must be sets')
             v = MultiAttr(v, self, k)

@@ -28,16 +28,7 @@ class QuerySet(BaseQuerySet):
 
     def commit(self):
         raise NotImplementedError("Committing is not available yet!")
-        commit = {
-            'deleted': [],
-            'changes': {}
-        }
-        for obj in self:
-            if obj.is_deleted():
-                commit['deleted'].append(obj.object_id)
-            elif obj.is_dirty():
-                commit['changes'][obj.object_id] = obj._serialize_changes()
-        
+        commit = self._build_commit_object() 
         result = send_request(COMMIT_URL, commit, self.auth_token)
 
         if result['status'] == 'success':
