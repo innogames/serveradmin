@@ -4,4 +4,5 @@ urlpatterns = patterns(
     'serveradmin.api.views',
     url(r'^echo$', 'echo', name='api_echo'),
     url(r'^dataset/query$', 'dataset_query', name='api_dataset_query'),
+    url(r'^dataset/commit$', 'dataset_commit', name='api_dataset_commit'),
 )

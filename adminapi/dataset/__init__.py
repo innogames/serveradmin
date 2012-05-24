@@ -33,7 +33,6 @@ class QuerySet(BaseQuerySet):
         raise NotImplementedError('Augmenting is not available yet!')
 
     def commit(self):
-        raise NotImplementedError("Committing is not available yet!")
         commit = self._build_commit_object() 
         result = send_request(COMMIT_URL, commit, self.auth_token)
 
@@ -42,8 +41,8 @@ class QuerySet(BaseQuerySet):
             for obj in self:
                 obj._confirm_changes()
             return True
-        else:
-            raise DatasetError(result['exception_msg'])
+        elif result['status'] == 'error':
+            _handle_exception(result)
 
     def count(self):
         return 1
@@ -60,16 +59,16 @@ class QuerySet(BaseQuerySet):
         result = send_request(QUERY_URL, request_data, self.auth_token)
         if result['status'] == 'success':
             attributes = {}
-            for attr_name, attr in result['attributes']:
+            for attr_name, attr in result['attributes'].iteritems():
                 attributes[attr_name] = Attribute(attr_name, attr['type'],
                         attr['multi'])
             self.attributes = attributes
             # The attributes in convert_set must be converted to sets
             # and attributes in convert_ip musst be converted to ips
             convert_set = frozenset(attr_name for attr_name, attr in
-                    self.attributes.iteritems() if attr['multi'])
+                    self.attributes.iteritems() if attr.multi)
             convert_ip = frozenset(attr_name for attr_name, attr in
-                    self.attributes.iteritems() if attr['type'] == 'ip')
+                    self.attributes.iteritems() if attr.type == 'ip')
             servers = {}
             for object_id, server in result['servers'].iteritems():
                 object_id = int(object_id)
@@ -101,7 +100,24 @@ class ServerObject(BaseServerObject):
         self.auth_token = auth_token
 
     def commit(self):
-        raise NotImplementedError("Committing is not available yet!")
+        commit = self._build_commit_object() 
+        result = send_request(COMMIT_URL, commit, self.auth_token)
+
+        if result['status'] == 'success':
+            self._confirm_changes()
+            return True
+        elif result['status'] == 'error':
+            _handle_exception(result)
+
+def _handle_exception(result):
+    exception_class = {
+        'ValueError': ValueError
+    }.get(result['type'], DatasetError)
+    # Dear traceback reader,
+    # this is not the location of the exception, please read the
+    # exception message and figure out what's wrong with your code
+    raise exception_class(result['message'])
+
 
 def query(**kwargs):
     filters = dict((k, _prepare_filter(v)) for k, v in kwargs.iteritems())

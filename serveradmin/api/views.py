@@ -2,6 +2,7 @@ from serveradmin.api.decorators import api_view
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset import QuerySet
 from serveradmin.dataset.filters import filter_from_obj
+from serveradmin.dataset.commit import commit_changes, CommitError
 
 @api_view
 def echo(request, app, data):
@@ -48,4 +49,23 @@ def dataset_query(request, app, data):
 
 @api_view
 def dataset_commit(request, app, data):
-    pass
+    try:
+        if 'changes' not in data or 'deleted' not in data:
+            raise ValueError('Invalid changes')
+
+        # Convert keys back to integers (json doesn't handle integer keys)
+        changes = {}
+        for server_id, change in data['changes'].iteritems():
+            changes[int(server_id)] = change
+
+        commit = {'deleted': data['deleted'], 'changes': changes}
+        commit_changes(commit)
+        return {
+            'status': 'success'
+        }
+    except (ValueError, CommitError), e:
+        return {
+            'status': 'error',
+            'type': e.__class__.__name__,
+            'message': e.message
+        }
