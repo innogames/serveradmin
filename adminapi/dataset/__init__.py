@@ -2,7 +2,7 @@ from adminapi import BASE_URL, _api_settings
 from adminapi.utils import IP
 from adminapi.request import send_request
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject, \
-        DatasetError, NonExistingAttribute, MultiAttr
+        DatasetError, MultiAttr
 from adminapi.dataset.filters import _prepare_filter
 
 COMMIT_URL = BASE_URL + '/dataset/commit'
@@ -98,33 +98,6 @@ class ServerObject(BaseServerObject):
     def __init__(self, object_id=None, queryset=None, auth_token=None):
         BaseServerObject.__init__(self, None, object_id, queryset)
         self.auth_token = auth_token
-
-    def _serialize_changes(self):
-        # FIXME: Put into base
-        changes = {}
-        for key, old_value in self.old_values.iteritems():
-            new_value = self.get(key, NonExistingAttribute)
-            if new_value == NonExistingAttribute:
-                action = 'delete'
-            elif old_value == NonExistingAttribute:
-                action = 'new'
-            elif self.queryset.attributes[key]['multi']:
-                action = 'multi'
-            else:
-                action = 'update'
-
-            change = {'action': action}
-            if action == 'update':
-                change['old'] = old_value
-                change['new'] = new_value
-            elif action == 'new':
-                change['new'] = new_value
-            elif action == 'multi':
-                change['remove'] = old_value.difference(new_value)
-                change['add'] = new_value.difference(old_value)
-            
-            changes[key] = change
-        return changes
 
     def commit(self):
         raise NotImplementedError("Committing is not available yet!")

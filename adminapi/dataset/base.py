@@ -184,6 +184,32 @@ class BaseServerObject(dict):
 
         print_table(table, file=file)
 
+    def _serialize_changes(self):
+        changes = {}
+        for key, old_value in self.old_values.iteritems():
+            new_value = self.get(key, NonExistingAttribute)
+            if new_value == NonExistingAttribute:
+                action = 'delete'
+            elif old_value == NonExistingAttribute:
+                action = 'new'
+            elif self.queryset.attributes[key]['multi']:
+                action = 'multi'
+            else:
+                action = 'update'
+
+            change = {'action': action}
+            if action == 'update':
+                change['old'] = old_value
+                change['new'] = new_value
+            elif action == 'new':
+                change['new'] = new_value
+            elif action == 'multi':
+                change['remove'] = old_value.difference(new_value)
+                change['add'] = new_value.difference(old_value)
+            
+            changes[key] = change
+        return changes
+    
     def _confirm_changes(self):
         self.old_values.clear()
         if self._deleted:
