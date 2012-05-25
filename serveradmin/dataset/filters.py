@@ -5,7 +5,17 @@ from serveradmin.dataset.base import lookups
 
 _filter_classes = {}
 
-class ExactMatch(object):
+class Filter(object):
+    def __and__(self, other):
+        return And(self, other)
+
+    def __or__(self, other):
+        return Or(self, other)
+
+    def __not__(self):
+        return Not(self)
+
+class ExactMatch(Filter):
     def __init__(self, value):
         self.value = value
 
@@ -22,7 +32,7 @@ class ExactMatch(object):
         raise ValueError('Invalid object for ExactMatch')
 _filter_classes['exactmatch'] = ExactMatch
 
-class Regexp(object):
+class Regexp(Filter):
     def __init__(self, regexp):
         self.regexp = regexp
 
@@ -56,7 +66,7 @@ class Regexp(object):
         raise ValueError('Invalid object for Regexp')
 _filter_classes['regexp'] = Regexp
 
-class Comparism(object):
+class Comparism(Filter):
     def __init__(self, comparator, value):
         if comparator not in ('<', '>', '<=', '>='):
             raise ValueError('Invalid comparism operator: ' + self.comparator)
@@ -77,7 +87,7 @@ class Comparism(object):
         raise ValueError('Invalid object for Comparism')
 _filter_classes['comparism'] = Comparism
 
-class Any(object):
+class Any(Filter):
     def __init__(self, *values):
         self.values = values
 
@@ -100,7 +110,7 @@ class Any(object):
         raise ValueError('Invalid object for Any')
 _filter_classes['any'] = Any
 
-class _AndOr(object):
+class _AndOr(Filter):
     def __init__(self, *filters):
         self.filters = map(_prepare_filter, filters)
 
@@ -128,7 +138,7 @@ class Or(_AndOr):
     name = 'or'
 _filter_classes['or'] = Or
 
-class Between(object):
+class Between(Filter):
     def __init__(self, a, b):
         self.a = a
         self.b = b
@@ -148,7 +158,7 @@ class Between(object):
         raise ValueError('Invalid object for Between')
 _filter_classes['between'] = Between
 
-class Not(object):
+class Not(Filter):
     def __init__(self, filter):
         self.filter = _prepare_filter(filter)
 
