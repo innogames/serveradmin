@@ -115,13 +115,20 @@ class QuerySet(BaseQuerySet):
                     attrs[u'segment'] = segment
                 if 'servertype' in restrict:
                     attrs[u'servertype'] = servertype_lookup[stype]
-
-            server_data[server_id] = ServerObject(attrs, server_id, self)
+            
+            server_object = ServerObject(attrs, server_id, self)
+            server_data[server_id] = server_object
+            
+            for attr in lookups.stype_ids[stype].attributes:
+                if attr.multi:
+                    if not restrict or attr.name in restrict:
+                        dict.__setitem__(server_object, attr.name,
+                                MultiAttr((), server_object, attr.name))
         
         # Return early if there are no servers (= empty dict)
         if not server_data:
             return server_data
-        
+
         # Remove attributes from adm_server from the restrict set
         if restrict:
             restrict = restrict - set(attr_exceptions.iterkeys())
@@ -156,9 +163,7 @@ class QuerySet(BaseQuerySet):
             
             # Using dict-methods to bypass ServerObject's special properties
             if attr.multi:
-                values = dict.setdefault(server_obj, attr.name, MultiAttr((),
-                        server_obj, attr.name))
-                set.add(values, value) # Bypass MultiAttr
+                set.add(server_obj[attr.name], value) # Bypass MultiAttr
             else:
                 dict.__setitem__(server_data[server_id], attr.name, value)
         
