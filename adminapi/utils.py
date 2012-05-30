@@ -38,7 +38,7 @@ def format_obj(obj):
     if isinstance(obj, basestring):
         return obj
     elif hasattr(obj, '__iter__'):
-        return ', '.join(obj)
+        return ', '.join(unicode(x) for x in obj)
     else:
         return unicode(obj)
 
