@@ -2,9 +2,9 @@ from threading import local
 from itertools import chain
 
 from django.core.signals import request_started
+from django.db import connection
 
-from serveradmin.dataset.models import (Attribute, ServerType,
-        ServerTypeAttributes)
+from serveradmin.dataset.models import Attribute, ServerType
 
 lookups = local()
 def _read_lookups(sender=None, **kwargs):
@@ -28,11 +28,14 @@ def _read_lookups(sender=None, **kwargs):
         lookups.stype_ids[stype.pk] = stype
         lookups.stype_names[stype.name] = stype
     
-    for stype_attr in ServerTypeAttributes.objects.all():
-        stype = lookups.stype_ids[stype_attr.servertype_id]
+    # Bypass Django ORM for performance reasons
+    c = connection.cursor()
+    c.execute('SELECT servertype_id, attrib_id FROM servertype_attributes')
+    for servertype_id, attr_id in c.fetchall():
+        stype = lookups.stype_ids[servertype_id]
         if not hasattr(stype, 'attributes'):
             stype.attributes = []
-        stype.attributes.append(lookups.attr_ids[stype_attr.attrib.pk])
+        stype.attributes.append(lookups.attr_ids[attr_id])
 
 _read_lookups()
 request_started.connect(_read_lookups)
