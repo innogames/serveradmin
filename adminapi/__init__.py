@@ -1,4 +1,5 @@
 BASE_URL = 'https://serveradmin.innogames.de/api'
+BASE_URL = 'http://localhost:8081/api'
 
 _api_settings = {
     'auth_token': ''
