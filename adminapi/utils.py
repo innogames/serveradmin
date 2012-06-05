@@ -74,6 +74,12 @@ class IP(object):
                 return self.ip == other.ip
             except ValueError:
                 return False
+    
+    def __getstate__(self):
+        return (self.ip, )
+
+    def __setstate__(self, state):
+        self.ip = state[0]
 
     def __hash__(self):
         return hash(self.ip)
