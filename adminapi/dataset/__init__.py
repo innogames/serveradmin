@@ -2,7 +2,7 @@ from adminapi import BASE_URL, _api_settings
 from adminapi.utils import IP
 from adminapi.request import send_request
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject, \
-        DatasetError, MultiAttr
+        DatasetError
 from adminapi.dataset.filters import _prepare_filter
 
 COMMIT_URL = BASE_URL + '/dataset/commit'
@@ -77,10 +77,9 @@ class QuerySet(BaseQuerySet):
                     if attr not in server:
                         continue
                     if attr in convert_ip:
-                        server[attr] = MultiAttr((IP(x) for x in server[attr]),
-                                server_obj, attr)
+                        server[attr] = set(IP(x) for x in server[attr])
                     else:
-                        server[attr] = MultiAttr(server[attr], server_obj, attr)
+                        server[attr] = set(server[attr])
                 for attr in convert_ip:
                     if attr not in server or attr in convert_set:
                         continue

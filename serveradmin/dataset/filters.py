@@ -1,4 +1,5 @@
 import re
+import operator
 
 from adminapi.utils import IP
 from serveradmin.dataset.base import lookups
@@ -15,6 +16,9 @@ class Filter(object):
     def __not__(self):
         return Not(self)
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 class ExactMatch(Filter):
     def __init__(self, value):
         self.value = value
@@ -22,8 +26,19 @@ class ExactMatch(Filter):
     def __repr__(self):
         return 'ExactMatch({0!r})'.format(self.value)
 
+    def __eq__(self, other):
+        if isinstance(other, ExactMatch):
+            return self.value == other.value
+        return False
+
+    def __hash__(self):
+        return hash('ExactMatch') ^ hash(self.value)
+
     def as_sql_expr(self, attr_name, field):
         return '{0} = {1}'.format(field, _prepare_value(attr_name, self.value))
+
+    def matches(self, server_obj, attr_name):
+        return server_obj[attr_name] == self.value
 
     @classmethod
     def from_obj(cls, obj):
@@ -38,6 +53,14 @@ class Regexp(Filter):
 
     def __repr__(self):
         return 'Regexp({0!r})'.format(self.regexp)
+
+    def __eq__(self, other):
+        if isinstance(other, Regexp):
+            return self.regexp == other.regexp
+        return False
+
+    def __hash__(self):
+        return hash('Regexp') ^ hash(self.regexp)
 
     def as_sql_expr(self, attr_name, field):
         # XXX Dirty hack for servertype regexp checking
@@ -59,6 +82,15 @@ class Regexp(Filter):
         else:
             return '{0} REGEXP {1}'.format(field, _sql_escape(self.regexp))
 
+    def matches(self, server_obj, attr_name):
+        value = server_obj[attr_name]
+        if lookups.attr_names[attr_name].type == 'ip':
+            value = value.as_ip()
+        else:
+            value = str(value)
+        
+        return bool(re.search(self.regexp, value))
+
     @classmethod
     def from_obj(cls, obj):
         if 'regexp' in obj and isinstance(obj['regexp'], basestring):
@@ -76,9 +108,28 @@ class Comparism(Filter):
     def __repr__(self):
         return 'Comparism({0!r}, {1!r})'.format(self.comparator, self.value)
 
+    def __eq__(self, other):
+        if isinstance(other, Comparism):
+            return (self.comparator == other.comparator and
+                    self.value == other.value)
+        return False
+
+    def __hash__(self):
+        return hash('Comparism') ^ hash(self.comparator) ^ hash(self.value)
+
     def as_sql_expr(self, attr_name, field):
         return '{0} {1} {2}'.format(field, self.comparator,
                 _prepare_value(attr_name, self.value))
+
+    def matches(self, server_obj, attr_name):
+        op = {
+            '<': operator.lt,
+            '>': operator.gt,
+            '<=': operator.le,
+            '>=': operator.gt
+        }[self.comparator]
+        return op(server_obj[attr_name], self.value)
+
 
     @classmethod
     def from_obj(cls, obj):
@@ -89,10 +140,21 @@ _filter_classes['comparism'] = Comparism
 
 class Any(Filter):
     def __init__(self, *values):
-        self.values = values
+        self.values = set(values)
 
     def __repr__(self):
         return 'Any({0})'.format(', '.join(repr(val) for val in self.values))
+
+    def __eq__(self, other):
+        if isinstance(other, Any):
+            return self.values == other.values
+        return False
+
+    def __hash__(self):
+        h = hash('Any')
+        for val in self.values:
+            h ^= hash(val)
+        return h
 
     def as_sql_expr(self, attr_name, field):
         if not self.values:
@@ -101,7 +163,9 @@ class Any(Filter):
             prepared_values = ', '.join(_prepare_value(attr_name, value)
                     for value in self.values)
             return '{0} IN({1})'.format(field, prepared_values)
-                    
+
+    def matches(self, server_obj, attr_name):
+        return server_obj[attr_name] in self.values
     
     @classmethod
     def from_obj(cls, obj):
@@ -118,6 +182,17 @@ class _AndOr(Filter):
         args = ', '.join(repr(filter) for filter in self.filters)
         return '{0}({1})'.format(self.name.capitalize(), args)
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.filters == other.filters
+        return False
+
+    def __hash__(self):
+        h = hash(self.name)
+        for val in self.filters:
+            h ^= hash(val)
+        return h
+
     def as_sql_expr(self, field):
         joiner = ' {0} '.format(self.name.upper())
         return '({0})'.format(joiner.join([filter.as_sql_expr(field)
@@ -132,10 +207,22 @@ class _AndOr(Filter):
 
 class And(_AndOr):
     name = 'and'
+
+    def matches(self, server_obj, attr_name):
+        for filter in self.filters:
+            if not filter.matches(server_obj, attr_name):
+                return False
+        return True
 _filter_classes['and'] = And
 
 class Or(_AndOr):
     name = 'or'
+    
+    def matches(self, server_obj, attr_name):
+        for filter in self.filters:
+            if filter.matches(server_obj, attr_name):
+                return True
+        return False
 _filter_classes['or'] = Or
 
 class Between(Filter):
@@ -146,10 +233,21 @@ class Between(Filter):
     def __repr__(self):
         return 'Between({0!r}, {1!r})'.format(self.a, self.b)
 
+    def __eq__(self, other):
+        if isinstance(other, Between):
+            return self.a == other.a and self.b == other.b
+        return False
+
+    def __hash__(self):
+        return hash('Between') ^ hash(self.a) ^ hash(self.b)
+
     def as_sql_expr(self, attr_name, field):
         a_prepared = _prepare_value(attr_name, self.a)
         b_prepared = _prepare_value(attr_name, self.b)
         return '{0} BETWEEN {1} AND {2}'.format(field, a_prepared, b_prepared)
+
+    def matches(self, server_obj, attr_name):
+        return self.a <= server_obj[attr_name] <= self.b
 
     @classmethod
     def from_obj(cls, obj):
@@ -165,12 +263,23 @@ class Not(Filter):
     def __repr__(self):
         return 'Not({0!})'.format(self.filter)
 
+    def __eq__(self, other):
+        if isinstance(other, Not):
+            return self.filter == other.filter
+        return False
+
+    def __hash__(self):
+        return hash('Not') ^ hash(self.filter)
+
     def as_sql_expr(self, attr_name, field):
         if isinstance(self.filter, ExactMatch):
             return '{0} != {1}'.format(field, _prepare_value(attr_name,
                     self.filter.value))
         else:
             return 'NOT {0}'.format(self.filter.as_sql_expr(attr_name, field))
+
+    def matches(self, server_obj, attr_name):
+        return not self.filter.matches(server_obj, attr_name)
 
     @classmethod
     def from_obj(cls, obj):
@@ -186,8 +295,22 @@ class Optional(object):
     def __repr__(self):
         return 'Optional({0!r})'.format(self.filter)
 
+    def __eq__(self, other):
+        if isinstance(other, Optional):
+            return self.filter == other.filter
+        return False
+
+    def __hash__(self):
+        return hash('Optional') ^ hash(self.filter)
+
     def as_sql_expr(self, attr_name, field):
         return self.filter.as_sql_expr(attr_name, field)
+
+    def matches(self, server_obj, attr_name):
+        value = server_obj.get(attr_name)
+        if value is None:
+            return True
+        return self.filter.matches(server_obj, attr_name)
 
     @classmethod
     def from_obj(cls, obj):

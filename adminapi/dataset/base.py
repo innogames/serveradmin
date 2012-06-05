@@ -248,6 +248,11 @@ class BaseServerObject(dict):
         if self._queryset and not was_dirty_before:
             self._queryset._num_dirty += 1
 
+    def __getitem__(self, k):
+        if self._queryset.attributes[k].multi:
+            return MultiAttr(dict.__getitem__(self, k), self, k)
+        return dict.__getitem__(self, k)
+
     def __setitem__(self, k, v):
         if self._deleted:
             raise DatasetError('Can not set attributes on deleted servers')
@@ -258,7 +263,6 @@ class BaseServerObject(dict):
         if self._queryset.attributes[k].multi:
             if not isinstance(v, set):
                 raise DatasetError('Multi attributes must be sets')
-            v = MultiAttr(v, self, k)
         self._save_old_value(k)
         return dict.__setitem__(self, k, v)
     __setitem__.__doc__ = dict.__setitem__.__doc__
@@ -306,63 +310,35 @@ class BaseServerObject(dict):
             self[k] = F[k]
     update.__doc__ = dict.update.__doc__
 
-class MultiAttr(set):
-    def __init__(self, iterable, server_obj, attr_name):
-        if iterable is not None:
-            set.__init__(self, iterable)
-        self._server_obj = server_obj
+class MultiAttr(object):
+    dirty_methods = frozenset(['add', 'clear', 'difference_update', 'discard',
+            'intersection_update', 'pop', 'remove', 'update',
+            'symmetric_difference_update'])
+
+    def __init__(self, proxied_set, server_obj, attr_name):
+        self._proxied_set = proxied_set
+        self._server_object = server_obj
         self._attr_name = attr_name
-
-    def add(self, elem):
-        self._tell_change()
-        set.add(self, elem)
-    add.__doc__ = set.add.__doc__
-
-    def clear(self):
-        self._tell_change()
-        set.clear(self)
-    clear.__doc__ = set.clear.__doc__
     
-    def difference_update(self, other_set):
-        self._tell_change()
-        set.difference_update(self, other_set)
-    difference_update.__doc__ = set.difference_update.__doc__
-    __isub__ = difference_update
+    def __repr__(self):
+        return 'MultiAttr({0!r})'.format(self._proxied_set)
 
-    def discard(self, elem):
-        self._tell_change()
-        set.discard(self, elem)
-    discard.__doc__ = set.discard.__doc__
+    def __iter__(self):
+        return iter(self._proxied_set)
+    
+    def __len__(self):
+        return len(self._proxied_set)
 
-    def intersection_update(self, other_set):
-        self._tell_change()
-        set.intersection_update(self, other_set)
-    intersection_update.__doc__ = set.intersection_update.__doc__
-    __iand__ = intersection_update
-
-    def pop(self, elem):
-        self._tell_change()
-        set.pop(self, elem)
-    pop.__doc__ = set.pop.__doc__
-
-    def remove(self, elem):
-        self._tell_change()
-        set.remove(self, elem)
-    remove.__doc__ = set.remove.__doc__
-
-    def symmetric_difference_update(self, other_set):
-        self._tell_change()
-        set.symmetric_difference_update(self, other_set)
-    symmetric_difference_update.__doc__ = set.symmetric_difference_update.__doc__
-    __ixor__ = symmetric_difference_update
-
-    def update(self, other_set):
-        self._tell_change()
-        set.update(self, other_set)
-    update.__doc__ = set.update.__doc__
-
-    def _tell_change(self):
-        self._server_obj._save_old_value(self._attr_name)
+    def __getattr__(self, attr):
+        if not hasattr(self._proxied_set, attr):
+            raise AttributeError('Cannot proxy attribute {0}'.format(attr))
+        proxied_set_attr = getattr(self._proxied_set, attr)
+        if attr in self.dirty_methods:
+            def _method(*args, **kwargs):
+                self._server_object._save_old_value(self._attr_name)
+                return proxied_set_attr(*args, **kwargs)
+            return _method
+        return proxied_set_attr
 
 def _format_value(value):
     if not value:

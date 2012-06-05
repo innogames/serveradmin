@@ -50,3 +50,10 @@ class AttributeValue(models.Model):
 
     class Meta:
         db_table = 'attrib_values'
+
+class ServerObjectCache(models.Model):
+    server = models.ForeignKey(ServerObject)
+    repr_hash = models.BigIntegerField()
+
+    class Meta:
+        unique_together = (('server', 'repr_hash'))
