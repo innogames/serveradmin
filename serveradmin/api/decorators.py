@@ -27,6 +27,12 @@ def api_view(view):
             return HttpResponseBadRequest('Invalid API request',
                     mimetype='text/plain')
 
+        try:
+            app = Application.objects.get(app_id=app_id)
+        except Application.DoesNotExist:
+            return HttpResponseForbidden('Invalid application',
+                    mimetype='text/plain')
+
         app = get_object_or_404(Application, app_id=app_id)
         real_security_token = _calc_security_token(app.auth_token.encode(
             'utf-8'), str(timestamp), request.body)
