@@ -343,6 +343,9 @@ class MultiAttr(object):
             return _method
         return proxied_set_attr
 
+    def __reduce__(self):
+        return dict.__reduce__(self)
+
 def _format_value(value):
     if not value:
         return ''

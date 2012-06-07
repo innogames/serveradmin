@@ -153,4 +153,14 @@ LOGGING = {
         },
     }
 }
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': '127.0.0.1:11211',
+    }
+}
+
+
+DATASET_CACHE_DIR = '/tmp'
 raise Exception('Set SECRET_KEY and DATABASE PASSWORD and remove this!')

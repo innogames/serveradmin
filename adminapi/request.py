@@ -4,7 +4,7 @@ import hashlib
 import hmac
 import time
 
-from adminapi.utils import json_encode_extra
+from adminapi.utils.json import json_encode_extra
 
 def _calc_security_token(auth_token, timestamp, content):
     message = ':'.join((str(timestamp), content))

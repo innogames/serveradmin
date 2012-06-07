@@ -1,14 +1,14 @@
 from django.db import connection
-from django.core.cache import cache
 
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 from adminapi.utils import IP
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset import filters
 from serveradmin.dataset.commit import commit_changes
-from serveradmin.dataset.models import ServerObjectCache
+from serveradmin.dataset.cache import QuerysetCacher
 
 CACHE_MIN_QS_COUNT = 3
+NUM_OBJECTS_FOR_FILECACHE = 50
 
 class QuerySetRepresentation(object):
     """ Object that can be easily pickled without storing to much data.
@@ -60,12 +60,14 @@ class QuerySetRepresentation(object):
         return True
 
 class QuerySet(BaseQuerySet):
-    def __init__(self, filters):
+    def __init__(self, filters, for_export=False):
         for attr in filters:
             if attr not in lookups.attr_names:
                 raise ValueError('Invalid attribute: {0}'.format(attr))
         BaseQuerySet.__init__(self, filters)
         self.attributes = lookups.attr_names
+        self._for_export = for_export
+        self._already_through_cache = False
 
     def commit(self):
         commit = self._build_commit_object()
@@ -76,28 +78,26 @@ class QuerySet(BaseQuerySet):
         self._get_results()
         return self._results
 
-    def _get_representation(self):
+    def get_representation(self):
         return QuerySetRepresentation(self._filters, self._restrict,
                 self._augmentations)
+    
+    def _get_results(self):
+        if self._results is not None:
+            return
+        if self._for_export:
+            self._results = self._fetch_results()
+        else:
+            if self._already_through_cache:
+                self._results = self._fetch_results()
+            else:
+                self._already_through_cache = True
+                cacher = QuerysetCacher(self, 'qs',
+                        pre_store=self._cache_pre_store,
+                        post_load=self._cache_post_load)
+                self._results = cacher.get_results()
 
     def _fetch_results(self):
-        # Caching stuff
-        qs_repr = self._get_representation()
-        qs_repr_hash = hash(qs_repr)
-        cached_qs_repr = cache.get('qs_repr:{0}'.format(qs_repr_hash))
-        if cached_qs_repr and qs_repr == cached_qs_repr:
-            result = cache.get('qs_result:{0}'.format(qs_repr_hash))
-            if result:
-                self._prepare_cache_result(result)
-                return result
-        count_key =  'qs_count:{0}'.format(qs_repr_hash)
-        try:
-            qs_count = cache.incr(count_key)
-        except ValueError:
-            # Reset counter after 1 day
-            cache.set(count_key, 1, 24 * 3600)
-            qs_count = 1
-
         # XXX: Dirty hack for the old database structure
         attr_exceptions = {
                 'hostname': 'hostname', 
@@ -216,15 +216,6 @@ class QuerySet(BaseQuerySet):
         if add_attributes:
             self._add_additional_attrs(server_data, restrict)
 
-        if qs_count >= CACHE_MIN_QS_COUNT:
-            cache.set('qs_result:{0}'.format(qs_repr_hash), server_data)
-            cache.set('qs_repr:{0}'.format(qs_repr_hash), qs_repr)
-            table_name = ServerObjectCache._meta.db_table
-            cache_insert_sql = ('REPLACE INTO {0} (server_id, repr_hash) '
-                    'VALUES (%s, %s)').format(table_name)
-            for server_id in server_data:
-                c.execute(cache_insert_sql, (server_id, qs_repr_hash))
-        
         return server_data
 
     def _add_additional_attrs(self, server_data, restrict):
@@ -256,11 +247,14 @@ class QuerySet(BaseQuerySet):
                 dict.__getitem__(server_data[server_id], attr.name).add(value)
             else:
                 dict.__setitem__(server_data[server_id], attr.name, value)
+    
+    def _cache_pre_store(self, server_data):
+        return server_data
 
-    def _prepare_cache_result(self, result):
-        for server_id, server_obj in result.iteritems():
-            server_obj._queryset = self
-
+    def _cache_post_load(self, server_data):
+        for server in server_data.itervalues():
+            server._queryset = self
+        return server_data
 
 class ServerObject(BaseServerObject):
     def commit(self):

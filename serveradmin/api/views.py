@@ -1,15 +1,32 @@
+import json
+
+from adminapi.utils.json import json_encode_extra 
+
 from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
 from serveradmin.api.decorators import api_view
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset import QuerySet
 from serveradmin.dataset.filters import filter_from_obj
 from serveradmin.dataset.commit import commit_changes, CommitError
+from serveradmin.dataset.cache import QuerysetCacher
+
+class StringEncoder(object):
+    def loads(self, x):
+        return x
+
+    def dumps(self, x):
+        return x
+
+    def load(self, file):
+        return file.read()
+
+    def dump(self, val, file):
+        return file.write(val)
 
 @api_view
 def echo(request, app, data):
     return data
 
-@api_view
 def dataset_query(request, app, data):
     if not all(x in data for x in ('filters', 'restrict', 'augmentations')):
         return {
@@ -23,7 +40,7 @@ def dataset_query(request, app, data):
         for attr, filter_obj in data['filters'].iteritems():
             filters[attr] = filter_from_obj(filter_obj)
 
-        q = QuerySet(filters=filters)
+        q = QuerySet(filters=filters, for_export=True)
         if data['restrict']:
             q.restrict(*data['restrict'])
         if data['augmentations']:
@@ -35,18 +52,25 @@ def dataset_query(request, app, data):
             'message': e.message
         }
 
-    attributes = {}
-    for attr in lookups.attr_ids.itervalues():
-        attributes[attr.name] = {
-            'multi': attr.multi,
-            'type': attr.type
-        }
+    def _build_response(server_data):
+        attributes = {}
+        for attr in lookups.attr_ids.itervalues():
+            attributes[attr.name] = {
+                'multi': attr.multi,
+                'type': attr.type
+            }
+        
+        return json.dumps({
+            'status': 'success',
+            'servers': q.get_raw_results(),
+            'attributes': attributes
+        }, default=json_encode_extra)
 
-    return {
-        'status': 'success',
-        'servers': q.get_raw_results(),
-        'attributes': attributes
-    }
+    cacher = QuerysetCacher(q, 'api', encoder=StringEncoder(),
+            post_fetch=_build_response)
+    return cacher.get_results()
+dataset_query.encode_json = False
+dataset_query = api_view(dataset_query)
 
 @api_view
 def dataset_commit(request, app, data):

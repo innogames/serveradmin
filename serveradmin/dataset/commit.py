@@ -1,8 +1,9 @@
 import re
 
 from django.db import connection
+from django.core.cache import cache
 
-from serveradmin.dataset.models import ServerTypeAttributes
+from serveradmin.dataset.models import ServerTypeAttributes, ServerObjectCache
 from serveradmin.dataset.base import lookups
 from adminapi.dataset.base import CommitValidationFailed, CommitNewerData, \
         CommitError
@@ -17,14 +18,11 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
     deleted_servers = commit.get('deleted', [])
     changed_servers = commit.get('changes', {})
 
-    if not changed_servers:
-        return
-    
     _validate_structure(deleted_servers, changed_servers) 
     
+    # FIXME: put it into lookups?
     stype_attrs = list(ServerTypeAttributes.objects.select_related())
     c = connection.cursor()
-    #c.execute('LOCK TABLES attrib_values WRITE, admin_server WRITE')
     c.execute("SELECT GET_LOCK('serverobject_commit', 10)")
     try:
         if not c.fetchone()[0]:
@@ -47,6 +45,22 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
         if deleted_servers:
             _delete_servers(deleted_servers)
         _apply_changes(changed_servers, servers)
+
+        kill_cache = set()
+        kill_cache.update(deleted_servers)
+        kill_cache.update(changed_servers)
+        
+        if kill_cache:
+            cache_table = ServerObjectCache._meta.db_table
+            server_ids = ','.join([str(x) for x in kill_cache])
+            query = ('SELECT repr_hash FROM {0} WHERE server_id IN({1}) '
+                ' OR server_id IS NULL')
+            c.execute(query.format(cache_table, server_ids))
+            cache_hashes = [x[0] for x in c.fetchall()]
+            for prefix in ('qs_repr', 'qs_storage', 'qs_result'):
+                cache.delete_many(['{0}:{1}'.format(prefix, x)
+                                   for x in cache_hashes])
+
     finally:
         c.execute('COMMIT')
         c.execute("SELECT RELEASE_LOCK('serverobject_commit')")

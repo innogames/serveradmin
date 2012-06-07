@@ -52,7 +52,7 @@ class AttributeValue(models.Model):
         db_table = 'attrib_values'
 
 class ServerObjectCache(models.Model):
-    server = models.ForeignKey(ServerObject)
+    server = models.ForeignKey(ServerObject, null=True, blank=True)
     repr_hash = models.BigIntegerField()
 
     class Meta:

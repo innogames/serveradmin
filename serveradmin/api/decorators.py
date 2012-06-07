@@ -8,7 +8,7 @@ from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbid
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
-from adminapi.utils import json_encode_extra
+from adminapi.utils.json import json_encode_extra
 from serveradmin.apps.models import Application
 from serveradmin.api import AVAILABLE_API_FUNCTIONS
 
@@ -42,8 +42,9 @@ def api_view(view):
             return HttpResponseForbidden('Invalid or expired security token',
                     mimetype='text/plain')
         return_value = view(request, app, json.loads(request.body))
-        return HttpResponse(json.dumps(return_value, default=json_encode_extra),
-                mimetype='application/x-json')
+        if getattr(view, 'encode_json', True):
+            return_value = json.dumps(return_value, default=json_encode_extra)
+        return HttpResponse(return_value, mimetype='application/x-json')
 
     return update_wrapper(_wrapper, view)
 
