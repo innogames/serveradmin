@@ -32,7 +32,7 @@ class QuerysetCacher(object):
         return server_data
     
     def _get_cache_file(self, qs_repr_hash):
-        return os.path.join(settings.DATASET_CACHE_DIR, '{0}.{1}.cache'.format(
+        return os.path.join(settings.DATASET_CACHE_DIR, 'cache_{0}.{1}'.format(
                 qs_repr_hash, self._key))
     
     def _from_cache(self):
