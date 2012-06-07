@@ -28,7 +28,7 @@ class QuerysetCacher(object):
         if not was_found:
             server_data = self.queryset.get_raw_results()
             server_data = self._post_fetch(server_data)
-        self._to_cache(server_data)
+            self._to_cache(server_data)
         return server_data
     
     def _get_cache_file(self, qs_repr_hash):
