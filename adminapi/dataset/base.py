@@ -41,6 +41,10 @@ class BaseQuerySet(object):
         self._get_results()
         return len(self._results)
 
+    def __bool__(self):
+        self._get_results()
+        return bool(self._results)
+
     def augment(self, *augmentations):
         self._augmentations = set(augmentations)
         return self
