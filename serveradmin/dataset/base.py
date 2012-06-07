@@ -1,13 +1,26 @@
+import uuid
 from threading import local
 from itertools import chain
 
+from django.core.cache import cache
 from django.core.signals import request_started
 from django.db import connection
 
 from serveradmin.dataset.models import Attribute, ServerType
 
 lookups = local()
+
 def _read_lookups(sender=None, **kwargs):
+    version = cache.get('dataset_lookups_version')
+    if not version:
+        version = uuid.uuid1().hex
+        cache.add('dataset_lookups_version', version)
+
+    if hasattr(lookups, 'version') and lookups.version == version:
+        return
+    else:
+        lookups.version = version
+
     special_attributes = [
         Attribute(name='object_id', type='integer', base=True, multi=False),
         Attribute(name='hostname', type='string', base=True, multi=False),
