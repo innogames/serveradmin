@@ -58,8 +58,9 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
             c.execute(query.format(cache_table, server_ids))
             cache_hashes = [x[0] for x in c.fetchall()]
             for prefix in ('qs_repr', 'qs_storage', 'qs_result'):
-                cache.delete_many(['{0}:{1}'.format(prefix, x)
-                                   for x in cache_hashes])
+                for key in ('qs', 'api'):
+                    cache.delete_many(['{0}:{1}:{2}'.format(prefix, key, x)
+                                       for x in cache_hashes])
 
     finally:
         c.execute('COMMIT')
