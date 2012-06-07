@@ -27,8 +27,9 @@ class QuerysetCacher(object):
         was_found, server_data = self._from_cache()
         if not was_found:
             server_data = self.queryset.get_raw_results()
+            num_servers = len(server_data)
             server_data = self._post_fetch(server_data)
-            self._to_cache(server_data)
+            self._to_cache(server_data, num_servers)
         return server_data
     
     def _get_cache_file(self, qs_repr_hash):
@@ -66,7 +67,7 @@ class QuerysetCacher(object):
             self._do_cache = True
         return False, None
     
-    def _to_cache(self, server_data):
+    def _to_cache(self, server_data, num_servers):
         # Only cache it, if it was a query that was requested often
         if not self._do_cache:
             return
@@ -74,7 +75,7 @@ class QuerysetCacher(object):
         qs_repr_hash = hash(qs_repr)
         hash_postfix = ':{0}:{1}'.format(self._key, qs_repr_hash)
         cache.set('qs_result' + hash_postfix, server_data)
-        if len(server_data) > NUM_OBJECTS_FOR_FILECACHE:
+        if num_servers > NUM_OBJECTS_FOR_FILECACHE:
             storage = 'file'
             with open(self._get_cache_file(qs_repr_hash), 'w') as f:
                 self._encoder.dump(server_data, f)
