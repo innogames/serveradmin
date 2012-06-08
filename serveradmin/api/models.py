@@ -14,5 +14,5 @@ class RaiseExceptionError(ApiError):
 
 @api_function(group='debug')
 def raise_exception():
-    """Just raise an exception of type RaiseExceptionError."""
+    """Just raise an exception of type ``RaiseExceptionError``."""
     raise RaiseExceptionError('Test exception')
