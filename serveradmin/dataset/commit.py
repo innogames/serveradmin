@@ -25,8 +25,10 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
         if not c.fetchone()[0]:
             raise CommitError('Could not get lock')
         servers = _fetch_servers(changed_servers)
+        
+        # Attributes must be always validated
+        violations_attribs = _validate_attributes(changed_servers, servers)
         if not skip_validation:
-            violations_attribs = _validate_attributes(changed_servers, servers)
             violations_regexp = _validate_regexp(changed_servers, servers)
             violations_required = _validate_required(changed_servers, servers)
             if violations_attribs or violations_regexp or violations_required:
@@ -34,6 +36,9 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
                 raise CommitValidationFailed('Validation failed',
                         violations_attribs + violations_regexp +
                         violations_required)
+        if violations_attribs:
+            raise CommitValidationFailed('Unskippable validation failed',
+                    violations_attribs)
         if not force_changes:
             newer = _validate_commit(changed_servers, servers)
             if newer:
