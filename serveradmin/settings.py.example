@@ -123,6 +123,7 @@ INSTALLED_APPS = (
     'serveradmin.apps',
     'serveradmin.dataset',
     'serveradmin.api',
+    'serveradmin.iprange',
 )
 
 # A sample logging configuration. The only tangible logging
