@@ -19,7 +19,8 @@ def build_function_description(fn):
     elif is_args:
         arguments[-1] = '*' + arguments[-1]
     
-    for i, default_value in enumerate(reversed(fn.func_defaults)):
+    defaults = fn.func_defaults if fn.func_defaults else []
+    for i, default_value in enumerate(reversed(defaults)):
         idx = code.co_argcount - i - 1
         arguments[idx] = '{0}={1!r}'.format(arguments[idx], default_value)
 
