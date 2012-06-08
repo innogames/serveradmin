@@ -6,7 +6,7 @@
 <h2>Available API functions</h2>
 
 {% for group in group_list %}
-<h3>Group: {{ group.name }}</h3>
+<h3>{{ group.name }}</h3>
 {% for function in group.function_list %}
 <h4>{{ function.description }}</h4>
 {% if function.docstring %}
