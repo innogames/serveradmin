@@ -45,7 +45,7 @@ class IPRange(models.Model):
         return self.range_id
 
 @api_function(group='ip')
-def get_next_free(range_id):
+def get_free(range_id):
     try:
         r = IPRange.objects.get(range_id=range_id)
         return r.get_next_free().as_ip()
