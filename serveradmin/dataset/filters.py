@@ -320,8 +320,7 @@ class Optional(object):
 _filter_classes['optional'] = Optional
 
 def _prepare_filter(filter):
-    return (ExactMatch(filter) if isinstance(filter, (int, basestring, bool))
-            else filter)
+    return filter if isinstance(filter, Filter) else ExactMatch(filter)
 
 def _prepare_value(attr_name, value):
     if lookups.attr_names[attr_name].type == 'ip':

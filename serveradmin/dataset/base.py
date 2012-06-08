@@ -26,7 +26,8 @@ def _read_lookups(sender=None, **kwargs):
         Attribute(name='hostname', type='string', base=True, multi=False),
         Attribute(name='servertype', type='string', base=True, multi=False),
         Attribute(name='intern_ip', type='ip', base=True, multi=False),
-        Attribute(name='segment', type='string', base=True, multi=False)
+        Attribute(name='segment', type='string', base=True, multi=False),
+        Attribute(name='all_ips', type='ip', base=True, multi=True)
     ]
     lookups.attr_ids = {}
     lookups.attr_names = {}
