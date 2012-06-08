@@ -1,14 +1,18 @@
+import re
 import uuid
 from threading import local
 from itertools import chain
+from collections import namedtuple
 
+from django.db import connection
 from django.core.cache import cache
 from django.core.signals import request_started
-from django.db import connection
 
 from serveradmin.dataset.models import Attribute, ServerType
 
 lookups = local()
+ServerTypeAttr = namedtuple('ServerTypeAttr', ['servertype_id', 'attribute_id',
+        'required', 'default', 'regexp', 'visible'])
 
 def _read_lookups(sender=None, **kwargs):
     version = cache.get('dataset_lookups_version')
@@ -20,15 +24,18 @@ def _read_lookups(sender=None, **kwargs):
         return
     else:
         lookups.version = version
-
+    
+    # Special attributes that don't have an entry in the attrib table
     special_attributes = [
-        Attribute(name='object_id', type='integer', base=True, multi=False),
+        Attribute(name='object_id', type='integer', base=False, multi=False),
         Attribute(name='hostname', type='string', base=True, multi=False),
         Attribute(name='servertype', type='string', base=True, multi=False),
         Attribute(name='intern_ip', type='ip', base=True, multi=False),
         Attribute(name='segment', type='string', base=True, multi=False),
-        Attribute(name='all_ips', type='ip', base=True, multi=True)
+        Attribute(name='all_ips', type='ip', base=False, multi=True)
     ]
+
+    # Read all attributes
     lookups.attr_ids = {}
     lookups.attr_names = {}
     for attr in chain(Attribute.objects.all(), special_attributes):
@@ -36,21 +43,47 @@ def _read_lookups(sender=None, **kwargs):
             attr.type = 'ip'
         lookups.attr_ids[attr.pk] = attr
         lookups.attr_names[attr.name] = attr
-
+    
+    # Read all servertypes
     lookups.stype_ids = {}
     lookups.stype_names = {}
     for stype in ServerType.objects.all():
         lookups.stype_ids[stype.pk] = stype
         lookups.stype_names[stype.name] = stype
     
+    # Read all servertype attributes
     # Bypass Django ORM for performance reasons
+    lookups.stype_attrs = {}
     c = connection.cursor()
-    c.execute('SELECT servertype_id, attrib_id FROM servertype_attributes')
-    for servertype_id, attr_id in c.fetchall():
-        stype = lookups.stype_ids[servertype_id]
+    c.execute('SELECT servertype_id, attrib_id, required, attrib_default, '
+              'regex, default_visible FROM servertype_attributes')
+    for row in c.fetchall():
+        row = list(row)
+        try:
+            row[4] = re.compile(row[4])
+        except (TypeError, re.error):
+            row[4] = None
+        stype_attr = ServerTypeAttr._make(row)
+        stype = lookups.stype_ids[stype_attr.servertype_id]
         if not hasattr(stype, 'attributes'):
             stype.attributes = []
-        stype.attributes.append(lookups.attr_ids[attr_id])
+        attribute = lookups.attr_ids[stype_attr.attribute_id]
+        stype.attributes.append(attribute)
+        index = (stype_attr.servertype_id, stype_attr.attribute_id)
+        lookups.stype_attrs[index] = stype_attr
+        
+        servertype = lookups.stype_ids[stype_attr.servertype_id]
+        index = (servertype.name, attribute.name)
+        lookups.stype_attrs[index] = stype_attr
+    
+    # Add attributes from admin_server to servertype attributes
+    for servertype in lookups.stype_ids.itervalues():
+        special_stype_attr = ServerTypeAttr(servertype.pk, -1, False, None,
+                None, True)
+        for attr in special_attributes:
+            if attr.base:
+                index = (servertype.name, attr.name)
+                lookups.stype_attrs[index] = special_stype_attr
 
 _read_lookups()
 request_started.connect(_read_lookups)
