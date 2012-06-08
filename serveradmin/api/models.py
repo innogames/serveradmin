@@ -3,7 +3,7 @@ from serveradmin.api import ApiError
 
 @api_function(group='debug')
 def echo(*args, **kwargs):
-    """Return the given positional and keyword arguments"""
+    """Return the given positional and keyword arguments."""
     return {
         'args': args,
         'kwargs': kwargs
@@ -14,4 +14,5 @@ class RaiseExceptionError(ApiError):
 
 @api_function(group='debug')
 def raise_exception():
+    """Just raise an exception of type RaiseExceptionError."""
     raise RaiseExceptionError('Test exception')

@@ -47,6 +47,13 @@ class IPRange(models.Model):
 
 @api_function(group='ip')
 def get_free(range_id, reserve_ip=True):
+    """Return a free IP address.
+
+    If ``reserve_ip`` is set to ``True`` it will return a different IP
+    on the next call unless all other IPs are used. This can be used
+    to reserve the IP so other scripts won't get the returned IP if
+    you haven't added a server with this IP yet.
+    """
     try:
         r = IPRange.objects.get(range_id=range_id)
         return r.get_free(increase_pointer=reserve_ip).as_ip()

@@ -6,6 +6,7 @@ except ImportError:
 
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
+from django.contrib.admindocs.utils import trim_docstring, parse_docstring
 
 from adminapi.utils.json import json_encode_extra 
 
@@ -24,11 +25,12 @@ def list_functions(request):
     for group_name, functions in AVAILABLE_API_FUNCTIONS.iteritems():
         function_list = []
         for name, function in functions.iteritems():
-            print function.func_defaults
+            heading, body, metadata = parse_docstring(function.__doc__)
+            body = trim_docstring(body)
             function_list.append({
                 'name': name,
                 'description': build_function_description(function),
-                'docstring': function.__doc__
+                'docstring': trim_docstring('{0}\n\n{1}'.format(heading, body))
             })
         function_list.sort(key=itemgetter('name'))
             
