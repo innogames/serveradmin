@@ -336,6 +336,9 @@ class MultiAttr(object):
     def __contains__(self, value):
         return value in self._proxied_set
 
+    def __bool__(self):
+        return bool(self._proxied_set)
+
     def __getattr__(self, attr):
         if not hasattr(self._proxied_set, attr):
             raise AttributeError('Cannot proxy attribute {0}'.format(attr))
