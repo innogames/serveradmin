@@ -79,7 +79,7 @@ def _fetch_servers(changed_servers):
 
 def _get_attr_regexps(stype_attrs):
     stype_attr_regexps = {}
-    for stype_attr in ServerTypeAttributes.objects.select_related():
+    for stype_attr in stype_attrs:
         stype_name = stype_attr.servertype.name
         try:
             regexp = re.compile(stype_attr.regex)
@@ -91,7 +91,7 @@ def _get_attr_regexps(stype_attrs):
 
 def _get_attr_required(stype_attrs):
     stype_attr_required = {}
-    for stype_attr in ServerTypeAttributes.objects.select_related():
+    for stype_attr in stype_attrs:
         stype_name = stype_attr.servertype.name
         attr_required = stype_attr_required.setdefault(stype_name, {})
         attr_required[stype_attr.attrib.name] = stype_attr.required
