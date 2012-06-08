@@ -19,7 +19,7 @@ class IPRange(models.Model):
     max = models.IntegerField()
     next_free = models.IntegerField()
 
-    def get_next_free(self):
+    def get_free(self, increase_pointer=True):
         c = connection.cursor()
         c.execute("SELECT GET_LOCK('serverobject_commit', 10)")
         try:
@@ -29,8 +29,9 @@ class IPRange(models.Model):
                     if query(all_ips=next_free).restrict('hostname'):
                         next_free += 1
                     else:
-                        self.next_free = next_free + 1
-                        self.save()
+                        if increase_pointer:
+                            self.next_free = next_free + 1
+                            self.save()
                         return IP(next_free)
                 next_free = self.min
                 if second_loop:
@@ -45,10 +46,10 @@ class IPRange(models.Model):
         return self.range_id
 
 @api_function(group='ip')
-def get_free(range_id):
+def get_free(range_id, reserve_ip=True):
     try:
         r = IPRange.objects.get(range_id=range_id)
-        return r.get_next_free().as_ip()
+        return r.get_free(increase_pointer=reserve_ip).as_ip()
     except IPRange.DoesNotExist:
         raise ApiError('No such IP range')
     except DatasetError, e:
