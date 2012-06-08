@@ -1,8 +1,11 @@
-import json
 import urllib2
 import hashlib
 import hmac
 import time
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 from adminapi.utils.json import json_encode_extra
 

@@ -1,8 +1,11 @@
 import hashlib
 import hmac
-import json
 import time
 from functools import update_wrapper
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import get_object_or_404

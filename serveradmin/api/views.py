@@ -1,4 +1,7 @@
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 from adminapi.utils.json import json_encode_extra 
 
