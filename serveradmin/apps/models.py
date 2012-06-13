@@ -34,7 +34,8 @@ class ApplicationStatistic(models.Model):
 
 def _app_changed(sender, instance, **kwargs):
     if not instance.auth_token:
-        token = ''.join(random.choice(string.letters) for _i in xrange(16))
+        token_chars = string.letters + string.digits + '!$#&@?;.()_-/%'
+        token = ''.join(random.choice(token_chars) for _i in xrange(24))
         instance.auth_token = token
     instance.app_id = hashlib.sha1(instance.auth_token).hexdigest()
 
