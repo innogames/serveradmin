@@ -30,8 +30,8 @@ class IPRange(models.Model):
                         next_free += 1
                     else:
                         if increase_pointer:
-                            self.next_free = next_free + 1
-                            self.save()
+                            IPRange.objects.filter(next_free=next_free).update(
+                                    next_free=next_free + 1)
                         return IP(next_free)
                 next_free = self.min
                 if second_loop:
@@ -61,3 +61,60 @@ def get_free(range_id, reserve_ip=True):
         raise ApiError('No such IP range')
     except DatasetError, e:
         raise ApiError(e.message)
+
+@api_function(group='ip')
+def get_range(range_id):
+    """Return range with given range_id.
+
+    The range is a dictionary with the following keys:
+
+    range_id
+       Given range_id
+    segment
+       Segment of the range (af01 etc.)
+    ip_type
+       The type of the range (either 'public' or 'private')
+    min
+       Minimum IP of this range
+    max
+       Maximum IP of this range
+    """
+    try:
+        r = IPRange.objects.get(range_id=range_id)
+    except IPRange.DoesNotExist:
+        raise ApiError('No such IP range')
+    
+    return _build_range_object(r)
+
+@api_function(group='ip')
+def get_ranges(range_ids=None):
+    """Return requested ranges. If no range ids are given, return all ranges.
+    
+    The return value is a list of range objects. See ip.get_range for
+    description of a range object.
+    """
+    if range_ids is None:
+        range_objects = IPRange.objects.all()
+    else:
+        range_objects = IPRange.objects.filter(range_id__in=range_ids)
+
+    return [_build_range_object(r) for r in range_objects]
+
+@api_function(group='ip')
+def get_matching_ranges(ip):
+    """Return the IP range(s) that belong to the given IP.
+    
+    See ip.get_range for description of the range object
+    """
+    ip_int = IP(ip).as_int()
+    range_objects =  IPRange.objects.filter(min__lte=ip_int, max__gte=ip_int)
+    return [_build_range_object(r) for r in range_objects]
+
+def _build_range_object(r):
+    return {
+        'range_id': r.range_id,
+        'segment': r.segment,
+        'type': 'private' if r.ip_type == 'ip' else 'public',
+        'min': r.min,
+        'max': r.max
+    }
