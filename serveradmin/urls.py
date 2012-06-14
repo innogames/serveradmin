@@ -9,5 +9,6 @@ urlpatterns = patterns(
     url(r'^$', lambda req: redirect('api_list_functions'),  name='home'),
     url(r'^servershell/', include('serveradmin.servershell.urls')),
     url(r'^api/', include('serveradmin.api.urls')),
+    url(r'^loginapi/', include('igrestlogin.urls')),
     url(r'^admin/', include(admin.site.urls)),
 )
