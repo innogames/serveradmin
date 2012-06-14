@@ -1,8 +1,7 @@
 from django.db import connection
-from django.core.cache import cache
 
-from serveradmin.dataset.models import ServerObjectCache
 from serveradmin.dataset.base import lookups
+from serveradmin.dataset.cache import invalidate_cache
 from adminapi.dataset.base import CommitValidationFailed, CommitNewerData, \
         CommitError
 
@@ -53,16 +52,7 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
         kill_cache.update(changed_servers)
         
         if kill_cache:
-            cache_table = ServerObjectCache._meta.db_table
-            server_ids = ','.join([str(x) for x in kill_cache])
-            query = ('SELECT repr_hash FROM {0} WHERE server_id IN({1}) '
-                ' OR server_id IS NULL')
-            c.execute(query.format(cache_table, server_ids))
-            cache_hashes = [x[0] for x in c.fetchall()]
-            for prefix in ('qs_repr', 'qs_storage', 'qs_result'):
-                for key in ('qs', 'api'):
-                    cache.delete_many(['{0}:{1}:{2}'.format(prefix, key, x)
-                                       for x in cache_hashes])
+            invalidate_cache(kill_cache)
 
     finally:
         c.execute('COMMIT')
