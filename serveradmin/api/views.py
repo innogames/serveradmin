@@ -15,8 +15,9 @@ from serveradmin.api.decorators import api_view
 from serveradmin.api.utils import build_function_description
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset import QuerySet
-from serveradmin.dataset.filters import filter_from_obj
+from serveradmin.dataset.filters import filter_from_obj, ExactMatch
 from serveradmin.dataset.commit import commit_changes, CommitError
+from serveradmin.dataset.create import create_server
 from serveradmin.dataset.cache import QuerysetCacher
 
 @login_required
@@ -87,22 +88,16 @@ def dataset_query(request, app, data):
         }
 
     def _build_response(server_data):
-        attributes = {}
-        for attr in lookups.attr_ids.itervalues():
-            attributes[attr.name] = {
-                'multi': attr.multi,
-                'type': attr.type
-            }
-        
         return json.dumps({
             'status': 'success',
             'servers': q.get_raw_results(),
-            'attributes': attributes
+            'attributes': _build_attributes()
         }, default=json_encode_extra)
 
     cacher = QuerysetCacher(q, 'api', encoder=StringEncoder(),
             post_fetch=_build_response)
     return cacher.get_results()
+
 dataset_query.encode_json = False
 dataset_query = api_view(dataset_query)
 
@@ -128,6 +123,40 @@ def dataset_commit(request, app, data):
             'type': e.__class__.__name__,
             'message': e.message
         }
+
+@api_view
+def dataset_create(request, app, data):
+    try:
+        required = ['attributes', 'skip_validation', 'fill_defaults',
+                'fill_defaults_all']
+        if not all(key in data for key in required):
+            raise ValueError('Invalid create request')
+        if not isinstance(data['attributes'], dict):
+            raise ValueError('Attributes must be a dictionary')
+
+        create_server(data['attributes'], data['skip_validation'],
+            data['fill_defaults'], data['fill_defaults_all'])
+        return {
+            'status': 'success',
+            'attributes': _build_attributes(),
+            'servers': QuerySet(filters={'hostname': ExactMatch(
+                data['attributes']['hostname'])}).get_raw_results()
+        }
+    except (ValueError, CommitError), e:
+        return {
+            'status': 'error',
+            'type': e.__class__.__name__,
+            'message': e.message
+        }
+
+def _build_attributes():
+    attributes = {}
+    for attr in lookups.attr_ids.itervalues():
+        attributes[attr.name] = {
+            'multi': attr.multi,
+            'type': attr.type
+        }
+    return attributes
 
 @api_view
 def api_call(request, app, data):

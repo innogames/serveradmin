@@ -7,6 +7,7 @@ from adminapi.dataset.filters import _prepare_filter
 
 COMMIT_URL = BASE_URL + '/dataset/commit'
 QUERY_URL = BASE_URL + '/dataset/query'
+CREATE_URL = BASE_URL + '/dataset/create'
 
 class Attribute(object):
     def __init__(self, name, type, multi):
@@ -57,6 +58,9 @@ class QuerySet(BaseQuerySet):
             'augmentations': self._augmentations
         }
         result = send_request(QUERY_URL, request_data, self.auth_token)
+        return self._handle_result(result)
+
+    def _handle_result(self, result):
         if result['status'] == 'success':
             attributes = {}
             for attr_name, attr in result['attributes'].iteritems():
@@ -93,6 +97,7 @@ class QuerySet(BaseQuerySet):
             }.get(result['type'], DatasetError)
             raise exception_class(result['message'])
 
+
 class ServerObject(BaseServerObject):
     def __init__(self, object_id=None, queryset=None, auth_token=None):
         BaseServerObject.__init__(self, None, object_id, queryset)
@@ -121,3 +126,22 @@ def _handle_exception(result):
 def query(**kwargs):
     filters = dict((k, _prepare_filter(v)) for k, v in kwargs.iteritems())
     return QuerySet(filters=filters, auth_token=_api_settings['auth_token'])
+
+def create(attributes, skip_validation=False, fill_defaults=True,
+        fill_defaults_all=False, auth_token=None):
+    
+    request_data = {
+        'attributes': attributes,
+        'skip_validation': skip_validation,
+        'fill_defaults': fill_defaults,
+        'fill_defaults_all': fill_defaults_all
+    }
+
+    if auth_token is None:
+        auth_token = _api_settings['auth_token']
+
+    result = send_request(CREATE_URL, request_data, auth_token)
+    qs = QuerySet(filters={'hostname': _prepare_filter(attributes['hostname'])},
+            auth_token=auth_token)
+    qs._handle_result(result)
+    return qs.get()

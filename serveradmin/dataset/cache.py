@@ -95,3 +95,20 @@ class QuerysetCacher(object):
         else:
             for server_id in server_data:
                 c.execute(cache_insert_sql, (server_id, qs_repr_hash))
+
+def invalidate_cache(server_ids=None):
+    c = connection.cursor()
+    cache_table = ServerObjectCache._meta.db_table
+    if server_ids:
+        server_ids = ','.join([str(x) for x in server_ids])
+        query = ('SELECT repr_hash FROM {0} WHERE server_id IN({1}) '
+            ' OR server_id IS NULL')
+        c.execute(query.format(cache_table, server_ids))
+    else:
+        c.execute('SELECT repr_hash FROM ' + cache_table)
+
+    cache_hashes = [x[0] for x in c.fetchall()]
+    for prefix in ('qs_repr', 'qs_storage', 'qs_result'):
+        for key in ('qs', 'api'):
+            cache.delete_many(['{0}:{1}:{2}'.format(prefix, key, x)
+                               for x in cache_hashes])
