@@ -72,7 +72,7 @@ def get_range(range_id):
        Given range_id
     segment
        Segment of the range (af01 etc.)
-    ip_type
+    type
        The type of the range (either 'public' or 'private')
     min
        Minimum IP of this range
