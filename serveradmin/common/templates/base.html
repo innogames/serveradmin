@@ -17,6 +17,7 @@
 {% if user.is_authenticated %}
 <li><a href="{% url admin:index %}">Admin</a></li>
 <li><a href="{% url api_list_functions %}">List API functions</a></li>
+<li><a href="{% url logout %}">Logout</a></li>
 {% else %}
 <li><a href="#">Login</a></li>
 {% endif %}
