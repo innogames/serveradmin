@@ -88,8 +88,9 @@ function parse_function_string(args)
     return parsed_args;
 }
 
-function autocomplete_shell_search(parsed_args, autocomplete_cb)
+function autocomplete_shell_search(term, autocomplete_cb)
 {
+	var parsed_args = parse_function_string(term);
     var autocomplete = [];
     var plen = parsed_args.length;
     if (plen == 0) {
@@ -98,7 +99,7 @@ function autocomplete_shell_search(parsed_args, autocomplete_cb)
     } else {
         var hostname = null;
         // Add hostname to autocomplete
-        if (parsed_args[0]['token'] == 'str') {
+        if (parsed_args[0]['token'] == 'str' && plen == 1) {
             hostname = parsed_args[0]['value'];
         }
 
@@ -109,12 +110,12 @@ function autocomplete_shell_search(parsed_args, autocomplete_cb)
         }
         if (prev_token != 'key' && parsed_args[plen - 1]['token'] == 'str') {
             var attr_name = parsed_args[plen - 1]['value'];
-            var autocomplete_attr = [];
+			var prefix = term.substring(0, term.length - attr_name.length);
             for (attr in attributes) {
                 if (attr.substr(0, attr_name.length) == attr_name) {
                     autocomplete.push({
                         'label': 'Attr: ' + attr,
-                        'value': attr
+                        'value': prefix + attr
                     })
                 }
             }
@@ -141,8 +142,7 @@ function autocomplete_shell_search(parsed_args, autocomplete_cb)
 $(function() {
     $('#shell_search').autocomplete({
         'source': function (request, response) {
-            var parsed_args = parse_function_string(request.term);
-            autocomplete_shell_search(parsed_args, response);
+            autocomplete_shell_search(request.term, response);
         }
     });
 });
