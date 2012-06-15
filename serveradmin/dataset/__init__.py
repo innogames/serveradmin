@@ -1,3 +1,4 @@
+from adminapi.dataset.base import DatasetError # Just for namespace
 from serveradmin.dataset.queryset import QuerySet
 from serveradmin.dataset.filters import _prepare_filter
 from serveradmin.dataset.create import create_server

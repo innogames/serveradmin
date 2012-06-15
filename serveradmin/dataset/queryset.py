@@ -68,6 +68,8 @@ class QuerySet(BaseQuerySet):
         self.attributes = lookups.attr_names
         self._for_export = for_export
         self._already_through_cache = False
+        self._limit = None
+        self._offset = None
 
     def commit(self):
         commit = self._build_commit_object()
@@ -81,6 +83,15 @@ class QuerySet(BaseQuerySet):
     def get_representation(self):
         return QuerySetRepresentation(self._filters, self._restrict,
                 self._augmentations)
+
+    def limit(self, offset, limit=None):
+        if limit is None:
+            self._limit = offset
+            self._offset = 0
+        else:
+            self._limit = limit
+            self._offset = offset
+        return self
     
     def _get_results(self):
         if self._results is not None:
@@ -155,6 +166,11 @@ class QuerySet(BaseQuerySet):
             cond2 = all_ips.as_sql_expr('intern_ip', 'intern_ip')
             sql_where.append('(({0}) OR {1})'.format(cond1, cond2))
         
+        if self._limit:
+            limit_extra = 'ORDER BY adms.hostname\nLIMIT {0}, {1}'.format(
+                    self._offset, self._limit)
+        else:
+            limit_extra = ''
         sql_stmt = '\n'.join([
                 'SELECT adms.server_id, adms.hostname, adms.intern_ip, '
                 'adms.segment, adms.servertype_id',
@@ -163,7 +179,8 @@ class QuerySet(BaseQuerySet):
                 '\n'.join(sql_left_joins),
                 'WHERE' if sql_where else '',
                 '\n AND '.join(sql_where),
-                'GROUP BY adms.server_id'
+                'GROUP BY adms.server_id',
+                limit_extra
         ])
 
         c = connection.cursor()
