@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Servershell{% endblock %}
+
+{% block content %}
+<h2>Servershell</h2>
+
+<input type="text" size="60"  id="shell_search" />
+{% endblock %}
+
+{% block additional_body %}
+<script type="text/javascript">
+//<![CDATA[
+var shell_autocomplete_url = "{% url servershell_autocomplete %}";
+var attributes = {{ attributes|safe }};
+//]]>
+</script>
+<script type="text/javascript" src="{{ STATIC_URL }}servershell.js"></script>
+{% endblock %}
