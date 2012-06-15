@@ -6,6 +6,7 @@ from django.template.response import TemplateResponse
 
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset import query, filters, DatasetError
+from serveradmin.servershell.utils import parse_function_string
 
 def index(request):
     attributes = {}
@@ -29,10 +30,11 @@ def autocomplete(request):
         except DatasetError:
             pass # If there is no valid query, just don't autocomplete
 
-    if 'attr' in request.GET:
-        attr_name = request.GET['attr_name']
-        # FIXME: Find distinct values for autocomplete
-
     return HttpResponse(json.dumps({'autocomplete': autocomplete_list}),
             mimetype='application/x-json')
 
+def get_results(request):
+    term = request.GET.get('term', '')
+    parsed_args = parse_function_string(term, strict=False)
+
+    return HttpResponse(repr(parsed_args))
