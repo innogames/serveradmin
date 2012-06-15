@@ -129,7 +129,7 @@ function autocomplete_shell_search(term, autocomplete_cb)
             for (var i = 0; i < hostnames.length; i++) {
                 autocomplete.push({
                     'label': 'Host: ' + hostnames[i],
-                    'value': hostname
+                    'value': hostnames[i]
                 })
             }
             autocomplete_cb(autocomplete);
