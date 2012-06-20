@@ -6,7 +6,7 @@ setup(
     author='Henning Pridoehl',
     author_email='henning.pridoehl@innogames.de',
     packages=['adminapi', 'adminapi.dataset'],
-    version='0.5',
+    version='0.6',
     long_description=('Admin remote API for querying servers and making'
                       'API requests')
 )
