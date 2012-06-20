@@ -1,0 +1,33 @@
+#content .sphinx a.headerlink {
+    font-size: 0.8em;
+    padding: 0 4px 0 4px;
+    text-decoration: none;
+    visibility: hidden;
+}
+#content .sphinx *:hover > a.headerlink { visibility: visible; }
+
+#content .sphinx h1 {
+ font-size:16px;
+ background-color: #67A13A;
+ color: #fff;
+ margin-top: 10px;
+ padding: 3px 5px;
+}
+
+#content .sphinx h2 {
+ background:none;
+ padding:0;
+ font-size: 14px;
+ font-weight: bold;
+ color: #536F49;
+ border-bottom: 1px solid #536F49;
+ margin-top: 15px;
+}
+
+#content .sphinx h3 {
+ font-size:12px;
+ font-weight:bold;
+ font-style:italic;
+ color:#333;
+ margin:5px 0;
+}

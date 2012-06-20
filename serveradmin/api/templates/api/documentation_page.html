@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}{{ document.title }}{% endblock %}
+
+{% block content %}
+<div class="sphinx">
+{{ document.body|safe }}
+</div>
+{% endblock %}
