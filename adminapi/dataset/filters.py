@@ -21,7 +21,7 @@ class Regexp(object):
 class Comparism(object):
     def __init__(self, comparator, value):
         if comparator not in ('<', '>', '<=', '>='):
-            raise ValueError('Invalid comparism operator: ' + self.comparator)
+            raise ValueError('Invalid comparism operator: ' + comparator)
         self.comparator = comparator
         self.value = value
 
