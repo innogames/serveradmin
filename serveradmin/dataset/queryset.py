@@ -71,9 +71,9 @@ class QuerySet(BaseQuerySet):
         self._limit = None
         self._offset = None
 
-    def commit(self):
+    def commit(self, skip_validation=False, force_changes=False):
         commit = self._build_commit_object()
-        commit_changes(commit)
+        commit_changes(commit, skip_validation, force_changes)
         self._confirm_changes()
 
     def get_raw_results(self):

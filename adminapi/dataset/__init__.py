@@ -34,8 +34,10 @@ class QuerySet(BaseQuerySet):
     def augment(self, *attrs):
         raise NotImplementedError('Augmenting is not available yet!')
 
-    def commit(self):
-        commit = self._build_commit_object() 
+    def commit(self, skip_validation=False, force_changes=False):
+        commit = self._build_commit_object()
+        commit['skip_validation'] = skip_validation
+        commit['force_changes'] = force_changes
         result = send_request(COMMIT_URL, commit, self.auth_token)
 
         if result['status'] == 'success':
@@ -104,8 +106,10 @@ class ServerObject(BaseServerObject):
         BaseServerObject.__init__(self, None, object_id, queryset)
         self.auth_token = auth_token
 
-    def commit(self):
+    def commit(self, skip_validation=False, force_changes=False):
         commit = self._build_commit_object() 
+        commit['skip_validation'] = skip_validation
+        commit['force_changes'] = force_changes
         result = send_request(COMMIT_URL, commit, self.auth_token)
 
         if result['status'] == 'success':

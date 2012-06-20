@@ -46,7 +46,7 @@ class BaseQuerySet(object):
     def is_dirty(self):
         return bool(self._num_dirty)
 
-    def commit(self):
+    def commit(self, skip_validation, force_changes):
         raise NotImplementedError()
 
     def rollback(self):

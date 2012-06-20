@@ -122,13 +122,16 @@ def dataset_commit(request, app, data):
         if 'changes' not in data or 'deleted' not in data:
             raise ValueError('Invalid changes')
 
+        skip_validation = bool(data.get('skip_validation', False))
+        force_changes = bool(data.get('force_changes', False))
+
         # Convert keys back to integers (json doesn't handle integer keys)
         changes = {}
         for server_id, change in data['changes'].iteritems():
             changes[int(server_id)] = change
 
         commit = {'deleted': data['deleted'], 'changes': changes}
-        commit_changes(commit)
+        commit_changes(commit, skip_validation, force_changes)
         return {
             'status': 'success'
         }
