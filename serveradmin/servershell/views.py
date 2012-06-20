@@ -1,5 +1,4 @@
 import json
-import re
 
 from django.http import HttpResponse
 from django.template.response import TemplateResponse
@@ -23,9 +22,8 @@ def autocomplete(request):
     autocomplete_list = []
     if 'hostname' in request.GET:
         hostname = request.GET['hostname']
-        hostname_regexp = u'^' + re.escape(hostname) + u'.*$'
         try:
-            hosts = query(hostname=filters.Regexp(hostname_regexp)).limit(10)
+            hosts = query(hostname=filters.Startswith(hostname)).limit(10)
             autocomplete_list += (host['hostname'] for host in hosts)
         except DatasetError:
             pass # If there is no valid query, just don't autocomplete

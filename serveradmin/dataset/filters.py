@@ -288,6 +288,48 @@ class Not(Filter):
         raise ValueError('Invalid object for Not')
 _filter_classes['not'] = Not
 
+class Startswith(Filter):
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return 'Startswith({0!})'.format(self.value)
+    
+    def __eq__(self, other):
+        if isinstance(other, Startswith):
+            return self.value == other.value
+
+    def __hash__(self):
+        return hash('Startswith') ^ hash(self.value)
+
+    def as_sql_expr(self, attr_name, field):
+        # XXX Dirty hack for servertype checking
+        if attr_name == 'servertype':
+            stype_ids = []
+            for stype in lookups.stype_ids.itervalues():
+                if stype.name.startswith(self.value):
+                    stype_ids.append(stype.pk)
+            if stype_ids:
+                return '{0} IN({1})'.format(field, ', '.join(stype_ids))
+            else:
+                return '0=1'
+        elif lookups.attr_names[attr_name].type == 'ip':
+            return 'NTOA({0}) LIKE {1}'.format(field, _sql_escape(self.value +
+                '%%'))
+        else:
+            return '{0} LIKE {1}'.format(field, _sql_escape(self.value + '%%'))
+
+    def matches(self, server_obj, attr_name):
+        return unicode(server_obj[attr_name]).startswith(self.value)
+    
+    @classmethod
+    def from_obj(cls, obj):
+        if 'value' in obj and isinstance(obj['value'], basestring):
+            return cls(obj['value'])
+        raise ValueError('Invalid object for Startswith')
+_filter_classes['Startswith'] = Startswith
+
+
 class Optional(object):
     def __init__(self, filter):
         self.filter = _prepare_filter(filter)
