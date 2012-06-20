@@ -2,28 +2,9 @@ from __future__ import print_function
 import sys
 
 from adminapi.utils import IP, print_table, print_heading
+from adminapi.exceptions import DatasetError
 
 NonExistingAttribute = object()
-
-class DatasetError(Exception):
-    pass
-
-class CommitError(Exception):
-    pass
-
-class CommitValidationFailed(CommitError):
-    def __init__(self, message, violations=None):
-        CommitError.__init__(self, message)
-        if violations is None:
-            violations = []
-        self.violations = violations
-
-class CommitNewerData(CommitError):
-    def __init__(self, message, newer=None):
-        CommitError.__init__(self, message)
-        if newer is None:
-            newer = []
-        self.newer = newer
 
 class BaseQuerySet(object):
     def __init__(self, filters):

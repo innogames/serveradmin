@@ -1,9 +1,10 @@
 from adminapi import BASE_URL, _api_settings
 from adminapi.utils import IP
 from adminapi.request import send_request
-from adminapi.dataset.base import BaseQuerySet, BaseServerObject, \
-        DatasetError
+from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 from adminapi.dataset.filters import _prepare_filter
+from adminapi.dataset.exceptions import (DatasetError, CommitError, 
+        CommitValidationFailed, CommitNewerData) # Import into this Namespace
 
 COMMIT_URL = BASE_URL + '/dataset/commit'
 QUERY_URL = BASE_URL + '/dataset/query'

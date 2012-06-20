@@ -1,8 +1,7 @@
 from django.db import models, connection
 
 from adminapi.utils import IP
-from adminapi.dataset.base import DatasetError
-from serveradmin.dataset import query
+from serveradmin.dataset import query, DatasetError
 from serveradmin.api.decorators import api_function
 from serveradmin.api import ApiError
 
