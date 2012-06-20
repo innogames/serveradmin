@@ -2,7 +2,7 @@ from __future__ import print_function
 import sys
 
 from adminapi.utils import IP, print_table, print_heading
-from adminapi.exceptions import DatasetError
+from adminapi.dataset.exceptions import DatasetError
 
 NonExistingAttribute = object()
 

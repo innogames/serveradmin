@@ -2,8 +2,8 @@ from django.db import connection
 
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.cache import invalidate_cache
-from adminapi.dataset.base import CommitValidationFailed, CommitNewerData, \
-        CommitError
+from adminapi.dataset.exceptions import (CommitValidationFailed, CommitNewerData,
+        CommitError)
 
 def commit_changes(commit, skip_validation=False, force_changes=False):
     """Commit server changes to the database after validation.

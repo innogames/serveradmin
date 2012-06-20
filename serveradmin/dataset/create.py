@@ -2,7 +2,7 @@ from django.db import connection
 
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.cache import invalidate_cache
-from adminapi.dataset.base import CommitValidationFailed, CommitError
+from adminapi.dataset.exceptions import CommitValidationFailed, CommitError
 from adminapi.utils import IP
 
 def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all):
