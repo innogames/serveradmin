@@ -25,6 +25,15 @@ class BaseQuerySet(object):
     def __bool__(self):
         self._get_results()
         return bool(self._results)
+    
+    def __repr__(self):
+        # QuerySet is not used directly but through query function
+        kwargs = ', '.join('{0}={1!r}'.format(k, v) for k, v in
+                self._filters.iteritems())
+        query_repr = 'query({0})'.format(kwargs)
+        if self._restrict:
+            query_repr += '.restrict({0})'.format(', '.join(self._restrict))
+        return query_repr
 
     def augment(self, *augmentations):
         self._augmentations = set(augmentations)

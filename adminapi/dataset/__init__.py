@@ -22,15 +22,6 @@ class QuerySet(BaseQuerySet):
         self.auth_token = auth_token
         self.attributes = {}
 
-    def __repr__(self):
-        # QuerySet is not used directly but through query function
-        kwargs = ', '.join('{0}={1!r}'.format(k, v) for k, v in
-                self._filters.iteritems())
-        query_repr = 'query({0})'.format(kwargs)
-        if self._restrict:
-            query_repr += '.restrict({0})'.format(', '.join(self._restrict))
-        return query_repr
-
     def augment(self, *attrs):
         raise NotImplementedError('Augmenting is not available yet!')
 
