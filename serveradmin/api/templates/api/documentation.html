@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Documentation{% endblock %}
+
+{% block content %}
+<h2>Documentation</h2>
+
+<h3><a href="{% url api_doc_pythonapi %}">Python API</a></h3>
+<p>The Python API documentation describes how to query for servers, create
+new servers or call API functions.</p>
+
+<h3><a href="{% url api_doc_functions %}">API functions</a></h3>
+<p>The API functions defined on the admin tool are described here.</p>
+{% endblock %}

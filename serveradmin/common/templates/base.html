@@ -4,6 +4,7 @@
 <head>
 <title>{% block title %}{% endblock %} &middot; Serveradmin</title>
 <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}innogames.css" />
+<link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}admintool.css" />
 <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}css/ui-innogames/jquery-ui-1.8.21.custom.css" />
 <script type="text/javascript" src="{{ STATIC_URL }}json2.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}jquery-1.7.2.js"></script>
@@ -21,7 +22,12 @@
 
 {% if user.is_authenticated %}
 <li><a href="{% url admin:index %}">Admin</a></li>
-<li><a href="{% url api_list_functions %}">List API functions</a></li>
+<li><a href="{% url api_doc_index %}">Documentation</a>
+ <ul class="childmenu">
+<li><a href="{% url api_doc_pythonapi %}">Python API</a></li>
+<li><a href="{% url api_doc_functions %}">API functions</a></li>
+ </ul>
+</li>
 <li><a href="{% url logout %}">Logout</a></li>
 {% else %}
 <li><a href="#">Login</a></li>

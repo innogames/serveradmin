@@ -1,3 +1,4 @@
+import os
 from operator import itemgetter
 try:
     import simplejson as json
@@ -7,6 +8,7 @@ except ImportError:
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.admindocs.utils import trim_docstring, parse_docstring
+from django.conf import settings
 
 from adminapi.utils.json import json_encode_extra 
 
@@ -21,7 +23,20 @@ from serveradmin.dataset.create import create_server
 from serveradmin.dataset.cache import QuerysetCacher
 
 @login_required
-def list_functions(request):
+def documentation(request):
+    return TemplateResponse(request, 'api/documentation.html')
+
+@login_required
+def doc_pythonapi(request):
+    docfile = os.path.join(settings.DOCUMENTATION_DATADIR, 'python-api.fjson')
+    with open(docfile) as f:
+        document = json.load(f)
+    return TemplateResponse(request, 'api/documentation_page.html', {
+        'document': document
+    })
+
+@login_required
+def doc_functions(request):
     group_list = []
     for group_name, functions in AVAILABLE_API_FUNCTIONS.iteritems():
         function_list = []
