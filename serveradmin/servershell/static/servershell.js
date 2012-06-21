@@ -247,12 +247,12 @@ function handle_command(command) {
             search['page'] = 1;
         }
         execute_search($('#shell_search').val());
-    } else if (command == 'all') {
+    } else if (command == 'select') {
         $('input[name="server"]').each(function(index) {
             this.checked = true;
         });
         return '';
-    } else if (command == 'none') {
+    } else if (command == 'unselect') {
         $('input[name="server"]').each(function(index) {
             this.checked = false;
         });
@@ -336,8 +336,8 @@ function autocomplete_shell_command(term, autocomplete_cb)
 
     var commands = {
         'attr': 'Show an attribute (e.g. "attr webserver")',
-        'all': 'Mark all servers on this page',
-        'none': 'Unmark all servers on this page',
+        'select': 'Select all servers on this page',
+        'unselect': 'Unselect all servers on this page',
         'multiadd': 'Add a value to a multi attribute (e.g. "multiadd webservers=nginx")',
         'multidel': 'Delete a value from a multi attribute (e.g. multidel webserver=apache)',
         'delete': 'Delete servers',
