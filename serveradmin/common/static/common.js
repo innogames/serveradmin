@@ -1,3 +1,39 @@
+function IP(value)
+{
+    if (typeof(value) == 'string') {
+        var ip_int = 0;
+        var segments = value.split('.');
+        for(var i = 0; i < segments.length; i++) {
+            ip_int = ip_int << 8;
+            ip_int |= parseInt(segments[i], 10);
+        }
+        this.value = ip_int
+    } else {
+        this.value = value
+    }
+}
+
+IP.prototype.as_ip = function() {
+    var ip = [0, 0, 0, 0];
+    ip_int = this.value;
+    for (var i = 0; i < 4; i++) {
+        ip[i] = (ip_int & 0xff) + '';
+        ip_int = ip_int >> 8
+    }
+    return ip[3] + '.' + ip[2] + '.' + ip[1] + '.' + ip[0];
+}
+
+IP.prototype.as_int = function() {
+    return this.value;
+}
+
+// Array Remove - By John Resig (MIT Licensed)
+Array.prototype.remove = function(from, to) {
+  var rest = this.slice((to || from) + 1 || this.length);
+  this.length = from < 0 ? this.length + from : from;
+  return this.push.apply(this, rest);
+};
+
 jQuery(document).ajaxSend(function(event, xhr, settings) {
     function getCookie(name) {
         var cookieValue = null;
