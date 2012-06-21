@@ -74,9 +74,11 @@ class QuerySetRepresentation(object):
             if isinstance(value, (filters.Filter, filters.Optional)):
                 if isinstance(value, filters.ExactMatch):
                     return repr(value.value)
-                elif isinstance(value, (filters.And, filters.Or, filters.Not)):
+                elif isinstance(value, (filters.And, filters.Or)):
                     return u'filters.{0}({1})'.format(value.name.capitalize(),
                             u', '.join(filter_repr(x) for x in value.filters))
+                elif isinstance(value, filters.Not):
+                    return u'filters.Not({0})'.format(filter_repr(value.filter))
                 else:
                     return u'filters.{0!r}'.format(value)
             else:
