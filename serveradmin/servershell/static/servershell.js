@@ -239,8 +239,11 @@ function render_server_table() {
 
 function handle_command(command) {
     if (command == 'n' || command == 'next') {
-        search['page']++;
-        execute_search($('#shell_search').val());
+        var num_pages = Math.ceil(search['num_servers'] / search['per_page']);
+        if (search['page'] < num_pages) {
+            search['page']++;
+            execute_search($('#shell_search').val());
+        }
     } else if (command == 'p' || command == 'previous') {
         search['page']--;
         if (search['page'] < 1) {
@@ -303,6 +306,17 @@ function handle_command(command) {
             }
             render_server_table();
             return '';
+        } else if (command_name == 'goto') {
+            if (parsed_args[1]['token'] != 'str') {
+                return;
+            }
+            var goto_page = parseInt(parsed_args[1]['value'], 10);
+            var num_pages = Math.ceil(search['num_servers'] / search['per_page']);
+            if (goto_page >= 1 && goto_page <= num_pages) {
+                search['page'] = goto_page;
+                execute_search($('#shell_search').val());
+                return '';
+            }
         }
     }
 }
@@ -341,7 +355,8 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'multiadd': 'Add a value to a multi attribute (e.g. "multiadd webservers=nginx")',
         'multidel': 'Delete a value from a multi attribute (e.g. multidel webserver=apache)',
         'delete': 'Delete servers',
-        'set': 'Set an attribute (e.g. "set os=wheezy")' 
+        'set': 'Set an attribute (e.g. "set os=wheezy")',
+        'goto': 'Goto page n (e.g. "goto 42")'
     };
     
     if (plen == 1 && parsed_args[0]['token'] == 'str') {
