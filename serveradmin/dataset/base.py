@@ -15,32 +15,32 @@ ServerTypeAttr = namedtuple('ServerTypeAttr', ['servertype_id', 'attribute_id',
         'required', 'default', 'regexp', 'visible'])
 
 def _read_lookups(sender=None, **kwargs):
-    version = cache.get('dataset_lookups_version')
+    version = cache.get(u'dataset_lookups_version')
     if not version:
         version = uuid.uuid1().hex
-        cache.add('dataset_lookups_version', version)
+        cache.add(u'dataset_lookups_version', version)
 
-    if hasattr(lookups, 'version') and lookups.version == version:
+    if hasattr(lookups, u'version') and lookups.version == version:
         return
     else:
         lookups.version = version
     
     # Special attributes that don't have an entry in the attrib table
     special_attributes = [
-        Attribute(name='object_id', type='integer', base=False, multi=False),
-        Attribute(name='hostname', type='string', base=True, multi=False),
-        Attribute(name='servertype', type='string', base=True, multi=False),
-        Attribute(name='intern_ip', type='ip', base=True, multi=False),
-        Attribute(name='segment', type='string', base=True, multi=False),
-        Attribute(name='all_ips', type='ip', base=False, multi=True)
+        Attribute(name=u'object_id', type=u'integer', base=False, multi=False),
+        Attribute(name=u'hostname', type=u'string', base=True, multi=False),
+        Attribute(name=u'servertype', type=u'string', base=True, multi=False),
+        Attribute(name=u'intern_ip', type=u'ip', base=True, multi=False),
+        Attribute(name=u'segment', type=u'string', base=True, multi=False),
+        Attribute(name=u'all_ips', type=u'ip', base=False, multi=True)
     ]
 
     # Read all attributes
     lookups.attr_ids = {}
     lookups.attr_names = {}
     for attr in chain(Attribute.objects.all(), special_attributes):
-        if attr.name == 'additional_ips':
-            attr.type = 'ip'
+        if attr.name == u'additional_ips':
+            attr.type = u'ip'
         lookups.attr_ids[attr.pk] = attr
         lookups.attr_names[attr.name] = attr
     
@@ -55,8 +55,8 @@ def _read_lookups(sender=None, **kwargs):
     # Bypass Django ORM for performance reasons
     lookups.stype_attrs = {}
     c = connection.cursor()
-    c.execute('SELECT servertype_id, attrib_id, required, attrib_default, '
-              'regex, default_visible FROM servertype_attributes')
+    c.execute(u'SELECT servertype_id, attrib_id, required, attrib_default, '
+              u'regex, default_visible FROM servertype_attributes')
     for row in c.fetchall():
         row = list(row)
         try:
@@ -65,7 +65,7 @@ def _read_lookups(sender=None, **kwargs):
             row[4] = None
         stype_attr = ServerTypeAttr._make(row)
         stype = lookups.stype_ids[stype_attr.servertype_id]
-        if not hasattr(stype, 'attributes'):
+        if not hasattr(stype, u'attributes'):
             stype.attributes = []
         attribute = lookups.attr_ids[stype_attr.attribute_id]
         stype.attributes.append(attribute)
