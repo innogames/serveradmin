@@ -4,14 +4,47 @@
 {% block content %}
 <h2>Servershell</h2>
 
-<input type="text" size="60"  id="shell_search" />
+<table class="valign-middle">
+<tr>
+    <td>Search: </td>
+    <td>
+        <form method="post" action="" id="shell_search_form">
+        <input type="text" size="60"  id="shell_search" />
+        </form>
+    </td>
+</tr>
+<tr id="shell_understood_container">
+    <td>Understood: </td>
+    <td id="shell_understood">Nothing yet.</td>
+</tr>
+<tr id="shell_command_container">
+    <td>Command: </td>
+    <td>
+        <form method="post" action="javascript:return false;" id="shell_command_form">
+        <input type="text" size="60"  id="shell_command" />
+        </form>
+    </td>
+</tr>
+</table>
+
+<div id="shell_servers"></div>
+
+<div id="shell_attributes" style="position:absolute; top:5em; right:3em;">
+    <ul>
+    {% for attr in attribute_list %}
+        <li>{{ attr }}
+    {% endfor %}
+    </ul>
+</div>
+
 {% endblock %}
 
 {% block additional_body %}
 <script type="text/javascript">
 //<![CDATA[
 var shell_autocomplete_url = "{% url servershell_autocomplete %}";
-var attributes = {{ attributes|safe }};
+var shell_results_url = "{% url servershell_results %}";
+var available_attributes = {{ attributes_json|safe }};
 //]]>
 </script>
 <script type="text/javascript" src="{{ STATIC_URL }}servershell.js"></script>

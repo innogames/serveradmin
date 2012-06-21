@@ -1,3 +1,5 @@
+from serveradmin.dataset.filters import Regexp, filter_classes
+
 def parse_function_string(args, strict=True):
     state = 'start'
     args_len = len(args)
@@ -44,12 +46,14 @@ def parse_function_string(args, strict=True):
                 parsed_args.append(('str', args[string_start:i]))
                 state = 'start'
             elif args[i] in ('(', '['):
-                parsed_args.append(('func', args[string_start:i]))
-                call_depth += 1
-                state = 'start'
+                if string_start != i:
+                    parsed_args.append(('func', args[string_start:i]))
+                    call_depth += 1
+                    state = 'start'
             elif args[i] in (')', ']') and call_depth != 0:
-                parsed_args.append(('str', args[string_start:i]))
-                parsed_args.append(('funcend', ''))
+                if string_start != i:
+                    parsed_args.append(('str', args[string_start:i]))
+                parsed_args.append(('endfunc', ''))
                 call_depth -= 1
                 state = 'start'
             elif args[i] == '=':
@@ -65,3 +69,54 @@ def parse_function_string(args, strict=True):
             parsed_args.append(('str', args[string_start:]))
     
     return parsed_args
+
+def build_query_args(parsed_args):
+    if len(parsed_args) == 1:
+        hostname = parsed_args[0][1]
+        if any(x in hostname for x in ('.*', '.+', '[', ']', '|', '\\')):
+            value = Regexp(hostname)
+        else:
+            value = hostname
+        return {u'hostname': value}
+    query_args = {}
+    stack = []
+    call_depth = 0
+    for arg in parsed_args:
+        token, value = arg
+        if token == 'key':
+            if stack:
+                query_args[stack[0][1]] = stack[1][1]
+                stack = []
+            stack.append(arg)
+        elif token == 'func':
+            call_depth += 1
+            stack.append(arg)
+        elif token == 'endfunc':
+            call_depth -= 1
+            fn_args = []
+            while True:
+                s_token, s_value = stack.pop()
+                if s_token == 'func':
+                    break
+                else:
+                    fn_args.append(s_value)
+            fn_name = s_value.lower()
+            fn_args.reverse()
+            try:
+                instance = filter_classes[fn_name](*fn_args)
+            except KeyError:
+                raise ValueError('Invalid function ' + fn_name)
+            except TypeError:
+                raise ValueError('Invalid function args ' + fn_name)
+            stack.append(('instance', instance))
+        elif token == 'str':
+            # Do not allow strings without key or function context
+            if not stack or (call_depth == 0 and stack[-1][0] != 'key'):
+                raise ValueError('Invalid term')
+            stack.append(arg)
+
+    if stack and stack[0][0] == 'key':
+        query_args[stack[0][1]] = stack[1][1]
+    return query_args
+            
+
