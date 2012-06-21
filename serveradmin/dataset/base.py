@@ -41,6 +41,9 @@ def _read_lookups(sender=None, **kwargs):
     for attr in chain(Attribute.objects.all(), special_attributes):
         if attr.name == u'additional_ips':
             attr.type = u'ip'
+        # XXX: Dirty hack for old structure
+        if attr.name == 'MAC':
+            attr.name = 'mac'
         lookups.attr_ids[attr.pk] = attr
         lookups.attr_names[attr.name] = attr
     
