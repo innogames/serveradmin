@@ -217,12 +217,16 @@ function build_server_table(servers, attributes, offset)
         table.append(row);
         search['no_mapping'][i + 1] = server;
     }
-    $('#shell_servers').empty().append(table);
+    var num_pages = Math.ceil(search['num_servers'] / search['per_page']);
+    var heading = '<h3>Results (' + search['num_servers'] + ' servers, ';
+    heading += 'page ' + search['page'] + '/' + num_pages + ')</h3>';
+    $('#shell_servers').empty().append(heading).append(table);
 }
 
 var search = {
     'shown_attributes': ['hostname', 'intern_ip', 'servertype'],
-    'servers': null,
+    'servers': {},
+    'num_servers': 0,
     'page': 1,
     'per_page': 25,
     'no_mapping': {}
@@ -317,6 +321,7 @@ function execute_search(term) {
             return;
         }
         search['servers'] = data['servers'];
+        search['num_servers'] = data['num_servers'];
         $('#shell_understood').text(data['understood']);
         render_server_table();
         $('#shell_command').focus();

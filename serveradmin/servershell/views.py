@@ -51,6 +51,7 @@ def get_results(request):
         query_args = build_query_args(parsed_args)
         q = query(**query_args).limit(offset, limit)
         results = q.get_raw_results()
+        num_servers = q.get_num_rows()
     except (ValueError, DatasetError), e:
         return HttpResponse(json.dumps({
             'status': 'error',
@@ -60,5 +61,6 @@ def get_results(request):
     return HttpResponse(json.dumps({
         'status': 'success',
         'understood': q.get_representation().as_string(hide_extra=True),
-        'servers': results
+        'servers': results,
+        'num_servers': num_servers
     }, default=json_encode_extra))#, mimetype='application/x-json')
