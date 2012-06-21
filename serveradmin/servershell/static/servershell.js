@@ -334,7 +334,8 @@ function execute_search(term) {
     };
     $.getJSON(shell_results_url, search_request, function(data) {
         if (data['status'] != 'success') {
-            $('#shell_understood').text('Error: ' + data['message']);
+            var error = $('<span class="error"></span>').text(data['message']);
+            $('#shell_understood').empty().append(error);
             return;
         }
         search['servers'] = data['servers'];
