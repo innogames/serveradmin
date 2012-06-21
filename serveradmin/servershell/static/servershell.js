@@ -260,6 +260,9 @@ function handle_command(command) {
             this.checked = false;
         });
         return '';
+    } else if (command == 'search') {
+        $('#shell_search').focus();
+        return '';    
     } else if (is_digit(command[0])) {
         var mark_nos = [];
         var ranges = command.split(',');
@@ -356,7 +359,8 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'multidel': 'Delete a value from a multi attribute (e.g. multidel webserver=apache)',
         'delete': 'Delete servers',
         'set': 'Set an attribute (e.g. "set os=wheezy")',
-        'goto': 'Goto page n (e.g. "goto 42")'
+        'goto': 'Goto page n (e.g. "goto 42")',
+        'search': 'Focus search field'
     };
     
     if (plen == 1 && parsed_args[0]['token'] == 'str') {
