@@ -6,7 +6,7 @@ admin.autodiscover()
 
 urlpatterns = patterns(
     '',
-    url(r'^$', lambda req: redirect('api_doc_index'),  name='home'),
+    url(r'^$', lambda req: redirect('servershell_index'),  name='home'),
     url(r'^servershell/', include('serveradmin.servershell.urls')),
     url(r'^api/', include('serveradmin.api.urls')),
     url(r'^loginapi/', include('igrestlogin.urls')),
