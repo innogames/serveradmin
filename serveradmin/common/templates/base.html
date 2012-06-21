@@ -22,6 +22,7 @@
 
 {% if user.is_authenticated %}
 <li><a href="{% url admin:index %}">Admin</a></li>
+<li><a href="{% url servershell_index %}">Servershell</a></li>
 <li><a href="{% url api_doc_index %}">Documentation</a>
  <ul class="childmenu">
 <li><a href="{% url api_doc_pythonapi %}">Python API</a></li>
