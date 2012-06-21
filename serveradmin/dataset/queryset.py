@@ -86,10 +86,8 @@ class QuerySetRepresentation(object):
 
 class QuerySet(BaseQuerySet):
     def __init__(self, filters, for_export=False):
-        for attr in filters:
-            if attr not in lookups.attr_names:
-                raise ValueError(u'Invalid attribute: {0}'.format(attr))
-        BaseQuerySet.__init__(self, filters)
+        _check_attributes(filters.keys())
+        super(QuerySet, self).__init__(filters)
         self.attributes = lookups.attr_names
         self._for_export = for_export
         self._already_through_cache = False
@@ -109,6 +107,10 @@ class QuerySet(BaseQuerySet):
         return QuerySetRepresentation(self._filters, self._restrict,
                 self._augmentations)
 
+    def restrict(self, *attrs):
+        _check_attributes(attrs)
+        return super(QuerySet, self).restrict(*attrs)
+
     def limit(self, offset, limit=None):
         if limit is None:
             self._limit = offset
@@ -117,6 +119,7 @@ class QuerySet(BaseQuerySet):
             self._limit = limit
             self._offset = offset
         return self
+
     
     def _get_results(self):
         if self._results is not None:
@@ -310,3 +313,8 @@ class ServerObject(BaseServerObject):
         instance_dict = tpl[2].copy()
         del instance_dict[u'_queryset']
         return (tpl[0], tpl[1], instance_dict)
+
+def _check_attributes(attributes):
+    for attr in attributes:
+        if attr not in lookups.attr_names:
+            raise ValueError(u'Invalid attribute: {0}'.format(attr))

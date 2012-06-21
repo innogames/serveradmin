@@ -89,18 +89,18 @@ def dataset_query(request, app, data):
         filters = {}
         for attr, filter_obj in data['filters'].iteritems():
             filters[attr] = filter_from_obj(filter_obj)
-
+        
         q = QuerySet(filters=filters, for_export=True)
         if data['restrict']:
             q.restrict(*data['restrict'])
         if data['augmentations']:
             q.augment(*data['augmentations'])
     except ValueError, e:
-        return {
+        return json.dumps({
             'status': 'error',
             'type': 'ValueError',
             'message': e.message
-        }
+        })
 
     def _build_response(server_data):
         return json.dumps({
