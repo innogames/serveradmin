@@ -31,3 +31,7 @@
  color:#333;
  margin:5px 0;
 }
+
+.valign-middle td {
+ vertical-align:middle;
+}
