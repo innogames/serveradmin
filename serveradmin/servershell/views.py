@@ -5,12 +5,14 @@ except ImportError:
 
 from django.http import HttpResponse
 from django.template.response import TemplateResponse
+from django.contrib.auth.decorators import login_required
 
 from adminapi.utils.json import json_encode_extra
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset import query, filters, DatasetError
 from serveradmin.servershell.utils import parse_function_string, build_query_args
 
+@login_required
 def index(request):
     attributes = {}
     for attr in lookups.attr_names.itervalues():
@@ -23,6 +25,7 @@ def index(request):
         'attribute_list': sorted(lookups.attr_names.keys())
     })
 
+@login_required
 def autocomplete(request):
     autocomplete_list = []
     if 'hostname' in request.GET:
@@ -36,6 +39,7 @@ def autocomplete(request):
     return HttpResponse(json.dumps({'autocomplete': autocomplete_list}),
             mimetype='application/x-json')
 
+@login_required
 def get_results(request):
     term = request.GET.get('term', '')
     try:
