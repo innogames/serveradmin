@@ -372,7 +372,10 @@ def _prepare_value(attr_name, value):
         value = value.as_int()
     # XXX: Dirty hack for the old database structure
     if attr_name == u'servertype':
-        value = lookups.stype_names[value].pk
+        try:
+            value = lookups.stype_names[value].pk
+        except KeyError:
+            raise ValueError(u'Invalid servertype: ' + value)
 
     return _sql_escape(value)
 
