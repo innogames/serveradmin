@@ -297,6 +297,10 @@ function handle_command(command) {
             for(var i = 1; i < parsed_args.length; i++) {
                 if (parsed_args[i]['token'] == 'str') {
                     var attr_name = parsed_args[i]['value'];
+                    if (typeof(available_attributes[attr_name]) == 'undefined') {
+                        return;
+                    }
+                    
                     var index = search['shown_attributes'].indexOf(attr_name);
                     if (index == -1) {
                         search['shown_attributes'].push(attr_name);
