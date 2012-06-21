@@ -103,6 +103,7 @@ class QuerySet(BaseQuerySet):
         self._already_through_cache = False
         self._limit = None
         self._offset = None
+        self._num_rows = 0
 
     def commit(self, skip_validation=False, force_changes=False):
         commit = self._build_commit_object()
@@ -112,6 +113,10 @@ class QuerySet(BaseQuerySet):
     def get_raw_results(self):
         self._get_results()
         return self._results
+
+    def get_num_rows(self):
+        self._get_results()
+        return self._num_rows
 
     def get_representation(self):
         return QuerySetRepresentation(self._filters, self._restrict,
@@ -210,8 +215,8 @@ class QuerySet(BaseQuerySet):
         else:
             limit_extra = ''
         sql_stmt = u'\n'.join([
-                u'SELECT adms.server_id, adms.hostname, adms.intern_ip, '
-                u'adms.segment, adms.servertype_id',
+                u'SELECT SQL_CALC_FOUND_ROWS adms.server_id, adms.hostname, '
+                u'adms.intern_ip, adms.segment, adms.servertype_id',
                 u'FROM',
                 u', '.join(sql_from),
                 u'\n'.join(sql_left_joins),
@@ -253,6 +258,9 @@ class QuerySet(BaseQuerySet):
                 if attr.multi:
                     if not restrict or attr.name in restrict:
                         dict.__setitem__(server_object, attr.name, set())
+
+        c.execute('SELECT FOUND_ROWS()')
+        self._num_rows = c.fetchone()[0]
         
         # Return early if there are no servers (= empty dict)
         if not server_data:

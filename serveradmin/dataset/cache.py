@@ -63,7 +63,9 @@ class QuerysetCacher(object):
             # Reset counter after 1 day
             cache.set(count_key, 1, 24 * 3600)
             qs_count = 1
-        if qs_count >= CACHE_MIN_QS_COUNT:
+        
+        has_limit = qs_repr.limit or qs_repr.offset
+        if qs_count >= CACHE_MIN_QS_COUNT and not has_limit:
             self._do_cache = True
         return False, None
     
