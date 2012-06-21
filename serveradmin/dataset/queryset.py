@@ -59,18 +59,30 @@ class QuerySetRepresentation(object):
         
         return True
 
-    def as_string(self):
-        args = []
-        for attr_name, value in self.filters.iteritems():
+    def as_string(self, hide_extra=True):
+        def filter_repr(value):
             if isinstance(value, (filters.Filter, filters.Optional)):
                 if isinstance(value, filters.ExactMatch):
-                    value_repr = repr(value.value)
+                    return repr(value.value)
+                elif isinstance(value, (filters.And, filters.Or, filters.Not)):
+                    return u'filters.{0}({1})'.format(value.name.capitalize(),
+                            u', '.join(filter_repr(x) for x in value.filters))
                 else:
-                    value_repr = u'filters.{0!}'.format(value)
+                    return u'filters.{0!r}'.format(value)
             else:
-                value_repr = repr(value)
+                return repr(value)
+
+
+        args = []
+        for attr_name, value in self.filters.iteritems():
+            value_repr = filter_repr(value)
             args.append(u'{0}={1}'.format(attr_name, value_repr))
-        return u'query({0})'.format(u', '.join(args))
+            
+        if hide_extra:
+            # FIXME: Add restrict/limit/augment etc.
+            extra = u''
+        
+        return u'query({0}){1}'.format(u', '.join(args), extra)
 
 class QuerySet(BaseQuerySet):
     def __init__(self, filters, for_export=False):
