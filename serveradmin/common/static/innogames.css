@@ -106,3 +106,12 @@ th, td {
  list-style-type:none;
  padding-left:0;
 }
+
+tr.row_a td {
+ background:#dce3d5;
+}
+
+tr.row_b td {
+ background:#e8ece4;
+}
+
