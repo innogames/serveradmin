@@ -14,10 +14,12 @@ class QuerySetRepresentation(object):
     """ Object that can be easily pickled without storing to much data.
     The main use is to compare querysets for caching. 
     """
-    def __init__(self, filters, restrict, augmentations):
+    def __init__(self, filters, restrict, augmentations, offset, limit):
         self.filters = filters
         self.restrict = restrict
         self.augmentations = augmentations
+        self.offset = offset
+        self.limit = limit
     
     def __hash__(self):
         h = 0
@@ -30,6 +32,11 @@ class QuerySetRepresentation(object):
         for attr_name, attr_filter in self.filters.iteritems():
             h ^= hash(attr_name)
             h ^= hash(attr_filter)
+
+        if self.offset or self.limit:
+            h ^=  self.offset
+            h ^=  self.limit
+        
         return h
     
     def __eq__(self, other):
@@ -56,6 +63,9 @@ class QuerySetRepresentation(object):
                 return False
             if self.filters[key] != other.filters[key]:
                 return False
+
+        if self.offset != other.offset or self.limit != other.limit:
+            return False
         
         return True
 
@@ -105,7 +115,7 @@ class QuerySet(BaseQuerySet):
 
     def get_representation(self):
         return QuerySetRepresentation(self._filters, self._restrict,
-                self._augmentations)
+                self._augmentations, self._offset, self._limit)
 
     def restrict(self, *attrs):
         _check_attributes(attrs)
@@ -210,7 +220,7 @@ class QuerySet(BaseQuerySet):
                 u'GROUP BY adms.server_id',
                 limit_extra
         ])
-
+        
         c = connection.cursor()
         c.execute(sql_stmt)
         server_data = {}
