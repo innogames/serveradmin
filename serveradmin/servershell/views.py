@@ -23,7 +23,8 @@ def index(request):
 
     filter_dict = {}
     for filt in filters.filter_classes.iterkeys():
-        if filt == 'exactmatch':
+        # FIXME: Remove startswith when it's implemented in the adminapi
+        if filt == 'exactmatch' or filt == 'startswith':
             continue
         # FIXME: Fill with real description
         filt = filt.capitalize()
