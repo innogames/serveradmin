@@ -328,7 +328,7 @@ class Startswith(Filter):
         if u'value' in obj and isinstance(obj[u'value'], basestring):
             return cls(obj[u'value'])
         raise ValueError(u'Invalid object for Startswith')
-filter_classes[u'Startswith'] = Startswith
+filter_classes[u'startswith'] = Startswith
 
 
 class Optional(object):
