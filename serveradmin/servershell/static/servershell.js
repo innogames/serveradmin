@@ -297,7 +297,8 @@ function handle_command(command) {
                     }
                 }
             }
-            render_server_table()
+            render_server_table();
+            return '';
         }
     }
 }
