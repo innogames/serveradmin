@@ -20,9 +20,19 @@ def index(request):
             'multi': attr.multi,
             'type': attr.type
         }
+
+    filter_dict = {}
+    for filt in filters.filter_classes.iterkeys():
+        if filt == 'exactmatch':
+            continue
+        # FIXME: Fill with real description
+        filt = filt.capitalize()
+        filter_dict[filt] = filt
+
     return TemplateResponse(request, 'servershell/index.html', {
         'attributes_json': json.dumps(attributes),
-        'attribute_list': sorted(lookups.attr_names.keys())
+        'filters_json': json.dumps(filter_dict),
+        'attribute_list': sorted(lookups.attr_names.keys()),
     })
 
 @login_required
