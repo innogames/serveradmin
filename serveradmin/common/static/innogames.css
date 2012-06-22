@@ -119,3 +119,7 @@ tr.row_b td {
  color:#d00;
  font-weight:bold;
 }
+
+.help_icon {
+ cursor:pointer;
+}

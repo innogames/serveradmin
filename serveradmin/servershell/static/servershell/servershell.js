@@ -493,5 +493,11 @@ $(function() {
         'autoFocus': true
     });
 
+    $('#shell_command_help_icon').click(function() {
+        $('#shell_command_help').dialog({
+            'width': '70em',
+        });
+    });
+
     $('#shell_command').val('');
 });
