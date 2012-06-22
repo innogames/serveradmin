@@ -81,6 +81,16 @@ class Not(object):
     def _serialize(self):
         return {'name': 'not', 'filter': self.filter._serialize()}
 
+class Startswith(object):
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return 'Startswith({0!r})'.format(self.value)
+
+    def _serialize(self):
+        return {'name': 'startswith', 'value': self.value}
+
 class Optional(object):
     def __init__(self, filter):
         self.filter = _prepare_filter(filter)
