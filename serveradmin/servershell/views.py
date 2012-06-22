@@ -70,7 +70,8 @@ def get_results(request):
         # Add attributes with non-constant values to the shown attributes
         for attr, value in query_args.iteritems():
             if not isinstance(value, (filters.ExactMatch, basestring)):
-                shown_attributes.append(attr)
+                if attr not in shown_attributes:
+                    shown_attributes.append(attr)
         
         q = query(**query_args).limit(offset, limit)
         if order_by:
