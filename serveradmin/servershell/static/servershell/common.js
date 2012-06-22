@@ -104,6 +104,21 @@ function startswith(x, y)
     return x.substring(0, y.length) == y;
 }
 
+function array_min(arr)
+{   
+    var local_min = null;
+    for(var i = 0; i < arr.length; i++) {
+        if (local_min == null) {
+            local_min = arr[i];
+        } else {
+            if (arr[i] < local_min) {
+                local_min = arr[i];
+            }
+        }
+    }
+    return local_min;
+}
+
 function _autocomplete_attr(term, parsed_args, autocomplete_list, suffix)
 {
     if (typeof(suffix) == 'undefined') {

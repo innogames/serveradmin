@@ -140,7 +140,25 @@ function build_server_table(servers, attributes, offset)
         server_list.push(servers[server]);
     }
     server_list.sort(function(a, b) {
-        return a['hostname'] > b['hostname'] ? 1 : -1;
+        var sort_attr;
+        if (typeof(search['order_by']) == 'string') {
+            sort_attr = search['order_by'];
+        } else {
+            sort_attr = 'hostname';
+        }
+        var x = a[sort_attr];
+        var y = b[sort_attr];
+        
+        if (available_attributes[sort_attr]['multi']) {
+            x = array_min(x);
+            y = array_min(y);
+        }
+
+        if (search['order_dir'] == 'desc') {
+            return x > y ? -1 : 1;
+        } else {
+            return x > y ? 1 : -1;
+        }
     });
     
     
