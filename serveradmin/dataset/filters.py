@@ -193,9 +193,9 @@ class _AndOr(Filter):
             h ^= hash(val)
         return h
 
-    def as_sql_expr(self, field):
+    def as_sql_expr(self, attr_name, field):
         joiner = u' {0} '.format(self.name.upper())
-        return u'({0})'.format(joiner.join([filter.as_sql_expr(field)
+        return u'({0})'.format(joiner.join([filter.as_sql_expr(attr_name, field)
                 for filter in self.filters]))
 
     @classmethod
