@@ -14,12 +14,15 @@ class QuerySetRepresentation(object):
     """ Object that can be easily pickled without storing to much data.
     The main use is to compare querysets for caching. 
     """
-    def __init__(self, filters, restrict, augmentations, offset, limit):
+    def __init__(self, filters, restrict, augmentations, offset, limit,
+                 order_by, order_dir):
         self.filters = filters
         self.restrict = restrict
         self.augmentations = augmentations
         self.offset = offset
         self.limit = limit
+        self.order_by = order_by
+        self.order_dir = order_dir
     
     def __hash__(self):
         h = 0
@@ -33,9 +36,13 @@ class QuerySetRepresentation(object):
             h ^= hash(attr_name)
             h ^= hash(attr_filter)
 
-        if self.offset or self.limit:
-            h ^=  self.offset
-            h ^=  self.limit
+        if self.limit:
+            h ^=  hash(self.offset)
+            h ^=  hash(self.limit)
+
+        if self.order_by:
+            h ^= hash(self.order_by)
+            h ^= hash(self.order_dir)
         
         return h
     
@@ -65,6 +72,9 @@ class QuerySetRepresentation(object):
                 return False
 
         if self.offset != other.offset or self.limit != other.limit:
+            return False
+
+        if self.order_by != other.order_by or self.order_dir != other.order_dir:
             return False
         
         return True
@@ -105,6 +115,8 @@ class QuerySet(BaseQuerySet):
         self._already_through_cache = False
         self._limit = None
         self._offset = None
+        self._order_by = None
+        self._order_dir = 'asc'
         self._num_rows = 0
 
     def commit(self, skip_validation=False, force_changes=False):
@@ -122,7 +134,8 @@ class QuerySet(BaseQuerySet):
 
     def get_representation(self):
         return QuerySetRepresentation(self._filters, self._restrict,
-                self._augmentations, self._offset, self._limit)
+                self._augmentations, self._offset, self._limit,
+                self._order_by, self._order_dir)
 
     def restrict(self, *attrs):
         _check_attributes(attrs)
@@ -130,13 +143,27 @@ class QuerySet(BaseQuerySet):
 
     def limit(self, offset, limit=None):
         if limit is None:
-            self._limit = offset
-            self._offset = 0
-        else:
-            self._limit = limit
-            self._offset = offset
+            limit, offset = offset, 0
+        
+        if limit < 1:
+            raise ValueError('Invalid limit')
+        if offset < 0:
+            raise ValueError('Invalid offset')
+        
+        self._offset = offset
+        self._limit = limit
+        
         return self
 
+    def order_by(self, order_by, order_dir='asc'):
+        _check_attributes([order_by])
+        if order_dir not in ('asc', 'desc'):
+            raise ValueError('Invalid order direction')
+        
+        self._order_by = order_by
+        self._order_dir = order_dir
+        
+        return self
     
     def _get_results(self):
         if self._results is not None:
@@ -166,6 +193,7 @@ class QuerySet(BaseQuerySet):
         sql_left_joins = []
         sql_from = [u'admin_server AS adms']
         sql_where = []
+        attr_fields = {}
         attr_names = lookups.attr_names
         all_ips = self._filters.get(u'all_ips')
         _Optional = filters.Optional
@@ -173,7 +201,8 @@ class QuerySet(BaseQuerySet):
             del self._filters[u'all_ips']
         for attr, f in self._filters.iteritems():
             if attr in attr_exceptions:
-                attr_field = attr_exceptions[attr]
+                attr_field = u'adms.' + attr_exceptions[attr]
+                attr_fields[attr] = attr_field
                 if isinstance(f, _Optional):
                     sql_where.append(u'({0} IS NULL OR {1})'.format(attr_field,
                         f.as_sql_expr(attr, attr_field)))
@@ -181,6 +210,7 @@ class QuerySet(BaseQuerySet):
                     sql_where.append(f.as_sql_expr(attr, attr_field))
             else:
                 attr_field = u'av{0}.value'.format(i)
+                attr_fields[attr] = attr_field
                 if isinstance(f, _Optional):
                     join = (u'LEFT JOIN attrib_values AS av{0} '
                             u'ON av{0}.server_id = adms.server_id AND '
@@ -202,6 +232,7 @@ class QuerySet(BaseQuerySet):
 
         if all_ips:
             attr_field = u'av{0}.value'.format(i)
+            attr_fields[u'additional_ips'] = attr_field
             attr_id = attr_names[u'additional_ips'].pk
             join = (u'LEFT JOIN attrib_values AS av{0} '
                     u'ON av{0}.server_id = adms.server_id AND '
@@ -210,12 +241,47 @@ class QuerySet(BaseQuerySet):
             cond1 = all_ips.as_sql_expr(u'additional_ips', attr_field)
             cond2 = all_ips.as_sql_expr(u'intern_ip', u'intern_ip')
             sql_where.append(u'(({0}) OR {1})'.format(cond1, cond2))
+            i += 1
         
+        # Copy order_by from instance to local variable to allow LIMIT
+        # to set it in the query (but not in the instance) if it is
+        # not set
+        order_by = self._order_by
+        order_dir = self._order_dir
+
+        # Add LIMIT
         if self._limit:
-            limit_extra = u'ORDER BY adms.hostname\nLIMIT {0}, {1}'.format(
+            if not order_by:
+                order_by = u'hostname'
+                order_dir = u'asc'
+
+            limit_sql = u'LIMIT {0}, {1}'.format(
                     self._offset, self._limit)
         else:
-            limit_extra = ''
+            limit_sql = u''
+        
+        # We will try to get the field name for ORDER BY. In case of the
+        # field not being in the query, we will add it with a LEFT JOIN.
+        if order_by:
+            if order_by in attr_exceptions:
+                order_field = u'adms.' + attr_exceptions[order_by]
+            else:
+                if order_by in attr_fields:
+                    order_field = attr_fields[order_by]
+                else:
+                    attr_id = attr_names[order_by].pk
+                    join = (u'LEFT JOIN attrib_values AS av{0} '
+                            u'ON av{0}.server_id = adms.server_id AND '
+                            u'av{0}.attrib_id = {1}').format(i, attr_id)
+                    sql_left_joins.append(join)
+                    order_field = u'av{0}.value'.format(i)
+
+            order_by_sql = u'ORDER BY {0} {1}'.format(order_field,
+                    order_dir.upper())
+        else:
+            order_by_sql = u''
+
+
         sql_stmt = u'\n'.join([
                 u'SELECT SQL_CALC_FOUND_ROWS adms.server_id, adms.hostname, '
                 u'adms.intern_ip, adms.segment, adms.servertype_id',
@@ -225,8 +291,11 @@ class QuerySet(BaseQuerySet):
                 u'WHERE' if sql_where else '',
                 u'\n AND '.join(sql_where),
                 u'GROUP BY adms.server_id',
-                limit_extra
+                order_by_sql,
+                limit_sql
         ])
+
+        print sql_stmt
         
         c = connection.cursor()
         c.execute(sql_stmt)
