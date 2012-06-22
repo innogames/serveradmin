@@ -295,8 +295,6 @@ class QuerySet(BaseQuerySet):
                 limit_sql
         ])
 
-        print sql_stmt
-        
         c = connection.cursor()
         c.execute(sql_stmt)
         server_data = {}
