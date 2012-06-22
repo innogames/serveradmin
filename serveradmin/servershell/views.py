@@ -23,10 +23,9 @@ def index(request):
 
     filter_dict = {}
     for filt in filters.filter_classes.iterkeys():
-        # FIXME: Remove startswith when it's implemented in the adminapi
-        if filt == 'exactmatch' or filt == 'startswith':
+        if filt == 'exactmatch':
             continue
-        # FIXME: Fill with real description
+        # TODO: Fill with real description
         filt = filt.capitalize()
         filter_dict[filt] = filt
 
