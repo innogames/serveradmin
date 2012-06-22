@@ -104,7 +104,7 @@ function autocomplete_shell_search(term, autocomplete_cb)
     } else {
         var hostname = null;
         // Add hostname to autocomplete
-        if (parsed_args[0]['token'] != 'key' && plen == 1) {
+        if (parsed_args[0]['token'] != 'key') {
             hostname = term;
         }
         

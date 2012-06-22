@@ -62,8 +62,7 @@ def get_results(request):
         limit = 25
 
     try:
-        parsed_args = parse_function_string(term, strict=True)
-        query_args = build_query_args(parsed_args)
+        query_args = build_query_args(term)
         q = query(**query_args).limit(offset, limit)
         results = q.get_raw_results()
         num_servers = q.get_num_rows()

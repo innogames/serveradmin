@@ -70,14 +70,21 @@ def parse_function_string(args, strict=True):
     
     return parsed_args
 
-def build_query_args(parsed_args):
-    if len(parsed_args) == 1:
-        hostname = parsed_args[0][1]
-        if any(x in hostname for x in ('.*', '.+', '[', ']', '|', '\\')):
-            value = Regexp(hostname)
+def build_query_args(term):
+    parsed_args = parse_function_string(term, strict=True)
+    if not parsed_args:
+        raise ValueError(u'Empty query')
+
+    # If first token is not a key, we assume that a hostname is meant
+    token, value = parsed_args[0]
+    if token != 'key':
+        if any(x in term for x in ('.*', '.+', '[', ']', '|', '\\')):
+            hostname = Regexp(term)
         else:
-            value = hostname
-        return {u'hostname': value}
+            hostname = term
+        return {u'hostname': hostname}
+    
+    # Otherwise just parse all attributes
     query_args = {}
     stack = []
     call_depth = 0
