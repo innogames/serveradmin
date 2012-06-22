@@ -93,9 +93,15 @@ function parse_function_string(args)
 }
 
 
-function is_digit(x) {
+function is_digit(x)
+{
     return x == '0' || x == '1' || x == '2' || x == '3' || x == '4' ||
         x == '5' || x == '6' || x == '7' || x == '8' || x == '9';
+}
+
+function startswith(x, y)
+{
+    return x.substring(0, y.length) == y;
 }
 
 function _autocomplete_attr(term, parsed_args, autocomplete_list, suffix)
@@ -114,4 +120,3 @@ function _autocomplete_attr(term, parsed_args, autocomplete_list, suffix)
         }
     }
 }
-

@@ -4,6 +4,8 @@ var search = {
     'num_servers': 0,
     'page': 1,
     'per_page': 25,
+    'order_by': null,
+    'order_dir': 'asc',
     'no_mapping': {}
 };
 
@@ -99,6 +101,10 @@ function execute_search(term)
         'limit': search['per_page'],
         'no_mapping': {}
     };
+    if (search['order_by'] != null) {
+        search_request['order_by'] = search['order_by'];
+        search_request['order_dir'] = search['order_dir'];
+    }
     $.getJSON(shell_results_url, search_request, function(data) {
         if (data['status'] != 'success') {
             var error = $('<span class="error"></span>').text(data['message']);
@@ -195,7 +201,8 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'goto': 'Goto page n (e.g. "goto 42")',
         'search': 'Focus search field',
         'next': 'Next page',
-        'prev': 'Previous page'
+        'prev': 'Previous page',
+        'orderby': 'Order results intuitively (e.g. "order intern_ip [asc]")'
     };
     
     if (plen == 1 && parsed_args[0]['token'] == 'str') {
@@ -221,6 +228,25 @@ function autocomplete_shell_command(term, autocomplete_cb)
     if (command == 'attr') {
         if (parsed_args[plen -1]['token'] == 'str') {
             _autocomplete_attr(term, parsed_args, autocomplete, ' '); 
+        }
+    } else if (command == 'orderby') {
+        if (plen == 2 && parsed_args[1]['token'] == 'str') {
+            _autocomplete_attr(term, parsed_args, autocomplete, ' ');
+        } else if (plen == 3 && parsed_args[2]['token'] == 'str') {
+            var order_dir = parsed_args[2]['value'];
+            var prefix = term.substring(0, term.length - order_dir.length);
+            if (startswith('asc', order_dir)) {
+                autocomplete.push({
+                    'label': 'Ascending',
+                    'value': prefix + 'asc'
+                });
+            }
+            if (startswith('desc', order_dir)) {
+                autocomplete.push({
+                    'label': 'Descending',
+                    'value': prefix + 'desc'
+                });
+            }
         }
     }
     autocomplete_cb(autocomplete);
@@ -317,6 +343,8 @@ function handle_command_other(command)
         return handle_command_attr(parsed_args);
     } else if (command_name == 'goto') {
         return handle_command_goto(parsed_args);
+    } else if (command_name == 'orderby') {
+        return handle_command_order(parsed_args);    
     } else if (command_name == 'setattr') {
         return handle_command_set_attr(parsed_args);
     } else if (command_name == 'delattr') {
@@ -361,6 +389,23 @@ function handle_command_goto(parsed_args)
         execute_search($('#shell_search').val());
         return '';
     }
+}
+
+function handle_command_order(parsed_args)
+{
+    if (parsed_args[1]['token'] != 'str') {
+        return;
+    }
+
+    if (parsed_args.length == 3) {
+        if (parsed_args[2]['token'] != 'str') {
+            return;
+        }
+        search['order_dir'] = parsed_args[2]['value'];
+    }
+    
+    search['order_by'] = parsed_args[1]['value'];
+    execute_search($('#shell_search').val());
 }
 
 $(function() {

@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from adminapi.utils.json import json_encode_extra
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset import query, filters, DatasetError
-from serveradmin.servershell.utils import parse_function_string, build_query_args
+from serveradmin.servershell.utils import build_query_args
 
 @login_required
 def index(request):
@@ -57,13 +57,17 @@ def get_results(request):
         offset = int(request.GET.get('offset', '0'))
         limit = min(int(request.GET.get('limit', '0')), 250)
     except ValueError:
-        raise
         offset = 0
         limit = 25
+
+    order_by = request.GET.get('order_by')
+    order_dir = request.GET.get('order_dir', 'asc')
 
     try:
         query_args = build_query_args(term)
         q = query(**query_args).limit(offset, limit)
+        if order_by:
+            q = q.order_by(order_by, order_dir)
         results = q.get_raw_results()
         num_servers = q.get_num_rows()
     except (ValueError, DatasetError), e:
