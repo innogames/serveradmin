@@ -151,10 +151,15 @@ function build_server_table(servers, attributes, offset)
         for (var j = 0; j < attributes.length; j++) {
             value = server[attributes[j]];
             var attr_obj = available_attributes[attributes[j]];
-            if (attr_obj['type'] == 'ip') {
-                value = new IP(value).as_ip();
-            } else if (attr_obj['multi']) {
+            if (attr_obj['multi']) {
+                if (attr_obj['type'] == 'ip') {
+                    value = value.map(function(x) {
+                        return new IP(x).as_ip();
+                    });
+                }
                 value = value.join(', ');
+            } else if (attr_obj['type'] == 'ip') {
+                value = new IP(value).as_ip();
             }
             row.append($('<td></td>').text(value));
         }
@@ -312,6 +317,14 @@ function handle_command_other(command)
         return handle_command_attr(parsed_args);
     } else if (command_name == 'goto') {
         return handle_command_goto(parsed_args);
+    } else if (command_name == 'setattr') {
+        return handle_command_set_attr(parsed_args);
+    } else if (command_name == 'delattr') {
+        return handle_command_del_attr(parsed_args);
+    } else if (command_name == 'multiadd') {
+        return handle_command_multi_attr(parsed_args, 'add');
+    } else if (command_name == 'multidel') {
+        return handle_command_multi_attr(parsed_args, 'del');
     }
 }
 
