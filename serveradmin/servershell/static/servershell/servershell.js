@@ -408,6 +408,11 @@ function handle_command_attr(parsed_args)
                 return;
             }
             
+            // FIXME: Handle all virtual attributes
+            if (attr_name == 'all_ips') {
+                return;
+            }
+            
             var index = search['shown_attributes'].indexOf(attr_name);
             if (index == -1) {
                 search['shown_attributes'].push(attr_name);

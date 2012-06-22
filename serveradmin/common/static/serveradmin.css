@@ -66,3 +66,7 @@
 #shell_search_help, #shell_command_help {
  display:none;
 }
+
+.noargs {
+ font-style:italic;
+}

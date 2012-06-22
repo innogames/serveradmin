@@ -52,17 +52,58 @@
 <table>
 	<tr>
 		<th>Command</th>
-		<th>Args</th>
+		<th>Arguments</th>
 		<th>Description</th>
+	</tr>
+	<tr>
+		<td>next</td>
+		<td><span class="noargs">none</span></td>
+		<td>Go the the next page.</td>
+	</tr>
+	<tr>
+		<td>prev</td>
+		<td><span class="noargs">none</span></td>
+		<td>Go the the previous page.</td>
+	</tr>
+	<tr>
+		<td>goto</td>
+		<td>page_number</td>
+		<td>Goto specified page.</td>
+	</tr>
+	<tr>
+		<td>search</td>
+		<td><span class="noargs">none</span></td>
+		<td>Focus search field</td>
 	</tr>
 	<tr>
 		<td>attr</td>
 		<td>attribute_name[&nbsp;...]</td>
 		<td>Show one or more attribute(s) in the server table. If it is already
-            shown, it will be hidden. Example: <code>attr os game_function</code></td>
+            shown, it will be hidden. The attribute "all_ips" is a virtual one
+			- it can't be used here. Example: "<code>attr os game_function</code>".
+		</td>
+	</tr>
+	<tr>
+		<td>orderby</td>
+		<td>attribute_name[&nbsp;asc|desc]</td>
+		<td>Order the result by given attribute. This can be either ascending
+			(asc) or descanding (desc). Multi attributes will be ordered in a
+			special way: If no filtering is used, it orders by the minimum
+			value on ascending and maximum on descending. If filtering is used,
+			it takes the minimum/maximum value <em>which matches the filter</em>.
+			Example: "<code>orderby game_market asc</code>".
+		</td>
+	</tr>
+	<tr>
+		<td>export</td>
+		<td><span class="noargs">none</span></td>
+		<td>Export servers as list of hostnames. This will open a dialog with
+		a textbox containing the hostnames separated by spaces.
+		</td>
 	</tr>
 </table>
 </div>
+
 {% endblock %}
 
 {% block additional_body %}
