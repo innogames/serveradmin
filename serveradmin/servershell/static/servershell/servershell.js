@@ -90,7 +90,8 @@ function autocomplete_shell_search(term, autocomplete_cb)
     }
 }
 
-function execute_search(term) {
+function execute_search(term)
+{
     var offset = (search['page'] - 1) * search['per_page'];
     var search_request = {
         'term': term,
@@ -166,7 +167,8 @@ function build_server_table(servers, attributes, offset)
     $('#shell_servers').empty().append(heading).append(table);
 }
 
-function render_server_table() {
+function render_server_table()
+{
     var offset = (search['page'] - 1) * search['per_page'];
     build_server_table(search['servers'], search['shown_attributes'], offset);
 }
@@ -219,97 +221,134 @@ function autocomplete_shell_command(term, autocomplete_cb)
     autocomplete_cb(autocomplete);
 }
 
-function handle_command(command) {
+function handle_command(command)
+{
     if (command == 'n' || command == 'next') {
-        var num_pages = Math.ceil(search['num_servers'] / search['per_page']);
-        if (search['page'] < num_pages) {
-            search['page']++;
-            execute_search($('#shell_search').val());
-        }
+        return handle_command_next_page();
     } else if (command == 'p' || command == 'prev') {
-        search['page']--;
-        if (search['page'] < 1) {
-            search['page'] = 1;
-        }
-        execute_search($('#shell_search').val());
+        return handle_command_prev_page();
     } else if (command == 'select') {
-        $('input[name="server"]').each(function(index) {
-            this.checked = true;
-        });
-        return '';
+        return handle_command_select(true);
     } else if (command == 'unselect') {
-        $('input[name="server"]').each(function(index) {
-            this.checked = false;
-        });
-        return '';
+        return handle_command_select(false)
     } else if (command == 'search') {
-        $('#shell_search').focus();
-        return '';    
+        return handle_command_search();
     } else if (is_digit(command[0])) {
-        var mark_nos = [];
-        var ranges = command.split(',');
-        for(var i = 0; i < ranges.length; i++) {
-            var range = ranges[i].split('-');
-            if (range.length == 1) {
-                mark_nos.push(parseInt($.trim(range[0]), 10));
-            } else if (range.length == 2) {
-                var first = parseInt($.trim(range[0]), 10);
-                var second = parseInt($.trim(range[1]), 10);
-                if (first < 0 || second < 0) {
-                    continue;
-                }
-                for(var j = first; j <= second; j++) {
-                    mark_nos.push(j);
-                }
-            }
-
-        }
-        for(var i = 0; i < mark_nos.length; i++) {
-            var server = search['no_mapping'][mark_nos[i]];
-            if (typeof(server) != 'undefined') {
-                var check = $('#server_' + server['object_id'])[0];
-                check.checked = !check.checked;
-            }
-        }
+        return handle_command_range(command);
     } else {
-        var parsed_args = parse_function_string(command);
-        if (parsed_args[0]['token'] != 'str') {
-            return;
+        return handle_command_other(command);
+    }
+}
+
+function handle_command_next_page()
+{
+    var num_pages = Math.ceil(search['num_servers'] / search['per_page']);
+    if (search['page'] < num_pages) {
+        search['page']++;
+        execute_search($('#shell_search').val());
+    }
+}
+
+function handle_command_prev_page()
+{
+    search['page']--;
+    if (search['page'] < 1) {
+        search['page'] = 1;
+    }
+    execute_search($('#shell_search').val());
+}
+
+function handle_command_select(value)
+{
+    $('input[name="server"]').each(function(index) {
+        this.checked = value;
+    });
+    return '';
+}
+
+function handle_command_search()
+{
+    $('#shell_search').focus();
+    return '';    
+}
+
+function handle_command_range(command)
+{
+    var mark_nos = [];
+    var ranges = command.split(',');
+    for(var i = 0; i < ranges.length; i++) {
+        var range = ranges[i].split('-');
+        if (range.length == 1) {
+            mark_nos.push(parseInt($.trim(range[0]), 10));
+        } else if (range.length == 2) {
+            var first = parseInt($.trim(range[0]), 10);
+            var second = parseInt($.trim(range[1]), 10);
+            if (first < 0 || second < 0) {
+                continue;
+            }
+            for(var j = first; j <= second; j++) {
+                mark_nos.push(j);
+            }
         }
-        var command_name = parsed_args[0]['value'];
-        if (command_name == 'attr') {
-            for(var i = 1; i < parsed_args.length; i++) {
-                if (parsed_args[i]['token'] == 'str') {
-                    var attr_name = parsed_args[i]['value'];
-                    if (typeof(available_attributes[attr_name]) == 'undefined') {
-                        return;
-                    }
-                    
-                    var index = search['shown_attributes'].indexOf(attr_name);
-                    if (index == -1) {
-                        search['shown_attributes'].push(attr_name);
-                    } else {
-                        search['shown_attributes'].remove(index);
-                    }
-                }
-            }
-            render_server_table();
-            return '';
-        } else if (command_name == 'goto') {
-            if (parsed_args[1]['token'] != 'str') {
-                return;
-            }
-            var goto_page = parseInt(parsed_args[1]['value'], 10);
-            var num_pages = Math.ceil(search['num_servers'] / search['per_page']);
-            if (goto_page >= 1 && goto_page <= num_pages) {
-                search['page'] = goto_page;
-                execute_search($('#shell_search').val());
-                return '';
-            }
+
+    }
+    for(var i = 0; i < mark_nos.length; i++) {
+        var server = search['no_mapping'][mark_nos[i]];
+        if (typeof(server) != 'undefined') {
+            var check = $('#server_' + server['object_id'])[0];
+            check.checked = !check.checked;
         }
     }
 }
 
+function handle_command_other(command)
+{
+    var parsed_args = parse_function_string(command);
+    if (parsed_args[0]['token'] != 'str') {
+        return;
+    }
+    var command_name = parsed_args[0]['value'];
+    if (command_name == 'attr') {
+        return handle_command_attr(parsed_args);
+    } else if (command_name == 'goto') {
+        return handle_command_goto(parsed_args);
+    }
+}
+
+function handle_command_attr(parsed_args)
+{
+    for(var i = 1; i < parsed_args.length; i++) {
+        if (parsed_args[i]['token'] == 'str') {
+            var attr_name = parsed_args[i]['value'];
+            if (typeof(available_attributes[attr_name]) == 'undefined') {
+                return;
+            }
+            
+            var index = search['shown_attributes'].indexOf(attr_name);
+            if (index == -1) {
+                search['shown_attributes'].push(attr_name);
+            } else {
+                search['shown_attributes'].remove(index);
+            }
+        }
+    }
+    render_server_table();
+    return '';
+}
+
+function handle_command_goto(parsed_args)
+{
+    if (parsed_args[1]['token'] != 'str') {
+        return;
+    }
+    var goto_page = parseInt(parsed_args[1]['value'], 10);
+    var num_pages = Math.ceil(search['num_servers'] / search['per_page']);
+    if (goto_page >= 1 && goto_page <= num_pages) {
+        search['page'] = goto_page;
+        execute_search($('#shell_search').val());
+        return '';
+    }
+}
 
 $(function() {
     $('#shell_search_form').submit(function(ev) {
