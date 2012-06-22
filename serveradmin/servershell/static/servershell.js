@@ -92,6 +92,7 @@ function parse_function_string(args)
     return parsed_args;
 }
 
+var _autocomplete_state = {'xhr': null};
 function autocomplete_shell_search(term, autocomplete_cb)
 {
     var parsed_args = parse_function_string(term);
@@ -103,8 +104,8 @@ function autocomplete_shell_search(term, autocomplete_cb)
     } else {
         var hostname = null;
         // Add hostname to autocomplete
-        if (parsed_args[0]['token'] == 'str' && plen == 1) {
-            hostname = parsed_args[0]['value'];
+        if (parsed_args[0]['token'] != 'key' && plen == 1) {
+            hostname = term;
         }
         
         // Check call depth
@@ -150,9 +151,15 @@ function autocomplete_shell_search(term, autocomplete_cb)
         }
     }
     if (hostname != null) {
-        autocomplete_cb(autocomplete);
+        // Selecting an item while the request is running will result in
+        // weird behavior (no item selected after request is finished)
+        //autocomplete_cb(autocomplete);
+        if (_autocomplete_state['xhr'] != null) {
+            _autocomplete_state['xhr'].abort();
+        }
         var autocomplete_request = {'hostname': hostname};
-        $.getJSON(shell_autocomplete_url, autocomplete_request, function(data) {
+        var xhr = $.getJSON(shell_autocomplete_url, autocomplete_request, function(data) {
+            _autocomplete_state['xhr'] = null;
             var hostnames = data['autocomplete'];
             for (var i = 0; i < hostnames.length; i++) {
                 autocomplete.push({
@@ -162,6 +169,7 @@ function autocomplete_shell_search(term, autocomplete_cb)
             }
             autocomplete_cb(autocomplete);
         });
+        _autocomplete_state['xhr'] = xhr;
     } else {
         autocomplete_cb(autocomplete);
     }
@@ -242,7 +250,7 @@ function handle_command(command) {
             search['page']++;
             execute_search($('#shell_search').val());
         }
-    } else if (command == 'p' || command == 'previous') {
+    } else if (command == 'p' || command == 'prev') {
         search['page']--;
         if (search['page'] < 1) {
             search['page'] = 1;
@@ -363,7 +371,9 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'delete': 'Delete servers',
         'set': 'Set an attribute (e.g. "set os=wheezy")',
         'goto': 'Goto page n (e.g. "goto 42")',
-        'search': 'Focus search field'
+        'search': 'Focus search field',
+        'next': 'Next page',
+        'prev': 'Previous page'
     };
     
     if (plen == 1 && parsed_args[0]['token'] == 'str') {
@@ -423,7 +433,8 @@ $(function() {
     $('#shell_search').autocomplete({
         'source': function (request, response) {
             autocomplete_shell_search(request.term, response);
-        }
+        },
+        'delay': 150,
     });
 
     $('#shell_search').bind('change keydown', function(ev) {
@@ -448,7 +459,9 @@ $(function() {
     $('#shell_command').autocomplete({
         'source': function (request, response) {
             autocomplete_shell_command($.trim(request.term), response);
-        }
+        },
+        'delay': 0,
+        'autoFocus': true
     });
 
     $('#shell_command').val('');
