@@ -62,9 +62,16 @@ def get_results(request):
 
     order_by = request.GET.get('order_by')
     order_dir = request.GET.get('order_dir', 'asc')
-
+    
+    shown_attributes = ['hostname', 'intern_ip', 'servertype']
     try:
         query_args = build_query_args(term)
+        
+        # Add attributes with non-constant values to the shown attributes
+        for attr, value in query_args.iteritems():
+            if not isinstance(value, (filters.ExactMatch, basestring)):
+                shown_attributes.append(attr)
+        
         q = query(**query_args).limit(offset, limit)
         if order_by:
             q = q.order_by(order_by, order_dir)
@@ -80,5 +87,6 @@ def get_results(request):
         'status': 'success',
         'understood': q.get_representation().as_string(hide_extra=True),
         'servers': results,
-        'num_servers': num_servers
+        'num_servers': num_servers,
+        'shown_attributes': shown_attributes,
     }, default=json_encode_extra))#, mimetype='application/x-json')

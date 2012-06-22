@@ -113,6 +113,7 @@ function execute_search(term)
         }
         search['servers'] = data['servers'];
         search['num_servers'] = data['num_servers'];
+        search['shown_attributes'] = data['shown_attributes'];
         $('#shell_understood').text(data['understood']);
         render_server_table();
         $('#shell_command').focus();
