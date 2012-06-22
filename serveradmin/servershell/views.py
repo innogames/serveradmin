@@ -85,7 +85,7 @@ def get_results(request):
 
     return HttpResponse(json.dumps({
         'status': 'success',
-        'understood': q.get_representation().as_string(hide_extra=True),
+        'understood': q.get_representation().as_code(hide_extra=True),
         'servers': results,
         'num_servers': num_servers,
         'shown_attributes': shown_attributes,
