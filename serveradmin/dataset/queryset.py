@@ -181,9 +181,9 @@ class QuerySet(BaseQuerySet):
         attr_names = lookups.attr_names
         all_ips = self._filters.get(u'all_ips')
         _Optional = filters.Optional
-        if all_ips:
-            del self._filters[u'all_ips']
         for attr, f in self._filters.iteritems():
+            if attr == u'all_ips':
+                continue
             if attr in attr_exceptions:
                 attr_field = u'adms.' + attr_exceptions[attr]
                 attr_fields[attr] = attr_field

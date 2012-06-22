@@ -58,3 +58,11 @@
 #shell_bookmarked {
  display:none;
 }
+
+#shell_search, #shell_command {
+	width:100%;
+}
+
+#shell_search_help, #shell_command_help {
+ display:none;
+}

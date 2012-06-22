@@ -69,6 +69,9 @@ def get_results(request):
         # Add attributes with non-constant values to the shown attributes
         for attr, value in query_args.iteritems():
             if not isinstance(value, (filters.ExactMatch, basestring)):
+                # FIXME: Just a dirty workaround
+                if attr == 'all_ips':
+                    continue
                 if attr not in shown_attributes:
                     shown_attributes.append(attr)
         

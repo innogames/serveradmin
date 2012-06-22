@@ -30,7 +30,9 @@
         <input type="text" size="60"  id="shell_command" />
         </form>
     </td>
-	<td></td>
+	<td>
+		<img src="{{ STATIC_URL}}help.png" id="shell_command_help_icon" class="help_icon" />
+	</td>
 </tr>
 </table>
 
@@ -45,6 +47,21 @@
     </ul>
 </div>
 
+<div id="shell_search_help"></div>
+<div id="shell_command_help">
+<table>
+	<tr>
+		<th>Command</th>
+		<th>Args</th>
+		<th>Description</th>
+	</tr>
+	<tr>
+		<td>attr</td>
+		<td>attribute_name[ attribute_name ...]</td>
+		<td>Show an attribute in the server table. If it is already shown, it
+		    will be hidden. Example: <code>attr os game_function</code></td>
+	</tr>
+</div>
 {% endblock %}
 
 {% block additional_body %}
