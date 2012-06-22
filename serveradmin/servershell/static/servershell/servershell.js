@@ -9,6 +9,11 @@ var search = {
     'no_mapping': {}
 };
 
+var commit = {
+    'deleted': [],
+    'changed': {}
+}
+
 var _autocomplete_state = {'xhr': null};
 function autocomplete_shell_search(term, autocomplete_cb)
 {
@@ -222,7 +227,9 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'search': 'Focus search field',
         'next': 'Next page',
         'prev': 'Previous page',
-        'orderby': 'Order results intuitively (e.g. "order intern_ip [asc]")'
+        'orderby': 'Order results intuitively (e.g. "order intern_ip [asc]")',
+        'commit': 'Commit outstanding changes',
+        'export': 'Export all hostnames for usage in shell'
     };
     
     if (plen == 1 && parsed_args[0]['token'] == 'str') {
@@ -284,6 +291,8 @@ function handle_command(command)
         return handle_command_select(false)
     } else if (command == 'search') {
         return handle_command_search();
+    } else if (command == 'export') {
+        return handle_command_export();
     } else if (is_digit(command[0])) {
         return handle_command_range(command);
     } else {
@@ -321,6 +330,19 @@ function handle_command_search()
 {
     $('#shell_search').focus();
     return '';    
+}
+
+function handle_command_export()
+{
+    $.get(shell_export_url, {'term': $('#shell_search').val()}, function(hostnames) {
+        var box = $('<textarea rows="20" cols="70"></textarea>').text(hostnames);
+        var dialog = $('<div title="Exported hostnames"></div>').css(
+            'text-align', 'center').append(box);
+        $(dialog).dialog({
+            'width': '50em'
+        });
+    });
+    return '';
 }
 
 function handle_command_range(command)

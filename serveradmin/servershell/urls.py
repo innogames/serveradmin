@@ -8,4 +8,5 @@ urlpatterns = patterns(
     url(r'^$', 'index', name='servershell_index'),
     url(r'^autocomplete$', 'autocomplete', name='servershell_autocomplete'),
     url(r'^results$', 'get_results', name='servershell_results'),
+    url(r'^export$', 'export', name='servershell_export'),
 )

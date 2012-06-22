@@ -90,3 +90,14 @@ def get_results(request):
         'num_servers': num_servers,
         'shown_attributes': shown_attributes,
     }, default=json_encode_extra))#, mimetype='application/x-json')
+
+def export(request):
+    term = request.GET.get('term', '')
+    try:
+        query_args = build_query_args(term)
+        q = query(**query_args).restrict('hostname')
+    except (ValueError, DatasetError), e:
+        return HttpResponse(e.message, status=400)
+
+    hostnames = u' '.join(server['hostname'] for server in q)
+    return HttpResponse(hostnames, mimetype='text/plain')
