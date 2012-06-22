@@ -341,6 +341,7 @@ function handle_command_export()
         $(dialog).dialog({
             'width': '50em'
         });
+        box.focus();
     });
     return '';
 }
