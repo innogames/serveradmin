@@ -1,96 +1,11 @@
-function parse_function_string(args)
-{
-    var state = 'start';
-    var args_len = args.length;
-    var parsed_args = [];
-    
-    var i = 0;
-    var call_depth = 0;
-    
-    var string_start, string_type, string_buf;
-    
-    while (i < args_len) {
-        if (state == 'start') {
-            if (args[i] == '"' || args[i] == "'") {
-                state = 'string';
-                string_start = i + 1;
-                string_type = args[i];
-                string_buf = [];
-                i++;
-            } else if (args[i] == ' ') {
-                i++;
-            } else {
-                string_start = i;
-                state = 'unquotedstring';
-            }
-        } else if (state == 'string') {
-            if (args[i] == '\\') {
-                if ((i + 1) == args_len) {
-                    // Do nothing, because the function string is not
-                    // finished yet.
-                } else if (args[i + 1] == '\\') {
-                    string_buf.push('\\');
-                    i += 2;
-                } else if (args[i + 1] == string_type) {
-                    string_buf.push(string_type);
-                    i += 2
-                }
-            } else if (args[i] == string_type) {
-                parsed_args.push({
-                    'token': 'str',
-                    'value': args.substring(string_start, i)
-                });
-                i++;
-                state = 'start';
-            } else {
-                i++;
-            }
-        } else if (state == 'unquotedstring') {
-            if (args[i] == ' ') {
-                parsed_args.push({
-                    'token': 'str',
-                    'value': args.substring(string_start, i)
-                });
-                state = 'start';
-            } else if (args[i] == '(') {
-                if (string_start != i) {
-                    parsed_args.push({
-                        'token': 'func',
-                        'value': args.substring(string_start, i)
-                    });
-                    call_depth++;
-                    state = 'start';
-                }
-            } else if (args[i] == ')') {
-                if (string_start != i) {
-                    parsed_args.push({
-                        'token': 'str',
-                        'value': args.substring(string_start, i)
-                    });
-                }
-                parsed_args.push({
-                    'token': 'endfunc'
-                });
-                call_depth--;
-                state = 'start';
-            } else if (args[i] == '=') {
-                parsed_args.push({
-                    'token': 'key',
-                    'value': args.substring(string_start, i)
-                });
-                state = 'start';
-            }
-            i++;
-        }
-    }
-    if (state == 'unquotedstring' || state == 'string') {
-        parsed_args.push({
-            'token': 'str',
-            'value': args.substring(string_start, i)
-        });
-    }
-    return parsed_args;
-}
+var search = {
+    'shown_attributes': ['hostname', 'intern_ip', 'servertype'],
+    'servers': {},
+    'num_servers': 0,
+    'page': 1,
+    'per_page': 25,
+    'no_mapping': {}
+};
 
 var _autocomplete_state = {'xhr': null};
 function autocomplete_shell_search(term, autocomplete_cb)
@@ -175,6 +90,28 @@ function autocomplete_shell_search(term, autocomplete_cb)
     }
 }
 
+function execute_search(term) {
+    var offset = (search['page'] - 1) * search['per_page'];
+    var search_request = {
+        'term': term,
+        'offset': offset,
+        'limit': search['per_page'],
+        'no_mapping': {}
+    };
+    $.getJSON(shell_results_url, search_request, function(data) {
+        if (data['status'] != 'success') {
+            var error = $('<span class="error"></span>').text(data['message']);
+            $('#shell_understood').empty().append(error);
+            return;
+        }
+        search['servers'] = data['servers'];
+        search['num_servers'] = data['num_servers'];
+        $('#shell_understood').text(data['understood']);
+        render_server_table();
+        $('#shell_command').focus();
+    });
+}
+
 function build_server_table(servers, attributes, offset)
 {
     if (typeof(offset) == 'undefined') {
@@ -229,18 +166,57 @@ function build_server_table(servers, attributes, offset)
     $('#shell_servers').empty().append(heading).append(table);
 }
 
-var search = {
-    'shown_attributes': ['hostname', 'intern_ip', 'servertype'],
-    'servers': {},
-    'num_servers': 0,
-    'page': 1,
-    'per_page': 25,
-    'no_mapping': {}
-};
-
 function render_server_table() {
     var offset = (search['page'] - 1) * search['per_page'];
     build_server_table(search['servers'], search['shown_attributes'], offset);
+}
+
+function autocomplete_shell_command(term, autocomplete_cb)
+{
+    var autocomplete = [];
+    var parsed_args = parse_function_string(term);
+    var plen = parsed_args.length;
+
+    var commands = {
+        'attr': 'Show an attribute (e.g. "attr webserver")',
+        'select': 'Select all servers on this page',
+        'unselect': 'Unselect all servers on this page',
+        'multiadd': 'Add a value to a multi attribute (e.g. "multiadd webservers=nginx")',
+        'multidel': 'Delete a value from a multi attribute (e.g. multidel webserver=apache)',
+        'delete': 'Delete servers',
+        'set': 'Set an attribute (e.g. "set os=wheezy")',
+        'goto': 'Goto page n (e.g. "goto 42")',
+        'search': 'Focus search field',
+        'next': 'Next page',
+        'prev': 'Previous page'
+    };
+    
+    if (plen == 1 && parsed_args[0]['token'] == 'str') {
+        var command = parsed_args[0]['value'].toLowerCase();
+        for (command_name in commands) {
+            if (command_name.substring(0, command.length) == command) {
+                var description = commands[command_name];
+                autocomplete.push({
+                    'label': command_name + ': ' + description,
+                    'value': command_name + ' '
+                });
+            }
+        }
+        autocomplete_cb(autocomplete);
+        return;
+    }
+
+    if (plen == 0 || parsed_args[0]['token'] != 'str') {
+        return;
+    }
+    var command = parsed_args[0]['value'];
+    
+    if (command == 'attr') {
+        if (parsed_args[plen -1]['token'] == 'str') {
+            _autocomplete_attr(term, parsed_args, autocomplete, ' '); 
+        }
+    }
+    autocomplete_cb(autocomplete);
 }
 
 function handle_command(command) {
@@ -334,97 +310,6 @@ function handle_command(command) {
     }
 }
 
-function execute_search(term) {
-    var offset = (search['page'] - 1) * search['per_page'];
-    var search_request = {
-        'term': term,
-        'offset': offset,
-        'limit': search['per_page'],
-        'no_mapping': {}
-    };
-    $.getJSON(shell_results_url, search_request, function(data) {
-        if (data['status'] != 'success') {
-            var error = $('<span class="error"></span>').text(data['message']);
-            $('#shell_understood').empty().append(error);
-            return;
-        }
-        search['servers'] = data['servers'];
-        search['num_servers'] = data['num_servers'];
-        $('#shell_understood').text(data['understood']);
-        render_server_table();
-        $('#shell_command').focus();
-    });
-}
-
-function autocomplete_shell_command(term, autocomplete_cb)
-{
-    var autocomplete = [];
-    var parsed_args = parse_function_string(term);
-    var plen = parsed_args.length;
-
-    var commands = {
-        'attr': 'Show an attribute (e.g. "attr webserver")',
-        'select': 'Select all servers on this page',
-        'unselect': 'Unselect all servers on this page',
-        'multiadd': 'Add a value to a multi attribute (e.g. "multiadd webservers=nginx")',
-        'multidel': 'Delete a value from a multi attribute (e.g. multidel webserver=apache)',
-        'delete': 'Delete servers',
-        'set': 'Set an attribute (e.g. "set os=wheezy")',
-        'goto': 'Goto page n (e.g. "goto 42")',
-        'search': 'Focus search field',
-        'next': 'Next page',
-        'prev': 'Previous page'
-    };
-    
-    if (plen == 1 && parsed_args[0]['token'] == 'str') {
-        var command = parsed_args[0]['value'].toLowerCase();
-        for (command_name in commands) {
-            if (command_name.substring(0, command.length) == command) {
-                var description = commands[command_name];
-                autocomplete.push({
-                    'label': command_name + ': ' + description,
-                    'value': command_name + ' '
-                });
-            }
-        }
-        autocomplete_cb(autocomplete);
-        return;
-    }
-
-    if (plen == 0 || parsed_args[0]['token'] != 'str') {
-        return;
-    }
-    var command = parsed_args[0]['value'];
-    
-    if (command == 'attr') {
-        if (parsed_args[plen -1]['token'] == 'str') {
-            _autocomplete_attr(term, parsed_args, autocomplete, ' '); 
-        }
-    }
-    autocomplete_cb(autocomplete);
-}
-
-function _autocomplete_attr(term, parsed_args, autocomplete_list, suffix)
-{
-    if (typeof(suffix) == 'undefined') {
-        suffix = '';
-    }
-    var attr_name = parsed_args[parsed_args.length - 1]['value'].toLowerCase();
-    var prefix = term.substring(0, term.length - attr_name.length);
-    for (attr in available_attributes) {
-        if (attr.substr(0, attr_name.length).toLowerCase() == attr_name) {
-            autocomplete_list.push({
-                'label': 'Attr: ' + attr,
-                'value': prefix + attr + suffix
-            })
-        }
-    }
-}
-
-function is_digit(x) {
-    return x == '0' || x == '1' || x == '2' || x == '3' || x == '4' ||
-        x == '5' || x == '6' || x == '7' || x == '8' || x == '9';
-}
 
 $(function() {
     $('#shell_search_form').submit(function(ev) {
