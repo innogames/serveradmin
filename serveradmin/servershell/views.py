@@ -71,6 +71,10 @@ def get_results(request):
             if not isinstance(value, (filters.ExactMatch, basestring)):
                 # FIXME: Just a dirty workaround
                 if attr == 'all_ips':
+                    if u'intern_ip' not in shown_attributes:
+                        shown_attributes.append(u'additional_ips')
+                    if u'additional_ips' not in shown_attributes:
+                        shown_attributes.append(u'additional_ips')
                     continue
                 if attr not in shown_attributes:
                     shown_attributes.append(attr)
