@@ -124,7 +124,7 @@ function autocomplete_shell_search(term, autocomplete_cb)
             prev_token = parsed_args[plen - 2]['token'];
         }
         if (prev_token != 'key' && parsed_args[plen - 1]['token'] == 'str' && call_depth == 0) {
-            _autocomplete_attr(term, parsed_args, autocomplete);
+            _autocomplete_attr(term, parsed_args, autocomplete, '=');
         }
         
         // Add filter functions to autocomplete
@@ -398,21 +398,24 @@ function autocomplete_shell_command(term, autocomplete_cb)
     
     if (command == 'attr') {
         if (parsed_args[plen -1]['token'] == 'str') {
-            _autocomplete_attr(term, parsed_args, autocomplete); 
+            _autocomplete_attr(term, parsed_args, autocomplete, ' '); 
         }
     }
     autocomplete_cb(autocomplete);
 }
 
-function _autocomplete_attr(term, parsed_args, autocomplete_list)
+function _autocomplete_attr(term, parsed_args, autocomplete_list, suffix)
 {
+    if (typeof(suffix) == 'undefined') {
+        suffix = '';
+    }
     var attr_name = parsed_args[parsed_args.length - 1]['value'].toLowerCase();
     var prefix = term.substring(0, term.length - attr_name.length);
     for (attr in available_attributes) {
         if (attr.substr(0, attr_name.length).toLowerCase() == attr_name) {
             autocomplete_list.push({
                 'label': 'Attr: ' + attr,
-                'value': prefix + attr
+                'value': prefix + attr + suffix
             })
         }
     }
