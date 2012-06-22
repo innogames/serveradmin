@@ -406,6 +406,7 @@ function handle_command_order(parsed_args)
     
     search['order_by'] = parsed_args[1]['value'];
     execute_search($('#shell_search').val());
+    return '';
 }
 
 $(function() {
