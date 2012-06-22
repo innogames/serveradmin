@@ -40,6 +40,9 @@ class ExactMatch(Filter):
     def matches(self, server_obj, attr_name):
         return server_obj[attr_name] == self.value
 
+    def as_code(self):
+        return repr(self.value)
+
     @classmethod
     def from_obj(cls, obj):
         if u'value' in obj:
@@ -92,6 +95,9 @@ class Regexp(Filter):
         
         return bool(self._regexp_obj.search(value))
 
+    def as_code(self):
+        return u'filters.' + repr(self)
+
     @classmethod
     def from_obj(cls, obj):
         if u'regexp' in obj and isinstance(obj[u'regexp'], basestring):
@@ -131,6 +137,8 @@ class Comparism(Filter):
         }[self.comparator]
         return op(server_obj[attr_name], self.value)
 
+    def as_code(self):
+        return u'filters.' + repr(self)
 
     @classmethod
     def from_obj(cls, obj):
@@ -167,6 +175,9 @@ class Any(Filter):
 
     def matches(self, server_obj, attr_name):
         return server_obj[attr_name] in self.values
+
+    def as_code(self):
+        return u'filters.' + repr(self)
     
     @classmethod
     def from_obj(cls, obj):
@@ -180,7 +191,7 @@ class _AndOr(Filter):
         self.filters = map(_prepare_filter, filters)
 
     def __repr__(self):
-        args = u', '.join(repr(filter) for filter in self.filters)
+        args = u', '.join(repr(filt) for filt in self.filters)
         return u'{0}({1})'.format(self.name.capitalize(), args)
 
     def __eq__(self, other):
@@ -198,6 +209,10 @@ class _AndOr(Filter):
         joiner = u' {0} '.format(self.name.upper())
         return u'({0})'.format(joiner.join([filter.as_sql_expr(attr_name, field)
                 for filter in self.filters]))
+    
+    def as_code(self):
+        args = u', '.join(filt.as_code() for filt in self.filters)
+        return u'filters.{0}({1})'.format(self.name.capitalize(), args)
 
     @classmethod
     def from_obj(cls, obj):
@@ -250,6 +265,9 @@ class Between(Filter):
     def matches(self, server_obj, attr_name):
         return self.a <= server_obj[attr_name] <= self.b
 
+    def as_code(self):
+        return u'filters.' + repr(self)
+
     @classmethod
     def from_obj(cls, obj):
         if u'a' in obj and u'b' in obj:
@@ -281,6 +299,9 @@ class Not(Filter):
 
     def matches(self, server_obj, attr_name):
         return not self.filter.matches(server_obj, attr_name)
+
+    def as_code(self):
+        return u'filters.Not({0})'.format(self.filter.as_code())
 
     @classmethod
     def from_obj(cls, obj):
@@ -323,6 +344,9 @@ class Startswith(Filter):
 
     def matches(self, server_obj, attr_name):
         return unicode(server_obj[attr_name]).startswith(self.value)
+
+    def as_code(self):
+        return u'filters.Startswith({0!r})'.format(self.value)
     
     @classmethod
     def from_obj(cls, obj):
@@ -355,6 +379,9 @@ class Optional(object):
         if value is None:
             return True
         return self.filter.matches(server_obj, attr_name)
+
+    def as_code(self):
+        return u'filters.Optional({0})'.format(self.filter.as_code())
 
     @classmethod
     def from_obj(cls, obj):

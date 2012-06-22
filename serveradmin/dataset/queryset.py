@@ -79,26 +79,10 @@ class QuerySetRepresentation(object):
         
         return True
 
-    def as_string(self, hide_extra=True):
-        def filter_repr(value):
-            if isinstance(value, (filters.Filter, filters.Optional)):
-                if isinstance(value, filters.ExactMatch):
-                    return repr(value.value)
-                elif isinstance(value, (filters.And, filters.Or)):
-                    return u'filters.{0}({1})'.format(value.name.capitalize(),
-                            u', '.join(filter_repr(x) for x in value.filters))
-                elif isinstance(value, filters.Not):
-                    return u'filters.Not({0})'.format(filter_repr(value.filter))
-                else:
-                    return u'filters.{0!r}'.format(value)
-            else:
-                return repr(value)
-
-
+    def as_code(self, hide_extra=True):
         args = []
         for attr_name, value in self.filters.iteritems():
-            value_repr = filter_repr(value)
-            args.append(u'{0}={1}'.format(attr_name, value_repr))
+            args.append(u'{0}={1}'.format(attr_name, value.as_code()))
             
         if hide_extra:
             # FIXME: Add restrict/limit/augment etc.
