@@ -101,6 +101,9 @@ def _validate_attributes(changed_servers, servers):
     for server_id, changes in changed_servers.iteritems():
         server = servers[server_id]
         for attr, change in changes.iteritems():
+            if attr == u'servertype':
+                raise CommitValidationFailed(u'Cannot change servertype', [])
+
             if (server[u'servertype'], attr) not in lookups.stype_attrs:
                 violations.append((server_id, attr))
     return violations
