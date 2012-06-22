@@ -49,6 +49,11 @@ filter_classes[u'exactmatch'] = ExactMatch
 
 class Regexp(Filter):
     def __init__(self, regexp):
+        try:
+            self._regexp_obj = re.compile(regexp)
+        except re.error:
+            raise ValueError(u'Invalid regexp: ' + regexp)
+        
         self.regexp = regexp
 
     def __repr__(self):
@@ -65,13 +70,9 @@ class Regexp(Filter):
     def as_sql_expr(self, attr_name, field):
         # XXX Dirty hack for servertype regexp checking
         if attr_name == u'servertype':
-            try:
-                regexp = re.compile(self.regexp)
-            except re.error:
-                return u'0=1'
             stype_ids = []
             for stype in lookups.stype_ids.itervalues():
-                if regexp.search(stype.name):
+                if self._regexp_obj.search(stype.name):
                     stype_ids.append(stype.pk)
             if stype_ids:
                 return u'{0} IN({1})'.format(field, ', '.join(stype_ids))
@@ -89,7 +90,7 @@ class Regexp(Filter):
         else:
             value = str(value)
         
-        return bool(re.search(self.regexp, value))
+        return bool(self._regexp_obj.search(value))
 
     @classmethod
     def from_obj(cls, obj):
