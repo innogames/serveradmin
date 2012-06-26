@@ -188,7 +188,7 @@ def _apply_changes(changed_servers, servers):
             # Quick workaround for hostname, will fix it later
             if attr_obj.name == 'hostname' and action == u'update':
                 c.execute('UPDATE admin_server SET hostname=%s '
-                        'WHERE server_id = %s', change[u'new'], server_id)
+                        'WHERE server_id = %s', (change[u'new'], server_id))
                 continue
 
 
