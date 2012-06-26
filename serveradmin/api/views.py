@@ -169,7 +169,7 @@ def dataset_create(request, app, data):
 
 def _build_attributes():
     attributes = {}
-    for attr in lookups.attr_ids.itervalues():
+    for attr in lookups.attr_names.itervalues():
         attributes[attr.name] = {
             'multi': attr.multi,
             'type': attr.type
