@@ -179,8 +179,18 @@ def _apply_changes(changed_servers, servers):
     for server_id, changes in changed_servers.iteritems():
         server = servers[server_id]
         for attr, change in changes.iteritems():
-            attr_id = lookups.attr_names[attr].pk
+            attr_obj = lookups.attr_names[attr]
+            attr_id = attr_obj.pk
+            
             action = change[u'action']
+            
+            # FIXME
+            # Quick workaround for hostname, will fix it later
+            if attr_obj.name == 'hostname' and action == u'update':
+                c.execute('UPDATE admin_server SET hostname=%s '
+                        'WHERE server_id = %s', change[u'new'], server_id)
+                continue
+
 
             if action == u'new' or action == u'update':
                 if attr in server:
