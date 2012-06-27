@@ -63,12 +63,12 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
                          'Got {1} of type {2}')
                 raise ValueError(error.format(attr.name, repr(value),
                     type(value).__name__))
-            if regexp:
+            if attr_obj.type == 'string' and regexp:
                 for val in value:
                     if not regexp.match(unicode(val)):
                         violations_regexp.append(attr.name)
         else:
-            if regexp and not regexp.match(value):
+            if attr_obj.type == 'string' and regexp and not regexp.match(value):
                 violations_regexp.append(attr.name)
     
     # Check for attributes that are not defined on this servertype
