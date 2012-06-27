@@ -49,8 +49,19 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
 
         # Validate regular expression
         regexp = stype_attr.regexp
-        if regexp and not regexp.match(real_attributes[attr.name]):
-            violations_regexp.append(attr.name)
+        value = real_attributes[attr.name]
+        if lookups.attr_names[attr.name].multi:
+            if not (isinstance(value, (list, set)) or hasattr(value,
+                    '_proxied_set')):
+                error = '{0} is a multi attribute and requires list/set'
+                raise ValueError(error.format(attr.name))
+            if regexp:
+                for val in value:
+                    if not regexp.match(unicode(val)):
+                        violations_regexp.append(attr.name)
+        else:
+            if regexp and not regexp.match(real_attributes[attr.name]):
+                violations_regexp.append(attr.name)
     
     # Check for attributes that are not defined on this servertype
     violations_attribs = []
