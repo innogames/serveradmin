@@ -181,7 +181,9 @@ function build_server_table(servers, attributes, offset)
         for (var j = 0; j < attributes.length; j++) {
             value = server[attributes[j]];
             var attr_obj = available_attributes[attributes[j]];
-            if (attr_obj['multi']) {
+            if (typeof(value) == 'undefined') {
+                value = '';
+            } else if (attr_obj['multi']) {
                 value.sort();
                 if (attr_obj['type'] == 'ip') {
                     value = value.map(function(x) {
