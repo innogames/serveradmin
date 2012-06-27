@@ -17,7 +17,6 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
 
     _validate_structure(deleted_servers, changed_servers) 
     
-    # FIXME: put it into lookups?
     c = connection.cursor()
     c.execute(u"SELECT GET_LOCK('serverobject_commit', 10)")
     try:
@@ -60,14 +59,15 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
 
 def _fetch_servers(changed_servers):
     # Import here to break cyclic import
-    from serveradmin.dataset import query, filters
+    from serveradmin.dataset.queryset import QuerySet
+    from serveradmin.dataset.filters import Any
     # Only load attributes that will be changed (for performance reasons)
     changed_attrs = set([u'servertype'])
     for changes in changed_servers.itervalues():
         for attr in changes:
             changed_attrs.add(attr)
-    return query(object_id=filters.Any(*changed_servers.keys())).restrict(
-            *changed_attrs).get_raw_results()
+    return QuerySet({'object_id': Any(*changed_servers.keys())},
+            bypass_cache=True).restrict(*changed_attrs).get_raw_results()
 
 def _validate_structure(deleted_servers, changed_servers):
     if not isinstance(deleted_servers, (list, set)):
