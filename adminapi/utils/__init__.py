@@ -74,6 +74,9 @@ class IP(object):
                 return self.ip == other.ip
             except ValueError:
                 return False
+
+    def __ne__(self, other):
+        return not (self == other)
     
     def __getstate__(self):
         return (self.ip, )
