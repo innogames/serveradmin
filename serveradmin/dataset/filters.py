@@ -374,7 +374,8 @@ class Optional(BaseFilter):
         return hash(u'Optional') ^ hash(self.filter)
 
     def as_sql_expr(self, attr_name, field):
-        return self.filter.as_sql_expr(attr_name, field)
+        return u'({0} IS NULL OR {1})'.format(field, self.filter.as_sql_expr(
+                attr_name, field))
 
     def matches(self, server_obj, attr_name):
         value = server_obj.get(attr_name)
