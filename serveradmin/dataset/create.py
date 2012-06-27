@@ -37,7 +37,12 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
         
         # Handle not existing attributes (fill defaults, validate require)
         if attr.name not in real_attributes:
-            if stype_attr.required:
+            if stype_attr.multi:
+                if stype_attr.default is None:
+                    real_attributes[attr.name] = []
+                else:
+                    real_attributes[attr.name] = stype_attr.default.split(',')
+            elif stype_attr.required:
                 if fill_defaults and stype_attr.default is not None:
                     real_attributes[attr.name] = stype_attr.default
                 else:
@@ -53,8 +58,10 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
         if lookups.attr_names[attr.name].multi:
             if not (isinstance(value, (list, set)) or hasattr(value,
                     '_proxied_set')):
-                error = '{0} is a multi attribute and requires list/set'
-                raise ValueError(error.format(attr.name))
+                error = ('{0} is a multi attribute and requires list/set. '
+                         'Got {1} of type {2}')
+                raise ValueError(error.format(attr.name, repr(value),
+                    type(value).__name__))
             if regexp:
                 for val in value:
                     if not regexp.match(unicode(val)):
