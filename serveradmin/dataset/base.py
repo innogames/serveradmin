@@ -14,7 +14,7 @@ lookups = local()
 ServerTypeAttr = namedtuple('ServerTypeAttr', ['servertype_id', 'attribute_id',
         'required', 'default', 'regexp', 'visible'])
 
-class AdminTableSpecial(object):
+class ServerTableSpecial(object):
     def __init__(self, field):
         self.field = field
 
@@ -36,15 +36,15 @@ def _read_lookups(sender=None, **kwargs):
     # Special attributes that don't have an entry in the attrib table
     special_attributes = [
         Attribute(name=u'object_id', type=u'integer', base=False, multi=False,
-            special=AdminTableSpecial(u'server_id')),
+            special=ServerTableSpecial(u'server_id')),
         Attribute(name=u'hostname', type=u'string', base=True, multi=False,
-            special=AdminTableSpecial(u'hostname')),
+            special=ServerTableSpecial(u'hostname')),
         Attribute(name=u'servertype', type=u'string', base=True, multi=False,
-            special=AdminTableSpecial(u'servertype_id')),
+            special=ServerTableSpecial(u'servertype_id')),
         Attribute(name=u'intern_ip', type=u'ip', base=True, multi=False,
-            special=AdminTableSpecial(u'intern_ip')),
+            special=ServerTableSpecial(u'intern_ip')),
         Attribute(name=u'segment', type=u'string', base=True, multi=False,
-            special=AdminTableSpecial(u'segment')),
+            special=ServerTableSpecial(u'segment')),
         Attribute(name=u'all_ips', type=u'ip', base=False, multi=True,
             special=CombinedSpecial(u'intern_ip', u'additional_ips'))
     ]

@@ -2,7 +2,7 @@ from django.db import connection
 
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 from adminapi.utils import IP
-from serveradmin.dataset.base import lookups, AdminTableSpecial, CombinedSpecial
+from serveradmin.dataset.base import lookups, ServerTableSpecial, CombinedSpecial
 from serveradmin.dataset.validation import check_attributes
 from serveradmin.dataset import filters
 from serveradmin.dataset.commit import commit_changes
@@ -176,12 +176,11 @@ class QuerySet(BaseQuerySet):
         _Optional = filters.Optional
         for attr, f in self._filters.iteritems():
             attr_obj = lookups.attr_names[attr]
-            if isinstance(attr_obj.special, AdminTableSpecial):
+            if isinstance(attr_obj.special, ServerTableSpecial):
                 attr_field = u'adms.' + attr_obj.special.field
                 attr_fields[attr] = attr_field
                 if isinstance(f, _Optional):
-                    sql_where.append(u'({0} IS NULL OR {1})'.format(attr_field,
-                        f.as_sql_expr(attr, attr_field)))
+                    sql_where.append(f.as_sql_expr(attr, attr_field))
                 else:
                     sql_where.append(f.as_sql_expr(attr, attr_field))
             elif isinstance(attr_obj.special, CombinedSpecial):
@@ -205,8 +204,7 @@ class QuerySet(BaseQuerySet):
                             u'ON av{0}.server_id = adms.server_id AND '
                             u'av{0}.attrib_id = {1}').format(i, attr_obj.pk)
                     sql_left_joins.append(join)
-                    sql_where.append(u'({0} IS NULL OR {1})'.format(attr_field,
-                            f.as_sql_expr(attr, attr_field)))
+                    sql_where.append(f.as_sql_expr(attr, attr_field))
 
                 else:
                     sql_from.append(u'attrib_values AS av{0}'.format(i))
@@ -239,7 +237,7 @@ class QuerySet(BaseQuerySet):
         # field not being in the query, we will add it with a LEFT JOIN.
         if order_by:
             attr_obj = lookups.attr_names[order_by]
-            if isinstance(attr_obj.special, AdminTableSpecial):
+            if isinstance(attr_obj.special, ServerTableSpecial):
                 order_field = u'adms.' + attr_obj.special.field
             else:
                 if order_by in attr_fields:
@@ -315,7 +313,7 @@ class QuerySet(BaseQuerySet):
         add_attributes = True
         if restrict:
             for attr_obj in lookups.attr_names.itervalues():
-                if isinstance(attr_obj.special, AdminTableSpecial):
+                if isinstance(attr_obj.special, ServerTableSpecial):
                     restrict.discard(attr_obj.name)
             # if restrict is empty now, there are no attributes to fetch
             # from the attrib_values table, but just attributes from
