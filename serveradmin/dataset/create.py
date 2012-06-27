@@ -50,8 +50,8 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
                     violations_required.append(attr.name)
                     continue
             else:
-                if fill_defaults_all:
-                    real_attributes[attr.name] = stype_attr.default
+                if fill_defaults_all and stype_attr.default is not None:
+                        real_attributes[attr.name] = stype_attr.default
 
         # Validate regular expression
         regexp = stype_attr.regexp
@@ -68,7 +68,7 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
                     if not regexp.match(unicode(val)):
                         violations_regexp.append(attr.name)
         else:
-            if regexp and not regexp.match(real_attributes[attr.name]):
+            if regexp and not regexp.match(value):
                 violations_regexp.append(attr.name)
     
     # Check for attributes that are not defined on this servertype
