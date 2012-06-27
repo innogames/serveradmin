@@ -3,6 +3,7 @@ from django.db import connection
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 from adminapi.utils import IP
 from serveradmin.dataset.base import lookups
+from serveradmin.dataset.validation import check_attributes
 from serveradmin.dataset import filters
 from serveradmin.dataset.commit import commit_changes
 from serveradmin.dataset.cache import QuerysetCacher
@@ -91,11 +92,11 @@ class QuerySetRepresentation(object):
         return u'query({0}){1}'.format(u', '.join(args), extra)
 
 class QuerySet(BaseQuerySet):
-    def __init__(self, filters, for_export=False):
-        _check_attributes(filters.keys())
+    def __init__(self, filters, bypass_cache=False):
+        check_attributes(filters.keys())
         super(QuerySet, self).__init__(filters)
         self.attributes = lookups.attr_names
-        self._for_export = for_export
+        self._bypass_cache = bypass_cache
         self._already_through_cache = False
         self._limit = None
         self._offset = None
@@ -122,7 +123,7 @@ class QuerySet(BaseQuerySet):
                 self._order_by, self._order_dir)
 
     def restrict(self, *attrs):
-        _check_attributes(attrs)
+        check_attributes(attrs)
         return super(QuerySet, self).restrict(*attrs)
 
     def limit(self, offset, limit=None):
@@ -140,7 +141,7 @@ class QuerySet(BaseQuerySet):
         return self
 
     def order_by(self, order_by, order_dir='asc'):
-        _check_attributes([order_by])
+        check_attributes([order_by])
         if order_dir not in ('asc', 'desc'):
             raise ValueError('Invalid order direction')
         
@@ -152,7 +153,7 @@ class QuerySet(BaseQuerySet):
     def _get_results(self):
         if self._results is not None:
             return
-        if self._for_export:
+        if self._bypass_cache:
             self._results = self._fetch_results()
         else:
             if self._already_through_cache:
@@ -384,8 +385,3 @@ class ServerObject(BaseServerObject):
         instance_dict = tpl[2].copy()
         del instance_dict[u'_queryset']
         return (tpl[0], tpl[1], instance_dict)
-
-def _check_attributes(attributes):
-    for attr in attributes:
-        if attr not in lookups.attr_names:
-            raise ValueError(u'Invalid attribute: {0}'.format(attr))

@@ -90,7 +90,7 @@ def dataset_query(request, app, data):
         for attr, filter_obj in data['filters'].iteritems():
             filters[attr] = filter_from_obj(filter_obj)
         
-        q = QuerySet(filters=filters, for_export=True)
+        q = QuerySet(filters=filters, bypass_cache=True)
         if data['restrict']:
             q.restrict(*data['restrict'])
         if data['augmentations']:
