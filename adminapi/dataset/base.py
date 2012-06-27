@@ -209,6 +209,8 @@ class BaseServerObject(dict):
                 change['new'] = new_value
             elif action == 'new':
                 change['new'] = new_value
+            elif action == 'delete':
+                change['old'] = old_value
             elif action == 'multi':
                 change['remove'] = old_value.difference(new_value)
                 change['add'] = new_value.difference(old_value)
