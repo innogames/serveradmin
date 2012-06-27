@@ -51,7 +51,9 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
                     continue
             else:
                 if fill_defaults_all and stype_attr.default is not None:
-                        real_attributes[attr.name] = stype_attr.default
+                    real_attributes[attr.name] = stype_attr.default
+                else:
+                    continue
 
         # Validate regular expression
         regexp = stype_attr.regexp
