@@ -1,16 +1,131 @@
-"""
-This file demonstrates writing tests using the unittest module. These will pass
-when you run "manage.py test".
-
-Replace this with more appropriate tests for your application.
-"""
-
 from django.test import TestCase
 
+from serveradmin.dataset import query, filters
 
-class SimpleTest(TestCase):
-    def test_basic_addition(self):
-        """
-        Tests that 1 + 1 always equals 2.
-        """
-        self.assertEqual(1 + 1, 2)
+class TestQuery(TestCase):
+    fixtures = ['test_dataset.json']
+    def test_query_hostname(self):
+        s = query(hostname=u'test0').get()
+        self.assertEqual(s[u'hostname'], u'test0')
+
+    def test_query_os(self):
+        s = query(os=u'wheezy').get()
+        self.assertEquals(s[u'hostname'], 'test0')
+
+    def test_query_iterate(self):
+        hostnames = set()
+        for s in query():
+            hostnames.add(s[u'hostname'])
+
+        self.assertIn(u'test0', hostnames)
+        self.assertIn(u'test1', hostnames)
+        self.assertIn(u'test2', hostnames)
+        self.assertIn(u'test3', hostnames)
+
+    def test_filter_regexp(self):
+        hostnames = set()
+        for s in query(hostname=filters.Regexp(ur'^test[02]$')):
+            hostnames.add(s[u'hostname'])
+        
+        self.assertIn(u'test0', hostnames)
+        self.assertNotIn(u'test1', hostnames)
+        self.assertIn(u'test2', hostnames)
+
+    def test_filter_regexp_servertype(self):
+        s = query(servertype=filters.Regexp(ur'^test[870]')).get()
+        self.assertEquals(s[u'hostname'], u'test0')
+    
+    def test_filter_comparism(self):
+        hostnames = set()
+        for s in query(game_world=filters.Comparism('<', 2)):
+            hostnames.add(s['hostname'])
+
+        self.assertNotIn(u'test0', hostnames)
+        self.assertIn(u'test1', hostnames)
+        self.assertNotIn(u'test2', hostnames)
+        self.assertNotIn(u'test3', hostnames)
+
+    def test_filter_any(self):
+        hostnames = set()
+        for s in query(hostname=filters.Any(u'test1', u'test3')):
+            hostnames.add(s[u'hostname'])
+
+        self.assertNotIn(u'test0', hostnames)
+        self.assertIn(u'test1', hostnames)
+        self.assertNotIn(u'test2', hostnames)
+        self.assertIn(u'test3', hostnames)
+
+    def test_and(self):
+        pass
+    
+    def test_or(self):
+        q = query(game_world=filters.Or(filters.Comparism(u'<', 2),
+                filters.Comparism(u'>', 7)))
+        hostnames = set()
+        for s in q:
+            hostnames.add(s[u'hostname'])
+
+        self.assertNotIn(u'test0', hostnames)
+        self.assertIn(u'test1', hostnames)
+        self.assertNotIn(u'test2', hostnames)
+        self.assertIn(u'test3', hostnames)
+    
+    def test_not(self):
+        s = query(os=filters.Not('squeeze')).get()
+        self.assertEquals(s[u'hostname'], u'test0')
+
+    def test_not_filter(self):
+        s = query(os=filters.Not(filters.Any('squeeze', 'lenny'))).get()
+        self.assertEquals(s[u'hostname'], u'test0')
+
+    def test_between(self):
+        hostnames = set()
+        for s in query(game_world=filters.Between(2, 10)):
+            hostnames.add(s[u'hostname'])
+        
+        self.assertNotIn(u'test0', hostnames)
+        self.assertNotIn(u'test1', hostnames)
+        self.assertIn(u'test2', hostnames)
+        self.assertIn(u'test3', hostnames)
+
+    def test_startswith(self):
+        s = query(os=filters.Startswith('whee')).get()
+        self.assertEquals(s[u'hostname'], u'test0')
+
+    def test_startswith_servertype(self):
+        q = query(servertype=filters.Startswith('tes'))
+        self.assertEquals(len(q), 4)
+
+    def test_optional(self):
+        hostnames = set()
+        for s in query(game_world=filters.Optional(1)):
+            hostnames.add(s[u'hostname'])
+
+        self.assertIn(u'test0', hostnames)
+        self.assertIn(u'test1', hostnames)
+        self.assertNotIn(u'test2', hostnames)
+        self.assertNotIn(u'test3', hostnames)
+
+class TestCommit(TestCase):
+    def test_commit(self):
+        pass
+
+    def test_commit_regexp_violation(self):
+        pass
+
+    def test_commit_attr_not_exist(self):
+        pass
+
+    def test_commit_servertype(self):
+        pass
+
+    def test_commit_hostname(self):
+        pass
+
+    def test_commit_intern_ip(self):
+        pass
+    
+    def test_commit_newer_data(self):
+        pass
+    
+
