@@ -27,6 +27,8 @@ class IPRange(models.Model):
                 while next_free <= self.max:
                     if query(all_ips=next_free).restrict('hostname'):
                         next_free += 1
+                    elif (next_free & 0xff) in (0x00, 0xff):
+                        next_free += 1
                     else:
                         if increase_pointer:
                             IPRange.objects.filter(next_free=next_free).update(
