@@ -82,8 +82,14 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
 
     if not skip_validation:
         if violations_regexp or violations_required:
-            raise CommitValidationFailed(u'Validation failed',
-                    violations_regexp + violations_required)
+            regexp_msg = u'Attributes violating regexp: {0}.'.format(
+                    u', '.join(violations_regexp))
+            required_msg = u'Attributes violating required: {0}.'.format(
+                    u', '.join(violations_required))
+
+            raise CommitValidationFailed(u'Validation failed. {0} {1}'.format(
+                    regexp_msg, required_msg), violations_regexp +
+                    violations_required)
     if violations_attribs:
         raise CommitValidationFailed(u'Unskippable validation failed',
                 violations_regexp + violations_required + violations_attribs)
