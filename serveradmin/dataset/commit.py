@@ -1,6 +1,7 @@
 from django.db import connection
 
-from serveradmin.dataset.base import lookups
+from adminapi.utils import IP
+from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.cache import invalidate_cache
 from adminapi.dataset.exceptions import (CommitValidationFailed, CommitNewerData,
         CommitError)
@@ -184,26 +185,41 @@ def _apply_changes(changed_servers, servers):
             
             action = change[u'action']
             
-            # FIXME
-            # Quick workaround for hostname, will fix it later
-            if attr_obj.name == 'hostname' and action == u'update':
-                c.execute('UPDATE admin_server SET hostname=%s '
-                        'WHERE server_id = %s', (change[u'new'], server_id))
+            # XXX Dirty hack for old database structure
+            if isinstance(attr_obj.special, ServerTableSpecial):
+                field = attr_obj.special.field
+                query = u'UPDATE admin_server SET {0}=%s WHERE server_id = %s'
+                if action == 'new' or action == 'update':
+                    value = _prepare_value(attr, change[u'new'])
+                    c.execute(query.format(field), (value, server_id))
+                elif action == 'delete':
+                    # FIXME: This might fail if field it not NULLable
+                    c.execute(query.format(field), (None, server_id))
                 continue
 
 
             if action == u'new' or action == u'update':
+                value = _prepare_value(attr, change[u'new'])
                 if attr in server:
-                    c.execute(query_update, (change[u'new'], server_id, attr_id))
+                    c.execute(query_update, (value, server_id, attr_id))
                 else:
-                    c.execute(query_insert, (server_id, attr_id, change[u'new']))
+                    c.execute(query_insert, (server_id, attr_id, value))
             elif action == u'delete':
                 c.execute(query_remove_all, (server_id, attr_id))
             elif action == u'multi':
                 for value in change[u'remove']:
+                    value = _prepare_value(attr, value)
                     c.execute(query_remove, (server_id, attr_id, value))
                 for value in change[u'add']:
+                    value = _prepare_value(attr, value)
                     if value in server[attr]:
                         continue # Avoid duplicate entries
                     c.execute(query_insert, (server_id, attr_id, value))
+    c.execute('COMMIT')
 
+def _prepare_value(attr_name, value):
+    if lookups.attr_names[attr_name].type == u'ip':
+        if not isinstance(value, IP):
+            value = IP(value)
+        value = value.as_int()
+    return value
