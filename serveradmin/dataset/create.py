@@ -2,7 +2,8 @@ from django.db import connection
 
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.cache import invalidate_cache
-from adminapi.dataset.exceptions import CommitValidationFailed, CommitError
+from serveradmin.dataset.validation import handle_violations, check_attribute_type
+from adminapi.dataset.exceptions import CommitError
 from adminapi.utils import IP
 
 def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all):
@@ -13,6 +14,9 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
     if u'intern_ip' not in attributes:
         raise CommitError(u'Internal IP (intern_ip) is required')
 
+    for attr in (u'hostname', u'servertype', u'intern_ip'):
+        check_attribute_type(attr, attributes[attr])
+
     try:
         stype = lookups.stype_names[attributes[u'servertype']]
     except KeyError:
@@ -22,6 +26,9 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
     intern_ip = IP(attributes[u'intern_ip'])
     servertype_id = stype.pk
     segment = attributes.get(u'segment')
+
+    if segment:
+        check_attribute_type(u'segment', segment)
 
     real_attributes = attributes.copy()
     for key in (u'hostname', u'intern_ip', u'comment', u'servertype', u'segment'):
@@ -55,16 +62,13 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
                 else:
                     continue
 
+        value = real_attributes[attr.name]
+        check_attribute_type(attr.name, value)
+        
+        
         # Validate regular expression
         regexp = stype_attr.regexp
-        value = real_attributes[attr.name]
         if attr_obj.multi:
-            if not (isinstance(value, (list, set)) or hasattr(value,
-                    '_proxied_set')):
-                error = ('{0} is a multi attribute and requires list/set. '
-                         'Got {1} of type {2}')
-                raise ValueError(error.format(attr.name, repr(value),
-                    type(value).__name__))
             if attr_obj.type == 'string' and regexp:
                 for val in value:
                     if not regexp.match(unicode(val)):
@@ -80,28 +84,8 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
         if attr not in attribute_set:
             violations_attribs.append(attr)
 
-    if not skip_validation:
-        if violations_regexp or violations_required:
-            if violations_regexp:
-                regexp_msg = u'Attributes violating regexp: {0}. '.format(
-                        u', '.join(violations_regexp))
-            else:
-                regexp_msg = u''
-            if violations_required:
-                required_msg = u'Attributes violating required: {0}.'.format(
-                        u', '.join(violations_required))
-            else:
-                required_msg = u''
-
-            raise CommitValidationFailed(u'Validation failed. {0}{1}'.format(
-                    regexp_msg, required_msg), violations_regexp +
-                    violations_required)
-    if violations_attribs:
-        raise CommitValidationFailed((u'Attributes {0} are not defined on '
-                'this servertype. You can\'t skip this validation!').format(
-                u', '.join(violations_attribs)), violations_regexp +
-                violations_required + violations_attribs)
-    
+    handle_violations(skip_validation, violations_regexp, violations_required,
+                      violations_attribs)
 
     c = connection.cursor()
     c.execute(u"SELECT GET_LOCK('serverobject_commit', 10)")
