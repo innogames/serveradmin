@@ -76,7 +76,7 @@ class Regexp(Filter):
             stype_ids = []
             for stype in lookups.stype_ids.itervalues():
                 if self._regexp_obj.search(stype.name):
-                    stype_ids.append(stype.pk)
+                    stype_ids.append(unicode(stype.pk))
             if stype_ids:
                 return u'{0} IN({1})'.format(field, ', '.join(stype_ids))
             else:
@@ -331,7 +331,7 @@ class Startswith(Filter):
             stype_ids = []
             for stype in lookups.stype_ids.itervalues():
                 if stype.name.startswith(self.value):
-                    stype_ids.append(stype.pk)
+                    stype_ids.append(unicode(stype.pk))
             if stype_ids:
                 return u'{0} IN({1})'.format(field, ', '.join(stype_ids))
             else:
