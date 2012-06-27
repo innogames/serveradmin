@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from serveradmin.dataset import query, filters
+from serveradmin.dataset import query, filters, create
 
 class TestQuery(TestCase):
     fixtures = ['test_dataset.json']
@@ -107,8 +107,19 @@ class TestQuery(TestCase):
         self.assertNotIn(u'test3', hostnames)
 
 class TestCommit(TestCase):
-    def test_commit(self):
-        pass
+    fixtures = ['test_dataset.json']
+    def test_commit_queryset(self):
+        q = query(hostname=u'test1')
+        s = q.get()
+        s[u'os'] = u'wheezy'
+        s[u'segment'] = u'seg0.r1'
+        s[u'intern_ip'] = u'10.16.2.1'
+        q.commit()
+
+        s = query(hostname=u'test1').get()
+        self.assertEquals(s[u'os'], u'wheezy')
+        self.assertEquals(s[u'segment'], u'seg0.r1')
+        self.assertEquals(s[u'intern_ip'].as_ip(), u'10.16.2.1')
 
     def test_commit_regexp_violation(self):
         pass
@@ -128,4 +139,15 @@ class TestCommit(TestCase):
     def test_commit_newer_data(self):
         pass
     
-
+class TestCreate(TestCase):
+    def test_create(self):
+        s = {
+            u'hostname': u'test4',
+            u'intern_ip': u'127.0.0.1',
+            u'servertype': u'test0',
+            u'segment': u'seg0.r0',
+            u'os': u'squeeze',
+            u'database': [u'pgsql']
+        }
+        s_res = create(s, fill_defaults=True, fill_defaults_all=True)
+        self.assertEqual(s_res[u'hostname'], u'test4')
