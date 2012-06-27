@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.core.cache import cache
 
 from serveradmin.dataset import query, filters, create
 
@@ -108,6 +109,10 @@ class TestQuery(TestCase):
 
 class TestCommit(TestCase):
     fixtures = ['test_dataset.json']
+
+    def setUp(self):
+        cache.clear()
+
     def test_commit_queryset(self):
         q = query(hostname=u'test1')
         s = q.get()
