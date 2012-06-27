@@ -34,10 +34,11 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
     violations_required = []
     for attr in stype.attributes:
         stype_attr = lookups.stype_attrs[(stype.name, attr.name)]
+        attr_obj = lookups.attr_names[attr.name]
         
         # Handle not existing attributes (fill defaults, validate require)
         if attr.name not in real_attributes:
-            if stype_attr.multi:
+            if attr_obj.multi:
                 if stype_attr.default is None:
                     real_attributes[attr.name] = []
                 else:
@@ -55,7 +56,7 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
         # Validate regular expression
         regexp = stype_attr.regexp
         value = real_attributes[attr.name]
-        if lookups.attr_names[attr.name].multi:
+        if attr_obj.multi:
             if not (isinstance(value, (list, set)) or hasattr(value,
                     '_proxied_set')):
                 error = ('{0} is a multi attribute and requires list/set. '

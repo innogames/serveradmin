@@ -34,7 +34,7 @@ class ServerTypeAttributes(models.Model):
         unique_together = (('servertype', 'attrib'), )
 
 class ServerObject(models.Model):
-    server_id = models.IntegerField(primary_key=True)
+    server_id = models.AutoField(primary_key=True)
     hostname = models.CharField(max_length=64)
     intern_ip = models.PositiveIntegerField()
     comment = models.CharField(max_length=255, null=True, blank=True)
