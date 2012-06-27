@@ -14,6 +14,14 @@ lookups = local()
 ServerTypeAttr = namedtuple('ServerTypeAttr', ['servertype_id', 'attribute_id',
         'required', 'default', 'regexp', 'visible'])
 
+class AdminTableSpecial(object):
+    def __init__(self, field):
+        self.field = field
+
+class CombinedSpecial(object):
+    def __init__(self, *attrs):
+        self.attrs = attrs
+
 def _read_lookups(sender=None, **kwargs):
     version = cache.get(u'dataset_lookups_version')
     if not version:
@@ -27,12 +35,18 @@ def _read_lookups(sender=None, **kwargs):
     
     # Special attributes that don't have an entry in the attrib table
     special_attributes = [
-        Attribute(name=u'object_id', type=u'integer', base=False, multi=False),
-        Attribute(name=u'hostname', type=u'string', base=True, multi=False),
-        Attribute(name=u'servertype', type=u'string', base=True, multi=False),
-        Attribute(name=u'intern_ip', type=u'ip', base=True, multi=False),
-        Attribute(name=u'segment', type=u'string', base=True, multi=False),
-        Attribute(name=u'all_ips', type=u'ip', base=False, multi=True)
+        Attribute(name=u'object_id', type=u'integer', base=False, multi=False,
+            special=AdminTableSpecial(u'server_id')),
+        Attribute(name=u'hostname', type=u'string', base=True, multi=False,
+            special=AdminTableSpecial(u'hostname')),
+        Attribute(name=u'servertype', type=u'string', base=True, multi=False,
+            special=AdminTableSpecial(u'servertype_id')),
+        Attribute(name=u'intern_ip', type=u'ip', base=True, multi=False,
+            special=AdminTableSpecial(u'intern_ip')),
+        Attribute(name=u'segment', type=u'string', base=True, multi=False,
+            special=AdminTableSpecial(u'segment')),
+        Attribute(name=u'all_ips', type=u'ip', base=False, multi=True,
+            special=CombinedSpecial(u'intern_ip', u'additional_ips'))
     ]
 
     # Read all attributes

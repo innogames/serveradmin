@@ -1,6 +1,13 @@
 from django.db import models
 
 class Attribute(models.Model):
+    special = None
+    def __init__(self, *args, **kwargs):
+        if 'special' in kwargs:
+            self.special = kwargs[u'special']
+            del kwargs[u'special']
+        super(Attribute, self).__init__(*args, **kwargs)
+
     attrib_id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=64)
     type = models.CharField(max_length=64)

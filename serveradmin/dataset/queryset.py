@@ -2,7 +2,7 @@ from django.db import connection
 
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 from adminapi.utils import IP
-from serveradmin.dataset.base import lookups
+from serveradmin.dataset.base import lookups, AdminTableSpecial, CombinedSpecial
 from serveradmin.dataset.validation import check_attributes
 from serveradmin.dataset import filters
 from serveradmin.dataset.commit import commit_changes
@@ -167,40 +167,43 @@ class QuerySet(BaseQuerySet):
 
     def _fetch_results(self):
         # XXX: Dirty hack for the old database structure
-        attr_exceptions = {
-                u'hostname': u'hostname', 
-                u'intern_ip': u'intern_ip',
-                u'segment': u'segment',
-                u'servertype': u'servertype_id',
-                u'object_id': u'server_id'
-        }
         i = 0
         sql_left_joins = []
         sql_from = [u'admin_server AS adms']
         sql_where = []
         attr_fields = {}
         attr_names = lookups.attr_names
-        all_ips = self._filters.get(u'all_ips')
         _Optional = filters.Optional
         for attr, f in self._filters.iteritems():
-            if attr == u'all_ips':
-                continue
-            if attr in attr_exceptions:
-                attr_field = u'adms.' + attr_exceptions[attr]
+            attr_obj = lookups.attr_names[attr]
+            if isinstance(attr_obj.special, AdminTableSpecial):
+                attr_field = u'adms.' + attr_obj.special.field
                 attr_fields[attr] = attr_field
                 if isinstance(f, _Optional):
                     sql_where.append(u'({0} IS NULL OR {1})'.format(attr_field,
                         f.as_sql_expr(attr, attr_field)))
                 else:
                     sql_where.append(f.as_sql_expr(attr, attr_field))
+            elif isinstance(attr_obj.special, CombinedSpecial):
+                # FIXME: Implement CombinedSpecial better 
+                attr_field = u'av{0}.value'.format(i)
+                attr_fields[u'additional_ips'] = attr_field
+                attr_id = attr_names[u'additional_ips'].pk
+                join = (u'LEFT JOIN attrib_values AS av{0} '
+                        u'ON av{0}.server_id = adms.server_id AND '
+                        u'av{0}.attrib_id = {1}').format(i, attr_id)
+                sql_left_joins.append(join)
+                cond1 = f.as_sql_expr(u'additional_ips', attr_field)
+                cond2 = f.as_sql_expr(u'intern_ip', u'intern_ip')
+                sql_where.append(u'(({0}) OR {1})'.format(cond1, cond2))
+                i += 1
             else:
                 attr_field = u'av{0}.value'.format(i)
                 attr_fields[attr] = attr_field
                 if isinstance(f, _Optional):
                     join = (u'LEFT JOIN attrib_values AS av{0} '
                             u'ON av{0}.server_id = adms.server_id AND '
-                            u'av{0}.attrib_id = {1}').format(i,
-                                attr_names[attr].pk)
+                            u'av{0}.attrib_id = {1}').format(i, attr_obj.pk)
                     sql_left_joins.append(join)
                     sql_where.append(u'({0} IS NULL OR {1})'.format(attr_field,
                             f.as_sql_expr(attr, attr_field)))
@@ -209,25 +212,12 @@ class QuerySet(BaseQuerySet):
                     sql_from.append(u'attrib_values AS av{0}'.format(i))
                     sql_where += [
                         u'av{0}.server_id = adms.server_id'.format(i),
-                        u'av{0}.attrib_id = {1}'.format(i, attr_names[attr].pk),
+                        u'av{0}.attrib_id = {1}'.format(i, attr_obj.pk),
                         f.as_sql_expr(attr, attr_field)
                     ]
         
                 i += 1
 
-        if all_ips:
-            attr_field = u'av{0}.value'.format(i)
-            attr_fields[u'additional_ips'] = attr_field
-            attr_id = attr_names[u'additional_ips'].pk
-            join = (u'LEFT JOIN attrib_values AS av{0} '
-                    u'ON av{0}.server_id = adms.server_id AND '
-                    u'av{0}.attrib_id = {1}').format(i, attr_id)
-            sql_left_joins.append(join)
-            cond1 = all_ips.as_sql_expr(u'additional_ips', attr_field)
-            cond2 = all_ips.as_sql_expr(u'intern_ip', u'intern_ip')
-            sql_where.append(u'(({0}) OR {1})'.format(cond1, cond2))
-            i += 1
-        
         # Copy order_by from instance to local variable to allow LIMIT
         # to set it in the query (but not in the instance) if it is
         # not set
@@ -248,8 +238,9 @@ class QuerySet(BaseQuerySet):
         # We will try to get the field name for ORDER BY. In case of the
         # field not being in the query, we will add it with a LEFT JOIN.
         if order_by:
-            if order_by in attr_exceptions:
-                order_field = u'adms.' + attr_exceptions[order_by]
+            attr_obj = lookups.attr_names[order_by]
+            if isinstance(attr_obj.special, AdminTableSpecial):
+                order_field = u'adms.' + attr_obj.special.field
             else:
                 if order_by in attr_fields:
                     order_field = attr_fields[order_by]
@@ -323,7 +314,9 @@ class QuerySet(BaseQuerySet):
         # Remove attributes from adm_server from the restrict set
         add_attributes = True
         if restrict:
-            restrict = restrict - set(attr_exceptions.iterkeys())
+            for attr_obj in lookups.attr_names.itervalues():
+                if isinstance(attr_obj.special, AdminTableSpecial):
+                    restrict.discard(attr_obj.name)
             # if restrict is empty now, there are no attributes to fetch
             # from the attrib_values table, but just attributes from
             # admin_server table. We can return early
