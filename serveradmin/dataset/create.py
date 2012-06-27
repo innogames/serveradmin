@@ -97,8 +97,10 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
                     regexp_msg, required_msg), violations_regexp +
                     violations_required)
     if violations_attribs:
-        raise CommitValidationFailed(u'Unskippable validation failed',
-                violations_regexp + violations_required + violations_attribs)
+        raise CommitValidationFailed((u'Attributes {0} are not defined on '
+                'this servertype. You can\'t skip this validation!').format(
+                u', '.join(violations_attribs)), violations_regexp +
+                violations_required + violations_attribs)
     
 
     c = connection.cursor()
