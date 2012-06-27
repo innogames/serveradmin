@@ -112,13 +112,13 @@ class TestCommit(TestCase):
         q = query(hostname=u'test1')
         s = q.get()
         s[u'os'] = u'wheezy'
-        s[u'segment'] = u'seg0.r1'
+        s[u'segment'] = u'seg1'
         s[u'intern_ip'] = u'10.16.2.1'
         q.commit()
 
         s = query(hostname=u'test1').get()
         self.assertEquals(s[u'os'], u'wheezy')
-        self.assertEquals(s[u'segment'], u'seg0.r1')
+        self.assertEquals(s[u'segment'], u'seg1')
         self.assertEquals(s[u'intern_ip'].as_ip(), u'10.16.2.1')
 
     def test_commit_regexp_violation(self):
