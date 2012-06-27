@@ -22,15 +22,16 @@ class ServerType(models.Model):
         db_table = 'servertype'
 
 class ServerTypeAttributes(models.Model):
-    servertype = models.ForeignKey(ServerType, primary_key=True)
-    attrib = models.ForeignKey(Attribute, primary_key=True)
+    servertype = models.ForeignKey(ServerType)
+    attrib = models.ForeignKey(Attribute)
     required = models.BooleanField(default=False)
     attrib_default = models.CharField(max_length=255, null=True, blank=True)
-    regex = models.CharField(max_length=255)
+    regex = models.CharField(max_length=255, null=True, blank=True)
     default_visible = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'servertype_attributes'
+        unique_together = (('servertype', 'attrib'), )
 
 class ServerObject(models.Model):
     server_id = models.IntegerField(primary_key=True)
