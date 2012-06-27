@@ -5,8 +5,10 @@ from adminapi.utils import IP
 from serveradmin.dataset.base import lookups
 
 filter_classes = {}
+class BaseFilter(object):
+    pass
 
-class Filter(object):
+class Filter(BaseFilter):
     def __and__(self, other):
         return And(self, other)
 
@@ -356,7 +358,7 @@ class Startswith(Filter):
 filter_classes[u'startswith'] = Startswith
 
 
-class Optional(object):
+class Optional(BaseFilter):
     def __init__(self, filter):
         self.filter = _prepare_filter(filter)
 
@@ -391,7 +393,7 @@ class Optional(object):
 filter_classes[u'optional'] = Optional
 
 def _prepare_filter(filter):
-    return filter if isinstance(filter, Filter) else ExactMatch(filter)
+    return filter if isinstance(filter, BaseFilter) else ExactMatch(filter)
 
 def _prepare_value(attr_name, value):
     if lookups.attr_names[attr_name].type == u'ip':
