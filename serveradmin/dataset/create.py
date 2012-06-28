@@ -145,13 +145,14 @@ def _insert_server(hostname, intern_ip, segment, servertype_id, attributes):
     return server_id
 
 def _type_cast_default(attr_obj, value):
-    casting_fns = {'integer': int, 'boolean': bool}
-    try:
-        fn = casting_fns[attr_obj.type]
-    except KeyError:
-        return value # No need to typecast
+    casting_fns = {
+        'integer': int,
+        'boolean': bool,
+        'string': lambda x: x,
+        'ip': lambda x: IP(x).as_int()
+    }
+    fn = casting_fns[attr_obj.type]
     if attr_obj.multi:
         return [fn(x) for x in value.split(',')]
     else:
         return fn(value)
-        
