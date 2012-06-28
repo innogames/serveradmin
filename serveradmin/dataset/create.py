@@ -20,7 +20,7 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
     try:
         stype = lookups.stype_names[attributes[u'servertype']]
     except KeyError:
-        raise CommitError(u'Unknown servertype')
+        raise CommitError(u'Unknown servertype: ' + attributes[u'servertype'])
 
     hostname = attributes[u'hostname']
     intern_ip = IP(attributes[u'intern_ip'])
@@ -49,15 +49,28 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
                 if stype_attr.default is None:
                     real_attributes[attr.name] = []
                 else:
-                    real_attributes[attr.name] = stype_attr.default.split(',')
+                    if attr_obj.type in ('integer', 'boolean'):
+                        default = [int(value) for value in
+                                stype_attr.default.split(',')]
+                    else:
+                        default = stype_attr.default.split(',')
+                    real_attributes[attr.name] = default 
             elif stype_attr.required:
                 if fill_defaults and stype_attr.default is not None:
-                    real_attributes[attr.name] = stype_attr.default
+                    if attr_obj.type in ('integer', 'boolean'):
+                        default = int(stype_attr.default)
+                    else:
+                        default = stype_attr.default
+                    real_attributes[attr.name] = default
                 else:
                     violations_required.append(attr.name)
                     continue
             else:
                 if fill_defaults_all and stype_attr.default is not None:
+                    if attr_obj.type in ('integer', 'boolean'):
+                        default = int(stype_attr.default)
+                    else:
+                        default = stype_attr.default
                     real_attributes[attr.name] = stype_attr.default
                 else:
                     continue
