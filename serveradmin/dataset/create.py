@@ -49,29 +49,19 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
                 if stype_attr.default is None:
                     real_attributes[attr.name] = []
                 else:
-                    if attr_obj.type in ('integer', 'boolean'):
-                        default = [int(value) for value in
-                                stype_attr.default.split(',')]
-                    else:
-                        default = stype_attr.default.split(',')
-                    real_attributes[attr.name] = default 
+                    real_attributes[attr.name] = _type_cast_default(attr_obj,
+                            stype_attr.default)
             elif stype_attr.required:
                 if fill_defaults and stype_attr.default is not None:
-                    if attr_obj.type in ('integer', 'boolean'):
-                        default = int(stype_attr.default)
-                    else:
-                        default = stype_attr.default
-                    real_attributes[attr.name] = default
+                    real_attributes[attr.name] = _type_cast_default(attr_obj,
+                            stype_attr.default)
                 else:
                     violations_required.append(attr.name)
                     continue
             else:
                 if fill_defaults_all and stype_attr.default is not None:
-                    if attr_obj.type in ('integer', 'boolean'):
-                        default = int(stype_attr.default)
-                    else:
-                        default = stype_attr.default
-                    real_attributes[attr.name] = default
+                    real_attributes[attr.name] = _type_cast_default(attr_obj,
+                            stype_attr.default)
                 else:
                     continue
 
@@ -153,3 +143,15 @@ def _insert_server(hostname, intern_ip, segment, servertype_id, attributes):
             c.execute(attr_query, (server_id, attr_obj.pk, value))
 
     return server_id
+
+def _type_cast_default(attr_obj, value):
+    casting_fns = {'integer': int, 'boolean': bool}
+    try:
+        fn = casting_fns[attr_obj.type]
+    except KeyError:
+        return value # No need to typecast
+    if attr_obj.multi:
+        return [fn(x) for x in value.split(',')]
+    else:
+        return fn(value)
+        
