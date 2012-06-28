@@ -71,7 +71,7 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
                         default = int(stype_attr.default)
                     else:
                         default = stype_attr.default
-                    real_attributes[attr.name] = stype_attr.default
+                    real_attributes[attr.name] = default
                 else:
                     continue
 
