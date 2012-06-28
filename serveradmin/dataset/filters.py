@@ -412,8 +412,7 @@ def _prepare_value(attr_name, value):
 
 def _sql_escape(value):
     if isinstance(value, basestring):
-        # FIXME: Prevent SQL Injections using real database escaping
-        return u"'{0}'".format(value.replace('\\', '\\\\'))
+        return u"'{0}'".format(value.replace("'", "\\'"))
     elif isinstance(value, (int, long, float)):
         return str(value)
     elif isinstance(value, bool):
