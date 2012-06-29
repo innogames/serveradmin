@@ -169,7 +169,7 @@ class QuerySet(BaseQuerySet):
         # XXX: Dirty hack for the old database structure
         i = 0
         sql_left_joins = []
-        sql_from = [u'admin_server AS adms']
+        sql_from = []
         sql_where = []
         attr_fields = {}
         attr_names = lookups.attr_names
@@ -255,7 +255,11 @@ class QuerySet(BaseQuerySet):
         else:
             order_by_sql = u''
 
-
+        
+        # admin_server must be the last entry in FROM, otherwise the LEFT
+        # JOINs will fail if they reference adms.server_id
+        sql_from.append(u'admin_server AS adms')
+        
         sql_stmt = u'\n'.join([
                 u'SELECT SQL_CALC_FOUND_ROWS adms.server_id, adms.hostname, '
                 u'adms.intern_ip, adms.segment, adms.servertype_id',
