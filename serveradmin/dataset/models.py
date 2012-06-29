@@ -65,3 +65,10 @@ class ServerObjectCache(models.Model):
 
     class Meta:
         unique_together = (('server', 'repr_hash'))
+
+class Segment(models.Model):
+    segment = models.CharField(max_length=20, db_column='segment_id',
+            primary_key=True)
+
+    class Meta:
+        db_table = 'segment'
