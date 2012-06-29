@@ -1,5 +1,7 @@
 import os
+import uuid
 import cPickle as pickle
+from threading import local
 
 from django.core.cache import cache
 from django.db import connection
@@ -9,6 +11,9 @@ from serveradmin.dataset.models import ServerObjectCache
 
 CACHE_MIN_QS_COUNT = 5
 NUM_OBJECTS_FOR_FILECACHE = 50
+INVALIDATE_ALL_BARRIER = 100
+
+_cache_info = local()
 
 class QuerysetCacher(object):
     def __init__(self, queryset, key='qs', encoder=pickle, pre_store=None,
@@ -39,7 +44,9 @@ class QuerysetCacher(object):
     def _from_cache(self):
         qs_repr = self.queryset.get_representation()
         qs_repr_hash = hash(qs_repr)
-        hash_postfix = ':{0}:{1}'.format(self._key, qs_repr_hash)
+        cache_version = _get_cache_version()
+        hash_postfix = ':{0}:{1}:{2}'.format(self._key, qs_repr_hash,
+                cache_version)
         cached_qs_repr = cache.get('qs_repr' + hash_postfix)
         if cached_qs_repr and qs_repr == cached_qs_repr:
             cache_storage = cache.get('qs_storage' + hash_postfix)
@@ -75,7 +82,9 @@ class QuerysetCacher(object):
             return
         qs_repr = self.queryset.get_representation()
         qs_repr_hash = hash(qs_repr)
-        hash_postfix = ':{0}:{1}'.format(self._key, qs_repr_hash)
+        cache_version = _get_cache_version()
+        hash_postfix = ':{0}:{1}:{2}'.format(self._key, qs_repr_hash,
+                cache_version)
         cache.set('qs_result' + hash_postfix, server_data)
         if num_servers > NUM_OBJECTS_FOR_FILECACHE:
             storage = 'file'
@@ -103,14 +112,38 @@ def invalidate_cache(server_ids=None):
     cache_table = ServerObjectCache._meta.db_table
     if server_ids:
         server_ids = ','.join([str(x) for x in server_ids])
-        query = ('SELECT repr_hash FROM {0} WHERE server_id IN({1}) '
+        
+        # Invalidate all cache values if there are too many
+        query_count = ('SELECT COUNT(*) FROM {0} WHERE server_id IN({1}) '
             ' OR server_id IS NULL')
-        c.execute(query.format(cache_table, server_ids))
+        c.execute(query_count.format(cache_table, server_ids))
+        if c.fetchone()[0] > INVALIDATE_ALL_BARRIER:
+            c.execute('TRUNCATE TABLE {0}'.format(cache_table))
+            _new_cache_version()
+            return
+        
+        query_get = ('SELECT repr_hash FROM {0} WHERE server_id IN({1}) '
+            ' OR server_id IS NULL')
+        c.execute(query_get.format(cache_table, server_ids))
+        cache_hashes = [x[0] for x in c.fetchall()]
+        cache_version = _get_cache_version()
+        for prefix in ('qs_repr', 'qs_storage', 'qs_result'):
+            for key in ('qs', 'api'):
+                cache.delete_many(['{0}:{1}:{2}:{3}'.format(prefix, key,
+                    qs_hash, cache_version) for qs_hash in cache_hashes])
     else:
-        c.execute('SELECT repr_hash FROM ' + cache_table)
+        c.execute('TRUNCATE TABLE {0}'.format(cache_table))
+        _new_cache_version()
+        return
 
-    cache_hashes = [x[0] for x in c.fetchall()]
-    for prefix in ('qs_repr', 'qs_storage', 'qs_result'):
-        for key in ('qs', 'api'):
-            cache.delete_many(['{0}:{1}:{2}'.format(prefix, key, x)
-                               for x in cache_hashes])
+
+def _get_cache_version():
+    version = cache.get(u'dataset_cache_version')
+    if not version:
+        version = uuid.uuid1().hex
+        cache.add(u'dataset_lookups_version', version)
+    return version
+
+def _new_cache_version():
+    cache.delete(u'dataset_cache_version')
+    return _get_cache_version()
