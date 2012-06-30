@@ -76,7 +76,26 @@ class IP(object):
                 return False
 
     def __ne__(self, other):
-        return not (self == other)
+        return not self == other
+
+    def __lt__(self, other):
+        if isinstance(other, IP):
+            return self.ip < other.ip
+        else:
+            try:
+                other = IP(other)
+                return self.ip < other.ip
+            except ValueError:
+                return False
+
+    def __le__(self, other):
+        return self < other or self == other
+
+    def __gt__(self, other):
+        return not (self < other or self == other)
+    
+    def __ge__(self, other):
+        return not self < other
     
     def __getstate__(self):
         return (self.ip, )
