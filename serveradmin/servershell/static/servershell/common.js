@@ -119,15 +119,18 @@ function array_min(arr)
     return local_min;
 }
 
-function _autocomplete_attr(term, parsed_args, autocomplete_list, suffix)
+function _autocomplete_attr(term, parsed_args, autocomplete_list, suffix, filter_fn)
 {
     if (typeof(suffix) == 'undefined') {
         suffix = '';
     }
+    if (typeof(filter_fn) == 'undefined') {
+        filter_fn = function(attr) { return true; }
+    }
     var attr_name = parsed_args[parsed_args.length - 1]['value'].toLowerCase();
     var prefix = term.substring(0, term.length - attr_name.length);
     for (attr in available_attributes) {
-        if (attr.substr(0, attr_name.length).toLowerCase() == attr_name) {
+        if (attr.substr(0, attr_name.length).toLowerCase() == attr_name && filter_fn(attr)) {
             autocomplete_list.push({
                 'label': 'Attr: ' + attr,
                 'value': prefix + attr + suffix

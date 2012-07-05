@@ -70,3 +70,11 @@
 .noargs {
  font-style:italic;
 }
+
+ins {
+    color:#080;
+}
+
+del {
+    color:#c00;
+}

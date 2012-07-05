@@ -11,6 +11,11 @@ function IP(value)
     } else {
         this.value = value
     }
+
+    if (this.value < 0) {
+        // hack to have this value as "unsigned" int in javascript
+        this.value += -2 * (1 << 31);
+    }
 }
 
 IP.prototype.as_ip = function() {
