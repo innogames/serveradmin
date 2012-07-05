@@ -110,7 +110,7 @@ filter_classes[u'regexp'] = Regexp
 class Comparison(Filter):
     def __init__(self, comparator, value):
         if comparator not in (u'<', u'>', u'<=', u'>='):
-            raise ValueError(u'Invalid comparison operator: ' + self.comparator)
+            raise ValueError(u'Invalid comparison operator: ' + comparator)
         self.comparator = comparator
         self.value = value
 
