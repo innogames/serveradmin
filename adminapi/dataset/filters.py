@@ -18,7 +18,7 @@ class Regexp(object):
     def _serialize(self):
         return {'name': 'regexp', 'regexp': self.regexp}
 
-class Comparism(object):
+class Comparison(object):
     def __init__(self, comparator, value):
         if comparator not in ('<', '>', '<=', '>='):
             raise ValueError('Invalid comparism operator: ' + comparator)
@@ -29,8 +29,9 @@ class Comparism(object):
         return 'Comparism({0!r}, {1!r})'.format(self.comparator, self.value)
 
     def _serialize(self):
-        return {'name': 'comparism', 'comparator': self.comparator,
+        return {'name': 'comparison', 'comparator': self.comparator,
                 'value': self.value}
+Comparism = Comparison # Backward compatibilty
 
 class Any(object):
     def __init__(self, *values):

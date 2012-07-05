@@ -107,24 +107,24 @@ class Regexp(Filter):
         raise ValueError(u'Invalid object for Regexp')
 filter_classes[u'regexp'] = Regexp
 
-class Comparism(Filter):
+class Comparison(Filter):
     def __init__(self, comparator, value):
         if comparator not in (u'<', u'>', u'<=', u'>='):
-            raise ValueError(u'Invalid comparism operator: ' + self.comparator)
+            raise ValueError(u'Invalid comparison operator: ' + self.comparator)
         self.comparator = comparator
         self.value = value
 
     def __repr__(self):
-        return u'Comparism({0!r}, {1!r})'.format(self.comparator, self.value)
+        return u'Comparison({0!r}, {1!r})'.format(self.comparator, self.value)
 
     def __eq__(self, other):
-        if isinstance(other, Comparism):
+        if isinstance(other, Comparison):
             return (self.comparator == other.comparator and
                     self.value == other.value)
         return False
 
     def __hash__(self):
-        return hash(u'Comparism') ^ hash(self.comparator) ^ hash(self.value)
+        return hash(u'Comparison') ^ hash(self.comparator) ^ hash(self.value)
 
     def as_sql_expr(self, attr_name, field):
         return u'{0} {1} {2}'.format(field, self.comparator,
@@ -147,7 +147,7 @@ class Comparism(Filter):
         if u'comparator' in obj and u'value' in obj:
             return cls(obj[u'comparator'], obj[u'value'])
         raise ValueError(u'Invalid object for Comparism')
-filter_classes[u'comparism'] = Comparism
+filter_classes[u'comparison'] = Comparison
 
 class Any(Filter):
     def __init__(self, *values):
