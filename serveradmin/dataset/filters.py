@@ -426,6 +426,8 @@ def filter_from_obj(obj):
             isinstance(obj[u'name'], basestring)):
         raise ValueError(u'Invalid filter object')
     try:
+        if obj[u'name'] == 'comparism':
+            obj[u'name'] = 'comparison' # Backward compatibility
         return filter_classes[obj[u'name']].from_obj(obj)
     except KeyError:
         raise ValueError(u'No such filter: {0}').format(obj[u'name'])
