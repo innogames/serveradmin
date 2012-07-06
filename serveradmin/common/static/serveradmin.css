@@ -72,9 +72,13 @@
 }
 
 ins {
-    color:#080;
+ color:#080;
 }
 
 del {
-    color:#c00;
+ color:#c00;
+}
+
+table.tabular td, table.tabular th {
+ border:1px solid #000;
 }
