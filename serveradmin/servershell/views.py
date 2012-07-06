@@ -96,7 +96,7 @@ def get_results(request):
         'servers': results,
         'num_servers': num_servers,
         'shown_attributes': shown_attributes,
-    }, default=json_encode_extra))#, mimetype='application/x-json')
+    }, default=json_encode_extra), mimetype='application/x-json')
 
 def export(request):
     term = request.GET.get('term', '')
