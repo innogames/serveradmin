@@ -1,3 +1,4 @@
 serveradmin/settings.py
 .*.swp
 MANIFEST
+*.pyc
