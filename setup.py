@@ -5,8 +5,9 @@ setup(
     url='http://serveradmin.innogames.de/',
     author='Henning Pridoehl',
     author_email='henning.pridoehl@innogames.de',
-    packages=['adminapi', 'adminapi.dataset', 'adminapi.utils', 'adminapi.api'],
-    version='0.13',
+    packages=['adminapi', 'adminapi.dataset', 'adminapi.utils', 'adminapi.api',
+              'adminapi.cmdline'],
+    version='0.14',
     long_description=('Admin remote API for querying servers and making'
                       'API requests')
 )
