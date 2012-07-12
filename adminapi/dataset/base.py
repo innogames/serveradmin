@@ -42,6 +42,10 @@ class BaseQuerySet(object):
                 lookup[host[attr]] = host
         return lookup
 
+    def request_results(self):
+        self._get_results()
+        return self
+
     def augment(self, *augmentations):
         self._augmentations = set(augmentations)
         return self
