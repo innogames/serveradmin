@@ -38,7 +38,7 @@ class TestQuery(TestCase):
     
     def test_filter_comparism(self):
         hostnames = set()
-        for s in query(game_world=filters.Comparism('<', 2)):
+        for s in query(game_world=filters.Comparison('<', 2)):
             hostnames.add(s['hostname'])
 
         self.assertNotIn(u'test0', hostnames)
@@ -60,8 +60,8 @@ class TestQuery(TestCase):
         pass
     
     def test_or(self):
-        q = query(game_world=filters.Or(filters.Comparism(u'<', 2),
-                filters.Comparism(u'>', 7)))
+        q = query(game_world=filters.Or(filters.Comparison(u'<', 2),
+                filters.Comparison(u'>', 7)))
         hostnames = set()
         for s in q:
             hostnames.add(s[u'hostname'])
