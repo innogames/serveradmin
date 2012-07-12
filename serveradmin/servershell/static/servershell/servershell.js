@@ -287,7 +287,13 @@ function render_server_table()
         shown_attributes.push(search['shown_attributes'][i]);
     }
     for(var i = 0; i < search['shown_attributes_extra'].length; i++) {
-        shown_attributes.push(search['shown_attributes_extra'][i]);
+        var extra = search['shown_attributes_extra'][i];
+        var index = shown_attributes.indexOf(extra);
+        if (index == -1) {
+            shown_attributes.push(extra);
+        } else {
+            shown_attributes.remove(index);
+        }
     }
     build_server_table(search['servers'], shown_attributes, offset);
 }
