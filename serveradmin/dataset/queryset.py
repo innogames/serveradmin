@@ -17,6 +17,8 @@ class QuerySetRepresentation(object):
     """
     def __init__(self, filters, restrict, augmentations, offset, limit,
                  order_by, order_dir):
+        for attr_name, filt in filters.iteritems():
+            filt.typecast(attr_name)
         self.filters = filters
         self.restrict = restrict
         self.augmentations = augmentations
@@ -340,7 +342,7 @@ class QuerySet(BaseQuerySet):
             restrict_ids = u', '.join(str(lookups.attr_names[attr_name].pk)
                     for attr_name in restrict)
             sql_stmt += u' AND attrib_id IN({0})'.format(restrict_ids)
-        
+       
         c.execute(sql_stmt)
         attr_ids = lookups.attr_ids
         for server_id, attr_id, value in c.fetchall():

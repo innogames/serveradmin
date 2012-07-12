@@ -45,6 +45,9 @@ class ExactMatch(Filter):
     def as_code(self):
         return repr(self.value)
 
+    def typecast(self, attr_name):
+        self.value = _typecast(attr_name, self.value)
+
     @classmethod
     def from_obj(cls, obj):
         if u'value' in obj:
@@ -100,6 +103,10 @@ class Regexp(Filter):
     def as_code(self):
         return u'filters.' + repr(self)
 
+    def typecast(self, attr_name):
+        # Regexp value is always string, no need to typecast
+        pass
+
     @classmethod
     def from_obj(cls, obj):
         if u'regexp' in obj and isinstance(obj[u'regexp'], basestring):
@@ -142,6 +149,9 @@ class Comparison(Filter):
     def as_code(self):
         return u'filters.' + repr(self)
 
+    def typecast(self, attr_name):
+        self.value = _typecast(attr_name, self.value)
+
     @classmethod
     def from_obj(cls, obj):
         if u'comparator' in obj and u'value' in obj:
@@ -180,6 +190,12 @@ class Any(Filter):
 
     def as_code(self):
         return u'filters.' + repr(self)
+
+    def typecast(self, attr_name):
+        casted_values = set()
+        for value in self.values:
+            casted_values.add(_typecast(attr_name, value))
+        self.values = casted_values
     
     @classmethod
     def from_obj(cls, obj):
@@ -215,6 +231,10 @@ class _AndOr(Filter):
     def as_code(self):
         args = u', '.join(filt.as_code() for filt in self.filters)
         return u'filters.{0}({1})'.format(self.name.capitalize(), args)
+
+    def typecast(self, attr_name):
+        for filt in self.filters:
+            filt.typecast(attr_name)
 
     @classmethod
     def from_obj(cls, obj):
@@ -270,6 +290,10 @@ class Between(Filter):
     def as_code(self):
         return u'filters.' + repr(self)
 
+    def typecast(self, attr_name):
+        self.a = _typecast(attr_name, self.a)
+        self.b = _typecast(attr_name, self.b)
+
     @classmethod
     def from_obj(cls, obj):
         if u'a' in obj and u'b' in obj:
@@ -304,6 +328,9 @@ class Not(Filter):
 
     def as_code(self):
         return u'filters.Not({0})'.format(self.filter.as_code())
+
+    def typecast(self, attr_name):
+       self.filter.typecast(attr_name)
 
     @classmethod
     def from_obj(cls, obj):
@@ -349,6 +376,9 @@ class Startswith(Filter):
 
     def as_code(self):
         return u'filters.Startswith({0!r})'.format(self.value)
+
+    def typecast(self, attr_name):
+        self.value = _typecast(attr_name, self.value)
     
     @classmethod
     def from_obj(cls, obj):
@@ -386,6 +416,9 @@ class Optional(BaseFilter):
     def as_code(self):
         return u'filters.Optional({0})'.format(self.filter.as_code())
 
+    def typecast(self, attr_name):
+        self.filter.typecast(attr_name)
+
     @classmethod
     def from_obj(cls, obj):
         if u'filter' in obj:
@@ -414,12 +447,12 @@ def _sql_escape(value):
     if isinstance(value, basestring):
         return u"'{0}'".format(value.replace("'", "\\'"))
     elif isinstance(value, (int, long, float)):
-        return str(value)
+        return unicode(value)
     elif isinstance(value, bool):
         return u'1' if value else u'0'
     else:
         raise ValueError(u'Value of type {0} can not be used in SQL'.format(
-                type(value)))
+                value))
 
 def filter_from_obj(obj):
     if not (isinstance(obj, dict) and u'name' in obj and
@@ -431,3 +464,12 @@ def filter_from_obj(obj):
         return filter_classes[obj[u'name']].from_obj(obj)
     except KeyError:
         raise ValueError(u'No such filter: {0}').format(obj[u'name'])
+
+_typecast_fns = {
+    'integer': int,
+    'boolean': lambda x: x in ('1', 'True', 'true', 1, True),
+    'string': lambda x: x if isinstance(x, basestring) else unicode(x),
+    'ip': lambda x: x if isinstance(x, IP) else IP(x)
+}
+def _typecast(attr_name, value):
+    return  _typecast_fns[lookups.attr_names[attr_name].type](value)
