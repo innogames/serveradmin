@@ -1,5 +1,3 @@
-from serveradmin.dataset.filters import Regexp, filter_classes
-
 def parse_function_string(args, strict=True):
     state = 'start'
     args_len = len(args)
@@ -70,7 +68,7 @@ def parse_function_string(args, strict=True):
     
     return parsed_args
 
-def build_query_args(term):
+def parse_query(term, filter_classes):
     parsed_args = parse_function_string(term, strict=True)
     if not parsed_args:
         raise ValueError(u'Empty query')
@@ -79,7 +77,7 @@ def build_query_args(term):
     token, value = parsed_args[0]
     if token != 'key':
         if any(x in term for x in ('.*', '.+', '[', ']', '|', '\\')):
-            hostname = Regexp(term)
+            hostname = filter_classes['regexp'](term)
         else:
             hostname = term
         return {u'hostname': hostname}
@@ -125,5 +123,3 @@ def build_query_args(term):
     if stack and stack[0][0] == 'key':
         query_args[stack[0][1]] = stack[1][1]
     return query_args
-            
-

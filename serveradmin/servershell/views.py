@@ -8,9 +8,10 @@ from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
 
 from adminapi.utils.json import json_encode_extra
+from adminapi.utils.parse import parse_query
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset import query, filters, DatasetError
-from serveradmin.servershell.utils import build_query_args
+from serveradmin.dataset.filters import filter_classes
 
 @login_required
 def index(request):
@@ -64,7 +65,7 @@ def get_results(request):
     
     shown_attributes = ['hostname', 'intern_ip', 'servertype']
     try:
-        query_args = build_query_args(term)
+        query_args = parse_query(term, filter_classes)
         
         # Add attributes with non-constant values to the shown attributes
         for attr, value in query_args.iteritems():
@@ -101,7 +102,7 @@ def get_results(request):
 def export(request):
     term = request.GET.get('term', '')
     try:
-        query_args = build_query_args(term)
+        query_args = parse_query(term, filter_classes)
         q = query(**query_args).restrict('hostname')
     except (ValueError, DatasetError), e:
         return HttpResponse(e.message, status=400)
