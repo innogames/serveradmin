@@ -41,7 +41,7 @@ def main():
     
     try:
         q = query(**query_args).restrict(*attrs)
-    except DatasetError, e:
+    except (ValueError, DatasetError), e:
         print(e.message, file=sys.stderr)
         sys.exit(1)
 
