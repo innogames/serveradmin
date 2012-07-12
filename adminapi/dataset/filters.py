@@ -1,3 +1,5 @@
+filter_classes = {}
+
 class ExactMatch(object):
     def __init__(self, value):
         self.value = value
@@ -7,6 +9,8 @@ class ExactMatch(object):
 
     def _serialize(self):
         return {'name': 'exactmatch', 'value': self.value}
+filter_classes['exactmatch'] = ExactMatch
+
 
 class Regexp(object):
     def __init__(self, regexp):
@@ -17,6 +21,8 @@ class Regexp(object):
 
     def _serialize(self):
         return {'name': 'regexp', 'regexp': self.regexp}
+filter_classes['regexp'] = Regexp
+
 
 class Comparison(object):
     def __init__(self, comparator, value):
@@ -31,7 +37,10 @@ class Comparison(object):
     def _serialize(self):
         return {'name': 'comparison', 'comparator': self.comparator,
                 'value': self.value}
+filter_classes['comparison'] = Comparison
+        
 Comparism = Comparison # Backward compatibilty
+
 
 class Any(object):
     def __init__(self, *values):
@@ -42,6 +51,8 @@ class Any(object):
 
     def _serialize(self):
         return {'name': 'any', 'values': self.values}
+filter_classes['any'] = Any
+
 
 class _AndOr(object):
     def __init__(self, *filters):
@@ -55,11 +66,16 @@ class _AndOr(object):
         return {'name': self.name, 'filters': [f._serialize() for f in
             self.filters]}
 
+
 class And(_AndOr):
     name = 'and'
+filter_classes['and'] = And
+
 
 class Or(_AndOr):
     name = 'or'
+filter_classes['or'] = Or
+
 
 class Between(object):
     def __init__(self, a, b):
@@ -71,6 +87,8 @@ class Between(object):
 
     def _serialize(self):
         return {'name': 'between', 'a': self.a, 'b': self.b}
+filter_classes['between'] = Between
+
 
 class Not(object):
     def __init__(self, filter):
@@ -81,6 +99,8 @@ class Not(object):
     
     def _serialize(self):
         return {'name': 'not', 'filter': self.filter._serialize()}
+filter_classes['not'] = Not
+
 
 class Startswith(object):
     def __init__(self, value):
@@ -91,6 +111,8 @@ class Startswith(object):
 
     def _serialize(self):
         return {'name': 'startswith', 'value': self.value}
+filter_classes['startswith'] = Startswith
+
 
 class Optional(object):
     def __init__(self, filter):
@@ -101,6 +123,8 @@ class Optional(object):
 
     def _serialize(self):
         return {'name': 'optional', 'filter': self.filter._serialize()}
+filter_classes['optional'] = Optional
+
 
 def _prepare_filter(filter):
     return (ExactMatch(filter) if isinstance(filter, (int, basestring, bool))
