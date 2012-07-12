@@ -313,7 +313,8 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'prev': 'Previous page',
         'orderby': 'Order results intuitively (e.g. "order intern_ip [asc]")',
         'commit': 'Commit outstanding changes',
-        'export': 'Export all hostnames for usage in shell'
+        'export': 'Export all hostnames for usage in shell',
+        'perpage': 'Show a specific number of hosts per page (e.g. "perpage 50")'
     };
     
     if (plen == 1 && parsed_args[0]['token'] == 'str') {
@@ -498,6 +499,8 @@ function handle_command_other(command)
         return handle_command_multiattr(parsed_args, 'add');
     } else if (command_name == 'multidel') {
         return handle_command_multiattr(parsed_args, 'del');
+    } else if (command_name == 'perpage') {
+        return handle_command_perpage(parsed_args);
     }
 }
 
@@ -554,6 +557,16 @@ function handle_command_order(parsed_args)
     }
     
     search['order_by'] = parsed_args[1]['value'];
+    execute_search($('#shell_search').val());
+    return '';
+}
+
+function handle_command_perpage(parsed_args)
+{
+    if (parsed_args[1]['token'] != 'str') {
+        return;
+    }
+    search['per_page'] = parseInt(parsed_args[1]['value'], 10);
     execute_search($('#shell_search').val());
     return '';
 }
