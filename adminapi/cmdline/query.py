@@ -40,7 +40,7 @@ def main():
         attrs = ['hostname']
     
     try:
-        q = query(**query_args).restrict(*attrs)
+        q = query(**query_args).restrict(*attrs).request_results()
     except (ValueError, DatasetError), e:
         print(e.message, file=sys.stderr)
         sys.exit(1)
