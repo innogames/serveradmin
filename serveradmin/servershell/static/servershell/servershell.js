@@ -1,5 +1,6 @@
 var search = {
     'shown_attributes': ['hostname', 'intern_ip', 'servertype'],
+    'shown_attributes_extra': [],
     'servers': {},
     'num_servers': 0,
     'page': 1,
@@ -281,7 +282,14 @@ function parse_value(value, attr_name)
 function render_server_table()
 {
     var offset = (search['page'] - 1) * search['per_page'];
-    build_server_table(search['servers'], search['shown_attributes'], offset);
+    var shown_attributes = [];
+    for(var i = 0; i < search['shown_attributes'].length; i++) {
+        shown_attributes.push(search['shown_attributes'][i]);
+    }
+    for(var i = 0; i < search['shown_attributes_extra'].length; i++) {
+        shown_attributes.push(search['shown_attributes_extra'][i]);
+    }
+    build_server_table(search['servers'], shown_attributes, offset);
 }
 
 function autocomplete_shell_command(term, autocomplete_cb)
@@ -507,11 +515,11 @@ function handle_command_attr(parsed_args)
                 return;
             }
             
-            var index = search['shown_attributes'].indexOf(attr_name);
+            var index = search['shown_attributes_extra'].indexOf(attr_name);
             if (index == -1) {
-                search['shown_attributes'].push(attr_name);
+                search['shown_attributes_extra'].push(attr_name);
             } else {
-                search['shown_attributes'].remove(index);
+                search['shown_attributes_extra'].remove(index);
             }
         }
     }
