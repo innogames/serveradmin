@@ -241,7 +241,7 @@ function build_server_table(servers, attributes, offset)
             }
         }
         table.append(row);
-        search['no_mapping'][i + 1] = server;
+        search['no_mapping'][offset + i + 1] = server;
     }
     var heading = '<h3>Results (' + search['num_servers'] + ' servers, ';
     heading += 'page ' + search['page'] + '/' + search['num_pages'] + ')</h3>';
