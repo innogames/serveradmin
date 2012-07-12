@@ -35,6 +35,13 @@ class BaseQuerySet(object):
             query_repr += '.restrict({0})'.format(', '.join(self._restrict))
         return query_repr
 
+    def get_lookup(self, attr):
+        lookup = {}
+        for host in self:
+            if attr in host:
+                lookup[host[attr]] = host
+        return lookup
+
     def augment(self, *augmentations):
         self._augmentations = set(augmentations)
         return self
