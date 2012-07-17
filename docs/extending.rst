@@ -149,6 +149,11 @@ application (or "app"):
 Short git introduction
 ^^^^^^^^^^^^^^^^^^^^^^
 
+Set your name and email::
+   
+   git config --global user.name "Your Name"
+   git config --global user.email your.name@innogames.de
+   
 Fetch new changes from remote repository::
    
    git pull
