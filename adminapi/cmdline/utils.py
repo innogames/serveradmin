@@ -8,10 +8,12 @@ def get_auth_token():
     try:
         with open(config_file) as f:
             for line in f:
+                if line.startswith('#'):
+                    continue
                 try:
                     key, value = line.split('=', 1)
                 except ValueError:
-                    pass
+                    continue
                 key, value = key.strip(), value.strip()
                 if key == 'auth_token':
                     return value
