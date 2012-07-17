@@ -14,7 +14,10 @@ def main():
     opt_parser = OptionParser()
     opt_parser.add_option('-a', '--attr', dest='attrs', action='append')
     opt_parser.add_option('-t', '--token', dest='token')
-    opt_parser.add_option('-e', '--empty', dest='empty_value', default='-')
+    opt_parser.add_option('-n', '--null', dest='null_value', default='-')
+    opt_parser.add_option('-e', '--export', action='store_true')
+    opt_parser.add_option('-s', '--separator', dest='separator', default=' ')
+
     options, args = opt_parser.parse_args()
 
     if len(args) != 1:
@@ -46,13 +49,17 @@ def main():
         print(e.message, file=sys.stderr)
         sys.exit(1)
 
+    if options.export:
+        print(options.separator.join(host[attrs[0]] for host in q))
+        exit(0)
+
     for host in q:
         row_values = []
         for attr in attrs:
             if attr in host:
                 row_values.append(format_obj(host[attr]))
             else:
-                row_values.append(options.empty_value)
+                row_values.append(options.null_value)
         print(u'\t'.join(row_values))
     sys.exit(0)
 
