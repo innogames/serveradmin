@@ -12,6 +12,8 @@ Contents:
    :maxdepth: 2
    
    python-api
+   extending
+   ideas
 
 
 Indices and tables
