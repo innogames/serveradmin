@@ -1,0 +1,4 @@
+Django
+docutils
+python-memcached
+Sphinx
