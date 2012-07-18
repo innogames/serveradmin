@@ -9,6 +9,7 @@ urlpatterns = patterns(
     url(r'^$', lambda req: redirect('servershell_index'),  name='home'),
     url(r'^servershell/', include('serveradmin.servershell.urls')),
     url(r'^api/', include('serveradmin.api.urls')),
+    url(r'^documentation/', include('serveradmin.docs.urls')),
     url(r'^loginapi/', include('igrestlogin.urls')),
     url(r'^logout', 'django.contrib.auth.views.logout_then_login',
         name='logout'),

@@ -1,4 +1,9 @@
 {% extends "base.html" %}
+
+{% block additional_styles %}
+<link href="{{ STATIC_URL }}docs.css" rel="stylesheet" type="text/css" />
+{% endblock %}
+
 {% block title %}{{ document.title }}{% endblock %}
 
 {% block content %}

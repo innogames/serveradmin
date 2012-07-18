@@ -6,10 +6,14 @@
 <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}innogames.css" />
 <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}serveradmin.css" />
 <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}css/ui-innogames/jquery-ui-1.8.21.custom.css" />
+{% block additional_styles %}
+{% endblock %}
 <script type="text/javascript" src="{{ STATIC_URL }}json2.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}jquery-1.7.2.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}jquery-ui-1.8.21.custom.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}common.js"></script>
+{% block additional_scripts %}
+{% endblock %}
 </head>
 <body>
 
@@ -23,10 +27,11 @@
 {% if user.is_authenticated %}
 <li><a href="{% url admin:index %}">Admin</a></li>
 <li><a href="{% url servershell_index %}">Servershell</a></li>
-<li><a href="{% url api_doc_index %}">Documentation</a>
+<li><a href="{% url docs_index %}">Documentation</a>
  <ul class="childmenu">
-<li><a href="{% url api_doc_pythonapi %}">Python API</a></li>
+<li><a href="{% url docs_document 'python-api' %}">Python API</a></li>
 <li><a href="{% url api_doc_functions %}">API functions</a></li>
+<li><a href="{% url docs_document 'extending' %}">Extending</a></li>
  </ul>
 </li>
 <li><a href="{% url logout %}">Logout</a></li>

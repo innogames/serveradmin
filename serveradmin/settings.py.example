@@ -125,6 +125,7 @@ INSTALLED_APPS = (
     'serveradmin.apps',
     'serveradmin.dataset',
     'serveradmin.api',
+    'serveradmin.docs',
     'serveradmin.iprange',
 )
 
