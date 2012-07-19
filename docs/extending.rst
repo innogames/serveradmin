@@ -145,14 +145,33 @@ Terminology
 Just to have same names:
 
 project:
-   Many applications together with settings and a global ``urls.py``
-   form a project. The serveradmin is a project.
+   Many applications together with settings, a global ``urls.py`` and the
+   ``manage.py`` form a project. The "serveradmin" is a project.
 
 application (or "app"):
    An application is basically a combination of several files for the same
    topic. You may have an application for nagios, graphs, the servershell etc.
-   Applications consist of views, models and templates.
+   Applications consist of views, models and templates. If you are familiar
+   with MVC pattern, think of views being the controllers and the templates
+   the views. 
 
+model:
+   The model will contain your application logic. This is mostly your database
+   structure and operations on on it, but also stuff that's not related to the
+   database. In your application you will find a ``models.py`` where you can
+   put your code in.
+
+view:
+   The view will get the input from the user and ask the model for the
+   execution of operations or fetch data from the model to pass it to the
+   template. As already said, it's known as the controller in the MVC pattern.
+   You will add your view functions to the ``views.py`` in your application.
+
+template:
+   The template is - in most cases - just an ordinary HTML file with some
+   template markup to display the data it got from the view. They usually
+   reside in a directory named ``yourapp/templates/yourapp``. You have to
+   create it yourself for a new application.
 
 Short git introduction
 ^^^^^^^^^^^^^^^^^^^^^^
