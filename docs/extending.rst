@@ -304,3 +304,78 @@ Look at the following example::
            # serveradmin, but not on the remote side. You have to catch
            # it and reraise it as ApiError or subclass of ApiError
            raise ApiError(e.message)
+   
+
+Handling Permissions
+^^^^^^^^^^^^^^^^^^^^
+
+We will use Django's integrated Permission system. In Django, you will define
+permissions on a model. You will automatically get a few magic permissions
+named ``app_label.(add|change|delete)_modelname``. For example: If you have a
+class ``IPRange`` in your application ``iprange`` you will get permissions
+named ``iprange.add_iprange`` etc. If you need own permissions, you have to
+define them like this::
+   
+   class IPRange(models.Model):
+       # Fields left out
+
+       class Meta:
+          permissions = (
+             ('can_get_ip', 'Can get a free IP'),
+          )
+   
+You will now get a permission named ``iprange.can_get_ip``.
+
+If you don't have a model class you have to create one. This will normally
+also create a database table, but you can avoid it by setting ``managed``
+to ``False``. This will tell Django that it shouldn't manage the database
+for this model. See the following example (inside servermonitor app)::
+   
+   class Servermonitor(models.Model):
+       class Meta:
+          managed = False
+          permissions = (
+             ('can_view_graphs', 'Can view graphs'),
+          )
+   
+There are several ways to check for permissions at different levels. To check
+permissions on a view, use the ``permission_required`` decorator::
+   
+   @permission_required('servermonitor.can_view_graphs')
+   def view_graphs(request):
+       # Do some stuff and render template
+         
+It will disallow calling this view for all users that don't have the required
+permission.
+
+To check permissions in the template you can use the ``perms`` proxy. Look at
+the following example::
+   
+   {% if perms.iprange.add_iprange %}
+   <a href="{% url iprange_add %}">Add an IP range</a>
+   {% endif %}
+   
+
+.. warning::
+   Just hiding things it the template might not be enough. For example you
+   should not hide a form, but leave the view with form processing unchecked.
+   
+In the code permissions can be checked using the ``user.has_perm`` method. See
+the following example in a view::
+   
+   def change_iprange(request, range_id):
+       ip_range = get_object_or_404(IPRange, pk=range_id)
+
+       if request.method == 'POST':
+          can_delete = request.user.has_perm('iprange.delete_iprange')
+          can_edit = request.user.has_perm('iprange.change_iprange')
+          if action == 'delete' and can_delete:
+              ip_range.delete()
+          if action == 'edit' and can_edit:
+              # edit ip range
+   
+To grant permissions to users, use the Django admin interface. Superusers will
+have all permissions be default.
+
+See the `Django documentation on permissions 
+<https://docs.djangoproject.com/en/1.4/topics/auth/#permissions>`_ for details.
