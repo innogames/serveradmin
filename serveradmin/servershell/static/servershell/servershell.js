@@ -655,7 +655,7 @@ $(function() {
         'delay': 150,
     });
 
-    $('#shell_search').bind('change keydown', function(ev) {
+    $('#shell_search').bind('change', function(ev) {
         $('#shell_understood').text('Nothing yet');
         $('#shell_servers').empty()
     });
