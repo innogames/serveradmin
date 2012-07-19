@@ -1,0 +1,16 @@
+{% load url from future %}
+<p class="pagination"{% if pagination_id %} id="{{ pagination_id }}"{% endif %}>
+{% if page.has_previous %}
+<a href="{{ url }}{{ sep }}page={{ page.previous_page_number }}" data-page="{{ page.previous_page_number }}" class="page">&laquo;</a>
+{% else %}
+<span class="disabled_page">&laquo;</span>
+{% endif %}
+{% for page_num in paginator.page_range %}
+<a href="{{ url }}{{ sep }}page={{ page_num }}" class="page{% if page_num == page.number %} current_page{% endif %}" data-page="{{ page_num }}">{{ page_num }}</a>
+{% endfor %}
+{% if page.has_next %}
+<a href="{{ url }}{{ sep }}page={{ page.next_page_number }}" data-page="{{ page.next_page_number }}" class="page">&raquo;</a>
+{% else %}
+<span class="disabled_page">&raquo;</span>
+{% endif %}
+</p>

@@ -82,3 +82,21 @@ del {
 table.tabular td, table.tabular th {
  border:1px solid #000;
 }
+
+.page {
+	border:1px solid #67a13a;
+	padding:3px;
+}
+
+.current_page {
+	border:1px solid #2e5d23;
+	background:#2e5d23;
+	color:#fff !important;
+	padding:3px;
+}
+
+.disabled_page {
+	border:1px solid #ccc;
+	padding:3px;
+	color:#ccc !important;
+}
