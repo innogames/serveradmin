@@ -155,19 +155,21 @@ application (or "app"):
    with MVC pattern, think of views being the controllers and the templates
    the views. 
 
-model:
-   The model will contain your application logic. This is mostly your database
+models:
+   The models will contain your application logic. This is mostly your database
    structure and operations on on it, but also stuff that's not related to the
    database. In your application you will find a ``models.py`` where you can
-   put your code in.
+   put your code in. Django calls a class inheriting ``django.db.models.Model``
+   a model, which should not be mistaken for the models itself (e.g. a class
+   for your database table and operations vs. your application logic in general)
 
-view:
-   The view will get the input from the user and ask the model for the
+viewe:
+   The views will get the input from the user and ask the model for the
    execution of operations or fetch data from the model to pass it to the
    template. As already said, it's known as the controller in the MVC pattern.
    You will add your view functions to the ``views.py`` in your application.
 
-template:
+templates:
    The template is - in most cases - just an ordinary HTML file with some
    template markup to display the data it got from the view. They usually
    reside in a directory named ``yourapp/templates/yourapp``. You have to
