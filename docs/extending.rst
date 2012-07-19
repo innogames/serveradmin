@@ -59,6 +59,9 @@ environment::
    ln -s /usr/lib/pyshared/python2.7/_mysql.so
    ln -s /usr/share/pyshared/_mysql_exceptions.py
    ln -s /usr/share/pyshared/MySQLdb
+   
+You can also install memcache if you want to use fast caching, but it is not
+required. See the comments in the ``settings.py.example`` (next section).
 
 
 Setting up Django
