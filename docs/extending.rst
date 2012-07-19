@@ -35,6 +35,11 @@ Every time you want to activate the environment, just type::
 For the rest of the instructions we assume that your are inside the serveradmin
 virtual environment.
 
+Bonus: You can set up hooks for your virtual environment by editing the files
+in ``~/.virtualenvs/serveradmin/bin``. Using the ``postactivate`` hook you can
+change directory to the project's source code after activating the virtual
+environment.
+
 
 Installing dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^
