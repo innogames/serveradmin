@@ -8,11 +8,11 @@ Most steps assume that you are using Debian wheezy, but rumors are that you
 could also use Ubuntu.
 
 
-Creating virtual environment
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Creating the virtual environment
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We will first create a virtual python environment which will isolate our python
-packages. This way you can for example use different Django versions for
+packages. This way you can - for example - use different Django versions for
 different projects.
 
 Install the debian package ``virtualenvwrapper``::
@@ -25,8 +25,8 @@ create your virtual environment by typing::
    mkvirtualenv serveradmin
 
 It will create a folder ``~/.virtualenvs/serveradmin`` with some files for the
-environment. You will now see ``(serveradmin)`` in your shell prompt -- this
-means that you are currently inside the virtual environment ``serveradmin``.
+environment. You will now see ``(serveradmin)`` in front of your shell prompt
+-- this means that you are currently inside the virtual environment ``serveradmin``.
 
 Every time you want to activate the environment, just type::
    
@@ -96,8 +96,8 @@ If you see a login prompt, use the following user account:
 If not, consult your local Django expert ;)
 
 
-Bonus: Setting up cool debugger
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Bonus: Setting up a cool debugger
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Install ``django-extensions`` and ``werkzeug`` using pip::
    
@@ -174,7 +174,8 @@ just modified files*)::
 **Don't forget to put a meaningful commit message.**
 
 Once you have done all your changes and your version is ready for deployment
-you can merge it back to master. You may want to fetch changes from remote::
+you can merge it back to master. You may want to fetch changes from remote
+first::
    
    git checkout master
    git pull # Optionally fetch changes from remote
@@ -192,11 +193,18 @@ And finally push your changes to the remote repository::
    
    git push
 
+Have any changes you don't want to commit and still want to change branch? Use
+git stash::
+   
+   git stash # Will save your uncomitted changes
+   # Do whatever you want (e.g. changing branches)
+   git stash pop # Will apply changes again and pop it from stash
+
 
 Short Django introduction
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you have some time I recommend doing the `Dango Tutorial 
+If you have some time I recommend doing the `Django Tutorial 
 <https://docs.djangoproject.com/en/1.4/intro/tutorial01/>`_. It covers many
 topics and gives your a good overview.
 
