@@ -246,4 +246,59 @@ Inside the serveradmin you will find the following files:
 
 The ``settings.py`` contains your settings. You have already edited this file.
 Inside the ``urls.py`` you can define URLs for the serveradmin. In most cases
-you will have an own ``urls.py`` in your application
+you will have an own ``urls.py`` in your application.
+
+
+
+Adding functions to the remote API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To create new functions which are callable by the Python remote API you have
+to define them inside the ``api.py`` file in your application. If it doesn't
+exist, you can just create it.
+
+To export the function you will use the ``api_function`` decorator, as shown
+in the following example::
+   
+   from serveradmin.api.decorators import api_function
+
+   @api_function(group='example')
+   def hello(name):
+      return 'Hello {0}!'.format(name)
+   
+Now you can call this function remotely::
+   
+   from adminapi import api
+
+   example = api.get('example')
+   print example.hello('world') # will print 'Hello world!'
+   
+The API uses JSON for communication, therefore you can only return and receive
+a restricted set of types. The following types are supported: String, integer,
+float, bool, dict, list and None. You can also receive and return datetime/date
+objects, but they will be converted to an unix timestamp prior sending. You have
+to convert them back manually by using ``datetime.fromtimestamp``.
+
+It has also limited support for exceptions. You can either raise a ``ValueError``
+if you get invalid parameters or use ``serveradmin.api.ApiError`` for other
+exceptions. You can subclass ``ApiError`` for more specific exceptions.
+Raising exception has also one other restriction: You can only pass a message,
+but not additional attributes on the exception.
+
+Look at the following example::
+   
+   from serveradmin.api.decorators import api_function
+   from serveradmin.api import ApiError
+
+   @api_function(group='example')
+   def nagios_downtimes(from, to):
+       if to < from:
+           raise ValueError('From must be smaller than to')
+       
+       try:
+           return get_nagios_downtimes(from, to)
+       except NagiosError, e:
+           # Propagating NagiosError would raise an exception in the
+           # serveradmin, but not on the remote side. You have to catch
+           # it and reraise it as ApiError or subclass of ApiError
+           raise ApiError(e.message)
