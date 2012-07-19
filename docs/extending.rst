@@ -293,12 +293,12 @@ Look at the following example::
    from serveradmin.api import ApiError
 
    @api_function(group='example')
-   def nagios_downtimes(from, to):
-       if to < from:
+   def nagios_downtimes(from_time, to_time):
+       if to_time < from_time:
            raise ValueError('From must be smaller than to')
        
        try:
-           return get_nagios_downtimes(from, to)
+           return get_nagios_downtimes(from_time, to_time)
        except NagiosError, e:
            # Propagating NagiosError would raise an exception in the
            # serveradmin, but not on the remote side. You have to catch
@@ -341,9 +341,11 @@ for this model. See the following example (inside servermonitor app)::
 There are several ways to check for permissions at different levels. To check
 permissions on a view, use the ``permission_required`` decorator::
    
+   from django.contrib.auth.decorators import permission_required
+   
    @permission_required('servermonitor.can_view_graphs')
    def view_graphs(request):
-       # Do some stuff and render template
+       pass # Do some stuff and render template
          
 It will disallow calling this view for all users that don't have the required
 permission.
@@ -372,8 +374,8 @@ the following example in a view::
           if action == 'delete' and can_delete:
               ip_range.delete()
           if action == 'edit' and can_edit:
-              # edit ip range
-   
+              pass # edit ip range
+    
 To grant permissions to users, use the Django admin interface. Superusers will
 have all permissions be default.
 
