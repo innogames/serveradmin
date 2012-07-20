@@ -1,7 +1,7 @@
 import re
 import operator
 
-from adminapi.utils import IP
+from adminapi.utils import IP, Network as Network
 from serveradmin.dataset.base import lookups
 
 filter_classes = {}
@@ -387,6 +387,58 @@ class Startswith(Filter):
         raise ValueError(u'Invalid object for Startswith')
 filter_classes[u'startswith'] = Startswith
 
+class InsideNetwork(Filter):
+    def __init__(self, *networks):
+        self.networks = []
+        for network in networks:
+            if not isinstance(network, Network):
+                network = Network(network)
+            self.networks.append(network)
+
+    def __repr__(self):
+        args = u', '.join(repr(network) for network in self.networks)
+        return u'InsideNetwork({0})'.format(args)
+
+    def __eq__(self, other):
+        if isinstance(other, InsideNetwork):
+            return all(
+                    n1 == n2 for n1, n2 in zip(self.networks, other.networks))
+        return False
+
+    def __hash__(self):
+        h = hash('InsideNetwork')
+        for network in self.networks:
+            h ^= hash(network)
+        return h
+
+    def as_sql_expr(self, attr_name, field):
+        betweens = [
+            u'{0} BETWEEN {1} AND {2}'.format(
+            field, net.min_ip.as_int(), net.max_ip.as_int())
+            for net in self.networks]
+
+        sql = u'({0})'.format(u' OR '.join(betweens))
+        print sql
+        return sql
+
+    def matches(self, server_obj, attr_name):
+        return any(
+            net.min_ip <= server_obj[attr_name] <= net.max_ip
+            for net in self.networks)
+
+    def as_code(self):
+        return u'filters.' + repr(self)
+
+    def typecast(self, attr_name):
+        # Typecast was already done in __init__
+        pass
+
+    @classmethod
+    def from_obj(cls, obj):
+        if u'networks' in obj:
+            return cls(*obj[u'networks'])
+        raise ValueError(u'Invalid object for InsideNetwork')
+filter_classes[u'insidenetwork'] = InsideNetwork
 
 class Optional(BaseFilter):
     def __init__(self, filter):
