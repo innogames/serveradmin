@@ -125,6 +125,33 @@ class Optional(object):
         return {'name': 'optional', 'filter': self.filter._serialize()}
 filter_classes['optional'] = Optional
 
+class InsideNetwork(object):
+    def __init__(self, *networks):
+        self.networks = networks
+
+    def __repr__(self):
+        args = ', '.join(repr(net) for net in self.networks)
+        return 'InsideNetwork({0})'.format(args)
+
+    def _serialize(self):
+        return {'name': 'insidenetwork', 'networks': self.networks}
+filter_classes['insidenetwork'] = InsideNetwork
+
+class PublicIP(object):
+    def __repr__(self):
+        return 'PublicIP'
+
+    def _serialize(self):
+        return {'name': 'publicip'}
+filter_classes['publicip'] = PublicIP
+
+def PrivateIP(object):
+    def __repr__(self):
+        return 'PrivateIP'
+
+    def _serialize(self):
+        return {'name': 'privateip'}
+filter_classes['privateip'] = PrivateIP
 
 def _prepare_filter(filter):
     return filter if hasattr(filter, '_serialize') else ExactMatch(filter)
