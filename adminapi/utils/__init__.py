@@ -169,7 +169,7 @@ class Network(object):
 
     def __repr__(self):
         try:
-            return self.as_cidr()
+            return u'Network({0!r})'.format(self.as_cidr())
         except TypeError:
             return u'Network({0!r}, {1!r})'.format(self.min_ip, self.max_ip)
 
