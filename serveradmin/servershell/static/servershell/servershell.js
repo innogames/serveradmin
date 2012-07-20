@@ -402,6 +402,8 @@ function handle_command(command)
         return handle_command_search();
     } else if (command == 'export') {
         return handle_command_export();
+    } else if (command == 'graph') {
+        return handle_command_graph();
     } else if (is_digit(command[0])) {
         return handle_command_range(command);
     } else {
@@ -451,6 +453,32 @@ function handle_command_export()
         });
         box.focus();
     });
+    return '';
+}
+
+function handle_command_graph()
+{
+    function show_graphs(server) {
+        $.get(shell_graph_url + server['hostname'], function(data) {
+            var dialog = $('<div title="' + server['hostname'] + '"></div>');
+            dialog.append(data)
+            dialog.dialog({
+                'width': 1500
+            });
+        });
+    }
+    var marked_servers = get_marked_servers();
+    if (marked_servers.length == 0) {
+        for (obj_id in search['servers']) {
+            show_graphs(search['servers'][obj_id]);
+            break;
+        }
+    } else {
+        for (var i = 0; i < marked_servers.length; i++) {
+            var server = search['servers'][marked_servers[i]];
+            show_graphs(server);
+        }
+    }
     return '';
 }
 

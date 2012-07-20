@@ -117,6 +117,9 @@
 var shell_autocomplete_url = "{% url servershell_autocomplete %}";
 var shell_results_url = "{% url servershell_results %}";
 var shell_export_url = "{% url servershell_export %}";
+var shell_graph_url = "{% url servermonitor_graph_table 'x' %}";
+// chop of x at the end (this is a hack for django url reversing in javascript)
+shell_graph_url = shell_graph_url.substr(0, shell_graph_url.length - 1);
 var available_attributes = {{ attributes_json|safe }};
 var filter_functions = {{ filters_json|safe }};
 //]]>
