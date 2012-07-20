@@ -250,6 +250,21 @@ The ``settings.py`` contains your settings. You have already edited this file.
 Inside the ``urls.py`` you can define URLs for the serveradmin. In most cases
 you will have an own ``urls.py`` in your application.
 
+We will create a small example application named "secinfo" (for "security
+information"). **Please don't commit this application, it is for learning
+purposes only!**
+
+We will use the ``manage.py`` to create our application::
+   
+   ./manage.py startapp secinfo
+   
+Now we have a directory named ``secinfo`` with some files inside it. We will
+move it into the directory ``serveradmin``. The idea is to put general
+applications (those which can be used in other projects too like
+``igrestlogin``) in the same directory as ``manage.py`` and project
+specific applications (like secinfo, nagios etc.) into the project's
+subdirectory.
+
 
 
 Adding functions to the remote API
