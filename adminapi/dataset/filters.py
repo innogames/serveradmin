@@ -127,5 +127,4 @@ filter_classes['optional'] = Optional
 
 
 def _prepare_filter(filter):
-    return (ExactMatch(filter) if isinstance(filter, (int, basestring, bool))
-            else filter)
+    return filter if hasattr(filter, '_serialize') else ExactMatch(filter)
