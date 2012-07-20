@@ -138,6 +138,9 @@ class Network(object):
             elif isinstance(list, tuple):
                 self.min_ip = IP(min_ip[0])
                 self.max_ip = IP(max_ip[0])
+            else:
+                raise ValueError("Can't convert {0} to network".format(
+                    min_ip, max_ip))
         else:
             self.min_ip = IP(min_ip) if not isinstance(min_ip, IP) else min_ip
             self.max_ip = IP(max_ip) if not isinstance(max_ip, IP) else max_ip
