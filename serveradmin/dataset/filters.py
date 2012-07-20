@@ -87,7 +87,7 @@ class Regexp(Filter):
             else:
                 return u'0=1'
         elif lookups.attr_names[attr_name].type == u'ip':
-            return u'NTOA({0}) REGEXP {1}'.format(field, _sql_escape(self.regexp))
+            return u'INET_NTOA({0}) REGEXP {1}'.format(field, _sql_escape(self.regexp))
         else:
             return u'{0} REGEXP {1}'.format(field, _sql_escape(self.regexp))
 
@@ -366,7 +366,7 @@ class Startswith(Filter):
             else:
                 return u'0=1'
         elif lookups.attr_names[attr_name].type == u'ip':
-            return u'NTOA({0}) LIKE {1}'.format(field, _sql_escape(value +
+            return u'INET_NTOA({0}) LIKE {1}'.format(field, _sql_escape(value +
                 '%%'))
         else:
             return u'{0} LIKE {1}'.format(field, _sql_escape(value + u'%%'))
