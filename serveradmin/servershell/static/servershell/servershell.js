@@ -7,7 +7,8 @@ var search = {
     'per_page': 25,
     'order_by': null,
     'order_dir': 'asc',
-    'no_mapping': {}
+    'no_mapping': {},
+    'first_server': null
 };
 
 var commit = {
@@ -242,6 +243,11 @@ function build_server_table(servers, attributes, offset)
         }
         table.append(row);
         search['no_mapping'][offset + i + 1] = server;
+        if (server_list.length == 0) {
+            search['first_server'] = null;
+        } else {
+            search['first_server'] = server_list[0];
+        }
     }
     var heading = '<h3>Results (' + search['num_servers'] + ' servers, ';
     heading += 'page ' + search['page'] + '/' + search['num_pages'] + ')</h3>';
@@ -469,9 +475,8 @@ function handle_command_graph()
     }
     var marked_servers = get_marked_servers();
     if (marked_servers.length == 0) {
-        for (obj_id in search['servers']) {
-            show_graphs(search['servers'][obj_id]);
-            break;
+        if (search['first_server'] != null) {
+            show_graphs(search['first_server']);
         }
     } else {
         for (var i = 0; i < marked_servers.length; i++) {
