@@ -137,6 +137,7 @@ INSTALLED_APPS = (
     'serveradmin.api',
     'serveradmin.docs',
     'serveradmin.iprange',
+    'serveradmin.servermonitor',
 )
 
 # A sample logging configuration. The only tangible logging
@@ -180,5 +181,8 @@ CACHES = {
 DATASET_CACHE_DIR = '/tmp'
 
 OBJECTS_PER_PAGE = 25
+
+SERVERMONITOR_SERVER = ('servermonitor.innogames.de', 5331)
+SERVERMONITOR_GRAPH_URL = 'https://servermonitor.innogames.de/graph/{hostname}/{graph}.png'
 
 raise Exception('Set SECRET_KEY and DATABASE PASSWORD and remove this!')
