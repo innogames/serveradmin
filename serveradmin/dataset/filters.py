@@ -1,7 +1,7 @@
 import re
 import operator
 
-from adminapi.utils import IP, Network as Network
+from adminapi.utils import IP, Network, PRIVATE_IP_BLOCKS, PUBLIC_IP_BLOCKS
 from serveradmin.dataset.base import lookups
 
 filter_classes = {}
@@ -417,9 +417,7 @@ class InsideNetwork(Filter):
             field, net.min_ip.as_int(), net.max_ip.as_int())
             for net in self.networks]
 
-        sql = u'({0})'.format(u' OR '.join(betweens))
-        print sql
-        return sql
+        return u'({0})'.format(u' OR '.join(betweens))
 
     def matches(self, server_obj, attr_name):
         return any(
@@ -439,6 +437,44 @@ class InsideNetwork(Filter):
             return cls(*obj[u'networks'])
         raise ValueError(u'Invalid object for InsideNetwork')
 filter_classes[u'insidenetwork'] = InsideNetwork
+
+class _PrivatePublicIP(Filter):
+    def __init__(self):
+        self.filt = InsideNetwork(*self.blocks)
+    
+    def __repr__(self):
+        return u'{0}()'.format(self.__class__.__name__)
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__)
+
+    def __hash__(self):
+        return hash(self.__class__.__name__)
+
+    def as_sql_expr(self, attr_name, field):
+        return self.filt.as_sql_expr(attr_name, field)
+
+    def matches(self, server_obj, attr_name):
+        return self.filt.matches(server_obj, attr_name)
+
+    def as_code(self):
+        return u'filters.{0}'.format(self.__class__.__name__)
+
+    def typecast(self, attr_name):
+        # We don't have values to typecast
+        pass
+    
+    @classmethod
+    def from_obj(cls, obj):
+        return cls()
+
+class PrivateIP(_PrivatePublicIP):
+    blocks = PRIVATE_IP_BLOCKS
+filter_classes['privateip'] = PrivateIP
+
+class PublicIP(_PrivatePublicIP):
+    blocks = PUBLIC_IP_BLOCKS
+filter_classes['publicip'] = PublicIP
 
 class Optional(BaseFilter):
     def __init__(self, filter):
