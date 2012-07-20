@@ -326,7 +326,8 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'orderby': 'Order results intuitively (e.g. "order intern_ip [asc]")',
         'commit': 'Commit outstanding changes',
         'export': 'Export all hostnames for usage in shell',
-        'perpage': 'Show a specific number of hosts per page (e.g. "perpage 50")'
+        'perpage': 'Show a specific number of hosts per page (e.g. "perpage 50")',
+        'graph': 'Show available servermonitor graphs for selected hosts'
     };
     
     if (plen == 1 && parsed_args[0]['token'] == 'str') {
