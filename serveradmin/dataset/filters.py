@@ -458,7 +458,7 @@ class _PrivatePublicIP(Filter):
         return self.filt.matches(server_obj, attr_name)
 
     def as_code(self):
-        return u'filters.{0}'.format(self.__class__.__name__)
+        return u'filters.{0}()'.format(self.__class__.__name__)
 
     def typecast(self, attr_name):
         # We don't have values to typecast
