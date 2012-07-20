@@ -92,6 +92,19 @@ The following filters are available:
       
       possible_os = ['lenny', 'squeeze']
       hosts = query(os=filters.Any(*possible_os))
+      
+:class:`adminapi.dataset.filters.InsideNetwork`
+   Checks if an IP is inside a network. It takes one or more ``Network``
+   objects. If several networks are given, it checks if it's inside any
+   network. See the following example::
+      
+      query(all_ips=filters.InsideNetwork(Network('192.168.0.0/24')))
+
+:class:`adminapi.dataset.filters.PublicIP`
+   Checks for public IP
+
+:class:`adminapi.dataset.filters.PrivateIP`
+   Checks for private IP
 
 :class:`adminapi.dataset.filters.And`
    Combines two or more filters by using the conjunction of them. Every filter
