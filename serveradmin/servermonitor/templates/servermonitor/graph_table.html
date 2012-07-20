@@ -13,17 +13,17 @@
 {% if graph.hourly %}
         <td><img src="{{ graph.hourly }}" alt="{{ graph.name }} hourly" /></td>
 {% else %}
-		<td><img src="{{ STATIC_URL }}graph_not_available.png" alt="Not available" /></td>
+		<td><div class="graph_not_available">Graph not available</div></td>
 {% endif %}
 {% if graph.daily %}
         <td><img src="{{ graph.daily }}" alt="{{ graph.name }} daily" /></td>
 {% else %}
-		<td><img src="{{ STATIC_URL }}graph_not_available.png" alt="Not available" /></td>
+		<td><div class="graph_not_available">Graph not available</div></td>
 {% endif %}
 {% if graph.weekly %}
         <td><img src="{{ graph.weekly }}" alt="{{ graph.name }} weekly" /></td>
 {% else %}
-		<td><img src="{{ STATIC_URL }}graph_not_available.png" alt="Not available" /></td>
+		<td><div class="graph_not_available">Graph not available</div></td>
 {% endif %}
     </tr>
 </table>
