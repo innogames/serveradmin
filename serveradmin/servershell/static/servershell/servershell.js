@@ -327,7 +327,8 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'commit': 'Commit outstanding changes',
         'export': 'Export all hostnames for usage in shell',
         'perpage': 'Show a specific number of hosts per page (e.g. "perpage 50")',
-        'graph': 'Show available servermonitor graphs for selected hosts'
+        'graph': 'Show available servermonitor graphs for selected hosts',
+        'compare': 'Compare servermonitor graphs for several hosts',
     };
     
     if (plen == 1 && parsed_args[0]['token'] == 'str') {
@@ -541,6 +542,8 @@ function handle_command_other(command)
         return handle_command_multiattr(parsed_args, 'del');
     } else if (command_name == 'perpage') {
         return handle_command_perpage(parsed_args);
+    } else if (command_name == 'compare') {
+        return handle_command_compare(parsed_args);
     }
 }
 
@@ -664,6 +667,28 @@ function handle_command_delattr(parsed_args)
 function handle_command_multiattr(parsed_args, action)
 {
 
+}
+
+function handle_command_compare(parsed_args)
+{
+    var marked_servers = get_marked_servers();
+    var hostnames = [];
+    for (var i = 0; i < marked_servers.length; i++) {
+        var server = search['servers'][marked_servers[i]];
+        hostnames.push(server['hostname']);
+    }
+    var spans = [];
+    for (var i = 1; i < parsed_args.length; i++) {
+        if (parsed_args[i]['token'] == 'str') {
+            spans.push('&graph=' + parsed_args[i]['value']);
+        }
+    }
+    var query_str = '?hostname=' + hostnames.join('&hostname=');
+    query_str += spans.join('');
+    $.get(shell_compare_url + query_str, function(data) {
+        $('<div title="Compare"></div>').append(data).dialog({'width': 800});
+    });
+    return '';
 }
 
 function get_marked_servers()

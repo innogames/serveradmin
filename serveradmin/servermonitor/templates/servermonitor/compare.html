@@ -1,0 +1,21 @@
+{% for graph in compare_table %}
+<h3>{{ graph.name }}</h3>
+{% if graph.hosts %}
+<table>
+    <tr>
+        <th>Hostname</th>
+        <th>Graph</th>
+    </tr>
+{% for hostname in graph.hosts %}
+    <tr>
+        <td>{{ hostname }}</td>
+        <td>
+            <img src="{{ graph.image }}" alt="{{ graph.name }} on {{ hostname }}" />
+        </td>
+    </tr>
+{% endfor %}
+</table>
+{% else %}
+<p>No hosts for this graph.</p>
+{% endif %}
+{% endfor %}
