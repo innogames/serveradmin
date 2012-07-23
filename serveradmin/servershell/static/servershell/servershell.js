@@ -328,7 +328,7 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'export': 'Export all hostnames for usage in shell',
         'perpage': 'Show a specific number of hosts per page (e.g. "perpage 50")',
         'graph': 'Show available servermonitor graphs for selected hosts',
-        'compare': 'Compare servermonitor graphs for several hosts',
+        'cmp': 'Compare servermonitor graphs for several hosts',
     };
     
     if (plen == 1 && parsed_args[0]['token'] == 'str') {
@@ -542,7 +542,7 @@ function handle_command_other(command)
         return handle_command_multiattr(parsed_args, 'del');
     } else if (command_name == 'perpage') {
         return handle_command_perpage(parsed_args);
-    } else if (command_name == 'compare') {
+    } else if (command_name == 'cmp') {
         return handle_command_compare(parsed_args);
     }
 }
