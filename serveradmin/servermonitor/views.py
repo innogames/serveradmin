@@ -28,18 +28,35 @@ def compare(request):
     hostnames = request.GET.getlist('hostname')
     use_graphs = set(request.GET.getlist('graph'))
     graph_hosts = {}
-    for hostname in sorted(hostnames):
-        available_graphs = get_available_graphs(hostname)
-        print available_graphs
-        for graph in available_graphs:
+    host_graphs = {}
+    for hostname in hostnames:
+        host_graphs[hostname] = get_available_graphs(hostname)
+
+    if not use_graphs:
+        for graphs in host_graphs.itervalues():
+            use_graphs.update(graphs)
+
+    for hostname in hostnames:
+        for graph in host_graphs[hostname]:
             if graph in use_graphs:
                 graph_hosts.setdefault(graph, []).append(hostname)
 
-    compare_table = [{'name': graph,
-                      'hosts': graph_hosts.get(graph, []),
-                      'image': get_graph_url(hostname, graph)
-                     } for graph in use_graphs]
-    compare_table.sort(key=itemgetter('name'))
+    compare_table = []
+    for graph in use_graphs:
+        graph_hostnames = graph_hosts.get(graph, [])
+        hosts = [{'hostname': hostname,
+                  'image': get_graph_url(hostname, graph)}
+                 for hostname in graph_hostnames]
+        compare_table.append({
+                'name': graph,
+                'hosts': hosts,
+        })
+
+    # Sort table by graph and hostnames
+    compare_table.sort(key=lambda x: _sort_key(x['name']))
+    for graph_row in compare_table:
+        graph_row['hosts'].sort(key=itemgetter('hostname'))
+    
     return TemplateResponse(request, 'servermonitor/compare.html', {
         'compare_table': compare_table
     })
@@ -50,3 +67,9 @@ def _split_graph_name(graph):
         return graph_name, period
     else:
         return graph,  None
+
+_sort_scores = {'hourly': 1, 'daily': 2, 'weekly': 3, 'monthly': 4,
+                'yearly': 5, None: 6}
+def _sort_key(graph):
+    graph_name, period = _split_graph_name(graph)
+    return (graph_name, _sort_scores.get(period, 0))

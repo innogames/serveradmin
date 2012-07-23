@@ -1,16 +1,28 @@
+{% if compare_table|length > 1 %}
+<ul id="compareindex">
 {% for graph in compare_table %}
-<h3>{{ graph.name }}</h3>
+    <li><a href="#compare_{{ graph.name }}">{{ graph.name }}</a></li>
+{% endfor %}
+</ul>
+{% endif %}
+
+{% for graph in compare_table %}
+<h3 id="compare_{{ graph.name }}">{{ graph.name }}
+{% if compare_table|length > 1 %}
+<small><a href="#compareindex">(index)</a></small>
+{% endif %}
+</h3>
 {% if graph.hosts %}
 <table>
     <tr>
         <th>Hostname</th>
         <th>Graph</th>
     </tr>
-{% for hostname in graph.hosts %}
+{% for host in graph.hosts %}
     <tr>
-        <td>{{ hostname }}</td>
+        <td>{{ host.hostname }}</td>
         <td>
-            <img src="{{ graph.image }}" alt="{{ graph.name }} on {{ hostname }}" />
+            <img src="{{ host.image }}" alt="{{ graph.name }} on {{ host.hostname }}" />
         </td>
     </tr>
 {% endfor %}
