@@ -27,5 +27,4 @@ def serversearch_js():
     return {
         'attributes_json': json.dumps(attributes),
         'filters_json': json.dumps(filter_dict),
-        'attribute_list': sorted(lookups.attr_names.keys()),
     }

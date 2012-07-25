@@ -11,10 +11,13 @@ from adminapi.utils.json import json_encode_extra
 from adminapi.utils.parse import parse_query
 from serveradmin.dataset import query, filters, DatasetError
 from serveradmin.dataset.filters import filter_classes
+from serveradmin.dataset.base import lookups
 
 @login_required
 def index(request):
-    return TemplateResponse(request, 'servershell/index.html')
+    return TemplateResponse(request, 'servershell/index.html', {
+        'attribute_list': sorted(lookups.attr_names.keys()),
+    })
 
 @login_required
 def autocomplete(request):
