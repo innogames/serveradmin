@@ -29,12 +29,13 @@ def reload_graphs(*updates):
     s.connect(settings.SERVERMONITOR_SERVER)
     s.sendall('HOSTNAME==serveradmin.admin\n')
     for hostname, graphs in updates:
-        graph_name, period = split_graph_name(graphs)
-        if not period:
-            period = ''
-        s.sendall('RELOAD=={graph}##{period}##{hostname}\n'.format(
-                graph=graph_name, period=period, hostname=hostname))
-    s.sendall('DONE')
+        for graph in graphs:
+            graph_name, period = split_graph_name(graph)
+            if not period:
+                period = ''
+            s.sendall('RELOAD=={graph}##{period}##{hostname}##\n'.format(
+                    graph=graph_name, period=period, hostname=hostname))
+    s.sendall('DONE\n')
     fileobj = s.makefile()
     return ['SUCCESS' == line.strip() for line in fileobj.readlines()]
     
