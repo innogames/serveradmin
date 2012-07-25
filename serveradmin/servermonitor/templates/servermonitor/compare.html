@@ -1,15 +1,15 @@
 {% if compare_table|length > 1 %}
-<ul id="compareindex">
+<ul id="compareindex_{{ rand }}">
 {% for graph in compare_table %}
-    <li><a href="#compare_{{ graph.name }}">{{ graph.name }}</a></li>
+    <li><a href="#compare_{{ rand }}_{{ graph.name }}">{{ graph.name }}</a></li>
 {% endfor %}
 </ul>
 {% endif %}
 
 {% for graph in compare_table %}
-<h3 id="compare_{{ graph.name }}">{{ graph.name }}
+<h3 id="compare_{{ rand }}_{{ graph.name }}">{{ graph.name }}
 {% if compare_table|length > 1 %}
-<small><a href="#compareindex">(index)</a></small>
+<small><a href="#compareindex_{{ rand }}">(index)</a></small>
 {% endif %}
 </h3>
 {% if graph.hosts %}
@@ -23,12 +23,12 @@
         <td>
 		<p>{{ host.hostname }}</p>
 		<p><a class="link"
-			href="javascript:reload_graph('{{ host.hostname|escapejs }}', '{{ graph.name|escapejs }}', $('#cmp_{{ forloop.counter }}'))">(reload)</a></p>
+			href="javascript:reload_graph('{{ host.hostname|escapejs }}', '{{ graph.name|escapejs }}', $('#cmp_{{ forloop.counter }}_{{ rand }}'))">(reload)</a></p>
 		
 		</td>
         <td>
             <img src="{{ host.image }}" alt="{{ graph.name }} on {{
-                host.hostname }}" id="cmp_{{ forloop.counter }}" />
+                host.hostname }}" id="cmp_{{ forloop.counter }}_{{ rand }}" />
         </td>
     </tr>
 {% endfor %}

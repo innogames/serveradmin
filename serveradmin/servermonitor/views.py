@@ -1,4 +1,5 @@
 import json
+import random
 from operator import itemgetter
 
 from django.template.response import TemplateResponse
@@ -62,7 +63,8 @@ def compare(request):
         graph_row['hosts'].sort(key=itemgetter('hostname'))
 
     return TemplateResponse(request, 'servermonitor/compare.html', {
-        'compare_table': compare_table
+        'compare_table': compare_table,
+        'rand': int(random.random() * 10000)
     })
 
 @require_POST
