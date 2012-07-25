@@ -75,3 +75,11 @@ jQuery(document).ajaxSend(function(event, xhr, settings) {
         xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
     }
 });
+
+function show_spinner() {
+    $('#spinner').show();
+}
+
+function hide_spinner() {
+    $('#spinner').hide();
+}
