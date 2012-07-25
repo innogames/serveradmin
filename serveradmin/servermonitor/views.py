@@ -2,14 +2,15 @@ from operator import itemgetter
 
 from django.template.response import TemplateResponse
 
-from serveradmin.servermonitor.models import get_available_graphs, get_graph_url
+from serveradmin.servermonitor.models import (get_available_graphs, get_graph_url,
+                                           split_graph_name)
 
 def graph_table(request, hostname):
     graphs = get_available_graphs(hostname)
     
     graph_table = {}
     for graph in graphs:
-        graph_name, period = _split_graph_name(graph)
+        graph_name, period = split_graph_name(graph)
         if period:
             graph_dict = graph_table.setdefault(graph_name, {})
             graph_dict[period] = get_graph_url(hostname, graph)
@@ -61,15 +62,8 @@ def compare(request):
         'compare_table': compare_table
     })
 
-def _split_graph_name(graph):
-    if graph.endswith(('-hourly', '-daily', '-weekly', '-monthly', '-yearly')):
-        graph_name, period = graph.rsplit('-', 1)
-        return graph_name, period
-    else:
-        return graph,  None
-
 _sort_scores = {'hourly': 1, 'daily': 2, 'weekly': 3, 'monthly': 4,
                 'yearly': 5, None: 6}
 def _sort_key(graph):
-    graph_name, period = _split_graph_name(graph)
+    graph_name, period = split_graph_name(graph)
     return (graph_name, _sort_scores.get(period, 0))
