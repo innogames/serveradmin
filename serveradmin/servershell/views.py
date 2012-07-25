@@ -6,6 +6,7 @@ except ImportError:
 from django.http import HttpResponse
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 from adminapi.utils.json import json_encode_extra
 from adminapi.utils.parse import parse_query
@@ -14,6 +15,7 @@ from serveradmin.dataset.filters import filter_classes
 from serveradmin.dataset.base import lookups
 
 @login_required
+@ensure_csrf_cookie
 def index(request):
     return TemplateResponse(request, 'servershell/index.html', {
         'attribute_list': sorted(lookups.attr_names.keys()),
