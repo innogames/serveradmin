@@ -1,9 +1,12 @@
+import json
 from operator import itemgetter
 
 from django.template.response import TemplateResponse
+from django.http import HttpResponse, HttpResponseBadRequest
+from django.views.decorators.http import require_POST
 
 from serveradmin.servermonitor.models import (get_available_graphs, get_graph_url,
-                                           split_graph_name)
+                                           split_graph_name, reload_graphs)
 
 def graph_table(request, hostname):
     graphs = get_available_graphs(hostname)
@@ -57,10 +60,22 @@ def compare(request):
     compare_table.sort(key=lambda x: _sort_key(x['name']))
     for graph_row in compare_table:
         graph_row['hosts'].sort(key=itemgetter('hostname'))
-    
+
     return TemplateResponse(request, 'servermonitor/compare.html', {
         'compare_table': compare_table
     })
+
+@require_POST
+def reload(request):
+    try:
+        hostname = request.POST['hostname']
+        graph = request.POST['graph']
+    except KeyError:
+        return HttpResponseBadRequest('No hostname or graph')
+
+    resp = HttpResponse(mimetype='application/x-json')
+    json.dump({'result': reload_graphs((hostname, [graph]))}, resp)
+    return resp
 
 _sort_scores = {'hourly': 1, 'daily': 2, 'weekly': 3, 'monthly': 4,
                 'yearly': 5, None: 6}

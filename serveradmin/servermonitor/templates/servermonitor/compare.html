@@ -20,9 +20,15 @@
     </tr>
 {% for host in graph.hosts %}
     <tr>
-        <td>{{ host.hostname }}</td>
         <td>
-            <img src="{{ host.image }}" alt="{{ graph.name }} on {{ host.hostname }}" />
+		<p>{{ host.hostname }}</p>
+		<p><a class="link"
+			href="javascript:reload_graph('{{ host.hostname|escapejs }}', '{{ graph.name|escapejs }}', $('#cmp_{{ forloop.counter }}'))">(reload)</a></p>
+		
+		</td>
+        <td>
+            <img src="{{ host.image }}" alt="{{ graph.name }} on {{
+                host.hostname }}" id="cmp_{{ forloop.counter }}" />
         </td>
     </tr>
 {% endfor %}
@@ -31,3 +37,8 @@
 <p>No hosts for this graph.</p>
 {% endif %}
 {% endfor %}
+<script type="text/javascript">
+//<![CDATA[
+var monitor_reload_url = '{% url servermonitor_reload %}';
+//]]>
+</script>
