@@ -9,32 +9,12 @@ from django.contrib.auth.decorators import login_required
 
 from adminapi.utils.json import json_encode_extra
 from adminapi.utils.parse import parse_query
-from serveradmin.dataset.base import lookups
 from serveradmin.dataset import query, filters, DatasetError
 from serveradmin.dataset.filters import filter_classes
 
 @login_required
 def index(request):
-    attributes = {}
-    for attr in lookups.attr_names.itervalues():
-        attributes[attr.name] = {
-            'multi': attr.multi,
-            'type': attr.type
-        }
-
-    filter_dict = {}
-    for filt in filters.filter_classes.iterkeys():
-        if filt == 'exactmatch':
-            continue
-        # TODO: Fill with real description
-        filt = filt.capitalize()
-        filter_dict[filt] = filt
-
-    return TemplateResponse(request, 'servershell/index.html', {
-        'attributes_json': json.dumps(attributes),
-        'filters_json': json.dumps(filter_dict),
-        'attribute_list': sorted(lookups.attr_names.keys()),
-    })
+    return TemplateResponse(request, 'servershell/index.html')
 
 @login_required
 def autocomplete(request):
