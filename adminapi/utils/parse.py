@@ -76,7 +76,7 @@ def parse_query(term, filter_classes):
     # If first token is not a key, we assume that a hostname is meant
     token, value = parsed_args[0]
     if token != 'key':
-        if any(x in term for x in ('.*', '.+', '[', ']', '|', '\\')):
+        if any(x in term for x in ('.*', '.+', '[', ']', '|', '\\', '$', '^')):
             hostname = filter_classes['regexp'](term)
         else:
             hostname = term
