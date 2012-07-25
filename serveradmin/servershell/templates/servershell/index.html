@@ -132,6 +132,7 @@ var available_attributes = {{ attributes_json|safe }};
 var filter_functions = {{ filters_json|safe }};
 //]]>
 </script>
+<script type="text/javascript" src="{{ STATIC_URL }}common/autocomplete_search.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}servershell/common.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}servershell/servershell.js"></script>
 {% endblock %}
