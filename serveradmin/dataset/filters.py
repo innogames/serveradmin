@@ -239,7 +239,7 @@ class _AndOr(Filter):
     @classmethod
     def from_obj(cls, obj):
         if u'filters' in obj and isinstance(obj[u'filters'], list):
-            return cls(*[filter_from_obj for filter in obj[u'filters']])
+            return cls(*[filter_from_obj(filter) for filter in obj[u'filters']])
         raise ValueError(u'Invalid object for {0}'.format(
                 cls.__name__.capitalize()))
 
