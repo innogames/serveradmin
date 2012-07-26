@@ -1,3 +1,18 @@
+{% extends base_template %}
+
+{% block title %}Graphs for  {{ hostname }}{% endblock %}
+
+{% block content %}
+{% if not is_ajax %}
+<h2>Graphs for {{ hostname }}</h2>
+{% endif %}
+
+{% if is_ajax %}
+<p><a href="{{ link }}">
+    <img src="{{ STATIC_URL }}link.png" alt="Link to this page" />
+</a></p>
+{% endif %}
+
 {% for graph in graph_table %}
 <h3>{{ graph.name }}</h3>
 {% if graph.general %}
@@ -29,3 +44,4 @@
 </table>
 {% endif %}
 {% endfor %}
+{% endblock content %}

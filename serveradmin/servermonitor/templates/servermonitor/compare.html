@@ -1,3 +1,18 @@
+{% extends base_template %}
+
+{% block title %}Graph comparison{% endblock %}
+
+{% block content %}
+{% if not is_ajax %}
+<h2>Graph comparison</h2>
+{% endif %}
+
+{% if is_ajax %}
+<p><a href="{{ link }}">
+    <img src="{{ STATIC_URL }}link.png" alt="Link to this page" />
+</a></p>
+{% endif %}
+
 {% if compare_table|length > 1 %}
 <ul id="compareindex">
 {% for graph in compare_table %}
@@ -59,3 +74,4 @@ var monitor_reload_url = '{% url servermonitor_reload %}';
 attach_graph_reload();
 //]]>
 </script>
+{% endblock content %}

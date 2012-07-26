@@ -25,7 +25,11 @@ def graph_table(request, hostname):
             }
     graph_table = sorted(graph_table.values(), key=itemgetter('name'))
     return TemplateResponse(request, 'servermonitor/graph_table.html', {
-        'graph_table': graph_table
+        'hostname': hostname,
+        'graph_table': graph_table,
+        'is_ajax': request.is_ajax(),
+        'base_template': 'empty.html' if request.is_ajax() else 'base.html',
+        'link': request.get_full_path()
     })
 
 def compare(request):
@@ -77,7 +81,10 @@ def compare(request):
         graph_row['hosts'].sort(key=itemgetter('hostname'))
     
     return TemplateResponse(request, 'servermonitor/compare.html', {
-        'compare_table': compare_table
+        'compare_table': compare_table,
+        'is_ajax': request.is_ajax(),
+        'base_template': 'empty.html' if request.is_ajax() else 'base.html',
+        'link': request.get_full_path()
     })
 
 @require_POST
