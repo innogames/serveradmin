@@ -1,7 +1,8 @@
 import socket
 
-from django.db import models
 from django.conf import settings
+
+PERIODS = ('hourly', 'daily', 'weekly', 'monthly', 'yearly')
 
 def get_available_graphs(hostname):
     # FIXME: Validate hostname!
@@ -40,9 +41,13 @@ def reload_graphs(*updates):
     return ['SUCCESS' == line.strip() for line in fileobj.readlines()]
     
 
+_period_extensions = tuple('-' + period for period in PERIODS)
 def split_graph_name(graph):
-    if graph.endswith(('-hourly', '-daily', '-weekly', '-monthly', '-yearly')):
+    if graph.endswith(_period_extensions):
         graph_name, period = graph.rsplit('-', 1)
         return graph_name, period
     else:
         return graph,  None
+
+def join_graph_name(graph, period):
+    return '-'.join((graph, period)) if period else graph
