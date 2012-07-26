@@ -54,7 +54,10 @@ def parse_function_string(args, strict=True):
                 parsed_args.append(('endfunc', ''))
                 call_depth -= 1
                 state = 'start'
-            elif args[i] == '=':
+            # Do not parse key inside functions or of preceding token
+            # was also a key
+            elif args[i] == '=' and call_depth == 0 and (not parsed_args or
+                    parsed_args[-1][0] != 'key'):
                 parsed_args.append(('key', args[string_start:i]))
                 state = 'start'
             i += 1
