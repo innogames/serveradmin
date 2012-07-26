@@ -3,6 +3,7 @@ import operator
 
 from adminapi.utils import IP, Network, PRIVATE_IP_BLOCKS, PUBLIC_IP_BLOCKS
 from serveradmin.dataset.base import lookups
+from serveradmin.dataset.exceptions import DatasetError
 
 filter_classes = {}
 class BaseFilter(object):
@@ -389,15 +390,33 @@ filter_classes[u'startswith'] = Startswith
 
 class InsideNetwork(Filter):
     def __init__(self, *networks):
+        # Avoid cyclic imports. Using other components inside dataset
+        # is really a problem. TODO: Think about solutions
+        from serveradmin.iprange.models import IPRange
         self.networks = []
+        self.iprange_mapping = {}
         for network in networks:
             if not isinstance(network, Network):
-                network = Network(network)
+                if isinstance(network, basestring) and '/' not in network:
+                    try:
+                        iprange = IPRange.objects.get(pk=network)
+                        network_obj = Network(iprange.min, iprange.max)
+                        self.iprange_mapping[network_obj] = network
+                        network = network_obj
+                    except IPRange.DoesNotExist:
+                        raise DatasetError('No such IP range: ' + network)
+                else:
+                    network = Network(network)
             self.networks.append(network)
 
     def __repr__(self):
-        args = u', '.join(repr(network) for network in self.networks)
-        return u'InsideNetwork({0})'.format(args)
+        args = []
+        for network in self.networks:
+            try:
+                args.append(repr(self.iprange_mapping[network]))
+            except KeyError:
+                args.append(repr(network))
+        return u'InsideNetwork({0})'.format(u', '.join(args))
 
     def __eq__(self, other):
         if isinstance(other, InsideNetwork):
