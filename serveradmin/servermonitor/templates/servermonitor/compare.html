@@ -6,6 +6,7 @@
 </ul>
 {% endif %}
 
+<p>Click on the images to refresh them.</p>
 {% for graph in compare_table %}
 <h3 id="compare_{{ graph.name }}">{{ graph.name }}
 {% if compare_table|length > 1 %}
@@ -14,23 +15,38 @@
 </h3>
 {% if graph.hosts %}
 <table>
-    <tr>
-        <th>Hostname</th>
-        <th>Graph</th>
-    </tr>
 {% for host in graph.hosts %}
     <tr>
-        <td>
-		<p>{{ host.hostname }}</p>
-		<p><a class="link"
-			href="javascript:reload_graph('{{ host.hostname|escapejs }}', '{{ graph.name|escapejs }}', $('#cmp_{{ forloop.counter }}'))">(reload)</a></p>
-		
-		</td>
-        <td>
-            <img src="{{ host.image }}" alt="{{ graph.name }} on {{
-                host.hostname }}" id="cmp_{{ forloop.counter }}" />
-        </td>
+		<td></td>
+        <th>Hourly</th>
+        <th>Daily</th>
+        <th>Weekly</th>
     </tr>
+    <tr>
+        <th{% if host.monthly.image or host.yearly.image %} rowspan="3"{% endif %}>
+        {{ host.hostname }}
+        </th>
+        {% include "servermonitor/compare_image.html" with hostname=host.hostname period=host.hourly %}
+        {% include "servermonitor/compare_image.html" with hostname=host.hostname period=host.daily %}
+        {% include "servermonitor/compare_image.html" with hostname=host.hostname period=host.weekly %}
+    </tr>
+    {% if host.monthly.image or host.yearly.image %}
+    <tr class="cmp-extra">
+        <th>Monthly</th>
+        <th>Yearly</th>
+        <th></th>
+    </tr>
+    <tr class="cmp-extra">
+        {% include "servermonitor/compare_image.html" with hostname=host.hostname period=host.monthly %}
+        {% include "servermonitor/compare_image.html" with hostname=host.hostname period=host.monthly %}
+		<td></td>
+    </tr> 
+    {% endif %}
+    {% if not forloop.last %}
+    <tr>
+        <td colspan="4"><hr /></td>
+    </tr>
+    {% endif %}
 {% endfor %}
 </table>
 {% else %}
@@ -40,5 +56,6 @@
 <script type="text/javascript">
 //<![CDATA[
 var monitor_reload_url = '{% url servermonitor_reload %}';
+attach_graph_reload();
 //]]>
 </script>

@@ -6,7 +6,7 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_POST
 
 from serveradmin.servermonitor.models import (get_available_graphs, get_graph_url,
-                                           split_graph_name, reload_graphs)
+        split_graph_name, join_graph_name, reload_graphs, PERIODS)
 
 def graph_table(request, hostname):
     graphs = get_available_graphs(hostname)
@@ -30,29 +30,44 @@ def graph_table(request, hostname):
 
 def compare(request):
     hostnames = request.GET.getlist('hostname')
-    use_graphs = set(request.GET.getlist('graph'))
-    graph_hosts = {}
-    host_graphs = {}
+    use_graphs = set() # Will contain shown graphs (without period)
+    for graph in request.GET.getlist('graph'):
+        graph_name, period = split_graph_name(graph)
+        use_graphs.add(graph_name)
+
+    graph_hosts = {} # Contains mapping from graph_name to list of hosts
+    host_graphs = {} # Available graphs [hostname] -> (graph_name, period)
     for hostname in hostnames:
-        host_graphs[hostname] = get_available_graphs(hostname)
+        host_graphs[hostname] = set([split_graph_name(graph)
+                                 for graph in get_available_graphs(hostname)])
 
     if not use_graphs:
         for graphs in host_graphs.itervalues():
-            use_graphs.update(graphs)
+            use_graphs.update([graph[0] for graph in graphs])
 
     for hostname in hostnames:
-        for graph in host_graphs[hostname]:
+        for graph, period in host_graphs[hostname]:
             if graph in use_graphs:
                 graph_hosts.setdefault(graph, []).append(hostname)
 
     compare_table = []
-    for graph in use_graphs:
-        graph_hostnames = graph_hosts.get(graph, [])
-        hosts = [{'hostname': hostname,
-                  'image': get_graph_url(hostname, graph)}
-                 for hostname in graph_hostnames]
+    for graph_name in use_graphs:
+        graph_hostnames = graph_hosts.get(graph_name, [])
+        hosts = []
+        for hostname in graph_hostnames:
+            host = {
+                'hostname': hostname
+            }
+            for period in PERIODS:
+                graph = join_graph_name(graph_name, period)
+                if (graph_name, period) in host_graphs[hostname]:
+                    image = get_graph_url(hostname, graph)
+                else:
+                    image = None
+                host[period] = {'image': image, 'graph': graph}
+            hosts.append(host)
         compare_table.append({
-                'name': graph,
+                'name': graph_name,
                 'hosts': hosts,
         })
 
@@ -60,7 +75,7 @@ def compare(request):
     compare_table.sort(key=lambda x: _sort_key(x['name']))
     for graph_row in compare_table:
         graph_row['hosts'].sort(key=itemgetter('hostname'))
-
+    
     return TemplateResponse(request, 'servermonitor/compare.html', {
         'compare_table': compare_table
     })

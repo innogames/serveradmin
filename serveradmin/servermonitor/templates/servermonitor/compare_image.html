@@ -1,0 +1,10 @@
+        {% if period.image %}
+        <td>
+            <img src="{{ period.image }}" class="cmp-graph" 
+                alt="{{ period.graph }} on {{ hostname }}"
+                data-hostname="{{ hostname }}"
+                data-graph="{{ period.graph }}" />
+        </td>
+        {% else %}
+        <td><div class="graph_not_available">Graph not available</div></td>
+        {% endif %}

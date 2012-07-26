@@ -594,16 +594,23 @@ function handle_command_compare(parsed_args)
         var server = search['servers'][marked_servers[i]];
         hostnames.push(server['hostname']);
     }
-    var spans = [];
+    
+    if (hostnames.length == 0) {
+        $('<dialog title="Error">Please select some servers.</div>').dialog();
+        return
+    }
+
+    var graphs = [];
     for (var i = 1; i < parsed_args.length; i++) {
         if (parsed_args[i]['token'] == 'str') {
-            spans.push('&graph=' + parsed_args[i]['value']);
+            graphs.push('&graph=' + parsed_args[i]['value']);
         }
     }
     var query_str = '?hostname=' + hostnames.join('&hostname=');
-    query_str += spans.join('');
+    query_str += graphs.join('');
     $.get(shell_compare_url + query_str, function(data) {
-        $('<div title="Compare"></div>').append(data).dialog({'width': 800});
+        $('<div title="Compare"></div>').append(data).dialog({'width': 1650});
+        attach_graph_reload();
     });
     return '';
 }
