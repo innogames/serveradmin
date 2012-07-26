@@ -94,6 +94,11 @@ def parse_query(term, filter_classes):
                 stack = []
             stack.append(arg)
         elif token == 'func':
+            # Do not allow functions without preceeding key
+            # if they are on top level (e.g. call_depth = 0)
+            if not stack or (call_depth == 0 and stack[-1][0] != 'key'):
+                raise ValueError('Invalid term: top level function requires '
+                                 'preceding attribute')
             call_depth += 1
             stack.append(arg)
         elif token == 'endfunc':
@@ -117,7 +122,8 @@ def parse_query(term, filter_classes):
         elif token == 'str':
             # Do not allow strings without key or function context
             if not stack or (call_depth == 0 and stack[-1][0] != 'key'):
-                raise ValueError('Invalid term')
+                raise ValueError('Invalid term: Top level strings are not '
+                                 'allowed when attributes are used')
             stack.append(arg)
 
     if stack and stack[0][0] == 'key':
