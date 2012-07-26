@@ -19,6 +19,7 @@ from serveradmin.dataset.base import lookups
 def index(request):
     return TemplateResponse(request, 'servershell/index.html', {
         'attribute_list': sorted(lookups.attr_names.keys()),
+        'search_term': request.GET.get('term', '')
     })
 
 @login_required

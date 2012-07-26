@@ -82,6 +82,10 @@
  display:none;
 }
 
+#shell_search_link {
+ display:none;
+}
+
 .noargs {
  font-style:italic;
 }

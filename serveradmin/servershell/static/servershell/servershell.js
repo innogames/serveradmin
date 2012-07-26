@@ -29,7 +29,9 @@ function execute_search(term)
         search_request['order_by'] = search['order_by'];
         search_request['order_dir'] = search['order_dir'];
     }
+    $('#shell_search_link').attr('href', '?' + $.param({'term': term})).show();
     $.getJSON(shell_results_url, search_request, function(data) {
+
         if (data['status'] != 'success') {
             var error = $('<span class="error"></span>').text(data['message']);
             $('#shell_understood').empty().append(error);

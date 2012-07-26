@@ -10,10 +10,14 @@
     <td>Search: </td>
     <td>
         <form method="post" action="" id="shell_search_form">
-        <input type="text" size="60"  id="shell_search" />
+        <input type="text" size="60"  id="shell_search" value="{{ search_term }}" />
         </form>
     </td>
 	<td>
+		<a href="?term=" id="shell_search_link">
+			<img src="{{ STATIC_URL }}link.png" alt="Link to this search" 
+				title="Link to this search" />
+		</a>
 	{% comment %}
 		<img src="{{ STATIC_URL}}bookmarked.png" id="shell_bookmarked" />
 		<img src="{{ STATIC_URL}}notbookmarked.png" id="shell_notbookmarked" />
