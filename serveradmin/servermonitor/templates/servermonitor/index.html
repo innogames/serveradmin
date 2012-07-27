@@ -41,7 +41,8 @@
     </tr>
 {% for hwhost in hardware_hosts %}
     <tr>
-        <td>{{ hwhost.hostname }}</td>
+        <td><a href="{% url servermonitor_graph_table %}?hostname={{ hwhost.hostname }}"
+			>{{ hwhost.hostname }}</a></td>
         <td>{{ hwhost.servertype }}</td>
         <td><a class="graph_sprite"
             style="background:url({{ hwhost.image }});left:0px;"
@@ -88,7 +89,8 @@
         </td>
         <td>
 {% for guest_host in hwhost.guests %}
-        {{ guest_host }}
+        <a href="{% url servermonitor_graph_table %}?hostname={{ guest_host }}"
+		>{{ guest_host }}</a>
 {% endfor %}
         </td>
     </tr>

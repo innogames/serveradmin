@@ -78,7 +78,7 @@ def index(request):
         else:
             mem_total = None
         hardware[host_info.hostname].update({
-            'guests': host_info.running_vserver.split(','),
+            'guests': host_info.running_vserver.split(),
             'mem_free': host_info.mem_free_dom0 * to_bytes,
             'mem_total': mem_total,
             'disk_free': host_info.disk_free_dom0 * to_bytes
