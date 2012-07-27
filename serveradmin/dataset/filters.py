@@ -318,11 +318,25 @@ class Not(Filter):
         return hash(u'Not') ^ hash(self.filter)
 
     def as_sql_expr(self, attr_name, field):
-        if isinstance(self.filter, ExactMatch):
-            return u'{0} != {1}'.format(field, _prepare_value(attr_name,
-                    self.filter.value))
+
+        if lookups.attr_names[attr_name].multi:
+            # FIXME: The random is a quite dirty hack that needs to be
+            # replaced with something better. The query building should
+            # be refactored to use a query builder objects which will
+            # be passed to as_sql_expr
+            import random 
+            cond = self.filter.as_sql_expr(attr_name, 'nav.value')
+            subquery = ('SELECT id FROM attrib_values AS nav{0} '
+                        'WHERE {1} AND nav.server_id = adms.server_id').format(
+                                random.randint(0, 999999), cond)
+            return 'NOT EXISTS ({0})'.format(subquery)
         else:
-            return u'NOT {0}'.format(self.filter.as_sql_expr(attr_name, field))
+            if isinstance(self.filter, ExactMatch):
+                return u'{0} != {1}'.format(field, _prepare_value(attr_name,
+                        self.filter.value))
+            else:
+                return u'NOT {0}'.format(self.filter.as_sql_expr(attr_name,
+                        field))
 
     def matches(self, server_obj, attr_name):
         return not self.filter.matches(server_obj, attr_name)
