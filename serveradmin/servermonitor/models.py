@@ -77,19 +77,22 @@ def reload_graphs(*updates):
                      ('serveradmin.admin', ['net-hourly']))
     """
     # FIXME: Validate hostname!
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect(settings.SERVERMONITOR_SERVER)
-    s.sendall('HOSTNAME==serveradmin.admin\n')
-    for hostname, graphs in updates:
-        for graph in graphs:
-            graph_name, period = split_graph_name(graph)
-            if not period:
-                period = ''
-            s.sendall('RELOAD=={graph}##{period}##{hostname}##\n'.format(
-                    graph=graph_name, period=period, hostname=hostname))
-    s.sendall('DONE\n')
-    fileobj = s.makefile()
-    return ['SUCCESS' == line.strip() for line in fileobj.readlines()]
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(settings.SERVERMONITOR_SERVER)
+        s.sendall('HOSTNAME==serveradmin.admin\n')
+        for hostname, graphs in updates:
+            for graph in graphs:
+                graph_name, period = split_graph_name(graph)
+                if not period:
+                    period = ''
+                s.sendall('RELOAD=={graph}##{period}##{hostname}##\n'.format(
+                        graph=graph_name, period=period, hostname=hostname))
+        s.sendall('DONE\n')
+        fileobj = s.makefile()
+        return ['SUCCESS' == line.strip() for line in fileobj.readlines()]
+    except socket.error:
+        return [False] * sum(len(graphs) for _host, graphs in updates) 
     
 
 _period_extensions = tuple('-' + period for period in PERIODS)
