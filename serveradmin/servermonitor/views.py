@@ -58,11 +58,11 @@ def compare(request):
     for hostname in hostnames:
         for graph, period in host_graphs[hostname]:
             if graph in use_graphs:
-                graph_hosts.setdefault(graph, []).append(hostname)
+                graph_hosts.setdefault(graph, set()).add(hostname)
 
     compare_table = []
     for graph_name in use_graphs:
-        graph_hostnames = graph_hosts.get(graph_name, [])
+        graph_hostnames = graph_hosts.get(graph_name, set())
         hosts = []
         for hostname in graph_hostnames:
             host = {
