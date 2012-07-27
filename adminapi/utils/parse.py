@@ -74,7 +74,7 @@ def parse_function_string(args, strict=True):
 def parse_query(term, filter_classes):
     parsed_args = parse_function_string(term, strict=True)
     if not parsed_args:
-        raise ValueError(u'Empty query')
+        return {}
 
     # If first token is not a key, we assume that a hostname is meant
     token, value = parsed_args[0]
