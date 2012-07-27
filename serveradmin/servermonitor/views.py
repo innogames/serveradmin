@@ -4,10 +4,12 @@ from operator import itemgetter
 from django.template.response import TemplateResponse
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
 
 from serveradmin.servermonitor.models import (get_available_graphs, get_graph_url,
         split_graph_name, join_graph_name, reload_graphs, PERIODS)
 
+@login_required
 def graph_table(request, hostname):
     graphs = get_available_graphs(hostname)
     
@@ -32,6 +34,7 @@ def graph_table(request, hostname):
         'link': request.get_full_path()
     })
 
+@login_required
 def compare(request):
     hostnames = request.GET.getlist('hostname')
     use_graphs = set() # Will contain shown graphs (without period)
@@ -88,6 +91,7 @@ def compare(request):
     })
 
 @require_POST
+@login_required
 def reload(request):
     try:
         hostname = request.POST['hostname']
