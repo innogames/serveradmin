@@ -325,10 +325,12 @@ class Not(Filter):
             # be refactored to use a query builder objects which will
             # be passed to as_sql_expr
             import random 
-            cond = self.filter.as_sql_expr(attr_name, 'nav.value')
+            uid = random.randint(0, 999999)
+            cond = self.filter.as_sql_expr(attr_name, 'nav{0}.value'.format(
+                    uid))
             subquery = ('SELECT id FROM attrib_values AS nav{0} '
-                        'WHERE {1} AND nav.server_id = adms.server_id').format(
-                                random.randint(0, 999999), cond)
+                        'WHERE {1} AND nav{0}.server_id = adms.server_id').format(
+                                uid, cond)
             return 'NOT EXISTS ({0})'.format(subquery)
         else:
             if isinstance(self.filter, ExactMatch):
