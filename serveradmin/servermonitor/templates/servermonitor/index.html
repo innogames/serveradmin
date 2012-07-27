@@ -45,17 +45,17 @@
 			>{{ hwhost.hostname }}</a></td>
         <td>{{ hwhost.servertype }}</td>
         <td><a class="graph_sprite"
-            style="background:url({{ hwhost.image }});left:0px;"
+            style="background:url({{ hwhost.image }}) 0px 0;"
             data-hostname="{{ hwhost.hostname }}"
             data-graph="cpu_dom0-hourly" ></a>
         </td>
         <td><a class="graph_sprite"
-            style="background:url({{ hwhost.image }});left:120px;"
+            style="background:url({{ hwhost.image }}) -120px 0;"
             data-hostname="{{ hwhost.hostname }}"
             data-graph="cpu_dom0-daily" ></a>
         </td>
         <td><a class="graph_sprite"
-            style="background:url({{ hwhost.image }});left:240px;"
+            style="background:url({{ hwhost.image }}) -240px 0;"
             data-hostname="{{ hwhost.hostname }}"
             data-graph="cpu_dom0-weekly" ></a>
         </td>
@@ -63,19 +63,19 @@
         <td>{{ hwhost.cpu.daily }}&nbsp;%</td>
         <td>{{ hwhost.cpu.yesterday }}&nbsp;%</td>
         <td><a class="graph_sprite"
-            style="background:url({{ hwhost.image }});left:360px;"
+            style="background:url({{ hwhost.image }}) -360px 0;"
             data-hostname="{{ hwhost.hostname }}"
-            data-graph="io2-hourly" ></a>
+            data-graph="io3-hourly" ></a>
         </td>
         <td><a class="graph_sprite"
-            style="background:url({{ hwhost.image }});left:480px;"
+            style="background:url({{ hwhost.image }}) -480px 0;"
             data-hostname="{{ hwhost.hostname }}"
-            data-graph="io2-weekly" ></a>
+            data-graph="io3-daily" ></a>
         </td>
         <td><a class="graph_sprite"
-            style="background:url({{ hwhost.image }});left:600px;"
+            style="background:url({{ hwhost.image }}) -600px 0;"
             data-hostname="{{ hwhost.hostname }}"
-            data-graph="io2-weekly" ></a>
+            data-graph="io3-weekly" ></a>
         </td>
         <td>{{ hwhost.io.hourly }}&nbsp;%</td>
         <td>{{ hwhost.io.daily }}&nbsp;%</td>
@@ -114,6 +114,8 @@ $('.graph_sprite').click(function() {
 	var title = params['graph'] + ' on ' + params['hostname'];
 	var query_str = '?' + $.param(params);
 	$.get(monitor_graph_popup_url + query_str, function(data) {
+		var image = $(data).find('.graph')
+		reload_graph(params['hostname'], params['graph'], image, true);
 		$('<div title="' + title + '"></div>').append(data).dialog({
 			'width': 550
 		});

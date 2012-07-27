@@ -1,6 +1,8 @@
-function reload_graph(hostname, graph, image_element)
+function reload_graph(hostname, graph, image_element, do_hide_spinner)
 {
-    show_spinner();
+    if (!do_hide_spinner) {
+        show_spinner();
+    }
     var reload_data = {'hostname': hostname, 'graph': graph};
     $.post(monitor_reload_url, reload_data, function(result) {
         image_element.attr('src', image_element.attr('src') + '?' + Math.random());
