@@ -114,8 +114,11 @@ $('.graph_sprite').click(function() {
 	var title = params['graph'] + ' on ' + params['hostname'];
 	var query_str = '?' + $.param(params);
 	$.get(monitor_graph_popup_url + query_str, function(data) {
-		var image = $(data).find('.graph')
-		reload_graph(params['hostname'], params['graph'], image, true);
+		var image = $(data).find('.graph');
+		image.on('load', function() {
+			image.off('load');
+			reload_graph(params['hostname'], params['graph'], image, true);
+		});
 		$('<div title="' + title + '"></div>').append(data).dialog({
 			'width': 550
 		});
