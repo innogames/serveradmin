@@ -23,27 +23,25 @@
 <table border="1">
     <tr>
         <th>Hardware host</th>
-        <th>Type</th>
         <th>CPU hourly</th>
         <th>CPU daily</th>
         <th>CPU weekly</th>
-        <th>Hourly</th>
-        <th>Daily</th>
-        <th>-1&nbsp;Day</th>
+        <th>Hourly/ -1&nbsp;Day/ Daily</th>
         <th>IO hourly</th>
         <th>IO daily</th>
         <th>IO weekly</th>
-        <th>Hourly</th>
-        <th>Daily</th>
+        <th>Hourly/ Daily</th>
         <th>Disk&nbsp;free</th>
         <th>Mem&nbsp;free</th>
         <th>Guests</th>
     </tr>
 {% for hwhost in hardware_hosts %}
     <tr>
-        <td><a href="{% url servermonitor_graph_table %}?hostname={{ hwhost.hostname }}"
-			>{{ hwhost.hostname }}</a></td>
-        <td>{{ hwhost.servertype }}</td>
+        <td>
+			<a href="{% url servermonitor_graph_table %}?hostname={{ hwhost.hostname }}"
+			>{{ hwhost.hostname }}</a>
+			<p>({{ hwhost.servertype }})</p>
+		</td>
         <td><a class="graph_sprite"
             style="background:url({{ hwhost.image }}) 0px 0;"
             data-hostname="{{ hwhost.hostname }}"
@@ -59,9 +57,10 @@
             data-hostname="{{ hwhost.hostname }}"
             data-graph="cpu_dom0-weekly" ></a>
         </td>
-        <td>{{ hwhost.cpu.hourly }}&nbsp;%</td>
-        <td>{{ hwhost.cpu.daily }}&nbsp;%</td>
-        <td>{{ hwhost.cpu.yesterday }}&nbsp;%</td>
+        <td>{{ hwhost.cpu.hourly }}&nbsp;%<br />
+			{{ hwhost.cpu.yesterday }}&nbsp;%<br />
+			{{ hwhost.cpu.yesterday }}&nbsp;%
+		</td>
         <td><a class="graph_sprite"
             style="background:url({{ hwhost.image }}) -360px 0;"
             data-hostname="{{ hwhost.hostname }}"
@@ -77,8 +76,9 @@
             data-hostname="{{ hwhost.hostname }}"
             data-graph="io3-weekly" ></a>
         </td>
-        <td>{{ hwhost.io.hourly }}&nbsp;%</td>
-        <td>{{ hwhost.io.daily }}&nbsp;%</td>
+        <td>{{ hwhost.io.hourly }}&nbsp;%<br />
+            {{ hwhost.io.daily }}&nbsp;%
+		</td>
         <td>{{ hwhost.disk_free|filesizeformat }}</td>
         <td>{{ hwhost.mem_free|filesizeformat }} /
             {% if hwhost.mem_total == None %}
