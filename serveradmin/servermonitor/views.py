@@ -25,8 +25,12 @@ def index(request):
     else:
         try:
             query_args = parse_query(term, filters.filter_classes)
-            for host in query(**query_args).restrict('xen_host'):
-                hostname_filter.add(host['xen_host'])
+            for host in query(**query_args).restrict('hostname', 'xen_host'):
+                if 'xen_host' in host:
+                    hostname_filter.add(host['xen_host'])
+                else:
+                    # If it's not guest, it might be a server, so we add it
+                    hostname_filter.add(host['hostname'])
         except (ValueError, DatasetError), e:
             return TemplateResponse(request, 'servermonitor/index.html', {
                 'search_term': term,
