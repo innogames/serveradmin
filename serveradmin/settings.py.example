@@ -17,8 +17,17 @@ DATABASES = {
         'PASSWORD': 'INSERT-PASSWORD-HERE',                  # Not used with sqlite3.
         'HOST': '127.0.0.1',                      # Set to empty string for localhost. Not used with sqlite3.
         'PORT': '3306',                      # Set to empty string for default. Not used with sqlite3.
-    }
+    },
+    'servermonitor': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'rrdd',
+        'USER': 'serveradmin',
+        'PASSWORD': 'INSERT-PASSWORD-HERE',
+        'HOST': '127.0.0.1',
+        'PORT': '3306'
 }
+
+DATABASE_ROUTERS = ['serveradmin.servermonitor.router.ServermonitorRouter']
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -184,5 +193,6 @@ OBJECTS_PER_PAGE = 25
 
 SERVERMONITOR_SERVER = ('servermonitor.innogames.de', 5331)
 SERVERMONITOR_GRAPH_URL = 'https://servermonitor.innogames.de/graph/{hostname}/{graph}.png'
+
 
 raise Exception('Set SECRET_KEY and DATABASE PASSWORD and remove this!')

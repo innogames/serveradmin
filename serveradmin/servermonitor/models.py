@@ -1,8 +1,57 @@
 import socket
 
+from django.db import models
 from django.conf import settings
 
 PERIODS = ('hourly', 'daily', 'weekly', 'monthly', 'yearly')
+
+class GraphValue(models.Model):
+    graph_name = models.CharField(max_length=50, db_column='graphname')
+    hostname = models.CharField(max_length=50)
+    period = models.CharField(max_length=20, db_column='spanname')
+    value = models.FloatField()
+
+    def __unicode__(self):
+        return '{0}-{1} on {2}'.format(self.graph_name, self.hostname,
+                self.period)
+
+    class Meta:
+        db_table = 'graph_value'
+
+class GraphLastUpdate(models.Model):
+    graph_name = models.CharField(max_length=50, db_column='graphname')
+    hostname = models.CharField(max_length=50)
+    period = models.CharField(max_length=20, db_column='spanname')
+    last_update = models.DateTimeField(null=True)
+    
+    def __unicode__(self):
+        return '{0}-{1} on {2}'.format(self.graph_name, self.hostname,
+                self.period)
+
+    class Meta:
+        db_table = 'graph_last_update'
+
+class ServerData(models.Model):
+    hostname = models.CharField(max_length=255, primary_key=True)
+    disk_free_dom0 = models.IntegerField()
+    mem_free_dom0 = models.IntegerField()
+    mem_installed_dom0 = models.IntegerField(null=True)
+    running_vserver = models.TextField()
+    cpu_sum = models.IntegerField()
+    updatetime = models.IntegerField()
+    cpu_info_dom0 = models.CharField(max_length=255)
+    io_hw_dom0 = models.CharField(max_length=255)
+    io_hddsum_dom0 = models.CharField(max_length=255)
+    xen_hwcaps_dom0 = models.CharField(max_length=255)
+    xen_version_dom0 = models.CharField(max_length=255)
+    last_update = models.DateTimeField(null=True)
+
+    def __unicode__(self):
+        return self.hostname
+
+    class Meta:
+        db_table = 'serverdata'
+
 
 def get_available_graphs(hostname):
     # FIXME: Validate hostname!
