@@ -6,9 +6,104 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django.conf import settings
 
-from serveradmin.servermonitor.models import (get_available_graphs, get_graph_url,
-        split_graph_name, join_graph_name, reload_graphs, PERIODS)
+from adminapi.utils.parse import parse_query
+from serveradmin.dataset import query, filters, DatasetError
+from serveradmin.servermonitor.models import (GraphValue, ServerData,
+        get_available_graphs, get_graph_url, split_graph_name, join_graph_name,
+        reload_graphs, PERIODS)
+
+@login_required
+@ensure_csrf_cookie
+def index(request):
+    term = request.GET.get('term', '')
+    
+    hostname_filter = set()
+    if not term:
+        query_args = {}
+    else:
+        try:
+            query_args = parse_query(term, filters.filter_classes)
+            for host in query(**query_args).restrict('xen_host'):
+                hostname_filter.add(host['xen_host'])
+        except (ValueError, DatasetError), e:
+            raise
+    
+    # Take same query arguments from search. If the guest search returned
+    # hosts, we will add them to the hostname condition
+    hw_query_args = query_args.copy()
+    if hostname_filter:
+        if 'hostname' in hw_query_args:
+            hw_query_args['hostname'] = filters.Or(
+                    hw_query_args['hostname'],
+                    filters.Any(*hostname_filter))
+        else:
+            hw_query_args['hostname'] = filters.Any(*hostname_filter)
+    # We want only hardware servers
+    hw_query_args['is_xen'] = True
+    hw_query_args['cancelled'] = False
+
+    hardware = {}
+    for hw_host in query(**hw_query_args).restrict('hostname', 'servertype'):
+        host_data = {
+                'hostname': hw_host['hostname'],
+                'servertype': hw_host['servertype'],
+                'image': '{url}/graph_sprite/{hostname}.png'.format(
+                        url=settings.SERVERMONITOR_URL,
+                        hostname=hw_host['hostname']),
+                'cpu': {},
+                'io': {}
+        }
+        for period in ('hourly', 'daily', 'yesterday'):
+            for what in ('io', 'cpu'):
+                host_data[what][period] = 0
+        hardware[hw_host['hostname']] = host_data
+    hostnames = hardware.keys()
+
+    server_data = ServerData.objects.filter(hostname__in=hostnames)
+    graph_values = GraphValue.objects.filter(hostname__in=hostnames,
+            graph_name__in=['cpu_dom0_value_max_95', 'io2_dom0_value_max_95'])
+    
+    # Annotate hardware with data from server data table
+    mem_free_sum = 0
+    mem_total_sum = 0
+    to_bytes = 1024 * 1024
+    for host_info in server_data:
+        if host_info.mem_installed_dom0:
+            mem_total = host_info.mem_installed_dom0 * to_bytes
+        else:
+            mem_total = None
+        hardware[host_info.hostname].update({
+            'guests': host_info.running_vserver.split(','),
+            'mem_free': host_info.mem_free_dom0 * to_bytes,
+            'mem_total': mem_total,
+            'disk_free': host_info.disk_free_dom0 * to_bytes
+        })
+        
+        if host_info.mem_free_dom0:
+            mem_free_sum += host_info.mem_free_dom0
+        if host_info.mem_installed_dom0:
+            mem_total_sum += host_info.mem_installed_dom0
+    
+    # Annotate hardware with the values for cpu/io
+    for graph_value in graph_values:
+        if graph_value.graph_name == 'cpu_dom0_value_max_95':
+            hardware[graph_value.hostname]['cpu'][graph_value.period] = \
+                    graph_value.value
+        elif graph_value.graph_name == 'io2_dom0_value_max_95':
+            hardware[graph_value.hostname]['io'][graph_value.period] = \
+                    graph_value.value
+
+    hardware = hardware.values()
+    hardware.sort(key=itemgetter('hostname'))
+    return TemplateResponse(request, 'servermonitor/index.html', {
+        'hardware_hosts': hardware,
+        'mem_free_sum': mem_free_sum,
+        'mem_free_total': mem_total_sum,
+        'search_term': term
+    })
+
 
 @login_required
 @ensure_csrf_cookie

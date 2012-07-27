@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Servermonitor{% endblock %}
+
+{% block content %}
+<h2>Servermonitor</h2>
+
+<form method="get" action="{% url servermonitor_index %}">
+<table class="valign-middle">
+<tr>
+    <td>Search: </td>
+    <td>
+        <input type="text" size="60"  id="monitor_search" name="term"
+            value="{{ search_term }}" />
+    </td>
+</tr>
+</table>
+</form>
+
+<table border="1">
+    <tr>
+        <th>Hardware host</th>
+        <th>Type</th>
+        <th>CPU hourly</th>
+        <th>CPU daily</th>
+        <th>CPU weekly</th>
+        <th>Hourly</th>
+        <th>Daily</th>
+        <th>-1&nbsp;Day</th>
+        <th>IO hourly</th>
+        <th>IO daily</th>
+        <th>IO weekly</th>
+        <th>Hourly</th>
+        <th>Daily</th>
+        <th>Disk&nbsp;free</th>
+        <th>Mem&nbsp;free</th>
+        <th>Guests</th>
+    </tr>
+{% for hwhost in hardware_hosts %}
+    <tr>
+        <td>{{ hwhost.hostname }}</td>
+        <td>{{ hwhost.servertype }}</td>
+        <td><a class="graph_sprite"
+            style="background:url({{ hwhost.image }});left:0px;"
+            data-hostname="{{ hwhost.hostname }}"
+            data-graph="cpu_dom0-hourly" ></a>
+        </td>
+        <td><a class="graph_sprite"
+            style="background:url({{ hwhost.image }});left:120px;"
+            data-hostname="{{ hwhost.hostname }}"
+            data-graph="cpu_dom0-daily" ></a>
+        </td>
+        <td><a class="graph_sprite"
+            style="background:url({{ hwhost.image }});left:240px;"
+            data-hostname="{{ hwhost.hostname }}"
+            data-graph="cpu_dom0-weekly" ></a>
+        </td>
+        <td>{{ hwhost.cpu.hourly }}&nbsp;%</td>
+        <td>{{ hwhost.cpu.daily }}&nbsp;%</td>
+        <td>{{ hwhost.cpu.yesterday }}&nbsp;%</td>
+        <td><a class="graph_sprite"
+            style="background:url({{ hwhost.image }});left:360px;"
+            data-hostname="{{ hwhost.hostname }}"
+            data-graph="io2-hourly" ></a>
+        </td>
+        <td><a class="graph_sprite"
+            style="background:url({{ hwhost.image }});left:480px;"
+            data-hostname="{{ hwhost.hostname }}"
+            data-graph="io2-weekly" ></a>
+        </td>
+        <td><a class="graph_sprite"
+            style="background:url({{ hwhost.image }});left:600px;"
+            data-hostname="{{ hwhost.hostname }}"
+            data-graph="io2-weekly" ></a>
+        </td>
+        <td>{{ hwhost.io.hourly }}&nbsp;%</td>
+        <td>{{ hwhost.io.daily }}&nbsp;%</td>
+        <td>{{ hwhost.disk_free|filesizeformat }}</td>
+        <td>{{ hwhost.mem_free|filesizeformat }} /
+            {% if hwhost.mem_total == None %}
+            unknown
+            {% else %}
+            {{ hwhost.mem_total|filesizeformat }}
+            {% endif %}
+        </td>
+        <td>
+{% for guest_host in hwhost.guests %}
+        {{ guest_host }}
+{% endfor %}
+        </td>
+    </tr>
+{% endfor %}
+</table>
+{% endblock content %}
+
+{% block additional_body %}
+<script type="text/javascript">
+//<[CDATA[
+//]]>
+</script>
+{% endblock %}

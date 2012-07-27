@@ -128,3 +128,11 @@ table.tabular td, table.tabular th {
  text-align:center;
  padding:10px 0 10px 0;
 }
+
+.graph_sprite {
+ display:block;
+ width:112px;
+ height:45px;
+ background-repeat:none;
+ top:0;
+}

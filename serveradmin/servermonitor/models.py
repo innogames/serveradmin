@@ -62,9 +62,11 @@ def get_available_graphs(hostname):
     fileobj = s.makefile()
     return fileobj.readline().split()
 
-def get_graph_url(hostname, graph_name):
-    return settings.SERVERMONITOR_GRAPH_URL.format(
-            hostname=hostname, graph=graph_name)
+def get_graph_url(hostname, graph):
+    return '{url}/graph/{hostname}/{graph}.png'.format(
+            url=settings.SERVERMONITOR_URL,
+            hostname=hostname,
+            graph=graph)
 
 def reload_graphs(*updates):
     """Reload many graphs. Expects tuples with hostname and graphs.
