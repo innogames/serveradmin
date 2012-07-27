@@ -100,8 +100,26 @@
 {% endblock content %}
 
 {% block additional_body %}
+<script type="text/javascript" src="{{ STATIC_URL }}servermonitor/servermonitor.js"></script>
 <script type="text/javascript">
 //<[CDATA[
+var monitor_graph_popup_url = '{% url servermonitor_graph_popup %}';
+var monitor_reload_url = '{% url servermonitor_reload %}';
+$('.graph_sprite').click(function() {
+	var sprite = $(this);
+	var params = {
+		'hostname': sprite.attr('data-hostname'),
+		'graph': sprite.attr('data-graph')
+	}
+	var title = params['graph'] + ' on ' + params['hostname'];
+	var query_str = '?' + $.param(params);
+	$.get(monitor_graph_popup_url + query_str, function(data) {
+		$('<div title="' + title + '"></div>').append(data).dialog({
+			'width': 550
+		});
+		attach_graph_reload();
+	});
+});
 //]]>
 </script>
 {% endblock %}

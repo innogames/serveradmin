@@ -197,6 +197,21 @@ def compare(request):
         'link': request.get_full_path()
     })
 
+@login_required
+def graph_popup(request):
+    try:
+        hostname = request.GET['hostname']
+        graph = request.GET['graph']
+    except KeyError:
+        return HttpResponseBadRequest('You have to supply hostname and graph')
+
+    return TemplateResponse(request, 'servermonitor/graph_popup.html', {
+        'hostname': hostname,
+        'graph': graph,
+        'image': get_graph_url(hostname, graph)
+    })
+
+
 @require_POST
 @login_required
 def reload(request):
