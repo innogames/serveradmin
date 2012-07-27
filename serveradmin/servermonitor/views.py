@@ -5,11 +5,13 @@ from django.template.response import TemplateResponse
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 from serveradmin.servermonitor.models import (get_available_graphs, get_graph_url,
         split_graph_name, join_graph_name, reload_graphs, PERIODS)
 
 @login_required
+@ensure_csrf_cookie
 def graph_table(request, hostname):
     graphs = get_available_graphs(hostname)
     
@@ -35,6 +37,7 @@ def graph_table(request, hostname):
     })
 
 @login_required
+@ensure_csrf_cookie
 def compare(request):
     hostnames = request.GET.getlist('hostname')
     use_graphs = set() # Will contain shown graphs (without period)
