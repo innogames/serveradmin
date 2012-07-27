@@ -386,7 +386,8 @@ function handle_command_export()
 function handle_command_graph()
 {
     function show_graphs(server) {
-        $.get(shell_graph_url + server['hostname'], function(data) {
+        var query_str = '?' + $.param({'hostname': server['hostname']});
+        $.get(shell_graph_url + query_str, function(data) {
             var dialog = $('<div title="' + server['hostname'] + '"></div>');
             dialog.append(data)
             dialog.dialog({

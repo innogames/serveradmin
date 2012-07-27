@@ -107,7 +107,12 @@ def index(request):
 
 @login_required
 @ensure_csrf_cookie
-def graph_table(request, hostname):
+def graph_table(request):
+    try:
+        hostname = request.GET['hostname']
+    except KeyError:
+        return HttpResponseBadRequest('You have to provide a hostname')
+
     graphs = get_available_graphs(hostname)
     
     graph_table = {}
