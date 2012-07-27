@@ -48,7 +48,7 @@ def index(request):
         else:
             hw_query_args['hostname'] = filters.Any(*hostname_filter)
     # We want only hardware servers
-    hw_query_args['is_xen'] = True
+    hw_query_args['physical_server'] = True
     hw_query_args['cancelled'] = False
 
     hardware = {}
