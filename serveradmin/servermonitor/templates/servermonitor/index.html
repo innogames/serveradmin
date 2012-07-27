@@ -17,6 +17,9 @@
 </table>
 </form>
 
+{% if error %}
+<p class="error">{{ error }}</p>
+{% else %}
 <table border="1">
     <tr>
         <th>Hardware host</th>
@@ -91,6 +94,7 @@
     </tr>
 {% endfor %}
 </table>
+{% endif %} {# else of if not error #}
 {% endblock content %}
 
 {% block additional_body %}

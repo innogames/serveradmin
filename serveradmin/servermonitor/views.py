@@ -28,7 +28,10 @@ def index(request):
             for host in query(**query_args).restrict('xen_host'):
                 hostname_filter.add(host['xen_host'])
         except (ValueError, DatasetError), e:
-            raise
+            return TemplateResponse(request, 'servermonitor/index.html', {
+                'search_term': term,
+                'error': e.message
+            })
     
     # Take same query arguments from search. If the guest search returned
     # hosts, we will add them to the hostname condition
@@ -101,7 +104,8 @@ def index(request):
         'hardware_hosts': hardware,
         'mem_free_sum': mem_free_sum,
         'mem_free_total': mem_total_sum,
-        'search_term': term
+        'search_term': term,
+        'error': None
     })
 
 
