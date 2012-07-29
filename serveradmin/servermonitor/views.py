@@ -20,9 +20,7 @@ def index(request):
     term = request.GET.get('term', '')
     
     hostname_filter = set()
-    if not term:
-        query_args = {}
-    else:
+    if term:
         try:
             query_args = parse_query(term, filters.filter_classes)
             for host in query(**query_args).restrict('hostname', 'xen_host'):
@@ -37,19 +35,9 @@ def index(request):
                 'error': e.message
             })
     
-    # Take same query arguments from search. If the guest search returned
-    # hosts, we will add them to the hostname condition
-    hw_query_args = query_args.copy()
+    hw_query_args = {'physical_server': True, 'cancelled': False}
     if hostname_filter:
-        if 'hostname' in hw_query_args:
-            hw_query_args['hostname'] = filters.Or(
-                    hw_query_args['hostname'],
-                    filters.Any(*hostname_filter))
-        else:
-            hw_query_args['hostname'] = filters.Any(*hostname_filter)
-    # We want only hardware servers
-    hw_query_args['physical_server'] = True
-    hw_query_args['cancelled'] = False
+        hw_query_args['hostname'] = filters.Any(*hostname_filter)
 
     hardware = {}
     for hw_host in query(**hw_query_args).restrict('hostname', 'servertype'):
