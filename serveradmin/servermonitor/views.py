@@ -56,39 +56,42 @@ def index(request):
         hardware[hw_host['hostname']] = host_data
     hostnames = hardware.keys()
 
-    server_data = ServerData.objects.filter(hostname__in=hostnames)
-    graph_values = GraphValue.objects.filter(hostname__in=hostnames,
+    server_data = ServerData.objects.filter(hostname__in=hostnames).only(
+            'hostname', 'mem_free_dom0', 'mem_installed_dom0',
+            'disk_free_dom0').values()
+    graph_values = (GraphValue.objects.filter(hostname__in=hostnames,
             graph_name__in=['cpu_dom0_value_max_95', 'io2_dom0_value_max_95'])
+            .values())
     
     # Annotate hardware with data from server data table
     mem_free_sum = 0
     mem_total_sum = 0
     to_bytes = 1024 * 1024
     for host_info in server_data:
-        if host_info.mem_installed_dom0:
-            mem_total = host_info.mem_installed_dom0 * to_bytes
+        if host_info['mem_installed_dom0']:
+            mem_total = host_info['mem_installed_dom0'] * to_bytes
         else:
             mem_total = None
-        hardware[host_info.hostname].update({
-            'guests': host_info.running_vserver.split(),
-            'mem_free': host_info.mem_free_dom0 * to_bytes,
+        hardware[host_info['hostname']].update({
+            'guests': host_info['running_vserver'].split(),
+            'mem_free': host_info['mem_free_dom0']* to_bytes,
             'mem_total': mem_total,
-            'disk_free': host_info.disk_free_dom0 * to_bytes
+            'disk_free': host_info['disk_free_dom0']* to_bytes
         })
         
-        if host_info.mem_free_dom0:
-            mem_free_sum += host_info.mem_free_dom0
-        if host_info.mem_installed_dom0:
-            mem_total_sum += host_info.mem_installed_dom0
+        if host_info['mem_free_dom0']:
+            mem_free_sum += host_info['mem_free_dom0']
+        if host_info['mem_installed_dom0']:
+            mem_total_sum += host_info['mem_installed_dom0']
     
     # Annotate hardware with the values for cpu/io
     for graph_value in graph_values:
-        if graph_value.graph_name == 'cpu_dom0_value_max_95':
-            hardware[graph_value.hostname]['cpu'][graph_value.period] = \
-                    graph_value.value
-        elif graph_value.graph_name == 'io2_dom0_value_max_95':
-            hardware[graph_value.hostname]['io'][graph_value.period] = \
-                    graph_value.value
+        if graph_value['graph_name'] == 'cpu_dom0_value_max_95':
+            hardware[graph_value['hostname']]['cpu'][graph_value['period']] = \
+                    graph_value['value']
+        elif graph_value['graph_name'] == 'io2_dom0_value_max_95':
+            hardware[graph_value['hostname']]['io'][graph_value['period']] = \
+                    graph_value['value']
 
     hardware = hardware.values()
     hardware.sort(key=itemgetter('hostname'))
