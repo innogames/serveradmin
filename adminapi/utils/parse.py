@@ -130,5 +130,7 @@ def parse_query(term, filter_classes):
             stack.append(arg)
 
     if stack and stack[0][0] == 'key':
+        if len(stack) != 2:
+            raise ValueError('Invalid term: Attribute requires one argument')
         query_args[stack[0][1]] = stack[1][1]
     return query_args
