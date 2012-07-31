@@ -75,28 +75,30 @@ def dataset_query(request, app, data):
         for attr, filter_obj in data['filters'].iteritems():
             filters[attr] = filter_from_obj(filter_obj)
         
+        # We do our own caching which caches the json is much faster
+        # than loading the normal cache and encode it as json
         q = QuerySet(filters=filters, bypass_cache=True)
         if data['restrict']:
             q.restrict(*data['restrict'])
         if data['augmentations']:
             q.augment(*data['augmentations'])
+
+        def _build_response(server_data):
+            return json.dumps({
+                'status': 'success',
+                'servers': q.get_raw_results(),
+                'attributes': _build_attributes()
+            }, default=json_encode_extra)
+
+        cacher = QuerysetCacher(q, 'api', encoder=StringEncoder(),
+                post_fetch=_build_response)
+        return cacher.get_results()
     except ValueError, e:
         return json.dumps({
             'status': 'error',
             'type': 'ValueError',
             'message': e.message
         })
-
-    def _build_response(server_data):
-        return json.dumps({
-            'status': 'success',
-            'servers': q.get_raw_results(),
-            'attributes': _build_attributes()
-        }, default=json_encode_extra)
-
-    cacher = QuerysetCacher(q, 'api', encoder=StringEncoder(),
-            post_fetch=_build_response)
-    return cacher.get_results()
 
 dataset_query.encode_json = False
 dataset_query = api_view(dataset_query)
