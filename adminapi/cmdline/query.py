@@ -37,8 +37,12 @@ def main():
     attrs = options.attrs if options.attrs else ['hostname']
 
     adminapi.auth(auth_token)
-    query_args = parse_query(args[0],
-            filter_classes=filters.filter_classes)
+
+    try:
+        query_args = parse_query(args[0],
+                filter_classes=filters.filter_classes)
+    except ValueError, e:
+        print(unicode(e), file=sys.stderr)
     
     if not attrs:
         attrs = ['hostname']
