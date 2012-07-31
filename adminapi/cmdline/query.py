@@ -43,6 +43,7 @@ def main():
                 filter_classes=filters.filter_classes)
     except ValueError, e:
         print(unicode(e), file=sys.stderr)
+        sys.exit(1)
     
     if not attrs:
         attrs = ['hostname']
