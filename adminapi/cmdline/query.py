@@ -46,7 +46,7 @@ def main():
     try:
         q = query(**query_args).restrict(*attrs).request_results()
     except (ValueError, DatasetError), e:
-        print(e.message, file=sys.stderr)
+        print(unicode(e), file=sys.stderr)
         sys.exit(1)
 
     if options.export:
