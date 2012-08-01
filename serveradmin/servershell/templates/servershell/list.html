@@ -7,7 +7,7 @@
 <h2>Editing object {{ object_id }}</h2>
 {% endif %}
 
-<table class="border_table">
+<table class="border_table" style="width:100%; table-layout:fixed;">
 <tr>
     <th>Attribute</th>
     <th>Value</th>
@@ -27,8 +27,11 @@
     <i>Empty set</i>
     {% endif %}
     {% else %}
-    {# foo #}
+    {% if field.value|length > 100 %}
+    <div style="overflow:auto;">{{ field.value }}</div>
+    {% else %}
     {{ field.value }}
+    {% endif %}
     {% endif %}
     </td>
 </tr>

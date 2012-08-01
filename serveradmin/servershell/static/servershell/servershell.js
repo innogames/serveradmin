@@ -248,6 +248,7 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'perpage': 'Show a specific number of hosts per page (e.g. "perpage 50")',
         'graph': 'Show available servermonitor graphs for selected hosts',
         'cmp': 'Compare servermonitor graphs for several hosts',
+        'list': 'List all attributes of a server'
     };
     
     if (plen == 1 && parsed_args[0]['token'] == 'str') {
@@ -313,6 +314,21 @@ function autocomplete_shell_command(term, autocomplete_cb)
     autocomplete_cb(autocomplete);
 }
 
+function execute_on_servers(callback)
+{
+    var marked_servers = get_marked_servers();
+    if (marked_servers.length == 0) {
+        if (search['first_server'] != null) {
+            callback(search['first_server']);
+        }
+    } else {
+        for (var i = 0; i < marked_servers.length; i++) {
+            var server = search['servers'][marked_servers[i]];
+            callback(server);
+        }
+    }
+}
+
 function handle_command(command)
 {
     if (command == '') {
@@ -331,6 +347,8 @@ function handle_command(command)
         return handle_command_export();
     } else if (command == 'graph') {
         return handle_command_graph();
+    } else if (command == 'list') {
+        return handle_command_list();
     } else if (is_digit(command[0])) {
         return handle_command_range(command);
     } else {
@@ -396,17 +414,22 @@ function handle_command_graph()
             attach_graph_reload();
         });
     }
-    var marked_servers = get_marked_servers();
-    if (marked_servers.length == 0) {
-        if (search['first_server'] != null) {
-            show_graphs(search['first_server']);
-        }
-    } else {
-        for (var i = 0; i < marked_servers.length; i++) {
-            var server = search['servers'][marked_servers[i]];
-            show_graphs(server);
-        }
+    execute_on_servers(show_graphs);
+    return '';
+}
+
+function handle_command_list() {
+    function show_list(server) {
+        var query_str = '?' + $.param({'object_id': server['object_id']});
+        $.get(shell_list_url + query_str, function(data) {
+            var dialog = $('<div title="' + server['hostname'] + '"></div>');
+            dialog.append(data)
+            dialog.dialog({
+                'width': 1000
+            });
+        });
     }
+    execute_on_servers(show_list);
     return '';
 }
 
