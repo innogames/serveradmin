@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load servermonitor %}
 
 {% block title %}Servermonitor{% endblock %}
 
@@ -57,9 +58,9 @@
             data-hostname="{{ hwhost.hostname }}"
             data-graph="cpu_dom0-weekly" ></a>
         </td>
-        <td>{{ hwhost.cpu.hourly }}&nbsp;%<br />
-			{{ hwhost.cpu.yesterday }}&nbsp;%<br />
-			{{ hwhost.cpu.yesterday }}&nbsp;%
+        <td>{% format_percent hwhost.cpu.hourly 50 100 30 %}
+			{% format_percent hwhost.cpu.yesterday 50 100 30 %}
+			{% format_percent hwhost.cpu.yesterday 50 100 30 %}
 		</td>
         <td><a class="graph_sprite"
             style="background:url({{ hwhost.image }}) -360px 0;"
@@ -76,8 +77,8 @@
             data-hostname="{{ hwhost.hostname }}"
             data-graph="io3-weekly" ></a>
         </td>
-        <td>{{ hwhost.io.hourly }}&nbsp;%<br />
-            {{ hwhost.io.daily }}&nbsp;%
+        <td>{% format_percent hwhost.io.hourly 30 100 30 %}
+            {% format_percent hwhost.io.daily 30 100 30 %}
 		</td>
         <td>{{ hwhost.disk_free|filesizeformat }}</td>
         <td>{{ hwhost.mem_free|filesizeformat }} /
