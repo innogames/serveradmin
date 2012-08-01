@@ -85,6 +85,7 @@ def get_results(request):
         'shown_attributes': shown_attributes,
     }, default=json_encode_extra), mimetype='application/x-json')
 
+@login_required
 def export(request):
     term = request.GET.get('term', '')
     try:
