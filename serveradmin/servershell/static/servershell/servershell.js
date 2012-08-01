@@ -393,6 +393,7 @@ function handle_command_graph()
             dialog.dialog({
                 'width': 1500
             });
+            attach_graph_reload();
         });
     }
     var marked_servers = get_marked_servers();
