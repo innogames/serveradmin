@@ -48,7 +48,7 @@
         <td>
             <a href="{% url servermonitor_graph_table %}?hostname={{ hwhost.hostname }}"
             >{{ hwhost.hostname }}</a>
-            <p>({{ hwhost.servertype }})</p>
+            <p class="graph_servertype">({{ hwhost.servertype }})</p>
         </td>
         <td><a class="graph_sprite"
             style="background:url({{ STATIC_URL }}empty.png) 0px 0;"

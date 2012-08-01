@@ -135,3 +135,7 @@ table.tabular td, table.tabular th {
  height:45px;
  background-repeat:none;
 }
+
+.graph_servertype {
+ margin-bottom:0;
+}
