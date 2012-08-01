@@ -13,6 +13,11 @@
  padding:1em;
 }
 
+.border_table td, th {
+ border:1px solid #000;
+ padding:0.3em;
+}
+
 #content .sphinx a.headerlink {
     font-size: 0.8em;
     padding: 0 4px 0 4px;
@@ -138,4 +143,9 @@ table.tabular td, table.tabular th {
 
 .graph_servertype {
  margin-bottom:0;
+}
+
+.multi_attr_list {
+ margin:0;
+ padding-left:1.5em;
 }
