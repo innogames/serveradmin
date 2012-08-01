@@ -3,8 +3,13 @@
 {% block title %}Attributes of object {{ object_id }}{% endblock %}
 
 {% block content %}
-{% if not is_ajax %}
-<h2>Editing object {{ object_id }}</h2>
+{% if is_ajax %}
+<p><a href="{{ link }}">
+    <img src="{{ STATIC_URL }}link.png" alt="Link to this page"
+        title="Link to this page" />
+</a></p>
+{% else %}
+<h2>Object {{ object_id }}</h2>
 {% endif %}
 
 <table class="border_table" style="width:100%; table-layout:fixed;">
