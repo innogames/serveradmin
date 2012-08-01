@@ -39,47 +39,53 @@
 {% for hwhost in hardware_hosts %}
     <tr>
         <td>
-			<a href="{% url servermonitor_graph_table %}?hostname={{ hwhost.hostname }}"
-			>{{ hwhost.hostname }}</a>
-			<p>({{ hwhost.servertype }})</p>
-		</td>
-        <td><a class="graph_sprite"
-            style="background:url({{ hwhost.image }}) 0px 0;"
-            data-hostname="{{ hwhost.hostname }}"
-            data-graph="cpu_dom0-hourly" ></a>
+            <a href="{% url servermonitor_graph_table %}?hostname={{ hwhost.hostname }}"
+            >{{ hwhost.hostname }}</a>
+            <p>({{ hwhost.servertype }})</p>
         </td>
         <td><a class="graph_sprite"
-            style="background:url({{ hwhost.image }}) -120px 0;"
+            style="background:url({{ STATIC_URL }}empty.png) 0px 0;"
             data-hostname="{{ hwhost.hostname }}"
-            data-graph="cpu_dom0-daily" ></a>
+            data-graph="cpu_dom0-hourly"
+            data-image="{{ hwhost.image }}"></a>
         </td>
         <td><a class="graph_sprite"
-            style="background:url({{ hwhost.image }}) -240px 0;"
+            style="background:url({{ STATIC_URL}}empty.png) -120px 0;"
             data-hostname="{{ hwhost.hostname }}"
-            data-graph="cpu_dom0-weekly" ></a>
+            data-graph="cpu_dom0-daily"
+            data-image="{{ hwhost.image }}"></a>
+        </td>
+        <td><a class="graph_sprite"
+            style="background:url({{ STATIC_URL }}empty.png) -240px 0;"
+            data-hostname="{{ hwhost.hostname }}"
+            data-graph="cpu_dom0-weekly"
+            data-image="{{ hwhost.image }}"></a>
         </td>
         <td>{% format_percent hwhost.cpu.hourly 50 100 30 %}
-			{% format_percent hwhost.cpu.yesterday 50 100 30 %}
-			{% format_percent hwhost.cpu.yesterday 50 100 30 %}
-		</td>
-        <td><a class="graph_sprite"
-            style="background:url({{ hwhost.image }}) -360px 0;"
-            data-hostname="{{ hwhost.hostname }}"
-            data-graph="io3-hourly" ></a>
+            {% format_percent hwhost.cpu.yesterday 50 100 30 %}
+            {% format_percent hwhost.cpu.yesterday 50 100 30 %}
         </td>
         <td><a class="graph_sprite"
-            style="background:url({{ hwhost.image }}) -480px 0;"
+            style="background:url({{ STATIC_URL }}empty.png) -360px 0;"
             data-hostname="{{ hwhost.hostname }}"
-            data-graph="io3-daily" ></a>
+            data-graph="io3-hourly"
+            data-image="{{ hwhost.image }}"></a>
         </td>
         <td><a class="graph_sprite"
-            style="background:url({{ hwhost.image }}) -600px 0;"
+            style="background:url({{ STATIC_URL }}empty.png) -480px 0;"
             data-hostname="{{ hwhost.hostname }}"
-            data-graph="io3-weekly" ></a>
+            data-graph="io3-daily"
+            data-image="{{ hwhost.image }}"></a>
+        </td>
+        <td><a class="graph_sprite"
+            style="background:url({{ STATIC_URL }}empty.png) -600px 0;"
+            data-hostname="{{ hwhost.hostname }}"
+            data-graph="io3-weekly"
+            data-image="{{ hwhost.image }}"></a>
         </td>
         <td>{% format_percent hwhost.io.hourly 30 100 30 %}
             {% format_percent hwhost.io.daily 30 100 30 %}
-		</td>
+        </td>
         <td>{{ hwhost.disk_free|filesizeformat }}</td>
         <td>{{ hwhost.mem_free|filesizeformat }} /
             {% if hwhost.mem_total == None %}
@@ -91,7 +97,7 @@
         <td>
 {% for guest_host in hwhost.guests %}
         <a href="{% url servermonitor_graph_table %}?hostname={{ guest_host }}"
-		>{{ guest_host }}</a>
+        >{{ guest_host }}</a>
 {% endfor %}
         </td>
     </tr>
@@ -106,25 +112,45 @@
 //<[CDATA[
 var monitor_graph_popup_url = '{% url servermonitor_graph_popup %}';
 var monitor_reload_url = '{% url servermonitor_reload %}';
-$('.graph_sprite').click(function() {
-	var sprite = $(this);
-	var params = {
-		'hostname': sprite.attr('data-hostname'),
-		'graph': sprite.attr('data-graph')
-	}
-	var title = params['graph'] + ' on ' + params['hostname'];
-	var query_str = '?' + $.param(params);
-	$.get(monitor_graph_popup_url + query_str, function(data) {
-		var image = $(data).find('.graph');
-		image.on('load', function() {
-			image.off('load');
-			reload_graph(params['hostname'], params['graph'], image, true);
-		});
-		$('<div title="' + title + '"></div>').append(data).dialog({
-			'width': 550
-		});
-		attach_graph_reload();
-	});
+$(function() {
+    $('.graph_sprite').click(function() {
+        var sprite = $(this);
+        var params = {
+            'hostname': sprite.attr('data-hostname'),
+            'graph': sprite.attr('data-graph')
+        }
+        var title = params['graph'] + ' on ' + params['hostname'];
+        var query_str = '?' + $.param(params);
+        $.get(monitor_graph_popup_url + query_str, function(data) {
+            var image = $(data).find('.graph');
+            image.on('load', function() {
+                image.off('load');
+                reload_graph(params['hostname'], params['graph'], image, true);
+            });
+            $('<div title="' + title + '"></div>').append(data).dialog({
+                'width': 550
+            });
+            attach_graph_reload();
+        });
+    });
+    function update_sprites() {
+        var threshold = 300;
+        var sprites = $('.graph_sprite[data-image!=""]')
+        for(var i = 0; i < sprites.length; i++) {
+            var sprite = $(sprites[i]);
+            var pos = sprite.offset().top - threshold;
+            var height = $(window).scrollTop() + $(window).height();
+            if (pos <= height) {
+                var image = 'url(' + sprite.attr('data-image') + ')';
+                sprite.css('background-image', image);
+                sprite.attr('data-image', '');
+            } else {
+                break;
+            }
+        }
+    }
+    $(window).on('scroll', update_sprites);
+    update_sprites();
 });
 //]]>
 </script>
