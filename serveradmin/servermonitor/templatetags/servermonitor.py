@@ -7,7 +7,7 @@ register = template.Library()
 @register.simple_tag
 def format_percent(value, range_start, range_end, range_diff):
     if value < range_start:
-        return u'{0}&nbsp;%'.format(value)
+        return u'<div>{0}&nbsp;%</div>'.format(value)
 
     hue_start = 0
     hue_end = 0.40
