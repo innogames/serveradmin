@@ -1,0 +1,37 @@
+{% extends base_template %}
+
+{% block title %}Attributes of object {{ object_id }}{% endblock %}
+
+{% block content %}
+{% if not is_ajax %}
+<h2>Editing object {{ object_id }}</h2>
+{% endif %}
+
+<table class="border_table">
+<tr>
+    <th>Attribute</th>
+    <th>Value</th>
+</tr>
+{% for field in fields %}
+<tr>
+    <td>{{ field.key }}</td>
+    <td>
+    {% if field.multi %}
+    {% if field.value %}
+    <ul class="multi_attr_list">
+    {% for val in field.value %}
+        <li>{{ val }}</li>
+    {% endfor %}
+    </ul>
+    {% else %}
+    <i>Empty set</i>
+    {% endif %}
+    {% else %}
+    {# foo #}
+    {{ field.value }}
+    {% endif %}
+    </td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

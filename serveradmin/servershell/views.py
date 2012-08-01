@@ -3,7 +3,7 @@ try:
 except ImportError:
     import json
 
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -96,3 +96,38 @@ def export(request):
 
     hostnames = u' '.join(server['hostname'] for server in q)
     return HttpResponse(hostnames, mimetype='text/plain')
+
+def list_and_edit(request):
+    try:
+        object_id = request.GET['object_id']
+        server = query(object_id=object_id).get()
+    except (KeyError, DatasetError):
+        raise Http404
+
+    mode = 'edit' if 'edit' in request.GET else 'list'
+
+    non_editable = ['servertype']
+    fields = []
+    for key, value in server.iteritems():
+        fields.append({
+            'key': key,
+            'value': value,
+            'editable': key not in non_editable,
+            'type': lookups.attr_names[key].type,
+            'multi': lookups.attr_names[key].multi
+        })
+    
+    # Sort keys by some order and then lexographically
+    _key_order = ['hostname', 'servertype', 'intern_ip']
+    _key_order_lookup = dict((key, i) for i, key in enumerate(_key_order))
+    def _sort_key(x):
+        return (_key_order_lookup.get(x['key'], 100), x['key'])
+    fields.sort(key=_sort_key)
+
+    return TemplateResponse(request, 'servershell/{0}.html'.format(mode), {
+        'object_id': server.object_id,
+        'fields': fields,
+        'is_ajax': request.is_ajax(),
+        'base_template': 'empty.html' if request.is_ajax() else 'base.html',
+        'link': request.get_full_path()
+    })
