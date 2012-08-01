@@ -17,7 +17,10 @@
 {% for graph in graph_table %}
 <h3>{{ graph.name }}</h3>
 {% if graph.general %}
-<p><img src="{{ graph.general }}" alt="{{ graph.name }}" /></p>
+<p><img src="{{ graph.general }}" alt="{{ graph.name }}"
+    data-hostname="{{ hostname }}" data-graph="{{ graph.graph }}"
+    class="graph"/>
+</p>
 {% else %}
 <table>
     <tr>
@@ -27,17 +30,26 @@
     </tr>
     <tr>
 {% if graph.hourly %}
-        <td><img src="{{ graph.hourly }}" alt="{{ graph.name }} hourly" /></td>
+        <td><img src="{{ graph.hourly }}" alt="{{ graph.name }} hourly" 
+        data-hostname="{{ hostname }}" data-graph="{{ graph.graph }}"
+        class="graph" />
+        </td>
 {% else %}
 		<td><div class="graph_not_available">Graph not available</div></td>
 {% endif %}
 {% if graph.daily %}
-        <td><img src="{{ graph.daily }}" alt="{{ graph.name }} daily" /></td>
+        <td><img src="{{ graph.daily }}" alt="{{ graph.name }} daily"
+        data-hostname="{{ hostname }}" data-graph="{{ graph.graph }}"
+        class="graph"/>
+        </td>
 {% else %}
 		<td><div class="graph_not_available">Graph not available</div></td>
 {% endif %}
 {% if graph.weekly %}
-        <td><img src="{{ graph.weekly }}" alt="{{ graph.name }} weekly" /></td>
+        <td><img src="{{ graph.weekly }}" alt="{{ graph.name }} weekly"
+        data-hostname="{{ hostname }}" data-graph="{{ graph.graph }}"
+        class="graph"/>
+        </td>
 {% else %}
 		<td><div class="graph_not_available">Graph not available</div></td>
 {% endif %}
@@ -46,3 +58,15 @@
 {% endif %}
 {% endfor %}
 {% endblock content %}
+
+{% block additional_body %}
+{% if not is_ajax %}
+<script type="text/javascript" src="{{ STATIC_URL }}servermonitor/servermonitor.js"></script>
+<script type="text/javascript">
+//<![CDATA[
+var monitor_reload_url = '{% url servermonitor_reload %}';
+attach_graph_reload();
+//]]>
+</script>
+{% endif %}
+{% endblock additional_body %}

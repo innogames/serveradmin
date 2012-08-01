@@ -126,9 +126,11 @@ def graph_table(request):
             graph_dict = graph_table.setdefault(graph_name, {})
             graph_dict[period] = get_graph_url(hostname, graph)
             graph_dict['name'] = graph_name
+            graph_dict['graph'] = graph
         else:
             graph_table[graph] = {
                 'name': graph,
+                'graph': graph,
                 'general': get_graph_url(hostname, graph)
             }
     graph_table = sorted(graph_table.values(), key=itemgetter('name'))
