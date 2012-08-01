@@ -1,7 +1,16 @@
+<script type="text/javascript" src="{{ STATIC_URL }}common/autocomplete_serversearch.js"></script>
 <script type="text/javascript">
 //<![CDATA[
 var shell_autocomplete_url = "{% url servershell_autocomplete %}";
 var available_attributes = {{ attributes_json|safe }};
 var filter_functions = {{ filters_json|safe }};
+$(function() {
+    $('#{{ search_id }}').autocomplete({
+        'source': function (request, response) {
+            autocomplete_shell_search(request.term, response);
+        },
+        'delay': 150,
+    });
+});
 //]]>
 </script>

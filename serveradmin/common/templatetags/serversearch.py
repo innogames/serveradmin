@@ -1,6 +1,7 @@
 import json
 
 from django import template
+from django.conf import settings
 
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset import filters
@@ -8,7 +9,7 @@ from serveradmin.dataset import filters
 register = template.Library()
 
 @register.inclusion_tag('serversearch.html')
-def serversearch_js():
+def serversearch_js(search_id):
     attributes = {}
     for attr in lookups.attr_names.itervalues():
         attributes[attr.name] = {
@@ -27,4 +28,6 @@ def serversearch_js():
     return {
         'attributes_json': json.dumps(attributes),
         'filters_json': json.dumps(filter_dict),
+        'search_id': search_id,
+        'STATIC_URL': settings.STATIC_URL
     }

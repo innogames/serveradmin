@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load serversearch %}
 {% load servermonitor %}
 
 {% block title %}Servermonitor{% endblock %}
@@ -154,4 +155,5 @@ $(function() {
 });
 //]]>
 </script>
+{% serversearch_js 'monitor_search' %}
 {% endblock %}

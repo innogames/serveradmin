@@ -124,7 +124,7 @@
 {% endblock %}
 
 {% block additional_body %}
-{% serversearch_js %}
+{% serversearch_js 'shell_search' %}
 <script type="text/javascript">
 //<![CDATA[
 var shell_results_url = "{% url servershell_results %}";
@@ -133,7 +133,6 @@ var shell_compare_url = "{% url servermonitor_compare %}";
 var shell_graph_url = "{% url servermonitor_graph_table %}";
 //]]>
 </script>
-<script type="text/javascript" src="{{ STATIC_URL }}common/autocomplete_serversearch.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}servershell/common.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}servershell/servershell.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}servermonitor/servermonitor.js"></script>

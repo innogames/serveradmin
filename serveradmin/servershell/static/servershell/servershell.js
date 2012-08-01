@@ -634,12 +634,6 @@ $(function() {
         execute_search($('#shell_search').val());
         return false;
     });
-    $('#shell_search').autocomplete({
-        'source': function (request, response) {
-            autocomplete_shell_search(request.term, response);
-        },
-        'delay': 150,
-    });
 
     $('#shell_search').bind('change', function(ev) {
         $('#shell_understood').text('Nothing yet');
