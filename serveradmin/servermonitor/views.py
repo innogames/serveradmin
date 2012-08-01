@@ -56,7 +56,7 @@ def index(request):
         }
         for period in ('hourly', 'daily', 'yesterday'):
             for what in ('io', 'cpu'):
-                host_data[what][period] = 0
+                host_data[what][period] = None
         hardware[hw_host['hostname']] = host_data
     hostnames = hardware.keys()
 

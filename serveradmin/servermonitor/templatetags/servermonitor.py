@@ -6,6 +6,8 @@ register = template.Library()
 
 @register.simple_tag
 def format_percent(value, range_start, range_end, range_diff):
+    if value is None:
+        return u'<div>unknown</div>'
     if value < range_start:
         return u'<div>{0}&nbsp;%</div>'.format(value)
 
