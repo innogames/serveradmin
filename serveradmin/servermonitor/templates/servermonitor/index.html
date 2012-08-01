@@ -16,12 +16,18 @@
             value="{{ search_term }}" />
     </td>
 </tr>
+<tr>
+    <td>Understood: </td>
+    {% if error %}
+    <td><span class="error">{{ error }}</span></td>
+    {% else %}
+    <td>{{ understood }}</td>
+    {% endif %}
+</tr>
 </table>
 </form>
 
-{% if error %}
-<p class="error">{{ error }}</p>
-{% else %}
+{% if not error %}
 <table border="1">
     <tr>
         <th>Hardware host</th>

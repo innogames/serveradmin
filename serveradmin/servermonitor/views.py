@@ -23,17 +23,21 @@ def index(request):
     if term:
         try:
             query_args = parse_query(term, filters.filter_classes)
-            for host in query(**query_args).restrict('hostname', 'xen_host'):
+            host_query = query(**query_args).restrict('hostname', 'xen_host')
+            for host in host_query:
                 if 'xen_host' in host:
                     hostname_filter.add(host['xen_host'])
                 else:
                     # If it's not guest, it might be a server, so we add it
                     hostname_filter.add(host['hostname'])
+            understood = host_query.get_representation().as_code()
         except (ValueError, DatasetError), e:
             return TemplateResponse(request, 'servermonitor/index.html', {
                 'search_term': term,
                 'error': e.message
             })
+    else:
+        understood = query().get_representation().as_code() # It's lazy :-)
     
     hw_query_args = {'physical_server': True, 'cancelled': False}
     if hostname_filter:
@@ -100,6 +104,7 @@ def index(request):
         'mem_free_sum': mem_free_sum,
         'mem_free_total': mem_total_sum,
         'search_term': term,
+        'understood': understood,
         'error': None
     })
 
