@@ -13,7 +13,7 @@
  padding:1em;
 }
 
-.border_table td, th {
+.border_table td, .border_table th {
  border:1px solid #000;
  padding:0.3em;
 }
