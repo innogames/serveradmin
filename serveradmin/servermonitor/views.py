@@ -124,14 +124,18 @@ def graph_table(request):
         graph_name, period = split_graph_name(graph)
         if period:
             graph_dict = graph_table.setdefault(graph_name, {})
-            graph_dict[period] = get_graph_url(hostname, graph)
             graph_dict['name'] = graph_name
-            graph_dict['graph'] = graph
+            graph_dict[period] = {
+                'image': get_graph_url(hostname, graph),
+                'graph': graph
+            }
         else:
             graph_table[graph] = {
                 'name': graph,
-                'graph': graph,
-                'general': get_graph_url(hostname, graph)
+                'general': {
+                    'image': get_graph_url(hostname, graph),
+                    'graph': graph
+                }
             }
     graph_table = sorted(graph_table.values(), key=itemgetter('name'))
     return TemplateResponse(request, 'servermonitor/graph_table.html', {
