@@ -41,9 +41,14 @@ function execute_search(term)
         search['num_servers'] = data['num_servers'];
         search['shown_attributes'] = data['shown_attributes'];
         search['num_pages'] = Math.ceil(search['num_servers'] / search['per_page']);
-        $('#shell_understood').text(data['understood']);
-        render_server_table();
-        $('#shell_command').focus();
+        if (search['page'] > search['num_pages']) {
+            search['page'] = search['num_pages'];
+            execute_search(term);
+        } else {
+            $('#shell_understood').text(data['understood']);
+            render_server_table();
+            $('#shell_command').focus();
+        }
     });
 }
 
