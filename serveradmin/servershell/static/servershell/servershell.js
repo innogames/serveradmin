@@ -40,7 +40,7 @@ function execute_search(term)
         search['servers'] = data['servers'];
         search['num_servers'] = data['num_servers'];
         search['shown_attributes'] = data['shown_attributes'];
-        search['num_pages'] = Math.ceil(search['num_servers'] / search['per_page']);
+        search['num_pages'] = Math.max(1, Math.ceil(search['num_servers'] / search['per_page']));
         if (search['page'] > search['num_pages']) {
             search['page'] = search['num_pages'];
             execute_search(term);
