@@ -53,4 +53,5 @@ def raise_random_exception(*names):
         name = 'code{0}'.format(random.randint(1000, 9999))
     exc_name = '{0}Error'.format(name.capitalize())
 
-    raise type(exc_name, (ApiError, ), {})
+    exc_class = type(exc_name, (ApiError, ), {})
+    raise exc_class('You can only fail, never succeed.')
