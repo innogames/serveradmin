@@ -16,9 +16,6 @@ class Filter(BaseFilter):
     def __or__(self, other):
         return Or(self, other)
 
-    def __not__(self):
-        return Not(self)
-
     def __ne__(self, other):
         return not self.__eq__(other)
 

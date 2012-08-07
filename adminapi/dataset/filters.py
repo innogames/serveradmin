@@ -10,9 +10,6 @@ class Filter(BaseFilter):
     def __or__(self, other):
         return Or(self, other)
 
-    def __not__(self):
-        return Not(self)
-
 class ExactMatch(Filter):
     def __init__(self, value):
         self.value = value
