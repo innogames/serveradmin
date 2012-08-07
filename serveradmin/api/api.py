@@ -1,3 +1,5 @@
+import random
+
 from serveradmin.api.decorators import api_function
 from serveradmin.api import ApiError
 
@@ -35,3 +37,20 @@ def raise_exception():
        
     """
     raise RaiseExceptionError('Test exception')
+
+@api_function(group='debug')
+def raise_random_exception(*names):
+    """Raise a random exception.
+
+    It will make up exceptions from the given names and choose on of
+    them at random -- or a completely different exception.
+    """
+    
+    names.append(None)
+    name = random.choice(names)
+
+    if not name:
+        name = 'code{0}'.format(random.randint(1000, 9999))
+    exc_name = '{0}Error'.format(name.capitalize())
+
+    raise type(exc_name, (ApiError, ), {})
