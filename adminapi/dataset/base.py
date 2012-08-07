@@ -361,8 +361,8 @@ def _format_value(value):
     if not value:
         return ''
     elif value is NonExistingAttribute:
-        return '(does not exist)'
+        return u'(does not exist)'
     elif isinstance(value, set):
-        return ', '.join(value)
+        return u', '.join(unicode(val) for val in value)
     else:
         return value
