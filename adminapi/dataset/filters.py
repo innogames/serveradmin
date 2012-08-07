@@ -1,6 +1,19 @@
 filter_classes = {}
 
-class ExactMatch(object):
+class BaseFilter(object):
+    pass
+
+class Filter(BaseFilter):
+    def __and__(self, other):
+        return And(self, other)
+
+    def __or__(self, other):
+        return Or(self, other)
+
+    def __not__(self):
+        return Not(self)
+
+class ExactMatch(Filter):
     def __init__(self, value):
         self.value = value
 
@@ -12,7 +25,7 @@ class ExactMatch(object):
 filter_classes['exactmatch'] = ExactMatch
 
 
-class Regexp(object):
+class Regexp(Filter):
     def __init__(self, regexp):
         self.regexp = regexp
 
@@ -24,7 +37,7 @@ class Regexp(object):
 filter_classes['regexp'] = Regexp
 
 
-class Comparison(object):
+class Comparison(Filter):
     def __init__(self, comparator, value):
         if comparator not in ('<', '>', '<=', '>='):
             raise ValueError('Invalid comparism operator: ' + comparator)
@@ -42,7 +55,7 @@ filter_classes['comparison'] = Comparison
 Comparism = Comparison # Backward compatibilty
 
 
-class Any(object):
+class Any(Filter):
     def __init__(self, *values):
         self.values = values
 
@@ -54,7 +67,7 @@ class Any(object):
 filter_classes['any'] = Any
 
 
-class _AndOr(object):
+class _AndOr(Filter):
     def __init__(self, *filters):
         self.filters = map(_prepare_filter, filters)
 
@@ -77,7 +90,7 @@ class Or(_AndOr):
 filter_classes['or'] = Or
 
 
-class Between(object):
+class Between(Filter):
     def __init__(self, a, b):
         self.a = a
         self.b = b
@@ -90,7 +103,7 @@ class Between(object):
 filter_classes['between'] = Between
 
 
-class Not(object):
+class Not(Filter):
     def __init__(self, filter):
         self.filter = _prepare_filter(filter)
 
@@ -102,7 +115,7 @@ class Not(object):
 filter_classes['not'] = Not
 
 
-class Startswith(object):
+class Startswith(Filter):
     def __init__(self, value):
         self.value = value
 
@@ -114,7 +127,7 @@ class Startswith(object):
 filter_classes['startswith'] = Startswith
 
 
-class Optional(object):
+class Optional(BaseFilter):
     def __init__(self, filter):
         self.filter = _prepare_filter(filter)
 
@@ -125,7 +138,7 @@ class Optional(object):
         return {'name': 'optional', 'filter': self.filter._serialize()}
 filter_classes['optional'] = Optional
 
-class InsideNetwork(object):
+class InsideNetwork(Filter):
     def __init__(self, *networks):
         self.networks = networks
 
@@ -137,7 +150,7 @@ class InsideNetwork(object):
         return {'name': 'insidenetwork', 'networks': self.networks}
 filter_classes['insidenetwork'] = InsideNetwork
 
-class PublicIP(object):
+class PublicIP(Filter):
     def __repr__(self):
         return 'PublicIP'
 
@@ -145,7 +158,7 @@ class PublicIP(object):
         return {'name': 'publicip'}
 filter_classes['publicip'] = PublicIP
 
-def PrivateIP(object):
+def PrivateIP(Filter):
     def __repr__(self):
         return 'PrivateIP'
 
@@ -154,4 +167,4 @@ def PrivateIP(object):
 filter_classes['privateip'] = PrivateIP
 
 def _prepare_filter(filter):
-    return filter if hasattr(filter, '_serialize') else ExactMatch(filter)
+    return filter if isinstance(filter, BaseFilter) else ExactMatch(filter)
