@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Servertype {{ servertype.name }}{% endblock %}
+
+{% block content %}
+<h2>Servertype {{ servertype.name }}</h2>
+
+<table>
+    <tr>
+        <th>Attribute</th>
+        <th>Type</th>
+        <th>Multi</th>
+        <th>Required</th>
+        <th>Validation</th>
+        <th>Default</th>
+    </tr>
+{% for attr in attributes %}
+    <tr>
+        <td>{{ attr.name }}</td>
+        <td>{{ attr.type }}</td>
+        <td>{{ attr.multi }}</td>
+        <td>{{ attr.required }}</td>
+        <td>{% if attr.regexp %}{{ attr.regexp }}{% else %}<i>None</i>{% endif %}</td>
+        <td>{% if attr.default %}{{ attr.default }}{% else %}<i>None</i>{% endif %}</td>
+    </tr>
+{% endfor %}
+</table>
+{% endblock %}

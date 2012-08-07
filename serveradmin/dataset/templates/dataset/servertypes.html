@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Servertypes{% endblock %}
+
+{% block content %}
+<h2>Servertypes</h2>
+<ul>
+{% for servertype in servertypes %}
+    <li><a href="{% url dataset_view_servertype servertype.name %}">
+        {{ servertype.name }}</a></li>
+{% endfor %}
+</ul>
+{% endblock %}
