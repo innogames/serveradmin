@@ -36,7 +36,8 @@
         </form>
     </td>
     <td>
-        <img src="{{ STATIC_URL}}help.png" id="shell_command_help_icon" class="help_icon" />
+        <img src="{{ STATIC_URL}}help.png" id="shell_command_help_icon"
+        alt="Help" class="help_icon" />
     </td>
 </tr>
 </table>
@@ -47,7 +48,7 @@
     <h3>Attributes</h3>
     <ul>
     {% for attr in attribute_list %}
-        <li>{{ attr }}
+        <li>{{ attr }}</li>
     {% endfor %}
     </ul>
 </div>
@@ -123,7 +124,7 @@
         <td>[graph[, graph ...]]</td>
         <td>Compares the given graphs of the selected hosts. If no graphs are
             given it compares all available graphs.
-        <td>
+        </td>
     </tr>
     <tr>
         <td>list</td>
