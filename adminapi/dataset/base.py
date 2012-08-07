@@ -72,10 +72,12 @@ class BaseQuerySet(object):
     def rollback(self):
         for obj in self:
             obj.rollback()
+        return self
 
     def delete(self):
         for obj in self:
             obj.delete()
+        return self
 
     def update(self, **attrs):
         for obj in self:
