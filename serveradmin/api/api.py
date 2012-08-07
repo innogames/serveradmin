@@ -46,7 +46,7 @@ def raise_random_exception(*names):
     them at random -- or a completely different exception.
     """
     
-    names.append(None)
+    names = names + (None, )
     name = random.choice(names)
 
     if not name:
