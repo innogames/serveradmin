@@ -270,7 +270,7 @@ class BaseServerObject(dict):
         if self._queryset.attributes[k].multi:
             if not isinstance(v, set):
                 raise DatasetError('Multi attributes must be sets')
-        if self.old_values[k] != v:
+        if k not in self.old_values or self.old_values[k] != v:
             self._save_old_value(k)
         return dict.__setitem__(self, k, v)
     __setitem__.__doc__ = dict.__setitem__.__doc__
