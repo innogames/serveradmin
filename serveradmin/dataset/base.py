@@ -76,15 +76,19 @@ def _read_lookups(sender=None, **kwargs):
               u'regex, default_visible FROM servertype_attributes')
     for row in c.fetchall():
         row = list(row)
-        try:
-            row[4] = re.compile(row[4])
-        except (TypeError, re.error):
+        attribute = lookups.attr_ids[row[1]]
+        if attribute.type == 'string':
+            try:
+                row[4] = re.compile(row[4])
+            except (TypeError, re.error):
+                row[4] = None
+        else:
             row[4] = None
+        row[2] = bool(row[2])
         stype_attr = ServerTypeAttr._make(row)
         stype = lookups.stype_ids[stype_attr.servertype_id]
         if not hasattr(stype, u'attributes'):
             stype.attributes = []
-        attribute = lookups.attr_ids[stype_attr.attribute_id]
         stype.attributes.append(attribute)
         index = (stype_attr.servertype_id, stype_attr.attribute_id)
         lookups.stype_attrs[index] = stype_attr
