@@ -658,16 +658,23 @@ function get_marked_servers()
 
 $(function() {
     $('#shell_search_form').submit(function(ev) {
+        $('#shell_understood').text('Nothing yet');
+        $('#shell_servers').empty()
         search['page'] = 1;
         ev.stopPropagation();
         execute_search($('#shell_search').val());
         return false;
     });
-
+    
+    /*
+     * Currently disabled until Opera fixes it's bug with the
+     * change event
+     *
     $('#shell_search').bind('change', function(ev) {
         $('#shell_understood').text('Nothing yet');
         $('#shell_servers').empty()
     });
+    */
 
     if ($('#shell_search').val() != '') {
         search['page'] = 1;
