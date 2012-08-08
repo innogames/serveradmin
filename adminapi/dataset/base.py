@@ -42,7 +42,7 @@ class BaseQuerySet(object):
                 lookup[host[attr]] = host
         return lookup
 
-    def request_results(self):
+    def fetch_now(self):
         self._get_results()
         return self
 

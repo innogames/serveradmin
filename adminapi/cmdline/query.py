@@ -49,7 +49,7 @@ def main():
         attrs = ['hostname']
     
     try:
-        q = query(**query_args).restrict(*attrs).request_results()
+        q = query(**query_args).restrict(*attrs).fetch_now()
     except (ValueError, DatasetError), e:
         print(unicode(e), file=sys.stderr)
         sys.exit(1)
