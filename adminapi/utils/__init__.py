@@ -2,6 +2,7 @@ from __future__ import print_function
 import sys
 from itertools import izip
 from math import log
+import warnings
 
 def print_table(input_table_rows, max_col_len=40, file=sys.stdout):
     if not input_table_rows:
@@ -121,8 +122,13 @@ class IP(object):
     def as_int(self):
         return self.ip
 
-    def is_internal(self):
+    def is_private(self):
         return any(net.min_ip <= self.ip <= net.max_ip for net in PRIVATE_IP_BLOCKS)
+
+    def is_internal(self):
+        warnings.warn('is_internal() is deprecated. Use is_private() instead',
+                DeprecationWarning)
+        return self.is_private()
 
     def is_public(self):
         return not self.is_internal()
