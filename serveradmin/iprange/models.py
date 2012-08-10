@@ -22,7 +22,6 @@ class IPRange(models.Model):
         try:
             next_free = self.next_free
             for second_loop in (False, True):
-                print next_free
                 while next_free <= self.max:
                     if query(all_ips=next_free).restrict('hostname'):
                         next_free += 1
