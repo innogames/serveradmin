@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}IP ranges{% endblock %}
+
+{% block content %}
+<h2>IP ranges</h2>
+
+<form method="get" action="">
+<p>
+<select name="segment">
+{% for segment in segments %}
+    <option value="{{ segment.segment }}"
+    {% if displayed_segment == segment %}selected="selected"{% endif %}
+    >{{ segment.segment }}</option>
+{% endfor %}
+</select>
+<input type="submit" value="Show" />
+</p>
+</form>
+
+<table class="tabular">
+    <tr>
+        <th>range_id</th>
+        <th>type</td>
+        <th>min ip</th>
+        <th>max ip</th>
+        <th>cidr</th>
+    </tr>
+{% for iprange in ip_ranges %}
+    <tr>
+        <td>{{ iprange.range_id }}</td>
+        <td>{{ iprange.get_ip_type_display }}</td>
+        <td>{{ iprange.min_ip }}</td>
+        <td>{{ iprange.max_ip }}</td>
+        <td>
+        {% if iprange.cidr %}
+        {{ iprange.cidr }}
+        {% else %}
+        Not possible
+        {% endif %}
+        </td>
+    </tr>
+{% endfor %}
+</table>
+{% endblock content %}

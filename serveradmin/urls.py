@@ -12,6 +12,7 @@ urlpatterns = patterns(
     url(r'^api/', include('serveradmin.api.urls')),
     url(r'^documentation/', include('serveradmin.docs.urls')),
     url(r'^servermonitor/', include('serveradmin.servermonitor.urls')),
+    url(r'^iprange/', include('serveradmin.iprange.urls')),
     url(r'^loginapi/', include('igrestlogin.urls')),
     url(r'^logout', 'django.contrib.auth.views.logout_then_login',
         name='logout'),

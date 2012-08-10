@@ -1,11 +1,11 @@
 from django.db import models, connection
 
-from adminapi.utils import IP
+from adminapi.utils import IP, Network
 from serveradmin.dataset import query, DatasetError
 
 IP_CHOICES = (
-    ('ip', 'Internal IP'),
-    ('public_ip', 'Public IP'),
+    ('ip', 'Private'),
+    ('public_ip', 'Public'),
 )
 
 class IPRange(models.Model):
@@ -39,6 +39,24 @@ class IPRange(models.Model):
                     raise DatasetError('No more free addresses, sorry')
         finally:
             c.execute("SELECT RELEASE_LOCK('serverobject_commit')")
+
+    def get_network(self):
+        return Network(self.min, self.max)
+
+    @property
+    def cidr(self):
+        try:
+            return self.get_network().as_cidr()
+        except TypeError:
+            return None
+
+    @property
+    def min_ip(self):
+        return IP(self.min)
+
+    @property
+    def max_ip(self):
+        return IP(self.max)
 
     class Meta:
         db_table = 'ip_range'
