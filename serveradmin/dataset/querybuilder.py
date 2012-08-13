@@ -76,14 +76,16 @@ class QueryBuilder(object):
         attr_field = self.aliases[alias]['field']
         self.sql_order_by.append(u'{0} {1}'.format(attr_field, direction))
 
-    def add_select(self, alias):
-        self.sql_select.append(self.aliases[alias]['field'])
+    def add_select(self, *aliases):
+        for alias in aliases:
+            self.sql_select.append(self.aliases[alias]['field'])
 
     def add_limit(self, offset, limit):
         self.sql_limit = [offset, limit]
 
-    def add_group_by(self, alias):
-        self.sql_group_by.append(self.aliases[alias]['field'])
+    def add_group_by(self, *aliases):
+        for alias in aliases:
+            self.sql_group_by.append(self.aliases[alias]['field'])
     
     def build_sql(self):
         self.sql_from_tables.append(u'admin_server AS adms')
