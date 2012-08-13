@@ -100,6 +100,5 @@ class QueryBuilder(object):
             sql.append(u'LIMIT {0}, {1}'.format(*self.sql_limit))
 
         sql_stmt = u'\n'.join(sql)
-        print sql_stmt
         return sql_stmt
 
