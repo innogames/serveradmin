@@ -235,12 +235,12 @@ def _build_error_message(violations_attribs, violations_regexp,
     message = []
     for violations, message_type in violation_types:
         seen = {}
-        for vattr, server_id in violations:
+        for server_id, vattr in violations:
             num_servers = seen.setdefault(vattr, 0)
             num_servers += 1
         if seen:
             for vattr, num_affected in seen.iteritems():
-                message.append(u'{0}: {1} (#affected: {2}'.format(message_type,
-                        vattr, num_affected))
+                message.append(u'{0}: {1} (#affected: {2})'.format(
+                        message_type, vattr, num_affected))
     return u'. '.join(message)
 
