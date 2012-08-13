@@ -1,6 +1,7 @@
 from django.db import models, connection
 
-from adminapi.utils import IP, Network
+from adminapi.utils import Network
+from serveradmin.common import dbfields
 from serveradmin.dataset import query, DatasetError
 
 IP_CHOICES = (
@@ -12,9 +13,9 @@ class IPRange(models.Model):
     range_id = models.CharField(max_length=20, primary_key=True)
     segment = models.CharField(max_length=30, db_column='segment_id')
     ip_type = models.CharField(max_length=10, choices=IP_CHOICES)
-    min = models.IntegerField()
-    max = models.IntegerField()
-    next_free = models.IntegerField()
+    min = dbfields.IPv4Field()
+    max = dbfields.IPv4Field()
+    next_free = dbfields.IPv4Field()
 
     def get_free(self, increase_pointer=True):
         c = connection.cursor()
@@ -25,14 +26,14 @@ class IPRange(models.Model):
                 while next_free <= self.max:
                     if query(all_ips=next_free).restrict('hostname'):
                         next_free += 1
-                    elif (next_free & 0xff) in (0x00, 0xff):
+                    elif (next_free.as_int() & 0xff) in (0x00, 0xff):
                         next_free += 1
                     else:
                         if increase_pointer:
                             IPRange.objects.filter(next_free=next_free).update(
                                     next_free=next_free + 1)
                             self.next_free = next_free + 1
-                        return IP(next_free)
+                        return next_free
                 next_free = self.min
                 if second_loop:
                     raise DatasetError('No more free addresses, sorry')
@@ -48,14 +49,6 @@ class IPRange(models.Model):
             return self.get_network().as_cidr()
         except TypeError:
             return None
-
-    @property
-    def min_ip(self):
-        return IP(self.min)
-
-    @property
-    def max_ip(self):
-        return IP(self.max)
 
     class Meta:
         db_table = 'ip_range'
