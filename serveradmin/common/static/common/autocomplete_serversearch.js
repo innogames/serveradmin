@@ -33,12 +33,15 @@ function parse_function_string(args)
                 if ((i + 1) == args_len) {
                     // Do nothing, because the function string is not
                     // finished yet.
+                    i++;
                 } else if (args[i + 1] == '\\') {
                     string_buf.push('\\');
                     i += 2;
                 } else if (args[i + 1] == string_type) {
                     string_buf.push(string_type);
                     i += 2
+                } else {
+                    i++;
                 }
             } else if (args[i] == string_type) {
                 parsed_args.push({
