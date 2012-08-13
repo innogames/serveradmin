@@ -34,8 +34,8 @@ class ExactMatch(Filter):
     def __hash__(self):
         return hash(u'ExactMatch') ^ hash(self.value)
 
-    def as_sql_expr(self, attr_name, field):
-        return u'{0} = {1}'.format(field, _prepare_value(attr_name, self.value))
+    def as_sql_expr(self, builder, attr_obj, field):
+        return u'{0} = {1}'.format(field, _prepare_value(attr_obj, self.value))
 
     def matches(self, server_obj, attr_name):
         return server_obj[attr_name] == self.value
@@ -73,9 +73,9 @@ class Regexp(Filter):
     def __hash__(self):
         return hash(u'Regexp') ^ hash(self.regexp)
 
-    def as_sql_expr(self, attr_name, field):
+    def as_sql_expr(self, builder, attr_obj, field):
         # XXX Dirty hack for servertype regexp checking
-        if attr_name == u'servertype':
+        if attr_obj.name == u'servertype':
             stype_ids = []
             for stype in lookups.stype_ids.itervalues():
                 if self._regexp_obj.search(stype.name):
@@ -84,7 +84,7 @@ class Regexp(Filter):
                 return u'{0} IN({1})'.format(field, ', '.join(stype_ids))
             else:
                 return u'0=1'
-        elif lookups.attr_names[attr_name].type == u'ip':
+        elif attr_obj.type == u'ip':
             return u'INET_NTOA({0}) REGEXP {1}'.format(field, _sql_escape(self.regexp))
         else:
             return u'{0} REGEXP {1}'.format(field, _sql_escape(self.regexp))
@@ -131,9 +131,9 @@ class Comparison(Filter):
     def __hash__(self):
         return hash(u'Comparison') ^ hash(self.comparator) ^ hash(self.value)
 
-    def as_sql_expr(self, attr_name, field):
+    def as_sql_expr(self, builder, attr_obj, field):
         return u'{0} {1} {2}'.format(field, self.comparator,
-                _prepare_value(attr_name, self.value))
+                _prepare_value(attr_obj, self.value))
 
     def matches(self, server_obj, attr_name):
         op = {
@@ -175,11 +175,11 @@ class Any(Filter):
             h ^= hash(val)
         return h
 
-    def as_sql_expr(self, attr_name, field):
+    def as_sql_expr(self, builder, attr_obj, field):
         if not self.values:
             return u'0=1'
         else:
-            prepared_values = u', '.join(_prepare_value(attr_name, value)
+            prepared_values = u', '.join(_prepare_value(attr_obj, value)
                     for value in self.values)
             return u'{0} IN({1})'.format(field, prepared_values)
 
@@ -194,7 +194,7 @@ class Any(Filter):
         for value in self.values:
             casted_values.add(_typecast(attr_name, value))
         self.values = casted_values
-    
+
     @classmethod
     def from_obj(cls, obj):
         if u'values' in obj and isinstance(obj[u'values'], list):
@@ -221,9 +221,9 @@ class _AndOr(Filter):
             h ^= hash(val)
         return h
 
-    def as_sql_expr(self, attr_name, field):
+    def as_sql_expr(self, builder, attr_obj, field):
         joiner = u' {0} '.format(self.name.upper())
-        return u'({0})'.format(joiner.join([filter.as_sql_expr(attr_name, field)
+        return u'({0})'.format(joiner.join([filter.as_sql_expr(builder, attr_obj, field)
                 for filter in self.filters]))
     
     def as_code(self):
@@ -277,9 +277,9 @@ class Between(Filter):
     def __hash__(self):
         return hash(u'Between') ^ hash(self.a) ^ hash(self.b)
 
-    def as_sql_expr(self, attr_name, field):
-        a_prepared = _prepare_value(attr_name, self.a)
-        b_prepared = _prepare_value(attr_name, self.b)
+    def as_sql_expr(self, builder, attr_obj, field):
+        a_prepared = _prepare_value(attr_obj, self.a)
+        b_prepared = _prepare_value(attr_obj, self.b)
         return u'{0} BETWEEN {1} AND {2}'.format(field, a_prepared, b_prepared)
 
     def matches(self, server_obj, attr_name):
@@ -314,28 +314,22 @@ class Not(Filter):
     def __hash__(self):
         return hash(u'Not') ^ hash(self.filter)
 
-    def as_sql_expr(self, attr_name, field):
-
-        if lookups.attr_names[attr_name].multi:
-            # FIXME: The random is a quite dirty hack that needs to be
-            # replaced with something better. The query building should
-            # be refactored to use a query builder objects which will
-            # be passed to as_sql_expr
-            import random 
-            uid = random.randint(0, 999999)
-            cond = self.filter.as_sql_expr(attr_name, 'nav{0}.value'.format(
-                    uid))
+    def as_sql_expr(self, builder, attr_obj, field):
+        if attr_obj.multi:
+            uid = builder.get_uid()
+            cond = self.filter.as_sql_expr(builder, attr_obj,
+                    'nav{0}.value'.format(uid))
             subquery = ('SELECT id FROM attrib_values AS nav{0} '
                         'WHERE {1} AND nav{0}.server_id = adms.server_id').format(
                                 uid, cond)
             return 'NOT EXISTS ({0})'.format(subquery)
         else:
             if isinstance(self.filter, ExactMatch):
-                return u'{0} != {1}'.format(field, _prepare_value(attr_name,
+                return u'{0} != {1}'.format(field, _prepare_value(attr_obj,
                         self.filter.value))
             else:
-                return u'NOT {0}'.format(self.filter.as_sql_expr(attr_name,
-                        field))
+                return u'NOT {0}'.format(self.filter.as_sql_expr(builder,
+                        attr_obj, field))
 
     def matches(self, server_obj, attr_name):
         return not self.filter.matches(server_obj, attr_name)
@@ -367,10 +361,10 @@ class Startswith(Filter):
     def __hash__(self):
         return hash(u'Startswith') ^ hash(self.value)
 
-    def as_sql_expr(self, attr_name, field):
+    def as_sql_expr(self, builder, attr_obj, field):
         # XXX Dirty hack for servertype checking
         value = self.value.replace('_', '\\_').replace(u'%', u'\\%%')
-        if attr_name == u'servertype':
+        if attr_obj.name == u'servertype':
             stype_ids = []
             for stype in lookups.stype_ids.itervalues():
                 if stype.name.startswith(self.value):
@@ -379,7 +373,7 @@ class Startswith(Filter):
                 return u'{0} IN({1})'.format(field, ', '.join(stype_ids))
             else:
                 return u'0=1'
-        elif lookups.attr_names[attr_name].type == u'ip':
+        elif attr_obj.type == u'ip':
             return u'INET_NTOA({0}) LIKE {1}'.format(field, _sql_escape(value +
                 '%%'))
         else:
@@ -443,7 +437,7 @@ class InsideNetwork(Filter):
             h ^= hash(network)
         return h
 
-    def as_sql_expr(self, attr_name, field):
+    def as_sql_expr(self, builder, attr_obj, field):
         betweens = [
             u'{0} BETWEEN {1} AND {2}'.format(
             field, net.min_ip.as_int(), net.max_ip.as_int())
@@ -483,8 +477,8 @@ class _PrivatePublicIP(Filter):
     def __hash__(self):
         return hash(self.__class__.__name__)
 
-    def as_sql_expr(self, attr_name, field):
-        return self.filt.as_sql_expr(attr_name, field)
+    def as_sql_expr(self, builder, attr_obj, field):
+        return self.filt.as_sql_expr(builder, attr_obj, field)
 
     def matches(self, server_obj, attr_name):
         return self.filt.matches(server_obj, attr_name)
@@ -523,9 +517,9 @@ class Optional(BaseFilter):
     def __hash__(self):
         return hash(u'Optional') ^ hash(self.filter)
 
-    def as_sql_expr(self, attr_name, field):
+    def as_sql_expr(self, builder, attr_obj, field):
         return u'({0} IS NULL OR {1})'.format(field, self.filter.as_sql_expr(
-                attr_name, field))
+                builder, attr_obj, field))
 
     def matches(self, server_obj, attr_name):
         value = server_obj.get(attr_name)
@@ -549,13 +543,13 @@ filter_classes[u'optional'] = Optional
 def _prepare_filter(filter):
     return filter if isinstance(filter, BaseFilter) else ExactMatch(filter)
 
-def _prepare_value(attr_name, value):
-    if lookups.attr_names[attr_name].type == u'ip':
+def _prepare_value(attr_obj, value):
+    if attr_obj.type == u'ip':
         if not isinstance(value, IP):
             value = IP(value)
         value = value.as_int()
     # XXX: Dirty hack for the old database structure
-    if attr_name == u'servertype':
+    if attr_obj.name == u'servertype':
         try:
             value = lookups.stype_names[value].pk
         except KeyError:

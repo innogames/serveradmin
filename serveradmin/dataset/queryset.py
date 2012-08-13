@@ -7,6 +7,7 @@ from serveradmin.dataset.validation import check_attributes
 from serveradmin.dataset import filters
 from serveradmin.dataset.commit import commit_changes
 from serveradmin.dataset.cache import QuerysetCacher
+from serveradmin.dataset.querybuilder import QueryBuilder
 
 CACHE_MIN_QS_COUNT = 3
 NUM_OBJECTS_FOR_FILECACHE = 50
@@ -169,54 +170,23 @@ class QuerySet(BaseQuerySet):
 
     def _fetch_results(self):
         # XXX: Dirty hack for the old database structure
-        i = 0
-        sql_left_joins = []
-        sql_from = []
-        sql_where = []
-        attr_fields = {}
-        attr_names = lookups.attr_names
+        builder = QueryBuilder()
         _Optional = filters.Optional
         for attr, f in self._filters.iteritems():
             attr_obj = lookups.attr_names[attr]
-            if isinstance(attr_obj.special, ServerTableSpecial):
-                attr_field = u'adms.' + attr_obj.special.field
-                attr_fields[attr] = attr_field
-                if isinstance(f, _Optional):
-                    sql_where.append(f.as_sql_expr(attr, attr_field))
-                else:
-                    sql_where.append(f.as_sql_expr(attr, attr_field))
-            elif isinstance(attr_obj.special, CombinedSpecial):
-                # FIXME: Implement CombinedSpecial better 
-                attr_field = u'av{0}.value'.format(i)
-                attr_fields[u'additional_ips'] = attr_field
-                attr_id = attr_names[u'additional_ips'].pk
-                join = (u'LEFT JOIN attrib_values AS av{0} '
-                        u'ON av{0}.server_id = adms.server_id AND '
-                        u'av{0}.attrib_id = {1}').format(i, attr_id)
-                sql_left_joins.append(join)
-                cond1 = f.as_sql_expr(u'additional_ips', attr_field)
-                cond2 = f.as_sql_expr(u'intern_ip', u'intern_ip')
-                sql_where.append(u'(({0}) OR {1})'.format(cond1, cond2))
-                i += 1
+            
+            if isinstance(attr_obj.special, CombinedSpecial):
+                # FIXME: Generalize it to generic combinations
+                builder.add_attribute(lookups.attr_names['intern_ip'])
+                builder.add_attribute(lookups.attr_names['additional_ips'],
+                        True)
+                cond1 = builder.get_filter_sql('additional_ips', f)
+                cond2 = builder.get_filter_sql('intern_ip', f)
+                builder.sql_where.append(u'({0} OR {1})'.format(cond1, cond2))
             else:
-                attr_field = u'av{0}.value'.format(i)
-                attr_fields[attr] = attr_field
-                if isinstance(f, _Optional):
-                    join = (u'LEFT JOIN attrib_values AS av{0} '
-                            u'ON av{0}.server_id = adms.server_id AND '
-                            u'av{0}.attrib_id = {1}').format(i, attr_obj.pk)
-                    sql_left_joins.append(join)
-                    sql_where.append(f.as_sql_expr(attr, attr_field))
+                builder.add_attribute(attr_obj, isinstance(f, _Optional))
+                builder.add_filter(attr_obj.name, f)
 
-                else:
-                    sql_from.append(u'attrib_values AS av{0}'.format(i))
-                    sql_where += [
-                        u'av{0}.server_id = adms.server_id'.format(i),
-                        u'av{0}.attrib_id = {1}'.format(i, attr_obj.pk),
-                        f.as_sql_expr(attr, attr_field)
-                    ]
-        
-                i += 1
 
         # Copy order_by from instance to local variable to allow LIMIT
         # to set it in the query (but not in the instance) if it is
@@ -229,51 +199,18 @@ class QuerySet(BaseQuerySet):
             if not order_by:
                 order_by = u'hostname'
                 order_dir = u'asc'
-
-            limit_sql = u'LIMIT {0}, {1}'.format(
-                    self._offset, self._limit)
-        else:
-            limit_sql = u''
+            builder.add_limit(self._offset, self._limit)
         
-        # We will try to get the field name for ORDER BY. In case of the
-        # field not being in the query, we will add it with a LEFT JOIN.
         if order_by:
             attr_obj = lookups.attr_names[order_by]
-            if isinstance(attr_obj.special, ServerTableSpecial):
-                order_field = u'adms.' + attr_obj.special.field
-            else:
-                if order_by in attr_fields:
-                    order_field = attr_fields[order_by]
-                else:
-                    attr_id = attr_names[order_by].pk
-                    join = (u'LEFT JOIN attrib_values AS av{0} '
-                            u'ON av{0}.server_id = adms.server_id AND '
-                            u'av{0}.attrib_id = {1}').format(i, attr_id)
-                    sql_left_joins.append(join)
-                    order_field = u'av{0}.value'.format(i)
-
-            order_by_sql = u'ORDER BY {0} {1}'.format(order_field,
-                    order_dir.upper())
-        else:
-            order_by_sql = u''
-
+            builder.add_attribute(attr_obj, optional=True)
+            builder.add_ordering((order_by, order_dir))
         
-        # admin_server must be the last entry in FROM, otherwise the LEFT
-        # JOINs will fail if they reference adms.server_id
-        sql_from.append(u'admin_server AS adms')
-        
-        sql_stmt = u'\n'.join([
-                u'SELECT SQL_CALC_FOUND_ROWS adms.server_id, adms.hostname, '
-                u'adms.intern_ip, adms.segment, adms.servertype_id',
-                u'FROM',
-                u', '.join(sql_from),
-                u'\n'.join(sql_left_joins),
-                u'WHERE' if sql_where else '',
-                u'\n AND '.join(sql_where),
-                u'GROUP BY adms.server_id',
-                order_by_sql,
-                limit_sql
-        ])
+        for attr in ('object_id', 'hostname', 'intern_ip', 'segment', 'servertype'):
+            builder.add_attribute(lookups.attr_names[attr])
+            builder.add_select(attr)
+        builder.sql_keywords += ['SQL_CALC_FOUND_ROWS', 'DISTINCT']
+        sql_stmt = builder.build_sql()
 
         c = connection.cursor()
         c.execute(sql_stmt)
