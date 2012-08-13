@@ -31,13 +31,14 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
             violations_regexp = _validate_regexp(changed_servers, servers)
             violations_required = _validate_required(changed_servers, servers)
             if violations_attribs or violations_regexp or violations_required:
-                # FIXME: distinguish regexp and required
-                raise CommitValidationFailed(u'Validation failed',
+                error_message = _build_error_message(violations_attribs,
+                        violations_regexp, violations_required)
+                raise CommitValidationFailed(error_message,
                         violations_attribs + violations_regexp +
                         violations_required)
         if violations_attribs:
-            raise CommitValidationFailed(u'Unskippable validation failed',
-                    violations_attribs)
+            error_message = _build_error_message(violations_attribs, [], [])
+            raise CommitValidationFailed(error_message, violations_attribs)
         if not force_changes:
             newer = _validate_commit(changed_servers, servers)
             if newer:
@@ -223,3 +224,23 @@ def _prepare_value(attr_name, value):
             value = IP(value)
         value = value.as_int()
     return value
+
+def _build_error_message(violations_attribs, violations_regexp,
+                         violations_required):
+
+    violation_types = [(violations_attribs, 'Attribute not on servertype'),
+                       (violations_regexp, 'Regexp does not match'),
+                       (violations_required, 'Attribute is required')]
+
+    message = []
+    for violations, message_type in violation_types:
+        seen = {}
+        for vattr, server_id in violations:
+            num_servers = seen.setdefault(vattr, 0)
+            num_servers += 1
+        if seen:
+            for vattr, num_affected in seen.iteritems():
+                message.append(u'{0}: {1} (#affected: {2}'.format(message_type,
+                        vattr, num_affected))
+    return u'. '.join(message)
+
