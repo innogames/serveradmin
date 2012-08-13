@@ -43,12 +43,12 @@ def parse_function_string(args, strict=True):
             if args[i] == ' ':
                 parsed_args.append(('str', args[string_start:i]))
                 state = 'start'
-            elif args[i] in ('(', '['):
+            elif args[i] == '(':
                 if string_start != i:
                     parsed_args.append(('func', args[string_start:i]))
                     call_depth += 1
                     state = 'start'
-            elif args[i] in (')', ']') and call_depth != 0:
+            elif args[i] == ')' and call_depth != 0:
                 if string_start != i:
                     parsed_args.append(('str', args[string_start:i]))
                 parsed_args.append(('endfunc', ''))
