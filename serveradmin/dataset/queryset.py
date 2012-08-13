@@ -174,18 +174,8 @@ class QuerySet(BaseQuerySet):
         _Optional = filters.Optional
         for attr, f in self._filters.iteritems():
             attr_obj = lookups.attr_names[attr]
-            
-            if isinstance(attr_obj.special, CombinedSpecial):
-                # FIXME: Generalize it to generic combinations
-                builder.add_attribute(lookups.attr_names['intern_ip'])
-                builder.add_attribute(lookups.attr_names['additional_ips'],
-                        True)
-                cond1 = builder.get_filter_sql('additional_ips', f)
-                cond2 = builder.get_filter_sql('intern_ip', f)
-                builder.sql_where.append(u'({0} OR {1})'.format(cond1, cond2))
-            else:
-                builder.add_attribute(attr_obj, isinstance(f, _Optional))
-                builder.add_filter(attr_obj.name, f)
+            builder.add_attribute(attr, isinstance(f, _Optional))
+            builder.add_filter(attr, f)
 
 
         # Copy order_by from instance to local variable to allow LIMIT
@@ -202,12 +192,11 @@ class QuerySet(BaseQuerySet):
             builder.add_limit(self._offset, self._limit)
         
         if order_by:
-            attr_obj = lookups.attr_names[order_by]
-            builder.add_attribute(attr_obj, optional=True)
+            builder.add_attribute(order_by, optional=True)
             builder.add_ordering((order_by, order_dir))
         
         for attr in ('object_id', 'hostname', 'intern_ip', 'segment', 'servertype'):
-            builder.add_attribute(lookups.attr_names[attr])
+            builder.add_attribute(attr)
             builder.add_select(attr)
         builder.sql_keywords += ['SQL_CALC_FOUND_ROWS', 'DISTINCT']
         sql_stmt = builder.build_sql()

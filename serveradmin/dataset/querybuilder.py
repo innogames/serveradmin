@@ -1,4 +1,4 @@
-from serveradmin.dataset.base import ServerTableSpecial
+from serveradmin.dataset.base import lookups, ServerTableSpecial, CombinedSpecial
 
 class QueryBuilder(object):
     def __init__(self):
@@ -18,7 +18,9 @@ class QueryBuilder(object):
         self.uid += 1
         return self.uid
 
-    def add_attribute(self, attr_obj, optional=False, alias=None):
+    def add_attribute(self, attr, optional=False, alias=None):
+        attr_obj = lookups.attr_names[attr]
+
         if alias is None:
             alias = attr_obj.name
 
@@ -27,6 +29,10 @@ class QueryBuilder(object):
 
         if isinstance(attr_obj.special, ServerTableSpecial):
             attr_field = u'adms.' + attr_obj.special.field
+        elif isinstance(attr_obj.special, CombinedSpecial):
+            attr_field = None
+            for extra_attr in attr_obj.special.attrs:
+                self.add_attribute(extra_attr, optional=True)
         else:
             uid = self.get_uid()
 
@@ -51,7 +57,15 @@ class QueryBuilder(object):
         attr_field = alias_info['field']
         attr_obj = alias_info['attr']
 
-        return filter_obj.as_sql_expr(self, attr_obj, attr_field)
+        if isinstance(attr_obj.special, CombinedSpecial):
+            conds = []
+            for attr in attr_obj.special.attrs:
+                extra = self.aliases[attr]
+                conds.append(filter_obj.as_sql_expr(self, extra['attr'],
+                    extra['field']))
+            return u'({0})'.format(u' OR '.join(conds))
+        else:
+            return filter_obj.as_sql_expr(self, attr_obj, attr_field)
 
     def add_filter(self, alias, filter_obj):
         self.sql_where.append(self.get_filter_sql(alias, filter_obj))
