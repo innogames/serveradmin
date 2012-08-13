@@ -1,5 +1,7 @@
 from django.db import models
 
+from serveradmin.common import dbfields
+
 class Attribute(models.Model):
     special = None
     def __init__(self, *args, **kwargs):
@@ -43,7 +45,7 @@ class ServerTypeAttributes(models.Model):
 class ServerObject(models.Model):
     server_id = models.AutoField(primary_key=True)
     hostname = models.CharField(max_length=64)
-    intern_ip = models.PositiveIntegerField()
+    intern_ip = dbfields.IPv4Field()
     comment = models.CharField(max_length=255, null=True, blank=True)
     servertype = models.ForeignKey(ServerType, null=True, blank=True)
     segment = models.CharField(max_length=10, null=True, blank=True)
