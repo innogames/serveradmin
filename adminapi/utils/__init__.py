@@ -99,6 +99,20 @@ class IP(object):
     def __ge__(self, other):
         return not self < other
     
+    def __add__(self, other):
+        return IP(self.ip + other)
+
+    def __sub__(self, other):
+        return IP(self.ip - other)
+
+    def __iadd__(self, other):
+        self.ip += other
+        return self
+    
+    def __isub__(self, other):
+        self.ip -= other
+        return self
+
     def __getstate__(self):
         return (self.ip, )
 
