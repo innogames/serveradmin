@@ -2,7 +2,7 @@ from django.db import connection
 
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 from adminapi.utils import IP
-from serveradmin.dataset.base import lookups, ServerTableSpecial, CombinedSpecial
+from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.validation import check_attributes
 from serveradmin.dataset import filters
 from serveradmin.dataset.commit import commit_changes
