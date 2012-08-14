@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}IP range {{ iprange.range_id }}{% endblock %}
+
+{% block content %}
+<h2>IP range {{ iprange.range_id }}</h2>
+
+<table>
+    <tr>
+        <th>Type:</th>
+        <td>{{ iprange.get_ip_type_display }}</td>
+    </tr>
+    <tr>
+        <th>Start IP:</th>
+        <td>{{ iprange.min }}</td>
+    </tr>
+    <tr>
+        <th>End IP:</th>
+        <td>{{ iprange.max }}</th>
+    </tr>
+    <tr>
+        <th>CIDR:</th>
+        <td>
+        {% if iprange.cidr %}
+        {{ iprange.cidr }}
+        {% else %}
+        Not possible
+        {% endif %}
+        </td>
+    </tr>
+    <tr>
+        <th>Total IPs:</th>
+        <td>{{ num_ips }}</td>
+    <tr>
+        <th>Usable IPs:</th>
+        <td>{{ num_usable_ips }}</td>
+    </tr>
+    <tr>
+        <th>Free IPs:</th>
+        <td>{{ num_free_ips }}</th>
+    </tr>
+</table>
+
+<h3>Free IPs</h3>
+
+{% for free_block in free_blocks %}
+<div class="iprange_block">
+{% for free_ip in free_block %}
+<span class="iprange_ip">{{ free_ip }}</span> 
+{% endfor %}
+</div>
+{% endfor %}
+{% endblock content %}

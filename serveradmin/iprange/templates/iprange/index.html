@@ -22,13 +22,14 @@
     <tr>
         <th>range_id</th>
         <th>type</td>
-        <th>min ip</th>
-        <th>max ip</th>
+        <th>start ip</th>
+        <th>end ip</th>
         <th>cidr</th>
     </tr>
 {% for iprange in ip_ranges %}
     <tr>
-        <td>{{ iprange.range_id }}</td>
+        <td><a href="{% url iprange_details iprange.range_id %}"
+        >{{ iprange.range_id }}</a></td>
         <td>{{ iprange.get_ip_type_display }}</td>
         <td>{{ iprange.min }}</td>
         <td>{{ iprange.max }}</td>
