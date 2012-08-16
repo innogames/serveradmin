@@ -593,6 +593,8 @@ def filter_from_obj(obj):
 _to_datetime_re = re.compile(
         r'(\d{4})-(\d{1,2})-(\d{1,2})(T(\d{1,2}):(\d{1,2})(:(\d{1,2}))?)?')
 def _to_datetime(x):
+    if isinstance(x, datetime):
+        return x
     if isinstance(x, (int, long)):
         return datetime.fromtimestamp(x)
     elif isinstance(x, basestring):
