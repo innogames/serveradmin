@@ -744,13 +744,24 @@ function handle_command_multiattr(parsed_args, action)
         if (typeof(changes[server_id]) == 'undefined') {
             changes[server_id] = {};
         }
-        changes[server_id][attr_name] = {
-            'action': 'multi',
-        };
-        if (typeof(changes[server_id][attr_name][action]) == 'undefined') {
-            changes[server_id][attr_name][action] = [];
+        if (typeof(changes[server_id][attr_name]) == 'undefined') {
+            changes[server_id][attr_name] = {
+                'action': 'multi',
+                'add': [],
+                'remove': []
+            };
         }
-        changes[server_id][attr_name][action].push(parse_value(value, attr_name));
+        var parsed_value = parse_value(value, attr_name);
+        if (action == 'remove') {
+            var index = changes[server_id][attr_name]['add'].indexOf(parsed_value);
+            if (index != -1) {
+                changes[server_id][attr_name]['add'].splice(index, 1);
+            } else {
+                changes[server_id][attr_name]['remove'].push(parsed_value);
+            }
+        } else if (action == 'add') {
+            changes[server_id][attr_name]['add'].push(parsed_value);
+        }
     }
     render_server_table();
     return '';
