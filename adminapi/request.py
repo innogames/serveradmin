@@ -17,6 +17,9 @@ def _calc_security_token(auth_token, timestamp, content):
     return hmac.new(auth_token, message, hashlib.sha1).hexdigest()
 
 def send_request(url, data, auth_token):
+    if not auth_token:
+        raise ValueError("No auth token supplied. Try adminapi.auth('Token').")
+
     data_json = json.dumps(data, default=json_encode_extra)
     timestamp = int(time.time())
     application_id = hashlib.sha1(auth_token).hexdigest()
