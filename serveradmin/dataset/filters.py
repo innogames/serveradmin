@@ -600,7 +600,7 @@ def _to_datetime(x):
             return datetime.fromtimestamp(int(x))
         match = _to_datetime_re.match(x)
         if not match:
-            raise ValueError('Could not cast to datetime')
+            raise ValueError('Could not cast {0!r} to datetime', x)
 
         hour, minute, second = 0, 0, 0
         if match.group(5):
@@ -612,7 +612,7 @@ def _to_datetime(x):
         return datetime(int(match.group(1)), int(match.group(2)),
                         int(match.group(3)), hour, minute, second)
     else:
-        raise ValueError('Could not cast to datetime')
+        raise ValueError('Could not cast {0!r} to datetime', x)
 
 _typecast_fns = {
     'integer': int,
