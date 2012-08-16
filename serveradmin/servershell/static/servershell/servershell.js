@@ -712,11 +712,11 @@ $(function() {
     $('#shell_command').val('');
 
     $('#shell_attributes input[name="attr"]').bind('change', function(ev) {
-        var index = search['shown_attributes'].indexOf(this.value);
+        var index = search['shown_attributes_extra'].indexOf(this.value);
         if (index == -1 && this.checked) {
-            search['shown_attributes'].push(this.value);
+            search['shown_attributes_extra'].push(this.value);
         } else if (index != -1 && !this.checked) {
-            search['shown_attributes'].splice(index, 1);
+            search['shown_attributes_extra'].splice(index, 1);
         }
         render_server_table();
     });
