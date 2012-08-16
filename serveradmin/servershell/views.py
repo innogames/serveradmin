@@ -3,9 +3,9 @@ try:
 except ImportError:
     import json
 
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, HttpResponseBadRequest, Http404
 from django.template.response import TemplateResponse
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 from adminapi.utils.json import json_encode_extra
@@ -13,6 +13,7 @@ from adminapi.utils.parse import parse_query
 from serveradmin.dataset import query, filters, DatasetError
 from serveradmin.dataset.filters import filter_classes
 from serveradmin.dataset.base import lookups
+from serveradmin.dataset.commit import commit_changes
 
 @login_required
 @ensure_csrf_cookie
@@ -131,3 +132,26 @@ def list_and_edit(request):
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
         'link': request.get_full_path()
     })
+
+@login_required
+@permission_required('dataset.change_serverobject')
+def commit(request):
+    try:
+        commit = json.loads(request.POST['commit'])
+    except (KeyError, ValueError):
+        return HttpResponseBadRequest()
+
+    if 'changes' in commit:
+        changes = {}
+        for key, value in commit['changes'].iteritems():
+            if not key.isdigit():
+                continue
+            changes[int(key)] = value
+        commit['changes'] = changes
+
+    try:
+        commit_changes(commit)
+    except (ValueError, DatasetError):
+        raise
+
+    return HttpResponse('OK')

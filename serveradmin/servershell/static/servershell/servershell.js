@@ -13,7 +13,7 @@ var search = {
 
 var commit = {
     'deleted': [],
-    'changed': {}
+    'changes': {}
 }
 
 function execute_search(term)
@@ -112,7 +112,7 @@ function build_server_table(servers, attributes, offset)
         for (var j = 0; j < attributes.length; j++) {
             var attr_name = attributes[j];
             var value = server[attr_name];
-            var changes = commit['changed'];
+            var changes = commit['changes'];
             if (typeof(changes[server['object_id']]) != 'undefined' &&
                     typeof(changes[server['object_id']][attr_name]) != 'undefined') {
                 var change = changes[server['object_id']][attr_name]
@@ -139,9 +139,15 @@ function build_server_table(servers, attributes, offset)
                     if (typeof(value) == 'undefined') {
                         value = [];
                     }
+                    if (typeof(change['remove']) == 'undefined') {
+                        change['remove'] = [];
+                    }
+                    if (typeof(change['add']) == 'undefined') {
+                        change['add'] = [];
+                    }
                     for (var k = 0; k < value.length; k++) {
                         var value_str = format_value(value[k], attr_name, true);
-                        if (change['del'].indexOf(value[k]) != -1) {
+                        if (change['remove'].indexOf(value[k]) != -1) {
                             table_cell.append($('<del></del>').text(value_str));
                         } else {
                             table_cell.append($('<span></span>').text(value_str));
@@ -493,7 +499,9 @@ function handle_command_other(command)
     } else if (command_name == 'multiadd') {
         return handle_command_multiattr(parsed_args, 'add');
     } else if (command_name == 'multidel') {
-        return handle_command_multiattr(parsed_args, 'del');
+        return handle_command_multiattr(parsed_args, 'remove');
+    } else if (command_name == 'commit') {
+        return handle_command_commit(parsed_args);
     } else if (command_name == 'perpage') {
         return handle_command_perpage(parsed_args);
     } else if (command_name == 'cmp') {
@@ -578,7 +586,7 @@ function handle_command_setattr(parsed_args)
     var new_value = parsed_args[2]['value'];
 
     var marked_servers = get_marked_servers();
-    var changes = commit['changed'];
+    var changes = commit['changes'];
     for (var i = 0; i < marked_servers.length; i++) {
         var server_id = marked_servers[i];
         if (typeof(changes[server_id]) == 'undefined') {
@@ -603,7 +611,7 @@ function handle_command_delattr(parsed_args)
     var attr_name = parsed_args[1]['value'];
 
     var marked_servers = get_marked_servers();
-    var changes = commit['changed'];
+    var changes = commit['changes'];
     for (var i = 0; i < marked_servers.length; i++) {
         var server_id = marked_servers[i];
         if (typeof(changes[server_id]) == 'undefined') {
@@ -620,7 +628,37 @@ function handle_command_delattr(parsed_args)
 
 function handle_command_multiattr(parsed_args, action)
 {
+    if (parsed_args.length != 3 || parsed_args[1]['token'] != 'key' ||
+            parsed_args[2]['token'] != 'str') {
+        return;
+    }
+    var attr_name = parsed_args[1]['value'];
+    var value = parsed_args[2]['value'];
 
+    var marked_servers = get_marked_servers();
+    var changes = commit['changes'];
+    for (var i = 0; i < marked_servers.length; i++) {
+        var server_id = marked_servers[i];
+        if (typeof(changes[server_id]) == 'undefined') {
+            changes[server_id] = {};
+        }
+        changes[server_id][attr_name] = {
+            'action': 'multi',
+        };
+        if (typeof(changes[server_id][attr_name][action]) == 'undefined') {
+            changes[server_id][attr_name][action] = [];
+        }
+        changes[server_id][attr_name][action].push(parse_value(value, attr_name));
+    }
+    render_server_table();
+    return '';
+}
+
+function handle_command_commit(parsed_args)
+{
+    $.post(shell_commit_url, {'commit': JSON.stringify(commit)}, function(res) {
+        console.log(res);
+    });
 }
 
 function handle_command_compare(parsed_args)

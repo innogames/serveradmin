@@ -11,4 +11,5 @@ urlpatterns = patterns(
     url(r'^export$', 'export', name='servershell_export'),
     url(r'^edit$', 'list_and_edit', name='servershell_edit'),
     url(r'^list$', 'list_and_edit', name='servershell_list'),
+    url(r'^commit$', 'commit', name='servershell_commit'),
 )
