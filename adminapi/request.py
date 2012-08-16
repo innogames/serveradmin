@@ -9,6 +9,9 @@ except ImportError:
 
 from adminapi.utils.json import json_encode_extra
 
+class PermissionDenied(Exception):
+    pass
+
 def _calc_security_token(auth_token, timestamp, content):
     message = ':'.join((str(timestamp), content))
     return hmac.new(auth_token, message, hashlib.sha1).hexdigest()
@@ -26,4 +29,9 @@ def send_request(url, data, auth_token):
     }
 
     req = urllib2.Request(url, data_json, headers)
-    return json.loads(urllib2.urlopen(req).read())
+    try:
+        return json.loads(urllib2.urlopen(req).read())
+    except urllib2.HTTPError, e:
+        if e.code != 403:
+            raise
+        raise PermissionDenied(e.read())

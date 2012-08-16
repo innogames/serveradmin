@@ -1,3 +1,5 @@
+from adminapi.request import PermissionDenied
+
 BASE_URL = 'http://serveradmin.innogames.de/api'
 
 _api_settings = {
