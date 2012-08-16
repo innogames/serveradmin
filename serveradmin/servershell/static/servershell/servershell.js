@@ -124,6 +124,7 @@ function build_server_table(servers, attributes, offset)
                     var ins_value = $('<ins></ins>').text(new_value_str);
                     var table_cell = $('<td></td>').append(del_value)
                         .append(' ').append(ins_value);
+                    _make_attr_editable(table_cell, server, attr_name, change['new']);
                     row.append(table_cell);
                 } else if (change['action'] == 'new') {
                     var value_str = format_value(value, attr_name);
@@ -168,7 +169,11 @@ function build_server_table(servers, attributes, offset)
                 }
             } else {
                 var value_str = format_value(value, attr_name);
-                row.append($('<td></td>').text(value_str));
+                var table_cell = $('<td></td>').text(value_str);
+                row.append(table_cell);
+                if (attr_name != 'servertype') {
+                    _make_attr_editable(table_cell, server, attr_name, value);
+                }
             }
         }
         table.append(row);
@@ -182,6 +187,82 @@ function build_server_table(servers, attributes, offset)
     var heading = '<h3>Results (' + search['num_servers'] + ' servers, ';
     heading += 'page ' + search['page'] + '/' + search['num_pages'] + ')</h3>';
     $('#shell_servers').empty().append(heading).append(table);
+}
+
+function _make_attr_editable(cell, server, attr_name, value)
+{
+    cell.dblclick(function(ev) {
+        if ($('#edit_attr').length) {
+            return;
+        }
+        var attr_obj = available_attributes[attr_name];
+
+        var form = $('<form method="post"></form>');
+        
+        if (attr_obj.multi) {
+            multi_value_strs = [];
+            for(var i = 0; i < value.length; i++) {
+                multi_value_strs.push(format_value(value[i], attr_name, true));
+            }
+            var input = $('<textarea id="edit_attr" rows="5" cols="30"/></textarea>').val(
+                    multi_value_strs.join('\n'));
+        } else {
+            var input = $('<input type="text" id="edit_attr" />').val(
+                    format_value(value, attr_name));
+        }
+        var ok_button = $('<input type="submit" value="edit" />');
+        form.append(input).append(ok_button);
+
+        form.submit(function(ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            if (attr_obj.multi) {
+                var unparsed_values = $('#edit_attr').val().split('\n');
+                commit_data = {'action': 'multi', 'add': [], 'remove': []};
+                var edit_values = [];
+                for (var i = 0; i < unparsed_values.length; i++) {
+                    var edit_value = parse_value(unparsed_values[i], attr_name);
+                    edit_values.push(edit_value);
+
+                    if (value.indexOf(edit_value) == -1) {
+                        commit_data['add'].push(edit_value);
+                    }
+                }
+                console.log('oo');
+                for (var i = 0; i < value.length; i++) {
+                    if (edit_values.indexOf(value[i]) == -1) {
+                        commit_data['remove'].push(value[i]);
+                    }
+                }
+            } else {
+                var new_value = parse_value($('#edit_attr').val(), attr_name);
+                if (new_value == value) {
+                    render_server_table();
+                    return;
+                }
+                commit_data = {
+                    'action': 'update',
+                    'new': new_value,
+                    'old': server[attr_name]
+                }
+            }
+            if (typeof(commit['changes'][server['object_id']]) == 'undefined') {
+                commit['changes'][server['object_id']] = {};
+            }
+            commit['changes'][server['object_id']][attr_name] = commit_data;
+            render_server_table();
+        }).keypress(function(ev) {
+            if (ev.keyCode == 27) {
+                render_server_table();
+            }
+        });
+        cell.empty().append(form);
+        input.focus();
+        if (input[0].setSelectionRange) {
+            var len = input.val().length;
+            input[0].setSelectionRange(len, len);
+        }
+    });
 }
 
 function format_value(value, attr_name, single_value)
@@ -656,7 +737,11 @@ function handle_command_multiattr(parsed_args, action)
 
 function handle_command_commit(parsed_args)
 {
-    $.post(shell_commit_url, {'commit': JSON.stringify(commit)}, function(res) {
+    $.post(shell_commit_url, {'commit': JSON.stringify(commit)}, function(result) {
+        if (result['status'] == 'error') {
+            $('<div title="Commit error"></div>').text(result['message']).dialog();
+            return;
+        }
         commit = {'deleted': [], 'changes': {}};
         execute_search($('#shell_search').val());
     });

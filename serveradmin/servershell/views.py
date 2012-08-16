@@ -13,7 +13,7 @@ from adminapi.utils.parse import parse_query
 from serveradmin.dataset import query, filters, DatasetError
 from serveradmin.dataset.filters import filter_classes
 from serveradmin.dataset.base import lookups
-from serveradmin.dataset.commit import commit_changes
+from serveradmin.dataset.commit import commit_changes, CommitValidationFailed
 
 @login_required
 @ensure_csrf_cookie
@@ -152,6 +152,15 @@ def commit(request):
     try:
         commit_changes(commit)
     except (ValueError, DatasetError):
-        raise
+        return HttpResponseBadRequest()
+    except CommitValidationFailed, e:
+        result = {
+            'status': 'error',
+            'message': e.message
+        }
+    else:
+        result = {
+            'status': 'success'
+        }
 
-    return HttpResponse('OK')
+    return HttpResponse(json.dumps(result), mimetype='application/x-json')
