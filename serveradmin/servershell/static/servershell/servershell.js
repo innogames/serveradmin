@@ -130,11 +130,15 @@ function build_server_table(servers, attributes, offset)
                     var value_str = format_value(value, attr_name);
                     var new_value_str = format_value(change['new'], attr_name);
                     var ins_value = $('<ins></ins>').text(new_value_str);
-                    row.append($('<td></td>').append(ins_value));
+                    var table_cell = $('<td></td>').append(ins_value);
+                    _make_attr_editable(table_cell, server, attr_name, change['new']);
+                    row.append(table_cell);
                 } else if (change['action'] == 'delete') {
                     var value_str = format_value(value, attr_name);
                     var del_value = $('<del></del>').text(value_str);
-                    row.append($('<td></td>').append(del_value));
+                    var table_cell = $('<td></td>').append(del_value);
+                    _make_attr_editable(table_cell, server, attr_name, '');
+                    row.append(table_cell);
                 } else if (change['action'] == 'multi') {
                     var table_cell = $('<td></td>');
                     if (typeof(value) == 'undefined') {
@@ -146,11 +150,14 @@ function build_server_table(servers, attributes, offset)
                     if (typeof(change['add']) == 'undefined') {
                         change['add'] = [];
                     }
+                    var current_values = [];
+                    
                     for (var k = 0; k < value.length; k++) {
                         var value_str = format_value(value[k], attr_name, true);
                         if (change['remove'].indexOf(value[k]) != -1) {
                             table_cell.append($('<del></del>').text(value_str));
                         } else {
+                            current_values.push(value[k]);
                             table_cell.append($('<span></span>').text(value_str));
                         }
 
@@ -164,7 +171,10 @@ function build_server_table(servers, attributes, offset)
                         if (k != change['add'].length - 1) {
                             table_cell.append(', ');
                         }
+                        current_values.push(change['add'][k]);
                     }
+                    
+                    _make_attr_editable(table_cell, server, attr_name, current_values);
                     row.append(table_cell);
                 }
             } else {
@@ -224,19 +234,22 @@ function _make_attr_editable(cell, server, attr_name, value)
                     var edit_value = parse_value(unparsed_values[i], attr_name);
                     edit_values.push(edit_value);
 
-                    if (value.indexOf(edit_value) == -1) {
+                    if (server[attr_name].indexOf(edit_value) == -1) {
                         commit_data['add'].push(edit_value);
                     }
                 }
-                console.log('oo');
-                for (var i = 0; i < value.length; i++) {
-                    if (edit_values.indexOf(value[i]) == -1) {
-                        commit_data['remove'].push(value[i]);
+                for (var i = 0; i < server[attr_name].length; i++) {
+                    if (edit_values.indexOf(server[attr_name][i]) == -1) {
+                        commit_data['remove'].push(server[attr_name][i]);
                     }
                 }
             } else {
                 var new_value = parse_value($('#edit_attr').val(), attr_name);
                 if (new_value == value) {
+                    render_server_table();
+                    return;
+                } else if (new_value == server[attr_name]) {
+                    _restore_attr(server['object_id'], attr_name);
                     render_server_table();
                     return;
                 }
@@ -263,6 +276,15 @@ function _make_attr_editable(cell, server, attr_name, value)
             input[0].setSelectionRange(len, len);
         }
     });
+}
+
+function _restore_attr(server_id, attr_name)
+{
+    if (typeof(commit['changes'][server_id]) != 'undefined') {
+        if (typeof(commit['changes'][server_id][attr_name]) != 'undefined') {
+            delete commit['changes'][server_id][attr_name];
+        }
+    }
 }
 
 function format_value(value, attr_name, single_value)
