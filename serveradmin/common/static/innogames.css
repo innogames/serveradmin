@@ -123,3 +123,21 @@ tr.row_b td {
 .help_icon {
  cursor:pointer;
 }
+
+.inline {
+    display:inline;
+}
+
+input.linkbutton, button.linkbutton {
+ font-weight:bold;
+ color: #67A13A;
+ border:0;
+ background:transparent;
+ font-size:12px;
+ font-family: Verdana, Arial, sans-serif;
+ cursor:pointer;
+}
+
+input.linkbutton:hover, button.linkbutton:hover {
+ color: #64C218;
+}
