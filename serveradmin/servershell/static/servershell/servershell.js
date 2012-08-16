@@ -403,12 +403,11 @@ function autocomplete_shell_command(term, autocomplete_cb)
             _autocomplete_attr(term, parsed_args, autocomplete, suffix, only_single); 
         }
     } else if (command == 'multiadd' || command == 'multidel') {
-        if (parsed_args[plen -1]['token'] == 'str') {
-            var suffix = {'multiadd': '=', 'multidel': ' '}[command];
+        if (parsed_args[plen -1]['token'] == 'str' && (plen < 3 || parsed_args[plen-2]['token'] != 'key')) {
             function only_multi(attr) {
                 return available_attributes[attr]['multi'];
             }
-            _autocomplete_attr(term, parsed_args, autocomplete, suffix, only_multi); 
+            _autocomplete_attr(term, parsed_args, autocomplete, '=', only_multi);
         }
     } else if (command == 'orderby') {
         if (plen == 2 && parsed_args[1]['token'] == 'str') {
