@@ -225,6 +225,11 @@ function render_server_table()
             shown_attributes.remove(index);
         }
     }
+    $('#shell_attributes input[name="attr"]').attr('checked', false);
+    for(var i = 0; i < shown_attributes.length; i++) {
+        $('#shell_attributes input[value="' + shown_attributes[i] + '"]').attr(
+                'checked', 'checked');
+    }
     build_server_table(search['servers'], shown_attributes, offset);
 }
 
@@ -705,4 +710,14 @@ $(function() {
     });
 
     $('#shell_command').val('');
+
+    $('#shell_attributes input[name="attr"]').bind('change', function(ev) {
+        var index = search['shown_attributes'].indexOf(this.value);
+        if (index == -1 && this.checked) {
+            search['shown_attributes'].push(this.value);
+        } else if (index != -1 && !this.checked) {
+            search['shown_attributes'].splice(index, 1);
+        }
+        render_server_table();
+    });
 });

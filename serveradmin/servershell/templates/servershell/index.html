@@ -48,7 +48,8 @@
     <h3>Attributes</h3>
     <ul>
     {% for attr in attribute_list %}
-        <li>{{ attr }}</li>
+        <li><label><input type="checkbox" name="attr" value="{{ attr }}" {% if attr == 'all_ips' %}disabled="disabled" {% endif %}/>
+        {{ attr }}</label></li>
     {% endfor %}
     </ul>
 </div>
