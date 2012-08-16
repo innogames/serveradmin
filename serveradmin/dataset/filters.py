@@ -1,5 +1,7 @@
 import re
 import operator
+import time
+from datetime import datetime
 
 from adminapi.utils import IP, Network, PRIVATE_IP_BLOCKS, PUBLIC_IP_BLOCKS
 from serveradmin.dataset.base import lookups
@@ -571,6 +573,8 @@ def _sql_escape(value):
         return unicode(value)
     elif isinstance(value, bool):
         return u'1' if value else u'0'
+    elif isinstance(value, datetime):
+        return unicode(time.mktime(datetime.timetuple()))
     else:
         raise ValueError(u'Value of type {0} can not be used in SQL'.format(
                 value))
@@ -586,11 +590,36 @@ def filter_from_obj(obj):
     except KeyError:
         raise ValueError(u'No such filter: {0}').format(obj[u'name'])
 
+_to_datetime_re = re.compile(
+        r'(\d{4})-(\d{1,2})-(\d{1,2})(T(\d{1,2}):(\d{1,2})(:(\d{1,2}))?)?')
+def _to_datetime(x):
+    if isinstance(x, (int, long)):
+        return datetime.fromtimestamp(x)
+    elif isinstance(x, basestring):
+        if x.isdigit():
+            return datetime.fromtimestamp(int(x))
+        match = _to_datetime_re.match(x)
+        if not match:
+            raise ValueError('Could not cast to datetime')
+
+        hour, minute, second = 0, 0, 0
+        if match.group(5):
+            hour = int(match.group(5))
+            minute = int(match.group(6))
+        if match.group(8):
+            second = int(match.group(8))
+
+        return datetime(int(match.group(0)), int(match.group(1)),
+                        int(match.group(2), hour, minute, second))
+    else:
+        raise ValueError('Could not cast to datetime')
+
 _typecast_fns = {
     'integer': int,
     'boolean': lambda x: x in ('1', 'True', 'true', 1, True),
     'string': lambda x: x if isinstance(x, basestring) else unicode(x),
-    'ip': lambda x: x if isinstance(x, IP) else IP(x)
+    'ip': lambda x: x if isinstance(x, IP) else IP(x),
+    'datetime': _to_datetime
 }
 def _typecast(attr_name, value):
     return  _typecast_fns[lookups.attr_names[attr_name].type](value)
