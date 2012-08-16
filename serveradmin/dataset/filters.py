@@ -363,7 +363,6 @@ class Startswith(Filter):
 
     def as_sql_expr(self, builder, attr_obj, field):
         # XXX Dirty hack for servertype checking
-        value = self.value.replace('_', '\\_').replace(u'%', u'\\%%')
         if attr_obj.name == u'servertype':
             stype_ids = []
             for stype in lookups.stype_ids.itervalues():
@@ -376,8 +375,16 @@ class Startswith(Filter):
         elif attr_obj.type == u'ip':
             return u'INET_NTOA({0}) LIKE {1}'.format(field, _sql_escape(value +
                 '%%'))
-        else:
+        elif attr_obj.type == 'string':
+            value = self.value.replace('_', '\\_').replace(u'%', u'\\%%')
             return u'{0} LIKE {1}'.format(field, _sql_escape(value + u'%%'))
+        elif attr_obj.type == 'integer':
+            try:
+                return u"{0} LIKE '{1}%'".format(int(self.value))
+            except ValueError:
+                return u'0=1'
+        else:
+            return u'0=1'
 
     def matches(self, server_obj, attr_name):
         return unicode(server_obj[attr_name]).startswith(self.value)
