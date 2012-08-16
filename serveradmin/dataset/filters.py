@@ -610,7 +610,7 @@ def _to_datetime(x):
             second = int(match.group(8))
 
         return datetime(int(match.group(1)), int(match.group(2)),
-                        int(match.group(3), hour, minute, second))
+                        int(match.group(3)), hour, minute, second)
     else:
         raise ValueError('Could not cast to datetime')
 
