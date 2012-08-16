@@ -603,14 +603,14 @@ def _to_datetime(x):
             raise ValueError('Could not cast to datetime')
 
         hour, minute, second = 0, 0, 0
-        if match.group(5):
-            hour = int(match.group(5))
-            minute = int(match.group(6))
-        if match.group(8):
-            second = int(match.group(8))
+        if match.group(6):
+            hour = int(match.group(6))
+            minute = int(match.group(7))
+        if match.group(9):
+            second = int(match.group(9))
 
-        return datetime(int(match.group(0)), int(match.group(1)),
-                        int(match.group(2), hour, minute, second))
+        return datetime(int(match.group(1)), int(match.group(2)),
+                        int(match.group(3), hour, minute, second))
     else:
         raise ValueError('Could not cast to datetime')
 
