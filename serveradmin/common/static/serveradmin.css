@@ -1,3 +1,7 @@
+table.tabular td, table.tabular th {
+ border:1px solid #000;
+}
+
 #spinner {
  width: 100px;
  height: 100px;
@@ -19,10 +23,10 @@
 }
 
 #content .sphinx a.headerlink {
-    font-size: 0.8em;
-    padding: 0 4px 0 4px;
-    text-decoration: none;
-    visibility: hidden;
+ font-size: 0.8em;
+ padding: 0 4px 0 4px;
+ text-decoration: none;
+ visibility: hidden;
 }
 #content .sphinx *:hover > a.headerlink { visibility: visible; }
 
@@ -104,26 +108,22 @@ del {
  color:#c00;
 }
 
-table.tabular td, table.tabular th {
- border:1px solid #000;
-}
-
 .page {
-	border:1px solid #67a13a;
-	padding:3px;
+ border:1px solid #67a13a;
+ padding:3px;
 }
 
 .current_page {
-	border:1px solid #2e5d23;
-	background:#2e5d23;
-	color:#fff !important;
-	padding:3px;
+ border:1px solid #2e5d23;
+ background:#2e5d23;
+ color:#fff !important;
+ padding:3px;
 }
 
 .disabled_page {
-	border:1px solid #ccc;
-	padding:3px;
-	color:#ccc !important;
+ border:1px solid #ccc;
+ padding:3px;
+ color:#ccc !important;
 }
 
 .graph_not_available {
@@ -164,5 +164,4 @@ table.tabular td, table.tabular th {
  background:#eee;
  margin-right:0.3em;
  padding:0 0.2em 0 0.2em;
-}
 }
