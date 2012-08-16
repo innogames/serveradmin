@@ -574,7 +574,7 @@ def _sql_escape(value):
     elif isinstance(value, bool):
         return u'1' if value else u'0'
     elif isinstance(value, datetime):
-        return unicode(time.mktime(datetime.timetuple()))
+        return unicode(time.mktime(value.timetuple()))
     else:
         raise ValueError(u'Value of type {0} can not be used in SQL'.format(
                 value))
