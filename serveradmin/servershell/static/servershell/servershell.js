@@ -657,7 +657,8 @@ function handle_command_multiattr(parsed_args, action)
 function handle_command_commit(parsed_args)
 {
     $.post(shell_commit_url, {'commit': JSON.stringify(commit)}, function(res) {
-        console.log(res);
+        commit = {'deleted': [], 'changes': {}};
+        execute_search($('#shell_search').val());
     });
 }
 
