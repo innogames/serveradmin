@@ -839,6 +839,7 @@ function handle_command_commit(parsed_args)
         commit = {'deleted': [], 'changes': {}};
         execute_search($('#shell_search').val());
     });
+    return '';
 }
 
 function handle_command_compare(parsed_args)
