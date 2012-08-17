@@ -25,4 +25,13 @@
     </tr>
 {% endfor %}
 </table>
+
+<h3>Delete servertype</h3>
+<form method="post" action="{% url dataset_delete_servertype servertype.name %}">
+{% csrf_token %}
+<p><label><input type="checkbox" name="confirm" />
+ I know that I will kill <strong>ALL</strong> servers which belong
+ to this servertype.</label></p>
+ <p><input type="submit" value="Delete servertype and servers" /></p>
+ </form>
 {% endblock %}
