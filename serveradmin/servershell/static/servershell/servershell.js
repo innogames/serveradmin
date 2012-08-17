@@ -127,7 +127,6 @@ function build_server_table(servers, attributes, offset)
                     _make_attr_editable(table_cell, server, attr_name, change['new']);
                     row.append(table_cell);
                 } else if (change['action'] == 'new') {
-                    var value_str = format_value(value, attr_name);
                     var new_value_str = format_value(change['new'], attr_name);
                     var ins_value = $('<ins></ins>').text(new_value_str);
                     var table_cell = $('<td></td>').append(ins_value);
@@ -253,10 +252,22 @@ function _make_attr_editable(cell, server, attr_name, value)
                     render_server_table();
                     return;
                 }
-                commit_data = {
-                    'action': 'update',
-                    'new': new_value,
-                    'old': server[attr_name]
+                if (typeof(server[attr_name]) == 'undefined') {
+                    commit_data = {
+                        'action': 'new',
+                        'new': new_value
+                    }
+                } else if (!new_value) {
+                    commit_data = {
+                        'action': 'delete',
+                        'old': server[attr_name]
+                    }
+                } else {
+                    commit_data = {
+                        'action': 'update',
+                        'new': new_value,
+                        'old': server[attr_name]
+                    }
                 }
             }
             if (typeof(commit['changes'][server['object_id']]) == 'undefined') {
@@ -287,6 +298,27 @@ function _restore_attr(server_id, attr_name)
     }
 }
 
+function _format_datetime(timestamp)
+{
+    var d = new Date(timestamp * 1000);
+    var year = d.getFullYear();
+    var month = (d.getMonth() + 1);
+    var day = d.getDate();
+    if (month < 10) {
+        month = '0' + month;
+    }
+    if (day < 10) {
+        day = '0' + day;
+    }
+    var hour = d.getHours();
+    var minute = d.getMinutes();
+    var second = d.getSeconds();
+    if (second < 10) {
+        second = '0' + second;
+    }
+    return year + '-' + month + '-' + day + 'T' + hour + ':' + minute + ':' + second;
+}
+
 function format_value(value, attr_name, single_value)
 {
     var attr_obj = available_attributes[attr_name];
@@ -298,10 +330,16 @@ function format_value(value, attr_name, single_value)
             value = value.map(function(x) {
                 return new IP(x).as_ip();
             });
+        } else if (attr_obj['type'] == 'datetime') {
+            value = value.map(function(x) {
+                return _format_datetime(value);
+            });
         }
         value = value.join(', ');
     } else if (attr_obj['type'] == 'ip') {
         value = new IP(value).as_ip();
+    } else if (attr_obj['type'] == 'datetime') {
+        return _format_datetime(value);
     }
     return value;
 }
@@ -313,6 +351,30 @@ function parse_value(value, attr_name)
         return parseInt(value, 10);
     } else if (attr_obj['type'] == 'ip') {
         return new IP(value).as_int();
+    } else if (attr_obj['type'] == 'datetime') {
+        var r = /^(\d{4})-(\d{1,2})-(\d{1,2})(T(\d{1,2}):(\d{1,2})(:(\d{1,2}))?)?$/
+        var match = value.match(r);
+        if (match == null) {
+            return null;
+        }
+        var year = parseInt(match[1], 10);
+        var month = parseInt(match[2], 10);
+        var day = parseInt(match[3], 10);
+        if (typeof(match[5]) != 'undefined') {
+            var hour = parseInt(match[5], 10);
+            var minute = parseInt(match[6], 10);
+        } else {
+            var hour = 0;
+            var minute = 0;
+        }
+        if (typeof(match[8]) != 'undefined') {
+            var second = parseInt(match[8], 10);
+        } else {
+            var second = 0;
+        }
+
+        var d = new Date(year, month - 1, day, hour, minute, second);
+        return parseInt(d.getTime() / 1000, 10);
     } else {
         return value;
     }
