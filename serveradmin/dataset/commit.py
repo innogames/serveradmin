@@ -1,3 +1,6 @@
+import time
+from datetime import datetime
+
 from django.db import connection
 
 from adminapi.utils import IP
@@ -219,10 +222,14 @@ def _apply_changes(changed_servers, servers):
     c.execute('COMMIT')
 
 def _prepare_value(attr_name, value):
-    if lookups.attr_names[attr_name].type == u'ip':
+    attr_obj = lookups.attr_names[attr_name]
+    if attr_obj.type == u'ip':
         if not isinstance(value, IP):
             value = IP(value)
         value = value.as_int()
+    elif attr_obj.type == u'datetime':
+        if isinstance(value, datetime):
+            value = int(time.mktime(value.timetuple()))
     return value
 
 def _build_error_message(violations_attribs, violations_regexp,
