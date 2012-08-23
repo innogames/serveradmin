@@ -13,18 +13,32 @@
         <th>Required</th>
         <th>Validation</th>
         <th>Default</th>
+{% if perms.dataset.change_servertype %}
+        <th>Action</th>
+{% endif %}
     </tr>
 {% for attr in attributes %}
-    <tr>
+    <tr class="{% cycle 'row_a' 'row_b' %}">
         <td>{{ attr.name }}</td>
         <td>{{ attr.type }}</td>
         <td>{{ attr.multi }}</td>
         <td>{{ attr.required }}</td>
         <td>{% if attr.regexp %}{{ attr.regexp }}{% else %}<i>None</i>{% endif %}</td>
         <td>{% if attr.default %}{{ attr.default }}{% else %}<i>None</i>{% endif %}</td>
+{% if perms.dataset.change_servertype %}
+        <td>
+            <a href="{% url dataset_edit_servertype_attr servertype.name attr.name %}">edit</a>
+            <a href="{% url dataset_delete_servertype_attr servertype.name attr.name %}">delete</a>
+        </td>
+{% endif %}
     </tr>
 {% endfor %}
 </table>
+
+{% if perms.dataset.change_servertype %}
+<p><a href="{% url dataset_add_servertype_attr servertype.name %}">Add
+attribute</a></p>
+{% endif %}
 
 {% if perms.dataset.delete_servertype %}
 <h3>Delete servertype</h3>

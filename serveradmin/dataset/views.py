@@ -1,4 +1,6 @@
-from operator import attrgetter
+import re
+from operator import attrgetter, itemgetter
+
 from django.http import Http404
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required, permission_required
@@ -8,7 +10,8 @@ from django.core.cache import cache
 from django import forms
 
 from serveradmin.dataset.base import lookups
-from serveradmin.dataset.models import ServerType, Attribute
+from serveradmin.dataset.models import (ServerType, Attribute, AttributeValue,
+        ServerTypeAttributes)
 
 @login_required
 def servertypes(request):
@@ -35,6 +38,7 @@ def view_servertype(request, servertype_name):
             'regexp': stype_attr.regexp.pattern if stype_attr.regexp else None,
             'default': stype_attr.default
         })
+    stype_attributes.sort(key=itemgetter('name'))
 
     return TemplateResponse(request, 'dataset/view_servertype.html', {
         'servertype': servertype,
@@ -55,6 +59,99 @@ def delete_servertype(request, servertype_name):
             messages.error(request, msg)
             return redirect('dataset_view_servertype', servertype_name)
     return redirect('dataset_servertypes')
+
+@login_required
+@permission_required('dataset.change_servertype')
+def manage_servertype_attr(request, servertype_name, attrib_name=None):
+    class EditForm(forms.ModelForm):
+        attrib_default = forms.CharField(label='Default', required=False)
+        class Meta:
+            model = ServerTypeAttributes
+            fields = ('required', 'attrib_default', 'regex')
+        
+        def __init__(self, servertype, *args, **kwargs):
+            self.servertype = servertype
+            super(EditForm, self).__init__(*args, **kwargs)
+
+        def clean_regex(self):
+            regex = self.cleaned_data['regex']
+            if regex is not None:
+                try:
+                    re.compile(regex)
+                except re.error:
+                    raise forms.ValidationError('Invalid regular expression')
+            return regex
+
+    class AddForm(EditForm):
+        class Meta(EditForm.Meta):
+            fields = ('attrib', ) + EditForm.Meta.fields
+
+        def clean_attrib(self):
+            attrib = self.cleaned_data['attrib']
+            exists = ServerTypeAttributes.objects.filter(attrib=attrib,
+                    servertype=self.servertype)
+            if exists:
+                error_msg = 'Attribute is already on this servertype'
+                raise forms.ValidationError(error_msg)
+            return attrib
+    
+    stype = get_object_or_404(ServerType, name=servertype_name)
+    if attrib_name:
+        form_class = EditForm
+        attrib = get_object_or_404(Attribute, name=attrib_name)
+        stype_attr = get_object_or_404(ServerTypeAttributes, attrib=attrib,
+                servertype=stype)
+    else:
+        form_class = AddForm
+        stype_attr = None
+        attrib = None
+
+    if request.method == 'POST':
+        form = form_class(stype, request.POST)
+        if form.is_valid():
+            if stype_attr:
+                form.save(instance=stype_attr)
+                msg = 'Edited attribute "{0}" to "{1}"'.format(
+                        stype_attr.attrib.name, stype.name)
+            else:
+                stype_attr = form.save(commit=False)
+                stype_attr.servertype = stype
+                stype_attr.save()
+                msg = 'Added attribute "{0}" to "{1}"'.format(
+                        stype_attr.attrib.name, stype.name)
+            _clear_lookups()
+            messages.success(request, msg)
+            return redirect('dataset_view_servertype', stype.name)
+    else:
+        if stype_attr:
+            form = form_class(stype, instance=stype_attr)
+        else:
+            form = form_class(stype)
+
+    return TemplateResponse(request, 'dataset/manage_servertype_attr.html', {
+        'servertype': stype,
+        'form': form,
+        'edit': stype_attr is not None,
+        'attrib': attrib
+    })
+
+@login_required
+@permission_required('dataset.change_servertype')
+def delete_servertype_attr(request, servertype_name, attrib_name):
+    stype_attr = get_object_or_404(ServerTypeAttributes,
+                                   attrib__name=attrib_name,
+                                   servertype__name=servertype_name)
+    if request.method == 'POST' and 'confirm' in request.POST:
+        AttributeValue.objects.filter(server__servertype=stype_attr.servertype,
+                attrib=stype_attr.attrib).delete()
+        stype_attr.delete()
+        messages.success(request, 'Deleted attribute {0}'.format(attrib_name))
+        return redirect('dataset_view_servertype', servertype_name)
+
+    return TemplateResponse(request, 'dataset/delete_servertype_attr.html', {
+        'stype_attr': stype_attr
+    })
+
 
 @login_required
 def attributes(request):

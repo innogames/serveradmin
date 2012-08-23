@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if edit %}
+{% else %}
+Add attribute to servertype {{ servertype.name }}
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if edit %}
+<h2>Edit attribute {{ attrib.name }} of servertype {{ servertype.name }}</h2>
+{% else %}
+<h2>Add attribute to servertype {{ servertype.name }}</h2>
+{% endif %}
+<form method="post" action="">
+{% csrf_token %}
+<table class="valign-middle">
+{{ form }}
+</table>
+<p>
+    <a href="{% url dataset_view_servertype servertype.name %}">Cancel</a>&nbsp;
+    <input type="submit" value="{% if edit %}Edit {{ attrib.name }}{% else %}Add attribute{% endif %}" />
+    </p>
+</form>
+{% endblock content %}
