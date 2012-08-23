@@ -459,6 +459,6 @@ group object first. See the following example for getting a free IP::
    from adminapi import api
 
    ip = api.get('ip')
-   free_ip = ip.get_free('af03.ds.fr', reserve=False)
+   free_ip = ip.get_free('af03.ds.fr', reserve_ip=False)
 
 You will find a list of available API functions in the admin tool.
