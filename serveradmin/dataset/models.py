@@ -2,6 +2,14 @@ from django.db import models
 
 from serveradmin.common import dbfields
 
+TYPE_CHOICES = (
+        ('integer', 'Integer'),
+        ('string', 'String'),
+        ('ip', 'IPv4 address'),
+        ('boolean', 'Boolean'),
+        ('datetime', 'Datetime')
+)
+
 class Attribute(models.Model):
     special = None
     def __init__(self, *args, **kwargs):
@@ -10,12 +18,11 @@ class Attribute(models.Model):
             del kwargs[u'special']
         super(Attribute, self).__init__(*args, **kwargs)
 
-    attrib_id = models.IntegerField(primary_key=True)
+    attrib_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=64)
-    type = models.CharField(max_length=64)
+    type = models.CharField(max_length=64, choices=TYPE_CHOICES)
     base = models.BooleanField(default=False)
     multi = models.BooleanField(default=False)
-    modifier = models.CharField(max_length=64, null=True, blank=True)
 
     class Meta:
         db_table = 'attrib'
