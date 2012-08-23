@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from django.core.cache import cache
+from django import forms
 
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.models import ServerType, Attribute
@@ -47,7 +48,7 @@ def delete_servertype(request, servertype_name):
     if request.method == 'POST':
         if 'confirm' in request.POST:
             stype.delete()
-            cache.delete('dataset_lookups_version')
+            _clear_lookups()
             messages.success(request, u'Servertype deleted.')
         else:
             msg = u'Please confirm the usage of weapons of mass destruction.'
@@ -68,7 +69,7 @@ def delete_attribute(request, attribute_name):
     attribute = get_object_or_404(Attribute, name=attribute_name)
     if request.method == 'POST':
         attribute.delete()
-        cache.delete('dataset_lookups_version')
+        _clear_lookups()
         messages.success(request, u'Attribute "{0}" deleted'.format(
                     attribute.name))
         return redirect('dataset_attributes')
@@ -76,3 +77,29 @@ def delete_attribute(request, attribute_name):
         return TemplateResponse(request, 'dataset/delete_attribute.html', {
             'attribute': attribute
         })
+
+@login_required
+@permission_required('dataset.add_attribute')
+def add_attribute(request):
+    class AddForm(forms.ModelForm):
+        class Meta:
+            model = Attribute
+            fields = ('name', 'type', 'multi')
+
+    if request.method == 'POST':
+        add_form = AddForm(request.POST)
+        if add_form.is_valid():
+            attribute = add_form.save()
+            _clear_lookups()
+            messages.success(request, u'Attribute "{0}" added'.format(
+                    attribute.name))
+            return redirect('dataset_attributes')
+    else:
+        add_form = AddForm()
+    return TemplateResponse(request, 'dataset/add_attribute.html', {
+        'form': add_form
+    })
+
+def _clear_lookups():
+    cache.delete('dataset_lookups_version')
+

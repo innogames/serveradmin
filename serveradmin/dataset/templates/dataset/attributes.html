@@ -30,4 +30,8 @@
 {% endfor %}
 </table>
 
+{% if perms.dataset.add_attribute %}
+<p><a href="{% url dataset_add_attribute %}">Add attribute</a></p>
+{% endif %}
+
 {% endblock content %}
