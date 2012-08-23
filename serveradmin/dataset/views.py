@@ -1,6 +1,6 @@
 from django.http import Http404
 from django.template.response import TemplateResponse
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 
@@ -38,6 +38,8 @@ def view_servertype(request, servertype_name):
         'attributes': stype_attributes
     })
 
+@login_required
+@permission_required('dataset.delete_servertype')
 def delete_servertype(request, servertype_name):
     stype = get_object_or_404(ServerType, name=servertype_name)
     if request.method == 'POST':
