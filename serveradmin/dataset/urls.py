@@ -7,4 +7,7 @@ urlpatterns = patterns(
             name='dataset_view_servertype'),
     url(r'^servertype/delete/([\w\._-]+)$', 'delete_servertype',
             name='dataset_delete_servertype'),
+    url(r'^attributes$', 'attributes', name='dataset_attributes'),
+    url(r'^attributes/delete/(\w+)$', 'delete_attribute',
+            name='dataset_delete_attribute'),
 )

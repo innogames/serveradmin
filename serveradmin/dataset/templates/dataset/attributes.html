@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Attributes</h2>
+
+<table class="tabular">
+    <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Multi</th>
+{% if perms.dataset.delete_attribute %}
+        <th>Delete</th>
+{% endif %}
+    </tr>
+{% for attr in attributes %}
+    <tr class="{% cycle 'row_a' 'row_b' %}">
+        <td>{{ attr.name }}</td>
+        <td>{{ attr.get_type_display }}</td>
+        <td>{{ attr.multi|yesno }}</td>
+{% if perms.dataset.delete_attribute %}
+        <td>
+        {% if attr.pk %}
+            <a href="{% url dataset_delete_attribute attr.name %}">delete</a>
+        {% else %}
+        not deletable
+        {% endif %}
+        </td>
+{% endif %}
+    </tr>
+{% endfor %}
+</table>
+
+{% endblock content %}

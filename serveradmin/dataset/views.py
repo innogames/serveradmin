@@ -1,11 +1,13 @@
+from operator import attrgetter
 from django.http import Http404
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
+from django.core.cache import cache
 
 from serveradmin.dataset.base import lookups
-from serveradmin.dataset.models import ServerType
+from serveradmin.dataset.models import ServerType, Attribute
 
 @login_required
 def servertypes(request):
@@ -45,9 +47,32 @@ def delete_servertype(request, servertype_name):
     if request.method == 'POST':
         if 'confirm' in request.POST:
             stype.delete()
+            cache.delete('dataset_lookups_version')
             messages.success(request, u'Servertype deleted.')
         else:
             msg = u'Please confirm the usage of weapons of mass destruction.'
             messages.error(request, msg)
             return redirect('dataset_view_servertype', servertype_name)
     return redirect('dataset_servertypes')
+
+@login_required
+def attributes(request):
+    return TemplateResponse(request, 'dataset/attributes.html', {
+        'attributes': sorted(lookups.attr_names.values(),
+                             key=attrgetter('name'))
+    })
+
+@login_required
+@permission_required('dataset.delete_attribute')
+def delete_attribute(request, attribute_name):
+    attribute = get_object_or_404(Attribute, name=attribute_name)
+    if request.method == 'POST':
+        attribute.delete()
+        cache.delete('dataset_lookups_version')
+        messages.success(request, u'Attribute "{0}" deleted'.format(
+                    attribute.name))
+        return redirect('dataset_attributes')
+    else:
+        return TemplateResponse(request, 'dataset/delete_attribute.html', {
+            'attribute': attribute
+        })

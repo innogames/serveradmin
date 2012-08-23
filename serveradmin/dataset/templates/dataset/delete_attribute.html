@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Delete {{ attribute.name }}{% endblock %}
+
+{% block content %}
+<h2>Delete {{ attribute.name }}</h2>
+<p>Do you really want to delete the attribute "{{ attribute.name }}"?</p>
+<form method="post" action="{% url dataset_delete_attribute attribute.name %}">
+{% csrf_token %}
+<a href="{% url dataset_attributes %}">Cancel </a>&nbsp;
+<input type="submit" value="delete" name="delete" />
+</form>
+{% endblock content %}
