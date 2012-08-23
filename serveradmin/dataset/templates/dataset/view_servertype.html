@@ -26,6 +26,7 @@
 {% endfor %}
 </table>
 
+{% if perms.dataset.delete_servertype %}
 <h3>Delete servertype</h3>
 <form method="post" action="{% url dataset_delete_servertype servertype.name %}">
 {% csrf_token %}
@@ -34,4 +35,5 @@
  to this servertype.</label></p>
  <p><input type="submit" value="Delete servertype and servers" /></p>
  </form>
+ {% endif %}
 {% endblock %}
