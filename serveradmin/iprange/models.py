@@ -33,6 +33,7 @@ class IPRange(models.Model):
                             IPRange.objects.filter(next_free=next_free).update(
                                     next_free=next_free + 1)
                             self.next_free = next_free + 1
+                            self.save()
                         return next_free
                 next_free = self.min
                 if second_loop:
