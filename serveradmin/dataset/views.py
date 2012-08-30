@@ -164,7 +164,7 @@ def attributes(request):
 @permission_required('dataset.delete_attribute')
 def delete_attribute(request, attribute_name):
     attribute = get_object_or_404(Attribute, name=attribute_name)
-    if request.method == 'POST':
+    if request.method == 'POST' and 'confirm' in request.POST:
         attribute.delete()
         _clear_lookups()
         messages.success(request, u'Attribute "{0}" deleted'.format(
