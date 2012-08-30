@@ -41,6 +41,9 @@
     <td>{{ form.end }} {{ form.end.errors }}</td>
 </tr>
 </table>
-<p><input type="submit" value="{% if edit %}edit{% else %}add{% endif %}"/></p>
+<p>
+    <a href="{% url iprange_index %}">Cancel</a>&nbsp;
+    <input type="submit" value="{% if edit %}edit{% else %}add{% endif %}"/>
+</p>
 </form>
 {% endblock content %}
