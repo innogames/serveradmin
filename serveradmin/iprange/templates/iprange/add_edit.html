@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% if edit %}
+<h2>Edit IP range</h2>
+{% else %}
+<h2>Add IP range</h2>
+{% endif %}
+<form method="post" action="">
+{% csrf_token %}
+{{ form.non_field_errors }}
+<table>
+<tr>
+    <th>{{ form.range_id.label }}</th>
+    <td>{{ form.range_id }} {{ form.range_id.errors }}</td>
+</tr>
+<tr>
+    <th>{{ form.segment.label }}</th>
+    <td>{{ form.segment }} {{ form.segment.errors }}</td>
+</tr>
+<tr>
+    <th>{{ form.ip_type.label }}</th>
+    <td>{{ form.ip_type }} {{ form.ip_type.errors }}</td>
+</tr>
+<tr>
+    <td colspan="2"><hr /></td>
+</tr>
+<tr>
+    <th>{{ form.cidr.label }}</th>
+    <td>{{ form.cidr }} {{ form.cidr.errors }}</td>
+</tr>
+<tr>
+    <td colspan="2" style="text-align:center;">-&nbsp;or&nbsp;-</td>
+</tr>
+<tr>
+    <th>{{ form.start.label }}</th>
+    <td>{{ form.start }} {{ form.start.errors }}</td>
+</tr>
+<tr>
+    <th>{{ form.end.label }}</th>
+    <td>{{ form.end }} {{ form.end.errors }}</td>
+</tr>
+</table>
+<p><input type="submit" value="{% if edit %}edit{% else %}add{% endif %}"/></p>
+</form>
+{% endblock content %}

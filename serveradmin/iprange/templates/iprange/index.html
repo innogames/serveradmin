@@ -25,6 +25,12 @@
         <th>start ip</th>
         <th>end ip</th>
         <th>cidr</th>
+{% if perms.iprange.change_iprange %}
+        <th>edit</th>
+{% endif %}
+{% if perms.iprange.delete_iprange %}
+        <th>delete</th>
+{% endif %}
     </tr>
 {% for iprange in ip_ranges %}
     <tr class="{% cycle "row_a" "row_b" %}">
@@ -40,7 +46,17 @@
         Not possible
         {% endif %}
         </td>
+{% if perms.iprange.change_iprange %}
+        <td><a href="{% url iprange_edit iprange.range_id %}">edit</a></td>
+{% endif %}
+{% if perms.iprange.delete_iprange %}
+        <td><a href="{% url iprange_delete iprange.range_id %}">delete</a></td>
+{% endif %}
     </tr>
 {% endfor %}
 </table>
+
+{% if perms.iprange.add_iprange %}
+<p><a href="{% url iprange_add %}">Add IP range</a></p>
+{% endif %}
 {% endblock content %}
