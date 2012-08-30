@@ -1,5 +1,7 @@
 import json
+import math
 from operator import itemgetter
+from itertools import izip_longest
 
 from django.template.response import TemplateResponse
 from django.http import HttpResponse, HttpResponseBadRequest
@@ -150,6 +152,7 @@ def graph_table(request):
 @ensure_csrf_cookie
 def compare(request):
     hostnames = request.GET.getlist('hostname')
+    periods = set(request.GET.getlist('period'))
     use_graphs = set() # Will contain shown graphs (without period)
     for graph in request.GET.getlist('graph'):
         graph_name, period = split_graph_name(graph)
@@ -176,15 +179,29 @@ def compare(request):
         hosts = []
         for hostname in graph_hostnames:
             host = {
-                'hostname': hostname
+                'hostname': hostname,
+                'images': []
             }
             for period in PERIODS:
+                if periods and period not in periods:
+                    continue
                 graph = join_graph_name(graph_name, period)
                 if (graph_name, period) in host_graphs[hostname]:
                     image = get_graph_url(hostname, graph)
                 else:
                     image = None
-                host[period] = {'image': image, 'graph': graph}
+                host['images'].append({'period': period,
+                                       'image': image,
+                                       'graph': graph})
+
+            # Pop non existing images at the end
+            for graph_entry in reversed(host['images']):
+                if graph_entry['image'] is None:
+                    host['images'].pop()
+                else:
+                    break
+            host['num_rows'] = int(math.ceil(len(host['images']) / 3))
+            host['images'] = izip_longest(*[iter(host['images'])] * 3)
             hosts.append(host)
         compare_table.append({
                 'name': graph_name,

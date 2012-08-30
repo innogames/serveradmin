@@ -863,15 +863,30 @@ function handle_command_compare(parsed_args)
     }
 
     var graphs = [];
+    var periods = [];
     for (var i = 1; i < parsed_args.length; i++) {
-        if (parsed_args[i]['token'] == 'str') {
+        if (parsed_args[i]['token'] == 'str' && parsed_args[i-1]['token'] != 'key') {
             graphs.push('&graph=' + parsed_args[i]['value']);
+        } else if (parsed_args[i-1]['token'] == 'key' && (parsed_args[i-1]['value'] == 'periods' ||
+                    parsed_args[i-1]['value'] == 'period')) {
+            var period_values = parsed_args[i]['value'].split(',');
+            for (var j = 0; j < period_values.length; j++) {
+                periods.push('&period=' + period_values[j]);
+            }
         }
     }
     var query_str = '?hostname=' + hostnames.join('&hostname=');
     query_str += graphs.join('');
+    if (periods.length) {
+        query_str += periods.join('');
+    }
     $.get(shell_compare_url + query_str, function(data) {
-        $('<div title="Compare"></div>').append(data).dialog({'width': 1650});
+        if (periods.length) {
+            var width = 500 * periods.length + 150;
+        } else {
+            var width = 1650;
+        }
+        $('<div title="Compare"></div>').append(data).dialog({'width': width});
         attach_graph_reload();
     });
     return '';
