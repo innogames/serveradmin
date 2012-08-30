@@ -82,7 +82,7 @@ def add(request):
                                    max=data['end'],
                                    next_free=data['start'])
             messages.success(request, u'Added IP range "{0}"'.format(
-                    data['name']))
+                    data['range_id']))
             return redirect('iprange_index')
     else:
         form = IPRangeForm()
@@ -95,7 +95,7 @@ def edit(request, range_id):
     iprange = get_object_or_404(IPRange, range_id=range_id)
 
     if request.method == 'POST':
-        form = IPRangeForm(request.POST)
+        form = IPRangeForm(request.POST, iprange=iprange)
         if form.is_valid():
             iprange.range_id = form.cleaned_data['range_id']
             iprange.segment = form.cleaned_data['segment']

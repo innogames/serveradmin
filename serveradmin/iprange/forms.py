@@ -4,7 +4,7 @@ from django.core import validators, exceptions
 from adminapi.utils import Network
 from serveradmin.common import formfields
 from serveradmin.dataset.models import Segment
-from serveradmin.iprange.models import IP_CHOICES
+from serveradmin.iprange.models import IPRange, IP_CHOICES
 
 class IPRangeForm(forms.Form):
     range_id = forms.CharField()
@@ -13,6 +13,18 @@ class IPRangeForm(forms.Form):
     cidr = forms.CharField(required=False, label='CIDR')
     start = formfields.IPv4Field(required=False, label='Start IP')
     end = formfields.IPv4Field(required=False, label='End IP')
+    
+    def __init__(self, *args, **kwargs):
+        self.iprange = kwargs.pop('iprange', None)
+        super(IPRangeForm, self).__init__(*args, **kwargs)
+
+    def clean_range_id(self):
+        data = self.cleaned_data
+        
+        check = not self.iprange or self.iprange.range_id != data['range_id']
+        if check and IPRange.objects.filter(range_id=data['range_id']).count():
+                raise forms.ValidationError('Range id is already taken')
+        return data['range_id']
 
     def clean(self):
         data = self.cleaned_data
