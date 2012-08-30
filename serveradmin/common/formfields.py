@@ -10,4 +10,7 @@ class IPv4Field(forms.IPAddressField):
         super(IPv4Field, self).__init__(**kwargs)
 
     def clean(self, value):
-        return IP(super(IPv4Field, self).clean(value))
+        ip_string = super(IPv4Field, self).clean(value)
+        if ip_string:
+            return IP(ip_string)
+        return None
