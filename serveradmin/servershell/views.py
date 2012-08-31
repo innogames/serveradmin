@@ -14,6 +14,7 @@ from serveradmin.dataset import query, filters, DatasetError
 from serveradmin.dataset.filters import filter_classes
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.commit import commit_changes, CommitValidationFailed
+from serveradmin.dataset.values import get_attribute_values
 
 @login_required
 @ensure_csrf_cookie
@@ -164,3 +165,18 @@ def commit(request):
         }
 
     return HttpResponse(json.dumps(result), mimetype='application/x-json')
+
+@login_required
+def get_values(request):
+    try:
+        attr_obj = lookups.attr_names[request.GET['attribute']]
+    except KeyError:
+        raise Http404
+
+    values = get_attribute_values(attr_obj.name)
+    print values
+
+    return TemplateResponse(request, 'servershell/values.html', {
+        'attribute': attr_obj,
+        'values': values
+    })

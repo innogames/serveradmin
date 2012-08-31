@@ -1,0 +1,14 @@
+<h3>Values for {{ attribute.name }}</h3>
+{% if values %}
+<ul>
+{% for value in values %}
+{% if attr.type == 'datetime' %}
+    <li>{{ value|date:"Y-m-dTH:i:s" }}</li>
+{% else %}
+    <li>{{ value }}</li>
+{% endif %}
+{% endfor %}
+</ul>
+{% else %}
+<p>No values.</p>
+{% endif %}
