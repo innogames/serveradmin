@@ -16,6 +16,8 @@ from serveradmin.dataset.base import lookups
 from serveradmin.dataset.commit import commit_changes, CommitValidationFailed
 from serveradmin.dataset.values import get_attribute_values
 
+MAX_DISTINGUISHED_VALUES = 20
+
 @login_required
 @ensure_csrf_cookie
 def index(request):
@@ -173,10 +175,10 @@ def get_values(request):
     except KeyError:
         raise Http404
 
-    values = get_attribute_values(attr_obj.name)
-    print values
+    values = get_attribute_values(attr_obj.name, MAX_DISTINGUISHED_VALUES)
 
     return TemplateResponse(request, 'servershell/values.html', {
         'attribute': attr_obj,
-        'values': values
+        'values': values,
+        'num_values': MAX_DISTINGUISHED_VALUES
     })

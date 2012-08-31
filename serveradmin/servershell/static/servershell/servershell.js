@@ -960,4 +960,16 @@ $(function() {
         }
         render_server_table();
     });
+    $('#shell_attributes li').each(function() {
+        console.log(this);
+        var attr_item = $(this);
+        var attr_name = attr_item.attr('data-attr');
+        var link = $('<span class="link">{}</span>').click(function(ev) {
+            $.get(shell_values_url + '?attribute=' + attr_name, function(data) {
+                $('<div title="' + attr_name + '"></div>').append(data).dialog();
+            });
+        });
+        attr_item.prepend(link);
+    });
+
 });

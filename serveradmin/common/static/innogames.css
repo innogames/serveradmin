@@ -1,15 +1,19 @@
-a:link, a:focus, a:visited {
+a:link, a:focus, a:visited, .link {
  font-weight:bold;
  color: #67A13A;
  text-decoration:none;
 }
 
-a:hover {
+a:hover, .link {
  color: #64C218;
 }
 
-a:active {
+a:active, .link {
  color: #63CF0B;
+}
+
+.link {
+ cursor:pointer;
 }
 
 body {
