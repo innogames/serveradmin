@@ -2,7 +2,7 @@
 {% if values %}
 <ul>
 {% for value in values %}
-{% if attr.type == 'datetime' %}
+{% if attribute.type == 'datetime' %}
     <li>{{ value|date:"Y-m-dTH:i:s" }}</li>
 {% else %}
     <li>{{ value }}</li>
