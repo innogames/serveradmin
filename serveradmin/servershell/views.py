@@ -16,7 +16,7 @@ from serveradmin.dataset.base import lookups
 from serveradmin.dataset.commit import commit_changes, CommitValidationFailed
 from serveradmin.dataset.values import get_attribute_values
 
-MAX_DISTINGUISHED_VALUES = 20
+MAX_DISTINGUISHED_VALUES = 50
 
 @login_required
 @ensure_csrf_cookie
