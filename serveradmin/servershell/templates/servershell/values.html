@@ -3,7 +3,7 @@
 <ul>
 {% for value in values %}
 {% if attribute.type == 'datetime' %}
-    <li>{{ value|date:"Y-m-dTH:i:s" }}</li>
+    <li>{{ value|date:"Y-m-d\TH:i:s" }}</li>
 {% else %}
     <li>{{ value }}</li>
 {% endif %}
