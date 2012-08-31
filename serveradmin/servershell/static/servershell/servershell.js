@@ -961,7 +961,6 @@ $(function() {
         render_server_table();
     });
     $('#shell_attributes li').each(function() {
-        console.log(this);
         var attr_item = $(this);
         var attr_name = attr_item.attr('data-attr');
         var link = $('<span class="link">{}</span>').click(function(ev) {
