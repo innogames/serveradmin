@@ -6,6 +6,9 @@ SSH_OPTS = ('-o BatchMode=yes '
             '-o ConnectTimeout=5 ')
 
 def execute_ssh_popen(host, ssh_key, cmd, **popen_opts):
+    if not isinstance(cmd, list):
+        cmd = [cmd]
+
     call = ['/usr/bin/ssh', '-i', ssh_key] + SSH_OPTS.split() + [host] + cmd
     return subprocess.Popen(call, **popen_opts)
 
