@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.db import connection
 
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
@@ -272,6 +274,7 @@ class QuerySet(BaseQuerySet):
         c.execute(sql_stmt)
         attr_ids = lookups.attr_ids
         for server_id, attr_id, value in c.fetchall():
+            # Typecasting is inlined here for performance reasons
             attr = attr_ids[attr_id]
             attr_type = attr.type
             if attr_type == u'integer':
@@ -280,6 +283,8 @@ class QuerySet(BaseQuerySet):
                 value = value == '1'
             elif attr_type == u'ip':
                 value = IP(value)
+            elif attr_type == u'datetime':
+                value = datetime.fromtimestamp(int(value))
 
             # Using dict-methods to bypass ServerObject's special properties
             if attr.multi:

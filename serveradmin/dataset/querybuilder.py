@@ -1,3 +1,6 @@
+from datetime import datetime
+
+from adminapi.utils import IP
 from serveradmin.dataset.base import lookups, ServerTableSpecial, CombinedSpecial
 
 class QueryBuilder(object):
@@ -118,3 +121,17 @@ class QueryBuilder(object):
         sql_stmt = u'\n'.join(sql)
         return sql_stmt
 
+# Note: This function is also inlined in queryset.py for performance
+def typecast_attribute(attr_name, value):
+    attr_type = lookups.attr_names[attr_name].type
+    
+    if attr_type == u'integer':
+        return int(value)
+    elif attr_type == u'boolean':
+        return value == '1'
+    elif attr_type == u'ip':
+        return IP(value)
+    elif attr_type == u'datetime':
+        return datetime.fromtimestamp(int(value))
+    else:
+        return value
