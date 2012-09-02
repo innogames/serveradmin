@@ -64,7 +64,7 @@ def index(request):
 
     server_data = ServerData.objects.filter(hostname__in=hostnames).only(
             'hostname', 'mem_free_dom0', 'mem_installed_dom0',
-            'disk_free_dom0').values()
+            'disk_free_dom0', 'running_vserver').values()
     graph_values = (GraphValue.objects.filter(hostname__in=hostnames,
             graph_name__in=['cpu_dom0_value_max_95', 'io2_dom0_value_max_95'])
             .values())
