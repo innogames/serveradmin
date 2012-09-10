@@ -3,10 +3,13 @@ try:
 except ImportError:
     import json
 
-from django.http import HttpResponse, HttpResponseBadRequest, Http404
+from django.http import (HttpResponse, HttpResponseBadRequest, 
+        HttpResponseRedirect, Http404)
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required, permission_required
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django.core.urlresolvers import reverse
+from django.contrib import messages
 
 from adminapi.utils.json import json_encode_extra
 from adminapi.utils.parse import parse_query
@@ -15,6 +18,7 @@ from serveradmin.dataset.filters import filter_classes
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.commit import commit_changes, CommitValidationFailed
 from serveradmin.dataset.values import get_attribute_values
+from serveradmin.dataset.typecast import typecast
 
 MAX_DISTINGUISHED_VALUES = 50
 
@@ -101,25 +105,73 @@ def export(request):
     hostnames = u' '.join(server['hostname'] for server in q)
     return HttpResponse(hostnames, mimetype='text/plain')
 
-def list_and_edit(request):
+def list_and_edit(request, mode='list'):
     try:
         object_id = request.GET['object_id']
         server = query(object_id=object_id).get()
     except (KeyError, DatasetError):
         raise Http404
 
-    mode = 'edit' if 'edit' in request.GET else 'list'
-
+    stype = lookups.stype_names[server['servertype']]
     non_editable = ['servertype']
+    
+    invalid_attrs = set()
+    if mode == 'edit' and request.POST:
+        attrs = set(request.POST.getlist('attr'))
+        for attr in attrs:
+            if attr in non_editable:
+                continue
+            if lookups.attr_names[attr].multi:
+                lines = request.POST.get('attr_' + attr, '').splitlines()
+                value = set()
+                for line in lines:
+                    value.add(typecast(attr, line.strip()))
+            else:
+                value = typecast(attr, request.POST.get('attr_' + attr, ''))
+            server[attr] = value
+        for attr in server.keys():
+            if attr in non_editable:
+                continue
+            if attr not in attrs:
+                del server[attr]
+        try:
+            server.commit()
+            messages.success(request, 'Edited server successfully')
+            url = '{0}?object_id={1}'.format(reverse('servershell_list'),
+                    server.object_id)
+            return HttpResponseRedirect(url)
+        except CommitValidationFailed as e:
+            invalid_attrs = set([attr for obj_id, attr in e.violations])
+
     fields = []
+    fields_set = set()
     for key, value in server.iteritems():
+        fields_set.add(key)
         fields.append({
             'key': key,
             'value': value,
+            'has_value': True,
             'editable': key not in non_editable,
             'type': lookups.attr_names[key].type,
-            'multi': lookups.attr_names[key].multi
+            'multi': lookups.attr_names[key].multi,
+            'required': lookups.stype_attrs[(stype.name, key)].required,
+            'error': key in invalid_attrs
         })
+    
+    if mode == 'edit':
+        for attr in stype.attributes:
+            if attr.name in fields_set:
+                continue
+            fields.append({
+                'key': attr.name,
+                'value': [] if attr.multi else '',
+                'has_value': False,
+                'editable': True,
+                'type': attr.type,
+                'multi': attr.multi,
+                'required': False,
+                'error': attr.name in invalid_attrs
+            })
     
     # Sort keys by some order and then lexographically
     _key_order = ['hostname', 'servertype', 'intern_ip']
@@ -127,7 +179,7 @@ def list_and_edit(request):
     def _sort_key(x):
         return (_key_order_lookup.get(x['key'], 100), x['key'])
     fields.sort(key=_sort_key)
-
+    
     return TemplateResponse(request, 'servershell/{0}.html'.format(mode), {
         'object_id': server.object_id,
         'fields': fields,
@@ -154,7 +206,7 @@ def commit(request):
 
     try:
         commit_changes(commit)
-    except (ValueError, DatasetError):
+    except (ValueError, DatasetError) as e:
         return HttpResponseBadRequest()
     except CommitValidationFailed, e:
         result = {

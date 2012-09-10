@@ -1,3 +1,58 @@
+{% extends base_template %}
+
+{% block title %}Attributes of object {{ object_id }}{% endblock %}
+
 {% block content %}
-not implemented yet
+{% if is_ajax %}
+<p><a href="{{ link }}">
+    <img src="{{ STATIC_URL }}link.png" alt="Link to this page"
+        title="Link to this page" />
+</a></p>
+{% else %}
+<h2>Object {{ object_id }}</h2>
+{% endif %}
+
+<form method="post" action="">
+{% csrf_token %}
+<table class="border_table" style="width:100%; table-layout:fixed;">
+<tr>
+    <th style="width:15em;">Attribute</th>
+    <th style="width:6em;">Type</th>
+    <th style="width:6em;">Required</th>
+    <th>Value</th>
+</tr>
+{% for field in fields %}
+<tr>
+    <td>
+    {% if field.editable and not field.required and not field.multi %}
+    <label>
+    <input type="checkbox" name="attr" value="{{ field.key }}"
+        {% if field.has_value %}checked="checked"{% endif %}/>
+    {{ field.key }}
+    </label>
+    {% else %}
+    <input type="hidden" name="attr" value="{{ field.key }}" />
+    {{ field.key }}
+    {% endif %}
+    </td>
+    <td>{{ field.type }}</td>
+    <td>{{ field.required }}</td>
+    <td>
+    {% if field.multi %}
+    <textarea rows="3" cols="40" name="attr_{{ field.key }}"
+    {% if field.error %} style="border:2px solid #d00"{% endif %} 
+    >{% for val in field.value %}{{ val }}
+{% endfor %}</textarea>
+    (multiple values, one value per row)
+    {% else %}
+    <input type="text" name="attr_{{ field.key }}" value="{{ field.value }}" size="30" 
+    {% if not field.editable %}disabled="disabled" {% endif %}
+    {% if field.error %} style="border:2px solid #d00;"{% endif %} />
+    {% endif %}
+    </td>
+</tr>
+{% endfor %}
+</table>
+<p><input type="submit" value="Change server" /></p>
+</form>
 {% endblock %}
