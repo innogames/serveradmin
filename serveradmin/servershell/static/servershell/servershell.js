@@ -756,11 +756,19 @@ function handle_command_setattr(parsed_args)
         if (typeof(changes[server_id]) == 'undefined') {
             changes[server_id] = {};
         }
-        changes[server_id][attr_name] = {
-            'action': 'update',
-            'new': parse_value(new_value, attr_name),
-            'old': search['servers'][server_id][attr_name]
-        };
+        var old_value = search['servers'][server_id][attr_name];
+        if (typeof(old_value) == 'undefined') {
+            changes[server_id][attr_name] = {
+                'action': 'new',
+                'new': parse_value(new_value, attr_name),
+            };
+        } else {
+            changes[server_id][attr_name] = {
+                'action': 'update',
+                'new': parse_value(new_value, attr_name),
+                'old': old_value
+            };
+        }
     }
     render_server_table();
     return '';
