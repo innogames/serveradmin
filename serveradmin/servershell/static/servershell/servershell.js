@@ -257,7 +257,7 @@ function _make_attr_editable(cell, server, attr_name, value)
                         'action': 'new',
                         'new': new_value
                     }
-                } else if (!new_value) {
+                } else if (new_value === "" || new_value === null) {
                     commit_data = {
                         'action': 'delete',
                         'old': server[attr_name]
