@@ -101,7 +101,7 @@ def _read_lookups(sender=None, **kwargs):
     
     # Add attributes from admin_server to servertype attributes
     for servertype in lookups.stype_ids.itervalues():
-        special_stype_attr = ServerTypeAttr(servertype.pk, -1, False, None,
+        special_stype_attr = ServerTypeAttr(servertype.pk, -1, True, None,
                 None, True)
         for attr in special_attributes:
             if attr.base:
