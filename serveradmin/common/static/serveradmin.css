@@ -1,3 +1,24 @@
+.messages {
+ list-style:none;
+ padding:0;
+}
+
+.messages li {
+ padding:0.3em 0.3em 0.3em 20px;
+ margin-bottom:0.3em;
+ font-weight:bold;
+ color:#000;
+ border:1px solid #000;
+}
+
+.messages li.success {
+ background:#d6ffd6 url(success.png) no-repeat 4px center;
+}
+
+.messages li.error {
+ background:#ffd6d6 url(error.png) no-repeat 4px center;
+}
+
 table.tabular td, table.tabular th {
  border:1px solid #000;
 }
