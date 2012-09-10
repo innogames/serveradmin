@@ -948,6 +948,12 @@ $(function() {
             'width': '70em',
         });
     });
+    
+    $('#shell_search_help_icon').click(function() {
+        $('#shell_search_help').dialog({
+            'width': '70em',
+        });
+    });
 
     $('#shell_command').val('');
 
