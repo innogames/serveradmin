@@ -268,7 +268,10 @@ class BaseServerObject(dict):
         if k not in self._queryset.attributes:
             raise DatasetError('No such attribute')
         if self._queryset.attributes[k].type == 'ip':
-            v = IP(v)
+            if self._queryset.attributes[k].multi:
+                v = set(x if isinstance(x, IP) else IP(x) for x in v)
+            else:
+                v = v if isinstance(v, IP) else IP(v)
         if self._queryset.attributes[k].multi:
             if not isinstance(v, set):
                 raise DatasetError('Multi attributes must be sets')
