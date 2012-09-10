@@ -6,6 +6,7 @@ from datetime import datetime
 from adminapi.utils import IP, Network, PRIVATE_IP_BLOCKS, PUBLIC_IP_BLOCKS
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.exceptions import DatasetError
+from serveradmin.dataset.typecast import typecast
 
 filter_classes = {}
 class BaseFilter(object):
@@ -46,7 +47,7 @@ class ExactMatch(Filter):
         return repr(self.value)
 
     def typecast(self, attr_name):
-        self.value = _typecast(attr_name, self.value)
+        self.value = typecast(attr_name, self.value)
 
     @classmethod
     def from_obj(cls, obj):
@@ -150,7 +151,7 @@ class Comparison(Filter):
         return u'filters.' + repr(self)
 
     def typecast(self, attr_name):
-        self.value = _typecast(attr_name, self.value)
+        self.value = typecast(attr_name, self.value)
 
     @classmethod
     def from_obj(cls, obj):
@@ -194,7 +195,7 @@ class Any(Filter):
     def typecast(self, attr_name):
         casted_values = set()
         for value in self.values:
-            casted_values.add(_typecast(attr_name, value))
+            casted_values.add(typecast(attr_name, value))
         self.values = casted_values
 
     @classmethod
@@ -291,8 +292,8 @@ class Between(Filter):
         return u'filters.' + repr(self)
 
     def typecast(self, attr_name):
-        self.a = _typecast(attr_name, self.a)
-        self.b = _typecast(attr_name, self.b)
+        self.a = typecast(attr_name, self.a)
+        self.b = typecast(attr_name, self.b)
 
     @classmethod
     def from_obj(cls, obj):
@@ -395,7 +396,7 @@ class Startswith(Filter):
         return u'filters.Startswith({0!r})'.format(self.value)
 
     def typecast(self, attr_name):
-        self.value = _typecast(attr_name, self.value)
+        self.value = typecast(attr_name, self.value)
     
     @classmethod
     def from_obj(cls, obj):
@@ -590,38 +591,3 @@ def filter_from_obj(obj):
     except KeyError:
         raise ValueError(u'No such filter: {0}').format(obj[u'name'])
 
-_to_datetime_re = re.compile(
-        r'(\d{4})-(\d{1,2})-(\d{1,2})(T(\d{1,2}):(\d{1,2})(:(\d{1,2}))?)?')
-def _to_datetime(x):
-    if isinstance(x, datetime):
-        return x
-    if isinstance(x, (int, long)):
-        return datetime.fromtimestamp(x)
-    elif isinstance(x, basestring):
-        if x.isdigit():
-            return datetime.fromtimestamp(int(x))
-        match = _to_datetime_re.match(x)
-        if not match:
-            raise ValueError('Could not cast {0!r} to datetime', x)
-
-        hour, minute, second = 0, 0, 0
-        if match.group(5):
-            hour = int(match.group(5))
-            minute = int(match.group(6))
-        if match.group(8):
-            second = int(match.group(8))
-
-        return datetime(int(match.group(1)), int(match.group(2)),
-                        int(match.group(3)), hour, minute, second)
-    else:
-        raise ValueError('Could not cast {0!r} to datetime', x)
-
-_typecast_fns = {
-    'integer': int,
-    'boolean': lambda x: x in ('1', 'True', 'true', 1, True),
-    'string': lambda x: x if isinstance(x, basestring) else unicode(x),
-    'ip': lambda x: x if isinstance(x, IP) else IP(x),
-    'datetime': _to_datetime
-}
-def _typecast(attr_name, value):
-    return  _typecast_fns[lookups.attr_names[attr_name].type](value)
