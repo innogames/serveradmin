@@ -25,6 +25,7 @@ from serveradmin.dataset.models import ServerType
 from serveradmin.dataset.create import create_server
 
 MAX_DISTINGUISHED_VALUES = 50
+NUM_SERVERS_DEFAULT = 50
 
 @login_required
 @ensure_csrf_cookie
@@ -56,7 +57,7 @@ def get_results(request):
         limit = min(int(request.GET.get('limit', '0')), 250)
     except ValueError:
         offset = 0
-        limit = 25
+        limit = NUM_SERVERS_DEFAULT
 
     order_by = request.GET.get('order_by')
     order_dir = request.GET.get('order_dir', 'asc')
