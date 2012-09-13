@@ -1,3 +1,4 @@
+from adminapi.utils import IP
 from adminapi.dataset.exceptions import CommitValidationFailed
 from serveradmin.dataset.base import lookups
 
@@ -52,8 +53,10 @@ def _require_boolean(attr, value):
             u'type {2}.').format(attr, repr(value), type(value).__name__))
 
 def _require_ip(attr, value):
-    # We will accept everything that IP(value) will convert
-    if isinstance(value, basestring):
+    # We will accept IP objects or everything that IP(value) will convert
+    if isinstance(value, IP):
+        return
+    elif isinstance(value, basestring):
         if value.isdigit():
             return
         segs = value.split('.')
@@ -67,7 +70,7 @@ def _require_ip(attr, value):
         except ValueError:
             raise ValueError(u'Attribute {0} is of type ip, but got {1}'
                     .format(attr, repr(value)))
-    elif isinstance(value (int, long)):
+    elif isinstance(value, (int, long)):
         return
     else:
         raise ValueError((u'Attribute {0} is of type ip, but got {0} of '

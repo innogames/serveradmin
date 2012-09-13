@@ -23,7 +23,10 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
         raise CommitError(u'Unknown servertype: ' + attributes[u'servertype'])
 
     hostname = attributes[u'hostname']
-    intern_ip = IP(attributes[u'intern_ip'])
+    if isinstance(attributes['intern_ip'], IP):
+        intern_ip = attributes['intern_ip']
+    else:
+        intern_ip = IP(attributes[u'intern_ip'])
     servertype_id = stype.pk
     segment = attributes.get(u'segment')
 
