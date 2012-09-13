@@ -80,6 +80,14 @@ function build_server_table(servers, attributes, offset)
         }
         var x = a[sort_attr];
         var y = b[sort_attr];
+
+        if (typeof(x) == 'undefined' && typeof(y) == 'undefined') {
+            return 0;
+        } else if (typeof(x) == 'undefined') {
+            return 1;
+        } else if (typeof(y) == 'undefined') {
+            return -1;
+        }
         
         if (available_attributes[sort_attr]['multi']) {
             x = array_min(x);
