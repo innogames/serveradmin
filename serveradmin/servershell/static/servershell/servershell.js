@@ -845,9 +845,13 @@ function handle_command_multiattr(parsed_args, action)
         return;
     }
     var attr_name = parsed_args[1]['value'];
-    var value = parsed_args[2]['value'];
+    var values = parsed_args[2]['value'].split(',');
 
     var marked_servers = get_marked_servers();
+    if (marked_servers.length == 0) {
+        $('<div title="Select servers">You have to select servers first</div>').dialog();
+        return;
+    }
     var changes = commit['changes'];
     for (var i = 0; i < marked_servers.length; i++) {
         var server_id = marked_servers[i];
@@ -861,21 +865,24 @@ function handle_command_multiattr(parsed_args, action)
                 'remove': []
             };
         }
-        var parsed_value = parse_value(value, attr_name);
-        if (action == 'remove') {
-            var index = changes[server_id][attr_name]['add'].indexOf(parsed_value);
-            if (index != -1) {
-                changes[server_id][attr_name]['add'].splice(index, 1);
-            } else {
-                changes[server_id][attr_name]['remove'].push(parsed_value);
-            }
-        } else if (action == 'add') {
-            var contains_value = false;
-            if (typeof(search['servers'][server_id][attr_name]) != 'undefined') {
-                contains_value = search['servers'][server_id][attr_name].indexOf(parsed_value) != -1;
-            }
-            if (!contains_value) {
-                changes[server_id][attr_name]['add'].push(parsed_value);
+        for (var j = 0; j < values.length; j++) {
+            var value = values[j];
+            var parsed_value = parse_value(value, attr_name);
+            if (action == 'remove') {
+                var index = changes[server_id][attr_name]['add'].indexOf(parsed_value);
+                if (index != -1) {
+                    changes[server_id][attr_name]['add'].splice(index, 1);
+                } else {
+                    changes[server_id][attr_name]['remove'].push(parsed_value);
+                }
+            } else if (action == 'add') {
+                var contains_value = false;
+                if (typeof(search['servers'][server_id][attr_name]) != 'undefined') {
+                    contains_value = search['servers'][server_id][attr_name].indexOf(parsed_value) != -1;
+                }
+                if (!contains_value) {
+                    changes[server_id][attr_name]['add'].push(parsed_value);
+                }
             }
         }
     }
