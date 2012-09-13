@@ -67,7 +67,8 @@ def get_results(request):
         
         # Add attributes with non-constant values to the shown attributes
         for attr, value in query_args.iteritems():
-            if not isinstance(value, (filters.ExactMatch, basestring)):
+            multi = lookups.attr_names[attr].multi
+            if not isinstance(value, (filters.ExactMatch, basestring)) or multi:
                 # FIXME: Just a dirty workaround
                 if attr == 'all_ips':
                     if u'intern_ip' not in shown_attributes:
