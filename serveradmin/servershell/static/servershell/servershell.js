@@ -618,7 +618,6 @@ function handle_command_list() {
 
 function handle_command_new()
 {
-    console.log('new');
     $.get(shell_new_url, function(page) {
         $('<div title="New server"></div>').append(page).dialog({
             'width': 600
