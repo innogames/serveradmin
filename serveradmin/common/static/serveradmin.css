@@ -129,6 +129,11 @@ del {
  color:#c00;
 }
 
+.row_del {
+ background:#d00;
+ color:#fff;
+}
+
 .page {
  border:1px solid #67a13a;
  padding:3px;

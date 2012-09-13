@@ -101,6 +101,10 @@ function build_server_table(servers, attributes, offset)
         }
     });
     
+    var delete_set = {};
+    for (var i = 0; i < commit['deleted'].length; i++) {
+        delete_set[commit['deleted'][i]] = true;
+    } 
     
     // Fill table
     search['no_mapping'] = {};
@@ -108,6 +112,9 @@ function build_server_table(servers, attributes, offset)
     for (var i = 0; i < server_list.length; i++) {
         var server = server_list[i];
         var row_class = i & 1 ? 'row_a' : 'row_b';
+        if (delete_set[server['object_id']]) {
+            row_class = 'row_del';
+        }
         var row = $('<tr class="' + row_class + '"></tr>');
         var check = $('<input type="checkbox" name="server"></input>')
             .attr('value', server['object_id'])
@@ -438,7 +445,8 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'graph': 'Show available servermonitor graphs for selected hosts',
         'cmp': 'Compare servermonitor graphs for several hosts',
         'list': 'List all attributes of a server',
-        'new': 'Create a new server'
+        'new': 'Create a new server',
+        'delete': 'Delete marked servers'
     };
     
     if (plen == 1 && parsed_args[0]['token'] == 'str') {
@@ -540,6 +548,8 @@ function handle_command(command)
         return handle_command_list();
     } else if (command == 'new') {
         return handle_command_new();
+    } else if (command == 'delete') {
+        return handle_command_delete();
     } else if (is_digit(command[0])) {
         return handle_command_range(command);
     } else {
@@ -631,6 +641,15 @@ function handle_command_new()
             'width': 600
         });
     });
+    return '';
+}
+
+function handle_command_delete()
+{
+    execute_on_servers(function(server) {
+        commit['deleted'].push(server['object_id']);
+    });
+    render_server_table();
     return '';
 }
 
