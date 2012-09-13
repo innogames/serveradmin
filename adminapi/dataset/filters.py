@@ -149,15 +149,15 @@ filter_classes['insidenetwork'] = InsideNetwork
 
 class PublicIP(Filter):
     def __repr__(self):
-        return 'PublicIP'
+        return 'PublicIP()'
 
     def _serialize(self):
         return {'name': 'publicip'}
 filter_classes['publicip'] = PublicIP
 
-def PrivateIP(Filter):
+class PrivateIP(Filter):
     def __repr__(self):
-        return 'PrivateIP'
+        return 'PrivateIP()'
 
     def _serialize(self):
         return {'name': 'privateip'}
