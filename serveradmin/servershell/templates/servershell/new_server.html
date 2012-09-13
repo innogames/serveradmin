@@ -1,0 +1,15 @@
+{% extends base_template %}
+
+{% block title %}Create server{% endblock %}
+
+{% block content %}
+{% if not is_ajax %}
+<h2>New server</h2>
+{% endif %}
+<form method="post" action="{% url servershell_new %}">
+{% csrf_token %}
+<table>
+{{ form }}
+</table>
+<p><input type="submit" value="Create" /></p>
+{% endblock %}

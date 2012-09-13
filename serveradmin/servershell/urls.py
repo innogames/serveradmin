@@ -13,4 +13,5 @@ urlpatterns = patterns(
     url(r'^list$', 'list_and_edit', {'mode': 'list'}, name='servershell_list'),
     url(r'^commit$', 'commit', name='servershell_commit'),
     url(r'^values$', 'get_values', name='servershell_values'),
+    url(r'^new$', 'new_server', name='servershell_new'),
 )

@@ -10,7 +10,9 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.core.urlresolvers import reverse
 from django.contrib import messages
+from django import forms
 
+from adminapi.utils import IP
 from adminapi.utils.json import json_encode_extra
 from adminapi.utils.parse import parse_query
 from serveradmin.dataset import query, filters, DatasetError
@@ -19,6 +21,8 @@ from serveradmin.dataset.base import lookups
 from serveradmin.dataset.commit import commit_changes, CommitValidationFailed
 from serveradmin.dataset.values import get_attribute_values
 from serveradmin.dataset.typecast import typecast
+from serveradmin.dataset.models import ServerType
+from serveradmin.dataset.create import create_server
 
 MAX_DISTINGUISHED_VALUES = 50
 
@@ -111,6 +115,9 @@ def list_and_edit(request, mode='list'):
         server = query(object_id=object_id).get()
     except (KeyError, DatasetError):
         raise Http404
+
+    if not request.user.has_perm('dataset.change_serverobject'):
+        mode = 'list'
 
     stype = lookups.stype_names[server['servertype']]
     non_editable = ['servertype']
@@ -233,4 +240,34 @@ def get_values(request):
         'attribute': attr_obj,
         'values': values,
         'num_values': MAX_DISTINGUISHED_VALUES
+    })
+
+@login_required
+@permission_required('dataset.create_serverobject')
+def new_server(request):
+    class NewServerForm(forms.Form):
+        hostname = forms.CharField()
+        intern_ip = forms.IPAddressField()
+        segment = forms.CharField()
+        servertype = forms.ModelChoiceField(queryset=ServerType.objects.order_by(
+            'name'))
+
+    if request.method == 'POST':
+        form = NewServerForm(request.POST)
+        if form.is_valid():
+            attributes = form.cleaned_data.copy()
+            attributes['intern_ip'] = IP(attributes['intern_ip'])
+            attributes['servertype'] = attributes['servertype'].name
+            server_id = create_server(attributes, skip_validation=True,
+                    fill_defaults=True, fill_defaults_all=True)
+            url = '{0}?object_id={1}'.format(reverse('servershell_edit'),
+                    server_id)
+            return HttpResponseRedirect(url)
+    else:
+        form = NewServerForm()
+
+    return TemplateResponse(request, 'servershell/new_server.html', {
+        'form': form,
+        'is_ajax': request.is_ajax(),
+        'base_template': 'empty.html' if request.is_ajax() else 'base.html'
     })

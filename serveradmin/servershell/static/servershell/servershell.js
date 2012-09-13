@@ -429,7 +429,8 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'perpage': 'Show a specific number of hosts per page (e.g. "perpage 50")',
         'graph': 'Show available servermonitor graphs for selected hosts',
         'cmp': 'Compare servermonitor graphs for several hosts',
-        'list': 'List all attributes of a server'
+        'list': 'List all attributes of a server',
+        'new': 'Create a new server'
     };
     
     if (plen == 1 && parsed_args[0]['token'] == 'str') {
@@ -529,6 +530,8 @@ function handle_command(command)
         return handle_command_graph();
     } else if (command == 'list') {
         return handle_command_list();
+    } else if (command == 'new') {
+        return handle_command_new();
     } else if (is_digit(command[0])) {
         return handle_command_range(command);
     } else {
@@ -610,6 +613,17 @@ function handle_command_list() {
         });
     }
     execute_on_servers(show_list);
+    return '';
+}
+
+function handle_command_new()
+{
+    console.log('new');
+    $.get(shell_new_url, function(page) {
+        $('<div title="New server"></div>').append(page).dialog({
+            'width': 600
+        });
+    });
     return '';
 }
 
