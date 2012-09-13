@@ -25,7 +25,7 @@ from serveradmin.dataset.models import ServerType
 from serveradmin.dataset.create import create_server
 
 MAX_DISTINGUISHED_VALUES = 50
-NUM_SERVERS_DEFAULT = 50
+NUM_SERVERS_DEFAULT = 25
 
 @login_required
 @ensure_csrf_cookie

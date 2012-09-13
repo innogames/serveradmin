@@ -4,7 +4,7 @@ var search = {
     'servers': {},
     'num_servers': 0,
     'page': 1,
-    'per_page': 50,
+    'per_page': 25,
     'order_by': null,
     'order_dir': 'asc',
     'no_mapping': {},
