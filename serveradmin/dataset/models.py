@@ -37,6 +37,9 @@ class ServerType(models.Model):
     class Meta:
         db_table = 'servertype'
 
+    def __unicode__(self):
+        return self.name
+
 class ServerTypeAttributes(models.Model):
     servertype = models.ForeignKey(ServerType, related_name='used_attributes')
     attrib = models.ForeignKey(Attribute)
