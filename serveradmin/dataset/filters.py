@@ -512,7 +512,10 @@ class PublicIP(_PrivatePublicIP):
     blocks = PUBLIC_IP_BLOCKS
 filter_classes['publicip'] = PublicIP
 
-class Optional(BaseFilter):
+class OptionalFilter(BaseFilter):
+    pass
+
+class Optional(OptionalFilter):
     def __init__(self, filter):
         self.filter = _prepare_filter(filter)
 
@@ -549,6 +552,34 @@ class Optional(BaseFilter):
             return cls(filter_from_obj(obj[u'filter']))
         raise ValueError(u'Invalid object for Optional')
 filter_classes[u'optional'] = Optional
+
+class Empty(OptionalFilter):
+    def __repr__(self):
+        return u'Empty()'
+
+    def __eq__(self, other):
+        return isinstance(other, Empty)
+
+    def __hash__(self):
+        return hash('Empty')
+    
+    def as_sql_expr(self, builder, attr_obj, field):
+        return u'{0} IS NULL'.format(field)
+
+    def matches(self, server_obj, attr_name):
+        return attr_name not in server_obj or len(server_obj[attr_name]) == 0
+
+    def as_code(self):
+        return u'filters.Empty()'
+
+    def typecast(self, attr_name):
+        pass
+    
+    @classmethod
+    def from_obj(cls, obj):
+        return cls()
+filter_classes[u'empty'] = Empty
+
 
 def _prepare_filter(filter):
     return filter if isinstance(filter, BaseFilter) else ExactMatch(filter)

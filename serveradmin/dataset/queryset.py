@@ -173,10 +173,10 @@ class QuerySet(BaseQuerySet):
     def _fetch_results(self):
         # XXX: Dirty hack for the old database structure
         builder = QueryBuilder()
-        _Optional = filters.Optional
+        _OptionalFilter = filters.OptionalFilter
         for attr, f in self._filters.iteritems():
             attr_obj = lookups.attr_names[attr]
-            builder.add_attribute(attr, isinstance(f, _Optional))
+            builder.add_attribute(attr, isinstance(f, _OptionalFilter))
             builder.add_filter(attr, f)
 
 

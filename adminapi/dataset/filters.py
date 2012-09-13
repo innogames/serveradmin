@@ -163,5 +163,12 @@ class PrivateIP(Filter):
         return {'name': 'privateip'}
 filter_classes['privateip'] = PrivateIP
 
+class Empty(Filter):
+    def __repr__(self):
+        return 'Empty()'
+
+    def _serialize(self):
+        return {'name': 'empty'}
+
 def _prepare_filter(filter):
     return filter if isinstance(filter, BaseFilter) else ExactMatch(filter)
