@@ -108,7 +108,8 @@ def edit(request, range_id):
                     iprange.range_id))
             return redirect('iprange_index')
     else:
-        initial = {'range_id': iprange.range_id, 'segment': iprange.segment}
+        initial = {'range_id': iprange.range_id, 'segment': iprange.segment,
+                   'ip_type': iprange.ip_type, 'gateway': iprange.gateway}
         cidr = iprange.cidr
         if cidr:
             initial['cidr'] = cidr
