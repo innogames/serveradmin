@@ -12,9 +12,15 @@ class IPv4Field(models.Field):
     def to_python(self, value):
         if isinstance(value, IP):
             return value
+        if value is None:
+            return None
         return IP(value)
 
     def get_prep_value(self, value):
+        if not isinstance(value, IP):
+            if value is None:
+                return None
+            value = IP(value)
         return value.as_int()
 
     def get_prep_lookup(self, lookup_type, value):
