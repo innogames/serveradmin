@@ -102,6 +102,7 @@ def edit(request, range_id):
             iprange.ip_type = form.cleaned_data['ip_type']
             iprange.min = form.cleaned_data['start']
             iprange.max = form.cleaned_data['end']
+            iprange.gateway = form.cleaned_data['gateway']
             iprange.save()
             messages.success(request, u'Edited IP range "{0}"'.format(
                     iprange.range_id))
