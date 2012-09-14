@@ -16,6 +16,8 @@ class IPRange(models.Model):
     min = dbfields.IPv4Field()
     max = dbfields.IPv4Field()
     next_free = dbfields.IPv4Field()
+    gateway = dbfields.IPv4Field(null=True)
+
 
     def get_free(self, increase_pointer=True):
         c = connection.cursor()

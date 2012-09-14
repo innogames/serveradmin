@@ -25,6 +25,7 @@
         <th>start ip</th>
         <th>end ip</th>
         <th>cidr</th>
+        <th>gateway</th>
 {% if perms.iprange.change_iprange %}
         <th>edit</th>
 {% endif %}
@@ -46,6 +47,7 @@
         Not possible
         {% endif %}
         </td>
+        <td>{{ iprange.gateway }}</td>
 {% if perms.iprange.change_iprange %}
         <td><a href="{% url iprange_edit iprange.range_id %}">edit</a></td>
 {% endif %}

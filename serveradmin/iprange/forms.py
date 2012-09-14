@@ -13,7 +13,8 @@ class IPRangeForm(forms.Form):
     cidr = forms.CharField(required=False, label='CIDR')
     start = formfields.IPv4Field(required=False, label='Start IP')
     end = formfields.IPv4Field(required=False, label='End IP')
-    
+    gateway = formfields.IPv4Field(required=True, label='Gateway') 
+
     def __init__(self, *args, **kwargs):
         self.iprange = kwargs.pop('iprange', None)
         super(IPRangeForm, self).__init__(*args, **kwargs)

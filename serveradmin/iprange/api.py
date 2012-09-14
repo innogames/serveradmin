@@ -75,5 +75,6 @@ def _build_range_object(r):
         'segment': r.segment,
         'type': 'private' if r.ip_type == 'ip' else 'public',
         'min': r.min,
-        'max': r.max
+        'max': r.max,
+        'gateway': r.gateway
     }
