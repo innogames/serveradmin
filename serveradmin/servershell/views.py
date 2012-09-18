@@ -66,9 +66,13 @@ def get_results(request):
     try:
         query_args = parse_query(term, filter_classes)
         
-        # Add attributes with non-constant values to the shown attributes
+        # Add attributes with non-constant values and multi attributes
+        # to the shown attributes
         for attr, value in query_args.iteritems():
-            multi = lookups.attr_names[attr].multi
+            try:
+                multi = lookups.attr_names[attr].multi
+            except KeyError:
+                continue
             if not isinstance(value, (filters.ExactMatch, basestring)) or multi:
                 # FIXME: Just a dirty workaround
                 if attr == 'all_ips':
