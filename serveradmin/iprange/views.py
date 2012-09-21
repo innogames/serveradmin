@@ -80,7 +80,8 @@ def add(request):
                                    ip_type=data['ip_type'],
                                    min=data['start'],
                                    max=data['end'],
-                                   next_free=data['start'])
+                                   next_free=data['start'],
+                                   gateway=data['gateway'])
             messages.success(request, u'Added IP range "{0}"'.format(
                     data['range_id']))
             return redirect('iprange_index')
