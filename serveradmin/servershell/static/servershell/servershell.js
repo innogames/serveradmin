@@ -787,19 +787,21 @@ function handle_command_setattr(parsed_args)
     }
     var attr_name = parsed_args[1]['value'];
     var new_value = parsed_args[2]['value'];
+    var marked_servers = get_marked_servers();
 
     var error = null;
     if (typeof(available_attributes[attr_name]) == 'undefined') {
         error = 'No such attribute';
     } else if (available_attributes[attr_name].multi) {
         error = 'This is a multi attribute. Use multiadd/multidel instead!';
+    } else if (marked_servers.length == 0) {
+        error = 'Please select some servers.';
     }
     if (error) {
         $('<div title="Error"></div>').text(error).dialog();
         return ;
     }
 
-    var marked_servers = get_marked_servers();
     var changes = commit['changes'];
     for (var i = 0; i < marked_servers.length; i++) {
         var server_id = marked_servers[i];
