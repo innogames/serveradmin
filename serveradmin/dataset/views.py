@@ -107,11 +107,11 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
         attrib = None
 
     if request.method == 'POST':
-        form = form_class(stype, request.POST)
+        form = form_class(stype, request.POST, instance=stype_attr)
         if form.is_valid():
             if stype_attr:
-                form.save(instance=stype_attr)
-                msg = 'Edited attribute "{0}" to "{1}"'.format(
+                form.save()
+                msg = 'Edited attribute "{0}" of "{1}"'.format(
                         stype_attr.attrib.name, stype.name)
             else:
                 stype_attr = form.save(commit=False)
