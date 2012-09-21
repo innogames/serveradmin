@@ -1,13 +1,12 @@
 import time
-from datetime import datetime
 
 from django.db import connection
 
-from adminapi.utils import IP
-from serveradmin.dataset.base import lookups, ServerTableSpecial
-from serveradmin.dataset.cache import invalidate_cache
 from adminapi.dataset.exceptions import (CommitValidationFailed, CommitNewerData,
         CommitError)
+from serveradmin.dataset.base import lookups, ServerTableSpecial
+from serveradmin.dataset.cache import invalidate_cache
+from serveradmin.dataset.typecast import typecast
 
 def commit_changes(commit, skip_validation=False, force_changes=False):
     """Commit server changes to the database after validation.
@@ -19,7 +18,8 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
     deleted_servers = commit.get('deleted', [])
     changed_servers = commit.get('changes', {})
 
-    _validate_structure(deleted_servers, changed_servers) 
+    _validate_structure(deleted_servers, changed_servers)
+    _typecast_values(changed_servers)
     
     c = connection.cursor()
     c.execute(u"SELECT GET_LOCK('serverobject_commit', 10)")
@@ -165,6 +165,16 @@ def _validate_commit(changed_servers, servers):
                     newer.append((server_id, attr, None))
     return newer
 
+def _typecast_values(changed_servers):
+    for server_id, changes in changed_servers.iteritems():
+        for attr, change in changes.iteritems():
+            action = change['action']
+            if action == 'new':
+                change['new'] = typecast(attr, change['new'])
+            elif action == 'update':
+                change['new'] = typecast(attr, change['new'])
+                change['old'] = typecast(attr, change['old'])
+
 def _delete_servers(deleted_servers):
     ids = ', '.join(str(x) for x in deleted_servers)
     c = connection.cursor()
@@ -224,12 +234,9 @@ def _apply_changes(changed_servers, servers):
 def _prepare_value(attr_name, value):
     attr_obj = lookups.attr_names[attr_name]
     if attr_obj.type == u'ip':
-        if not isinstance(value, IP):
-            value = IP(value)
         value = value.as_int()
     elif attr_obj.type == u'datetime':
-        if isinstance(value, datetime):
-            value = int(time.mktime(value.timetuple()))
+        value = int(time.mktime(value.timetuple()))
     return value
 
 def _build_error_message(violations_attribs, violations_regexp,
