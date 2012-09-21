@@ -206,7 +206,7 @@ it will be interpreted as regular expression.</p>
     </tr>
     <tr>
         <td>attr</td>
-        <td>attribute_name[&nbsp;...]</td>
+        <td>attr_name[&nbsp;...]</td>
         <td>Show one or more attribute(s) in the server table. If it is already
             shown, it will be hidden. The attribute "all_ips" is a virtual one
             - it can't be used here. Example: "<code>attr os game_function</code>".
@@ -214,7 +214,7 @@ it will be interpreted as regular expression.</p>
     </tr>
     <tr>
         <td>orderby</td>
-        <td>attribute_name[&nbsp;asc|desc]</td>
+        <td>attr_name[&nbsp;asc|desc]</td>
         <td>Order the result by given attribute. This can be either ascending
             (asc) or descanding (desc). Multi attributes will be ordered in a
             special way: If no filtering is used, it orders by the minimum
@@ -228,6 +228,29 @@ it will be interpreted as regular expression.</p>
         <td><span class="noargs">none</span></td>
         <td>Export servers as list of hostnames. This will open a dialog with
         a textbox containing the hostnames separated by spaces.
+        </td>
+    </tr>
+    <tr>
+        <td>select</td>
+        <td><span class="noargs">none</span></td>
+        <td>Select all servers on this page.
+        </td>
+    </tr>
+    <tr>
+        <td>unselect</td>
+        <td><span class="noargs">none</span></td>
+        <td>Unselect all servers on this page.
+        </td>
+    </tr>
+    <tr>
+        <td><i>(empty)</i></td>
+        <td><i>from</i>[-<i>to</i>[, <i>from</i>[-<i>to</i>]]]</td>
+        <td><p>Select a several servers using a range. Examples:</p>
+            <ul>
+                <li>1: Select first server</li>
+                <li>1,3,5: Select server 1, 3 and 5</li>
+                <li>1,3,6-9: Select server 1, 3, 6, 7, 8 and 9</li>
+            </ul>
         </td>
     </tr>
     <tr>
@@ -250,6 +273,46 @@ it will be interpreted as regular expression.</p>
         <td>List all attributes of the selected servers. If no servers are
             selected, it takes the first one.
         </td>
+    </tr>
+    <tr>
+        <td>setattr</td>
+        <td>attr_name=attr_value</td>
+        <td>Set an attribute on a server. Example: "setattr os=wheezy"</td>
+    </tr>
+    <tr>
+        <td>delattr</td>
+        <td>attr_name</td>
+        <td>Delete an attribute from a server.</td>
+    </tr>
+    <tr>
+        <td>multiadd</td>
+        <td>attr_name=value1[,value2[,...]]</td>
+        <td>Add values to an multi attribute. Example: "multiadd
+            webserver=nginx,apache".
+        </td>
+    </tr>
+    <tr>
+        <td>multidel</td>
+        <td>attr_name=value1[,value2[,...]</td>
+        <td>Delete values from a multi attribute.
+        </td>
+    </tr>
+    <tr>
+        <td>delete</td>
+        <td><span class="noargs">none</span></td>
+        <td>Mark all selected servers for deletion. Commit to apply.
+        </td>
+    </tr>
+    <tr>
+        <td>commit</td>
+        <td><span class="noargs">none</span></td>
+        <td>Commit all pending changes.
+        </td>
+    </tr>
+    <tr>
+        <td>new</td>
+        <td><span class="noargs">none</span>
+        <td>Create a new server.</td>
     </tr>
 </table>
 </div>
