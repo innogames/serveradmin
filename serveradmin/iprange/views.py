@@ -1,7 +1,9 @@
 from django.template.response import TemplateResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from django.db import connection
 from django.contrib import messages
+from django.core.urlresolvers import reverse
+from django.http import HttpResponseRedirect
 
 from adminapi.utils import IP
 from serveradmin.dataset.models import Segment
@@ -103,7 +105,8 @@ def add(request):
                                    gateway=data['gateway'])
             messages.success(request, u'Added IP range "{0}"'.format(
                     data['range_id']))
-            return redirect('iprange_index')
+            return HttpResponseRedirect('{0}?segment={1}'.format(
+                    reverse('iprange_index'), data['segment'].segment))
     else:
         form = IPRangeForm()
 
@@ -117,16 +120,18 @@ def edit(request, range_id):
     if request.method == 'POST':
         form = IPRangeForm(request.POST, iprange=iprange)
         if form.is_valid():
+            data = form.cleaned_data
             IPRange.objects.filter(range_id=iprange.range_id).update(
-                    range_id=form.cleaned_data['range_id'],
-                    segment=form.cleaned_data['segment'],
-                    ip_type=form.cleaned_data['ip_type'],
-                    min=form.cleaned_data['start'],
-                    max=form.cleaned_data['end'],
-                    gateway=form.cleaned_data['gateway'])
+                    range_id=data['range_id'],
+                    segment=data['segment'],
+                    ip_type=data['ip_type'],
+                    min=data['start'],
+                    max=data['end'],
+                    gateway=data['gateway'])
             messages.success(request, u'Edited IP range "{0}"'.format(
                     iprange.range_id))
-            return redirect('iprange_index')
+            return HttpResponseRedirect('{0}?segment={1}'.format(
+                    reverse('iprange_index'), data['segment'].segment))
     else:
         initial = {'range_id': iprange.range_id, 'segment': iprange.segment,
                    'ip_type': iprange.ip_type, 'gateway': iprange.gateway}
@@ -147,7 +152,8 @@ def delete(request, range_id):
     iprange = get_object_or_404(IPRange, range_id=range_id)
     if request.method == 'POST':
         iprange.delete()
-        return redirect('iprange_index')
+        return HttpResponseRedirect('{0}?segment={1}'.format(
+                reverse('iprange_index'), iprange.segment.segment))
     
     return TemplateResponse(request, 'iprange/delete.html', {
         'iprange': iprange
