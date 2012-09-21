@@ -19,7 +19,7 @@ from serveradmin.servermonitor.models import (GraphValue, ServerData,
 @login_required
 @ensure_csrf_cookie
 def index(request):
-    term = request.GET.get('term', '')
+    term = request.GET.get('term', request.session.get('term', ''))
     
     hostname_filter = set()
     if term:
@@ -33,6 +33,7 @@ def index(request):
                     # If it's not guest, it might be a server, so we add it
                     hostname_filter.add(host['hostname'])
             understood = host_query.get_representation().as_code()
+            request.session['term'] = term
         except (ValueError, DatasetError), e:
             return TemplateResponse(request, 'servermonitor/index.html', {
                 'search_term': term,

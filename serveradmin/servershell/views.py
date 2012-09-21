@@ -32,7 +32,7 @@ NUM_SERVERS_DEFAULT = 25
 def index(request):
     return TemplateResponse(request, 'servershell/index.html', {
         'attribute_list': sorted(lookups.attr_names.keys()),
-        'search_term': request.GET.get('term', '')
+        'search_term': request.GET.get('term', request.session.get('term', ''))
     })
 
 @login_required
@@ -94,7 +94,8 @@ def get_results(request):
             'status': 'error',
             'message': e.message
         }))
-
+    
+    request.session['term'] = term
     return HttpResponse(json.dumps({
         'status': 'success',
         'understood': q.get_representation().as_code(hide_extra=True),
