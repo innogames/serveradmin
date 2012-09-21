@@ -446,7 +446,6 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'cmp': 'Compare servermonitor graphs for several hosts',
         'list': 'List all attributes of a server',
         'new': 'Create a new server',
-        'delete': 'Delete marked servers'
     };
     
     if (plen == 1 && parsed_args[0]['token'] == 'str') {
