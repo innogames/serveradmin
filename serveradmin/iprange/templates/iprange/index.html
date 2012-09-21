@@ -20,12 +20,12 @@
 
 <table class="tabular">
     <tr>
-        <th>range_id</th>
-        <th>type</td>
-        <th>start ip</th>
-        <th>end ip</th>
-        <th>cidr</th>
-        <th>gateway</th>
+        <th>range_id {% include "iprange/ordering.html" with field="range_id" %}</th>
+        <th>type {% include "iprange/ordering.html" with field="ip_type" %}</td>
+        <th>start ip {% include "iprange/ordering.html" with field="min" %}</th>
+        <th>end ip {% include "iprange/ordering.html" with field="max" %}</th>
+        <th>cidr {% include "iprange/ordering.html" with field="min" %}</th>
+        <th>gateway {% include "iprange/ordering.html" with field="gateway" %}</th>
 {% if perms.iprange.change_iprange %}
         <th>edit</th>
 {% endif %}

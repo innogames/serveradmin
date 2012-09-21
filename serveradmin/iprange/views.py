@@ -11,13 +11,32 @@ from serveradmin.iprange.models import IPRange
 from serveradmin.iprange.forms import IPRangeForm
 
 def index(request):
+    order_field = request.GET.get('order_field',
+            request.session.get('iprange_order_field', 'name'))
+    order_dir = request.GET.get('order_dir',
+            request.session.get('iprange_order_dir', 'asc'))
+
+    if order_field in ('range_id', 'ip_type', 'min', 'max', 'gateway'):
+        request.session['iprange_order_field'] = order_field
+        request.session['iprange_order_dir'] = order_dir
+
+        if order_dir == 'desc':
+            ordering = '-' + order_field
+        else:
+            ordering = order_field
+    else:
+        ordering = 'range_id'
+
     try:
         segment = Segment.objects.get(segment=request.GET['segment'])
     except (KeyError, Segment.DoesNotExist):
         segment = Segment.objects.all()[0]
-    ip_ranges = IPRange.objects.filter(segment=segment.segment)
+    ip_ranges = IPRange.objects.filter(segment=segment.segment).order_by(
+            ordering)
 
     return TemplateResponse(request, 'iprange/index.html', {
+        'order_field': order_field,
+        'order_dir': order_dir,
         'ip_ranges': ip_ranges,
         'displayed_segment': segment,
         'segments': Segment.objects.all()
