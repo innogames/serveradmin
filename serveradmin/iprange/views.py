@@ -98,13 +98,13 @@ def edit(request, range_id):
     if request.method == 'POST':
         form = IPRangeForm(request.POST, iprange=iprange)
         if form.is_valid():
-            iprange.range_id = form.cleaned_data['range_id']
-            iprange.segment = form.cleaned_data['segment']
-            iprange.ip_type = form.cleaned_data['ip_type']
-            iprange.min = form.cleaned_data['start']
-            iprange.max = form.cleaned_data['end']
-            iprange.gateway = form.cleaned_data['gateway']
-            iprange.save()
+            IPRange.objects.filter(range_id=iprange.range_id).update(
+                    range_id=form.cleaned_data['range_id'],
+                    segment=form.cleaned_data['segment'],
+                    ip_type=form.cleaned_data['ip_type'],
+                    min=form.cleaned_data['start'],
+                    max=form.cleaned_data['end'],
+                    gateway=form.cleaned_data['gateway'])
             messages.success(request, u'Edited IP range "{0}"'.format(
                     iprange.range_id))
             return redirect('iprange_index')
