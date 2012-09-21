@@ -270,6 +270,9 @@ class QuerySet(BaseQuerySet):
             restrict_ids = u', '.join(str(lookups.attr_names[attr_name].pk)
                     for attr_name in restrict)
             sql_stmt += u' AND attrib_id IN({0})'.format(restrict_ids)
+
+        _getitem = dict.__getitem__
+        _setitem = dict.__setitem__
        
         c.execute(sql_stmt)
         attr_ids = lookups.attr_ids
@@ -289,9 +292,9 @@ class QuerySet(BaseQuerySet):
             # Using dict-methods to bypass ServerObject's special properties
             if attr.multi:
                 # Bypass MultiAttr wrapping in ServerObject.__getitem__
-                dict.__getitem__(server_data[server_id], attr.name).add(value)
+                _getitem(server_data[server_id], attr.name).add(value)
             else:
-                dict.__setitem__(server_data[server_id], attr.name, value)
+                _setitem(server_data[server_id], attr.name, value)
     
     def _cache_pre_store(self, server_data):
         return server_data
