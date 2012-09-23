@@ -22,11 +22,13 @@ def index(request):
     term = request.GET.get('term', request.session.get('term', ''))
     
     hostname_filter = set()
+    matched_servers = set()
     if term:
         try:
             query_args = parse_query(term, filters.filter_classes)
             host_query = query(**query_args).restrict('hostname', 'xen_host')
             for host in host_query:
+                matched_servers.add(host['hostname'])
                 if 'xen_host' in host:
                     hostname_filter.add(host['xen_host'])
                 else:
@@ -34,6 +36,13 @@ def index(request):
                     hostname_filter.add(host['hostname'])
             understood = host_query.get_representation().as_code()
             request.session['term'] = term
+
+            if not matched_servers:
+                return TemplateResponse(request, 'servermonitor/index.html', {
+                    'search_term': term,
+                    'understood': host_query.get_representation().as_code(),
+                    'hardware_hosts': []
+                })
         except (ValueError, DatasetError), e:
             return TemplateResponse(request, 'servermonitor/index.html', {
                 'search_term': term,
@@ -104,6 +113,7 @@ def index(request):
     hardware.sort(key=itemgetter('hostname'))
     return TemplateResponse(request, 'servermonitor/index.html', {
         'hardware_hosts': hardware,
+        'matched_servers': matched_servers,
         'mem_free_sum': mem_free_sum,
         'mem_free_total': mem_total_sum,
         'search_term': term,
