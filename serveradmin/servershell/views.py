@@ -136,26 +136,38 @@ def list_and_edit(request, mode='list'):
             if attr in non_editable:
                 continue
             if lookups.attr_names[attr].multi:
-                lines = request.POST.get('attr_' + attr, '').splitlines()
-                value = set()
-                for line in lines:
-                    value.add(typecast(attr, line.strip()))
+                values = [raw_value.strip() for raw_value in 
+                          request.POST.get('attr_' + attr, '').splitlines()]
+                try:
+                    value = typecast(attr, values)
+                except ValueError:
+                    invalid_attrs.add(attr)
+                    value = set(values)
             else:
-                value = typecast(attr, request.POST.get('attr_' + attr, ''))
+                value = request.POST.get('attr_' + attr, '')
+                try:
+                    value = typecast(attr, value)
+                except ValueError:
+                    invalid_attrs.add(attr)
             server[attr] = value
         for attr in server.keys():
             if attr in non_editable:
                 continue
             if attr not in attrs:
                 del server[attr]
-        try:
-            server.commit()
-            messages.success(request, 'Edited server successfully')
-            url = '{0}?object_id={1}'.format(reverse('servershell_list'),
-                    server.object_id)
-            return HttpResponseRedirect(url)
-        except CommitValidationFailed as e:
-            invalid_attrs = set([attr for obj_id, attr in e.violations])
+
+        if not invalid_attrs:
+            try:
+                server.commit()
+                messages.success(request, 'Edited server successfully')
+                url = '{0}?object_id={1}'.format(reverse('servershell_list'),
+                        server.object_id)
+                return HttpResponseRedirect(url)
+            except CommitValidationFailed as e:
+                invalid_attrs.update([attr for obj_id, attr in e.violations])
+
+        if invalid_attrs:
+            messages.error(request, 'Attributes contain invalid values')
 
     fields = []
     fields_set = set()
