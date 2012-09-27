@@ -81,7 +81,12 @@ class QueryBuilder(object):
 
     def add_select(self, *aliases):
         for alias in aliases:
-            self.sql_select.append(self.aliases[alias]['field'])
+            field = self.aliases[alias]['field']
+            attr_obj = self.aliases[alias]['attr']
+            if isinstance(attr_obj.special, CombinedSpecial):
+                self.add_select(*attr_obj.special.attrs)
+            else:
+                self.sql_select.append(field)
 
     def add_limit(self, offset, limit):
         self.sql_limit = [offset, limit]
