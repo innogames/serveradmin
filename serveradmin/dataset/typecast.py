@@ -37,12 +37,12 @@ _typecast_fns = {
     'ip': lambda x: x if isinstance(x, IP) else IP(x),
     'datetime': _to_datetime
 }
-def typecast(attr_name, value):
+def typecast(attr_name, value, force_single=False):
     if value is None:
         return value
     attr_obj = lookups.attr_names[attr_name]
     typecast_fn = _typecast_fns[attr_obj.type]
-    if attr_obj.multi:
+    if attr_obj.multi and not force_single:
         if not isinstance(value, (list, set)):
             raise ValueError('Attr is multi, but value is not a list/set')
         return set(typecast_fn(x) for x in value)
