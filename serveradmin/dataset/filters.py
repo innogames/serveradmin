@@ -193,10 +193,7 @@ class Any(Filter):
         return u'filters.' + repr(self)
 
     def typecast(self, attr_name):
-        casted_values = set()
-        for value in self.values:
-            casted_values.add(typecast(attr_name, value))
-        self.values = casted_values
+        self.values = typecast(attr_name, self.values)
 
     @classmethod
     def from_obj(cls, obj):
