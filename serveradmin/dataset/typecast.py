@@ -40,4 +40,11 @@ _typecast_fns = {
 def typecast(attr_name, value):
     if value is None:
         return value
-    return  _typecast_fns[lookups.attr_names[attr_name].type](value)
+    attr_obj = lookups.attr_names[attr_name]
+    typecast_fn = _typecast_fns[attr_obj.type]
+    if attr_obj.multi:
+        if not isinstance(value, (list, set)):
+            raise ValueError('Attr is multi, but value is not a list/set')
+        return set(typecast_fn(x) for x in value)
+    else:
+        return typecast_fn(value)
