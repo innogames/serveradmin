@@ -38,4 +38,6 @@ _typecast_fns = {
     'datetime': _to_datetime
 }
 def typecast(attr_name, value):
+    if value is None:
+        return value
     return  _typecast_fns[lookups.attr_names[attr_name].type](value)
