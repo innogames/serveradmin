@@ -18,7 +18,8 @@ from adminapi.utils.parse import parse_query
 from serveradmin.dataset import query, filters, DatasetError
 from serveradmin.dataset.filters import filter_classes
 from serveradmin.dataset.base import lookups
-from serveradmin.dataset.commit import commit_changes, CommitValidationFailed
+from serveradmin.dataset.commit import (commit_changes, CommitValidationFailed,
+        CommitNewerData)
 from serveradmin.dataset.values import get_attribute_values
 from serveradmin.dataset.typecast import typecast
 from serveradmin.dataset.models import ServerType
@@ -234,7 +235,7 @@ def commit(request):
         commit_changes(commit)
     except (ValueError, DatasetError) as e:
         return HttpResponseBadRequest()
-    except CommitValidationFailed, e:
+    except (CommitNewerData, CommitValidationFailed) as e:
         result = {
             'status': 'error',
             'message': e.message
