@@ -45,6 +45,7 @@ class ServerData(models.Model):
     xen_hwcaps_dom0 = models.CharField(max_length=255)
     xen_version_dom0 = models.CharField(max_length=255)
     last_update = models.DateTimeField(null=True)
+    lun_usage = models.CharField(max_length=255)
 
     def __unicode__(self):
         return self.hostname
