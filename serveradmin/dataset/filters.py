@@ -47,7 +47,7 @@ class ExactMatch(Filter):
         return repr(self.value)
 
     def typecast(self, attr_name):
-        self.value = typecast(attr_name, self.value)
+        self.value = typecast(attr_name, self.value, force_single=True)
 
     @classmethod
     def from_obj(cls, obj):
@@ -151,7 +151,7 @@ class Comparison(Filter):
         return u'filters.' + repr(self)
 
     def typecast(self, attr_name):
-        self.value = typecast(attr_name, self.value)
+        self.value = typecast(attr_name, self.value, force_single=True)
 
     @classmethod
     def from_obj(cls, obj):
@@ -193,7 +193,8 @@ class Any(Filter):
         return u'filters.' + repr(self)
 
     def typecast(self, attr_name):
-        self.values = set(typecast(attr_name, x) for x in self.values)
+        self.values = set(typecast(attr_name, x, force_single=True)
+                          for x in self.values)
 
     @classmethod
     def from_obj(cls, obj):
@@ -289,8 +290,8 @@ class Between(Filter):
         return u'filters.' + repr(self)
 
     def typecast(self, attr_name):
-        self.a = typecast(attr_name, self.a)
-        self.b = typecast(attr_name, self.b)
+        self.a = typecast(attr_name, self.a, force_single=True)
+        self.b = typecast(attr_name, self.b, force_single=True)
 
     @classmethod
     def from_obj(cls, obj):
@@ -393,7 +394,7 @@ class Startswith(Filter):
         return u'filters.Startswith({0!r})'.format(self.value)
 
     def typecast(self, attr_name):
-        self.value = typecast(attr_name, self.value)
+        self.value = typecast(attr_name, self.value, force_single=True)
     
     @classmethod
     def from_obj(cls, obj):
