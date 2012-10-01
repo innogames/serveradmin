@@ -153,7 +153,7 @@ def delete(request, range_id):
     if request.method == 'POST':
         iprange.delete()
         return HttpResponseRedirect('{0}?segment={1}'.format(
-                reverse('iprange_index'), iprange.segment.segment))
+                reverse('iprange_index'), iprange.segment))
     
     return TemplateResponse(request, 'iprange/delete.html', {
         'iprange': iprange
