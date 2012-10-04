@@ -118,6 +118,12 @@
         </td>
     </tr>
 {% endfor %}
+    <tr>
+        <td colspan="9"></td>
+        <td>Σ&nbsp;{{ mem_free_sum|filesizeformat }}/{{ mem_free_total|filesizeformat }}</td>
+        <td>Σ&nbsp;{{ disk_free_sum|filesizeformat }}</td>
+        <td></td>
+    </tr>
 </table>
 {% endif %} {# else of if not error #}
 {% endblock content %}

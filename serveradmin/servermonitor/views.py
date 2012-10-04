@@ -82,6 +82,7 @@ def index(request):
     # Annotate hardware with data from server data table
     mem_free_sum = 0
     mem_total_sum = 0
+    disk_free_sum = 0
     to_bytes = 1024 * 1024
     for host_info in server_data:
         if host_info['mem_installed_dom0']:
@@ -99,6 +100,8 @@ def index(request):
             mem_free_sum += host_info['mem_free_dom0']
         if host_info['mem_installed_dom0']:
             mem_total_sum += host_info['mem_installed_dom0']
+        if host_info['disk_free_dom0']:
+            disk_free_sum += host_info['disk_free_dom0']
     
     # Annotate hardware with the values for cpu/io
     for graph_value in graph_values:
@@ -116,6 +119,7 @@ def index(request):
         'matched_servers': matched_servers,
         'mem_free_sum': mem_free_sum,
         'mem_free_total': mem_total_sum,
+        'disk_free_sum': disk_free_sum * 1024 * 1024,
         'search_term': term,
         'understood': understood,
         'error': None
