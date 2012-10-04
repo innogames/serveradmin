@@ -117,8 +117,8 @@ def index(request):
     return TemplateResponse(request, 'servermonitor/index.html', {
         'hardware_hosts': hardware,
         'matched_servers': matched_servers,
-        'mem_free_sum': mem_free_sum,
-        'mem_free_total': mem_total_sum,
+        'mem_free_sum': mem_free_sum * 1024 * 1024,
+        'mem_free_total': mem_total_sum * 1024 * 1024,
         'disk_free_sum': disk_free_sum * 1024 * 1024,
         'search_term': term,
         'understood': understood,
