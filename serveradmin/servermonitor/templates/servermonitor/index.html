@@ -131,12 +131,12 @@
     <tr>
         <th>Average</th>
         <td colspan="3"></td>
-        <td>{{ cpu_aggregate.hourly.avg }}&nbsp;%<br />
-            {{ cpu_aggregate.yesterday.avg }}&nbsp;%<br />
-            {{ cpu_aggregate.daily.avg }}&nbsp;%</td>
+        <td>{% format_percent cpu_aggregate.hourly.avg 50 100 30 %}
+            {% format_percent cpu_aggregate.yesterday.avg 50 100 30 %}
+            {% format_percent cpu_aggregate.daily.avg 50 100 30 %}
         <td colspan="3"></td>
-        <td>{{ io_aggregate.hourly.avg }}&nbsp;%<br />
-            {{ io_aggregate.daily.avg }}&nbsp;%</td>
+        <td>{% format_percent io_aggregate.hourly.avg 30 100 30 %}
+            {% format_percent io_aggregate.daily.avg 30 100 30 %}</td>
         <td>{{ disk_free_avg|filesizeformat }}</td>
         <td>{{ mem_free_avg|filesizeformat}}/{{ mem_total_avg|filesizeformat }}</td>
         <td></td>
