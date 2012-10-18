@@ -5,6 +5,8 @@ urlpatterns = patterns(
     url(r'^servertypes$', 'servertypes', name='dataset_servertypes'),
     url(r'^servertype/([\w_]+)$', 'view_servertype',
             name='dataset_view_servertype'),
+    url(r'^servertype/add/$', 'add_servertype',
+            name='dataset_add_servertype'),
     url(r'^servertype/delete/([\w_]+)$', 'delete_servertype',
             name='dataset_delete_servertype'),
     url(r'^servertype/addattr/([\w_]+)$', 'manage_servertype_attr',

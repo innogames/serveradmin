@@ -32,7 +32,7 @@ class Attribute(models.Model):
 
 class ServerType(models.Model):
     servertype_id = models.IntegerField(primary_key=True)
-    name = models.CharField(max_length=64)
+    name = models.CharField(max_length=64, unique=True)
 
     class Meta:
         db_table = 'servertype'

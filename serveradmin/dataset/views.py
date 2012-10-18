@@ -46,6 +46,27 @@ def view_servertype(request, servertype_name):
     })
 
 @login_required
+@permission_required('dataset.add_servertype')
+def add_servertype(request):
+    class AddForm(forms.ModelForm):
+        class Meta:
+            model = ServerType
+            fields = ('name', )
+
+    if request.method == 'POST':
+        form = AddForm(request.POST)
+        if form.is_valid():
+            stype = form.save()
+            _clear_lookups()
+            return redirect('dataset_view_servertype', stype.name)
+    else:
+        form = AddForm()
+
+    return TemplateResponse(request, 'dataset/add_servertype.html', {
+        'add_form': form
+    })
+
+@login_required
 @permission_required('dataset.delete_servertype')
 def delete_servertype(request, servertype_name):
     stype = get_object_or_404(ServerType, name=servertype_name)
