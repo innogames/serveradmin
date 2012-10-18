@@ -110,15 +110,21 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
         form = form_class(stype, request.POST, instance=stype_attr)
         if form.is_valid():
             if stype_attr:
-                form.save()
+                stype_attr = form.save(commit=False)
                 msg = 'Edited attribute "{0}" of "{1}"'.format(
                         stype_attr.attrib.name, stype.name)
             else:
                 stype_attr = form.save(commit=False)
                 stype_attr.servertype = stype
-                stype_attr.save()
                 msg = 'Added attribute "{0}" to "{1}"'.format(
                         stype_attr.attrib.name, stype.name)
+            
+            # Set attrib_default to None if empty and not string
+            if stype_attr.attrib.type != 'string':
+                if not form.cleaned_data['attrib_default']:
+                    stype_attr.attrib_default = None
+            
+            stype_attr.save()
             _clear_lookups()
             messages.success(request, msg)
             return redirect('dataset_view_servertype', stype.name)
