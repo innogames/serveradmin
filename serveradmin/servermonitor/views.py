@@ -1,3 +1,5 @@
+from __future__ import division
+
 import json
 import math
 from operator import itemgetter
@@ -55,6 +57,8 @@ def index(request):
     if hostname_filter:
         hw_query_args['hostname'] = filters.Any(*hostname_filter)
 
+
+    periods = ('hourly', 'daily', 'yesterday')
     hardware = {}
     for hw_host in query(**hw_query_args).restrict('hostname', 'servertype'):
         host_data = {
@@ -66,7 +70,7 @@ def index(request):
                 'cpu': {},
                 'io': {}
         }
-        for period in ('hourly', 'daily', 'yesterday'):
+        for period in periods:
             for what in ('io', 'cpu'):
                 host_data[what][period] = None
         hardware[hw_host['hostname']] = host_data
@@ -81,8 +85,18 @@ def index(request):
     
     # Annotate hardware with data from server data table
     mem_free_sum = 0
+    mem_free_count = 0
     mem_total_sum = 0
+    mem_total_count = 0
     disk_free_sum = 0
+    disk_free_count = 0
+    
+    cpu_aggregate = {}
+    io_aggregate = {}
+    for period in periods:
+        cpu_aggregate[period] = {'sum': 0, 'count': 0}
+        io_aggregate[period] = {'sum': 0, 'count': 0}
+    
     to_bytes = 1024 * 1024
     for host_info in server_data:
         if host_info['mem_installed_dom0']:
@@ -98,28 +112,51 @@ def index(request):
         
         if host_info['mem_free_dom0']:
             mem_free_sum += host_info['mem_free_dom0']
+            mem_free_count += 1
         if host_info['mem_installed_dom0']:
             mem_total_sum += host_info['mem_installed_dom0']
+            mem_total_count += 1
         if host_info['disk_free_dom0']:
             disk_free_sum += host_info['disk_free_dom0']
+            disk_free_count += 1
     
     # Annotate hardware with the values for cpu/io
     for graph_value in graph_values:
         if graph_value['graph_name'] == 'cpu_dom0_value_max_95':
             hardware[graph_value['hostname']]['cpu'][graph_value['period']] = \
-                    graph_value['value']
+                    int(round(graph_value['value']))
+            cpu_aggregate[graph_value['period']]['sum'] += graph_value['value']
+            cpu_aggregate[graph_value['period']]['count'] += 1
         elif graph_value['graph_name'] == 'io2_dom0_value_max_95':
             hardware[graph_value['hostname']]['io'][graph_value['period']] = \
-                    graph_value['value']
+                    int(round(graph_value['value']))
+            io_aggregate[graph_value['period']]['sum'] += graph_value['value']
+            io_aggregate[graph_value['period']]['count'] += 1
 
     hardware = hardware.values()
     hardware.sort(key=itemgetter('hostname'))
+
+    mem_free_sum *= to_bytes
+    mem_total_sum *= to_bytes
+    disk_free_sum *= to_bytes
+    
+    for period in periods:
+        cpu_aggregate[period]['avg'] = round(cpu_aggregate[period]['sum'] /
+                cpu_aggregate[period]['count'], 2)
+        io_aggregate[period]['avg'] = round(cpu_aggregate[period]['sum'] /
+                cpu_aggregate[period]['count'], 2)
+
     return TemplateResponse(request, 'servermonitor/index.html', {
         'hardware_hosts': hardware,
         'matched_servers': matched_servers,
-        'mem_free_sum': mem_free_sum * 1024 * 1024,
-        'mem_free_total': mem_total_sum * 1024 * 1024,
-        'disk_free_sum': disk_free_sum * 1024 * 1024,
+        'mem_free_sum': mem_free_sum,
+        'mem_free_avg': mem_free_sum / mem_free_count,
+        'mem_total_sum': mem_total_sum,
+        'mem_total_avg': mem_total_sum / mem_total_count,
+        'disk_free_sum': disk_free_sum,
+        'disk_free_avg': disk_free_sum / disk_free_count,
+        'cpu_aggregate': cpu_aggregate,
+        'io_aggregate': io_aggregate,
         'search_term': term,
         'understood': understood,
         'error': None

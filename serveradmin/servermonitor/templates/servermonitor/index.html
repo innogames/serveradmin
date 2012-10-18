@@ -119,9 +119,26 @@
     </tr>
 {% endfor %}
     <tr>
-        <td colspan="9"></td>
-        <td>Σ&nbsp;{{ disk_free_sum|filesizeformat }}</td>
-        <td>Σ&nbsp;{{ mem_free_sum|filesizeformat }}/{{ mem_free_total|filesizeformat }}</td>
+        <th>Sum</th>
+        <td colspan="3"></td>
+        <td style="text-align:center;">-</td>
+        <td colspan="3"></td>
+        <td style="text-align:center;">-</td>
+        <td>{{ disk_free_sum|filesizeformat }}</td>
+        <td>{{ mem_free_sum|filesizeformat }}/{{ mem_total_sum|filesizeformat }}</td>
+        <td></td>
+    </tr>
+    <tr>
+        <th>Average</th>
+        <td colspan="3"></td>
+        <td>{{ cpu_aggregate.hourly.avg }}&nbsp;%<br />
+            {{ cpu_aggregate.yesterday.avg }}&nbsp;%<br />
+            {{ cpu_aggregate.daily.avg }}&nbsp;%</td>
+        <td colspan="3"></td>
+        <td>{{ io_aggregate.hourly.avg }}&nbsp;%<br />
+            {{ io_aggregate.daily.avg }}&nbsp;%</td>
+        <td>{{ disk_free_avg|filesizeformat }}</td>
+        <td>{{ mem_free_avg|filesizeformat}}/{{ mem_total_avg|filesizeformat }}</td>
         <td></td>
     </tr>
 </table>
