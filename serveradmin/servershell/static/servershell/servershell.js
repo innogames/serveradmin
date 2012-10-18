@@ -432,8 +432,8 @@ function autocomplete_shell_command(term, autocomplete_cb)
 
     var commands = {
         'attr': 'Show an attribute (e.g. "attr webserver")',
-        'select': 'Select all servers on this page',
-        'unselect': 'Unselect all servers on this page',
+        'selectall': 'Select all servers on this page',
+        'unselectall': 'Unselect all servers on this page',
         'multiadd': 'Add a value to a multi attribute (e.g. "multiadd webservers=nginx")',
         'multidel': 'Delete a value from a multi attribute (e.g. multidel webserver=apache)',
         'delete': 'Delete servers',
@@ -538,9 +538,9 @@ function handle_command(command)
         return handle_command_next_page();
     } else if (command == 'p' || command == 'prev') {
         return handle_command_prev_page();
-    } else if (command == 'select') {
+    } else if (command == 'selectall') {
         return handle_command_select(true);
-    } else if (command == 'unselect') {
+    } else if (command == 'unselectall') {
         return handle_command_select(false)
     } else if (command == 'search') {
         return handle_command_search();
