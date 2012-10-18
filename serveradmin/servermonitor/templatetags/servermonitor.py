@@ -1,3 +1,5 @@
+from __future__ import division
+
 from colorsys import hsv_to_rgb
 
 from django import template
