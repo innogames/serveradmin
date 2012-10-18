@@ -241,7 +241,12 @@ function _make_attr_editable(cell, server, attr_name, value)
             ev.preventDefault();
             ev.stopPropagation();
             if (attr_obj.multi) {
-                var unparsed_values = $('#edit_attr').val().split('\n');
+                var unparsed_values = $('#edit_attr').val();
+                if ($.trim(unparsed_values) == '') {
+                    unparsed_values = [];
+                } else {
+                    unparsed_values = unparsed_values.split('\n');
+                }
                 commit_data = {'action': 'multi', 'add': [], 'remove': []};
                 var edit_values = [];
                 for (var i = 0; i < unparsed_values.length; i++) {
