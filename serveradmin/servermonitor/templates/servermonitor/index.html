@@ -135,26 +135,7 @@
 var monitor_graph_popup_url = '{% url servermonitor_graph_popup %}';
 var monitor_reload_url = '{% url servermonitor_reload %}';
 $(function() {
-    $('.graph_sprite').click(function() {
-        var sprite = $(this);
-        var params = {
-            'hostname': sprite.attr('data-hostname'),
-            'graph': sprite.attr('data-graph')
-        }
-        var title = params['graph'] + ' on ' + params['hostname'];
-        var query_str = '?' + $.param(params);
-        $.get(monitor_graph_popup_url + query_str, function(data) {
-            var image = $(data).find('.graph');
-            image.on('load', function() {
-                image.off('load');
-                reload_graph(params['hostname'], params['graph'], image, true);
-            });
-            $('<div title="' + title + '"></div>').append(data).dialog({
-                'width': 550
-            });
-            attach_graph_reload();
-        });
-    });
+    $('.graph_sprite').click(open_graph_popup);
     function update_sprites() {
         var threshold = 300;
         var sprites = $('.graph_sprite[data-image!=""]')

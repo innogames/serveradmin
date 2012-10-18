@@ -17,3 +17,25 @@ function attach_graph_reload()
         reload_graph(img.attr('data-hostname'), img.attr('data-graph'), img);
     });
 }
+
+function open_graph_popup()
+{
+    var handle = $(this);
+    var params = {
+        'hostname': handle.attr('data-hostname'),
+        'graph': handle.attr('data-graph')
+    }
+    var title = params['graph'] + ' on ' + params['hostname'];
+    var query_str = '?' + $.param(params);
+    $.get(monitor_graph_popup_url + query_str, function(data) {
+        var image = $(data).find('.graph');
+        image.on('load', function() {
+            image.off('load');
+            reload_graph(params['hostname'], params['graph'], image, true);
+        });
+        $('<div title="' + title + '"></div>').append(data).dialog({
+            'width': 550
+        });
+        attach_graph_reload();
+    });
+}
