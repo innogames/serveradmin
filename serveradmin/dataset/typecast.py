@@ -16,7 +16,7 @@ def _to_datetime(x):
             return datetime.fromtimestamp(int(x))
         match = _to_datetime_re.match(x)
         if not match:
-            raise ValueError('Could not cast {0!r} to datetime', x)
+            raise ValueError('Could not cast {0!r} to datetime'.format(x))
 
         hour, minute, second = 0, 0, 0
         if match.group(5):
