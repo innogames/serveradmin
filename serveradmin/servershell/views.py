@@ -55,7 +55,7 @@ def get_results(request):
     term = request.GET.get('term', '')
     try:
         offset = int(request.GET.get('offset', '0'))
-        limit = min(int(request.GET.get('limit', '0')), 250)
+        limit = int(request.GET.get('limit', '0'))
     except ValueError:
         offset = 0
         limit = NUM_SERVERS_DEFAULT
