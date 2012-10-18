@@ -3,6 +3,7 @@ from django.db import connection
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.cache import invalidate_cache
 from serveradmin.dataset.validation import handle_violations, check_attribute_type
+from serveradmin.dataset.typecast import typecast
 from adminapi.dataset.exceptions import CommitError
 from adminapi.utils import IP
 
@@ -148,14 +149,8 @@ def _insert_server(hostname, intern_ip, segment, servertype_id, attributes):
     return server_id
 
 def _type_cast_default(attr_obj, value):
-    casting_fns = {
-        'integer': int,
-        'boolean': bool,
-        'string': lambda x: x,
-        'ip': lambda x: IP(x).as_int()
-    }
-    fn = casting_fns[attr_obj.type]
     if attr_obj.multi:
-        return [fn(x) for x in value.split(',')]
+        return [typecast(attr_obj.name, val, force_single=True)
+                for val in value.split(',')]
     else:
-        return fn(value)
+        return typecast(attr_obj.name, value, force_single=True)
