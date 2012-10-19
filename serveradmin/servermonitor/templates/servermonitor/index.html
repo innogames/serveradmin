@@ -14,6 +14,24 @@
     <td>
         <input type="text" size="60"  id="monitor_search" name="term"
             value="{{ search_term }}" />
+        <input type="submit" value="Go" />
+    </td>
+    <td rowspan="2" style="width:4em;">
+    </td>
+    <td rowspan="2" style="vertical-align:top;">
+    <table class="valign-middle">
+        <tr>
+            <th>Segment</th>
+            <td>
+            <select id="segment_short">
+            <option value="">- all -</option>
+            {% for seg in segments %}
+                <option value="{{ seg.segment }}">{{ seg.segment }}</option>
+            {% endfor %}
+            </select>
+            </td>
+        </tr>
+    </table>
     </td>
 </tr>
 <tr>
@@ -169,6 +187,11 @@ $(function() {
             }
         }
     }
+    $('#segment_short').change(function() {
+        var segment = $('#segment_short').val();
+        var search_input = 'segment=' + segment;
+        $('#monitor_search').val(search_input).focus();
+    });
     $(window).on('scroll', update_sprites);
     update_sprites();
 });
