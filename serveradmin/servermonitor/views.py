@@ -150,7 +150,10 @@ def index(request):
         io_count = io_count if io_count else 1
         io_aggregate[period]['avg'] = round(cpu_aggregate[period]['sum'] /
                 io_count, 2)
-
+    
+    mem_free_count = mem_free_count if mem_free_count else 1
+    mem_total_count = mem_total_count if mem_total_count else 1
+    disk_free_count = disk_free_count if disk_free_count else 1
     return TemplateResponse(request, 'servermonitor/index.html', {
         'hardware_hosts': hardware,
         'matched_servers': matched_servers,
