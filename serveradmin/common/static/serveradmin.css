@@ -77,7 +77,7 @@ table.tabular td, table.tabular th {
  margin:5px 0;
 }
 
-.valign-middle td {
+.valign-middle td, .valign-middle th {
  vertical-align:middle;
 }
 
