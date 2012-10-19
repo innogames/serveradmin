@@ -141,10 +141,15 @@ def index(request):
     disk_free_sum *= to_bytes
     
     for period in periods:
+        cpu_count = cpu_aggregate[period]['count']
+        cpu_count = cpu_count if cpu_count else 1
         cpu_aggregate[period]['avg'] = round(cpu_aggregate[period]['sum'] /
-                cpu_aggregate[period]['count'], 2)
+                cpu_count, 2)
+
+        io_count = io_aggregate[period]['count']
+        io_count = io_count if io_count else 1
         io_aggregate[period]['avg'] = round(cpu_aggregate[period]['sum'] /
-                cpu_aggregate[period]['count'], 2)
+                io_count, 2)
 
     return TemplateResponse(request, 'servermonitor/index.html', {
         'hardware_hosts': hardware,
