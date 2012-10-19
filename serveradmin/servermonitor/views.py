@@ -14,6 +14,7 @@ from django.conf import settings
 
 from adminapi.utils.parse import parse_query
 from serveradmin.dataset import query, filters, DatasetError
+from serveradmin.dataset.models import Segment
 from serveradmin.servermonitor.models import (GraphValue, ServerData,
         get_available_graphs, get_graph_url, split_graph_name, join_graph_name,
         reload_graphs, PERIODS)
@@ -155,6 +156,7 @@ def index(request):
     mem_total_count = mem_total_count if mem_total_count else 1
     disk_free_count = disk_free_count if disk_free_count else 1
     return TemplateResponse(request, 'servermonitor/index.html', {
+        'segments': Segment.objects.all(),
         'hardware_hosts': hardware,
         'matched_servers': matched_servers,
         'mem_free_sum': mem_free_sum,
