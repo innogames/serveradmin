@@ -36,7 +36,6 @@ class ServerType(models.Model):
 
     class Meta:
         db_table = 'servertype'
-        ordering = ('name', )
 
     def __unicode__(self):
         return self.name
@@ -85,4 +84,3 @@ class Segment(models.Model):
 
     class Meta:
         db_table = 'segment'
-        ordering = ('segment', )
