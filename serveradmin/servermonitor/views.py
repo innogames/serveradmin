@@ -26,8 +26,8 @@ def index(request):
     
     template_info = {
         'search_term': term,
-        'segments': Segment.objects.all(),
-        'servertypes': ServerType.objects.all()
+        'segments': Segment.objects.order_by('segment'),
+        'servertypes': ServerType.objects.order_by('name')
     }
     
     hostname_filter = set()
