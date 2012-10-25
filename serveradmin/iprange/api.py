@@ -37,6 +37,8 @@ def get_range(range_id):
        Minimum IP of this range
     max
        Maximum IP of this range
+    gateway
+       Gateway IP of this range
     """
     try:
         r = IPRange.objects.get(range_id=range_id)
