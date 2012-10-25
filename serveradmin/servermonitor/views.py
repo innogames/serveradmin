@@ -14,7 +14,7 @@ from django.conf import settings
 
 from adminapi.utils.parse import parse_query
 from serveradmin.dataset import query, filters, DatasetError
-from serveradmin.dataset.models import Segment
+from serveradmin.dataset.models import Segment, ServerType
 from serveradmin.servermonitor.models import (GraphValue, ServerData,
         get_available_graphs, get_graph_url, split_graph_name, join_graph_name,
         reload_graphs, PERIODS)
@@ -23,6 +23,12 @@ from serveradmin.servermonitor.models import (GraphValue, ServerData,
 @ensure_csrf_cookie
 def index(request):
     term = request.GET.get('term', request.session.get('term', ''))
+    
+    template_info = {
+        'search_term': term,
+        'segments': Segment.objects.all(),
+        'servertypes': ServerType.objects.all()
+    }
     
     hostname_filter = set()
     matched_servers = set()
@@ -41,16 +47,18 @@ def index(request):
             request.session['term'] = term
 
             if not matched_servers:
-                return TemplateResponse(request, 'servermonitor/index.html', {
-                    'search_term': term,
+                template_info.update({
                     'understood': host_query.get_representation().as_code(),
                     'hardware_hosts': []
                 })
+                return TemplateResponse(request, 'servermonitor/index.html',
+                        template_info)
         except (ValueError, DatasetError), e:
-            return TemplateResponse(request, 'servermonitor/index.html', {
-                'search_term': term,
+            template_info.update({
                 'error': e.message
             })
+            return TemplateResponse(request, 'servermonitor/index.html',
+                    template_info)
     else:
         understood = query().get_representation().as_code() # It's lazy :-)
     
@@ -155,8 +163,7 @@ def index(request):
     mem_free_count = mem_free_count if mem_free_count else 1
     mem_total_count = mem_total_count if mem_total_count else 1
     disk_free_count = disk_free_count if disk_free_count else 1
-    return TemplateResponse(request, 'servermonitor/index.html', {
-        'segments': Segment.objects.all(),
+    template_info.update({
         'hardware_hosts': hardware,
         'matched_servers': matched_servers,
         'mem_free_sum': mem_free_sum,
@@ -167,10 +174,10 @@ def index(request):
         'disk_free_avg': disk_free_sum / disk_free_count,
         'cpu_aggregate': cpu_aggregate,
         'io_aggregate': io_aggregate,
-        'search_term': term,
         'understood': understood,
         'error': None
     })
+    return TemplateResponse(request, 'servermonitor/index.html', template_info)
 
 
 @login_required

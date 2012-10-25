@@ -31,6 +31,17 @@
             </select>
             </td>
         </tr>
+        <tr>
+            <th>Servertype</th>
+            <td>
+            <select id="servertype_short">
+            <option value="">- all -</option>
+            {% for stype in servertypes %}
+                <option value="{{ stype.name }}">{{ stype.name }}</option>
+            {% endfor %}
+            </select>
+            </td>
+        </tr>
     </table>
     </td>
 </tr>
@@ -187,11 +198,20 @@ $(function() {
             }
         }
     }
-    $('#segment_short').change(function() {
+    function insert_search() {
+        var search_input = '';
         var segment = $('#segment_short').val();
-        var search_input = 'segment=' + segment;
+        if (segment) {
+            search_input += 'segment=' + segment + ' ';
+        }
+        var stype = $('#servertype_short').val();
+        if (stype) {
+            search_input += 'servertype=' + stype + ' ';
+        }
         $('#monitor_search').val(search_input).focus();
-    });
+    }
+    $('#segment_short').change(insert_search);
+    $('#servertype_short').change(insert_search);
     $(window).on('scroll', update_sprites);
     update_sprites();
 });
