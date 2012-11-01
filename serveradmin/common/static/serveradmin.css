@@ -101,6 +101,13 @@ table.tabular td, table.tabular th {
  margin:0 0 1em 0;
 }
 
+#shell_attributes_toggle {
+ font-size:0.8em;
+ float:right;
+ cursor:pointer;
+ margin-left:2em;
+}
+
 #shell_bookmarked {
  display:none;
 }
