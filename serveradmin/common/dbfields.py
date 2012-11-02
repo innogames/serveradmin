@@ -1,4 +1,6 @@
 from django.db import models
+from django import forms
+from django.core import exceptions
 
 from adminapi.utils import IP
 from serveradmin.common import formfields
@@ -33,3 +35,25 @@ class IPv4Field(models.Field):
 
     def formfield(self, **kwargs):
         return formfields.IPv4Field(**kwargs)
+
+class CommaSeparatedOptionField(models.Field):
+    def to_python(self, value):
+        if value is None or isinstance(value, list):
+            return value
+        return value.split(',')
+
+    def get_prep_value(self, value):
+        return ','.join(value)
+
+    def validate(self, value, model_instance):
+        _valid_options = dict(self._choices)
+        for val in value:
+            if val not in _valid_options:
+                msg = self.error_messages['invalid_choice'] % value
+                raise exceptions.ValidationError(msg)
+        return True
+
+    def formfield(self, **kwargs):
+        kwargs['choices'] = self._choices
+        kwargs['widget'] = forms.CheckboxSelectMultiple()
+        return forms.MultipleChoiceField(**kwargs)
