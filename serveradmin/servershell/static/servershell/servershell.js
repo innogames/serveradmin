@@ -264,6 +264,7 @@ function _make_attr_editable(cell, server, attr_name, value)
                 }
             } else {
                 var new_value = parse_value($('#edit_attr').val(), attr_name);
+                console.log(value, new_value);
                 if (new_value == value) {
                     render_server_table();
                     return;
@@ -367,6 +368,10 @@ function format_value(value, attr_name, single_value)
 function parse_value(value, attr_name)
 {
     var attr_obj = available_attributes[attr_name];
+    if (value === '') {
+        return null;
+    }
+
     if (attr_obj['type'] == 'integer') {
         return parseInt(value, 10);
     } else if (attr_obj['type'] == 'ip') {
