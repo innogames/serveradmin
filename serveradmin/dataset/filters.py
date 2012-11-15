@@ -3,6 +3,8 @@ import operator
 import time
 from datetime import datetime
 
+from django.db import connection, DatabaseError
+
 from adminapi.utils import IP, Network, PRIVATE_IP_BLOCKS, PUBLIC_IP_BLOCKS
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.exceptions import DatasetError
@@ -60,8 +62,13 @@ class Regexp(Filter):
     def __init__(self, regexp):
         try:
             self._regexp_obj = re.compile(regexp)
-        except re.error:
-            raise ValueError(u'Invalid regexp: ' + regexp)
+            c = connection.cursor()
+            c.execute("SELECT '' REGEXP {0}".format(_sql_escape(regexp)))
+            c.close()
+        except re.error as e:
+            raise ValueError(u'Invalid regexp: ' + unicode(e))
+        except DatabaseError as e:
+            raise ValueError(u'Invalid regexp: ' + e[1])
         
         self.regexp = regexp
 
