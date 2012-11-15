@@ -177,6 +177,8 @@ def _typecast_values(changed_servers):
             elif action == 'multi':
                 change['add'] = typecast(attr, change['add'])
                 change['remove'] = typecast(attr, change['remove'])
+            elif action == 'delete':
+                change['old'] = typecast(attr, change['old'])
 
 def _delete_servers(deleted_servers):
     ids = ', '.join(str(x) for x in deleted_servers)
