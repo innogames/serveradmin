@@ -1,7 +1,11 @@
 # Django settings for Serveradmin project.
 
+import os
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
+
+ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
@@ -25,6 +29,7 @@ DATABASES = {
         'PASSWORD': 'INSERT-PASSWORD-HERE',
         'HOST': '127.0.0.1',
         'PORT': '3306'
+    }
 }
 
 DATABASE_ROUTERS = ['serveradmin.servermonitor.router.ServermonitorRouter']
