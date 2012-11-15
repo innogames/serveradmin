@@ -235,6 +235,8 @@ def _apply_changes(changed_servers, servers):
     c.execute('COMMIT')
 
 def _prepare_value(attr_name, value):
+    if value is None:
+        raise ValueError('Value is empty')
     attr_obj = lookups.attr_names[attr_name]
     if attr_obj.type == u'ip':
         value = value.as_int()
