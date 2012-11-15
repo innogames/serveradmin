@@ -46,7 +46,7 @@ def _read_lookups(sender=None, **kwargs):
         Attribute(name=u'segment', type=u'string', base=True, multi=False,
             special=ServerTableSpecial(u'segment')),
         Attribute(name=u'all_ips', type=u'ip', base=False, multi=True,
-            special=CombinedSpecial(u'intern_ip', u'additional_ips'))
+            special=CombinedSpecial(u'intern_ip', u'additional_ips', u'ipmi_ip'))
     ]
 
     # Read all attributes
