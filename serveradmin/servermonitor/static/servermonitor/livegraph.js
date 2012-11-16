@@ -1,5 +1,5 @@
 (function() {
-    var NUM_POINTS = 50;
+    var NUM_POINTS = 100;
     var _sources = {};
     var _data = {};
     var _plots = {};
