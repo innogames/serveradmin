@@ -636,11 +636,11 @@ function handle_command_livegraph()
     function show_livegraphs(server) {
         var query_str = '?' + $.param({'hostname': server['hostname']});
         $.get(shell_livegraph_url + query_str, function(data) {
-            var dialog = $('<div title="' + server['hostname'] + '"></div>');
+            var dialog = $('<div title="Livegraph for ' + server['hostname'] + '"></div>');
             dialog.append(data)
             dialog.dialog({
                 'width': 800
-            }).bind('close', function() {
+            }).bind('dialogclose', function() {
                 stop_livegraph();
             });
             init_livegraph(server['hostname']);
