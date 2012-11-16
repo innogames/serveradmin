@@ -2,6 +2,8 @@ from __future__ import division
 
 import json
 import math
+import socket
+import time
 from operator import itemgetter
 from itertools import izip_longest
 
@@ -12,6 +14,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 
+import nrpe
 from adminapi.utils.parse import parse_query
 from serveradmin.dataset import query, filters, DatasetError
 from serveradmin.dataset.models import Segment, ServerType
@@ -302,6 +305,37 @@ def graph_popup(request):
         'graph': graph,
         'image': get_graph_url(hostname, graph)
     })
+
+@login_required
+def livegraph(request):
+    try:
+        hostname = request.GET['hostname']
+    except KeyError:
+        return HttpResponseBadRequest('You have to supply hostname')
+    
+    return TemplateResponse(request, 'servermonitor/livegraph.html', {
+        'hostname': hostname
+    })
+
+@login_required
+def livegraph_data(request):
+    try:
+        hostname = request.GET['hostname']
+        intern_ip = query(hostname=hostname).get()['intern_ip'].as_ip()
+    except (KeyError, DatasetError):
+        return HttpResponseBadRequest('No such server')
+
+    try:
+        code, message = nrpe.send_query('check_livegraph', intern_ip,
+                timeout=0.5)
+        data = dict(zip([iter(message.split())]*2))
+    except (socket.error, ValueError, nrpe.InvalidResponse):
+        data = {}
+    
+    return HttpResponse(json.dumps({
+        'time': int(time.time() * 1000),
+        'data': data
+    }), mimetype='application/x-json')
 
 
 @require_POST

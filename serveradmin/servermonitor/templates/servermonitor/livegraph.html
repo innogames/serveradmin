@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Livegraph for {{ hostname }}{% endblock %}
+
+{% block content %}
+<h2>Livegraph for {{ hostname }}</h2>
+<div id="livegraph_load" style="width:300px; height:100px;"></div>
+{% endblock %}
+
+{% block additional_body %}
+<script type="text/javascript" src="{{ STATIC_URL }}flot/jquery.flot.min.js"></script>
+<script type="text/javascript">
+//<![CDATA[
+var LIVEGRAPH_DATA_URL = '{% url servermonitor_livegraph_data %}';
+var LIVEGRAPH_HOSTNAME = '{{ hostname|escapejs }}';
+var LIVEGRAPH_PLOTS = [
+    {
+        'name': 'load',
+        'container': '#livegraph_load',
+        'data': [
+            {'label': 'load1', '_data_source': 'load1'},
+            {'label': 'load5', '_data_source': 'load5'},
+            {'label': 'load15', '_data_source': 'load15'}
+        ],
+        'options': {
+            'xaxis': {'mode': 'time'},
+            'legend': {'position': 'nw', 'backgroundOpacity': 0.2}
+        }
+    }
+]
+//]]>
+</script>
+<script type="text/javascript" src="{{ STATIC_URL }}servermonitor/livegraph.js"></script>
+{% endblock %}
