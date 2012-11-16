@@ -3,7 +3,17 @@
 {% block title %}Livegraph for {{ hostname }}{% endblock %}
 
 {% block content %}
+{% if not is_ajax %}
 <h2>Livegraph for {{ hostname }}</h2>
+{% endif %}
+
+{% if is_ajax %}
+<p><a href="{% url servermonitor_livegraph %}?hostname={{ hostname }}">
+    <img src="{{ STATIC_URL }}link.png" alt="Link to this page" 
+		title="Link to this page" />
+</a></p>
+{% endif %}
+
 <h3>Load</h3>
 <div id="livegraph_load" style="width:600px; height:200px;"></div>
 {% endblock %}
