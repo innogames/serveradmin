@@ -92,7 +92,6 @@ var LIVEGRAPH_TEMPLATES = [
         for (var i = 0; i < plot_data.length; i++) {
             var entry = plot_data[i];
             entry['data'] = _data[entry['_data_source']];
-            //console.log(entry);
         }
         return plot_data;
     }
