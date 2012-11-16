@@ -314,6 +314,8 @@ def livegraph(request):
         return HttpResponseBadRequest('You have to supply hostname')
     
     return TemplateResponse(request, 'servermonitor/livegraph.html', {
+        'is_ajax': request.is_ajax(),
+        'base_template': 'empty.html' if request.is_ajax() else 'base.html',
         'hostname': hostname
     })
 

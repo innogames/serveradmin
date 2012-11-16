@@ -1,13 +1,32 @@
+var LIVEGRAPH_TEMPLATES = [
+    {
+        'name': 'load',
+        'container': '#livegraph_load',
+        'data': [
+            {'label': 'load1', '_data_source': 'load1'},
+            {'label': 'load5', '_data_source': 'load5'},
+            {'label': 'load15', '_data_source': 'load15'}
+        ],
+        'options': {
+            'xaxis': {'mode': 'time'},
+            'legend': {'position': 'nw', 'backgroundOpacity': 0.2}
+        }
+    }
+];
+
 (function() {
     var NUM_POINTS = 100;
     var _sources = {};
     var _data = {};
     var _plots = {};
+    var _hostname = null;
+    var _interval = null;
 
-    function init()
+    function init(hostname)
     {
-        for (var i = 0; i < LIVEGRAPH_PLOTS.length; ++i) {
-            var plot_config = LIVEGRAPH_PLOTS[i];
+        _hostname = hostname;
+        for (var i = 0; i < LIVEGRAPH_TEMPLATES.length; ++i) {
+            var plot_config = LIVEGRAPH_TEMPLATES[i];
 
             // Initialize sources
             for (var j = 0; j < plot_config['data'].length; ++j) {
@@ -21,10 +40,9 @@
                     _prepare_plot_data(plot_config['data']),
                     plot_config['options']);
         }
-        console.log(_sources);
 
-        setInterval(function() {
-            $.get(LIVEGRAPH_DATA_URL + '?hostname=' + LIVEGRAPH_HOSTNAME, update_data);
+        _interval = setInterval(function() {
+            $.get(livegraph_url + '?hostname=' + _hostname, update_data);
         }, 1000);
     }
 
@@ -54,14 +72,19 @@
 
     function update_plots()
     {
-        for (var i = 0; i < LIVEGRAPH_PLOTS.length; ++i) {
-            var plot = LIVEGRAPH_PLOTS[i];
+        for (var i = 0; i < LIVEGRAPH_TEMPLATES.length; ++i) {
+            var plot = LIVEGRAPH_TEMPLATES[i];
             var plot_key = plot['name'];
             _plots[plot_key].setData(_prepare_plot_data(plot['data']));
             _plots[plot_key].setupGrid();
             _plots[plot_key].draw();
 
         }
+    }
+
+    function stop()
+    {
+        clearTimeout(_interval);
     }
 
     function _prepare_plot_data(plot_data)
@@ -74,6 +97,6 @@
         return plot_data;
     }
 
-
-    init();
+    window.init_livegraph = init
+    window.stop_livegraph = stop
 })();
