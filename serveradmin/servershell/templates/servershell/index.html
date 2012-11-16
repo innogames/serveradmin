@@ -261,6 +261,13 @@ it will be interpreted as regular expression.</p>
         </td>
     </tr>
     <tr>
+        <td>livegraph</td>
+        <td><span class="noargs">none</span></td>
+        <td>Show live graphs for the selected hosts. If no host
+        is selected, it will show graphs for the first host in the list.
+        </td>
+    </tr>
+    <tr>
         <td>cmp</td>
         <td>[graph[, graph ...]]</td>
         <td>Compares the given graphs of the selected hosts. If no graphs are
@@ -331,10 +338,14 @@ var shell_values_url = "{% url servershell_values %}";
 var shell_new_url = "{% url servershell_new %}";
 var shell_compare_url = "{% url servermonitor_compare %}";
 var shell_graph_url = "{% url servermonitor_graph_table %}";
+var shell_livegraph_url = "{% url servermonitor_livegraph %}";
+var livegraph_url = "{% url servermonitor_livegraph_data %}";
 var monitor_reload_url = "{% url servermonitor_reload %}";
 //]]>
 </script>
 <script type="text/javascript" src="{{ STATIC_URL }}servershell/common.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}servershell/servershell.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}servermonitor/servermonitor.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}flot/jquery.flot.min.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}servermonitor/livegraph.js"></script>
 {% endblock %}

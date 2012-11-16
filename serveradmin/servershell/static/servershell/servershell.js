@@ -453,6 +453,7 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'export': 'Export all hostnames for usage in shell',
         'perpage': 'Show a specific number of hosts per page (e.g. "perpage 50")',
         'graph': 'Show available servermonitor graphs for selected hosts',
+        'livegraph': 'Show available live graphs for selected hosts',
         'cmp': 'Compare servermonitor graphs for several hosts',
         'list': 'List all attributes of a server',
         'new': 'Create a new server',
@@ -553,6 +554,8 @@ function handle_command(command)
         return handle_command_export();
     } else if (command == 'graph') {
         return handle_command_graph();
+    } else if (command == 'livegraph') {
+        return handle_command_livegraph();
     } else if (command == 'list') {
         return handle_command_list();
     } else if (command == 'new') {
@@ -625,6 +628,25 @@ function handle_command_graph()
         });
     }
     execute_on_servers(show_graphs);
+    return '';
+}
+
+function handle_command_livegraph()
+{
+    function show_livegraphs(server) {
+        var query_str = '?' + $.param({'hostname': server['hostname']});
+        $.get(shell_livegraph_url + query_str, function(data) {
+            var dialog = $('<div title="' + server['hostname'] + '"></div>');
+            dialog.append(data)
+            dialog.dialog({
+                'width': 800
+            }).bind('close', function() {
+                stop_livegraph();
+            });
+            init_livegraph(server['hostname']);
+        });
+    }
+    execute_on_servers(show_livegraphs);
     return '';
 }
 
