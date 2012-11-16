@@ -329,6 +329,11 @@ def livegraph_data(request):
         code, message = nrpe.send_query('check_livegraph', intern_ip,
                 timeout=0.5)
         data = dict(zip([iter(message.split())]*2))
+        for key, value in data.items():
+            try:
+                data[key] = float(value)
+            except ValueError:
+                data[key] = float('nan')
     except (socket.error, ValueError, nrpe.InvalidResponse):
         data = {}
     
