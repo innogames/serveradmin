@@ -23,7 +23,7 @@ class IPRange(models.Model):
         c = connection.cursor()
         c.execute("SELECT GET_LOCK('serverobject_commit', 10)")
         try:
-            next_free = self.next_free
+            next_free = min(max(self.next_free, self.min), self.max)
             for second_loop in (False, True):
                 while next_free <= self.max:
                     if query(all_ips=next_free).restrict('hostname'):
