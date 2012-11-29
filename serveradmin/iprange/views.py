@@ -63,7 +63,7 @@ def details(request, range_id):
     for ip_tuple in c.fetchall():
         for ip in ip_tuple:
             if ip is not None:
-                taken_ips.add(ip)
+                taken_ips.add(int(ip))
     
     # Divide IP range into continues blocks
     free_blocks = []
