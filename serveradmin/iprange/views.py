@@ -6,6 +6,7 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 
 from adminapi.utils import IP
+from serveradmin.dataset.base import lookups
 from serveradmin.dataset.models import Segment
 from serveradmin.dataset.querybuilder import QueryBuilder
 from serveradmin.dataset import filters
@@ -52,17 +53,17 @@ def details(request, range_id):
     builder = QueryBuilder()
     builder.add_attribute('all_ips')
     builder.add_filter('all_ips', f_between)
-    builder.add_select('intern_ip', 'additional_ips')
+    fields = lookups.attr_names['all_ips'].special.attrs
+    builder.add_select(*fields)
     
     # Collect taken IPs in set
     taken_ips = set()
     c = connection.cursor()
     c.execute(builder.build_sql())
-    for intern_ip, add_ip in c.fetchall():
-        if intern_ip is not None:
-            taken_ips.add(intern_ip)
-        if add_ip is not None:
-            taken_ips.add(int(add_ip))
+    for ip_tuple in c.fetchall():
+        for ip in ip_tuple:
+            if ip is not None:
+                taken_ips.add(ip)
     
     # Divide IP range into continues blocks
     free_blocks = []
