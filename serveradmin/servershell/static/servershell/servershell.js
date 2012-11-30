@@ -1086,4 +1086,11 @@ $(function() {
         
     });
 
+    $('#shell_command').bind('keydown', function(ev) {
+        var key = ev.keyCode || ev.which;
+        if (key == 9) {
+            ev.preventDefault();
+        }
+    });
+
 });
