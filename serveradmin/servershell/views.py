@@ -3,6 +3,8 @@ try:
 except ImportError:
     import json
 
+from itertools import chain
+
 from django.http import (HttpResponse, HttpResponseBadRequest, 
         HttpResponseRedirect, Http404)
 from django.template.response import TemplateResponse
@@ -97,12 +99,27 @@ def get_results(request):
         }))
     
     request.session['term'] = term
+    
+    # Add information about available attributes on servertypes
+    # It will be encoded as map avail[servertype][attr] = boolean
+    avail_attributes = {}
+    for server in results.itervalues():
+        servertype = server['servertype']
+        if servertype not in avail_attributes:
+            avail_attributes[servertype] = {}
+    
+    for servertype, attr_set in avail_attributes.iteritems():
+        attributes = lookups.stype_names[servertype].attributes
+        for attr in chain(attributes, lookups.special_attributes):
+            attr_set[attr.name] = True
+
     return HttpResponse(json.dumps({
         'status': 'success',
         'understood': q.get_representation().as_code(hide_extra=True),
         'servers': results,
         'num_servers': num_servers,
         'shown_attributes': shown_attributes,
+        'avail_attributes': avail_attributes
     }, default=json_encode_extra), mimetype='application/x-json')
 
 @login_required

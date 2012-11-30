@@ -1,6 +1,7 @@
 var search = {
     'shown_attributes': ['hostname', 'intern_ip', 'servertype'],
     'shown_attributes_extra': [],
+    'avail_attributes': {},
     'servers': {},
     'num_servers': 0,
     'page': 1,
@@ -40,6 +41,7 @@ function execute_search(term)
         search['servers'] = data['servers'];
         search['num_servers'] = data['num_servers'];
         search['shown_attributes'] = data['shown_attributes'];
+        search['avail_attributes'] = data['avail_attributes'];
         search['num_pages'] = Math.max(1, Math.ceil(search['num_servers'] / search['per_page']));
         if (search['page'] > search['num_pages']) {
             search['page'] = search['num_pages'];
@@ -104,8 +106,10 @@ function build_server_table(servers, attributes, offset)
     var delete_set = {};
     for (var i = 0; i < commit['deleted'].length; i++) {
         delete_set[commit['deleted'][i]] = true;
-    } 
-    
+    }
+     
+    var avail_attrs = search['avail_attributes'];
+
     // Fill table
     search['no_mapping'] = {};
     var marked_servers = get_marked_servers();
@@ -188,15 +192,23 @@ function build_server_table(servers, attributes, offset)
                         current_values.push(change['add'][k]);
                     }
                     
-                    _make_attr_editable(table_cell, server, attr_name, current_values);
+                    if (!avail_attrs[server['servertype']][attr_name]) {
+                        table_cell.addClass('cell-disabled');
+                    } else {
+                        _make_attr_editable(table_cell, server, attr_name, current_values);
+                    }
                     row.append(table_cell);
                 }
             } else {
                 var value_str = format_value(value, attr_name);
                 var table_cell = $('<td></td>').text(value_str);
                 row.append(table_cell);
-                if (attr_name != 'servertype') {
+                var has_attr = avail_attrs[server['servertype']][attr_name];
+                if (attr_name != 'servertype' && has_attr) {
                     _make_attr_editable(table_cell, server, attr_name, value);
+                }
+                if (!has_attr) {
+                    table_cell.addClass('cell-disabled');
                 }
             }
         }
