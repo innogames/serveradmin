@@ -48,6 +48,7 @@ def _read_lookups(sender=None, **kwargs):
         Attribute(name=u'all_ips', type=u'ip', base=False, multi=True,
             special=CombinedSpecial(u'intern_ip', u'additional_ips', u'ipmi_ip'))
     ]
+    lookups.special_attributes = special_attributes
 
     # Read all attributes
     lookups.attr_ids = {}
