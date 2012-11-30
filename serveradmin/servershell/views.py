@@ -35,7 +35,8 @@ NUM_SERVERS_DEFAULT = 25
 def index(request):
     return TemplateResponse(request, 'servershell/index.html', {
         'attribute_list': sorted(lookups.attr_names.keys()),
-        'search_term': request.GET.get('term', request.session.get('term', ''))
+        'search_term': request.GET.get('term', request.session.get('term', '')),
+        'per_page': request.session.get('per_page', NUM_SERVERS_DEFAULT)
     })
 
 @login_required
@@ -99,6 +100,7 @@ def get_results(request):
         }))
     
     request.session['term'] = term
+    request.session['per_page'] = limit
     
     # Add information about available attributes on servertypes
     # It will be encoded as map avail[servertype][attr] = boolean

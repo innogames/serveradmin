@@ -348,4 +348,9 @@ var monitor_reload_url = "{% url servermonitor_reload %}";
 <script type="text/javascript" src="{{ STATIC_URL }}servermonitor/servermonitor.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}flot/jquery.flot.min.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}servermonitor/livegraph.js"></script>
+<script type="text/javascript">
+//<![CDATA[
+search['per_page'] = {{ per_page }};
+//]]>
+</script>
 {% endblock %}
