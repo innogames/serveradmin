@@ -128,6 +128,14 @@ table.tabular td, table.tabular th {
  font-style:italic;
 }
 
+.row_a .cell-disabled {
+ background:#bbb !important;
+}
+
+.row_b .cell-disabled {
+ background:#ccc !important;
+}
+
 ins {
  color:#080;
 }
