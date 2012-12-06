@@ -1,3 +1,5 @@
+from copy import copy
+
 from django.db import models, connection
 
 from adminapi.utils import Network
@@ -37,7 +39,7 @@ class IPRange(models.Model):
                             self.next_free = next_free + 1
                             self.save()
                         return next_free
-                next_free = self.min
+                next_free = copy(self.min)
                 if second_loop:
                     raise DatasetError('No more free addresses, sorry')
         finally:
