@@ -109,7 +109,6 @@ function start_livegraph(hostname, server_id)
             tpl[key] = LIVEGRAPH_TEMPLATES[i][key];
         }
         tpl['container'] = tpl['container'] + '_' + server_id;
-        console.log(tpl);
         graphs.push(new LiveGraph(tpl, hostname));
     }
     _livegraphs[hostname] = graphs;
