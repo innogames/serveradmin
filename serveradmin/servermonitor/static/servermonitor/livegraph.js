@@ -20,7 +20,7 @@ function LiveGraph(template, hostname)
     this.hostname = hostname;
     this._num_points = 100;
     this._sources = {};
-    this._data = [];
+    this._data = {};
     this._plot = null;
     this._timeout = null;
     
