@@ -55,8 +55,8 @@ attribute</a></p>
 <h3>Copy servertype</h3>
 <form method="post" action="{% url dataset_copy_servertype servertype.name %}">
 {% csrf_token %}
-<p><input type="text" name="name" /></p>
- <p><input type="submit" value="Copy" /></p>
+<p>Target servertype: <input type="text" name="name" /> <input type="submit" value="Copy" /></p>
+ <p>If the target servertype doesn't exist it will be automatically created.</p>
  </form>
  {% endif %}
 

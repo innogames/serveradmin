@@ -36,13 +36,15 @@ class ServerType(models.Model):
     name = models.CharField(max_length=64, unique=True)
 
     def copy(self, new_name):
-        if ServerType.objects.filter(name=new_name).count():
-            raise Exception('Duplicate') # FIXME
+        target, created = ServerType.objects.get_or_create(name=new_name)
+        skip = set([attr.attrib.name for attr in
+                target.used_attributes.select_related()])
 
-        new_servertype = ServerType.objects.create(name=new_name)
-        for attr in self.used_attributes.all():
+        for attr in self.used_attributes.select_related():
+            if attr.attrib.name in skip:
+                continue
             ServerTypeAttributes.objects.create(
-                    servertype=new_servertype,
+                    servertype=target,
                     attrib=attr.attrib,
                     required=attr.required,
                     attrib_default=attr.attrib_default,
