@@ -653,9 +653,10 @@ function handle_command_livegraph()
             dialog.dialog({
                 'width': 800
             }).bind('dialogclose', function() {
-                stop_livegraph();
+                stop_livegraph(server['hostname']);
             });
-            init_livegraph(server['hostname']);
+
+            start_livegraph(server['hostname']);
         });
     }
     execute_on_servers(show_livegraphs);

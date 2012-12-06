@@ -29,7 +29,7 @@ var livegraph_url = '{% url servermonitor_livegraph_data %}';
 <script type="text/javascript">
 //<![CDATA[
 $(function() {
-    init_livegraph('{{ hostname|escapejs }}')
+    start_livegraph('{{ hostname|escapejs }}');
 })
 //]]>
 </script>

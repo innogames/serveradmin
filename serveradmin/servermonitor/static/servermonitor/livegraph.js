@@ -14,88 +14,104 @@ var LIVEGRAPH_TEMPLATES = [
     }
 ];
 
-(function() {
-    var NUM_POINTS = 100;
-    var _sources = {};
-    var _data = {};
-    var _plots = {};
-    var _hostname = null;
-    var _interval = null;
-
-    function init(hostname)
-    {
-        _hostname = hostname;
-        for (var i = 0; i < LIVEGRAPH_TEMPLATES.length; ++i) {
-            var plot_config = LIVEGRAPH_TEMPLATES[i];
-
-            // Initialize sources
-            for (var j = 0; j < plot_config['data'].length; ++j) {
-                var source_name = plot_config['data'][j]['_data_source'];
-                _sources[source_name] = true;
-                _data[source_name] = [];
+function LiveGraph(template, hostname)
+{
+    this.template = template;
+    this.hostname = hostname;
+    this._num_points = 100;
+    this._sources = {};
+    this._data = [];
+    this._plot = null;
+    this._timeout = null;
+    
+    // Initialize sources 
+    for (var i = 0; i < this.template.length; ++i) {
+        var source_name = this.template['data'][i]['_data_source'];
+        this._sources[source_name] = true;
+        this._data[source_name] = [];
+    }
+    
+    // Create plot
+    this._plot = $.plot(
+            this.template.container,
+            this._prepare_plot_data(this.template['data']),
+            this.template['options']);
+    
+    // Start polling for data
+    var that = this;
+    function get_new_data() {
+        $.get(livegraph_url + '?hostname=' + that.hostname, function(data) {
+            that._update_data(data);
+            if (that._timeout !== false) {
+                that._timeout = setTimeout(get_new_data, 1000);
             }
-
-            _plots[plot_config['name']] = $.plot(
-                    plot_config['container'],
-                    _prepare_plot_data(plot_config['data']),
-                    plot_config['options']);
-        }
-
-        _interval = setInterval(function() {
-            $.get(livegraph_url + '?hostname=' + _hostname, update_data);
-        }, 1000);
+        });
     }
+    
+    get_new_data();
+}
 
-    function update_data(data)
-    {
-        for (var source in _sources) {
-            var graph_data = _data[source];
-            var num_data_points = graph_data.length;
-            var data_value = data['data'][source];
-            if (typeof(data_value) == 'undefined') {
-                continue;
+LiveGraph.prototype.stop = function()
+{
+    this._timeout = false;
+}
+
+LiveGraph.prototype._update_data = function(data)
+{
+    for (var source in this._sources) {
+        var graph_data = this._data[source];
+        var num_data_points = graph_data.length;
+        var data_value = data['data'][source];
+
+        if (typeof(data_value) == 'undefined') {
+            continue;
+        }
+        
+        var data_point = [data['time'], data_value];
+        // We have enough data points, so we shift every point
+        // to have a slot for the new datapoint
+        if (num_data_points >= this._num_points) {
+            for (var j = 1; j < num_data_points; ++j) {
+                graph_data[j - 1] = graph_data[j]; 
             }
-            var data_point = [data['time'], data_value];
-            if (num_data_points >= NUM_POINTS) {
-                for (var j = 1; j < num_data_points; ++j) {
-                    graph_data[j - 1] = graph_data[j]; 
-                }
-            } else {
-                for(var j = NUM_POINTS; j > 0; --j) {
-                    graph_data.push([data['time'] - j * 1000, NaN]);
-                }
+        // We don't have enough points, fill data array with NaN
+        } else {
+            for(var j = NUM_POINTS; j > 0; --j) {
+                graph_data.push([data['time'] - j * 1000, NaN]);
             }
-            graph_data[NUM_POINTS - 1] = data_point;
         }
-        update_plots();
+        graph_data[NUM_POINTS - 1] = data_point;
+
     }
+    
+    this._plot.setData(this._prepare_plot_data(this.template['data']));
+    this._plot.setupGrid();
+    this._plot.draw();
+}
 
-    function update_plots()
-    {
-        for (var i = 0; i < LIVEGRAPH_TEMPLATES.length; ++i) {
-            var plot = LIVEGRAPH_TEMPLATES[i];
-            var plot_key = plot['name'];
-            _plots[plot_key].setData(_prepare_plot_data(plot['data']));
-            _plots[plot_key].setupGrid();
-            _plots[plot_key].draw();
-
-        }
+LiveGraph.prototype._prepare_plot_data = function(plot_data)
+{
+    for (var i = 0; i < plot_data.length; i++) {
+        var entry = plot_data[i];
+        entry['data'] = this._data[entry['_data_source']];
     }
+    return plot_data;
+}
 
-    function stop()
-    {
-        clearTimeout(_interval);
+var _livegraphs = {};
+function start_livegraph(hostname)
+{
+    var graphs = [];
+    for (var i = 0; i < LIVEGRAPH_TEMPLATES.length; i++) {
+        graphs.push(new LiveGraph(LIVEGRAPH_TEMPLATES[0], hostname));
     }
+    _livegraphs[hostname] = graphs;
+}
 
-    function _prepare_plot_data(plot_data)
-    {
-        for (var i = 0; i < plot_data.length; i++) {
-            var entry = plot_data[i];
-            entry['data'] = _data[entry['_data_source']];
-        }
-        return plot_data;
+function stop_livegraph(hostname)
+{
+    var graphs = _livegraphs[hostname];
+    for (var i = 0; i < graphs.length; i++) {
+        graphs[i].stop();
     }
-
-    window.init_livegraph = init
-    window.stop_livegraph = stop
-})();
+}
