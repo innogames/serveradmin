@@ -76,11 +76,11 @@ LiveGraph.prototype._update_data = function(data)
             }
         // We don't have enough points, fill data array with NaN
         } else {
-            for(var j = NUM_POINTS; j > 0; --j) {
+            for(var j = this._num_points; j > 0; --j) {
                 graph_data.push([data['time'] - j * 1000, NaN]);
             }
         }
-        graph_data[NUM_POINTS - 1] = data_point;
+        graph_data[this._num_points - 1] = data_point;
 
     }
     
