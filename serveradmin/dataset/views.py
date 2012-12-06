@@ -179,6 +179,14 @@ def delete_servertype_attr(request, servertype_name, attrib_name):
         'stype_attr': stype_attr
     })
 
+@login_required
+@permission_required('dataset.add_servertype')
+def copy_servertype(request, servertype_name):
+    stype = get_object_or_404(ServerType, name=servertype_name)
+    if request.method == 'POST':
+        stype.copy(request.POST['name'])
+        messages.success(request, u'Servertype copied.')
+    return redirect('dataset_servertypes')
 
 @login_required
 def attributes(request):

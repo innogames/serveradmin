@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.cache import cache
 
 from serveradmin.common import dbfields
 
@@ -31,8 +32,24 @@ class Attribute(models.Model):
         return self.name
 
 class ServerType(models.Model):
-    servertype_id = models.IntegerField(primary_key=True)
+    servertype_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=64, unique=True)
+
+    def copy(self, new_name):
+        if ServerType.objects.filter(name=new_name).count():
+            raise Exception('Duplicate') # FIXME
+
+        new_servertype = ServerType.objects.create(name=new_name)
+        for attr in self.used_attributes.all():
+            ServerTypeAttributes.objects.create(
+                    servertype=new_servertype,
+                    attrib=attr.attrib,
+                    required=attr.required,
+                    attrib_default=attr.attrib_default,
+                    regex=attr.regex,
+                    default_visible=attr.default_visible)
+            cache.delete('dataset_lookups_version')
+
 
     class Meta:
         db_table = 'servertype'

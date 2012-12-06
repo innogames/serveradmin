@@ -50,4 +50,14 @@ attribute</a></p>
  <p><input type="submit" value="Delete servertype and servers" /></p>
  </form>
  {% endif %}
+
+{% if perms.dataset.add_servertype %}
+<h3>Copy servertype</h3>
+<form method="post" action="{% url dataset_copy_servertype servertype.name %}">
+{% csrf_token %}
+<p><input type="text" name="name" /></p>
+ <p><input type="submit" value="Copy" /></p>
+ </form>
+ {% endif %}
+
 {% endblock %}

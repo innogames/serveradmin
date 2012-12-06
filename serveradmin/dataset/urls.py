@@ -15,6 +15,8 @@ urlpatterns = patterns(
             name='dataset_edit_servertype_attr'),
     url(r'^servertype/delattr/([\w_]+)/([\w_]+)$', 'delete_servertype_attr',
             name='dataset_delete_servertype_attr'),
+    url(r'^servertype/copy/([\w_]+)$', 'copy_servertype',
+            name='dataset_copy_servertype'),
     url(r'^attributes$', 'attributes', name='dataset_attributes'),
     url(r'^attributes/delete/([\w_]+)$', 'delete_attribute',
             name='dataset_delete_attribute'),
