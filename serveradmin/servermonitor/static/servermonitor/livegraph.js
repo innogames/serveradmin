@@ -25,7 +25,7 @@ function LiveGraph(template, hostname)
     this._timeout = null;
     
     // Initialize sources 
-    for (var i = 0; i < this.template.length; ++i) {
+    for (var i = 0; i < this.template['data'].length; ++i) {
         var source_name = this.template['data'][i]['_data_source'];
         this._sources[source_name] = true;
         this._data[source_name] = [];
@@ -109,6 +109,7 @@ function start_livegraph(hostname, server_id)
             tpl[key] = LIVEGRAPH_TEMPLATES[i][key];
         }
         tpl['container'] = tpl['container'] + '_' + server_id;
+        console.log(tpl);
         graphs.push(new LiveGraph(tpl, hostname));
     }
     _livegraphs[hostname] = graphs;
