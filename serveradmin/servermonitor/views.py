@@ -310,13 +310,15 @@ def graph_popup(request):
 def livegraph(request):
     try:
         hostname = request.GET['hostname']
-    except KeyError:
-        return HttpResponseBadRequest('You have to supply hostname')
+        server_id = query(hostname=hostname).get().object_id
+    except (KeyError, DatasetError):
+        return HttpResponseBadRequest('No such server')
     
     return TemplateResponse(request, 'servermonitor/livegraph.html', {
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
-        'hostname': hostname
+        'hostname': hostname,
+        'server_id': server_id
     })
 
 @login_required

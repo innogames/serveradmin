@@ -15,7 +15,7 @@
 {% endif %}
 
 <h3>Load</h3>
-<div id="livegraph_load" style="width:600px; height:200px;"></div>
+<div id="livegraph_load_{{ server_id }}" style="width:600px; height:200px;"></div>
 {% endblock %}
 
 {% block additional_body %}
@@ -29,7 +29,7 @@ var livegraph_url = '{% url servermonitor_livegraph_data %}';
 <script type="text/javascript">
 //<![CDATA[
 $(function() {
-    start_livegraph('{{ hostname|escapejs }}');
+    start_livegraph('{{ hostname|escapejs }}', {{ server_id }});
 })
 //]]>
 </script>

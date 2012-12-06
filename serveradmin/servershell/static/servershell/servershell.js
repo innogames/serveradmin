@@ -656,7 +656,7 @@ function handle_command_livegraph()
                 stop_livegraph(server['hostname']);
             });
 
-            start_livegraph(server['hostname']);
+            start_livegraph(server['hostname'], server['object_id']);
         });
     }
     execute_on_servers(show_livegraphs);

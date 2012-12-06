@@ -99,11 +99,17 @@ LiveGraph.prototype._prepare_plot_data = function(plot_data)
 }
 
 var _livegraphs = {};
-function start_livegraph(hostname)
+function start_livegraph(hostname, server_id)
 {
     var graphs = [];
+
     for (var i = 0; i < LIVEGRAPH_TEMPLATES.length; i++) {
-        graphs.push(new LiveGraph(LIVEGRAPH_TEMPLATES[0], hostname));
+        var tpl = {};
+        for (var key in LIVEGRAPH_TEMPLATES[i]) {
+            tpl[key] = LIVEGRAPH_TEMPLATES[i][key];
+        }
+        tpl['container'] = tpl['container'] + '_' + server_id;
+        graphs.push(new LiveGraph(tpl, hostname));
     }
     _livegraphs[hostname] = graphs;
 }
