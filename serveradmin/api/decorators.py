@@ -8,11 +8,13 @@ except ImportError:
     import json
 
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
+from django.core.urlresolvers import reverse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.sites.models import RequestSite
 
 from adminapi.utils.json import json_encode_extra
-from serveradmin.apps.models import Application
+from serveradmin.apps.models import Application, ApplicationException
 from serveradmin.api import AVAILABLE_API_FUNCTIONS
 
 def _calc_security_token(auth_token, timestamp, content):
@@ -44,6 +46,20 @@ def api_view(view):
         if real_security_token != security_token or expired:
             return HttpResponseForbidden('Invalid or expired security token',
                     mimetype='text/plain')
+        
+        if app.restriction_active():
+            has_exception = ApplicationException.objects.filter(application=app,
+                    granted=True).count()
+            if not has_exception:
+                domain = RequestSite(request).domain
+                full_url = reverse('apps_request_exception', args=[app.app_id])
+                exception_url = 'https://{0}{1}'.format(domain, full_url)
+                forbidden_text = ('This token is restricted. To get an '
+                        'exception go to ' + exception_url)
+                return HttpResponseForbidden(forbidden_text,
+                        mimetype='text/plain')
+
+
         return_value = view(request, app, json.loads(request.body))
         if getattr(view, 'encode_json', True):
             return_value = json.dumps(return_value, default=json_encode_extra)

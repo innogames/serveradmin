@@ -2,6 +2,7 @@ from __future__ import division
 import random
 import string
 import hashlib
+from datetime import datetime
 
 from django.db import models
 from django.db.models.signals import pre_save, pre_delete, post_save
@@ -13,9 +14,37 @@ class Application(models.Model):
     auth_token = models.CharField(max_length=64, unique=True, editable=False)
     author = models.ForeignKey(User)
     location = models.CharField(max_length=150)
+    restricted = models.BooleanField(default=False)
 
     def __unicode__(self):
         return self.name
+
+    def restriction_active(self):
+        if not self.restricted:
+            return False
+
+        now = datetime.today()
+        
+        # Full friday to sunday
+        if now.weekday() in (4, 5, 6):
+            return True
+
+        # Every day after 16:00
+        if now.hour >= 16:
+            return True
+        
+        return False
+
+class ApplicationException(models.Model):
+    application = models.ForeignKey(Application)
+    user = models.ForeignKey(User)
+    issue = models.TextField()
+    changes = models.TextField()
+    tested = models.BooleanField(default=False)
+    granted = models.BooleanField(default=False)
+
+    def __unicode__(self):
+        return u'Exception on {0}'.format(self.application)
 
 class ApplicationStatistic(models.Model):
     application = models.OneToOneField(Application)
