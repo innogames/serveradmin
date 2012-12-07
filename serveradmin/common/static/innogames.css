@@ -119,7 +119,7 @@ tr.row_b td {
  background:#e8ece4;
 }
 
-.warning, .error {
+.warning, .error, .errorlist li {
  color:#d00;
  font-weight:bold;
 }
