@@ -327,18 +327,24 @@ def livegraph_data(request):
         server = query(hostname=hostname).get()
     except (KeyError, DatasetError):
         return HttpResponseBadRequest('No such server')
-
-    try:
-        message = query_livegraph(server['intern_ip'].as_ip(),
-                                  server['hostname'])
-        data = dict(zip(*[iter(message.split())]*2))
-        for key, value in data.items():
-            try:
-                data[key] = float(value)
-            except ValueError:
-                data[key] = float('nan')
-    except (socket.error, ValueError):
+    
+    # Ask dom0 about performance data for the domU
+    if 'xen_host' in server and server['xen_host'] != server['hostname']:
+        try:
+            data = query_livegraph(server['xen_host'], server['hostname'])
+        except socket.error:
+            data = {}
+    else:
         data = {}
+    
+    # ask dom0 itself for performance data
+    try:
+        server_data = query_livegraph(server['intern_ip'].as_ip(), '')
+    except (socket.error, ValueError):
+        server_data = {}
+
+    # combine performance data
+    data.update(server_data)
     
     return HttpResponse(json.dumps({
         'time': int(time.time() * 1000),

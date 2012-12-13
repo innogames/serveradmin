@@ -112,6 +112,13 @@ def query_livegraph(server, hostname):
      s.connect(('127.0.0.1', 8462))
      s.sendall('{0} {1}\n'.format(server, hostname))
      fileobj = s.makefile()
-     line = fileobj.readline()
+     message = fileobj.readline()
      s.close()
-     return line
+     data = dict(zip(*[iter(message.split())]*2))
+     for key, value in data.items():
+        try:
+            data[key] = float(value)
+        except ValueError:
+            data[key] = float('nan')
+     
+     return data
