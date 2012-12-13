@@ -106,3 +106,12 @@ def split_graph_name(graph):
 
 def join_graph_name(graph, period):
     return '-'.join((graph, period)) if period else graph
+
+def query_livegraph(server, hostname):
+     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+     s.connect(('127.0.0.1', 8462))
+     s.sendall('{0} {1}\n'.format(server, hostname))
+     fileobj = s.makefile()
+     line = fileobj.readline()
+     s.close()
+     return line

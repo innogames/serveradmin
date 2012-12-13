@@ -14,13 +14,12 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 
-import nrpe
 from adminapi.utils.parse import parse_query
 from serveradmin.dataset import query, filters, DatasetError
 from serveradmin.dataset.models import Segment, ServerType
 from serveradmin.servermonitor.models import (GraphValue, ServerData,
         get_available_graphs, get_graph_url, split_graph_name, join_graph_name,
-        reload_graphs, PERIODS)
+        reload_graphs, PERIODS, query_livegraph)
 
 @login_required
 @ensure_csrf_cookie
@@ -325,20 +324,20 @@ def livegraph(request):
 def livegraph_data(request):
     try:
         hostname = request.GET['hostname']
-        intern_ip = query(hostname=hostname).get()['intern_ip'].as_ip()
+        server = query(hostname=hostname).get()
     except (KeyError, DatasetError):
         return HttpResponseBadRequest('No such server')
 
     try:
-        code, message = nrpe.send_query('check_livegraph', intern_ip,
-                timeout=0.5)
+        message = query_livegraph(server['intern_ip'].as_ip(),
+                                  server['hostname'])
         data = dict(zip(*[iter(message.split())]*2))
         for key, value in data.items():
             try:
                 data[key] = float(value)
             except ValueError:
                 data[key] = float('nan')
-    except (socket.error, ValueError, nrpe.InvalidResponse):
+    except (socket.error, ValueError):
         data = {}
     
     return HttpResponse(json.dumps({
