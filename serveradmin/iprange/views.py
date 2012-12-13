@@ -68,12 +68,7 @@ def details(request, range_id):
     # Divide IP range into continues blocks
     free_blocks = []
     free_block = []
-    usable_ips = 0
-    for ip_int in xrange(iprange.min.as_int(), iprange.max.as_int() + 1):
-        if ip_int & 0xff in (0, 255):
-            continue
-        
-        usable_ips += 1
+    for ip_int in xrange(iprange.min.as_int() + 1, iprange.max.as_int()):
         if ip_int in taken_ips:
             if free_block:
                 free_blocks.append(free_block)
@@ -83,13 +78,13 @@ def details(request, range_id):
     if free_block:
         free_blocks.append(free_block)
 
-
+    num_ips = iprange.max.as_int() - iprange.min.as_int() + 1
     return TemplateResponse(request, 'iprange/details.html', {
         'iprange': iprange,
         'free_blocks': free_blocks,
         'num_free_ips': sum([len(block) for block in free_blocks]),
-        'num_usable_ips': usable_ips,
-        'num_ips': iprange.max.as_int() - iprange.min.as_int() + 1
+        'num_usable_ips': num_ips - 2,
+        'num_ips': num_ips
     })
 
 def add(request):
