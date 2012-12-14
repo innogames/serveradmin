@@ -26,6 +26,19 @@ var LIVEGRAPH_TEMPLATES = {
             'legend': {'position': 'nw', 'backgroundOpacity': 0.2}
         }
     }
+    'io': {
+        'name': 'io',
+        'container': '#livegraph_io',
+        'data': [
+            {'label': 'write', '_data_source': 'io_w_per'},
+            {'label': 'read', '_data_source': 'io_r_per'},
+        ],
+        'options': {
+            'xaxis': {'mode': 'time'},
+            'legend': {'position': 'nw', 'backgroundOpacity': 0.2},
+            'series': {'stack': true}
+        }
+    }
 };
 
 (function() {
