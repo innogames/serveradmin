@@ -27,6 +27,53 @@ var LIVEGRAPH_TEMPLATES = {
     }
 };
 
+(function() {
+    var polls = {};
+    function get_new_data() {
+        for (hostname in polls) {
+            if (!polls[hostname].length) {
+                continue;
+            }
+
+            $.get(livegraph_url + '?hostname=' + hostname, function(data) {
+                for (var i = 0; i < polls[hostname].length; ++i) {
+                    polls[hostname][i](data);
+                }
+                if (polls[hostname].length) {
+                    setTimeout(get_new_data, 1000);
+                }
+            });
+        }
+    }
+
+    window.livegraph_poller = {
+        'register': function(hostname, callback)
+        {
+            var start_polling = false;
+            if (typeof(polls[hostname]) == 'undefined') {
+                polls[hostname] = [];
+                start_polling = true;
+            }
+            var poll = polls[hostname];
+            poll.push(callback);
+            if (start_polling) {
+                get_new_data();
+            }
+        },
+        'unregister': function(hostname, callback)
+        {
+            var registered_cbs = polls[hostname];
+            var new_registered_cbs = [];
+            for (var i = 0; i < registered_cbs.length; ++i) {
+                if (callback != registered_cbs[i]) {
+                    new_registered_cbs.push(registered_cbs[i]);
+                }
+            }
+            polls[hostname] = new_registered_cbs;
+        }
+    };
+})();
+
 function LiveGraph(template, hostname)
 {
     this.template = template;
@@ -50,23 +97,14 @@ function LiveGraph(template, hostname)
             this._prepare_plot_data(this.template['data']),
             this.template['options']);
     
-    // Start polling for data
-    var that = this;
-    function get_new_data() {
-        $.get(livegraph_url + '?hostname=' + that.hostname, function(data) {
-            that._update_data(data);
-            if (that._timeout !== false) {
-                that._timeout = setTimeout(get_new_data, 1000);
-            }
-        });
-    }
+    this._update_data = this._update_data.bind(this);
     
-    get_new_data();
+    livegraph_poller.register(this.hostname, this._update_data);
 }
 
 LiveGraph.prototype.stop = function()
 {
-    this._timeout = false;
+    livegraph_poller.unregister(this.hostname, this._update_data);
 }
 
 LiveGraph.prototype._update_data = function(data)
