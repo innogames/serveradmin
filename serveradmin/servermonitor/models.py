@@ -107,18 +107,18 @@ def split_graph_name(graph):
 def join_graph_name(graph, period):
     return '-'.join((graph, period)) if period else graph
 
-def query_livegraph(server, hostname):
-     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-     s.connect(('127.0.0.1', 8462))
-     s.sendall('{0} {1}\n'.format(server, hostname))
-     fileobj = s.makefile()
-     message = fileobj.readline()
-     s.close()
-     data = dict(zip(*[iter(message.split())]*2))
-     for key, value in data.items():
-        try:
-            data[key] = float(value)
-        except ValueError:
-            data[key] = float('nan')
-     
-     return data
+def query_livegraph(server, info_type='host', hostname=''):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect(('127.0.0.1', 8462))
+    s.sendall('{0} livegraph-data {1} {2}\n'.format(server, info_type, hostname))
+    fileobj = s.makefile()
+    message = fileobj.readline()
+    s.close()
+    data = dict(zip(*[iter(message.split())]*2))
+    for key, value in data.items():
+       try:
+           data[key] = float(value)
+       except ValueError:
+           data[key] = float('nan')
+    
+    return data

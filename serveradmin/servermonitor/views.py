@@ -331,15 +331,15 @@ def livegraph_data(request):
     # Ask dom0 about performance data for the domU
     if 'xen_host' in server and server['xen_host'] != server['hostname']:
         try:
-            data = query_livegraph(server['xen_host'], server['hostname'])
+            data = query_livegraph(server['xen_host'], 'guest', server['hostname'])
         except socket.error:
             data = {}
     else:
         data = {}
     
-    # ask dom0 itself for performance data
+    # ask domU itself for performance data
     try:
-        server_data = query_livegraph(server['intern_ip'].as_ip(), '')
+        server_data = query_livegraph(server['intern_ip'].as_ip(), 'host')
     except (socket.error, ValueError):
         server_data = {}
 
