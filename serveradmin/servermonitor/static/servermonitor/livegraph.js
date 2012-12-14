@@ -36,7 +36,10 @@ var LIVEGRAPH_TEMPLATES = {
         'options': {
             'xaxis': {'mode': 'time'},
             'legend': {'position': 'nw', 'backgroundOpacity': 0.2},
-            'series': {'stack': true}
+            'series': {
+                'stack': true,
+                'lines': {'fill': true}
+            },
         }
     }
 };
