@@ -22,6 +22,7 @@ var LIVEGRAPH_TEMPLATES = {
         ],
         'options': {
             'xaxis': {'mode': 'time'},
+            'yaxis': {'min': 0, 'max': 100},
             'legend': {'position': 'nw', 'backgroundOpacity': 0.2}
         }
     }
@@ -50,7 +51,7 @@ var LIVEGRAPH_TEMPLATES = {
         'register': function(hostname, callback)
         {
             var start_polling = false;
-            if (typeof(polls[hostname]) == 'undefined') {
+            if (typeof(polls[hostname]) == 'undefined' || !polls[hostname].length) {
                 polls[hostname] = [];
                 start_polling = true;
             }
@@ -75,7 +76,7 @@ var LIVEGRAPH_TEMPLATES = {
 })();
 
 function LiveGraph(template, hostname)
-{
+{   
     this.template = template;
     this.hostname = hostname;
     this._num_points = 100;
