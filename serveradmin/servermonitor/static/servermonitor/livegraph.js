@@ -19,7 +19,11 @@ var LIVEGRAPH_TEMPLATES = {
             {'label': 'user', '_data_source': 'usage_user'},
             {'label': 'system', '_data_source': 'usage_system'},
             {'label': 'nice', '_data_source': 'usage_nice'}
-        ]
+        ],
+        'options': {
+            'xaxis': {'mode': 'time'},
+            'legend': {'position': 'nw', 'backgroundOpacity': 0.2}
+        }
     }
 };
 
