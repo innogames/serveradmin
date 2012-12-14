@@ -9,7 +9,8 @@ var LIVEGRAPH_TEMPLATES = {
         ],
         'options': {
             'xaxis': {'mode': 'time'},
-            'legend': {'position': 'nw', 'backgroundOpacity': 0.2}
+            'legend': {'position': 'nw', 'backgroundOpacity': 0.2},
+            'series': {'shadowSize': 0}
         }
     },
     'usage': {
@@ -23,7 +24,8 @@ var LIVEGRAPH_TEMPLATES = {
         'options': {
             'xaxis': {'mode': 'time'},
             'yaxis': {'min': 0, 'max': 100},
-            'legend': {'position': 'nw', 'backgroundOpacity': 0.2}
+            'legend': {'position': 'nw', 'backgroundOpacity': 0.2},
+            'series': {'shadowSize': 0}
         }
     },
     'io': {
@@ -38,7 +40,8 @@ var LIVEGRAPH_TEMPLATES = {
             'legend': {'position': 'nw', 'backgroundOpacity': 0.2},
             'series': {
                 'stack': true,
-                'lines': {'fill': true}
+                'lines': {'fill': true},
+                'shadowSize': 0
             },
         }
     }
