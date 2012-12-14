@@ -1,5 +1,5 @@
-var LIVEGRAPH_TEMPLATES = [
-    {
+var LIVEGRAPH_TEMPLATES = {
+    'load': {
         'name': 'load',
         'container': '#livegraph_load',
         'data': [
@@ -11,8 +11,17 @@ var LIVEGRAPH_TEMPLATES = [
             'xaxis': {'mode': 'time'},
             'legend': {'position': 'nw', 'backgroundOpacity': 0.2}
         }
+    },
+    'usage': {
+        'name': 'usage',
+        'container': '#livegraph_usage',
+        'data': [
+            {'label': 'user', '_data_source': 'usage_user'},
+            {'label': 'system', '_data_source': 'usage_system'},
+            {'label': 'nice', '_data_source': 'usage_nice'}
+        ]
     }
-];
+};
 
 function LiveGraph(template, hostname)
 {
@@ -103,10 +112,10 @@ function start_livegraph(hostname, server_id)
 {
     var graphs = [];
 
-    for (var i = 0; i < LIVEGRAPH_TEMPLATES.length; i++) {
+    for (var name in LIVEGRAPH_TEMPLATES) {
         var tpl = {};
-        for (var key in LIVEGRAPH_TEMPLATES[i]) {
-            tpl[key] = LIVEGRAPH_TEMPLATES[i][key];
+        for (var key in LIVEGRAPH_TEMPLATES[name]) {
+            tpl[key] = LIVEGRAPH_TEMPLATES[name][key];
         }
         tpl['container'] = tpl['container'] + '_' + server_id;
         graphs.push(new LiveGraph(tpl, hostname));
