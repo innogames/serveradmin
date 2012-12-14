@@ -25,7 +25,7 @@ var LIVEGRAPH_TEMPLATES = {
             'yaxis': {'min': 0, 'max': 100},
             'legend': {'position': 'nw', 'backgroundOpacity': 0.2}
         }
-    }
+    },
     'io': {
         'name': 'io',
         'container': '#livegraph_io',
