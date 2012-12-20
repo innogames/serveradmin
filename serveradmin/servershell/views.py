@@ -303,6 +303,8 @@ def new_server(request):
         form = NewServerForm(request.POST)
         if form.is_valid():
             attributes = form.cleaned_data.copy()
+            # remove check_ip, because it's not an attributes
+            del attributes['check_ip'] 
             attributes['intern_ip'] = IP(attributes['intern_ip'])
             attributes['servertype'] = attributes['servertype'].name
             server_id = create_server(attributes, skip_validation=True,
