@@ -287,9 +287,17 @@ def new_server(request):
     class NewServerForm(forms.Form):
         hostname = forms.CharField()
         intern_ip = forms.IPAddressField()
+        check_ip = forms.BooleanField(required=False)
         segment = forms.CharField()
         servertype = forms.ModelChoiceField(queryset=ServerType.objects.order_by(
             'name'))
+
+        def clean(self):
+            if self.cleaned_data.get('check_ip'):
+                if 'intern_ip' in self.cleaned_data:
+                    if query(intern_ip=self.cleaned_data['intern_ip']):
+                        raise forms.ValidationError('IP already taken.')
+            return self.cleaned_data
 
     if request.method == 'POST':
         form = NewServerForm(request.POST)
@@ -303,7 +311,7 @@ def new_server(request):
                     server_id)
             return HttpResponseRedirect(url)
     else:
-        form = NewServerForm()
+        form = NewServerForm(initial={'check_ip': True})
 
     return TemplateResponse(request, 'servershell/new_server.html', {
         'form': form,
