@@ -37,6 +37,7 @@ var LIVEGRAPH_TEMPLATES = {
         ],
         'options': {
             'xaxis': {'mode': 'time'},
+            'yaxis': {'min': 0, 'max': 100},
             'legend': {'position': 'nw', 'backgroundOpacity': 0.2},
             'series': {
                 'stack': true,
@@ -54,13 +55,16 @@ var LIVEGRAPH_TEMPLATES = {
             if (!polls[hostname].length) {
                 continue;
             }
-
+            
+            var request_started = (new Date()).getTime();
             $.get(livegraph_url + '?hostname=' + hostname, function(data) {
                 for (var i = 0; i < polls[hostname].length; ++i) {
                     polls[hostname][i](data);
                 }
                 if (polls[hostname].length) {
-                    setTimeout(get_new_data, 1000);
+                    var time_taken = (new Date()).getTime() - request_started;
+                    var timout = Math.max(0, 1000 - time_taken);
+                    setTimeout(get_new_data, timeout);
                 }
             });
         }
