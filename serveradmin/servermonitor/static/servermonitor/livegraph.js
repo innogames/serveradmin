@@ -63,7 +63,7 @@ var LIVEGRAPH_TEMPLATES = {
                 }
                 if (polls[hostname].length) {
                     var time_taken = (new Date()).getTime() - request_started;
-                    var timout = Math.max(0, 1000 - time_taken);
+                    var timeout = Math.max(0, 1000 - time_taken);
                     setTimeout(get_new_data, timeout);
                 }
             });
