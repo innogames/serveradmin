@@ -1070,6 +1070,11 @@ $(function() {
     $('#shell_command').val('');
 
     $('#shell_attributes input[name="attr"]').bind('change', function(ev) {
+        var s_index = search['shown_attributes'].indexOf(this.value);
+        if (s_index != -1 && !this.checked) {
+            search['shown_attributes'].splice(s_index, 1);
+        }
+
         var index = search['shown_attributes_extra'].indexOf(this.value);
         if (index == -1 && this.checked) {
             search['shown_attributes_extra'].push(this.value);
