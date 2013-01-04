@@ -257,7 +257,7 @@ function _make_attr_editable(cell, server, attr_name, value)
                 if ($.trim(unparsed_values) == '') {
                     unparsed_values = [];
                 } else {
-                    unparsed_values = unparsed_values.split(/[\s|,]+/);
+                    unparsed_values = unparsed_values.split(/[\s,]+/);
                 }
                 commit_data = {'action': 'multi', 'add': [], 'remove': []};
                 var edit_values = [];
