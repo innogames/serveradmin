@@ -89,6 +89,9 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
         class Meta:
             model = ServerTypeAttributes
             fields = ('required', 'attrib_default', 'regex')
+            widgets = {
+                'regex': forms.TextInput(attrs={'size': 50})
+            }
         
         def __init__(self, servertype, *args, **kwargs):
             self.servertype = servertype
