@@ -14,7 +14,9 @@ class IPv4Field(models.Field):
     def to_python(self, value):
         if isinstance(value, IP):
             return value
-        if value is None:
+        elif value is None:
+            return None
+        elif value == '':
             return None
         return IP(value)
 
