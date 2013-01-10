@@ -26,6 +26,7 @@
         <th>end ip {% include "iprange/ordering.html" with field="max" %}</th>
         <th>cidr {% include "iprange/ordering.html" with field="min" %}</th>
         <th>gateway {% include "iprange/ordering.html" with field="gateway" %}</th>
+        <th>routes</th>
 {% if perms.iprange.change_iprange %}
         <th>edit</th>
 {% endif %}
@@ -48,6 +49,7 @@
         {% endif %}
         </td>
         <td>{{ iprange.gateway }}</td>
+        <td><a href="{% url iprange_routes iprange.range_id %}">routes</a></td>
 {% if perms.iprange.change_iprange %}
         <td><a href="{% url iprange_edit iprange.range_id %}">edit</a></td>
 {% endif %}

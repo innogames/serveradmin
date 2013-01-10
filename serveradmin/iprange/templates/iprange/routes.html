@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Routes for {{ iprange.range_id }}{% endblock %}
+
+{% block content %}
+<h2>Routes for {{ iprange.range_id }}</h2>
+
+{% if routes %}
+<table>
+	<tr>
+		<th>Network</th>
+		<th>Gateway</th>
+{% if perms.iprange.can_delete_route %}
+		<th>delete</th>
+{% endif %}
+	</tr>
+{% for route in routes %}
+	<tr>
+		<td>{{ route.network }}</td>
+		<td>{{ route.gateway }}</td>
+{% if perms.iprange.can_delete_route %}
+		<td><a href="{% url iprange_routes_del route.pk %}">delete</a></td>
+{% endif %}
+	</tr>
+{% endfor %}
+</table>
+{% else %}
+<p>No routes found.</p>
+{% endif %}
+
+<p><a href="{% url iprange_routes_add iprange.range_id %}">Add route</a></p>.
+
+{% if routes %}
+<h3>route commands</h3>
+<pre>
+{% for route in routes %}
+route add -net {{ route.network }} gw {{ route.gateway }}
+{% endfor %}
+</pre>
+{% endif %}
+
+{% endblock content %}

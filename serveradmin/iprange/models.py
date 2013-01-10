@@ -5,6 +5,7 @@ from django.db import models, connection
 from adminapi.utils import Network
 from serveradmin.common import dbfields
 from serveradmin.dataset import query, DatasetError
+from serveradmin.dataset.models import Segment
 
 IP_CHOICES = (
     ('ip', 'Private'),
@@ -60,3 +61,19 @@ class IPRange(models.Model):
     
     def __unicode__(self):
         return self.range_id
+
+class Route(models.Model):
+    network = dbfields.IPv4CIDRField()
+    gateway = dbfields.IPv4Field()
+    iprange = models.ForeignKey(IPRange)
+    
+    def __unicode__(self):
+        return u'{0}: {1}'.format(self.iprange, self.cidr)
+
+class SegmentRoute(models.Model):
+    network = dbfields.IPv4CIDRField()
+    gateway = dbfields.IPv4Field()
+    segment = models.ForeignKey(Segment)
+    
+    def __unicode__(self):
+        return u'{0}: {1}'.format(self.segment, self.cidr)

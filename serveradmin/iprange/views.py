@@ -1,9 +1,10 @@
 from django.template.response import TemplateResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.db import connection
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
+from django import forms
 from django.contrib.auth.decorators import login_required
 
 from adminapi.utils import IP
@@ -159,4 +160,47 @@ def delete(request, range_id):
     
     return TemplateResponse(request, 'iprange/delete.html', {
         'iprange': iprange
+    })
+
+@login_required
+def routes(request, range_id):
+    iprange = get_object_or_404(IPRange, range_id=range_id)
+    return TemplateResponse(request, 'iprange/routes.html', {
+        'iprange': iprange,
+        'routes': Route.objects.filter(iprange=iprange)
+    })
+
+@login_required
+def routes_add(request, range_id):
+    class AddForm(forms.ModelForm):
+        class Meta:
+            model = Route
+            exclude = ('iprange', )
+
+    iprange = get_object_or_404(IPRange, range_id=range_id)
+    
+    if request.method == 'POST':
+        add_form = AddForm(request.POST)
+        if add_form.is_valid():
+            route = add_form.save(commit=False)
+            route.iprange = iprange
+            route.save()
+            return redirect('iprange_routes', iprange.range_id)
+    else:
+        add_form = AddForm()
+
+    return TemplateResponse(request, 'iprange/routes_add.html', {
+        'iprange': iprange,
+        'add_form': add_form
+    })
+
+@login_required
+def routes_del(request, route_id):
+    route = get_object_or_404(Route, pk=route_id)
+    if request.method == 'POST':
+        iprange = route.iprange
+        route.delete()
+        return redirect('iprange_routes', iprange.range_id)
+    return TemplateResponse(request, 'iprange/routes_del.html', {
+        'route': route
     })
