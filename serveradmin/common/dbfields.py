@@ -59,3 +59,20 @@ class CommaSeparatedOptionField(models.Field):
         kwargs['choices'] = self._choices
         kwargs['widget'] = forms.CheckboxSelectMultiple()
         return forms.MultipleChoiceField(**kwargs)
+
+
+class IPv4CIDRField(models.Field):
+    empty_strings_allowed = False
+    description = "IPv4 CIDR"
+
+    def __init__(self, *args, **kwargs):
+        kwargs['max_length'] = 18
+        models.Field.__init__(self, *args, **kwargs)
+
+    def get_internal_type(self):
+        return "CharField"
+
+    def formfield(self, **kwargs):
+        defaults = {'form_class': formfields.IPv4CIDRField}
+        defaults.update(kwargs)
+        return super(IPv4CIDRField, self).formfield(**defaults)
