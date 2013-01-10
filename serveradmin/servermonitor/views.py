@@ -159,7 +159,7 @@ def index(request):
 
         io_count = io_aggregate[period]['count']
         io_count = io_count if io_count else 1
-        io_aggregate[period]['avg'] = round(cpu_aggregate[period]['sum'] /
+        io_aggregate[period]['avg'] = round(io_aggregate[period]['sum'] /
                 io_count, 2)
     
     mem_free_count = mem_free_count if mem_free_count else 1
