@@ -4,15 +4,17 @@ from django.db import connection
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
+from django.contrib.auth.decorators import login_required
 
 from adminapi.utils import IP
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.models import Segment
 from serveradmin.dataset.querybuilder import QueryBuilder
 from serveradmin.dataset import filters
-from serveradmin.iprange.models import IPRange
+from serveradmin.iprange.models import IPRange, Route
 from serveradmin.iprange.forms import IPRangeForm
 
+@login_required
 def index(request):
     order_field = request.GET.get('order_field',
             request.session.get('iprange_order_field', 'name'))
@@ -45,6 +47,7 @@ def index(request):
         'segments': Segment.objects.all()
     })
 
+@login_required
 def details(request, range_id):
     iprange = get_object_or_404(IPRange, range_id=range_id)
     
@@ -87,6 +90,7 @@ def details(request, range_id):
         'num_ips': num_ips
     })
 
+@login_required
 def add(request):
     if request.method == 'POST':
         form = IPRangeForm(request.POST)
@@ -110,6 +114,7 @@ def add(request):
         'form': form
     })
 
+@login_required
 def edit(request, range_id):
     iprange = get_object_or_404(IPRange, range_id=range_id)
 
@@ -144,6 +149,7 @@ def edit(request, range_id):
         'edit': True
     })
 
+@login_required
 def delete(request, range_id):
     iprange = get_object_or_404(IPRange, range_id=range_id)
     if request.method == 'POST':
