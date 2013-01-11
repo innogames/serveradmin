@@ -61,19 +61,3 @@ class IPRange(models.Model):
     
     def __unicode__(self):
         return self.range_id
-
-class Route(models.Model):
-    network = dbfields.IPv4CIDRField()
-    gateway = dbfields.IPv4Field()
-    iprange = models.ForeignKey(IPRange)
-    
-    def __unicode__(self):
-        return u'{0}: {1}'.format(self.iprange, self.cidr)
-
-class SegmentRoute(models.Model):
-    network = dbfields.IPv4CIDRField()
-    gateway = dbfields.IPv4Field()
-    segment = models.ForeignKey(Segment)
-    
-    def __unicode__(self):
-        return u'{0}: {1}'.format(self.segment, self.cidr)
