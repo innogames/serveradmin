@@ -5,7 +5,6 @@ from django.db import models, connection
 from adminapi.utils import Network
 from serveradmin.common import dbfields
 from serveradmin.dataset import query, DatasetError
-from serveradmin.dataset.models import Segment
 
 IP_CHOICES = (
     ('ip', 'Private'),
