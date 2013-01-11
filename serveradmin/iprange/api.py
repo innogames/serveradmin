@@ -98,5 +98,6 @@ def _build_range_object(r):
         'type': 'private' if r.ip_type == 'ip' else 'public',
         'min': r.min,
         'max': r.max,
-        'gateway': r.gateway
+        'gateway': r.gateway,
+        'belongs_to': r.belongs_to.range_id
     }
