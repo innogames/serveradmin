@@ -92,6 +92,7 @@ def get_matching_ranges(ip):
     return [_build_range_object(r) for r in range_objects]
 
 def _build_range_object(r):
+    belongs_to = r.belongs_to.range_id if r.belongs_to else None
     return {
         'range_id': r.range_id,
         'segment': r.segment,
@@ -99,5 +100,5 @@ def _build_range_object(r):
         'min': r.min,
         'max': r.max,
         'gateway': r.gateway,
-        'belongs_to': r.belongs_to.range_id
+        'belongs_to': belongs_to
     }
