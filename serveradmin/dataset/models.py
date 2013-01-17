@@ -103,3 +103,10 @@ class Segment(models.Model):
 
     class Meta:
         db_table = 'segment'
+
+class SegmentUsage(models.Model):
+    segment = models.OneToOneField(Segment, related_name='usage')
+    description = models.TextField()
+
+    def __unicode__(self):
+        return '{0}: {1}'.format(self.segment, self.description)
