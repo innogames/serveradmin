@@ -169,6 +169,7 @@ class Empty(Filter):
 
     def _serialize(self):
         return {'name': 'empty'}
+filter_classes['empty'] = Empty
 
 def _prepare_filter(filter):
     return filter if isinstance(filter, BaseFilter) else ExactMatch(filter)
