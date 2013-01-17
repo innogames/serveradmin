@@ -16,7 +16,7 @@ from django.conf import settings
 
 from adminapi.utils.parse import parse_query
 from serveradmin.dataset import query, filters, DatasetError
-from serveradmin.dataset.models import Segment, ServerType
+from serveradmin.dataset.models import Segment, SegmentUsage, ServerType
 from serveradmin.servermonitor.models import (get_available_graphs,
         get_graph_url, split_graph_name, join_graph_name, reload_graphs,
         PERIODS, query_livegraph)
@@ -266,7 +266,6 @@ def livegraph_data(request):
         'data': data
     }), mimetype='application/x-json')
 
-
 @require_POST
 @login_required
 def reload(request):
@@ -279,6 +278,63 @@ def reload(request):
     resp = HttpResponse(mimetype='application/x-json')
     json.dump({'result': reload_graphs((hostname, [graph]))}, resp)
     return resp
+
+@login_required
+def segments_info(request):
+    try:
+        bins = [int(x) for x in request.GET['bins'].split(',')]
+    except (KeyError, ValueError):
+        bins = [0, 5, 70]
+    bin_list = []
+    last = 100
+    for start in reversed(bins):
+        bin_list.append({'start': start, 'stop': last})
+        last = start
+    bin_list.reverse()
+    
+    segments = []
+    for segment in Segment.objects.select_related():
+        try:
+            usage = segment.usage.description
+        except SegmentUsage.DoesNotExist:
+            usage = 'unknown'
+
+        segments.append({
+            'name': segment.segment,
+            'info': _get_segment_info(segment, bins),
+            'usage': usage
+        })
+    
+    return TemplateResponse(request, 'servermonitor/segments_info.html', {
+        'segments': segments,
+        'bin_list': bin_list
+    })
+
+def _get_segment_info(segment, bins):
+    reversed_bins = list(reversed(bins))
+    server_hist = [0] * len(bins)
+    
+    segment_name = segment.segment
+    hosts = (query(physical_server=True, cancelled=False, segment=segment_name)
+                .restrict('hostname'))
+    hostnames = [host['hostname'] for host in hosts]
+    
+    info = get_information(hostnames, disabled_features=['vserver'])
+    for host in info['hosts']:
+        try:
+            cpu_value = host['cpu']['daily']
+        except KeyError:
+            continue
+        for i, start in enumerate(reversed_bins):
+            if cpu_value >= start:
+                server_hist[i] += 1
+                break
+    server_hist.reverse()
+    
+    info['num_servers'] = len(hostnames)
+    info['server_hist'] = server_hist
+
+    return info
 
 _sort_scores = {'hourly': 1, 'daily': 2, 'weekly': 3, 'monthly': 4,
                 'yearly': 5, None: 6}

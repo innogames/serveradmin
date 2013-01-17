@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load servermonitor %}
+
+{% block title %}Segments information{% endblock %}
+
+{% block content %}
+<h2>Segments information</h2>
+
+<table class="tabular">
+    <tr>
+        <th>Segment</th>
+        <th>Num servers</th>
+        <th>Free RAM</th>
+        <th>Total RAM</th>
+        <th>Free RAM %</th>
+        {% for bin in bin_list %}
+        <th>CPU {{ bin.start }}-{{ bin.stop }}%</th>
+        {% endfor %}
+        <th>Usage</th>
+    </tr>
+{% for segment in segments %}
+    <tr>
+        <td>{{ segment.name }}</td>
+{% with info=segment.info %}
+        <td>{{ info.num_servers }}</td>
+        <td>{{ info.mem_free_sum|filesizeformat }}</td>
+        <td>{{ info.mem_total_sum|filesizeformat }}</td>
+        <td>{% display_percentage info.mem_free_perc %}</td>
+        {% for num_servers in info.server_hist %}
+        <td>{{ num_servers }}</td>
+        {% endfor %}
+        <td>{{ segment.usage }}</td>
+{% endwith %}
+</tr>
+{% endfor %}
+</table>
+{% endblock content %}

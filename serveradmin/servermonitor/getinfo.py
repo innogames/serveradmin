@@ -1,3 +1,5 @@
+from __future__ import division
+
 from operator import itemgetter
 
 from serveradmin.servermonitor.models import GraphValue, ServerData
@@ -109,6 +111,7 @@ def get_information(hostnames, hardware=None, disabled_features=None):
         'mem_free_avg': mem_free_sum / mem_free_count,
         'mem_total_sum': mem_total_sum,
         'mem_total_avg': mem_total_sum / mem_total_count,
+        'mem_free_perc': mem_free_sum / mem_total_sum if mem_total_sum else 0,
         'disk_free_sum': disk_free_sum,
         'disk_free_avg': disk_free_sum / disk_free_count,
         'cpu_aggregate': cpu_aggregate,

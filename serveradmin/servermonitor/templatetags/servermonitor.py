@@ -27,3 +27,7 @@ def format_percent(value, range_start, range_end, range_diff):
 
     return (u'<div style="background:rgb({r}, {g}, {b});">'
             '{value}&nbsp;%</div>').format(r=r, g=g, b=b, value=value)
+
+@register.simple_tag
+def display_percentage(value):
+    return '{0}%'.format(round(value * 100))
