@@ -60,11 +60,11 @@
 <h3>Results</h3>
 {% endif %}
 
-{% if not hardware_hosts %}
+{% if not hosts %}
 <p>No servers matching your search query.</p>
 {% endif %}
 
-{% if not error and hardware_hosts %}
+{% if not error and hosts %}
 <table border="1">
     <tr>
         <th>Hardware host</th>
@@ -80,7 +80,7 @@
         <th>Mem&nbsp;free</th>
         <th>Guests</th>
     </tr>
-{% for hwhost in hardware_hosts %}
+{% for hwhost in hosts %}
     <tr>
         <td>
             <a href="{% url servermonitor_graph_table %}?hostname={{ hwhost.hostname }}"
