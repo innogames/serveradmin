@@ -315,8 +315,8 @@ def _get_segment_info(segment, bins):
     server_hist = [0] * len(bins)
     
     segment_name = segment.segment
-    hosts = (query(physical_server=True, cancelled=False, segment=segment_name)
-                .restrict('hostname'))
+    hosts = query(physical_server=True, cancelled=False, segment=segment_name,
+                   servertype=filters.Not('hw_loadbalancer')).restrict('hostname')
     hostnames = [host['hostname'] for host in hosts]
     
     info = get_information(hostnames, disabled_features=['vserver'])
