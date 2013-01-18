@@ -20,7 +20,7 @@
         <th>Usage</th>
     </tr>
 {% for segment in segments %}
-    <tr>
+    <tr class="{% cycle 'row_a' 'row_b' %}">
         <td><a href="{% url servermonitor_index %}?term=segment%3D{{ segment.name }}"
         >{{ segment.name }}</td>
 {% with info=segment.info %}
