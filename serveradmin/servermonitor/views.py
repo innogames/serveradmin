@@ -333,6 +333,7 @@ def _get_segment_info(segment, bins):
     
     info['num_servers'] = len(hostnames)
     info['server_hist'] = server_hist
+    info['cpu_usage'] = info['cpu_aggregate']['daily']['avg'] / 100.0 / 0.7
 
     return info
 
