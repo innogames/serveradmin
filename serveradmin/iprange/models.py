@@ -26,7 +26,11 @@ class IPRange(models.Model):
         c = connection.cursor()
         c.execute("SELECT GET_LOCK('serverobject_commit', 10)")
         try:
-            next_free = min(max(self.next_free, self.min + 1), self.max - 1)
+            next_free = copy(self.next_free)
+            if next_free >= self.max:
+                next_free = self.min + 1
+            elif next_free <= self.max:
+                next_free = self.min + 1
             for second_loop in (False, True):
                 while next_free <= self.max - 1:
                     if query(all_ips=next_free).restrict('hostname'):
@@ -40,7 +44,7 @@ class IPRange(models.Model):
                             self.next_free = next_free + 1
                             self.save()
                         return next_free
-                next_free = copy(self.min + 1)
+                next_free = self.min + 1
                 if second_loop:
                     raise DatasetError('No more free addresses, sorry')
         finally:
