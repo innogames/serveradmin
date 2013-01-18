@@ -29,7 +29,7 @@ class IPRange(models.Model):
             next_free = copy(self.next_free)
             if next_free >= self.max:
                 next_free = self.min + 1
-            elif next_free <= self.max:
+            elif next_free <= self.min:
                 next_free = self.min + 1
             for second_loop in (False, True):
                 while next_free <= self.max - 1:
