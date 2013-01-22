@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load servermonitor %}
+{% load commentlist %}
 
 {% block title %}Segments information{% endblock %}
 
@@ -37,5 +38,22 @@
 </tr>
 {% endfor %}
 </table>
+
+<h3>Comments</h3>
+<form method="post" action="{% url comments_delete %}">
+{% csrf_token %}
+<input type="hidden" name="return_to" value="{% url servermonitor_segments %}" />
+{% commentlist 'segmentinfo' can_delete=perms.comments.delete_comment %}
+</form>
+
+<h3>Post a comment</h3>
+<form method="post" action="{% url comments_post %}">
+{% csrf_token %}
+<table>
+{{ comment_form }}
+</table>
+<input type="hidden" name="return_to" value="{% url servermonitor_segments %}" />
+<input type="submit" value="Post comment" />
+</form>
 
 {% endblock content %}

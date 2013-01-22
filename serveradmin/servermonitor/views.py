@@ -13,6 +13,7 @@ from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
+from comments.forms import CommentForm
 
 from adminapi.utils.parse import parse_query
 from serveradmin.dataset import query, filters, DatasetError
@@ -304,10 +305,13 @@ def segments_info(request):
             'info': _get_segment_info(segment, bins),
             'usage': usage
         })
+
+    comment_form = CommentForm(initial={'type': 'segmentinfo'})
     
     return TemplateResponse(request, 'servermonitor/segments_info.html', {
         'segments': segments,
-        'bin_list': bin_list
+        'bin_list': bin_list,
+        'comment_form': comment_form
     })
 
 def _get_segment_info(segment, bins):
