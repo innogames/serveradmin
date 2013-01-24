@@ -5,7 +5,7 @@ from serveradmin.servermonitor.models import ServermonitorError, get_rrd_data
 
 @api_function(group='servermonitor')
 def get_rrd_values(create_definition, hostname, df='AVERAGE', start=None,
-                   stop=None, aggregate=None):
+                   end=None, aggregate=None):
     """Return a dictionary of values in the RRD files.
     
     This looks like the following one::
@@ -32,7 +32,7 @@ def get_rrd_values(create_definition, hostname, df='AVERAGE', start=None,
     """
     
     try:
-        return get_rrd_data(create_definition, hostname, df, start, stop,
+        return get_rrd_data(create_definition, hostname, df, start, end,
                 aggregate)
     except ServermonitorError, e:
         raise ApiError(unicode(e))

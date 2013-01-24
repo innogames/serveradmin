@@ -99,7 +99,7 @@ def reload_graphs(*updates):
     except socket.error:
         return [False] * sum(len(graphs) for _host, graphs in updates)
 
-def get_rrd_data(create_def, hostname, df='AVERAGE', start=None, stop=None,
+def get_rrd_data(create_def, hostname, df='AVERAGE', start=None, end=None,
                  aggregate=None):
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -110,7 +110,7 @@ def get_rrd_data(create_def, hostname, df='AVERAGE', start=None, stop=None,
                                              hostname=hostname,
                                              df=df,
                                              start=start,
-                                             stop=stop,
+                                             end=end,
                                              aggregate=aggregate))
         s.sendall('DONE\n')
         fileobj = s.makefile()
