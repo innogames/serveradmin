@@ -1,9 +1,13 @@
 import socket
+import json
 
 from django.db import models
 from django.conf import settings
 
 PERIODS = ('hourly', 'daily', 'weekly', 'monthly', 'yearly')
+
+class ServermonitorError(Exception):
+    pass
 
 class GraphValue(models.Model):
     graph_name = models.CharField(max_length=50, db_column='graphname')
@@ -93,7 +97,30 @@ def reload_graphs(*updates):
         fileobj = s.makefile()
         return ['SUCCESS' == line.strip() for line in fileobj.readlines()]
     except socket.error:
-        return [False] * sum(len(graphs) for _host, graphs in updates) 
+        return [False] * sum(len(graphs) for _host, graphs in updates)
+
+def get_rrd_data(create_def, hostname, df='AVERAGE', start=None, stop=None,
+                 aggregate=None):
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(settings.SERVERMONITOR_SERVER)
+        s.sendall('HOSTNAME==serveradmin.admin\n')
+        s.sendall(('GETDATA=={create_def}##{hostname}##{df}##{start}##{end}'
+                   '##{aggregate}\n').format(create_def=create_def,
+                                             hostname=hostname,
+                                             df=df,
+                                             start=start,
+                                             stop=stop,
+                                             aggregate=aggregate))
+        s.sendall('DONE\n')
+        fileobj = s.makefile()
+        line = fileobj.readline()
+        if line.startswith('ERR'):
+            raise ServermonitorError(line.split(None, 1)[1])
+        return json.loads(line)
+    except socket.error:
+        raise ServermonitorError('Error in communication to servermonitor')
+
     
 
 _period_extensions = tuple('-' + period for period in PERIODS)
