@@ -109,9 +109,11 @@ class QuerySet(BaseQuerySet):
         self._order_dir = 'asc'
         self._num_rows = 0
 
-    def commit(self, skip_validation=False, force_changes=False):
+    def commit(self, skip_validation=False, force_changes=False, app=None,
+               user=None):
         commit = self._build_commit_object()
-        commit_changes(commit, skip_validation, force_changes)
+        commit_changes(commit, skip_validation, force_changes, app=app,
+                       user=user)
         self._confirm_changes()
 
     def get_raw_results(self):
@@ -305,9 +307,9 @@ class QuerySet(BaseQuerySet):
         return server_data
 
 class ServerObject(BaseServerObject):
-    def commit(self):
+    def commit(self, app=None, user=None):
         commit = self._build_commit_object()
-        commit_changes(commit)
+        commit_changes(commit, app=app, user=user)
         self._confirm_changes()
 
     def __reduce__(self):

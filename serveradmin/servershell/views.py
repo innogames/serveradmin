@@ -178,7 +178,7 @@ def list_and_edit(request, mode='list'):
 
         if not invalid_attrs:
             try:
-                server.commit()
+                server.commit(user=request.user)
                 messages.success(request, 'Edited server successfully')
                 url = '{0}?object_id={1}'.format(reverse('servershell_list'),
                         server.object_id)
@@ -240,7 +240,7 @@ def commit(request):
     try:
         commit = json.loads(request.POST['commit'])
     except (KeyError, ValueError):
-        return HttpResponseBadRequest()
+        return HttpResponseBadRequest('ups')
 
     if 'changes' in commit:
         changes = {}
@@ -251,7 +251,7 @@ def commit(request):
         commit['changes'] = changes
 
     try:
-        commit_changes(commit)
+        commit_changes(commit, user=request.user)
     except (ValueError, DatasetError) as e:
         return HttpResponseBadRequest()
     except (CommitNewerData, CommitValidationFailed) as e:
