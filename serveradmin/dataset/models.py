@@ -1,7 +1,12 @@
+import json
+
 from django.db import models
 from django.core.cache import cache
+from django.utils.timezone import now
+from django.contrib.auth.models import User
 
 from serveradmin.common import dbfields
+from serveradmin.apps.models import Application
 
 TYPE_CHOICES = (
         ('integer', 'Integer'),
@@ -110,3 +115,16 @@ class SegmentUsage(models.Model):
 
     def __unicode__(self):
         return '{0}: {1}'.format(self.segment, self.description)
+
+
+class Change(models.Model):
+    change_on = models.DateTimeField(default=now, db_index=True)
+    user = models.ForeignKey(User, blank=True, null=True)
+    app = models.ForeignKey(Application, blank=True, null=True)
+    changes_json = models.TextField()
+
+    def changes(self):
+        return json.loads(self.changes_json)
+
+    def __unicode__(self):
+        return unicode(self.change_on)

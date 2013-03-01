@@ -1,14 +1,18 @@
 import time
+import json
 
 from django.db import connection
 
 from adminapi.dataset.exceptions import (CommitValidationFailed, CommitNewerData,
         CommitError)
+from adminapi.utils.json import json_encode_extra
 from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.cache import invalidate_cache
 from serveradmin.dataset.typecast import typecast
+from serveradmin.dataset.models import Change
 
-def commit_changes(commit, skip_validation=False, force_changes=False):
+def commit_changes(commit, skip_validation=False, force_changes=False,
+                   app=None, user=None):
     """Commit server changes to the database after validation.
 
     :param commit: Dictionary with the keys 'deleted' and 'changes' containing
@@ -47,6 +51,7 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
             if newer:
                 raise CommitNewerData(u'Newer data available', newer)
         
+        _log_changes(deleted_servers, changed_servers, app, user)
         if deleted_servers:
             _delete_servers(deleted_servers)
         _apply_changes(changed_servers, servers)
@@ -61,6 +66,27 @@ def commit_changes(commit, skip_validation=False, force_changes=False):
     finally:
         c.execute(u'COMMIT')
         c.execute(u"SELECT RELEASE_LOCK('serverobject_commit')")
+
+def _log_changes(deleted_servers, changed_servers, app, user):
+    # Import here to break cyclic import
+    from serveradmin.dataset import query, filters
+    
+    if deleted_servers:
+        old_servers = list(query(object_id=filters.Any(*deleted_servers)))
+    else:
+        old_servers = []
+
+    servers = (query(object_id=filters.Any(*changed_servers.keys()))
+            .restrict('hostname'))
+    changes = {}
+    for server_obj in servers:
+        changes[server_obj['hostname']] = changed_servers[server_obj.object_id]
+
+    changes_json = json.dumps({
+        'deleted': old_servers,
+        'changed': changes
+    }, default=json_encode_extra)
+    Change.objects.create(changes_json=changes_json, app=app, user=user)
 
 def _fetch_servers(changed_servers):
     # Import here to break cyclic import
