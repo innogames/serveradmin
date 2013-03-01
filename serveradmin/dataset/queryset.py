@@ -3,7 +3,7 @@ from datetime import datetime
 from django.db import connection
 
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
-from adminapi.utils import IP
+from adminapi.utils import IP, IPv6
 from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.validation import check_attributes
 from serveradmin.dataset import filters
@@ -288,6 +288,8 @@ class QuerySet(BaseQuerySet):
                 value = value == '1'
             elif attr_type == u'ip':
                 value = IP(value)
+            elif attr_type == u'ipv6':
+                value = IPv6.from_hex(value)
             elif attr_type == u'datetime':
                 value = datetime.fromtimestamp(int(value))
 

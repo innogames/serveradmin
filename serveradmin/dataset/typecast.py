@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 
-from adminapi.utils import IP
+from adminapi.utils import IP, IPv6
 from serveradmin.dataset.base import lookups
 
 _to_datetime_re = re.compile(
@@ -35,6 +35,7 @@ _typecast_fns = {
     'boolean': lambda x: x in ('1', 'True', 'true', 1, True),
     'string': lambda x: x if isinstance(x, basestring) else unicode(x),
     'ip': lambda x: x if isinstance(x, IP) else IP(x),
+    'ipv6': lambda x: x if isinstance(x, IPv6) else IPv6(x),
     'datetime': _to_datetime
 }
 def typecast(attr_name, value, force_single=False):

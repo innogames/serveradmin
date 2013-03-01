@@ -268,6 +268,8 @@ def _prepare_value(attr_name, value):
     attr_obj = lookups.attr_names[attr_name]
     if attr_obj.type == u'ip':
         value = value.as_int()
+    elif attr_obj.type == u'ipv6':
+        value = value.as_hex()
     elif attr_obj.type == u'datetime':
         value = int(time.mktime(value.timetuple()))
     return value

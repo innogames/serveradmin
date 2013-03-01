@@ -276,7 +276,6 @@ function _make_attr_editable(cell, server, attr_name, value)
                 }
             } else {
                 var new_value = parse_value($('#edit_attr').val(), attr_name);
-                console.log(value, new_value);
                 if (new_value == value) {
                     render_server_table();
                     return;

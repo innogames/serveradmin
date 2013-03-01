@@ -1,5 +1,7 @@
 from __future__ import print_function
 import sys
+from socket import inet_pton, inet_ntop, AF_INET6
+from binascii import hexlify, unhexlify
 from itertools import izip
 from math import log
 import warnings
@@ -146,6 +148,33 @@ class IP(object):
 
     def is_public(self):
         return not self.is_internal()
+
+class IPv6(IP):
+    def __init__(self, ipv6):
+        self.ip = inet_pton(AF_INET6, ipv6)
+
+    @classmethod
+    def from_hex(hexcode):
+        byte_string = unhexlify(hexcode)
+        ipv6 = inet_ntop(AF_INET6, byte_string)
+        return IP(ipv6)
+
+    def as_ip(self):
+        return inet_ntop(AF_INET6, self.ip)
+
+    def as_bytes(self):
+        return self.ip
+
+    def as_hex(self):
+        return hexlify(self.ip)
+
+    def is_private(self):
+        # TODO: Implement
+        return False
+
+    def is_public(self):
+        # TODO: Implement
+        return False
 
 class Network(object):
     def __init__(self, min_ip, max_ip=None):
