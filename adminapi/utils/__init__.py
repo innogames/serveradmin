@@ -149,15 +149,15 @@ class IP(object):
     def is_public(self):
         return not self.is_internal()
 
-class IPv6(IP):
+class IPv6(object):
     def __init__(self, ipv6):
         self.ip = inet_pton(AF_INET6, ipv6)
 
     @classmethod
-    def from_hex(hexcode):
+    def from_hex(cls, hexcode):
         byte_string = unhexlify(hexcode)
         ipv6 = inet_ntop(AF_INET6, byte_string)
-        return IP(ipv6)
+        return cls(ipv6)
 
     def as_ip(self):
         return inet_ntop(AF_INET6, self.ip)
@@ -167,6 +167,22 @@ class IPv6(IP):
 
     def as_hex(self):
         return hexlify(self.ip)
+
+    def __repr__(self):
+        return 'IPv6({0!r})'.format(self.as_ip())
+    
+    def __eq__(self, other):
+        if isinstance(other, IPv6):
+            return self.ip == other.ip
+        else:
+            try:
+                other = IP(other)
+                return self.ip == other.ip
+            except ValueError:
+                return False
+
+    def __ne__(self, other):
+        return not self == other
 
     def is_private(self):
         # TODO: Implement
