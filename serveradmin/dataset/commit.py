@@ -81,11 +81,12 @@ def _log_changes(deleted_servers, changed_servers, app, user):
     changes = {}
     for server_obj in servers:
         changes[server_obj['hostname']] = changed_servers[server_obj.object_id]
-
+    
     changes_json = json.dumps({
         'deleted': old_servers,
         'changed': changes
     }, default=json_encode_extra)
+    changes_json = '{}'
     Change.objects.create(changes_json=changes_json, app=app, user=user)
 
 def _fetch_servers(changed_servers):

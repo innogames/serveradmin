@@ -12,6 +12,7 @@ TYPE_CHOICES = (
         ('integer', 'Integer'),
         ('string', 'String'),
         ('ip', 'IPv4 address'),
+        ('ipv6', 'IPv6 address'),
         ('boolean', 'Boolean'),
         ('datetime', 'Datetime')
 )

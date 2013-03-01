@@ -5,7 +5,7 @@ from datetime import datetime
 
 from django.db import connection, DatabaseError
 
-from adminapi.utils import IP, Network, PRIVATE_IP_BLOCKS, PUBLIC_IP_BLOCKS
+from adminapi.utils import IP, IPv6, Network, PRIVATE_IP_BLOCKS, PUBLIC_IP_BLOCKS
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.exceptions import DatasetError
 from serveradmin.dataset.typecast import typecast
@@ -594,6 +594,10 @@ def _prepare_value(attr_obj, value):
         if not isinstance(value, IP):
             value = IP(value)
         value = value.as_int()
+    elif attr_obj.type == u'ipv6':
+        if not isinstance(value, IPv6):
+            value = IPv6(value)
+        value = value.as_hex()
     # XXX: Dirty hack for the old database structure
     if attr_obj.name == u'servertype':
         try:
