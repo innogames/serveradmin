@@ -1,5 +1,6 @@
 from django.db import connection
 
+from serveradmin.iprange.models import IPRange
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.cache import invalidate_cache
 from serveradmin.dataset.validation import handle_violations, check_attribute_type
@@ -33,6 +34,13 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
 
     if segment:
         check_attribute_type(u'segment', segment)
+    else:
+        try:
+            segment = IPRange.objects.filter(
+                    min__lte=intern_ip,
+                    max__gte=intern_ip)[0].segment
+        except IndexError:
+            raise CommitError('Could not determine segment')
 
     real_attributes = attributes.copy()
     for key in (u'hostname', u'intern_ip', u'comment', u'servertype', u'segment'):
