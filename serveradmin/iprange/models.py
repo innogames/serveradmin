@@ -4,7 +4,8 @@ from django.db import models, connection
 
 from adminapi.utils import Network
 from serveradmin.common import dbfields
-from serveradmin.dataset import query, DatasetError
+from serveradmin.dataset.base import lookups
+from serveradmin.dataset.exceptions import DatasetError
 
 IP_CHOICES = (
     ('ip', 'Private'),
@@ -33,7 +34,7 @@ class IPRange(models.Model):
                 next_free = self.min + 1
             for second_loop in (False, True):
                 while next_free <= self.max - 1:
-                    if query(all_ips=next_free).restrict('hostname'):
+                    if _is_taken(next_free):
                         next_free += 1
                     elif (next_free.as_int() & 0xff) in (0x00, 0xff):
                         next_free += 1
@@ -65,3 +66,14 @@ class IPRange(models.Model):
     
     def __unicode__(self):
         return self.range_id
+
+def _is_taken(ip):
+    attrib_id = lookups.attr_names['additional_ips'].pk
+    query = ('SELECT (SELECT COUNT(*) FROM admin_server '
+             '        WHERE intern_ip = %s) + '
+             '       (SELECT COUNT(*) FROM attrib_values '
+             '        WHERE value = %s AND attrib_id = {0})').format(attrib_id)
+    c = connection.cursor()
+    result = c.execute(query, (ip, ip))
+    c.close()
+    return result != 0
