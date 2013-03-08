@@ -4,6 +4,10 @@ import time
 from datetime import datetime
 
 from django.db import connection, DatabaseError
+try:
+    from oursql import OperationalError
+except ImportError:
+    OperationalError = DatabaseError
 
 from adminapi.utils import IP, IPv6, Network, PRIVATE_IP_BLOCKS, PUBLIC_IP_BLOCKS
 from serveradmin.dataset.base import lookups
@@ -67,7 +71,7 @@ class Regexp(Filter):
             c.close()
         except re.error as e:
             raise ValueError(u'Invalid regexp: ' + unicode(e))
-        except DatabaseError as e:
+        except (OperationalError, DatabaseError) as e:
             raise ValueError(u'Invalid regexp: ' + e[1])
         
         self.regexp = regexp
