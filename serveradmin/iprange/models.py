@@ -34,7 +34,7 @@ class IPRange(models.Model):
                 next_free = self.min + 1
             for second_loop in (False, True):
                 while next_free <= self.max - 1:
-                    if _is_taken(next_free):
+                    if _is_taken(next_free.as_int()):
                         next_free += 1
                     elif (next_free.as_int() & 0xff) in (0x00, 0xff):
                         next_free += 1
@@ -74,6 +74,7 @@ def _is_taken(ip):
              '       (SELECT COUNT(*) FROM attrib_values '
              '        WHERE value = %s AND attrib_id = {0})').format(attrib_id)
     c = connection.cursor()
-    result = c.execute(query, (ip, ip))
+    c.execute(query, (ip, ip))
+    result = c.fetchone()[0]
     c.close()
     return result != 0
