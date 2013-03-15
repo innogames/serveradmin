@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load dataset %}
+
+{% block title %}Changes{% endblock %}
+
+{% block content %}
+<h2>Changes</h2>
+<table>
+    <tr>
+        <th>Change on</th>
+        <th>User/App</th>
+        <th>Deleted</th>
+        <th>Changed</th>
+    </tr>
+{% for change in changes %}
+    <tr>
+        <td>{{ change.change_on|date }}</td>
+        <td>
+        {% if change.user %}
+        {{ change.user.first_name }} {{ change.user.last_name }}
+        {% else %}
+        {{ change.app }}
+        {% endif %}
+        </td>
+        {% with server_changes=change.changes %}
+        <td>
+        {% if server_changes.deleted %}
+        {% for server_obj in server_changes.deleted %}
+        <div class="changes_container">
+        <h3>{{ server_obj.hostname }}</h3>
+        {% format_server server_obj %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <i>Nothing deleted.</li>
+        {% endif %}
+        </td>
+        <td>
+        {% if server_changes.changed %}
+        {% for hostname, changes in server_changes.changed.iteritems %}
+        <div class="changes_container">
+        <h3>{{ hostname }}</h3>
+        {% format_changes changes %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <i>Nothing changed.</i>
+        {% endif %}
+        </td>
+        {% endwith %}
+    </tr>
+{% endfor %}
+</table>
+{% endblock content %}

@@ -1,0 +1,22 @@
+<table>
+{% for item in server_items %}
+    <tr>
+        <th>{{ item.attr }}:</th>
+        <td>
+        {% if item.multi %}
+        {% if item.value %}
+        <ul>
+        {% for val in item.value %}
+            <li>{{ val }}</li>
+        {% endfor %}
+        </ul>
+        {% else %}
+        <i>Empty set</i>
+        {% endif %}
+        {% else %}
+        {{ item.value }}
+        {% endif %}
+        </td>
+    </tr>
+{% endfor %}
+</table>

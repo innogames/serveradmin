@@ -11,7 +11,7 @@ from django import forms
 
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.models import (ServerType, Attribute, AttributeValue,
-        ServerTypeAttributes)
+        ServerTypeAttributes, Change)
 
 @login_required
 def servertypes(request):
@@ -233,6 +233,12 @@ def add_attribute(request):
         add_form = AddForm()
     return TemplateResponse(request, 'dataset/add_attribute.html', {
         'form': add_form
+    })
+
+@login_required
+def changes(request):
+    return TemplateResponse(request, 'dataset/changes.html', {
+        'changes': Change.objects.order_by('-change_on').select_related()
     })
 
 def _clear_lookups():
