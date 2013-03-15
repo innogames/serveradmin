@@ -261,18 +261,24 @@ function _make_attr_editable(cell, server, attr_name, value)
                 }
                 commit_data = {'action': 'multi', 'add': [], 'remove': []};
                 var edit_values = [];
+                var was_changed = false;
                 for (var i = 0; i < unparsed_values.length; i++) {
                     var edit_value = parse_value(unparsed_values[i], attr_name);
                     edit_values.push(edit_value);
 
                     if (server[attr_name].indexOf(edit_value) == -1) {
                         commit_data['add'].push(edit_value);
+                        was_cached = true;
                     }
                 }
                 for (var i = 0; i < server[attr_name].length; i++) {
                     if (edit_values.indexOf(server[attr_name][i]) == -1) {
                         commit_data['remove'].push(server[attr_name][i]);
+                        was_changed = true;
                     }
+                }
+                if (!was_changed) {
+                    commit_data = null;
                 }
             } else {
                 var new_value = parse_value($('#edit_attr').val(), attr_name);
@@ -301,6 +307,10 @@ function _make_attr_editable(cell, server, attr_name, value)
                         'old': server[attr_name]
                     }
                 }
+            }
+            if (commit_data === null) {
+                render_server_table();
+                return;
             }
             if (typeof(commit['changes'][server['object_id']]) == 'undefined') {
                 commit['changes'][server['object_id']] = {};
