@@ -254,8 +254,11 @@ def changes(request):
 @login_required
 def restore_deleted(request, change_id):
     change = get_object_or_404(Change, pk=change_id)
-    server_obj = [sobj for sobj in change.changes['deleted']
-                  if sobj['hostname'] == request.POST.get('hostname')][0]
+    try:
+        server_obj = [sobj for sobj in change.changes['deleted']
+                      if sobj['hostname'] == request.POST.get('hostname')][0]
+    except IndexError:
+        raise Http404
     
     try:
         create_server(server_obj, skip_validation=True, fill_defaults=False,
