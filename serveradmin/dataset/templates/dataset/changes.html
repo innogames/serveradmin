@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load url from future %}
 {% load dataset %}
 
 {% block title %}Changes{% endblock %}
@@ -29,6 +30,11 @@
         <div class="changes_container">
         <h3>{{ server_obj.hostname }}</h3>
         {% format_server server_obj %}
+		<form method="post" action="{% url 'dataset_restore_deleted' change.pk %}">
+		{% csrf_token %}
+		<input type="hidden" name="hostname" value="{{ server_obj.hostname }}" />
+		<p><input type="submit" value="restore" /></p>
+		</form>
         </div>
         {% endfor %}
         {% else %}

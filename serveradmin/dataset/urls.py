@@ -22,4 +22,5 @@ urlpatterns = patterns(
             name='dataset_delete_attribute'),
     url(r'^attributes/add$', 'add_attribute', name='dataset_add_attribute'),
     url(r'^changes$', 'changes', name='dataset_changes'),
+    url(r'^changes_restore/(\d+)$', 'restore_deleted', name='dataset_restore_deleted'),
 )

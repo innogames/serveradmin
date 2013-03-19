@@ -13,6 +13,8 @@ from django import forms
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.models import (ServerType, Attribute, AttributeValue,
         ServerTypeAttributes, Change)
+from serveradmin.dataset.create import create_server
+from serveradmin.dataset.exceptions import CommitError
 
 @login_required
 def servertypes(request):
@@ -248,6 +250,21 @@ def changes(request):
     return TemplateResponse(request, 'dataset/changes.html', {
         'changes': page 
     })
+
+@login_required
+def restore_deleted(request, change_id):
+    change = get_object_or_404(Change, pk=change_id)
+    server_obj = [sobj for sobj in change.changes['deleted']
+                  if sobj['hostname'] == request.POST.get('hostname')][0]
+    
+    try:
+        create_server(server_obj, skip_validation=True, fill_defaults=False,
+                      fill_defaults_all=False)
+    except CommitError as e:
+        messages.error(request, unicode(e))
+    else:
+        messages.success(request, 'Server restored.')
+    return redirect('dataset_changes')
 
 def _clear_lookups():
     cache.delete('dataset_lookups_version')
