@@ -124,6 +124,7 @@ class Change(models.Model):
     app = models.ForeignKey(Application, blank=True, null=True)
     changes_json = models.TextField()
 
+    @property
     def changes(self):
         return json.loads(self.changes_json)
 
