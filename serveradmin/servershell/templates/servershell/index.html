@@ -321,6 +321,11 @@ it will be interpreted as regular expression.</p>
         <td><span class="noargs">none</span>
         <td>Create a new server.</td>
     </tr>
+    <tr>
+        <td>changes</td>
+        <td><span class="noargs">none</span>
+        <td>Show changes to server database.</td>
+    </tr>
 </table>
 </div>
 
@@ -339,6 +344,7 @@ var shell_new_url = "{% url servershell_new %}";
 var shell_compare_url = "{% url servermonitor_compare %}";
 var shell_graph_url = "{% url servermonitor_graph_table %}";
 var shell_livegraph_url = "{% url servermonitor_livegraph %}";
+var shell_changes_url = "{% url dataset_changes %}";
 var livegraph_url = "{% url servermonitor_livegraph_data %}";
 var monitor_reload_url = "{% url servermonitor_reload %}";
 //]]>

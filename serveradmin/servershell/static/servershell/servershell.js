@@ -478,6 +478,7 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'cmp': 'Compare servermonitor graphs for several hosts',
         'list': 'List all attributes of a server',
         'new': 'Create a new server',
+        'changes': 'Show changes',
     };
     
     if (plen == 1 && parsed_args[0]['token'] == 'str') {
@@ -583,6 +584,8 @@ function handle_command(command)
         return handle_command_new();
     } else if (command == 'delete') {
         return handle_command_delete();
+    } else if (command == 'changes') {
+        return handle_command_changes();
     } else if (is_digit(command[0])) {
         return handle_command_range(command);
     } else {
@@ -704,6 +707,11 @@ function handle_command_delete()
     });
     render_server_table();
     return '';
+}
+
+function handle_command_changes()
+{
+    window.location = shell_changes_url;
 }
 
 function handle_command_range(command)
