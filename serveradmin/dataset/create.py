@@ -63,20 +63,21 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
         # Handle not existing attributes (fill defaults, validate require)
         if attr.name not in real_attributes:
             if attr_obj.multi:
-                if stype_attr.default is None:
+                print attr.name, repr(stype_attr.default)
+                if stype_attr.default in ('', None):
                     real_attributes[attr.name] = []
                 else:
                     real_attributes[attr.name] = _type_cast_default(attr_obj,
                             stype_attr.default)
             elif stype_attr.required:
-                if fill_defaults and stype_attr.default is not None:
+                if fill_defaults and stype_attr.default not in ('', None):
                     real_attributes[attr.name] = _type_cast_default(attr_obj,
                             stype_attr.default)
                 else:
                     violations_required.append(attr.name)
                     continue
             else:
-                if fill_defaults_all and stype_attr.default is not None:
+                if fill_defaults_all and stype_attr.default not in ('', None):
                     real_attributes[attr.name] = _type_cast_default(attr_obj,
                             stype_attr.default)
                 else:
