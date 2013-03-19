@@ -1,4 +1,5 @@
 {% extends base_template %}
+{% load url from future %}
 
 {% block title %}Graphs for  {{ hostname }}{% endblock %}
 
@@ -64,7 +65,7 @@
 <script type="text/javascript" src="{{ STATIC_URL }}servermonitor/servermonitor.js"></script>
 <script type="text/javascript">
 //<![CDATA[
-var monitor_reload_url = '{% url servermonitor_reload %}';
+var monitor_reload_url = '{% url 'servermonitor_reload' %}';
 attach_graph_reload();
 //]]>
 </script>

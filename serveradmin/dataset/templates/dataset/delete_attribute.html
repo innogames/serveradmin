@@ -1,17 +1,18 @@
 {% extends "base.html" %}
+{% load url from future %}
 
 {% block title %}Delete {{ attribute.name }}{% endblock %}
 
 {% block content %}
 <h2>Delete {{ attribute.name }}</h2>
 <p>Do you really want to delete the attribute "{{ attribute.name }}"?</p>
-<form method="post" action="{% url dataset_delete_attribute attribute.name %}">
+<form method="post" action="{% url 'dataset_delete_attribute' attribute.name %}">
 {% csrf_token %}
 <p>
 <label><input type="checkbox" name="confirm" value="1" />
 I know that this will also kill all associated values on the servers.</label>
 </p>
-<a href="{% url dataset_attributes %}">Cancel </a>&nbsp;
+<a href="{% url 'dataset_attributes' %}">Cancel </a>&nbsp;
 <input type="submit" value="delete" name="delete" />
 </form>
 {% endblock content %}

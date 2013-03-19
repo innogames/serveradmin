@@ -1,3 +1,4 @@
+{% load url from future %}
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -25,23 +26,22 @@
 <ul class="menu">
 
 {% if user.is_authenticated %}
-<li><a href="{% url servershell_index %}">Servershell</a></li>
-<li><a href="{% url dataset_servertypes %}">Servertypes</a></li>
-<li><a href="{% url dataset_attributes %}">Attributes</a></li>
-<li><a href="{% url iprange_index %}">IP ranges</a></li>
-<li><a href="{% url servermonitor_index %}">Servermonitor</a></li>
-<li><a href="{% url servermonitor_segments %}">Segments info</a></li>
-<li><a href="{% url docs_index %}">Documentation</a>
- <ul class="childmenu">
-<li><a href="{% url docs_document 'python-api' %}">Python API</a></li>
-<li><a href="{% url api_doc_functions %}">API functions</a></li>
-<li><a href="{% url docs_document 'extending' %}">Extending</a></li>
- </ul>
+<li><a href="{% url 'servershell_index' %}">Servershell</a></li>
+<li><a href="{% url 'dataset_servertypes' %}">Servertypes</a></li>
+<li><a href="{% url 'dataset_attributes' %}">Attributes</a></li>
+<li><a href="{% url 'iprange_index' %}">IP ranges</a></li>
+<li><a href="{% url 'servermonitor_index' %}">Servermonitor</a></li>
+<li><a href="{% url 'servermonitor_segments' %}">Segments info</a></li>
+<li><a href="{% url 'docs_index' %}">Documentation</a>
+<li><a href="{% url 'docs_document' 'python-api' %}">Python API</a></li>
+<li><a href="{% url 'api_doc_functions' %}">API functions</a></li>
+<li><a href="{% url 'docs_document' 'extending' %}">Extending</a></li>
+</ul>
 </li>
 {% if user.is_staff %}
-<li><a href="{% url admin:index %}">Admin</a></li>
+<li><a href="{% url 'admin:index' %}">Admin</a></li>
 {% endif %}
-<li><a href="{% url logout %}">Logout</a></li>
+<li><a href="{% url 'logout' %}">Logout</a></li>
 {% else %}
 <li><a href="#">Login</a></li>
 {% endif %}

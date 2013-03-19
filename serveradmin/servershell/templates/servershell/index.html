@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load url from future %}
 {% load serversearch %}
 {% block title %}Servershell{% endblock %}
 
@@ -335,18 +336,18 @@ it will be interpreted as regular expression.</p>
 {% serversearch_js 'shell_search' %}
 <script type="text/javascript">
 //<![CDATA[
-var shell_results_url = "{% url servershell_results %}";
-var shell_export_url = "{% url servershell_export %}";
-var shell_list_url = "{% url servershell_list %}";
-var shell_commit_url = "{% url servershell_commit %}";
-var shell_values_url = "{% url servershell_values %}";
-var shell_new_url = "{% url servershell_new %}";
-var shell_compare_url = "{% url servermonitor_compare %}";
-var shell_graph_url = "{% url servermonitor_graph_table %}";
-var shell_livegraph_url = "{% url servermonitor_livegraph %}";
-var shell_changes_url = "{% url dataset_changes %}";
-var livegraph_url = "{% url servermonitor_livegraph_data %}";
-var monitor_reload_url = "{% url servermonitor_reload %}";
+var shell_results_url = "{% url 'servershell_results' %}";
+var shell_export_url = "{% url 'servershell_export' %}";
+var shell_list_url = "{% url 'servershell_list' %}";
+var shell_commit_url = "{% url 'servershell_commit' %}";
+var shell_values_url = "{% url 'servershell_values' %}";
+var shell_new_url = "{% url 'servershell_new' %}";
+var shell_compare_url = "{% url 'servermonitor_compare' %}";
+var shell_graph_url = "{% url 'servermonitor_graph_table' %}";
+var shell_livegraph_url = "{% url 'servermonitor_livegraph' %}";
+var shell_changes_url = "{% url 'dataset_changes' %}";
+var livegraph_url = "{% url 'servermonitor_livegraph_data' %}";
+var monitor_reload_url = "{% url 'servermonitor_reload' %}";
 //]]>
 </script>
 <script type="text/javascript" src="{{ STATIC_URL }}servershell/common.js"></script>

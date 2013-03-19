@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load url from future %}
 
 {% block content %}
 {% if edit %}
@@ -50,7 +51,7 @@
 </tr>
 </table>
 <p>
-    <a href="{% url iprange_index %}">Cancel</a>&nbsp;
+    <a href="{% url 'iprange_index' %}">Cancel</a>&nbsp;
     <input type="submit" value="{% if edit %}edit{% else %}add{% endif %}"/>
 </p>
 </form>

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load url from future %}
 
 {% block title %}IP ranges{% endblock %}
 
@@ -36,7 +37,7 @@
     </tr>
 {% for iprange in ip_ranges %}
     <tr class="{% cycle "row_a" "row_b" %}">
-        <td><a href="{% url iprange_details iprange.range_id %}"
+        <td><a href="{% url 'iprange_details' iprange.range_id %}"
         >{{ iprange.range_id }}</a></td>
         <td>{{ iprange.get_ip_type_display }}</td>
         <td>{{ iprange.min }}</td>
@@ -51,23 +52,23 @@
         <td>{{ iprange.gateway }}</td>
 		<td>
 		{% if iprange.belongs_to %}
-        <a href="{% url iprange_details iprange.belongs_to.range_id %}"
+        <a href="{% url 'iprange_details' iprange.belongs_to.range_id %}"
         >{{ iprange.belongs_to.range_id }}</a>
 		{% else %}
 		None
 		{% endif %}
 		</td>
 {% if perms.iprange.change_iprange %}
-        <td><a href="{% url iprange_edit iprange.range_id %}">edit</a></td>
+        <td><a href="{% url 'iprange_edit' iprange.range_id %}">edit</a></td>
 {% endif %}
 {% if perms.iprange.delete_iprange %}
-        <td><a href="{% url iprange_delete iprange.range_id %}">delete</a></td>
+        <td><a href="{% url 'iprange_delete' iprange.range_id %}">delete</a></td>
 {% endif %}
     </tr>
 {% endfor %}
 </table>
 
 {% if perms.iprange.add_iprange %}
-<p><a href="{% url iprange_add %}">Add IP range</a></p>
+<p><a href="{% url 'iprange_add' %}">Add IP range</a></p>
 {% endif %}
 {% endblock content %}

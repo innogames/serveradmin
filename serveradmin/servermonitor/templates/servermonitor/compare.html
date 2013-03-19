@@ -1,4 +1,5 @@
 {% extends base_template %}
+{% load url from future %}
 
 {% block title %}Graph comparison{% endblock %}
 
@@ -72,7 +73,7 @@
 {% endif %}
 <script type="text/javascript">
 //<![CDATA[
-var monitor_reload_url = '{% url servermonitor_reload %}';
+var monitor_reload_url = '{% url 'servermonitor_reload' %}';
 $(function() {
     attach_graph_reload();
 });

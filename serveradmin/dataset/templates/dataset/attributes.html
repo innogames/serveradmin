@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load url from future %}
 
 {% block title %}Attributes{% endblock %}
 
@@ -22,7 +23,7 @@
 {% if perms.dataset.delete_attribute %}
         <td>
         {% if attr.pk %}
-            <a href="{% url dataset_delete_attribute attr.name %}">delete</a>
+            <a href="{% url 'dataset_delete_attribute' attr.name %}">delete</a>
         {% else %}
         not deletable
         {% endif %}
@@ -33,7 +34,7 @@
 </table>
 
 {% if perms.dataset.add_attribute %}
-<p><a href="{% url dataset_add_attribute %}">Add attribute</a></p>
+<p><a href="{% url 'dataset_add_attribute' %}">Add attribute</a></p>
 {% endif %}
 
 {% endblock content %}

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load url from future %}
 {% load servermonitor %}
 {% load commentlist %}
 
@@ -22,7 +23,7 @@
     </tr>
 {% for segment in segments %}
     <tr class="{% cycle 'row_a' 'row_b' %}">
-        <td><a href="{% url servermonitor_index %}?term=segment%3D{{ segment.name }}"
+        <td><a href="{% url 'servermonitor_index' %}?term=segment%3D{{ segment.name }}"
         >{{ segment.name }}</td>
 {% with info=segment.info %}
         <td>{{ info.num_servers }}</td>
@@ -40,19 +41,19 @@
 </table>
 
 <h3>Comments</h3>
-<form method="post" action="{% url comments_delete %}">
+<form method="post" action="{% url 'comments_delete' %}">
 {% csrf_token %}
-<input type="hidden" name="return_to" value="{% url servermonitor_segments %}" />
+<input type="hidden" name="return_to" value="{% url 'servermonitor_segments' %}" />
 {% commentlist 'segmentinfo' can_delete=perms.comments.delete_comment %}
 </form>
 
 <h3>Post a comment</h3>
-<form method="post" action="{% url comments_post %}">
+<form method="post" action="{% url 'comments_post' %}">
 {% csrf_token %}
 <table>
 {{ comment_form }}
 </table>
-<input type="hidden" name="return_to" value="{% url servermonitor_segments %}" />
+<input type="hidden" name="return_to" value="{% url 'servermonitor_segments' %}" />
 <input type="submit" value="Post comment" />
 </form>
 

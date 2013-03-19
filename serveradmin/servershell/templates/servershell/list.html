@@ -1,4 +1,5 @@
 {% extends base_template %}
+{% load url from future %}
 
 {% block title %}Attributes of object {{ object_id }}{% endblock %}
 
@@ -42,5 +43,5 @@
 </tr>
 {% endfor %}
 </table>
-<p><a href="{% url servershell_edit %}?object_id={{ object_id }}">Edit</a></p>
+<p><a href="{% url 'servershell_edit' %}?object_id={{ object_id }}">Edit</a></p>
 {% endblock %}

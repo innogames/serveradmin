@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load url from future %}
 
 {% block title %}Delete servertype attribute{% endblock %}
 
@@ -15,7 +16,7 @@ I know that this will also kill all affected values on the servers
 </label>
 </p>
 <p>
-    <a href="{% url dataset_view_servertype stype.name %}">Cancel</a>&nbsp;
+    <a href="{% url 'dataset_view_servertype' stype.name %}">Cancel</a>&nbsp;
     <input type="submit" value="Delete attribute and values">
 </p>
 </form>
