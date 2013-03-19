@@ -268,7 +268,7 @@ function _make_attr_editable(cell, server, attr_name, value)
 
                     if (server[attr_name].indexOf(edit_value) == -1) {
                         commit_data['add'].push(edit_value);
-                        was_cached = true;
+                        was_changed = true;
                     }
                 }
                 for (var i = 0; i < server[attr_name].length; i++) {
