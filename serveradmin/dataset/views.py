@@ -1,6 +1,7 @@
 import re
 from operator import attrgetter, itemgetter
 
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import Http404
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required, permission_required
@@ -237,8 +238,15 @@ def add_attribute(request):
 
 @login_required
 def changes(request):
+    changes = Change.objects.order_by('-change_on').select_related()
+    paginator = Paginator(changes, 20)
+    try:
+        page = paginator.page(request.GET.get('page', 1))
+    except (PageNotAnInteger, EmptyPage):
+        page = paginator.page(1)
+
     return TemplateResponse(request, 'dataset/changes.html', {
-        'changes': Change.objects.order_by('-change_on').select_related()
+        'changes': page 
     })
 
 def _clear_lookups():

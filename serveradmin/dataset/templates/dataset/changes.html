@@ -51,4 +51,19 @@
     </tr>
 {% endfor %}
 </table>
+
+<div class="pagination">
+    Page:
+    <span class="step-links">
+        {% if changes.has_previous %}
+            <a href="?page={{ changes.previous_page_number }}">&laquo;</a>
+        {% endif %}
+        <span class="current">
+            {{ changes.number }}/{{ changes.paginator.num_pages }}
+        </span>
+        {% if changes.has_next %}
+            <a href="?page={{ changes.next_page_number }}">&raquo;</a>
+        {% endif %}
+    </span>
+</div>
 {% endblock content %}
