@@ -308,7 +308,8 @@ def new_server(request):
             attributes['intern_ip'] = IP(attributes['intern_ip'])
             attributes['servertype'] = attributes['servertype'].name
             server_id = create_server(attributes, skip_validation=True,
-                    fill_defaults=True, fill_defaults_all=True)
+                    fill_defaults=True, fill_defaults_all=True,
+                    user=request.user)
             url = '{0}?object_id={1}'.format(reverse('servershell_edit'),
                     server_id)
             return HttpResponseRedirect(url)

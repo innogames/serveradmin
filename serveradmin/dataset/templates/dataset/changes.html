@@ -11,6 +11,7 @@
         <th>Change on</th>
         <th>User/App</th>
         <th>Deleted</th>
+		<th>Added</th>
         <th>Changed</th>
     </tr>
 {% for change in changes %}
@@ -41,6 +42,15 @@
         <i>Nothing deleted.</li>
         {% endif %}
         </td>
+		<td>
+		{% if server_changes.created %}
+		<div class="changes_container">
+		<h3>{{ server_changes.created.hostname }}</h3>
+		{% format_server server_changes.created %}
+		</div>
+		{% else %}
+		<i>Nothing created.</i>
+		{% endif %}
         <td>
         {% if server_changes.changed %}
         {% for hostname, changes in server_changes.changed.iteritems %}

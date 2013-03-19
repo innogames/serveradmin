@@ -1,3 +1,5 @@
+import json
+
 from django.db import connection
 
 from serveradmin.iprange.models import IPRange
@@ -5,10 +7,13 @@ from serveradmin.dataset.base import lookups
 from serveradmin.dataset.cache import invalidate_cache
 from serveradmin.dataset.validation import handle_violations, check_attribute_type
 from serveradmin.dataset.typecast import typecast
+from serveradmin.dataset.models import Change
+from adminapi.utils.json import json_encode_extra
 from adminapi.dataset.exceptions import CommitError
 from adminapi.utils import IP
 
-def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all):
+def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
+                  user=None, app=None):
     if u'hostname' not in attributes:
         raise CommitError(u'Hostname is required')
     if u'servertype' not in attributes:
@@ -109,12 +114,26 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all)
     try:
         server_id = _insert_server(hostname, intern_ip, segment,
                 servertype_id, real_attributes)
+    except:
+        raise
+    else:
+        created_server = real_attributes.copy()
+        created_server['hostname'] = hostname
+        created_server['intern_ip'] = intern_ip
+        created_server['segment'] = segment
+
+        changes_json = json.dumps(
+                {'deleted': [], 'changed': {}, 'created': created_server},
+                default=json_encode_extra)
+        Change.objects.create(changes_json=changes_json, app=app, user=user)
     finally:
         c.execute(u'COMMIT')
         c.execute(u"SELECT RELEASE_LOCK('serverobject_commit')")
 
     # Invalidate caches
     invalidate_cache()
+
+
 
     return server_id
 
