@@ -118,7 +118,7 @@ def dataset_commit(request, app, data):
             changes[int(server_id)] = change
 
         commit = {'deleted': data['deleted'], 'changes': changes}
-        commit_changes(commit, skip_validation, force_changes)
+        commit_changes(commit, skip_validation, force_changes, app=app)
         return {
             'status': 'success'
         }
@@ -140,7 +140,8 @@ def dataset_create(request, app, data):
             raise ValueError('Attributes must be a dictionary')
 
         create_server(data['attributes'], data['skip_validation'],
-            data['fill_defaults'], data['fill_defaults_all'])
+            data['fill_defaults'], data['fill_defaults_all'],
+            app=app)
         return {
             'status': 'success',
             'attributes': _build_attributes(),
