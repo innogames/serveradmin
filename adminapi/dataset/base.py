@@ -353,6 +353,12 @@ class MultiAttr(object):
     def __bool__(self):
         return bool(self._proxied_set)
 
+    def __eq__(self, other):
+        return self._proxied_set == other
+
+    def __neq__(self, other):
+        return self._proxied_set == other
+
     def __getattr__(self, attr):
         if not hasattr(self._proxied_set, attr):
             raise AttributeError('Cannot proxy attribute {0}'.format(attr))
