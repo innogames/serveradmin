@@ -40,7 +40,7 @@ class QuerySet(BaseQuerySet):
             _handle_exception(result)
 
     def count(self):
-        return 1
+        return len(self)
 
     def _fetch_results(self):
         serialized_filters = dict((k, v._serialize()) for k, v in
