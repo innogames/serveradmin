@@ -112,6 +112,9 @@ def graph_table(request):
     for graph in graphs:
         graph_name, period = split_graph_name(graph)
         if period:
+            # Don't show graph with custom timespans
+            if period.startswith('custom'):
+                continue
             graph_dict = graph_table.setdefault(graph_name, {})
             graph_dict['name'] = graph_name
             graph_dict[period] = {
