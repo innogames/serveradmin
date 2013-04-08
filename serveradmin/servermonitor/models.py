@@ -1,5 +1,6 @@
 import socket
 import json
+import re
 
 from django.db import models
 from django.conf import settings
@@ -124,8 +125,9 @@ def get_rrd_data(create_def, hostname, df='AVERAGE', start=None, end=None,
     
 
 _period_extensions = tuple('-' + period for period in PERIODS)
+_period_custom_re = re.compile('custom\d+$')
 def split_graph_name(graph):
-    if graph.endswith(_period_extensions):
+    if graph.endswith(_period_extensions) or _period_custom_re.search(graph):
         graph_name, period = graph.rsplit('-', 1)
         return graph_name, period
     else:
