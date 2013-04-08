@@ -860,7 +860,13 @@ function handle_command_setattr(parsed_args)
         error = 'Please select some servers.';
     }
     if (error) {
-        $('<div title="Error"></div>').text(error).dialog();
+        $('<div title="Error"></div>').text(error).dialog({
+            'buttons': {
+                'OK': function() {
+                    $(this).dialog('close'); 
+                }
+            }
+        });
         return ;
     }
 
@@ -923,7 +929,13 @@ function handle_command_multiattr(parsed_args, action)
 
     var marked_servers = get_marked_servers();
     if (marked_servers.length == 0) {
-        $('<div title="Select servers">You have to select servers first</div>').dialog();
+        $('<div title="Select servers">You have to select servers first</div>').dialog({
+            buttons: {
+                'OK': function() {
+                    $(this).dialog('close');
+                }
+            }
+        });
         return;
     }
     var changes = commit['changes'];
