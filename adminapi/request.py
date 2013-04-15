@@ -32,9 +32,17 @@ def send_request(url, data, auth_token):
     }
 
     req = urllib2.Request(url, data_json, headers)
-    try:
-        return json.loads(urllib2.urlopen(req).read())
-    except urllib2.HTTPError, e:
-        if e.code != 403:
-            raise
-        raise PermissionDenied(e.read())
+    retries = 3
+    while True:
+        retries -= 1
+        try:
+            return json.loads(urllib2.urlopen(req).read())
+        except urllib2.HTTPError, e:
+            if e.code == 403:
+                raise PermissionDenied(e.read())
+            elif e.code == 502:
+                if retries <= 0:
+                    raise
+                time.sleep(5)
+            else:
+                raise
