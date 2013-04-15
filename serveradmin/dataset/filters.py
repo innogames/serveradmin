@@ -129,7 +129,6 @@ filter_classes[u'regexp'] = Regexp
 extended_re = re.compile(r'<((\d+\-\d+|\d+)(,(\d+\-\d+|\d+))*)>')
 class ExtendedRegexp(Regexp):
     def __init__(self, extended_regexp):
-        print 'hello', extended_regexp
         self.extended_regexp = extended_regexp
 
         def expand(match):
@@ -145,7 +144,6 @@ class ExtendedRegexp(Regexp):
             return '({0})'.format(choices)
 
         regexp = extended_re.sub(expand, extended_regexp)
-        print 'parsed', regexp
         Regexp.__init__(self, regexp)
     
     def __repr__(self):
