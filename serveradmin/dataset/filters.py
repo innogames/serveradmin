@@ -126,6 +126,35 @@ class Regexp(Filter):
         raise ValueError(u'Invalid object for Regexp')
 filter_classes[u'regexp'] = Regexp
 
+extended_re = re.compile(r'<((\d+\-\d+|\d+)(,(\d+\-\d+|\d+))*)>')
+class ExtendedRegexp(Regexp):
+    def __init__(self, extended_regexp):
+        print 'hello', extended_regexp
+        self.extended_regexp = extended_regexp
+
+        def expand(match):
+            numbers = []
+            parts = match.group(1).split(',')
+            for part in parts:
+                if '-' in part:
+                    start, stop = part.split('-')
+                    numbers += range(int(start), int(stop) + 1)
+                else:
+                    numbers.append(int(part))
+            choices = '|'.join(str(num) for num in numbers)
+            return '({0})'.format(choices)
+
+        regexp = extended_re.sub(expand, extended_regexp)
+        print 'parsed', regexp
+        Regexp.__init__(self, regexp)
+    
+    def __repr__(self):
+        return u'ExtendedRegexp({0!r})'.format(self.extended_regexp)
+
+    def __hash__(self):
+        return hash(u'ExtendedRegexp') ^ hash(self.regexp)
+filter_classes[u'extendedregexp'] = ExtendedRegexp
+
 class Comparison(Filter):
     def __init__(self, comparator, value):
         if comparator not in (u'<', u'>', u'<=', u'>='):

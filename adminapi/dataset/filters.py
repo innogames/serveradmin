@@ -34,6 +34,15 @@ class Regexp(Filter):
 filter_classes['regexp'] = Regexp
 
 
+class ExtendedRegexp(Regexp):
+    def __repr__(self):
+        return 'ExtendedRegexp({0!r})'.format(self.regexp)
+
+    def _serialize(self):
+        return {'name': 'extendedregexp', 'regexp': self.regexp}
+filter_classes['extendedregexp'] = ExtendedRegexp
+
+
 class Comparison(Filter):
     def __init__(self, comparator, value):
         if comparator not in ('<', '>', '<=', '>='):
