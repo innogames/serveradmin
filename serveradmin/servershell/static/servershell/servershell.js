@@ -41,6 +41,15 @@ function execute_search(term)
         search['servers'] = data['servers'];
         search['num_servers'] = data['num_servers'];
         search['shown_attributes'] = data['shown_attributes'];
+
+        // Remove shown_attributes from shown_attributes_extra
+        for (var i = 0; i < search['shown_attributes'].length; ++i) {
+            var index = search['shown_attributes_extra'].indexOf(search['shown_attributes'][i]);
+            if (index !== -1) {
+                search['shown_attributes_extra'].remove(index);
+            }
+        }
+
         search['avail_attributes'] = data['avail_attributes'];
         search['num_pages'] = Math.max(1, Math.ceil(search['num_servers'] / search['per_page']));
         if (search['page'] > search['num_pages']) {
