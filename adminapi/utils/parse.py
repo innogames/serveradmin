@@ -71,6 +71,7 @@ def parse_function_string(args, strict=True):
     
     return parsed_args
 
+_trigger_re_chars = ('.*', '.+', '[', ']', '|', '\\', '$', '^', '<')
 def parse_query(term, filter_classes):
     parsed_args = parse_function_string(term, strict=True)
     if not parsed_args:
@@ -79,8 +80,13 @@ def parse_query(term, filter_classes):
     # If first token is not a key, we assume that a hostname is meant
     token, value = parsed_args[0]
     if token != 'key':
-        if any(x in term for x in ('.*', '.+', '[', ']', '|', '\\', '$', '^')):
-            hostname = filter_classes['regexp'](term)
+        if any(x in term for x in _trigger_re_chars):
+            if '<' in term:
+                regexp_class = filter_classes['extendedregexp']
+            else:
+                regexp_class = filter_classes['regexp']
+
+            hostname = regexp_class(term)
         else:
             hostname = term
         return {u'hostname': hostname}
