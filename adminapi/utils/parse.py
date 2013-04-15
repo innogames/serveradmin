@@ -80,16 +80,26 @@ def parse_query(term, filter_classes):
     # If first token is not a key, we assume that a hostname is meant
     token, value = parsed_args[0]
     if token != 'key':
-        if any(x in term for x in _trigger_re_chars):
+        term_parts = term.split(None, 1)
+        if len(term_parts) == 2:
+            hostname_part, remaining_part = term_parts
+            query_args = parse_query(remaining_part, filter_classes)
+        else:
+            hostname_part = term
+            query_args = {}
+
+        if any(x in hostname_part for x in _trigger_re_chars):
             if '<' in term:
                 regexp_class = filter_classes['extendedregexp']
             else:
                 regexp_class = filter_classes['regexp']
 
-            hostname = regexp_class(term)
+            hostname = regexp_class(hostname_part)
         else:
-            hostname = term
-        return {u'hostname': hostname}
+            hostname = hostname_part
+
+        query_args[u'hostname'] = hostname
+        return query_args
     
     # Otherwise just parse all attributes
     query_args = {}
