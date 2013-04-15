@@ -950,6 +950,14 @@ function handle_command_multiattr(parsed_args, action)
     var changes = commit['changes'];
     for (var i = 0; i < marked_servers.length; i++) {
         var server_id = marked_servers[i];
+        var server = search['servers'][server_id];
+        
+        // Don't modify multiattr if it doesn't exist
+        if (!search['avail_attributes'][server['servertype']][attr_name]) {
+            continue;
+        }
+        
+
         if (typeof(changes[server_id]) == 'undefined') {
             changes[server_id] = {};
         }
