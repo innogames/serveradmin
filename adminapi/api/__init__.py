@@ -32,6 +32,10 @@ class FunctionGroup(object):
                 'args': args,
                 'kwargs': kwargs
             }
+            
+            if hasattr(self.auth_token, '__call__'):
+                self.auth_token = self.auth_token()
+
             result = send_request(API_CALL_URL, call, self.auth_token)
 
             if result['status'] == 'success':
@@ -50,5 +54,11 @@ class FunctionGroup(object):
 
 
 def get(group):
-    return FunctionGroup(group, _api_settings['auth_token'])
+    # We allow delaying the authentication
+    if _api_settings['auth_token'] is None:
+        token = lambda: _api_settings['auth_token']
+    else:
+        token = _api_settings['auth_token']
+
+    return FunctionGroup(group, token)
 
