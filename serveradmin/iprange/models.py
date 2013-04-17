@@ -6,6 +6,8 @@ from adminapi.utils import Network
 from serveradmin.common import dbfields
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.exceptions import DatasetError
+from serveradmin.dataset.querybuilder import QueryBuilder
+from serveradmin.dataset import filters
 
 IP_CHOICES = (
     ('ip', 'Private'),
@@ -53,6 +55,35 @@ class IPRange(models.Model):
 
     def get_network(self):
         return Network(self.min, self.max)
+
+    def get_taken_set(self):
+        # Query taken IPs
+        f_between = filters.Between(self.min, self.max)
+        builder = QueryBuilder()
+        builder.add_attribute('all_ips')
+        builder.add_filter('all_ips', f_between)
+        fields = lookups.attr_names['all_ips'].special.attrs
+        builder.add_select(*fields)
+        
+        # Collect taken IPs in set
+        taken_ips = set()
+        c = connection.cursor()
+        c.execute(builder.build_sql())
+        for ip_tuple in c.fetchall():
+            for ip in ip_tuple:
+                if ip is not None:
+                    taken_ips.add(int(ip))
+
+        return taken_ips
+
+    def get_free_set(self):
+        free_ips = set()
+        taken_ips = self.get_taken_set()
+        for ip_int in xrange(self.min.as_int() + 1, self.max.as_int()):
+            if ip_int not in taken_ips:
+                free_ips.add(ip_int)
+        
+        return free_ips
 
     @property
     def cidr(self):

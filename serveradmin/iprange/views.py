@@ -9,8 +9,6 @@ from django.contrib.auth.decorators import login_required
 from adminapi.utils import IP
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.models import Segment
-from serveradmin.dataset.querybuilder import QueryBuilder
-from serveradmin.dataset import filters
 from serveradmin.iprange.models import IPRange
 from serveradmin.iprange.forms import IPRangeForm
 
@@ -52,23 +50,7 @@ def index(request):
 def details(request, range_id):
     iprange = get_object_or_404(IPRange, range_id=range_id)
     
-    # Query taken IPs
-    f_between = filters.Between(iprange.min, iprange.max)
-    builder = QueryBuilder()
-    builder.add_attribute('all_ips')
-    builder.add_filter('all_ips', f_between)
-    fields = lookups.attr_names['all_ips'].special.attrs
-    builder.add_select(*fields)
-    
-    # Collect taken IPs in set
-    taken_ips = set()
-    c = connection.cursor()
-    c.execute(builder.build_sql())
-    for ip_tuple in c.fetchall():
-        for ip in ip_tuple:
-            if ip is not None:
-                taken_ips.add(int(ip))
-    
+    taken_ips = iprange.get_taken_set() 
     # Divide IP range into continues blocks
     free_blocks = []
     free_block = []
