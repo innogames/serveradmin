@@ -141,7 +141,7 @@ class ExtendedRegexp(Regexp):
                 else:
                     numbers.append(int(part))
             choices = '|'.join(str(num) for num in numbers)
-            return '({0})'.format(choices)
+            return '0*({0})($|[^0-9])'.format(choices)
 
         regexp = extended_re.sub(expand, extended_regexp)
         Regexp.__init__(self, regexp)
