@@ -42,6 +42,26 @@ def get_multiple_free(range_id, num_free=1):
         raise ApiError(e.message)
 
 @api_function(group='ip')
+def get_free_set(range_id):
+    """Return all free IPs"""
+    try:
+        r = IPRange.objects.get(range_id=range_id)
+    except IPRange.DoesNotExist:
+        raise ApiError('No such IP range')
+    
+    return [IP(x).as_ip() for x in r.get_free_set()]
+
+@api_function(group='ip')
+def get_taken_set(range_id):
+    """Return all taken IPs"""
+    try:
+        r = IPRange.objects.get(range_id=range_id)
+    except IPRange.DoesNotExist:
+        raise ApiError('No such IP range')
+    
+    return [IP(x).as_ip() for x in r.get_taken_set()]
+
+@api_function(group='ip')
 def get_range(range_id):
     """Return range with given range_id.
 
