@@ -36,7 +36,8 @@ def index(request):
     return TemplateResponse(request, 'servershell/index.html', {
         'attribute_list': sorted(lookups.attr_names.keys()),
         'search_term': request.GET.get('term', request.session.get('term', '')),
-        'per_page': request.session.get('per_page', NUM_SERVERS_DEFAULT)
+        'per_page': request.session.get('per_page', NUM_SERVERS_DEFAULT),
+        'command_history': json.dumps(request.session.get('command_history', []))
     })
 
 @login_required
@@ -321,3 +322,14 @@ def new_server(request):
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html'
     })
+
+@login_required
+def store_command(request):
+    command = request.POST.get('command')
+    if command:
+        command_history = request.session.setdefault('command_history', [])
+        if not command in command_history:
+            command_history.append(command)
+            request.session.modified = True
+    return HttpResponse('{"status": "OK"}', mimetype='application/x-json')
+
