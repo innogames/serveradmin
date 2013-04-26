@@ -339,7 +339,7 @@ it will be interpreted as regular expression.</p>
 var history = {
     'commands': {{ command_history|safe }}
 };
-history['index'] = history['commands'].length - 1;
+history['index'] = history['commands'].length;
 var shell_results_url = "{% url 'servershell_results' %}";
 var shell_export_url = "{% url 'servershell_export' %}";
 var shell_list_url = "{% url 'servershell_list' %}";
