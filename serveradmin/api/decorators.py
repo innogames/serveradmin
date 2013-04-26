@@ -59,6 +59,9 @@ def api_view(view):
                 return HttpResponseForbidden(forbidden_text,
                         mimetype='text/plain')
 
+        if app.readonly and view.__name__ != 'dataset_query':
+            return HttpResponseForbidden('This token is readonly')
+
 
         return_value = view(request, app, json.loads(request.body))
         if getattr(view, 'encode_json', True):
