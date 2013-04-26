@@ -15,6 +15,7 @@ class Application(models.Model):
     author = models.ForeignKey(User)
     location = models.CharField(max_length=150)
     restricted = models.BooleanField(default=False)
+    readonly = models.BooleanField(default=False)
 
     def __unicode__(self):
         return self.name
