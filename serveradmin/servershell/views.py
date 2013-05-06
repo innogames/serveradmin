@@ -285,14 +285,11 @@ def get_values(request):
 @login_required
 @permission_required('dataset.create_serverobject')
 def new_server(request):
-    class NewServerForm(forms.Form):
+    class CloneServerForm(forms.Form):
         hostname = forms.CharField()
         intern_ip = forms.IPAddressField()
         check_ip = forms.BooleanField(required=False)
-        segment = forms.CharField()
-        servertype = forms.ModelChoiceField(queryset=ServerType.objects.order_by(
-            'name'))
-
+        
         def clean(self):
             if self.cleaned_data.get('check_ip'):
                 if 'intern_ip' in self.cleaned_data:
@@ -300,14 +297,36 @@ def new_server(request):
                         raise forms.ValidationError('IP already taken.')
             return self.cleaned_data
 
+    class NewServerForm(CloneServerForm):
+        servertype = forms.ModelChoiceField(queryset=ServerType.objects.order_by(
+            'name'))
+    
+    if 'clone_from' in request.REQUEST:
+        form_class = CloneServerForm
+        try:
+            clone_from = query(hostname=request.REQUEST['clone_from']).get()
+        except DatasetError:
+            raise Http404
+    else:
+        form_class = NewServerForm
+        clone_from = None
+
     if request.method == 'POST':
-        form = NewServerForm(request.POST)
+        form = form_class(request.POST)
         if form.is_valid():
             attributes = form.cleaned_data.copy()
             # remove check_ip, because it's not an attributes
             del attributes['check_ip'] 
             attributes['intern_ip'] = IP(attributes['intern_ip'])
-            attributes['servertype'] = attributes['servertype'].name
+
+            if clone_from:
+                for key, value in clone_from.iteritems():
+                    if key not in attributes:
+                        attributes[key] = value
+            else:
+                attributes['servertype'] = attributes['servertype'].name
+
+            
             server_id = create_server(attributes, skip_validation=True,
                     fill_defaults=True, fill_defaults_all=True,
                     user=request.user)
@@ -315,12 +334,13 @@ def new_server(request):
                     server_id)
             return HttpResponseRedirect(url)
     else:
-        form = NewServerForm(initial={'check_ip': True})
+        form = form_class(initial={'check_ip': True})
 
     return TemplateResponse(request, 'servershell/new_server.html', {
         'form': form,
         'is_ajax': request.is_ajax(),
-        'base_template': 'empty.html' if request.is_ajax() else 'base.html'
+        'base_template': 'empty.html' if request.is_ajax() else 'base.html',
+        'clone_from': clone_from
     })
 
 @login_required

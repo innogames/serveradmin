@@ -9,6 +9,9 @@
 {% endif %}
 <form method="post" action="{% url 'servershell_new' %}">
 {% csrf_token %}
+{% if clone_from %}
+<input type="hidden" name="clone_from" value="{{ clone_from.hostname }}" />
+{% endif %}
 <table>
 {{ form }}
 </table>

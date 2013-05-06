@@ -562,7 +562,9 @@ function execute_on_servers(callback)
     } else {
         for (var i = 0; i < marked_servers.length; i++) {
             var server = search['servers'][marked_servers[i]];
-            callback(server);
+            if(callback(server) === false) {
+                break;
+            }
         }
     }
 }
@@ -591,6 +593,8 @@ function handle_command(command)
         return handle_command_list();
     } else if (command == 'new') {
         return handle_command_new();
+    } else if (command == 'clone') {
+        return handle_command_clone();
     } else if (command == 'delete') {
         return handle_command_delete();
     } else if (command == 'changes') {
@@ -659,6 +663,7 @@ function handle_command_graph()
             });
             attach_graph_reload();
         });
+        return true;
     }
     execute_on_servers(show_graphs);
     return '';
@@ -678,6 +683,7 @@ function handle_command_livegraph()
             });
 
             start_livegraph(server['hostname'], server['object_id']);
+            return true;
         });
     }
     execute_on_servers(show_livegraphs);
@@ -694,6 +700,7 @@ function handle_command_list() {
                 'width': 1000
             });
         });
+        return true;
     }
     execute_on_servers(show_list);
     return '';
@@ -709,10 +716,26 @@ function handle_command_new()
     return '';
 }
 
+function handle_command_clone()
+{
+    function clone_server(server) {
+        $.get(shell_new_url, {'clone_from': server['hostname']}, function(page) {
+            var title = 'Clone server from ' + server['hostname'];
+            $('<div title="' + title + '"></div>').append(page).dialog({
+                'width': 600
+            });
+        });
+        return false;
+    }
+    execute_on_servers(clone_server);
+    return '';
+}
+
 function handle_command_delete()
 {
     execute_on_servers(function(server) {
         commit['deleted'].push(server['object_id']);
+        return true;
     });
     render_server_table();
     return '';
