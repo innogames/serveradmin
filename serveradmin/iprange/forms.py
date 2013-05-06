@@ -3,7 +3,7 @@ from django.core import validators, exceptions
 
 from adminapi.utils import Network
 from serveradmin.common import formfields
-from serveradmin.dataset.models import Segment
+from serveradmin.serverdb.models import Segment
 from serveradmin.iprange.models import IPRange, IP_CHOICES
 
 class IPRangeForm(forms.Form):

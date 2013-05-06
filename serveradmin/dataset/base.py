@@ -8,7 +8,7 @@ from django.db import connection
 from django.core.cache import cache
 from django.core.signals import request_started
 
-from serveradmin.dataset.models import Attribute, ServerType
+from serveradmin.serverdb.models import Attribute, ServerType
 
 lookups = local()
 ServerTypeAttr = namedtuple('ServerTypeAttr', ['servertype_id', 'attribute_id',

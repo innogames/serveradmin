@@ -20,7 +20,7 @@ Add attribute to servertype {{ servertype.name }}
 {{ form }}
 </table>
 <p>
-    <a href="{% url 'dataset_view_servertype' servertype.name %}">Cancel</a>&nbsp;
+    <a href="{% url 'serverdb_view_servertype' servertype.name %}">Cancel</a>&nbsp;
     <input type="submit" value="{% if edit %}Edit {{ attrib.name }}{% else %}Add attribute{% endif %}" />
     </p>
 </form>

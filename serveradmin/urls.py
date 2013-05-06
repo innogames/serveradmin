@@ -10,7 +10,7 @@ urlpatterns = patterns(
     '',
     url(r'^$', lambda req: redirect('servershell_index'),  name='home'),
     url(r'^servershell/', include('serveradmin.servershell.urls')),
-    url(r'^dataset/', include('serveradmin.dataset.urls')),
+    url(r'^serverdb/', include('serveradmin.serverdb.urls')),
     url(r'^apps/', include('serveradmin.apps.urls')),
     url(r'^api/', include('serveradmin.api.urls')),
     url(r'^documentation/', include('serveradmin.docs.urls')),

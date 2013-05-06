@@ -33,6 +33,7 @@ class Attribute(models.Model):
 
     class Meta:
         db_table = 'attrib'
+        ordering = ('name', )
 
     def __unicode__(self):
         return self.name

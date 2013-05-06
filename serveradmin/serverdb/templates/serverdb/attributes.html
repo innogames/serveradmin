@@ -11,7 +11,7 @@
         <th>Name</th>
         <th>Type</th>
         <th>Multi</th>
-{% if perms.dataset.delete_attribute %}
+{% if perms.serverdb.delete_attribute %}
         <th>Delete</th>
 {% endif %}
     </tr>
@@ -20,10 +20,10 @@
         <td>{{ attr.name }}</td>
         <td>{{ attr.get_type_display }}</td>
         <td>{{ attr.multi|yesno }}</td>
-{% if perms.dataset.delete_attribute %}
+{% if perms.serverdb.delete_attribute %}
         <td>
         {% if attr.pk %}
-            <a href="{% url 'dataset_delete_attribute' attr.name %}">delete</a>
+            <a href="{% url 'serverdb_delete_attribute' attr.name %}">delete</a>
         {% else %}
         not deletable
         {% endif %}
@@ -33,8 +33,8 @@
 {% endfor %}
 </table>
 
-{% if perms.dataset.add_attribute %}
-<p><a href="{% url 'dataset_add_attribute' %}">Add attribute</a></p>
+{% if perms.serverdb.add_attribute %}
+<p><a href="{% url 'serverdb_add_attribute' %}">Add attribute</a></p>
 {% endif %}
 
 {% endblock content %}

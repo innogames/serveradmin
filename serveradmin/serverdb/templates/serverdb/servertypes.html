@@ -7,9 +7,9 @@
 <h2>Servertypes</h2>
 <ul>
 {% for servertype in servertypes %}
-    <li><a href="{% url 'dataset_view_servertype' servertype.name %}">
+    <li><a href="{% url 'serverdb_view_servertype' servertype.name %}">
         {{ servertype.name }}</a></li>
 {% endfor %}
 </ul>
-<p><a href="{% url 'dataset_add_servertype' %}">Add servertype</a></p>
+<p><a href="{% url 'serverdb_add_servertype' %}">Add servertype</a></p>
 {% endblock %}

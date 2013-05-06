@@ -11,14 +11,15 @@ from django.core.cache import cache
 from django import forms
 
 from serveradmin.dataset.base import lookups
-from serveradmin.dataset.models import (ServerType, Attribute, AttributeValue,
-        ServerTypeAttributes, Change)
 from serveradmin.dataset.create import create_server
 from serveradmin.dataset.exceptions import CommitError
 
+from serveradmin.serverdb.models import (ServerType, Attribute, AttributeValue,
+        ServerTypeAttributes, Change)
+
 @login_required
 def servertypes(request):
-    return TemplateResponse(request, 'dataset/servertypes.html', {
+    return TemplateResponse(request, 'serverdb/servertypes.html', {
         'servertypes': ServerType.objects.order_by('name')
     })
 
@@ -43,13 +44,13 @@ def view_servertype(request, servertype_name):
         })
     stype_attributes.sort(key=itemgetter('name'))
 
-    return TemplateResponse(request, 'dataset/view_servertype.html', {
+    return TemplateResponse(request, 'serverdb/view_servertype.html', {
         'servertype': servertype,
         'attributes': stype_attributes
     })
 
 @login_required
-@permission_required('dataset.add_servertype')
+@permission_required('serverdb.add_servertype')
 def add_servertype(request):
     class AddForm(forms.ModelForm):
         class Meta:
@@ -61,16 +62,16 @@ def add_servertype(request):
         if form.is_valid():
             stype = form.save()
             _clear_lookups()
-            return redirect('dataset_view_servertype', stype.name)
+            return redirect('serverdb_view_servertype', stype.name)
     else:
         form = AddForm()
 
-    return TemplateResponse(request, 'dataset/add_servertype.html', {
+    return TemplateResponse(request, 'serverdb/add_servertype.html', {
         'add_form': form
     })
 
 @login_required
-@permission_required('dataset.delete_servertype')
+@permission_required('serverdb.delete_servertype')
 def delete_servertype(request, servertype_name):
     stype = get_object_or_404(ServerType, name=servertype_name)
     if request.method == 'POST':
@@ -81,11 +82,11 @@ def delete_servertype(request, servertype_name):
         else:
             msg = u'Please confirm the usage of weapons of mass destruction.'
             messages.error(request, msg)
-            return redirect('dataset_view_servertype', servertype_name)
-    return redirect('dataset_servertypes')
+            return redirect('serverdb_view_servertype', servertype_name)
+    return redirect('serverdb_servertypes')
 
 @login_required
-@permission_required('dataset.change_servertype')
+@permission_required('serverdb.change_servertype')
 def manage_servertype_attr(request, servertype_name, attrib_name=None):
     class EditForm(forms.ModelForm):
         attrib_default = forms.CharField(label='Default', required=False)
@@ -154,14 +155,14 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
             stype_attr.save()
             _clear_lookups()
             messages.success(request, msg)
-            return redirect('dataset_view_servertype', stype.name)
+            return redirect('serverdb_view_servertype', stype.name)
     else:
         if stype_attr:
             form = form_class(stype, instance=stype_attr)
         else:
             form = form_class(stype)
 
-    return TemplateResponse(request, 'dataset/manage_servertype_attr.html', {
+    return TemplateResponse(request, 'serverdb/manage_servertype_attr.html', {
         'servertype': stype,
         'form': form,
         'edit': stype_attr is not None,
@@ -169,7 +170,7 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
     })
 
 @login_required
-@permission_required('dataset.change_servertype')
+@permission_required('serverdb.change_servertype')
 def delete_servertype_attr(request, servertype_name, attrib_name):
     stype_attr = get_object_or_404(ServerTypeAttributes,
                                    attrib__name=attrib_name,
@@ -179,30 +180,30 @@ def delete_servertype_attr(request, servertype_name, attrib_name):
                 attrib=stype_attr.attrib).delete()
         stype_attr.delete()
         messages.success(request, 'Deleted attribute {0}'.format(attrib_name))
-        return redirect('dataset_view_servertype', servertype_name)
+        return redirect('serverdb_view_servertype', servertype_name)
 
-    return TemplateResponse(request, 'dataset/delete_servertype_attr.html', {
+    return TemplateResponse(request, 'serverdb/delete_servertype_attr.html', {
         'stype_attr': stype_attr
     })
 
 @login_required
-@permission_required('dataset.add_servertype')
+@permission_required('serverdb.add_servertype')
 def copy_servertype(request, servertype_name):
     stype = get_object_or_404(ServerType, name=servertype_name)
     if request.method == 'POST' and 'name' in request.POST:
         stype.copy(request.POST['name'])
         messages.success(request, u'Copied servertype')
-    return redirect('dataset_servertypes')
+    return redirect('serverdb_servertypes')
 
 @login_required
 def attributes(request):
-    return TemplateResponse(request, 'dataset/attributes.html', {
+    return TemplateResponse(request, 'serverdb/attributes.html', {
         'attributes': sorted(lookups.attr_names.values(),
                              key=attrgetter('name'))
     })
 
 @login_required
-@permission_required('dataset.delete_attribute')
+@permission_required('serverdb.delete_attribute')
 def delete_attribute(request, attribute_name):
     attribute = get_object_or_404(Attribute, name=attribute_name)
     if request.method == 'POST' and 'confirm' in request.POST:
@@ -210,14 +211,14 @@ def delete_attribute(request, attribute_name):
         _clear_lookups()
         messages.success(request, u'Attribute "{0}" deleted'.format(
                     attribute.name))
-        return redirect('dataset_attributes')
+        return redirect('serverdb_attributes')
     else:
-        return TemplateResponse(request, 'dataset/delete_attribute.html', {
+        return TemplateResponse(request, 'serverdb/delete_attribute.html', {
             'attribute': attribute
         })
 
 @login_required
-@permission_required('dataset.add_attribute')
+@permission_required('serverdb.add_attribute')
 def add_attribute(request):
     class AddForm(forms.ModelForm):
         class Meta:
@@ -231,10 +232,10 @@ def add_attribute(request):
             _clear_lookups()
             messages.success(request, u'Attribute "{0}" added'.format(
                     attribute.name))
-            return redirect('dataset_attributes')
+            return redirect('serverdb_attributes')
     else:
         add_form = AddForm()
-    return TemplateResponse(request, 'dataset/add_attribute.html', {
+    return TemplateResponse(request, 'serverdb/add_attribute.html', {
         'form': add_form
     })
 
@@ -247,7 +248,7 @@ def changes(request):
     except (PageNotAnInteger, EmptyPage):
         page = paginator.page(1)
 
-    return TemplateResponse(request, 'dataset/changes.html', {
+    return TemplateResponse(request, 'serverdb/changes.html', {
         'changes': page 
     })
 
@@ -267,7 +268,7 @@ def restore_deleted(request, change_id):
         messages.error(request, unicode(e))
     else:
         messages.success(request, 'Server restored.')
-    return redirect('dataset_changes')
+    return redirect('serverdb_changes')
 
 def _clear_lookups():
     cache.delete('dataset_lookups_version')

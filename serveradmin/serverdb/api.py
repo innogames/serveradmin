@@ -1,5 +1,5 @@
 from serveradmin.api.decorators import api_function
-from serveradmin.dataset.models import ServerType, Segment
+from serveradmin.serverdb.models import ServerType, Segment
 
 @api_function(group='dataset')
 def get_servertypes():

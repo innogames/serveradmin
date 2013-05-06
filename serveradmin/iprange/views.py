@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 
 from adminapi.utils import IP
 from serveradmin.dataset.base import lookups
-from serveradmin.dataset.models import Segment
+from serveradmin.serverdb.models import Segment
 from serveradmin.iprange.models import IPRange
 from serveradmin.iprange.forms import IPRangeForm
 

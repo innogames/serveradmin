@@ -1,0 +1,26 @@
+from django.conf.urls import patterns, url
+
+urlpatterns = patterns(
+    'serveradmin.serverdb.views',
+    url(r'^servertypes$', 'servertypes', name='serverdb_servertypes'),
+    url(r'^servertype/([\w_]+)$', 'view_servertype',
+            name='serverdb_view_servertype'),
+    url(r'^servertype/add/$', 'add_servertype',
+            name='serverdb_add_servertype'),
+    url(r'^servertype/delete/([\w_]+)$', 'delete_servertype',
+            name='serverdb_delete_servertype'),
+    url(r'^servertype/addattr/([\w_]+)$', 'manage_servertype_attr',
+            name='serverdb_add_servertype_attr'),
+    url(r'^servertype/editattr/([\w_]+)/([\w_]+)$', 'manage_servertype_attr',
+            name='serverdb_edit_servertype_attr'),
+    url(r'^servertype/delattr/([\w_]+)/([\w_]+)$', 'delete_servertype_attr',
+            name='serverdb_delete_servertype_attr'),
+    url(r'^servertype/copy/([\w_]+)$', 'copy_servertype',
+            name='serverdb_copy_servertype'),
+    url(r'^attributes$', 'attributes', name='serverdb_attributes'),
+    url(r'^attributes/delete/([\w_]+)$', 'delete_attribute',
+            name='serverdb_delete_attribute'),
+    url(r'^attributes/add$', 'add_attribute', name='serverdb_add_attribute'),
+    url(r'^changes$', 'changes', name='serverdb_changes'),
+    url(r'^changes_restore/(\d+)$', 'restore_deleted', name='serverdb_restore_deleted'),
+)

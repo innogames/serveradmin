@@ -7,7 +7,7 @@ from django.core.cache import cache
 from django.db import connection
 from django.conf import settings
 
-from serveradmin.dataset.models import ServerObjectCache
+from serveradmin.serverdb.models import ServerObjectCache
 
 CACHE_MIN_QS_COUNT = 5
 NUM_OBJECTS_FOR_FILECACHE = 50

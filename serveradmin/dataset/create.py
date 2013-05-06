@@ -2,18 +2,20 @@ import json
 
 from django.db import connection
 
-from serveradmin.iprange.models import IPRange
+from serveradmin.serverdb.models import Change
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.cache import invalidate_cache
 from serveradmin.dataset.validation import handle_violations, check_attribute_type
 from serveradmin.dataset.typecast import typecast
-from serveradmin.dataset.models import Change
+from serveradmin.dataset.exceptions import CommitError
 from adminapi.utils.json import json_encode_extra
-from adminapi.dataset.exceptions import CommitError
 from adminapi.utils import IP
 
 def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
                   user=None, app=None):
+    # Import here to break cyclic imports.
+    from serveradmin.iprange.models import IPRange
+    
     if u'hostname' not in attributes:
         raise CommitError(u'Hostname is required')
     if u'servertype' not in attributes:

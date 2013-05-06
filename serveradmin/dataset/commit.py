@@ -9,7 +9,7 @@ from adminapi.utils.json import json_encode_extra
 from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.cache import invalidate_cache
 from serveradmin.dataset.typecast import typecast
-from serveradmin.dataset.models import Change
+from serveradmin.serverdb.models import Change
 
 def commit_changes(commit, skip_validation=False, force_changes=False,
                    app=None, user=None):

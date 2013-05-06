@@ -24,8 +24,8 @@ from serveradmin.dataset.commit import (commit_changes, CommitValidationFailed,
         CommitNewerData)
 from serveradmin.dataset.values import get_attribute_values
 from serveradmin.dataset.typecast import typecast
-from serveradmin.dataset.models import ServerType
 from serveradmin.dataset.create import create_server
+from serveradmin.serverdb.models import ServerType
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 25

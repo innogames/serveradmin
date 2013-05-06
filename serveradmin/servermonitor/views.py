@@ -17,7 +17,7 @@ from comments.forms import CommentForm
 
 from adminapi.utils.parse import parse_query
 from serveradmin.dataset import query, filters, DatasetError
-from serveradmin.dataset.models import Segment, SegmentUsage, ServerType
+from serveradmin.serverdb.models import Segment, SegmentUsage, ServerType
 from serveradmin.servermonitor.models import (get_available_graphs,
         get_graph_url, split_graph_name, join_graph_name, reload_graphs,
         PERIODS, query_livegraph)

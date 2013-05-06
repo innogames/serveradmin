@@ -27,8 +27,8 @@
 
 {% if user.is_authenticated %}
 <li><a href="{% url 'servershell_index' %}">Servershell</a></li>
-<li><a href="{% url 'dataset_servertypes' %}">Servertypes</a></li>
-<li><a href="{% url 'dataset_attributes' %}">Attributes</a></li>
+<li><a href="{% url 'serverdb_servertypes' %}">Servertypes</a></li>
+<li><a href="{% url 'serverdb_attributes' %}">Attributes</a></li>
 <li><a href="{% url 'iprange_index' %}">IP ranges</a></li>
 <li><a href="{% url 'servermonitor_index' %}">Servermonitor</a></li>
 <li><a href="{% url 'servermonitor_segments' %}">Segments info</a></li>
