@@ -304,7 +304,7 @@ function _make_attr_editable(cell, server, attr_name, value)
                         'action': 'new',
                         'new': new_value
                     }
-                } else if (new_value === "" || new_value === null) {
+                } else if (new_value === "") {
                     commit_data = {
                         'action': 'delete',
                         'old': server[attr_name]
@@ -399,7 +399,7 @@ function parse_value(value, attr_name)
 {
     var attr_obj = available_attributes[attr_name];
     if (value === '') {
-        return null;
+        return value;
     }
 
     if (attr_obj['type'] == 'integer') {
