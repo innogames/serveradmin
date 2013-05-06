@@ -24,7 +24,7 @@ def _format(attr_type, value, multi=False):
         else:
             return unicode(value)
 
-@register.inclusion_tag('dataset/format_server.html')
+@register.inclusion_tag('serverdb/format_server.html')
 def format_server(server_obj):
     """Render a serverobject with all attributes as HTML"""
     attr_names = lookups.attr_names
@@ -54,7 +54,7 @@ def format_server(server_obj):
         'server_items': server_items
     }
 
-@register.inclusion_tag('dataset/format_changes.html')
+@register.inclusion_tag('serverdb/format_changes.html')
 def format_changes(changes):
     attr_names = lookups.attr_names
     
