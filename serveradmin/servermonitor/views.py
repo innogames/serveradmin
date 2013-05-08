@@ -6,6 +6,7 @@ import socket
 import time
 from operator import itemgetter
 from itertools import izip_longest
+from datetime import datetime, timedelta
 
 from django.template.response import TemplateResponse
 from django.http import HttpResponse, HttpResponseBadRequest
@@ -13,6 +14,7 @@ from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
+from django import forms
 from comments.forms import CommentForm
 
 from adminapi.utils.parse import parse_query
@@ -20,7 +22,7 @@ from serveradmin.dataset import query, filters, DatasetError
 from serveradmin.serverdb.models import Segment, SegmentUsage, ServerType
 from serveradmin.servermonitor.models import (get_available_graphs,
         get_graph_url, split_graph_name, join_graph_name, reload_graphs,
-        PERIODS, query_livegraph)
+        draw_custom_graph, query_livegraph, ServermonitorError, PERIODS)
 from serveradmin.servermonitor.getinfo import get_information
 
 @login_required
@@ -282,6 +284,46 @@ def reload(request):
     resp = HttpResponse(mimetype='application/x-json')
     json.dump({'result': reload_graphs((hostname, [graph]))}, resp)
     return resp
+
+@login_required
+def custom_graph(request, graph_name):
+    class CustomGraphForm(forms.Form):
+        start = forms.DateTimeField()
+        end = forms.DateTimeField()
+
+        def clean(self):
+            if self.cleaned_data['start'] >= self.cleaned_data['end']:
+                raise forms.ValidationError('Start must be less than end')
+            return self.cleaned_data
+    
+    hostname = request.REQUEST.get('hostname')
+    if not hostname:
+        return HttpResponseBadRequest('No hostname given')
+
+    graph_url = None
+    if request.method == 'POST':
+        form = CustomGraphForm(request.POST)
+        
+        if form.is_valid():
+            start = int(time.mktime(form.cleaned_data['start'].timetuple()))
+            end = int(time.mktime(form.cleaned_data['end'].timetuple()))
+
+            try:
+                graph_url = draw_custom_graph(graph_name, hostname, start, end)
+            except ServermonitorError:
+                graph_url = None
+    else:
+        form = CustomGraphForm(initial={
+            'start': datetime.utcnow() - timedelta(minutes=60),
+            'end': datetime.utcnow() 
+        })
+
+    return TemplateResponse(request, 'servermonitor/custom_graph.html', {
+        'form': form,
+        'graph_url': graph_url,
+        'graph_name': graph_name,
+        'hostname': hostname,
+    })
 
 @login_required
 def segments_info(request):

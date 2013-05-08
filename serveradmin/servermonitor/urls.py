@@ -10,5 +10,7 @@ urlpatterns = patterns(
     url(r'^livegraph/data$', 'livegraph_data',
             name='servermonitor_livegraph_data'),
     url(r'^reload$', 'reload', name='servermonitor_reload'),
+    url(r'^custom_graph/(\w+)$', 'custom_graph',
+            name='servermonitor_custom_graph'),
     url(r'^segments$', 'segments_info', name='servermonitor_segments'),
 )

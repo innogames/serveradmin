@@ -1,9 +1,12 @@
 import socket
 import json
 import re
+import random
 
 from django.db import models
 from django.conf import settings
+
+from serveradmin.common.utils import validate_hostname
 
 PERIODS = ('hourly', 'daily', 'weekly', 'monthly', 'yearly')
 
@@ -58,15 +61,75 @@ class ServerData(models.Model):
     class Meta:
         db_table = 'serverdata'
 
+class ServermonitorConnection(object):
+    def __init__(self):
+        self._sock = None
+        self._fileobj = None
+        self._authed = False
+        self._done = False
+    
+    def connect(self, host=None):
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if host is None:
+            host = settings.SERVERMONITOR_SERVER
+        self._sock.connect(host)
+        self._fileobj = self._sock.makefile()
+    
+    def authenticate(self, hostname=None):
+        self._authed = True
+        if hostname is None:
+            hostname = 'serveradmin.admin'
+        self.command('hostname', hostname)
+    
+    def command(self, command_name, *args):
+        if not self._sock:
+            self.connect()
+        if not self._authed:
+            self.authenticate()
+        
+        args = [arg if isinstance(arg, basestring) else str(arg)
+                for arg in args]
+        for arg in args:
+            if '##' in arg or '\n' in arg:
+                raise ValueError('Invalid arg: ' + repr(arg))
+        
+        if not args:
+            command = command_name.upper() + '\n'
+        else:
+            command = '{0}=={1}\n'.format(command_name.upper(), '##'.join(args))
+        print command,
+        self._sock.sendall(command)
+
+    def done(self):
+        self._done = True
+        self.command('done')
+
+    def check_success(self):
+        return ['SUCCESS' == line.strip() for line in self.get_response('lines')]
+
+    def get_response(self, mode='lines'):
+        if not self._done:
+            self.done()
+
+        if mode == 'line':
+            line = self._fileobj.readline()
+            if line.startswith('ERR'):
+                raise ServermonitorError(line.split(None, 1)[1])
+            return line
+        elif mode == 'lines':
+            return self._fileobj.readlines()
+        else:
+            return self._fileobj.read()
+
+        return self._fileobj.readlines()
+
 
 def get_available_graphs(hostname):
-    # FIXME: Validate hostname!
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect(settings.SERVERMONITOR_SERVER)
-    s.sendall('HOSTNAME==serveradmin.admin\n')
-    s.sendall('GRAPHS=={0}\nDONE\n'.format(hostname))
-    fileobj = s.makefile()
-    return fileobj.readline().split()
+    if not validate_hostname:
+        raise ValueError('Invalid hostname ' + hostname)
+    conn = ServermonitorConnection()
+    conn.command('graphs', hostname)
+    return conn.get_response('line').split()
 
 def get_graph_url(hostname, graph):
     return '{url}/graph/{hostname}/{graph}.png'.format(
@@ -82,47 +145,37 @@ def reload_graphs(*updates):
        reload_graphs(('techerror.support', ['io2-hourly', 'io2-daily']),
                      ('serveradmin.admin', ['net-hourly']))
     """
-    # FIXME: Validate hostname!
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(settings.SERVERMONITOR_SERVER)
-        s.sendall('HOSTNAME==serveradmin.admin\n')
-        for hostname, graphs in updates:
-            for graph in graphs:
-                graph_name, period = split_graph_name(graph)
-                if not period:
-                    period = ''
-                s.sendall('RELOAD=={graph}##{period}##{hostname}##\n'.format(
-                        graph=graph_name, period=period, hostname=hostname))
-        s.sendall('DONE\n')
-        fileobj = s.makefile()
-        return ['SUCCESS' == line.strip() for line in fileobj.readlines()]
-    except socket.error:
-        return [False] * sum(len(graphs) for _host, graphs in updates)
+    for host, _graphs in updates:
+        if not validate_hostname(host):
+            raise ValueError('Invalid hostname ' + host)
+
+    conn = ServermonitorConnection()
+    for hostname, graphs in updates:
+        for graph in graphs:
+            graph_name, period = split_graph_name(graph)
+            if not period:
+                period = ''
+        # Reload takes an unused argument for backward compatibility
+        conn.command('reload', graph_name, period, hostname, '')
+    print conn.get_response('lines')
+    return conn.check_success()
+
+def draw_custom_graph(graph_name, hostname, start, end):
+    if not validate_hostname(hostname):
+        raise ValueError('Invalid hostname ' + hostname)
+    name = 'custom{0}'.format(random.randint(0, 99999))
+    conn = ServermonitorConnection()
+    conn.command('draw', graph_name, name, start, end, hostname)
+    if all(conn.check_success()):
+        return get_graph_url(hostname, join_graph_name(graph_name, name))
+    else:
+        raise ServermonitorError('Could not draw graph')
 
 def get_rrd_data(create_def, hostname, df='AVERAGE', start=None, end=None,
                  aggregate=None):
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(settings.SERVERMONITOR_SERVER)
-        s.sendall('HOSTNAME==serveradmin.admin\n')
-        s.sendall(('GETDATA=={create_def}##{hostname}##{df}##{start}##{end}'
-                   '##{aggregate}\n').format(create_def=create_def,
-                                             hostname=hostname,
-                                             df=df,
-                                             start=start,
-                                             end=end,
-                                             aggregate=aggregate))
-        s.sendall('DONE\n')
-        fileobj = s.makefile()
-        line = fileobj.readline()
-        if line.startswith('ERR'):
-            raise ServermonitorError(line.split(None, 1)[1])
-        return json.loads(line)
-    except socket.error:
-        raise ServermonitorError('Error in communication to servermonitor')
-
-    
+    conn = ServermonitorConnection()
+    conn.command('getdata', create_def, hostname, df, start, end, aggregate)
+    return json.loads(conn.get_response('line'))
 
 _period_extensions = tuple('-' + period for period in PERIODS)
 _period_custom_re = re.compile('custom\d+$')
