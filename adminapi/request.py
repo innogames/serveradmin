@@ -36,7 +36,7 @@ def send_request(url, data, auth_token):
     while True:
         retries -= 1
         try:
-            return json.loads(urllib2.urlopen(req).read())
+            return json.loads(urllib2.urlopen(req, timeout=10).read())
         except urllib2.HTTPError, e:
             if e.code == 403:
                 raise PermissionDenied(e.read())
@@ -46,3 +46,7 @@ def send_request(url, data, auth_token):
                 time.sleep(5)
             else:
                 raise
+        except urllib2.URLError:
+            if retries <= 0:
+                raise
+            time.sleep(5)
