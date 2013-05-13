@@ -176,7 +176,6 @@ def api_call(request, app, data):
             raise ValueError('No such function')
 
         retval = fn(*data['args'], **data['kwargs'])
-        print 'retval', retval
         return {
             'status': 'success',
             'retval': retval
