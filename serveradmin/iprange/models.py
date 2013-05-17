@@ -71,7 +71,7 @@ class IPRange(models.Model):
         c.execute(builder.build_sql())
         for ip_tuple in c.fetchall():
             for ip in ip_tuple:
-                if ip is not None:
+                if ip is not None and self.min <= ip <= self.max:
                     taken_ips.add(int(ip))
 
         return taken_ips
