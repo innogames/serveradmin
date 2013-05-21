@@ -1,7 +1,5 @@
 import re
 import operator
-import time
-from datetime import datetime
 
 from django.db import connection, DatabaseError
 try:
@@ -9,10 +7,11 @@ try:
 except ImportError:
     OperationalError = DatabaseError
 
-from adminapi.utils import IP, IPv6, Network, PRIVATE_IP_BLOCKS, PUBLIC_IP_BLOCKS
+from adminapi.utils import Network, PRIVATE_IP_BLOCKS, PUBLIC_IP_BLOCKS
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.exceptions import DatasetError
 from serveradmin.dataset.typecast import typecast
+from serveradmin.dataset.sqlhelpers import value_to_sql, raw_sql_escape
 
 filter_classes = {}
 class BaseFilter(object):
@@ -44,7 +43,7 @@ class ExactMatch(Filter):
         return hash(u'ExactMatch') ^ hash(self.value)
 
     def as_sql_expr(self, builder, attr_obj, field):
-        return u'{0} = {1}'.format(field, _prepare_value(attr_obj, self.value))
+        return u'{0} = {1}'.format(field, value_to_sql(attr_obj, self.value))
 
     def matches(self, server_obj, attr_name):
         return server_obj[attr_name] == self.value
@@ -67,7 +66,8 @@ class Regexp(Filter):
         try:
             self._regexp_obj = re.compile(regexp)
             c = connection.cursor()
-            c.execute("SELECT '' REGEXP {0}".format(_sql_escape(regexp)))
+            sql_regexp = raw_sql_escape(regexp)
+            c.execute("SELECT '' REGEXP {0}".format(sql_regexp))
             c.close()
         except re.error as e:
             raise ValueError(u'Invalid regexp: ' + unicode(e))
@@ -99,9 +99,11 @@ class Regexp(Filter):
             else:
                 return u'0=1'
         elif attr_obj.type == u'ip':
-            return u'INET_NTOA({0}) REGEXP {1}'.format(field, _sql_escape(self.regexp))
+            sql_regexp = raw_sql_escape(self.regexp)
+            return u'INET_NTOA({0}) REGEXP {1}'.format(field, sql_regexp)
         else:
-            return u'{0} REGEXP {1}'.format(field, _sql_escape(self.regexp))
+            sql_regexp = raw_sql_escape(self.regexp)
+            return u'{0} REGEXP {1}'.format(field, sql_regexp)
 
     def matches(self, server_obj, attr_name):
         value = server_obj[attr_name]
@@ -182,7 +184,7 @@ class Comparison(Filter):
 
     def as_sql_expr(self, builder, attr_obj, field):
         return u'{0} {1} {2}'.format(field, self.comparator,
-                _prepare_value(attr_obj, self.value))
+                value_to_sql(attr_obj, self.value))
 
     def matches(self, server_obj, attr_name):
         op = {
@@ -228,7 +230,7 @@ class Any(Filter):
         if not self.values:
             return u'0=1'
         else:
-            prepared_values = u', '.join(_prepare_value(attr_obj, value)
+            prepared_values = u', '.join(value_to_sql(attr_obj, value)
                     for value in self.values)
             return u'{0} IN({1})'.format(field, prepared_values)
 
@@ -325,8 +327,8 @@ class Between(Filter):
         return hash(u'Between') ^ hash(self.a) ^ hash(self.b)
 
     def as_sql_expr(self, builder, attr_obj, field):
-        a_prepared = _prepare_value(attr_obj, self.a)
-        b_prepared = _prepare_value(attr_obj, self.b)
+        a_prepared = value_to_sql(attr_obj, self.a)
+        b_prepared = value_to_sql(attr_obj, self.b)
         return u'{0} BETWEEN {1} AND {2}'.format(field, a_prepared, b_prepared)
 
     def matches(self, server_obj, attr_name):
@@ -372,7 +374,7 @@ class Not(Filter):
             return 'NOT EXISTS ({0})'.format(subquery)
         else:
             if isinstance(self.filter, ExactMatch):
-                return u'{0} != {1}'.format(field, _prepare_value(attr_obj,
+                return u'{0} != {1}'.format(field, value_to_sql(attr_obj,
                         self.filter.value))
             else:
                 return u'NOT {0}'.format(self.filter.as_sql_expr(builder,
@@ -420,11 +422,12 @@ class Startswith(Filter):
             else:
                 return u'0=1'
         elif attr_obj.type == u'ip':
-            return u'INET_NTOA({0}) LIKE {1}'.format(field, _sql_escape(value +
-                '%%'))
+            value = raw_sql_escape(str(self.value) + '%%')
+            return u'INET_NTOA({0}) LIKE {1}'.format(field, value)
         elif attr_obj.type == 'string':
             value = self.value.replace('_', '\\_').replace(u'%', u'\\%%')
-            return u'{0} LIKE {1}'.format(field, _sql_escape(value + u'%%'))
+            value = raw_sql_escape(value + u'%%')
+            return u'{0} LIKE {1}'.format(field, value)
         elif attr_obj.type == 'integer':
             try:
                 return u"{0} LIKE '{1}%'".format(int(self.value))
@@ -440,7 +443,7 @@ class Startswith(Filter):
         return u'filters.Startswith({0!r})'.format(self.value)
 
     def typecast(self, attr_name):
-        self.value = typecast(attr_name, self.value, force_single=True)
+        self.value = unicode(self.value)
     
     @classmethod
     def from_obj(cls, obj):
@@ -627,37 +630,6 @@ filter_classes[u'empty'] = Empty
 
 def _prepare_filter(filter):
     return filter if isinstance(filter, BaseFilter) else ExactMatch(filter)
-
-def _prepare_value(attr_obj, value):
-    if attr_obj.type == u'ip':
-        if not isinstance(value, IP):
-            value = IP(value)
-        value = value.as_int()
-    elif attr_obj.type == u'ipv6':
-        if not isinstance(value, IPv6):
-            value = IPv6(value)
-        value = value.as_hex()
-    # XXX: Dirty hack for the old database structure
-    if attr_obj.name == u'servertype':
-        try:
-            value = lookups.stype_names[value].pk
-        except KeyError:
-            raise ValueError(u'Invalid servertype: ' + value)
-
-    return _sql_escape(value)
-
-def _sql_escape(value):
-    if isinstance(value, basestring):
-        return u"'{0}'".format(value.replace("'", "\\'"))
-    elif isinstance(value, (int, long, float)):
-        return unicode(value)
-    elif isinstance(value, bool):
-        return u'1' if value else u'0'
-    elif isinstance(value, datetime):
-        return unicode(time.mktime(value.timetuple()))
-    else:
-        raise ValueError(u'Value of type {0} can not be used in SQL'.format(
-                value))
 
 def filter_from_obj(obj):
     if not (isinstance(obj, dict) and u'name' in obj and

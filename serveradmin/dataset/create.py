@@ -8,6 +8,7 @@ from serveradmin.dataset.cache import invalidate_cache
 from serveradmin.dataset.validation import handle_violations, check_attribute_type
 from serveradmin.dataset.typecast import typecast
 from serveradmin.dataset.exceptions import CommitError
+from serveradmin.dataset.sqlhelpers import value_to_sql
 from adminapi.utils.json import json_encode_extra
 from adminapi.utils import IP
 
@@ -168,12 +169,10 @@ def _insert_server(hostname, intern_ip, segment, servertype_id, attributes):
         attr_obj = lookups.attr_names[attr_name]
         if attr_obj.multi:
             for single_value in value:
-                if attr_obj.type == u'ip':
-                    single_value = IP(single_value).as_int()
+                single_value = value_to_sql(attr_obj, single_value)
                 c.execute(attr_query, (server_id, attr_obj.pk, single_value))
         else:
-            if attr_obj.type == u'ip':
-                value = IP(value).as_int()
+            value = value_to_sql(attr_obj, value)
             c.execute(attr_query, (server_id, attr_obj.pk, value))
 
     return server_id
