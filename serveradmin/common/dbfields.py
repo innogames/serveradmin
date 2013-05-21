@@ -39,6 +39,8 @@ class IPv4Field(models.Field):
         return formfields.IPv4Field(**kwargs)
 
 class CommaSeparatedOptionField(models.Field):
+    __metaclass__ = models.SubfieldBase
+
     def to_python(self, value):
         if value is None or isinstance(value, list):
             return value
