@@ -18,7 +18,7 @@ def _sql_escape(value):
                 value))
 
 def value_to_sql(attr_obj, value):
-    return _sql_escape(prepare_value)
+    return _sql_escape(prepare_value(attr_obj, value))
 
 def prepare_value(attr_obj, value):
     if attr_obj.type == u'ip':
