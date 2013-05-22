@@ -18,6 +18,9 @@ def _sql_escape(value):
                 value))
 
 def value_to_sql(attr_obj, value):
+    return _sql_escape(prepare_value)
+
+def prepare_value(attr_obj, value):
     if attr_obj.type == u'ip':
         if not isinstance(value, IP):
             value = IP(value)
@@ -32,8 +35,7 @@ def value_to_sql(attr_obj, value):
             value = lookups.stype_names[value].pk
         except KeyError:
             raise ValueError(u'Invalid servertype: ' + value)
-
-    return _sql_escape(value)
+    return value
 
 def raw_sql_escape(value):
     return u"'{0}'".format(value.replace("'", "\\'"))
