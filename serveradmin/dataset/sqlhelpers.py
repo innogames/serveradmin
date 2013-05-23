@@ -1,6 +1,8 @@
 import time
 from datetime import datetime
 
+from django.db import connection
+
 from adminapi.utils import IP, IPv6
 from serveradmin.dataset.base import lookups
 
@@ -38,4 +40,4 @@ def prepare_value(attr_obj, value):
     return value
 
 def raw_sql_escape(value):
-    return u"'{0}'".format(value.encode('string-escape'))
+    return u"'{0}'".format(connection.connection.escape_string(value))
