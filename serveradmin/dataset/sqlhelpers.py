@@ -38,4 +38,4 @@ def prepare_value(attr_obj, value):
     return value
 
 def raw_sql_escape(value):
-    return u"'{0}'".format(value.replace("'", "\\'"))
+    return u"'{0}'".format(value.encode('string-escape'))
