@@ -347,6 +347,12 @@ class MultiAttr(object):
     def __repr__(self):
         return 'MultiAttr({0!r})'.format(self._proxied_set)
 
+    def __unicode__(self):
+        return u' '.join(unicode(x) for x in self._proxied_set)
+
+    def __str__(self):
+        return unicode(self).encode('utf-8')
+
     def __iter__(self):
         return iter(self._proxied_set)
     
