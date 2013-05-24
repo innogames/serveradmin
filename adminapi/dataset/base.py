@@ -203,6 +203,12 @@ class BaseServerObject(dict):
 
         print_table(table, file=file)
 
+    def get_attribute_info(self, attr_name):
+        try:
+            return self._queryset.attributes[attr_name]
+        except KeyError:
+            raise ValueError('No such attribute: ' + attr_name)
+
     def _serialize_changes(self):
         changes = {}
         for key, old_value in self.old_values.iteritems():
