@@ -16,7 +16,7 @@ def _calc_security_token(auth_token, timestamp, content):
     message = ':'.join((str(timestamp), content))
     return hmac.new(auth_token, message, hashlib.sha1).hexdigest()
 
-def send_request(url, data, auth_token):
+def send_request(url, data, auth_token, timeout=None):
     if not auth_token:
         raise ValueError("No auth token supplied. Try adminapi.auth('Token').")
 
@@ -36,7 +36,7 @@ def send_request(url, data, auth_token):
     while True:
         retries -= 1
         try:
-            return json.loads(urllib2.urlopen(req, timeout=10).read())
+            return json.loads(urllib2.urlopen(req, timeout=timeout).read())
         except urllib2.HTTPError, e:
             if e.code == 403:
                 raise PermissionDenied(e.read())

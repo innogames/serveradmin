@@ -20,9 +20,10 @@ class ExceptionManager(object):
 exc = ExceptionManager()
 
 class FunctionGroup(object):
-    def __init__(self, group, auth_token):
+    def __init__(self, group, auth_token, timeout):
         self.group = group
         self.auth_token = auth_token
+        self.timeout = timeout
     
     def __getattr__(self, attr):
         def _api_function(*args, **kwargs):
@@ -36,7 +37,8 @@ class FunctionGroup(object):
             if hasattr(self.auth_token, '__call__'):
                 self.auth_token = self.auth_token()
 
-            result = send_request(API_CALL_URL, call, self.auth_token)
+            result = send_request(API_CALL_URL, call, self.auth_token,
+                                  self.timeout)
 
             if result['status'] == 'success':
                 return result['retval']
@@ -60,5 +62,5 @@ def get(group):
     else:
         token = _api_settings['auth_token']
 
-    return FunctionGroup(group, token)
+    return FunctionGroup(group, token, _api_settings['timeout_api'])
 

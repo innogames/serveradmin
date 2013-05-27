@@ -17,10 +17,11 @@ class Attribute(object):
         self.multi = multi
 
 class QuerySet(BaseQuerySet):
-    def __init__(self, filters, auth_token):
+    def __init__(self, filters, auth_token, timeout):
         BaseQuerySet.__init__(self, filters)
         self.auth_token = auth_token
         self.attributes = {}
+        self.timeout = timeout
 
     def augment(self, *attrs):
         raise NotImplementedError('Augmenting is not available yet!')
@@ -29,7 +30,8 @@ class QuerySet(BaseQuerySet):
         commit = self._build_commit_object()
         commit['skip_validation'] = skip_validation
         commit['force_changes'] = force_changes
-        result = send_request(COMMIT_URL, commit, self.auth_token)
+        result = send_request(COMMIT_URL, commit, self.auth_token,
+                              self.timeout)
 
         if result['status'] == 'success':
             self.num_dirty = 0
@@ -51,7 +53,8 @@ class QuerySet(BaseQuerySet):
             'restrict': self._restrict,
             'augmentations': self._augmentations
         }
-        result = send_request(QUERY_URL, request_data, self.auth_token)
+        result = send_request(QUERY_URL, request_data, self.auth_token,
+                              self.timeout)
         return self._handle_result(result)
 
     def _handle_result(self, result):
@@ -101,7 +104,8 @@ class ServerObject(BaseServerObject):
         commit = self._build_commit_object() 
         commit['skip_validation'] = skip_validation
         commit['force_changes'] = force_changes
-        result = send_request(COMMIT_URL, commit, self.auth_token)
+        result = send_request(COMMIT_URL, commit, self.auth_token,
+                              self.timeout)
 
         if result['status'] == 'success':
             self._confirm_changes()
@@ -121,7 +125,8 @@ def _handle_exception(result):
 
 def query(**kwargs):
     filters = dict((k, _prepare_filter(v)) for k, v in kwargs.iteritems())
-    return QuerySet(filters=filters, auth_token=_api_settings['auth_token'])
+    return QuerySet(filters=filters, auth_token=_api_settings['auth_token'],
+                    timeout=_api_settings['timeout_dataset'])
 
 def create(attributes, skip_validation=False, fill_defaults=True,
         fill_defaults_all=False, auth_token=None):
@@ -136,7 +141,8 @@ def create(attributes, skip_validation=False, fill_defaults=True,
     if auth_token is None:
         auth_token = _api_settings['auth_token']
 
-    result = send_request(CREATE_URL, request_data, auth_token)
+    result = send_request(CREATE_URL, request_data, auth_token,
+                          _api_settings['timeout_dataset'])
     qs = QuerySet(filters={'hostname': _prepare_filter(attributes['hostname'])},
             auth_token=auth_token)
     qs._handle_result(result)
