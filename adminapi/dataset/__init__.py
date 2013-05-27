@@ -73,7 +73,8 @@ class QuerySet(BaseQuerySet):
             servers = {}
             for object_id, server in result['servers'].iteritems():
                 object_id = int(object_id)
-                server_obj = ServerObject(object_id, self, self.auth_token)
+                server_obj = ServerObject(object_id, self, self.auth_token,
+                                          self.timeout)
                 for attr in convert_set:
                     if attr not in server:
                         continue
@@ -96,9 +97,11 @@ class QuerySet(BaseQuerySet):
 
 
 class ServerObject(BaseServerObject):
-    def __init__(self, object_id=None, queryset=None, auth_token=None):
+    def __init__(self, object_id=None, queryset=None, auth_token=None,
+                 timeout=None):
         BaseServerObject.__init__(self, None, object_id, queryset)
         self.auth_token = auth_token
+        self.timeout = timeout
 
     def commit(self, skip_validation=False, force_changes=False):
         commit = self._build_commit_object() 
@@ -144,6 +147,6 @@ def create(attributes, skip_validation=False, fill_defaults=True,
     result = send_request(CREATE_URL, request_data, auth_token,
                           _api_settings['timeout_dataset'])
     qs = QuerySet(filters={'hostname': _prepare_filter(attributes['hostname'])},
-            auth_token=auth_token)
+            auth_token=auth_token, timeout=_api_settings['timeout_dataset'])
     qs._handle_result(result)
     return qs.get()
