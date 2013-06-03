@@ -104,17 +104,24 @@ def get_results(request):
     request.session['per_page'] = limit
     
     # Add information about available attributes on servertypes
-    # It will be encoded as map avail[servertype][attr] = boolean
+    # It will be encoded as map avail[servertype][attr] = stypeattr
     avail_attributes = {}
     for server in results.itervalues():
         servertype = server['servertype']
         if servertype not in avail_attributes:
             avail_attributes[servertype] = {}
     
-    for servertype, attr_set in avail_attributes.iteritems():
+    for servertype, attr_info in avail_attributes.iteritems():
         attributes = lookups.stype_names[servertype].attributes
-        for attr in chain(attributes, lookups.special_attributes):
-            attr_set[attr.name] = True
+        for attr in attributes:
+            stype_attr = lookups.stype_attrs[(servertype, attr.name)]
+            regexp = stype_attr.regexp.pattern if stype_attr.regexp else None
+            attr_info[attr.name] = {
+                'regexp': regexp,
+                'default': stype_attr.default
+            }
+        for attr in lookups.special_attributes:
+            attr_info[attr.name] = {'regexp': None, 'default': None}
 
     return HttpResponse(json.dumps({
         'status': 'success',

@@ -251,12 +251,22 @@ function _make_attr_editable(cell, server, attr_name, value)
             }
             var input = $('<textarea id="edit_attr" rows="5" cols="30"/></textarea>').val(
                     multi_value_strs.join('\n'));
+            form.append('<br/>').append(input);
         } else {
             var input = $('<input type="text" id="edit_attr" />').val(
                     format_value(value, attr_name));
+            form.append(input);
         }
         var ok_button = $('<input type="submit" value="edit" />');
-        form.append(input).append(ok_button);
+        form.append(ok_button)
+
+        var stype_attr = search['avail_attributes'][server['servertype']][attr_name]
+        if (stype_attr.regexp !== null) {
+            form.append($('<div/>').text('Regexp: ' + stype_attr.regexp));
+        }
+        if (stype_attr.default !== null) {
+            form.append($('<div/>').text('Default: ' + stype_attr.default));
+        }
 
         form.submit(function(ev) {
             ev.preventDefault();
