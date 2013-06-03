@@ -16,9 +16,10 @@
 {% csrf_token %}
 <table class="border_table" style="width:100%; table-layout:fixed;">
 <tr>
-    <th style="width:15em;">Attribute</th>
+    <th style="width:14em;">Attribute</th>
     <th style="width:6em;">Type</th>
     <th style="width:6em;">Required</th>
+    <th style="width:10em;">Regexp</th>
     <th>Value</th>
 </tr>
 {% for field in fields %}
@@ -38,12 +39,17 @@
     <td>{{ field.type }}</td>
     <td>{{ field.required }}</td>
     <td>
+    {% if field.regexp %}
+    {{ field.regexp }}
+    {% endif %}
+    </td>
+    <td>
     {% if field.multi %}
     <textarea rows="3" cols="40" name="attr_{{ field.key }}"
     {% if field.error %} style="border:2px solid #d00"{% endif %} 
     >{% for val in field.value %}{{ val }}
 {% endfor %}</textarea>
-    (multiple values, one value per row)
+    <br />Multiple values, one value per row.
     {% else %}
     <input type="text" name="attr_{{ field.key }}" value="{{ field.value }}" size="30" 
     {% if not field.editable %}disabled="disabled" {% endif %}

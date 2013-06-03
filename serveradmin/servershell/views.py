@@ -13,6 +13,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django import forms
+from django.utils.html import mark_safe, escape as escape_html
 
 from adminapi.utils import IP
 from adminapi.utils.json import json_encode_extra
@@ -201,6 +202,7 @@ def list_and_edit(request, mode='list'):
     fields_set = set()
     for key, value in server.iteritems():
         fields_set.add(key)
+        stype_attr = lookups.stype_attrs[(stype.name, key)]
         fields.append({
             'key': key,
             'value': value,
@@ -208,7 +210,9 @@ def list_and_edit(request, mode='list'):
             'editable': key not in non_editable,
             'type': lookups.attr_names[key].type,
             'multi': lookups.attr_names[key].multi,
-            'required': lookups.stype_attrs[(stype.name, key)].required,
+            'required': stype_attr.required,
+            'regexp': _prepare_regexp_html(stype_attr.regexp),
+            'default': stype_attr.default,
             'error': key in invalid_attrs
         })
     
@@ -216,6 +220,7 @@ def list_and_edit(request, mode='list'):
         for attr in stype.attributes:
             if attr.name in fields_set:
                 continue
+            stype_attr = lookups.stype_attrs[(stype.name, attr.name)]
             fields.append({
                 'key': attr.name,
                 'value': [] if attr.multi else '',
@@ -224,6 +229,8 @@ def list_and_edit(request, mode='list'):
                 'type': attr.type,
                 'multi': attr.multi,
                 'required': False,
+                'regexp': _prepare_regexp_html(stype_attr.regexp),
+                'default': stype_attr.default,
                 'error': attr.name in invalid_attrs
             })
     
@@ -359,4 +366,13 @@ def store_command(request):
             command_history.append(command)
             request.session.modified = True
     return HttpResponse('{"status": "OK"}', mimetype='application/x-json')
+
+def _prepare_regexp_html(regexp):
+    """Return HTML for a given regexp. Includes wordbreaks."""
+    if not regexp:
+        return ''
+    else:
+        regexp_html = (escape_html(regexp.pattern).replace('|', '|&#8203;')
+                       .replace(']', ']&#8203;').replace(')', ')&#8203;'))
+        return mark_safe(regexp_html)
 
