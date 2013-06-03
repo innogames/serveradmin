@@ -83,3 +83,10 @@ function show_spinner() {
 function hide_spinner() {
     $('#spinner').hide();
 }
+
+escapehtml = (function() {
+    var escape_map = { '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' };
+    return function(text) {
+        return text.replace(/[\"&<>]/g, function (m) { return escape_map[m]; });
+    }
+})();
