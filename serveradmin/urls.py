@@ -21,6 +21,7 @@ urlpatterns = patterns(
         name='logout'),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^comments/', include('comments.urls')),
+    url(r'^failoverlogin$', 'serveradmin.common.views.failoverlogin'),
 )
 
 if settings.DEBUG:
