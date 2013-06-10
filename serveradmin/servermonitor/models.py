@@ -97,7 +97,6 @@ class ServermonitorConnection(object):
             command = command_name.upper() + '\n'
         else:
             command = '{0}=={1}\n'.format(command_name.upper(), '##'.join(args))
-        print command,
         self._sock.sendall(command)
 
     def done(self):
@@ -157,7 +156,6 @@ def reload_graphs(*updates):
                 period = ''
         # Reload takes an unused argument for backward compatibility
         conn.command('reload', graph_name, period, hostname, '')
-    print conn.get_response('lines')
     return conn.check_success()
 
 def draw_custom_graph(graph_name, hostname, start, end):
