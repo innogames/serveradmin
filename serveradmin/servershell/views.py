@@ -303,12 +303,18 @@ def new_server(request):
         hostname = forms.CharField()
         intern_ip = forms.IPAddressField()
         check_ip = forms.BooleanField(required=False)
+
+        def clean_hostname(self):
+            if query(hostname=self.cleaned_data['hostname']):
+                raise forms.ValidationError('Hostname already taken.')
+            return self.cleaned_data
         
         def clean(self):
             if self.cleaned_data.get('check_ip'):
                 if 'intern_ip' in self.cleaned_data:
                     if query(intern_ip=self.cleaned_data['intern_ip']):
-                        raise forms.ValidationError('IP already taken.')
+                        msg = 'IP already taken'
+                        self._errors['intern_ip'] = self.error_class([msg])
             return self.cleaned_data
 
     class NewServerForm(CloneServerForm):
