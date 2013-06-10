@@ -307,7 +307,7 @@ def new_server(request):
         def clean_hostname(self):
             if query(hostname=self.cleaned_data['hostname']):
                 raise forms.ValidationError('Hostname already taken.')
-            return self.cleaned_data
+            return self.cleaned_data['hostname']
         
         def clean(self):
             if self.cleaned_data.get('check_ip'):
