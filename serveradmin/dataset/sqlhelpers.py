@@ -40,4 +40,7 @@ def prepare_value(attr_obj, value):
     return value
 
 def raw_sql_escape(value):
-    return u"'{0}'".format(connection.connection.escape_string(value))
+    # escape_string just takes bytestrings, so convert unicode back and forth
+    if isinstance(value, unicode):
+        value = value.encode('utf-8')
+    return u"'{0}'".format(connection.connection.escape_string(value).decode('utf-8'))
