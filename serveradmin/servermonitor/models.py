@@ -123,12 +123,14 @@ class ServermonitorConnection(object):
         return self._fileobj.readlines()
 
 
+_valid_graph_re = re.compile('^([a-z0-9_-]+/)?[a-z0-9_-]+$')
 def get_available_graphs(hostname):
     if not validate_hostname:
         raise ValueError('Invalid hostname ' + hostname)
     conn = ServermonitorConnection()
     conn.command('graphs', hostname)
-    return conn.get_response('line').split()
+    graphs = conn.get_response('line').split()
+    return [graph for graph in graphs if _valid_graph_re.match(graph)]
 
 def get_graph_url(hostname, graph):
     return '{url}/graph/{hostname}/{graph}.png'.format(
