@@ -118,16 +118,7 @@ class ServermonitorConnection(object):
         elif mode == 'lines':
             return self._fileobj.readlines()
         elif mode == 'json':
-            # Own buffering as workaround for python's broken
-            # makefile.read()/readline()
-            buf = []
-            while True:
-                content = self._sock.recv(4096)
-                if not content:
-                    break
-
-                buf.append(content)
-            return json.loads(''.join(buf))
+            return json.loads(self._fileobj.readline())
         else:
             return self._fileobj.read()
 
