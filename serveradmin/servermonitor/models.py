@@ -117,6 +117,17 @@ class ServermonitorConnection(object):
             return line
         elif mode == 'lines':
             return self._fileobj.readlines()
+        elif mode == 'json':
+            # Own buffering as workaround for python's broken
+            # makefile.read()/readline()
+            buf = []
+            while True:
+                content = self._sock.recv(4096)
+                if not content:
+                    break
+
+                buf.append(content)
+            return json.loads(''.join(buf))
         else:
             return self._fileobj.read()
 
@@ -175,7 +186,7 @@ def get_rrd_data(create_def, hostname, df='AVERAGE', start=None, end=None,
                  aggregate=None):
     conn = ServermonitorConnection()
     conn.command('getdata', create_def, hostname, df, start, end, aggregate)
-    return json.loads(conn.get_response('line'))
+    return conn.get_response('json')
 
 _period_extensions = tuple('-' + period for period in PERIODS)
 _period_custom_re = re.compile('custom\d+$')
