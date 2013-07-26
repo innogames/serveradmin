@@ -15,8 +15,9 @@ ServerTypeAttr = namedtuple('ServerTypeAttr', ['servertype_id', 'attribute_id',
         'required', 'default', 'regexp', 'visible'])
 
 class ServerTableSpecial(object):
-    def __init__(self, field):
+    def __init__(self, field, unique=False):
         self.field = field
+        self.unique = unique
 
 class CombinedSpecial(object):
     def __init__(self, *attrs):
@@ -38,7 +39,7 @@ def _read_lookups(sender=None, **kwargs):
         Attribute(name=u'object_id', type=u'integer', base=False, multi=False,
             special=ServerTableSpecial(u'server_id')),
         Attribute(name=u'hostname', type=u'string', base=True, multi=False,
-            special=ServerTableSpecial(u'hostname')),
+            special=ServerTableSpecial(u'hostname', unique=True)),
         Attribute(name=u'servertype', type=u'string', base=True, multi=False,
             special=ServerTableSpecial(u'servertype_id')),
         Attribute(name=u'intern_ip', type=u'ip', base=True, multi=False,
