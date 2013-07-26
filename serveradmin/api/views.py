@@ -185,5 +185,5 @@ def api_call(request, app, data):
         return {
             'status': 'error',
             'type': e.__class__.__name__,
-            'message': e.message
+            'message': unicode(e)
         }
