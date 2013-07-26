@@ -1,7 +1,7 @@
 import os
 import pwd
 
-def get_user(home_at=['/home']):
+def get_user(home_at=['/home', '/var', '/opt', '/usr']):
     """Try to find the user who executed the script originally.
     
     :param home_at: List of directories containing home directories
