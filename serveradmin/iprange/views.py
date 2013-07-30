@@ -1,13 +1,11 @@
 from django.template.response import TemplateResponse
 from django.shortcuts import get_object_or_404
-from django.db import connection
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 
 from adminapi.utils import IP
-from serveradmin.dataset.base import lookups
 from serveradmin.serverdb.models import Segment
 from serveradmin.iprange.models import IPRange
 from serveradmin.iprange.forms import IPRangeForm
