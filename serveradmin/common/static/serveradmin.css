@@ -226,3 +226,7 @@ del {
  margin:0;
  padding:0 0 0 1.2em;
 }
+
+.ip_select, .iprange_select {
+ cursor:pointer;
+}
