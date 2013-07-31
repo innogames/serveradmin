@@ -127,6 +127,8 @@ function build_server_table(servers, attributes, offset)
         var row_class = i & 1 ? 'row_a' : 'row_b';
         if (delete_set[server['object_id']]) {
             row_class = 'row_del';
+        } else if (server['cancelled']) {
+            row_class = 'row_cancelled';
         }
         var row = $('<tr class="' + row_class + '"></tr>');
         var check = $('<input type="checkbox" name="server"></input>')

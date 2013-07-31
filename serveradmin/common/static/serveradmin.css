@@ -149,6 +149,10 @@ del {
  color:#fff;
 }
 
+.row_cancelled {
+ background:#fdd;
+}
+
 .page {
  border:1px solid #67a13a;
  padding:3px;
