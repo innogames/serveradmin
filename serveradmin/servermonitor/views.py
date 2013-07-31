@@ -292,6 +292,11 @@ def custom_graph(request, graph_name):
         end = forms.DateTimeField()
 
         def clean(self):
+            check_order = ('start' in self.cleaned_data and
+                           'end'in self.cleaned_data)
+            if not check_order:
+                return self.cleaned_data
+
             if self.cleaned_data['start'] >= self.cleaned_data['end']:
                 raise forms.ValidationError('Start must be less than end')
             return self.cleaned_data
