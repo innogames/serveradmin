@@ -332,6 +332,11 @@ it will be interpreted as regular expression.</p>
         <td><span class="noargs">none</span>
         <td>Show changes to server database.</td>
     </tr>
+    <tr>
+        <td>history</td>
+        <td><span class="noargs">none</span>
+        <td>Show history of selected hosts.</td>
+    </tr>
 </table>
 </div>
 
@@ -358,6 +363,7 @@ var shell_changes_url = "{% url 'serverdb_changes' %}";
 var shell_store_command_url = "{% url 'servershell_store_command' %}";
 var livegraph_url = "{% url 'servermonitor_livegraph_data' %}";
 var monitor_reload_url = "{% url 'servermonitor_reload' %}";
+var serverdb_history_url = "{% url 'serverdb_history' %}";
 //]]>
 </script>
 <script type="text/javascript" src="{{ STATIC_URL }}servershell/common.js"></script>

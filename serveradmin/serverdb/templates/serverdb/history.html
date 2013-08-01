@@ -1,10 +1,21 @@
-{% extends "base.html" %}
+{% extends base_template %}
+{% load url from future %}
 {% load serverdb %}
 
 {% block title %}History for {{ hostname }}{% endblock %}
 
 {% block content %}
+{% if not is_ajax %}
 <h2>History for {{ hostname }}</h2>
+{% endif %}
+
+{% if is_ajax %}
+<p><a href="{{ link }}">
+    <img src="{{ STATIC_URL }}link.png" alt="Link to this page" 
+		title="Link to this page" />
+</a></p>
+{% endif %}
+
 {% for type, change in change_list %}
 
 {% if type == 'add' %}

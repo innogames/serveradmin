@@ -290,7 +290,10 @@ def history(request):
     return TemplateResponse(request, 'serverdb/history.html', {
         'change_list': change_list,
         'commit_id': commit_id,
-        'hostname': hostname
+        'hostname': hostname,
+        'is_ajax': request.is_ajax(),
+        'base_template': 'empty.html' if request.is_ajax() else 'base.html',
+        'link': request.get_full_path()
     })
 
 

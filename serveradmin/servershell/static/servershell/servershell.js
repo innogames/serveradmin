@@ -499,7 +499,8 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'cmp': 'Compare servermonitor graphs for several hosts',
         'list': 'List all attributes of a server',
         'new': 'Create a new server',
-        'changes': 'Show changes',
+        'changes': 'Show all changes',
+        'history': 'Show history for selected hosts'
     };
     
     if (plen == 1 && parsed_args[0]['token'] == 'str') {
@@ -611,6 +612,8 @@ function handle_command(command)
         return handle_command_delete();
     } else if (command == 'changes') {
         return handle_command_changes();
+    } else if (command == 'history') {
+        return handle_command_history();
     } else if (is_digit(command[0])) {
         return handle_command_range(command);
     } else {
@@ -756,6 +759,23 @@ function handle_command_delete()
 function handle_command_changes()
 {
     window.location = shell_changes_url;
+}
+
+function handle_command_history()
+{
+    function show_history(server) {
+        var query_str = '?' + $.param({'hostname': server['hostname']});
+        $.get(serverdb_history_url + query_str, function(data) {
+            var dialog = $('<div title="History of ' + server['hostname'] + '"></div>');
+            dialog.append(data)
+            dialog.dialog({
+                'width': 800
+            });
+        });
+        return true;
+    }
+    execute_on_servers(show_history);
+    return '';
 }
 
 function handle_command_range(command)
