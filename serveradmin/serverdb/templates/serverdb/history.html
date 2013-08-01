@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load serverdb %}
+
+{% block title %}History for {{ hostname }}{% endblock %}
+
+{% block content %}
+<h2>History for {{ hostname }}</h2>
+{% for type, change in change_list %}
+
+{% if type == 'add' %}
+<h3>Added server on {{ change.commit.change_on|date:"DATETIME_FORMAT" }}
+by {{ change.commit.commit_by }}</h3>
+{% format_server change.attributes %}
+{% endif %}
+
+{% if type == 'update' %}
+<h3>Changed attributes on {{ change.commit.change_on|date:"DATETIME_FORMAT" }}
+by {{ change.commit.commit_by }}</h3>
+{% format_changes change.updates %}
+{% endif %}
+
+{% if type == 'delete' %}
+<h3>Deleted server on {{ change.commit.change_on|date:"DATETIME_FORMAT" }}
+by {{ change.commit.commit_by }}</h3>
+{% endif %}
+{% if change.attributes %}
+{% format_server change.attributes %}
+
+<form method="post" action="{% url 'serverdb_restore_deleted' change.commit.pk %}">
+{% csrf_token %}
+<input type="hidden" name="hostname" value="{{ change.hostname }}" />
+<p><input type="submit" value="Restore this server" /></p>
+</form>
+{% endif %}
+
+{% endfor %}
+{% endblock %}

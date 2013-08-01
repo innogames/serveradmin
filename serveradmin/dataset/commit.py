@@ -9,7 +9,7 @@ from adminapi.utils.json import json_encode_extra
 from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.cache import invalidate_cache
 from serveradmin.dataset.typecast import typecast
-from serveradmin.serverdb.models import Change
+from serveradmin.serverdb.models import ChangeCommit, ChangeUpdate, ChangeDelete
 
 def commit_changes(commit, skip_validation=False, force_changes=False,
                    app=None, user=None):
@@ -24,6 +24,10 @@ def commit_changes(commit, skip_validation=False, force_changes=False,
 
     _validate_structure(deleted_servers, changed_servers)
     _typecast_values(changed_servers)
+    _clean_changed(changed_servers)
+
+    if not changed_servers and not deleted_servers:
+        return
     
     c = connection.cursor()
     c.execute(u"SELECT GET_LOCK('serverobject_commit', 10)")
@@ -82,12 +86,21 @@ def _log_changes(deleted_servers, changed_servers, app, user):
     for server_obj in servers:
         changes[server_obj['hostname']] = changed_servers[server_obj.object_id]
     
-    changes_json = json.dumps({
-        'deleted': old_servers,
-        'changed': changes,
-        'created': None
-    }, default=json_encode_extra)
-    Change.objects.create(changes_json=changes_json, app=app, user=user)
+    if not (changes or old_servers):
+        return
+
+    commit = ChangeCommit.objects.create(app=app, user=user)
+    for hostname, updates in changes.items():
+        ChangeUpdate.objects.create(
+                commit=commit,
+                hostname=hostname,
+                updates_json=json.dumps(updates, default=json_encode_extra))
+    for attributes in old_servers:
+        attributes_json = json.dumps(attributes, default=json_encode_extra)
+        ChangeDelete.objects.create(
+                commit=commit,
+                hostname=attributes['hostname'],
+                attributes_json=attributes_json)
 
 def _fetch_servers(changed_servers):
     # Import here to break cyclic import
@@ -206,6 +219,28 @@ def _typecast_values(changed_servers):
                 change['remove'] = typecast(attr, change['remove'])
             elif action == 'delete':
                 change['old'] = typecast(attr, change['old'])
+
+def _clean_changed(changed_servers):
+    for server_id, changes in changed_servers.items():
+        server_changed = False
+        for attr, change in changes.items():
+            action = change['action']
+            if action == 'new':
+                server_changed = True
+            elif action == 'update':
+                if change['old'] != change['new']:
+                    server_changed = True
+                else:
+                    del changes[attr]
+            elif action == 'multi':
+                if change['add'] or change['remove']:
+                    server_changed = True
+                else:
+                    del changes[attr]
+            elif action == 'delete':
+                server_changed = True
+        if not server_changed:
+            del changed_servers[server_id]
 
 def _delete_servers(deleted_servers):
     ids = ', '.join(str(x) for x in deleted_servers)

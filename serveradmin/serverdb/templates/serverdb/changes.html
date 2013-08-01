@@ -14,56 +14,49 @@
 		<th>Added</th>
         <th>Changed</th>
     </tr>
-{% for change in changes %}
-    <tr>
-        <td>{{ change.change_on|date }}</td>
+{% for commit in commits %}
+    <tr class="{% cycle 'row_a' 'row_b' %}">
+        <td>{{ commit.change_on|date }}</td>
         <td>
-        {% if change.user %}
-        {{ change.user.first_name }} {{ change.user.last_name }}
+        {% if commit.user %}
+        {{ commit.user.get_full_name }}
         {% else %}
-        {{ change.app }}
+        {{ commit.app }}
         {% endif %}
         </td>
-        {% with server_changes=change.changes %}
+        
         <td>
-        {% if server_changes.deleted %}
-        {% for server_obj in server_changes.deleted %}
-        <div class="changes_container">
-        <h3>{{ server_obj.hostname }}</h3>
-        {% format_server server_obj %}
-		<form method="post" action="{% url 'serverdb_restore_deleted' change.pk %}">
-		{% csrf_token %}
-		<input type="hidden" name="hostname" value="{{ server_obj.hostname }}" />
-		<p><input type="submit" value="restore" /></p>
-		</form>
-        </div>
+        {% if commit.changedelete_set.count %}
+        {% for change_del in commit.changedelete_set.all %}
+        <ul class="nolist">
+            <li><a href="{% url 'serverdb_history' %}?hostname={{ change_del.hostname }}&amp;commit={{ commit.pk }}"
+            >{{ change_del.hostname }}</li>
         {% endfor %}
-        {% else %}
-        <i>Nothing deleted.</li>
+        </ul>
         {% endif %}
         </td>
-		<td>
-		{% if server_changes.created %}
-		<div class="changes_container">
-		<h3>{{ server_changes.created.hostname }}</h3>
-		{% format_server server_changes.created %}
-		</div>
-		{% else %}
-		<i>Nothing created.</i>
+		
+        <td>
+		{% if commit.changeadd_set.count %}
+        <ul class="nolist">
+        {% for change_add in commit.changeadd_set.all %}
+            <li><a href="{% url 'serverdb_history' %}?hostname={{ change_add.hostname }}&amp;commit={{ commit.pk }}"
+            >{{ change_add.hostname }}</li>
+        {% endfor %}
+        </ul>
 		{% endif %}
+        </td>
+
         <td>
-        {% if server_changes.changed %}
-        {% for hostname, changes in server_changes.changed.iteritems %}
-        <div class="changes_container">
-        <h3>{{ hostname }}</h3>
-        {% format_changes changes %}
-        </div>
+		{% if commit.changeupdate_set.count %}
+        <ul class="nolist">
+        {% for change_update in commit.changeupdate_set.all %}
+            <li><a href="{% url 'serverdb_history' %}?hostname={{ change_update.hostname }}&amp;commit={{ commit.pk }}"
+            >{{ change_update.hostname }}</li>
         {% endfor %}
-        {% else %}
-        <i>Nothing changed.</i>
+        </ul>
         {% endif %}
         </td>
-        {% endwith %}
     </tr>
 {% endfor %}
 </table>
@@ -71,14 +64,14 @@
 <div class="pagination">
     Page:
     <span class="step-links">
-        {% if changes.has_previous %}
-            <a href="?page={{ changes.previous_page_number }}">&laquo;</a>
+        {% if commits.has_previous %}
+            <a href="?page={{ commits.previous_page_number }}">&laquo;</a>
         {% endif %}
         <span class="current">
-            {{ changes.number }}/{{ changes.paginator.num_pages }}
+            {{ commits.number }}/{{ commits.paginator.num_pages }}
         </span>
-        {% if changes.has_next %}
-            <a href="?page={{ changes.next_page_number }}">&raquo;</a>
+        {% if commits.has_next %}
+            <a href="?page={{ commits.next_page_number }}">&raquo;</a>
         {% endif %}
     </span>
 </div>

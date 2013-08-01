@@ -2,7 +2,7 @@ import json
 
 from django.db import connection
 
-from serveradmin.serverdb.models import Change
+from serveradmin.serverdb.models import ChangeCommit, ChangeAdd
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.cache import invalidate_cache
 from serveradmin.dataset.validation import handle_violations, check_attribute_type
@@ -66,7 +66,6 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
         # Handle not existing attributes (fill defaults, validate require)
         if attr.name not in real_attributes:
             if attr_obj.multi:
-                print attr.name, repr(stype_attr.default)
                 if stype_attr.default in ('', None):
                     real_attributes[attr.name] = []
                 else:
@@ -126,10 +125,11 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
         created_server['intern_ip'] = intern_ip
         created_server['segment'] = segment
 
-        changes_json = json.dumps(
-                {'deleted': [], 'changed': {}, 'created': created_server},
-                default=json_encode_extra)
-        Change.objects.create(changes_json=changes_json, app=app, user=user)
+        commit = ChangeCommit.objects.create(app=app, user=user)
+        attributes_json = json.dumps(created_server, default=json_encode_extra)
+        ChangeAdd.objects.create(commit=commit,
+                                 hostname=created_server['hostname'],
+                                 attributes_json=attributes_json)
     finally:
         c.execute(u'COMMIT')
         c.execute(u"SELECT RELEASE_LOCK('serverobject_commit')")

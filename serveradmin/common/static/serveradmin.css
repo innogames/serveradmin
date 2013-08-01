@@ -234,3 +234,9 @@ del {
 .ip_select, .iprange_select {
  cursor:pointer;
 }
+
+ul.nolist {
+ list-style:none;
+ padding:0;
+ margin:0;
+}

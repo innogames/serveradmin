@@ -131,3 +131,52 @@ class Change(models.Model):
 
     def __unicode__(self):
         return unicode(self.change_on)
+
+
+class ChangeCommit(models.Model):
+    change_on = models.DateTimeField(default=now, db_index=True)
+    user = models.ForeignKey(User, blank=True, null=True)
+    app = models.ForeignKey(Application, blank=True, null=True)
+    
+    def __unicode__(self):
+        return unicode(self.change_on)
+
+
+class ChangeDelete(models.Model):
+    commit = models.ForeignKey(ChangeCommit)
+    hostname = models.CharField(max_length=64, db_index=True)
+    attributes_json = models.TextField()
+
+    @property
+    def attributes(self):
+        return json.loads(self.attributes_json)
+    
+    def __unicode__(self):
+        return u'{0}: {1}'.format(unicode(self.commit), self.hostname)
+
+
+class ChangeUpdate(models.Model):
+    commit = models.ForeignKey(ChangeCommit)
+    hostname = models.CharField(max_length=64, db_index=True)
+    updates_json = models.TextField()
+
+    @property
+    def updates(self):
+        return json.loads(self.updates_json)
+
+    def __unicode__(self):
+        return u'{0}: {1}'.format(unicode(self.commit), self.hostname)
+
+
+class ChangeAdd(models.Model):
+    commit = models.ForeignKey(ChangeCommit)
+    hostname = models.CharField(max_length=64, db_index=True)
+    attributes_json = models.TextField()
+
+    @property
+    def attributes(self):
+        return json.loads(self.attributes_json)
+    
+
+    def __unicode__(self):
+        return u'{0}: {1}'.format(unicode(self.commit), self.hostname)

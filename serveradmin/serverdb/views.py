@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from django.core.cache import cache
+from django.core.urlresolvers import reverse
 from django import forms
 
 from serveradmin.dataset.base import lookups
@@ -15,7 +16,7 @@ from serveradmin.dataset.create import create_server
 from serveradmin.dataset.exceptions import CommitError
 
 from serveradmin.serverdb.models import (ServerType, Attribute, AttributeValue,
-        ServerTypeAttributes, Change)
+        ServerTypeAttributes, ChangeCommit, ChangeAdd, ChangeUpdate, ChangeDelete)
 
 @login_required
 def servertypes(request):
@@ -241,26 +242,65 @@ def add_attribute(request):
 
 @login_required
 def changes(request):
-    changes = Change.objects.order_by('-change_on').select_related()
-    paginator = Paginator(changes, 20)
+    commits = ChangeCommit.objects.order_by('-change_on').prefetch_related()
+    paginator = Paginator(commits, 30)
     try:
         page = paginator.page(request.GET.get('page', 1))
     except (PageNotAnInteger, EmptyPage):
         page = paginator.page(1)
 
     return TemplateResponse(request, 'serverdb/changes.html', {
-        'changes': page 
+        'commits': page 
     })
 
 @login_required
-def restore_deleted(request, change_id):
-    change = get_object_or_404(Change, pk=change_id)
-    try:
-        server_obj = [sobj for sobj in change.changes['deleted']
-                      if sobj['hostname'] == request.POST.get('hostname')][0]
-    except IndexError:
+def history(request):
+    hostname = request.GET.get('hostname')
+    if not hostname:
         raise Http404
+
+    try:
+        commit_id = int(request.GET['commit'])
+    except (KeyError, ValueError):
+        commit_id = None
+
+    adds = ChangeAdd.objects.filter(hostname=hostname).select_related()
+    updates = ChangeUpdate.objects.filter(hostname=hostname).select_related()
+    deletes = ChangeDelete.objects.filter(hostname=hostname).select_related()
+
+    if commit_id:
+        adds = adds.filter(commit__pk=commit_id)
+        updates = updates.filter(commit__pk=commit_id)
+        deletes = deletes.filter(commit__pk=commit_id)
+
+    change_list = ([('add', obj) for obj in adds] +
+                   [('update', obj) for obj in updates] +
+                   [('delete', obj) for obj in deletes])
+    change_list.sort(key=lambda entry: entry[1].commit.change_on)
+
+    for change in change_list:
+        commit = change[1].commit
+        if commit.user:
+            commit.commit_by = commit.user.get_full_name()
+        elif commit.app:
+            commit.commit_by = commit.app.name
+        else:
+            commit.commit_by = 'unknown'
+
+    return TemplateResponse(request, 'serverdb/history.html', {
+        'change_list': change_list,
+        'commit_id': commit_id,
+        'hostname': hostname
+    })
+
+
+@login_required
+def restore_deleted(request, change_commit):
+    deleted = get_object_or_404(ChangeDelete,
+                                hostname=request.POST.get('hostname'),
+                                commit__pk=change_commit)
     
+    server_obj = deleted.attributes
     try:
         create_server(server_obj, skip_validation=True, fill_defaults=False,
                       fill_defaults_all=False)
@@ -268,7 +308,7 @@ def restore_deleted(request, change_id):
         messages.error(request, unicode(e))
     else:
         messages.success(request, 'Server restored.')
-    return redirect('serverdb_changes')
+    return redirect(reverse('serverdb_history') + '?hostname=' + server_obj['hostname'])
 
 def _clear_lookups():
     cache.delete('dataset_lookups_version')

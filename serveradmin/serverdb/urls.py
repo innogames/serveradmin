@@ -23,4 +23,5 @@ urlpatterns = patterns(
     url(r'^attributes/add$', 'add_attribute', name='serverdb_add_attribute'),
     url(r'^changes$', 'changes', name='serverdb_changes'),
     url(r'^changes_restore/(\d+)$', 'restore_deleted', name='serverdb_restore_deleted'),
+    url(r'^history$', 'history', name='serverdb_history'),
 )
