@@ -276,7 +276,7 @@ def history(request):
     change_list = ([('add', obj) for obj in adds] +
                    [('update', obj) for obj in updates] +
                    [('delete', obj) for obj in deletes])
-    change_list.sort(key=lambda entry: entry[1].commit.change_on)
+    change_list.sort(key=lambda entry: entry[1].commit.change_on, reverse=True)
 
     for change in change_list:
         commit = change[1].commit
