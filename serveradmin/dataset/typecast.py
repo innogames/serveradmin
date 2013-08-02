@@ -30,13 +30,29 @@ def _to_datetime(x):
     else:
         raise ValueError('Could not cast {0!r} to datetime', x)
 
+_hex_sep = '([a-fA-F0-9]{,2})[^a-fA-Z0-9]'
+_mac_re = re.compile('^' + _hex_sep * 5 + '([a-fA-F0-9]{,2})$')
+_mac_re_nosep = re.compile('^[a-fA-F0-9]{12}$')
+def _to_mac(mac):
+    match = _mac_re.match(mac)
+    if match:
+        parts = [match.group(grp).lower().zfill(2) for grp in xrange(1, 7)]
+        return u':'.join(parts)
+    elif _mac_re_nosep.match(mac):
+        mac_lower = mac.lower()
+        return u':'.join(mac_lower[i:i+2] for i in xrange(6))
+    else:
+        raise ValueError(u'Invalid MAC "{0}"'.format(mac))
+
+
 _typecast_fns = {
     'integer': int,
     'boolean': lambda x: x in ('1', 'True', 'true', 1, True),
     'string': lambda x: x if isinstance(x, basestring) else unicode(x),
     'ip': lambda x: x if isinstance(x, IP) else IP(x),
     'ipv6': lambda x: x if isinstance(x, IPv6) else IPv6(x),
-    'datetime': _to_datetime
+    'datetime': _to_datetime,
+    'mac': _to_mac
 }
 def typecast(attr_name, value, force_single=False):
     if value is None:

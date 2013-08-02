@@ -14,7 +14,8 @@ TYPE_CHOICES = (
         ('ip', 'IPv4 address'),
         ('ipv6', 'IPv6 address'),
         ('boolean', 'Boolean'),
-        ('datetime', 'Datetime')
+        ('datetime', 'Datetime'),
+        ('mac', 'MAC address')
 )
 
 class Attribute(models.Model):
