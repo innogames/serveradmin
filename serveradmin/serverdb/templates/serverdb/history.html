@@ -45,4 +45,9 @@ by {{ change.commit.commit_by }}</h3>
 {% endif %}
 
 {% endfor %}
+
+{% if commit_id %}
+<p><a href="{% url 'serverdb_history' %}?hostname={{ hostname }}">Show complete history</a></p>
+{% endif %}
+
 {% endblock %}
