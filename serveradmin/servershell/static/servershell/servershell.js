@@ -528,6 +528,10 @@ function autocomplete_shell_command(term, autocomplete_cb)
             _autocomplete_attr(term, parsed_args, autocomplete, ' ');
         }
     } else if (command == 'setattr' || command == 'delattr') {
+        // Do not autocomplete values with names of attributes
+        if (plen > 2) {
+            return;
+        }
         if (parsed_args[plen -1]['token'] == 'str') {
             var suffix = {'setattr': '=', 'delattr': ' '}[command];
             function only_single(attr) {
