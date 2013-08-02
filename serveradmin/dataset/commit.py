@@ -234,7 +234,15 @@ def _clean_changed(changed_servers):
                     del changes[attr]
             elif action == 'multi':
                 if change['add'] or change['remove']:
-                    server_changed = True
+                    intersect = change['add'].intersection(change['remove'])
+                    if intersect:
+                        for value in intersect:
+                            change['add'].remove(value)
+                            change['remove'].remove(value)
+                    if change['add'] or change['remove']:
+                        server_changed = True
+                    else:
+                        del changes[attr]
                 else:
                     del changes[attr]
             elif action == 'delete':
