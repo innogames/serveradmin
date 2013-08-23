@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import sys
 from optparse import OptionParser
+from operator import itemgetter
 
 import adminapi
 from adminapi.dataset import query, filters, DatasetError
@@ -58,7 +59,11 @@ def main():
         print(options.separator.join(host[attrs[0]] for host in q))
         exit(0)
 
-    for host in q:
+    host_list = q
+    if 'hostname' in attrs:
+        host_list = sorted(q, key=itemgetter('hostname'))
+
+    for host in host_list:
         row_values = []
         for attr in attrs:
             if attr in host:
