@@ -197,9 +197,10 @@ class Network(object):
         if max_ip is None:
             if isinstance(min_ip, basestring):
                 cidr_ip, size = min_ip.split('/')
-                num_ips = 1 << (32 - int(size))
-                self.min_ip = IP(cidr_ip)
-                self.max_ip = IP(self.min_ip.as_int() + num_ips - 1)
+                cidr_ip_int = IP(cidr_ip).as_int()
+                mask = -1 << (32 - int(size))
+                self.min_ip = IP(cidr_ip_int & mask)
+                self.max_ip = IP(self.min_ip.as_int() | ~mask)
             elif isinstance(list, tuple):
                 self.min_ip = IP(min_ip[0])
                 self.max_ip = IP(max_ip[0])
