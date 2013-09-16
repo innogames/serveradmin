@@ -9,6 +9,9 @@ except ImportError:
 
 from adminapi.utils.json import json_encode_extra
 
+BASE_URL = 'https://serveradmin.innogames.de/api'
+BASE_URL_BACKUP = 'https://serveradmin2.innogames.de/api'
+
 class PermissionDenied(Exception):
     pass
 
@@ -16,11 +19,36 @@ def _calc_security_token(auth_token, timestamp, content):
     message = ':'.join((str(timestamp), content))
     return hmac.new(auth_token, message, hashlib.sha1).hexdigest()
 
-def send_request(url, data, auth_token, timeout=None):
+def send_request(endpoint, data, auth_token, timeout=None):
     if not auth_token:
         raise ValueError("No auth token supplied. Try adminapi.auth('Token').")
 
     data_json = json.dumps(data, default=json_encode_extra)
+    
+    try_backup = False
+    while True:
+        try:
+            req = _build_request(endpoint, auth_token, data_json, try_backup)
+            return json.loads(urllib2.urlopen(req, timeout=timeout).read())
+        except urllib2.HTTPError, e:
+            if e.code == 403:
+                raise PermissionDenied(e.read())
+            elif e.code == 502:
+                if try_backup:
+                    raise
+                try_backup = True
+            elif e.code == 500:
+                if try_backup:
+                    raise
+                try_backup = True
+            else:
+                raise
+        except urllib2.URLError:
+            if try_backup:
+                raise
+            try_backup = True
+
+def _build_request(endpoint, auth_token, data_json, backup=False):
     timestamp = int(time.time())
     application_id = hashlib.sha1(auth_token).hexdigest()
     security_token = _calc_security_token(auth_token, timestamp, data_json)
@@ -30,23 +58,5 @@ def send_request(url, data, auth_token, timeout=None):
         'X-Application': application_id,
         'X-SecurityToken': security_token
     }
-
-    req = urllib2.Request(url, data_json, headers)
-    retries = 3
-    while True:
-        retries -= 1
-        try:
-            return json.loads(urllib2.urlopen(req, timeout=timeout).read())
-        except urllib2.HTTPError, e:
-            if e.code == 403:
-                raise PermissionDenied(e.read())
-            elif e.code == 502:
-                if retries <= 0:
-                    raise
-                time.sleep(5)
-            else:
-                raise
-        except urllib2.URLError:
-            if retries <= 0:
-                raise
-            time.sleep(5)
+    url = (BASE_URL_BACKUP if backup else BASE_URL) + endpoint
+    return urllib2.Request(url, data_json, headers)

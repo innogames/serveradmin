@@ -1,4 +1,4 @@
-from adminapi import BASE_URL, _api_settings
+from adminapi import _api_settings
 from adminapi.utils import IP
 from adminapi.request import send_request
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
@@ -6,9 +6,9 @@ from adminapi.dataset.filters import _prepare_filter
 from adminapi.dataset.exceptions import (DatasetError, CommitError, 
         CommitValidationFailed, CommitNewerData) # Import into this Namespace
 
-COMMIT_URL = BASE_URL + '/dataset/commit'
-QUERY_URL = BASE_URL + '/dataset/query'
-CREATE_URL = BASE_URL + '/dataset/create'
+COMMIT_ENDPOINT = '/dataset/commit'
+QUERY_ENDPOINT = '/dataset/query'
+CREATE_ENDPOINT = '/dataset/create'
 
 class Attribute(object):
     def __init__(self, name, type, multi):
@@ -30,7 +30,7 @@ class QuerySet(BaseQuerySet):
         commit = self._build_commit_object()
         commit['skip_validation'] = skip_validation
         commit['force_changes'] = force_changes
-        result = send_request(COMMIT_URL, commit, self.auth_token,
+        result = send_request(COMMIT_ENDPOINT, commit, self.auth_token,
                               self.timeout)
 
         if result['status'] == 'success':
@@ -53,7 +53,7 @@ class QuerySet(BaseQuerySet):
             'restrict': self._restrict,
             'augmentations': self._augmentations
         }
-        result = send_request(QUERY_URL, request_data, self.auth_token,
+        result = send_request(QUERY_ENDPOINT, request_data, self.auth_token,
                               self.timeout)
         return self._handle_result(result)
 
@@ -107,7 +107,7 @@ class ServerObject(BaseServerObject):
         commit = self._build_commit_object() 
         commit['skip_validation'] = skip_validation
         commit['force_changes'] = force_changes
-        result = send_request(COMMIT_URL, commit, self.auth_token,
+        result = send_request(COMMIT_ENDPOINT, commit, self.auth_token,
                               self.timeout)
 
         if result['status'] == 'success':
@@ -144,7 +144,7 @@ def create(attributes, skip_validation=False, fill_defaults=True,
     if auth_token is None:
         auth_token = _api_settings['auth_token']
 
-    result = send_request(CREATE_URL, request_data, auth_token,
+    result = send_request(CREATE_ENDPOINT, request_data, auth_token,
                           _api_settings['timeout_dataset'])
     qs = QuerySet(filters={'hostname': _prepare_filter(attributes['hostname'])},
             auth_token=auth_token, timeout=_api_settings['timeout_dataset'])

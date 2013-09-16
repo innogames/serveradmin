@@ -1,7 +1,7 @@
-from adminapi import BASE_URL, _api_settings
+from adminapi import _api_settings
 from adminapi.request import send_request
 
-API_CALL_URL = BASE_URL + '/call'
+API_CALL_ENDPOINT = '/call'
 
 class ApiError(Exception):
     pass
@@ -37,7 +37,7 @@ class FunctionGroup(object):
             if hasattr(self.auth_token, '__call__'):
                 self.auth_token = self.auth_token()
 
-            result = send_request(API_CALL_URL, call, self.auth_token,
+            result = send_request(API_CALL_ENDPOINT, call, self.auth_token,
                                   self.timeout)
 
             if result['status'] == 'success':

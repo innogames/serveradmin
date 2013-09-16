@@ -1,8 +1,6 @@
 from adminapi.request import PermissionDenied
 from adminapi.cmdline.utils import get_auth_token
 
-BASE_URL = 'http://serveradmin.innogames.de/api'
-
 _api_settings = {
     'auth_token': '',
     'timeout_api': None,
