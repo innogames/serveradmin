@@ -39,3 +39,17 @@ function open_graph_popup()
         attach_graph_reload();
     });
 }
+
+
+function attach_show_graph_description() {
+    $('img.graph_desc_icon').off('click').click(function(){
+        var img = $(this);
+        var graph_name = img.attr('data-graphname');
+        $('#graph_desc_' + graph_name).dialog({
+            'width': '30em',
+            'graph_name': graph_name
+        });
+    });
+}
+
+$(attach_show_graph_description);

@@ -10,6 +10,13 @@ from serveradmin.common.utils import validate_hostname
 
 PERIODS = ('hourly', 'daily', 'weekly', 'monthly', 'yearly')
 
+class GraphDescription(models.Model):
+    description = models.TextField()
+    graph_name = models.CharField(max_length=50)
+    def __unicode__(self):
+        return self.graph_name
+    
+
 class ServermonitorError(Exception):
     pass
 

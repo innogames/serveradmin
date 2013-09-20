@@ -15,8 +15,16 @@
 </a></p>
 {% endif %}
 
+
+{% for graph in graph_table %}
+<div id="graph_desc_{{graph.name}}" title="Graph description for {{ graph.name }}" style="display:none;">
+{{graph.description }}
+</div>
+{% endfor %}
+
 {% for graph in graph_table %}
 <h3>{{ graph.name }}
+  <img src="{{ STATIC_URL}}help.png" class="graph_desc_icon" data-graphname={{graph.name}} >
 <a style="margin-left:1em; font-size:0.8em;"
   href="{% url 'servermonitor_custom_graph' graph.name %}?hostname={{ hostname|urlencode }}"
   >(draw for custom time)</a>

@@ -681,6 +681,7 @@ function handle_command_graph()
                 'width': 1500
             });
             attach_graph_reload();
+            attach_show_graph_description();
         });
         return true;
     }
@@ -1198,7 +1199,7 @@ $(function() {
             'width': '70em',
         });
     });
-    
+
     $('#shell_search_help_icon').click(function() {
         $('#shell_search_help').dialog({
             'width': '70em',

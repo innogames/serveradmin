@@ -15,6 +15,8 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 from django import forms
+from django.core.urlresolvers import reverse
+from django.utils.safestring import mark_safe
 from comments.forms import CommentForm
 
 from adminapi.utils.parse import parse_query
@@ -22,7 +24,7 @@ from serveradmin.dataset import query, filters, DatasetError
 from serveradmin.serverdb.models import Segment, SegmentUsage, ServerType
 from serveradmin.servermonitor.models import (get_available_graphs,
         get_graph_url, split_graph_name, join_graph_name, reload_graphs,
-        draw_custom_graph, query_livegraph, ServermonitorError, PERIODS)
+        draw_custom_graph, query_livegraph, ServermonitorError, PERIODS, GraphDescription)
 from serveradmin.servermonitor.getinfo import get_information
 
 @login_required
@@ -113,12 +115,18 @@ def graph_table(request):
     graph_table = {}
     for graph in graphs:
         graph_name, period = split_graph_name(graph)
+        try:
+            graph_description = GraphDescription.objects.get(graph_name=graph_name).description
+        except GraphDescription.DoesNotExist:
+            url = reverse('admin:servermonitor_graphdescription_add')
+            graph_description = mark_safe('Not yet defined. Go to <a href="{0}">admin</a> and add it.'.format(url))
         if period:
             # Don't show graph with custom timespans
             if period.startswith('custom'):
                 continue
             graph_dict = graph_table.setdefault(graph_name, {})
             graph_dict['name'] = graph_name
+            graph_dict['description'] = graph_description
             graph_dict[period] = {
                 'image': get_graph_url(hostname, graph),
                 'graph': graph

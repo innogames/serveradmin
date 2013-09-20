@@ -116,7 +116,7 @@ table.tabular td, table.tabular th {
 	width:100%;
 }
 
-#shell_search_help, #shell_command_help {
+#shell_search_help, #shell_command_help, #graph_desc {
  display:none;
 }
 
