@@ -18,7 +18,7 @@
 
 {% for graph in graph_table %}
 <div id="graph_desc_{{graph.name}}" title="Graph description for {{ graph.name }}" style="display:none;">
-{{graph.description }}
+{{graph.description|safe }}
 </div>
 {% endfor %}
 
