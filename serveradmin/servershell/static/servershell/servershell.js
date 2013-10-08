@@ -500,6 +500,8 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'list': 'List all attributes of a server',
         'new': 'Create a new server',
         'changes': 'Show all changes',
+        'custom_graph': 'Shows graphs for a host in a custom timerange',
+        'custom_cmp': 'Compare graphs in a custom timerange',
         'history': 'Show history for selected hosts'
     };
     
@@ -614,6 +616,8 @@ function handle_command(command)
         return handle_command_clone();
     } else if (command == 'delete') {
         return handle_command_delete();
+    } else if (command == 'custom_graph') {
+        return handle_command_custom_graph();
     } else if (command == 'changes') {
         return handle_command_changes();
     } else if (command == 'history') {
@@ -673,7 +677,9 @@ function handle_command_export()
 function handle_command_graph()
 {
     function show_graphs(server) {
+        console.log(server);
         var query_str = '?' + $.param({'hostname': server['hostname']});
+        console.log(query_str);
         $.get(shell_graph_url + query_str, function(data) {
             var dialog = $('<div title="' + server['hostname'] + '"></div>');
             dialog.append(data)
@@ -687,6 +693,49 @@ function handle_command_graph()
     }
     execute_on_servers(show_graphs);
     return '';
+}
+
+function handle_command_custom_graph()
+{
+    function create_custom_graph(server){
+        var query_str = '?' + $.param({'hostname': server['hostname']});
+        window.location = shell_custom_graph_url + query_str;
+        return true;
+    }
+    execute_on_servers(create_custom_graph);
+}
+
+function handle_command_custom_cmp(parsed_args)
+{
+    var marked_servers = get_marked_servers();
+    var hostnames = [];
+    for (var i = 0; i < marked_servers.length; i++) {
+        var server = search['servers'][marked_servers[i]];
+        hostnames.push(server['hostname']);
+    }
+    
+
+    if (hostnames.length == 0) {
+        $('<dialog title="Error">Please select some servers.</div>').dialog();
+        return
+    }
+
+    var graphs = [];
+    var periods = [];
+    for (var i = 1; i < parsed_args.length; i++) {
+        if (parsed_args[i]['token'] == 'str' && parsed_args[i-1]['token'] != 'key') {
+            graphs.push('&graph=' + parsed_args[i]['value']);
+        }
+    }
+    var query_str = '?hostname=' + hostnames.join('&hostname=');
+    query_str += graphs.join('');
+
+    function create_custom_cmp(server){
+        console.log('query_str = ' + query_str);
+        window.location = shell_custom_cmp_url + query_str;
+        return true;
+    }
+    execute_on_servers(create_custom_cmp);
 }
 
 function handle_command_livegraph()
@@ -744,7 +793,7 @@ function handle_command_clone()
             $('<div title="' + title + '"></div>').append(page).dialog({
                 'width': 600
             });
-        });
+        ö});
         return false;
     }
     execute_on_servers(clone_server);
@@ -840,6 +889,8 @@ function handle_command_other(command)
         return handle_command_perpage(parsed_args);
     } else if (command_name == 'cmp') {
         return handle_command_compare(parsed_args);
+    } else if (command_name == 'custom_cmp') {
+        return handle_command_custom_cmp(parsed_args);
     }
 }
 

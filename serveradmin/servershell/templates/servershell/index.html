@@ -11,6 +11,7 @@
     <td>Search: </td>
     <td>
         <form method="post" action="" id="shell_search_form">
+        {% csrf_token %}
         <input type="text" size="60"  id="shell_search" value="{{ search_term }}" />
         </form>
     </td>
@@ -359,6 +360,8 @@ var shell_values_url = "{% url 'servershell_values' %}";
 var shell_new_url = "{% url 'servershell_new' %}";
 var shell_compare_url = "{% url 'servermonitor_compare' %}";
 var shell_graph_url = "{% url 'servermonitor_graph_table' %}";
+var shell_custom_graph_url = "{% url 'servermonitor_custom_graph_table' %}";
+var shell_custom_cmp_url= "{% url 'servermonitor_custom_compare' %}";
 var shell_livegraph_url = "{% url 'servermonitor_livegraph' %}";
 var shell_changes_url = "{% url 'serverdb_changes' %}";
 var shell_store_command_url = "{% url 'servershell_store_command' %}";

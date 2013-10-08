@@ -1,0 +1,92 @@
+{% extends base_template %}
+{% load url from future %}
+
+{% block title %}Graph comparison{% endblock %}
+
+{% block content %}
+{% if not is_ajax %}
+
+
+<form method="post" action="">
+{% csrf_token %}
+<table>
+{{ form }}
+</table>
+<p><input type="submit" value="Draw graph" /></p>
+</form>
+
+<h2>Graph comparison</h2>
+{% endif %}
+
+{% if is_ajax %}
+<p><a href="{{ link }}">
+    <img src="{{ STATIC_URL }}link.png" alt="Link to this page" 
+		title="Link to this page" />
+</a></p>
+{% endif %}
+
+{% if compare_table|length > 1 %}
+<ul id="compareindex">
+{% for graph in compare_table %}
+    <li><a href="#compare_{{ graph.name }}">{{ graph.name }}</a></li>
+{% endfor %}
+</ul>
+{% endif %}
+
+<p>Click on the images to refresh them.</p>
+{% for graph in compare_table %}
+<h3 id="compare_{{ graph.name }}">{{ graph.name }}
+{% if compare_table|length > 1 %}
+<small><a href="#compareindex">(index)</a></small>
+{% endif %}
+</h3>
+{% if graph.hosts %}
+<table>
+{% for host in graph.hosts %}
+    {% for chunk in host.images %}
+    <tr>
+    <td></td>
+    {% for image in chunk %}
+        {% if image %}
+        <th>{{ image.period }}</th>
+        {% else %}
+        <th></th>
+        {% endif %}
+    {% endfor %}
+    </tr>
+    <tr>
+    {% if forloop.counter == 1 %}
+    <th>{{ host.hostname }}</th>
+    {% else %}
+    <td></td>
+    {% endif %}
+    {% for image in chunk %}
+        {% if image %}
+        {% include "servermonitor/compare_image.html" with hostname=host.hostname period=image %}
+        {% endif %}
+    {% endfor %}
+    </tr>
+    {% endfor %}
+    {% if not forloop.last %}
+    <tr>
+        <td colspan="4"><hr /></td>
+    </tr>
+    {% endif %}
+{% endfor %}
+</table>
+{% else %}
+<p>No hosts for this graph.</p>
+{% endif %}
+{% endfor %}
+{% if not is_ajax %}
+<script type="text/javascript" src="{{ STATIC_URL }}servermonitor/servermonitor.js"></script>
+{% endif %}
+<script type="text/javascript">
+//<![CDATA[
+var monitor_reload_url = '{% url 'servermonitor_reload' %}';
+$(function() {
+    attach_graph_reload();
+});
+//]]>
+</script>
+{% endblock content %}

@@ -1,5 +1,6 @@
 from __future__ import division
 
+import os
 import json
 import math
 import socket
@@ -150,6 +151,81 @@ def graph_table(request):
 
 @login_required
 @ensure_csrf_cookie
+def custom_graph_table(request):
+    class CustomGraphForm(forms.Form):
+        start = forms.DateTimeField()
+        end = forms.DateTimeField()
+    
+        def clean(self):
+            check_order = ('start' in self.cleaned_data and 
+                           'end' in self.cleaned_data)
+
+            if not check_order:
+                return self.cleaned_data
+            
+            if self.cleaned_data['start']  >= self.cleaned_data['end']:
+                raise forms.ValidationError('Start must be less than end')
+
+            return self.cleaned_data
+    try:
+        hostname = request.GET['hostname']
+    except KeyError:
+        return HttpResponseBadRequest('You have to provide a hostname')
+
+    graphs = get_available_graphs(hostname)
+    graph_table = {}
+    graph_names = set()
+
+    for graph in graphs:
+        graph_name, period = split_graph_name(graph)
+        graph_names.add(graph_name)
+
+    
+    if request.method == 'POST':
+        form = CustomGraphForm(request.POST)
+        
+        if form.is_valid():
+            start = int(time.mktime(form.cleaned_data['start'].timetuple()))
+            end = int(time.mktime(form.cleaned_data['end'].timetuple()))
+        
+            for graph_name in graph_names:
+                try:
+                    url = draw_custom_graph(graph_name, hostname, start, end)
+                except ServermonitorError:
+                    url = None
+       
+                try:
+                    graph_description = GraphDescription.objects.get(graph_name=graph_name).description
+                except:
+                    graph_description = "Not yet defined. Go to /admin and add it."
+
+                graph_dict = graph_table.setdefault(graph_name, {})
+                graph_dict['name'] = graph_name
+                graph_dict['description'] = graph_description
+                graph_dict['custom'] = {
+                    'image': url,
+                    'graph': graph
+                }
+    else:
+        form = CustomGraphForm(initial={
+            'start':datetime.utcnow() - timedelta(minutes=60),
+            'end': datetime.utcnow()
+        })
+    
+    graph_table = sorted(graph_table.values(), key=itemgetter('name'))
+    return TemplateResponse(request, 'servermonitor/custom_graph_table.html', {
+        'hostname': hostname,
+        'graph_table': graph_table,
+        'is_ajax': request.is_ajax(),
+        'form': form,
+        'base_template': 'empty.html' if request.is_ajax() else 'base.html',
+        'link': request.get_full_path(),
+    })
+
+
+
+@login_required
+@ensure_csrf_cookie
 def compare(request):
     hostnames = request.GET.getlist('hostname')
     periods = set(request.GET.getlist('period'))
@@ -218,6 +294,108 @@ def compare(request):
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
         'link': request.get_full_path()
+    })
+
+@login_required
+@ensure_csrf_cookie
+def custom_compare(request):
+    class CustomGraphForm(forms.Form):
+        start = forms.DateTimeField()
+        end   = forms.DateTimeField()
+
+        def clean(self):    
+            check_order = ('start' in self.cleaned_data and
+                           'end' in self.cleaned_data)
+
+            if not check_order:
+                return self.cleaned_data
+            
+            if self.cleaned_data['start'] >= self.cleaned_data['end']:
+                raise forms.ValidationError('Start must be less than end')
+            
+            return self.cleaned_data
+
+        
+  
+    try:
+        hostnames = request.GET.getlist('hostname')
+    except KeyError:
+        return HttpResponseBadRequest('You have to provide a hostname')
+
+    use_graphs = set() # Will contain shown graphs (without period)
+    compare_table = []
+    if request.method == 'POST':
+            form = CustomGraphForm(request.POST)
+            if form.is_valid():
+                start = int(time.mktime(form.cleaned_data['start'].timetuple()))
+                end = int(time.mktime(form.cleaned_data['end'].timetuple()))
+    
+            for graph in request.GET.getlist('graph'):
+                graph_name, period = split_graph_name(graph)
+                use_graphs.add(graph_name)
+        
+            graph_hosts = {} # Contains mapping from graph_name to list of hosts
+            host_graphs = {} # Available graphs [hostname] -> (graph_name, period)
+            for hostname in hostnames:
+                host_graphs[hostname] = set([split_graph_name(graph)[0]
+                                         for graph in get_available_graphs(hostname)])
+        
+            if not use_graphs:
+                for graphs in host_graphs.itervalues():
+                    use_graphs.update([graph for graph in graphs])
+        
+            for hostname in hostnames:
+                for graph in host_graphs[hostname]:
+                    if graph in use_graphs:
+                        graph_hosts.setdefault(graph, set()).add(hostname)
+        
+            for graph_name in use_graphs:
+                graph_hostnames = graph_hosts.get(graph_name, set())
+                hosts = []
+                for hostname in graph_hostnames:
+                    host = {
+                        'hostname': hostname,
+                        'images': []
+                    }
+                    if graph_name in host_graphs[hostname]:
+                        image = draw_custom_graph(graph_name, hostname, start, end)
+                    else:
+                        image = None
+                    host['images'].append({    'image': image,
+                                               'graph': graph})
+        
+                    # Pop non existing images at the end
+                    for graph_entry in reversed(host['images']):
+                        if graph_entry['image'] is None:
+                            host['images'].pop()
+                        else:
+                            break
+                    host['num_rows'] = int(math.ceil(len(host['images']) / 3))
+                    host['images'] = izip_longest(*[iter(host['images'])] * 3)
+                    hosts.append(host)
+                compare_table.append({
+                        'name': graph_name,
+                        'hosts': hosts,
+                })
+        
+            # Sort table by graph and hostnames
+            compare_table.sort(key=lambda x: _sort_key(x['name']))
+            for graph_row in compare_table:
+                graph_row['hosts'].sort(key=itemgetter('hostname'))
+        
+    else:
+        form = CustomGraphForm(initial={
+            'start':datetime.utcnow() - timedelta(minutes=60),
+            'end': datetime.utcnow()
+        })
+
+        
+    return TemplateResponse(request, 'servermonitor/custom_compare.html', {
+        'compare_table': compare_table,
+        'is_ajax': request.is_ajax(),
+        'base_template': 'empty.html' if request.is_ajax() else 'base.html',
+        'link': request.get_full_path(),
+        'form':form
     })
 
 @login_required
