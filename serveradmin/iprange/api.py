@@ -78,7 +78,9 @@ def get_range(range_id):
     max
        Maximum IP of this range
     gateway
-       Gateway IP of this range
+       Default Gateway IP of this range
+    internal_gateway
+       Internal (10.0.0.0/8) gateway of this range
     """
     try:
         r = IPRange.objects.get(range_id=range_id)
@@ -120,5 +122,6 @@ def _build_range_object(r):
         'min': r.min,
         'max': r.max,
         'gateway': r.gateway,
+        'internal_gateway': r.internal_gateway,
         'belongs_to': belongs_to
     }

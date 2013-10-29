@@ -13,7 +13,8 @@ class IPRangeForm(forms.Form):
     cidr = forms.CharField(required=False, label='CIDR')
     start = formfields.IPv4Field(required=False, label='Start IP')
     end = formfields.IPv4Field(required=False, label='End IP')
-    gateway = formfields.IPv4Field(required=False, label='Gateway')
+    gateway = formfields.IPv4Field(required=False, label='Default gateway')
+    internal_gateway = formfields.IPv4Field(required=False, label='Internal gateway')
     belongs_to = forms.ModelChoiceField(queryset=IPRange.objects.all(),
             empty_label='None', required=False)
 

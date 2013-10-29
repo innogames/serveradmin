@@ -26,7 +26,8 @@
         <th>start ip {% include "iprange/ordering.html" with field="min" %}</th>
         <th>end ip {% include "iprange/ordering.html" with field="max" %}</th>
         <th>cidr {% include "iprange/ordering.html" with field="min" %}</th>
-        <th>gateway {% include "iprange/ordering.html" with field="gateway" %}</th>
+        <th>default gateway {% include "iprange/ordering.html" with field="gateway" %}</th>
+        <th>internal gateway {% include "iprange/ordering.html" with field="internal_gateway" %}</th>
 		<th>belongs to {% include "iprange/ordering.html" with field="belongs_to__range_id" %}</th>
 {% if perms.iprange.change_iprange %}
         <th>edit</th>
@@ -50,6 +51,7 @@
         {% endif %}
         </td>
         <td>{{ iprange.gateway }}</td>
+        <td>{{ iprange.internal_gateway }}</td>
 		<td>
 		{% if iprange.belongs_to %}
         <a href="{% url 'iprange_details' iprange.belongs_to.range_id %}"

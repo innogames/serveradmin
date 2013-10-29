@@ -18,7 +18,7 @@ def index(request):
             request.session.get('iprange_order_dir', 'asc'))
 
     if order_field in ('range_id', 'ip_type', 'min', 'max', 'gateway',
-                       'belongs_to__range_id'):
+                       'internal_gateway', 'belongs_to__range_id'):
         request.session['iprange_order_field'] = order_field
         request.session['iprange_order_dir'] = order_dir
 
@@ -83,7 +83,8 @@ def add(request):
                                    min=data['start'],
                                    max=data['end'],
                                    next_free=data['start'],
-                                   gateway=data['gateway'])
+                                   gateway=data['gateway'],
+                                   internal_gateway=data['internal_gateway'])
             messages.success(request, u'Added IP range "{0}"'.format(
                     data['range_id']))
             return HttpResponseRedirect('{0}?segment={1}'.format(
@@ -110,6 +111,7 @@ def edit(request, range_id):
                     min=data['start'],
                     max=data['end'],
                     gateway=data['gateway'],
+                    internal_gateway=data['internal_gateway'],
                     belongs_to=data['belongs_to'])
             messages.success(request, u'Edited IP range "{0}"'.format(
                     iprange.range_id))
@@ -118,6 +120,7 @@ def edit(request, range_id):
     else:
         initial = {'range_id': iprange.range_id, 'segment': iprange.segment,
                    'ip_type': iprange.ip_type, 'gateway': iprange.gateway,
+                   'internal_gateway' : iprange.internal_gateway,
                    'belongs_to': iprange.belongs_to}
         cidr = iprange.cidr
         if cidr:

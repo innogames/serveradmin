@@ -22,6 +22,7 @@ class IPRange(models.Model):
     max = dbfields.IPv4Field()
     next_free = dbfields.IPv4Field()
     gateway = dbfields.IPv4Field(null=True)
+    internal_gateway = dbfields.IPv4Field(null=True)
     belongs_to = models.ForeignKey('IPRange', null=True, blank=True,
             related_name='subnet_of')
 
