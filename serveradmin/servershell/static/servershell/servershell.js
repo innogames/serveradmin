@@ -284,7 +284,11 @@ function _make_attr_editable(cell, server, attr_name, value)
                 var edit_values = [];
                 var was_changed = false;
                 for (var i = 0; i < unparsed_values.length; i++) {
-                    var edit_value = parse_value(unparsed_values[i], attr_name);
+                    var unparsed_value = unparsed_values[i];
+                    if (unparsed_value == '') {
+                        continue;
+                    }
+                    var edit_value = parse_value(unparsed_value, attr_name);
                     edit_values.push(edit_value);
 
                     if (server[attr_name].indexOf(edit_value) == -1) {
