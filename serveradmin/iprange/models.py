@@ -110,3 +110,28 @@ def _is_taken(ip):
     result = c.fetchone()[0]
     c.close()
     return result != 0
+
+
+def get_gateway(ip):
+
+    ranges = IPRange.objects.get(min<ip, max>ip)
+    range = []
+
+    for ran in ranges:
+        ran_size = ran.max-ran.min
+        
+        if ran.gateway is not None and len(range) and range[1]>ran_size:
+            range = [ran, ran_size]
+
+    def get_gw(data, name):
+        if data.get(name) is not None:
+            return data.get(name)
+        if data.belongs_to_id is None:
+            return None
+
+        data = IPRange.objects.get(range_id=data.belongs_to_id)
+        return get_gw(data, name)
+
+    return {'default_gateway': get_gw(range, 'gateway'), 'internal_gateway': get_gw(range, 'internal_gateway')}
+
+
