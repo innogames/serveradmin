@@ -112,7 +112,7 @@ def _is_taken(ip):
     return result != 0
 
 
-def get_gateway(ip):
+def get_gateways(ip):
 
     ranges = IPRange.objects.get(min<ip, max>ip)
     range = []

@@ -2,7 +2,7 @@ from adminapi.utils import IP
 from serveradmin.api.decorators import api_function
 from serveradmin.api import ApiError
 from serveradmin.dataset import DatasetError
-from serveradmin.iprange.models import IPRange
+from serveradmin.iprange.models import IPRange, get_gateways
 
 @api_function(group='ip')
 def get_free(range_id, reserve_ip=True):
@@ -125,3 +125,10 @@ def _build_range_object(r):
         'internal_gateway': r.internal_gateway,
         'belongs_to': belongs_to
     }
+
+
+@api_function(group='ip')
+def get_gateway(ip):
+    ip_int = IP(ip).as_int()
+    return get_gateways(ip_int)
+
