@@ -114,7 +114,7 @@ def _is_taken(ip):
 
 def get_gateways(ip):
 
-    ranges = IPRange.objects.get(min<ip, max>ip)
+    ranges = IPRange.objects.get(min__lte=ip, max__gte=ip)
     range = []
 
     for ran in ranges:
