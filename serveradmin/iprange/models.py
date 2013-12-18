@@ -1,3 +1,4 @@
+import socket, struct
 from copy import copy
 
 from django.db import models, connection
@@ -125,9 +126,17 @@ def get_gateways(ip):
         if ran.gateway is not None and (len(range) and range[1]>ran_size or not len(range)):
             range = [ran, ran_size]
 
+    def get_netmask(data):
+        if data.ip_type == 'ip':
+            return '255.255.0.0'
+        else:
+            #netmask calculation via: http://stackoverflow.com/questions/8872636/how-to-calculate-netmask-from-2-ip-adresses-in-python
+            m = 0xFFFFFFFF ^ ip_to_int(data.min) ^ ip_to_int(data.max)
+            return [(m & (0xFF << (8*n))) >> 8*n for n in (3, 2, 1, 0)].join('.')
+
     def get_gw(data, name):
         if getattr(data, name, None) is not None:
-            return getattr(data, name)
+            return [getattr(data, name), get_netmask(data)]
         if data.belongs_to_id is None:
             return None
 
