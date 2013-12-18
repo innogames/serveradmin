@@ -118,8 +118,6 @@ def get_gateways(ip):
     ranges = IPRange.objects.filter(min__lte=ip, max__gte=ip)
     range = []
 
-    print ranges
-
     for ran in ranges:
         ran_size = ran.max.as_int() - ran.min.as_int()
         
@@ -131,8 +129,10 @@ def get_gateways(ip):
             return '255.255.0.0'
         else:
             #netmask calculation via: http://stackoverflow.com/questions/8872636/how-to-calculate-netmask-from-2-ip-adresses-in-python
-            m = 0xFFFFFFFF ^ ip_to_int(data.min) ^ ip_to_int(data.max)
-            return [(m & (0xFF << (8*n))) >> 8*n for n in (3, 2, 1, 0)].join('.')
+            print data.min
+            m = 0xFFFFFFFF ^ data.min.as_int() ^ data.max.as_int()
+            netmask = [(m & (0xFF << (8*n))) >> 8*n for n in (3, 2, 1, 0)]
+            return '.'.join([ str(i) for i in netmask])
 
     def get_gw(data, name):
         if getattr(data, name, None) is not None:
