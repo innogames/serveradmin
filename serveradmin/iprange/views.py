@@ -84,7 +84,8 @@ def add(request):
                                    max=data['end'],
                                    next_free=data['start'],
                                    gateway=data['gateway'],
-                                   internal_gateway=data['internal_gateway'])
+                                   internal_gateway=data['internal_gateway'],
+                                   belongs_to=data['belongs_to'])
             messages.success(request, u'Added IP range "{0}"'.format(
                     data['range_id']))
             return HttpResponseRedirect('{0}?segment={1}'.format(
