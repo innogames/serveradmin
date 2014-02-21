@@ -518,7 +518,7 @@ class InsideNetwork(Filter):
 
     @classmethod
     def from_obj(cls, obj):
-        if u'networks' in obj:
+        if u'networks' in obj and isinstance(obj['networks'], (tuple, list)):
             return cls(*obj[u'networks'])
         raise ValueError(u'Invalid object for InsideNetwork')
 filter_classes[u'insidenetwork'] = InsideNetwork
