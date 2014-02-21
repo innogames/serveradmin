@@ -284,7 +284,7 @@ function _make_attr_editable(cell, server, attr_name, value)
                 var edit_values = [];
                 var was_changed = false;
                 for (var i = 0; i < unparsed_values.length; i++) {
-                    var unparsed_value = unparsed_values[i];
+                    var unparsed_value = $.trim(unparsed_values[i]);
                     if (unparsed_value == '') {
                         continue;
                     }
