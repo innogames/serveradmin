@@ -65,3 +65,19 @@ def typecast(attr_name, value, force_single=False):
         return set(typecast_fn(x) for x in value)
     else:
         return typecast_fn(value)
+
+_displaycast_fns = {
+    'datetime': lambda x: x.strftime('%Y-%m-%dT%H:%M'),
+    'boolean': lambda x: u'true' if x else u'false'
+}
+def displaycast(attr_name, value):
+    attr_obj = lookups.attr_names[attr_name]
+    displaycast_fn = _displaycast_fns.get(attr_obj.type, lambda x: x)
+    if attr_obj.multi:
+        if not isinstance(value, (list, set)):
+            raise ValueError('Attr is multi, but value is not a list/set')
+        result = [displaycast_fn(x) for x in value]
+        result.sort()
+        return result
+    else:
+        return displaycast_fn(value)
