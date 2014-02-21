@@ -22,7 +22,7 @@ from serveradmin.dataset.base import lookups
 from serveradmin.dataset.commit import (commit_changes, CommitValidationFailed,
         CommitNewerData)
 from serveradmin.dataset.values import get_attribute_values
-from serveradmin.dataset.typecast import typecast
+from serveradmin.dataset.typecast import typecast, displaycast
 from serveradmin.dataset.create import create_server
 from serveradmin.serverdb.models import ServerType
 
@@ -195,7 +195,7 @@ def list_and_edit(request, mode='list'):
 
         if invalid_attrs:
             messages.error(request, 'Attributes contain invalid values')
-
+    
     fields = []
     fields_set = set()
     for key, value in server.iteritems():
@@ -203,7 +203,7 @@ def list_and_edit(request, mode='list'):
         stype_attr = lookups.stype_attrs[(stype.name, key)]
         fields.append({
             'key': key,
-            'value': value,
+            'value': displaycast(key, value),
             'has_value': True,
             'editable': key not in non_editable,
             'type': lookups.attr_names[key].type,
