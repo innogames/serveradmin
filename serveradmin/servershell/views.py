@@ -3,8 +3,6 @@ try:
 except ImportError:
     import json
 
-from itertools import chain
-
 from django.http import (HttpResponse, HttpResponseBadRequest, 
         HttpResponseRedirect, Http404)
 from django.template.response import TemplateResponse
