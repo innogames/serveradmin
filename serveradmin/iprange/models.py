@@ -1,4 +1,3 @@
-import socket, struct
 from copy import copy
 
 from django.db import models, connection
