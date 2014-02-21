@@ -71,8 +71,11 @@ def parse_function_string(args, strict=True):
     
     return parsed_args
 
-_trigger_re_chars = ('.*', '.+', '[', ']', '|', '\\', '$', '^', '<')
 def parse_query(term, filter_classes):
+    return _parse_query(term, filter_classes)
+
+_trigger_re_chars = ('.*', '.+', '[', ']', '|', '\\', '$', '^', '<')
+def _parse_query(term, filter_classes, hostname_shortcut=True):
     parsed_args = parse_function_string(term, strict=True)
     if not parsed_args:
         return {}
@@ -80,10 +83,12 @@ def parse_query(term, filter_classes):
     # If first token is not a key, we assume that a hostname is meant
     token, value = parsed_args[0]
     if token != 'key':
+        if not hostname_shortcut:
+            raise ValueError("Garbled hostname. Maybe unquoted spaces in it?")
         term_parts = term.split(None, 1)
         if len(term_parts) == 2:
             hostname_part, remaining_part = term_parts
-            query_args = parse_query(remaining_part, filter_classes)
+            query_args = _parse_query(remaining_part, filter_classes, False)
         else:
             hostname_part = term
             query_args = {}
@@ -97,8 +102,13 @@ def parse_query(term, filter_classes):
             hostname = regexp_class(hostname_part)
         else:
             hostname = hostname_part
+        
+        if u'hostname' in query_args:
+            query_args[u'hostname'] = filter_classes['or'](
+                    query_args[u'hostname'], hostname)
+        else:
+            query_args[u'hostname'] = hostname
 
-        query_args[u'hostname'] = hostname
         return query_args
     
     # Otherwise just parse all attributes
