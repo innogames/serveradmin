@@ -75,7 +75,7 @@ def parse_query(term, filter_classes):
     return _parse_query(term, filter_classes)
 
 _trigger_re_chars = ('.*', '.+', '[', ']', '|', '\\', '$', '^', '<')
-def _parse_query(term, filter_classes, hostname_shortcut=True):
+def _parse_query(term, filter_classes, hostname=None):
     parsed_args = parse_function_string(term, strict=True)
     if not parsed_args:
         return {}
@@ -83,12 +83,15 @@ def _parse_query(term, filter_classes, hostname_shortcut=True):
     # If first token is not a key, we assume that a hostname is meant
     token, value = parsed_args[0]
     if token != 'key':
-        if not hostname_shortcut:
-            raise ValueError("Garbled hostname. Maybe unquoted spaces in it?")
+        if hostname:
+            # We already parsed a hostname, so we don't expect another one
+            raise ValueError(u"Garbled hostname: {0}".format(hostname))
         term_parts = term.split(None, 1)
         if len(term_parts) == 2:
             hostname_part, remaining_part = term_parts
-            query_args = _parse_query(remaining_part, filter_classes, False)
+            query_args = _parse_query(remaining_part,
+                                      filter_classes,
+                                      hostname_part)
         else:
             hostname_part = term
             query_args = {}
