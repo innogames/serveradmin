@@ -90,3 +90,11 @@ escapehtml = (function() {
         return text.replace(/[\"&<>]/g, function (m) { return escape_map[m]; });
     }
 })();
+
+if (!$.ui.dialog.prototype._makeDraggableBase) {
+    $.ui.dialog.prototype._makeDraggableBase = $.ui.dialog.prototype._makeDraggable;
+    $.ui.dialog.prototype._makeDraggable = function() {
+        this._makeDraggableBase();
+        this.uiDialog.draggable("option", "containment", false);
+    };
+}
