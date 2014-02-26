@@ -506,7 +506,8 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'changes': 'Show all changes',
         'custom_graph': 'Shows graphs for a host in a custom timerange',
         'custom_cmp': 'Compare graphs in a custom timerange',
-        'history': 'Show history for selected hosts'
+        'history': 'Show history for selected hosts',
+        'clone': 'Clone a server with it\'s attributes'
     };
     
     if (plen == 1 && parsed_args[0]['token'] == 'str') {
