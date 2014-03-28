@@ -115,20 +115,21 @@ def _is_taken(ip):
 def get_gateways(ip):
 
     ranges = IPRange.objects.filter(min__lte=ip, max__gte=ip)
-    range = []
+    range = None
 
     for ran in ranges:
         ran_size = ran.max.as_int() - ran.min.as_int()
         
         if ran.gateway is not None and (len(range) and range[1]>ran_size or not len(range)):
             range = [ran, ran_size]
+    if range is None:
+        raise ValueError('IP is not in known IP ranges')
 
     def get_netmask(data):
         if data.ip_type == 'ip':
             return '255.255.0.0'
         else:
             #netmask calculation via: http://stackoverflow.com/questions/8872636/how-to-calculate-netmask-from-2-ip-adresses-in-python
-            print data.min
             m = 0xFFFFFFFF ^ data.min.as_int() ^ data.max.as_int()
             netmask = [(m & (0xFF << (8*n))) >> 8*n for n in (3, 2, 1, 0)]
             return '.'.join([ str(i) for i in netmask])
