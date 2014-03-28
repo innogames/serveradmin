@@ -114,35 +114,38 @@ def _is_taken(ip):
 
 def get_gateways(ip):
 
-    ranges = IPRange.objects.filter(min__lte=ip, max__gte=ip)
-    range = None
+    ipranges = IPRange.objects.filter(min__lte=ip, max__gte=ip)
+    ipranges = [iprange for iprange in ipranges if iprange is not None]
 
-    for ran in ranges:
-        ran_size = ran.max.as_int() - ran.min.as_int()
-        
-        if ran.gateway is not None and (len(range) and range[1]>ran_size or not len(range)):
-            range = [ran, ran_size]
-    if range is None:
+    if not ipranges:
         raise ValueError('IP is not in known IP ranges')
+    
+    def get_range_size(iprange_obj):
+        return iprange_obj.max.as_int() - iprange_obj.min.as_int()
 
-    def get_netmask(data):
-        if data.ip_type == 'ip':
+    iprange_obj = min(ipranges, key=get_range_size)
+
+    def get_netmask(iprange_obj):
+        if iprange_obj.ip_type == 'ip':
             return '255.255.0.0'
         else:
             #netmask calculation via: http://stackoverflow.com/questions/8872636/how-to-calculate-netmask-from-2-ip-adresses-in-python
-            m = 0xFFFFFFFF ^ data.min.as_int() ^ data.max.as_int()
+            m = 0xFFFFFFFF ^ iprange_obj.min.as_int() ^ iprange_obj.max.as_int()
             netmask = [(m & (0xFF << (8*n))) >> 8*n for n in (3, 2, 1, 0)]
             return '.'.join([ str(i) for i in netmask])
 
-    def get_gw(data, name):
-        if getattr(data, name, None) is not None:
-            return [getattr(data, name), get_netmask(data)]
-        if data.belongs_to_id is None:
+    def get_gw(iprange_obj, gw_attr):
+        if getattr(iprange_obj, gw_attr, None) is not None:
+            return [getattr(iprange_obj, gw_attr), get_netmask(iprange_obj)]
+        if iprange_obj.belongs_to_id is None:
             return None
 
-        data = IPRange.objects.get(range_id=data.belongs_to_id)
-        return get_gw(data, name)
+        iprange_obj = IPRange.objects.get(range_id=iprange_obj.belongs_to_id)
+        return get_gw(iprange_obj, gw_attr)
 
-    return {'default_gateway': get_gw(range[0], 'gateway'), 'internal_gateway': get_gw(range[0], 'internal_gateway')}
+    return {
+        'default_gateway': get_gw(iprange_obj, 'gateway'),
+        'internal_gateway': get_gw(iprange_obj, 'internal_gateway')
+    }
 
 
