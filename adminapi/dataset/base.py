@@ -51,6 +51,13 @@ class BaseQuerySet(object):
         return self
 
     def restrict(self, *attrs):
+        if not attrs:
+            return self
+        if isinstance(attrs[0], (list, set, tuple)):
+            attrs = attrs[0]
+        for attr in attrs:
+            if not isinstance(attr, basestring):
+                raise ValueError('Invalid restriction')
         self._restrict = set(attrs)
         return self
 
