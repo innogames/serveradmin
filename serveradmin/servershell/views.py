@@ -51,7 +51,7 @@ def autocomplete(request):
             pass # If there is no valid query, just don't autocomplete
 
     return HttpResponse(json.dumps({'autocomplete': autocomplete_list}),
-            mimetype='application/x-json')
+            content_type='application/x-json')
 
 @login_required
 def get_results(request):
@@ -129,7 +129,7 @@ def get_results(request):
         'num_servers': num_servers,
         'shown_attributes': shown_attributes,
         'avail_attributes': avail_attributes
-    }, default=json_encode_extra), mimetype='application/x-json')
+    }, default=json_encode_extra), content_type='application/x-json')
 
 @login_required
 def export(request):
@@ -141,7 +141,7 @@ def export(request):
         return HttpResponse(e.message, status=400)
 
     hostnames = u' '.join(server['hostname'] for server in q)
-    return HttpResponse(hostnames, mimetype='text/plain')
+    return HttpResponse(hostnames, content_type='text/plain')
 
 def list_and_edit(request, mode='list'):
     try:
@@ -277,7 +277,7 @@ def commit(request):
             'status': 'success'
         }
 
-    return HttpResponse(json.dumps(result), mimetype='application/x-json')
+    return HttpResponse(json.dumps(result), content_type='application/x-json')
 
 @login_required
 def get_values(request):
@@ -369,7 +369,7 @@ def store_command(request):
         if not command in command_history:
             command_history.append(command)
             request.session.modified = True
-    return HttpResponse('{"status": "OK"}', mimetype='application/x-json')
+    return HttpResponse('{"status": "OK"}', content_type='application/x-json')
 
 def _prepare_regexp_html(regexp):
     """Return HTML for a given regexp. Includes wordbreaks."""

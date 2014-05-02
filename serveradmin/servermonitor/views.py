@@ -456,7 +456,7 @@ def livegraph_data(request):
     return HttpResponse(json.dumps({
         'time': int(time.time() * 1000),
         'data': data
-    }), mimetype='application/x-json')
+    }), content_type='application/x-json')
 
 @require_POST
 @login_required
@@ -467,7 +467,7 @@ def reload(request):
     except KeyError:
         return HttpResponseBadRequest('No hostname or graph')
 
-    resp = HttpResponse(mimetype='application/x-json')
+    resp = HttpResponse(content_type='application/x-json')
     json.dump({'result': reload_graphs((hostname, [graph]))}, resp)
     return resp
 

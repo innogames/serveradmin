@@ -30,13 +30,13 @@ def api_view(view):
             security_token = request.META['HTTP_X_SECURITYTOKEN']
         except (KeyError, ValueError):
             return HttpResponseBadRequest('Invalid API request',
-                    mimetype='text/plain')
+                    content_type='text/plain')
 
         try:
             app = Application.objects.get(app_id=app_id)
         except Application.DoesNotExist:
             return HttpResponseForbidden('Invalid application',
-                    mimetype='text/plain')
+                    content_type='text/plain')
 
         app = get_object_or_404(Application, app_id=app_id)
         real_security_token = _calc_security_token(app.auth_token.encode(
@@ -45,7 +45,7 @@ def api_view(view):
         expired = timestamp + 300 < time.time()
         if real_security_token != security_token or expired:
             return HttpResponseForbidden('Invalid or expired security token',
-                    mimetype='text/plain')
+                    content_type='text/plain')
         
         if app.restriction_active():
             has_exception = ApplicationException.objects.filter(application=app,
@@ -57,7 +57,7 @@ def api_view(view):
                 forbidden_text = ('This token is restricted. To get an '
                         'exception go to ' + exception_url)
                 return HttpResponseForbidden(forbidden_text,
-                        mimetype='text/plain')
+                        content_type='text/plain')
 
         if app.readonly and view.__name__ != 'dataset_query':
             return HttpResponseForbidden('This token is readonly')
@@ -66,7 +66,7 @@ def api_view(view):
         return_value = view(request, app, json.loads(request.body))
         if getattr(view, 'encode_json', True):
             return_value = json.dumps(return_value, default=json_encode_extra)
-        return HttpResponse(return_value, mimetype='application/x-json')
+        return HttpResponse(return_value, content_type='application/x-json')
 
     return update_wrapper(_wrapper, view)
 
