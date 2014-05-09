@@ -58,8 +58,9 @@ def api_view(view):
                         'exception go to ' + exception_url)
                 return HttpResponseForbidden(forbidden_text,
                         content_type='text/plain')
-
-        if app.readonly and view.__name__ != 'dataset_query':
+        
+        readonly_views = ('dataset_query', 'api_call')
+        if app.readonly and view.__name__ not in readonly_views:
             return HttpResponseForbidden('This token is readonly')
 
 
