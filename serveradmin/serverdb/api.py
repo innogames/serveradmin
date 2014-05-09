@@ -14,13 +14,16 @@ def get_segments():
 
 @api_function(group='dataset')
 def get_attribute_info(servertype_name, attr_name):
-    """Returns a dictionary with information for an attribute::
-       
-       {
-           'required': True/False,
-           'regexp': 'RegexpAsString',
-           'default': defaultValueTypeDependend
-       }
+    """Returns a dictionary with information for an attribute.
+      
+      .. code-block:: python
+
+         {
+            'required': True/False,
+            'regexp': 'RegexpAsString',
+            'default': defaultValueTypeDependend
+         }
+
     """
     try:
         return _get_stype_attr_dict(servertype_name, attr_name)
