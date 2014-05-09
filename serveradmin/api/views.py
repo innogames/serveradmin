@@ -5,6 +5,7 @@ except ImportError:
     import json
 
 from django.template.response import TemplateResponse
+from django.core.exceptions import PermissionDenied
 from django.contrib.auth.decorators import login_required
 from django.contrib.admindocs.utils import trim_docstring, parse_docstring
 
@@ -173,6 +174,11 @@ def api_call(request, app, data):
     try:
         if not all(x in data for x in ('group', 'name', 'args', 'kwargs')):
             raise ValueError('Invalid API call')
+
+        allowed_methods = app.allowed_methods.splitlines()
+        method_name = u'{0}.{1}'.format(data['group'], data['name'])
+        if app.readonly and method_name not in allowed_methods:
+            raise PermissionDenied(u'Method {0} not allowed'.format(method_name))
         
         try:
             fn = AVAILABLE_API_FUNCTIONS[data['group']][data['name']]

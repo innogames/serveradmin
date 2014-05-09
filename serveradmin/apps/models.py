@@ -16,6 +16,7 @@ class Application(models.Model):
     location = models.CharField(max_length=150)
     restricted = models.BooleanField(default=False)
     readonly = models.BooleanField(default=False)
+    allowed_methods = models.TextField(blank=True)
 
     def __unicode__(self):
         return self.name
