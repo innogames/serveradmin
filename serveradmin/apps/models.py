@@ -1,12 +1,12 @@
 from __future__ import division
-import random
-import string
 import hashlib
 from datetime import datetime
 
 from django.db import models
 from django.db.models.signals import pre_save, pre_delete, post_save
 from django.contrib.auth.models import User
+
+from serveradmin.common.utils import random_alnum_string
 
 class Application(models.Model):
     name = models.CharField(max_length=80)
@@ -65,9 +65,7 @@ class ApplicationStatistic(models.Model):
 
 def _app_changed(sender, instance, **kwargs):
     if not instance.auth_token:
-        token_chars = string.letters + string.digits
-        token = ''.join(random.choice(token_chars) for _i in xrange(24))
-        instance.auth_token = token
+        instance.auth_token = random_alnum_string(24)
     instance.app_id = hashlib.sha1(instance.auth_token).hexdigest()
 
 def _app_created(sender, instance, created, **kwargs):
