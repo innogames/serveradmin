@@ -12,6 +12,7 @@ from django.core.urlresolvers import reverse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.sites.models import RequestSite
+from django.utils.crypto import constant_time_compare
 
 from adminapi.utils.json import json_encode_extra
 from serveradmin.apps.models import Application, ApplicationException
@@ -43,7 +44,7 @@ def api_view(view):
             'utf-8'), str(timestamp), request.body)
         
         expired = timestamp + 300 < time.time()
-        if real_security_token != security_token or expired:
+        if not constant_time_compare(real_security_token, security_token) or expired:
             return HttpResponseForbidden('Invalid or expired security token',
                     content_type='text/plain')
         
