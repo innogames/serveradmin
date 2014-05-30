@@ -371,8 +371,10 @@ class Not(Filter):
             cond = self.filter.as_sql_expr(builder, attr_obj,
                     'nav{0}.value'.format(uid))
             subquery = ('SELECT id FROM attrib_values AS nav{0} '
-                        'WHERE {1} AND nav{0}.server_id = adms.server_id').format(
-                                uid, cond)
+                        'WHERE {1} AND '
+                        'nav{0}.server_id = adms.server_id AND '
+                        'nav{0}.attrib_id = {2}').format(
+                                uid, cond, attr_obj.attrib_id)
             return 'NOT EXISTS ({0})'.format(subquery)
         else:
             if isinstance(self.filter, ExactMatch):

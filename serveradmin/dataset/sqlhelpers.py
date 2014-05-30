@@ -23,7 +23,9 @@ def value_to_sql(attr_obj, value):
     return _sql_escape(prepare_value(attr_obj, value))
 
 def prepare_value(attr_obj, value):
-    if attr_obj.type == u'ip':
+    if attr_obj.type == u'boolean':
+        value = 1 if value else 0
+    elif attr_obj.type == u'ip':
         if not isinstance(value, IP):
             value = IP(value)
         value = value.as_int()
