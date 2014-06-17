@@ -3,8 +3,14 @@ import sys
 from socket import inet_pton, inet_ntop, AF_INET6
 from binascii import hexlify, unhexlify
 from itertools import izip
-from math import log
 import warnings
+
+def log2(x):
+    i = -1
+    while x:
+        x >>= 1
+        i += 1
+    return i
 
 def print_table(input_table_rows, max_col_len=40, file=sys.stdout):
     if not input_table_rows:
@@ -230,7 +236,7 @@ class Network(object):
         power_of_two = (num_ips & (num_ips - 1)) == 0
         if not power_of_two:
             raise TypeError("Network can't be converted to cidr")
-        size = 32 - int(log(num_ips, 2))
+        size = 32 - log2(num_ips)
         return u'{0}/{1}'.format(self.min_ip.as_ip(), size)
 
     def __repr__(self):
