@@ -2,3 +2,4 @@ Django
 docutils
 python-memcached
 Sphinx
+django-markup-deprecated
