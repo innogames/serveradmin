@@ -302,6 +302,12 @@ function _make_attr_editable(cell, server, attr_name, value)
                         was_changed = true;
                     }
                 }
+
+                // We removed all data from multi attribute
+                if (unparsed_values.length == 0 && server[attr_name].length != 0) {
+                    was_changed = true;
+                }
+                
                 if (!was_changed) {
                     commit_data = null;
                 }
@@ -334,6 +340,11 @@ function _make_attr_editable(cell, server, attr_name, value)
                 }
             }
             if (commit_data === null) {
+                // Since we might remove uncomitted data, we have to delete
+                // them from the outstanding commit.
+                if (typeof(commit['changes'][server['object_id']]) != 'undefined') {
+                    delete commit['changes'][server['object_id']][attr_name];
+                }
                 render_server_table();
                 return;
             }
