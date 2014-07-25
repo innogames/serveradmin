@@ -1207,10 +1207,10 @@ $(function() {
         if (typeof(new_command) != 'undefined' && new_command != null) {
             $('#shell_command').val(new_command);
             $.post(shell_store_command_url, {'command': command_value});
-            if (history['commands'].indexOf(command_value) === -1) {
-                history['commands'].push(command_value);
+            if (shell_history['commands'].indexOf(command_value) === -1) {
+                shell_history['commands'].push(command_value);
             }
-            history['index'] = history['commands'].length - 1;
+            shell_history['index'] = shell_history['commands'].length - 1;
         }
         return false;
     });
@@ -1225,22 +1225,22 @@ $(function() {
 
     $('#shell_command').keydown(function(ev) {
         var new_command = null;
-        if (history['index'] == -1) {
+        if (shell_history['index'] == -1) {
             return true; // we have no history
         }
         
         if (ev.shiftKey && ev.which == 38) { // arrow up
             $(this).autocomplete('close');
-            if (history['index'] != 0) {
-                history['index']--;
+            if (shell_history['index'] != 0) {
+                shell_history['index']--;
             }
-            new_command = history['commands'][history['index']];
+            new_command = shell_history['commands'][shell_history['index']];
         } else if (ev.shiftKey && ev.which == 40) { // arrow down
             $(this).autocomplete('close');
-            if (history['index'] < history['commands'].length - 1) {
-                history['index']++;
+            if (shell_history['index'] < shell_history['commands'].length - 1) {
+                shell_history['index']++;
             }
-            new_command = history['commands'][history['index']];
+            new_command = shell_history['commands'][shell_history['index']];
         } else {
             return true;
         }
