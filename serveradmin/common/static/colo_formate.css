@@ -1,0 +1,356 @@
+
+/*  Formatierung des Layers
+Hier werden die Farben und die Groesse des Layers formatiert welcher erscheint wenn Sie mit der Maus ueber die 
+Gluehlampe gehen, die auf diversen Seiten als Kurzhilfe eingebaut ist.
+Aendern Sie hier nur die Farbwerte, aber keinesfalls andere Werte. */
+.clDescriptionCont {position:absolute;  width:200px; visibility:hidden; layer-background-color:#336699; z-index:200;}
+.clDescription	 {width:345px; height:auto; left:0px; top:0px; font-family:verdana,arial,helvetica,sans-serif; overflow:hidden; border: 1px solid #000000; padding-top:8px;padding-left:2px;padding-right:2px;padding-bottom:2px; font-size:11px; background-color:#FFFFFF; layer-background-color:#FFFFFF;}
+.clLinks		   {position:absolute; left:100px; top:200px; z-index:1;}
+.clCaption		 {position:absolute; left:0px; top:0px; width:350px; height:12px; clip:rect(0px 350px 100px 0px); font-size:11px; font-family:verdana,arial,helvetica,sans-serif; background-color:#336699; layer-background-color:#ffffff; padding:3px;}
+.help{cursor:help;}
+
+/* Die Style-Angaben  fuer den Body-Bereich saemtlicher Seiten, ausgenommern des Menues */
+body {
+	font-size: 9pt;
+	font-family: Arial, Helvetica, Verdana, sans-serif;
+	background-color:#ffffff;
+	color: #000000;
+	SCROLLBAR-FACE-COLOR : #003366;
+	SCROLLBAR-HIGHLIGHT-COLOR : #4583c0;
+	SCROLLBAR-SHADOW-COLOR : #336699;
+	SCROLLBAR-BASE-COLOR : #336699;
+	SCROLLBAR-ARROW-COLOR : #d2d2d2;
+	scrollbar-3dlight-color:#225588;
+	scrollbar-darkshadow-color:#003366;
+	scrollbar-track-color:#336699;
+	margin: 0;
+}
+
+.redborder {
+	border: 1px solid red;
+	margin-left:4px;
+	margin-right:4px;
+	margin-top:8px;
+	padding:3px;
+}
+
+.blueborder {
+	border: 1px solid #336699;
+	margin-left:4px;
+	margin-right:4px;
+	margin-top:8px;
+	padding:3px;
+}
+
+/* Die Style-Angaben  fuer den Body-Bereich der Menue-Seite */
+body.dcp_menu {
+	font-size: 9pt;
+	font-family: Arial, Helvetica, Verdana, sans-serif;
+	background-color:#eeeeee;
+	color: #000000;
+	SCROLLBAR-FACE-COLOR : #336699;
+	SCROLLBAR-HIGHLIGHT-COLOR : #4583c0;
+	SCROLLBAR-SHADOW-COLOR : #336699;
+	SCROLLBAR-BASE-COLOR : #4583c0;
+	SCROLLBAR-ARROW-COLOR : #003366;
+	scrollbar-3dlight-color:#225588;
+	scrollbar-darkshadow-color:#003366;
+	scrollbar-track-color:#5588BB;
+	margin: 0;
+}
+
+td {
+	font-size: 9pt;
+}
+
+/* Formatierung der Links*/
+a {
+	font-size: 9pt;
+	font-family: Arial, Helvetica, Verdana, sans-serif;
+	color:#003366;
+	font-weight: bold;
+	text-decoration: none;
+}
+
+a:hover {
+	font-size: 9pt;
+	font-family: Arial, Helvetica, Verdana, sans-serif;
+	color: #ce0b10;
+	text-decoration: none;
+}
+			
+a:visited {
+	font-size: 9pt;
+	font-family: Arial, Helvetica, Verdana, sans-serif;
+}
+
+/* Definieren Sie hier das Format der Links in den Tabellenkoepfen (sortierbare Liste) */	
+a.link_tablehead {
+	font-size: 9pt;
+	font-family: Arial, Helvetica, Verdana, sans-serif;
+	color: #ffffff;
+	text-decoration: none;
+}
+
+a.link_tablehead:hover {
+	text-decoration: underline;
+}
+
+select {
+	font-family: monospace;
+	border: 1px solid #000000;
+	background-color: #f3f3f3;
+	color: #000000;
+	font-size: 9pt;
+}
+
+/* normaler Text */
+.text { 
+	color:black;
+	font-family : Arial, Helvetica, sans-serif;
+	font-size : 9pt; 
+}
+
+/* kleiner Text */
+.small_text { 
+	color:black;
+	font-family : Arial, Helvetica, sans-serif;
+	font-size : 8pt; 
+}
+
+/* Fehlermeldungen */
+.redtext { 
+	color:red;
+	font-family : Arial, Helvetica, sans-serif;
+	font-size : 9pt; 
+}
+
+
+/* Ueberschrifen im Tabellenkopf */
+.text_tablehead { 
+	font-size: 9pt;
+	font-family: Arial, Helvetica, Verdana, sans-serif;
+	color: #ffffff;
+	text-decoration: none;
+	padding-left: 3px;
+	font-weight: bold;
+}
+
+/* Eingabefelder (text input) etc. */
+.textbox { 
+	font-family: monospace; 
+	background: transparent; 
+	background-color: #f3f3f3;
+	border: 1px solid #000000; 
+	color: #000000; 
+	font-size: 9pt; 
+	text-align: left; 
+	SCROLLBAR-FACE-COLOR : #336699;
+	SCROLLBAR-HIGHLIGHT-COLOR : #4583c0;
+	SCROLLBAR-SHADOW-COLOR : #336699;
+	SCROLLBAR-BASE-COLOR : #4583c0;
+	SCROLLBAR-ARROW-COLOR : #003366;
+	scrollbar-3dlight-color:#225588;
+	scrollbar-darkshadow-color:#003366;
+	scrollbar-track-color:#5588BB;
+	padding-left: 2pt;
+	padding-top: 1pt;
+	padding-bottom:1pt;
+	padding-right:2pt;
+	margin: 0;
+}
+
+.textbox_focus { 
+	font-family: monospace; 
+	background: transparent; 
+	background-color: #999999;
+	border: 1px solid #000000; 
+	color: #ffffff; 
+	font-size: 9pt; 
+	text-align: left; 
+	padding-left: 2pt;
+	padding-top: 1pt;
+	padding-bottom:1pt;
+	padding-right:2pt;
+	margin: 0;
+}
+
+/* textareas */
+.textbox_textarea { 
+	font-family: monospace; 
+	background: transparent; 
+	background-color: #f3f3f3;
+	border: 1px solid #000000; 
+	color: #000000; 
+	font-size: 9pt; 
+	text-align: left; 
+	SCROLLBAR-FACE-COLOR : #bbbbbb;
+	SCROLLBAR-HIGHLIGHT-COLOR : #e0e0e0;
+	SCROLLBAR-SHADOW-COLOR : #eeeeee;
+	SCROLLBAR-BASE-COLOR : #bbbbbb;
+	SCROLLBAR-ARROW-COLOR : #000000;
+	scrollbar-3dlight-color:#eeeeee;
+	scrollbar-darkshadow-color:#eeeeee;
+	scrollbar-track-color:#eeeeee;
+	padding-left: 2pt;
+	padding-top: 1pt;
+	padding-bottom:1pt;
+	padding-right:2pt;
+	margin: 0;
+}
+
+/* input type file */
+.files { 
+	font-family: monospace; 
+	background-color: #f3f3f3;
+	border: 1px solid #000000;
+	background-image: url(http://dcp2.c.artfiles.de/images/kontakt.gif);
+	color: #000000; 
+	font-size: 9pt; 
+	padding-left: 2pt;
+	padding-top: 1pt;
+	padding-bottom: 1pt;
+	padding-right: 2pt;
+	margin: 0;
+}
+
+
+/* buttons, submit */
+.button {
+	background-color: #ffffff;
+	border: 1px ridge #003366;
+	color: #003366;
+	font-family: Arial, Helvetica, Verdana, sans-serif;
+	font-size: 8pt;
+	font-weight: bold;
+	text-align: center;
+	margin: 0;
+	padding-top: 0;
+	padding-bottom: 0;
+}
+
+.button_go {
+	background-color: #ffffff;
+	border: 1px ridge #00cc00;
+	color: #00cc00;
+	font-family: Arial, Helvetica, Verdana, sans-serif;
+	font-size: 8pt;
+	font-weight: bold;
+	text-align: center;
+	margin: 0;
+	padding-top: 0;
+	padding-bottom: 0;
+}
+
+.button_del {
+	background-color: #ffffff;
+	border: 1px ridge #cc0000;
+	color: #cc0000;
+	font-family: Arial, Helvetica, Verdana, sans-serif;
+	font-size: 8pt;
+	font-weight: bold;
+	text-align: center;
+	margin: 0;
+	padding-top: 0;
+	padding-bottom: 0;
+}
+
+tr.list:hover {
+	background-color: #7799bb;
+	cursor: pointer;
+}
+
+
+/* 20070227 aw */
+tr.link {
+	background-color: #ffffff;
+}
+
+tr.link:hover {
+	cursor: pointer;
+	background-color: #7799bb;
+}
+
+tr.link_urgent {
+	background-color: #ffff99;
+}
+
+tr.link_urgent:hover {
+	cursor: pointer;
+	background-color: #7799bb;
+}
+
+.prev {
+	text-align: left;
+	color: #ffffff;
+	padding-left: 5px;
+}
+
+.prev a {
+	color: #ffffff;
+}
+
+.prev a:hover {
+	color: #cccccc;
+}
+
+.next {
+	text-align: right;
+	color: #ffffff;
+	padding-right: 5px;
+}
+
+.next a {
+	color: #ffffff;
+}
+
+.next a:hover {
+	color: #cccccc;
+}
+
+.error {
+	font-weight: bold;
+	color: #cc0000;
+}
+
+form {
+	margin: 0;	
+}
+
+div#qTip {
+	display: none;
+	border: 1px solid black;
+	text-align: left;
+	position: absolute;
+	z-index: 1000;
+}
+div.help_title {
+	background: #336699;
+	color: white;
+	font-weight: bold;
+	padding: 3px 3px 3px 5px;
+}
+div.help_cont {
+	padding: 5px 3px 3px 3px;
+	background: #eeeeee;
+	color: black;
+}
+img.help {
+	border: 0;
+	cursor: help;
+}
+
+.clean td {
+	font-size: 1em;
+}
+
+#whitemask {
+	position: fixed;
+	opacity: 0.7;
+	min-height: 100%;
+	width: 100%;
+	top: 0;
+	left: 0;
+	background: #ffffff;
+	z-index: 1;
+}

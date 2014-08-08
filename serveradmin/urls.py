@@ -14,6 +14,7 @@ urlpatterns = patterns(
     url(r'^apps/', include('serveradmin.apps.urls')),
     url(r'^api/', include('serveradmin.api.urls')),
     url(r'^documentation/', include('serveradmin.docs.urls')),
+    url(r'^colocation/', include('serveradmin.colo.urls')),
     url(r'^servermonitor/', include('serveradmin.servermonitor.urls')),
     url(r'^iprange/', include('serveradmin.iprange.urls')),
     url(r'^loginapi/', include('igrestlogin.urls')),

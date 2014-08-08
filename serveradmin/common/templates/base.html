@@ -33,6 +33,11 @@
 <li><a href="{% url 'iprange_index' %}">IP ranges</a></li>
 <li><a href="{% url 'servermonitor_index' %}">Servermonitor</a></li>
 <li><a href="{% url 'servermonitor_segments' %}">Segments info</a></li>
+<li><a href="{% url 'colo_index' %}">Colocation</a>
+ <ul class="childmenu">
+<li><a href="{% url 'colo_plan' 'suderstrasse' %}">Süderstrasse</a></li>
+<li><a href="{% url 'colo_plan' 'wendenstrasse' %}">Wendenstrasse</a></li>
+</ul>
 <li><a href="{% url 'docs_index' %}">Documentation</a>
 <li><a href="{% url 'docs_document' 'python-api' %}">Python API</a></li>
 <li><a href="{% url 'api_doc_functions' %}">API functions</a></li>

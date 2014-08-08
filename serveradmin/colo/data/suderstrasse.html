@@ -1,0 +1,975 @@
+
+<!-- saved from url=(0055)http://dcp.c.artfiles.de/statistik/coloplan_level3.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Coloplan</title>
+<script type="text/javascript">
+	function showPowergraph(id) {
+		window.open("power.html?meter_id=" + id + "&quantity=current", "_blank");
+		exit;
+	}
+</script>
+<style type="text/css">
+	@import url(/static/colo_formate.css);
+
+	/*
+	@media screen {
+		td.duct {
+			height: 40px;
+		   	background-image: url(/static/duct.gif);
+		}
+	}
+
+	@media print {
+		td.duct {
+			height: 40px;
+		   	background-color: #cccccc;
+		}
+	}
+	*/
+
+	body {
+		background-color: #ffffff;
+		font-family: Arial, Verdana, sans-serif;
+	}
+
+	table.root {
+		margin-top: 10px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	table.rack_act_router, table.rack_act_verteiler, table.rack_act_normal,
+	table.rack_nom_router, table.rack_nom_verteiler, table.rack_nom_normal,
+	table.rack_none {
+		margin: 0;
+		margin-left: auto;
+		margin-right: auto;
+		padding: 0;
+		border-spacing: 0;
+		border-collapse: collapse;
+		width: 40px;
+		height: 80px;
+	}
+
+	table.rack_act_router:hover, table.rack_act_verteiler:hover, table.rack_act_normal:hover,
+	table.rack_nom_router:hover, table.rack_nom_verteiler:hover, table.rack_nom_normal:hover,
+	table.rack_none:hover {
+	}
+
+	table.rack_act_router, table.rack_act_verteiler, table.rack_act_normal {
+		border: 1px solid #000000;
+	}
+
+	table.rack_nom_router, table.rack_nom_verteiler, table.rack_nom_normal, table.rack_none {
+		border: 1px dotted #000000;
+	}
+
+	table.rack_act_router {
+		background-color: #ee9090;
+	}
+
+	table.rack_act_verteiler {
+		background-color: #9090ee;
+	}
+
+	table.rack_act_normal {
+		background-color: #dddddd;
+	}
+
+	table.rack_nom_router {
+		background-color: #ffcccc;
+	}
+
+	table.rack_nom_verteiler {
+		background-color: #ccccff;
+	}
+
+	table.rack_nom_normal {
+		background-color: #eeeeee;
+	}
+
+	table.rack_none {
+		background-color: #ffffff;
+	}
+
+	caption.rack_title {
+		caption-side: top;
+		font-size: 9pt;
+	}
+
+	td.colhead {
+		height: 30px;
+		text-align: center;
+		vertical-align: top;
+		font-size: 10pt;
+		font-weight: bold;
+	}
+
+	td.rowhead {
+		text-align: left;
+		vertical-align: middle;
+		font-size: 10pt;
+		font-weight: bold;
+	}
+
+	td.empty {
+		height: 40px;
+		background-color: #ffffff;
+	}
+
+	td.empty2 {
+		height: 20px;
+		background-color: #ffffff;
+	}
+
+	td.duct {
+		height: 40px;
+		background-image: url(/static/duct.gif);
+	}
+
+	td.rack_title {
+		margin: 0;
+		padding: 0;
+		text-align: center;
+	}
+
+	td.rack_remark {
+		padding-left: 1px;
+		font-size: 7pt;
+		height: 99%;
+		text-align: center;
+		vertical-align: top;
+	}
+
+	td.rack_switch {
+		font-size: 7pt;
+		text-align: center;
+		border-bottom: 1px solid #000000;
+		background: #eeeebb;
+	}
+
+	td.rack_meter_full, td.rack_meter_half, td.rack_meter_free, td.rack_meter_nom {
+		font-size: 6pt;
+		text-align: center;
+	}
+
+	td.inno {
+		width: 40px;
+		background: #059E00;
+		color: #FFF;
+	}
+
+	tr.rack_meter_full {
+		border-top: 1px solid #000000;
+		background: #dd6060;
+	}
+
+	tr.rack_meter_half {
+		border-top: 1px solid #000000;
+		background: #dddd60;
+	}
+
+	tr.rack_meter_free {
+		border-top: 1px solid #000000;
+		background: #60dd60;
+	}
+
+	tr.rack_meter_nom {
+		border-top: 1px dotted #000000;
+		background-image: url(/images/raster.gif);
+	}
+
+	div.remark {
+		width: 40px;
+		white-space: normal;
+		overflow: hidden;
+	}
+	div.segment {
+		font-weight: bold;
+		padding: 3px;
+	}
+	div.hardware {
+		width: 40px;
+		overflow: hidden;
+		padding-top: 10px;
+		text-align:left;
+	}
+</style>
+</head>
+
+<body style="zoom: 1;">
+<table class="root">
+<tbody><tr>
+<td>&nbsp;</td>
+<td class="colhead">1</td>
+<td class="colhead">2</td>
+<td class="colhead">3</td>
+<td class="colhead">4</td>
+<td class="colhead">5</td>
+<td class="colhead">6</td>
+<td class="colhead">7</td>
+<td class="colhead">8</td>
+<td class="colhead">9</td>
+<td class="colhead">10</td>
+<td class="colhead">11</td>
+<td class="colhead">12</td>
+<td class="colhead">13</td>
+<td class="colhead">14</td>
+</tr>
+
+				<tr>
+					<td>&nbsp;</td>
+					<td class="empty2" colspan="30"></td>
+				</tr>
+			
+<tr>
+<td class="rowhead">A</td>
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">A/1</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">A/2</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">A/3</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">A/4</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">A/5</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">A/6</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">A/7</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">A/8</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">A/9</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">A/10</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">A/11</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">A/12</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">A/13</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">A/14</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+</tr>
+
+				<tr>
+					<td>&nbsp;</td>
+					<td class="duct" colspan="30"></td>
+				</tr>
+			
+<tr>
+<td class="rowhead">B</td>
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B/1</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">AF01<br /><br />hadoop</div></td></tr>
+
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B/2</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">AF01<br /><br />hadoop</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B/3</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">AF01<br /><br />hadoop</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B/4</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">AF05</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B/5</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">work<br />rack</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B/6</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">storage</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B/7</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B/8</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B/9</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B/10</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B/11</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B/12</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B/13</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B/14</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+
+</tr>
+
+				<tr>
+					<td>&nbsp;</td>
+					<td class="empty" colspan="30"></td>
+				</tr>
+			
+<tr>
+<td class="rowhead">C</td>
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">C/1</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">C/2</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">C/3</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">C/4</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">C/5</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">C/6</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">C/7</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">C/8</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">C/9</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">C/10</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">C/11</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">C/12</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">C/13</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">C/14</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+</tr>
+
+				<tr>
+					<td>&nbsp;</td>
+					<td class="duct" colspan="30"></td>
+				</tr>
+			
+<tr>
+<td class="rowhead">D</td>
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">D/1</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">AF01<br /><br />CMC01</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">D/2</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">AF01<br /><br />CMC02</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">D/3</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">empty<br />old af08</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">D/4</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">AF06<br /><br />CMC02</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">D/5</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">AF06<br /><br />stor</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">D/6</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">AF06<br /><br />CMC01</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">D/7</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">AF01<br /><br />CMC03</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">D/8</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">AF07<br /><br />CMC01</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">D/9</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">AF06<br /><br />CMC03</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">D/10</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">AF02<br /><br />CMC01</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">D/11</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">AF03</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">D/12</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">AF04<br /><br />CMC01</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">D/13</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">AF10<br /><br />CMC03</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">D/14</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">network</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+</tr>
+
+				<tr>
+					<td>&nbsp;</td>
+					<td class="empty" colspan="30"></td>
+				</tr>
+			
+<tr>
+<td class="rowhead">E</td>
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">E/1</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">AF10<br /><br />CMC01</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">E/2</caption>
+			
+			<tbody><tr><td class="rack_remark inno" colspan="2" style=""><div class="segment">AF10<br /><br />CMC02</div></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">E/3</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">E/4</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">E/5</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">E/6</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">E/7</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">E/8</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">E/9</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">E/10</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">E/11</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">E/12</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">E/13</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+
+		<td>
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">E/14</caption>
+			
+			<tbody><tr><td class="rack_remark" colspan="2"></td></tr>
+			
+		</tbody></table>
+		</td>
+	
+</tr>
+
+				<tr>
+					<td>&nbsp;</td>
+					<td class="duct" colspan="30"></td>
+				</tr>
+			
+</tbody></table>
+
+
+
+</body></html>
