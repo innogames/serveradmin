@@ -34,7 +34,8 @@ def prepare_value(attr_obj, value):
             value = IPv6(value)
         value = value.as_hex()
     elif attr_obj.type == u'datetime':
-        value = int(time.mktime(value.timetuple()))
+        if isinstance(value, datetime):
+            value = int(time.mktime(value.timetuple()))
     # XXX: Dirty hack for the old database structure
     if attr_obj.name == u'servertype':
         try:
