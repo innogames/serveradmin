@@ -125,7 +125,10 @@ class ServermonitorConnection(object):
         elif mode == 'lines':
             return self._fileobj.readlines()
         elif mode == 'json':
-            return json.loads(self._fileobj.readline())
+            line = self._fileobj.readline()
+            if line.startswith('ERR '):
+                raise ValueError(line[4:])
+            return json.loads(line)
         else:
             return self._fileobj.read()
 
