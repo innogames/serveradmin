@@ -700,7 +700,7 @@ function handle_command_graph()
             var dialog = $('<div title="' + server['hostname'] + '"></div>');
             dialog.append(data)
             dialog.dialog({
-                'width': 1500
+                'width': 1550
             });
             attach_graph_reload();
             attach_show_graph_description();
