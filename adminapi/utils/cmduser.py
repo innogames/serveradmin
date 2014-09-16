@@ -1,7 +1,8 @@
 import os
 import pwd
+import getpass
 
-def get_user(home_at=['/home', '/var', '/opt', '/usr']):
+def get_user(home_at=['/home','/Users' ,'/var', '/opt', '/usr']):
     """Try to find the user who executed the script originally.
     
     :param home_at: List of directories containing home directories
@@ -35,17 +36,7 @@ def get_user(home_at=['/home', '/var', '/opt', '/usr']):
 
 
 def _parse_status(pid):
-    uid = None
-    ppid = None
-    with open('/proc/{0}/status'.format(pid)) as f:
-        for line in f:
-            if line.startswith('Uid:'):
-                uid = int(line.split()[1])
-            elif line.startswith('PPid:'):
-                ppid = int(line.split()[1])
-            if not (uid is None or ppid is None):
-                break
-        else:
-            # Should never happen, but who knows ;-)
-            raise Exception('Could not find Uid/PPid in /proc/PID/status')
+    uid = os.getuid()
+    ppid = os.getpid()
+
     return pwd.getpwuid(uid), ppid
