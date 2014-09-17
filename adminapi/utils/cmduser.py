@@ -1,6 +1,7 @@
 import os
 import pwd
 import getpass
+import psutil
 
 def get_user(home_at=['/home','/Users' ,'/var', '/opt', '/usr']):
     """Try to find the user who executed the script originally.
@@ -37,6 +38,9 @@ def get_user(home_at=['/home','/Users' ,'/var', '/opt', '/usr']):
 
 def _parse_status(pid):
     uid = os.getuid()
-    ppid = os.getpid()
-
-    return pwd.getpwuid(uid), ppid
+    pid = os.getpid()
+    ppid = pid
+    while uid == 0:
+        ppid = psutil.Process(ppid).ppid()
+        uid, effective,saved =  psutil.Process(ppid).uids()
+    return pwd.getpwuid(uid), pid
