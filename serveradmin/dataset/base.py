@@ -6,7 +6,6 @@ from collections import namedtuple
 
 from django.db import connection
 from django.core.cache import cache
-from django.core.signals import request_started
 
 from serveradmin.serverdb.models import Attribute, ServerType
 
@@ -108,6 +107,3 @@ def _read_lookups(sender=None, **kwargs):
             if attr.base:
                 index = (servertype.name, attr.name)
                 lookups.stype_attrs[index] = special_stype_attr
-
-_read_lookups()
-request_started.connect(_read_lookups)
