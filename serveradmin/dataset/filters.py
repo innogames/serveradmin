@@ -368,6 +368,16 @@ class Not(Filter):
     def as_sql_expr(self, builder, attr_obj, field):
         if attr_obj.multi:
             uid = builder.get_uid()
+            
+            # Special case for empty filter, simple negation doesn't work
+            # here. It would just return all empty values, instead of values
+            # which are NOT empty.
+            if isinstance(self.filter, Empty):
+                return ('EXISTS (SELECT id FROM attrib_values AS nav{0} '
+                        '        WHERE nav{0}.server_id = adms.server_id AND '
+                        '              nav{0}.attrib_id = {1})').format(
+                                uid, attr_obj.attrib_id)
+            
             cond = self.filter.as_sql_expr(builder, attr_obj,
                     'nav{0}.value'.format(uid))
             subquery = ('SELECT id FROM attrib_values AS nav{0} '
