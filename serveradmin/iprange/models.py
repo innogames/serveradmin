@@ -186,9 +186,12 @@ def _get_network_settings(ip):
         else:
             return iprange_obj
 
+    default_gateway = nonempty_parent(iprange_obj, 'gateway')
+    internal_gateway = nonempty_parent(iprange_obj, 'internal_gateway')
+
     return {
-        'default_gateway':  str(nonempty_parent(iprange_obj, 'gateway')),
-        'internal_gateway': str(nonempty_parent(iprange_obj, 'internal_gateway')),
+        'default_gateway':  str(default_gateway) if default_gateway else None,
+        'internal_gateway': str(internal_gateway) if internal_gateway else None,
         'broadcast': str(iprange_obj.max),
         'netmask': calculate_netmask(highest_parent(iprange_obj))
     }
@@ -207,8 +210,8 @@ def _get_iprange_settings(name):
             return '.'.join([ str(i) for i in netmask])
 
     return {
-        'default_gateway':  str(iprange_obj.gateway),
-        'internal_gateway': str(iprange_obj.internal_gateway),
+        'default_gateway':  str(iprange_obj.gateway) if iprange_obj.gateway else None,
+        'internal_gateway': str(iprange_obj.internal_gateway) if iprange_obj.internal_gateway else None,
         'broadcast': str(iprange_obj.max),
         'netmask': calculate_netmask(iprange_obj)
     }
