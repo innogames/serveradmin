@@ -149,3 +149,67 @@ def get_gateways(ip):
     }
 
 
+def _get_network_settings(ip):
+    ipranges = IPRange.objects.filter(min__lte=ip, max__gte=ip)
+    ipranges = [iprange for iprange in ipranges if iprange is not None]
+
+    if not ipranges:
+        raise ValueError('IP is not in known IP ranges')
+
+    def get_range_size(iprange_obj):
+        return iprange_obj.max.as_int() - iprange_obj.min.as_int()
+
+    # This is the smallest matching IP range.
+    # For most of things we will traverse to his parents.
+    iprange_obj = min(ipranges, key=get_range_size)
+
+    def calculate_netmask(iprange_obj):
+            #netmask calculation via: http://stackoverflow.com/questions/8872636/how-to-calculate-netmask-from-2-ip-adresses-in-python
+            m = 0xFFFFFFFF ^ iprange_obj.min.as_int() ^ iprange_obj.max.as_int()
+            netmask = [(m & (0xFF << (8*n))) >> 8*n for n in (3, 2, 1, 0)]
+            return '.'.join([ str(i) for i in netmask])
+
+    # Traverse to parent ip_range if given parameter is not specified.
+    def nonempty_parent(iprange_obj, param):
+        if getattr(iprange_obj, param, None) is not None:
+            return getattr(iprange_obj, param)
+        if iprange_obj.belongs_to_id is None:
+            return None
+        iprange_obj = IPRange.objects.get(range_id=iprange_obj.belongs_to_id)
+        return nonempty_parent(iprange_obj, param)
+
+    # Traverse to parent ip_range if there is any.
+    def highest_parent(iprange_obj):
+        if iprange_obj.belongs_to_id:
+            iprange_obj = IPRange.objects.get(range_id=iprange_obj.belongs_to_id)
+            return highest_parent(iprange_obj)
+        else:
+            return iprange_obj
+
+    return {
+        'default_gateway':  str(nonempty_parent(iprange_obj, 'gateway')),
+        'internal_gateway': str(nonempty_parent(iprange_obj, 'internal_gateway')),
+        'broadcast': str(iprange_obj.max),
+        'netmask': calculate_netmask(highest_parent(iprange_obj))
+    }
+
+def _get_iprange_settings(name):
+    ipranges = IPRange.objects.filter(range_id=name)
+    if not len(ipranges)==1:
+        raise ValueError('IP Range not found by name')
+    iprange_obj = ipranges[0]
+    print iprange_obj.gateway
+
+    def calculate_netmask(iprange_obj):
+            #netmask calculation via: http://stackoverflow.com/questions/8872636/how-to-calculate-netmask-from-2-ip-adresses-in-python
+            m = 0xFFFFFFFF ^ iprange_obj.min.as_int() ^ iprange_obj.max.as_int()
+            netmask = [(m & (0xFF << (8*n))) >> 8*n for n in (3, 2, 1, 0)]
+            return '.'.join([ str(i) for i in netmask])
+
+    return {
+        'default_gateway':  str(iprange_obj.gateway),
+        'internal_gateway': str(iprange_obj.internal_gateway),
+        'broadcast': str(iprange_obj.max),
+        'netmask': calculate_netmask(iprange_obj)
+    }
+
