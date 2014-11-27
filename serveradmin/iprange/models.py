@@ -192,7 +192,7 @@ def _get_network_settings(ip):
     return {
         'default_gateway':  str(default_gateway) if default_gateway else None,
         'internal_gateway': str(internal_gateway) if internal_gateway else None,
-        'broadcast': str(iprange_obj.max),
+        'broadcast': str(highest_parent(iprange_obj).max),
         'netmask': calculate_netmask(highest_parent(iprange_obj))
     }
 
