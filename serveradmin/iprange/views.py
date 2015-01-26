@@ -18,7 +18,7 @@ def index(request):
             request.session.get('iprange_order_dir', 'asc'))
 
     if order_field in ('range_id', 'ip_type', 'min', 'max', 'gateway',
-                       'internal_gateway', 'belongs_to__range_id'):
+                       'internal_gateway', 'vlan', 'belongs_to__range_id'):
         request.session['iprange_order_field'] = order_field
         request.session['iprange_order_dir'] = order_dir
 
@@ -85,6 +85,7 @@ def add(request):
                                    next_free=data['start'],
                                    gateway=data['gateway'],
                                    internal_gateway=data['internal_gateway'],
+                                   vlan=data['vlan'],
                                    belongs_to=data['belongs_to'])
             messages.success(request, u'Added IP range "{0}"'.format(
                     data['range_id']))
@@ -113,6 +114,7 @@ def edit(request, range_id):
                     max=data['end'],
                     gateway=data['gateway'],
                     internal_gateway=data['internal_gateway'],
+                    vlan=data['vlan'],
                     belongs_to=data['belongs_to'])
             messages.success(request, u'Edited IP range "{0}"'.format(
                     iprange.range_id))
@@ -122,6 +124,7 @@ def edit(request, range_id):
         initial = {'range_id': iprange.range_id, 'segment': iprange.segment,
                    'ip_type': iprange.ip_type, 'gateway': iprange.gateway,
                    'internal_gateway' : iprange.internal_gateway,
+                   'vlan' : iprange.vlan,
                    'belongs_to': iprange.belongs_to}
         cidr = iprange.cidr
         if cidr:

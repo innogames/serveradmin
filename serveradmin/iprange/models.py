@@ -23,6 +23,7 @@ class IPRange(models.Model):
     next_free = dbfields.IPv4Field()
     gateway = dbfields.IPv4Field(null=True)
     internal_gateway = dbfields.IPv4Field(null=True)
+    vlan = models.IntegerField(null=True)
     belongs_to = models.ForeignKey('IPRange', null=True, blank=True,
             related_name='subnet_of')
 
@@ -192,6 +193,7 @@ def _get_network_settings(ip):
     return {
         'default_gateway':  str(default_gateway) if default_gateway else None,
         'internal_gateway': str(internal_gateway) if internal_gateway else None,
+        'vlan': nonempty_parent(iprange_obj, 'vlan'),
         'broadcast': str(highest_parent(iprange_obj).max),
         'netmask': calculate_netmask(highest_parent(iprange_obj))
     }
@@ -212,6 +214,7 @@ def _get_iprange_settings(name):
     return {
         'default_gateway':  str(iprange_obj.gateway) if iprange_obj.gateway else None,
         'internal_gateway': str(iprange_obj.internal_gateway) if iprange_obj.internal_gateway else None,
+        'vlan': iprange_obj.vlan,
         'broadcast': str(iprange_obj.max),
         'netmask': calculate_netmask(iprange_obj)
     }

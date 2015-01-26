@@ -15,6 +15,7 @@ class IPRangeForm(forms.Form):
     end = formfields.IPv4Field(required=False, label='End IP')
     gateway = formfields.IPv4Field(required=False, label='Default gateway')
     internal_gateway = formfields.IPv4Field(required=False, label='Internal gateway')
+    vlan = forms.IntegerField(required=False, label='VLAN', min_value=1, max_value=4095)
     belongs_to = forms.ModelChoiceField(queryset=IPRange.objects.all(),
             empty_label='None', required=False)
 
