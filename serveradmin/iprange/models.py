@@ -216,6 +216,7 @@ def _get_iprange_settings(name):
         'internal_gateway': str(iprange_obj.internal_gateway) if iprange_obj.internal_gateway else None,
         'vlan': iprange_obj.vlan,
         'broadcast': str(iprange_obj.max),
-        'netmask': calculate_netmask(iprange_obj)
+        'netmask': calculate_netmask(iprange_obj),
+        'network': str(iprange_obj.min)
     }
 
