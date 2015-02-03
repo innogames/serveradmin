@@ -191,12 +191,11 @@ class IPv6(object):
         return not self == other
 
     def is_private(self):
-        # TODO: Implement
-        return False
+        return not self.is_public()
 
     def is_public(self):
-        # TODO: Implement
-        return False
+        # Check if IP starts with 001 (in binary)
+        return (ord(self.ip[0]) ^ 0b00100000) & 0b11100000 == 0
 
 class Network(object):
     def __init__(self, min_ip, max_ip=None):
