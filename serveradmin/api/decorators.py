@@ -47,6 +47,9 @@ def api_view(view):
         if not constant_time_compare(real_security_token, security_token) or expired:
             return HttpResponseForbidden('Invalid or expired security token',
                     content_type='text/plain')
+
+        if not (app.author is None or app.author.is_active):
+            return HttpResponseForbidden('Sorry, your user is inactive.')
         
         if app.restriction_active():
             has_exception = ApplicationException.objects.filter(application=app,
