@@ -43,6 +43,8 @@ class ExactMatch(Filter):
         return hash(u'ExactMatch') ^ hash(self.value)
 
     def as_sql_expr(self, builder, attr_obj, field):
+        if attr_obj.type == 'boolean' and not self.value:
+            return u"({0} = '0' OR {0} IS NULL)".format(field)
         return u'{0} = {1}'.format(field, value_to_sql(attr_obj, self.value))
 
     def matches(self, server_obj, attr_name):

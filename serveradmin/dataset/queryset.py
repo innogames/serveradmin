@@ -178,7 +178,9 @@ class QuerySet(BaseQuerySet):
         optional_filters = (filters.OptionalFilter, filters.Not)
         for attr, f in self._filters.iteritems():
             attr_obj = lookups.attr_names[attr]
-            builder.add_attribute(attr, isinstance(f, optional_filters))
+            optional = (isinstance(f, optional_filters) or
+                        attr_obj.type == 'boolean')
+            builder.add_attribute(attr, optional)
             builder.add_filter(attr, f)
 
 
@@ -206,6 +208,7 @@ class QuerySet(BaseQuerySet):
         sql_stmt = builder.build_sql()
 
         c = connection.cursor()
+        print sql_stmt
         c.execute(sql_stmt)
         server_data = {}
         servertype_lookup = dict((k, v.name) for k, v in
