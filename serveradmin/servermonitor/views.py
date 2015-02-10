@@ -57,7 +57,7 @@ def index(request):
 
             if not matched_servers:
                 template_info.update({
-                    'understood': host_query.get_representation().as_code(),
+                    'understood': understood,
                     'hosts': []
                 })
                 return TemplateResponse(request, 'servermonitor/index.html',

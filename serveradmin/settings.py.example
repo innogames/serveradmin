@@ -152,6 +152,7 @@ INSTALLED_APPS = (
     'serveradmin.docs',
     'serveradmin.iprange',
     'serveradmin.servermonitor',
+    'serveradmin.graphite',
 )
 
 # A sample logging configuration. The only tangible logging

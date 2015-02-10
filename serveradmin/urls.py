@@ -21,6 +21,7 @@ urlpatterns = patterns(
     url(r'^logout', 'django.contrib.auth.views.logout_then_login',
         name='logout'),
     url(r'^admin/', include(admin.site.urls)),
+    url(r'^graphite/', include('serveradmin.graphite.urls')),
     url(r'^comments/', include('comments.urls')),
     url(r'^failoverlogin$', 'serveradmin.common.views.failoverlogin'),
     url(r'^check$', 'serveradmin.common.views.check'),
