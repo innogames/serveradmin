@@ -1,4 +1,3 @@
-import urllib
 from string import Formatter
 
 from django.shortcuts import render
@@ -92,26 +91,30 @@ def index(request):
 
 @login_required
 @ensure_csrf_cookie
-def graph_table(request):
-
-    try:
-        hostname = request.GET['hostname']
-    except KeyError:
-        return HttpResponseBadRequest('You have to provide a hostname')
+def graph_table(request, hostname):
 
     #
-    # Prepare the dictionary to format URL's
+    # Optional parameters
     #
-    # String attributes can be used on the params supplied by the Graph
-    # templates.  We will prepare a dictionary with them for ease of use.
-    # Also, we need to replace hostname variables inside the params as
-    # the templates will be defined for many servers.  Dots on the hostnames
-    # are replaced by underscores on the Graphite.
-    attribute_values = AttributeValue.objects.filter(server__hostname=hostname,
-                                                     attrib__type='string',
-                                                     attrib__multi=False)
-    formatting_dict = dict((a.attrib.name, a.value) for a in attribute_values)
-    formatting_dict['hostname'] = hostname.replace('.', '_')
+    # We will accept all GET parameters and pass them to Graphite.  We only
+    # care that there are any GET parameters or not.  If there are in custom
+    # graph mode.
+    #
+    custom_params = request.GET.urlencode()
+
+    #
+    # Prepare the dictionary of attributes
+    #
+    # For convenience we will create a dictionary of attributes and store
+    # array of values in it.  They will be used to filter the graphs and
+    # to format the URL parameters of the graphs.
+    #
+    attribute_dict = {}
+    for row in AttributeValue.objects.filter(server__hostname=hostname):
+        if row.attrib.name not in attribute_dict:
+            attribute_dict[row.attrib.name] = [row.value]
+        else:
+            attribute_dict[row.attrib.name].append(row.value)
 
     #
     # Generate graph table
@@ -137,19 +140,24 @@ def graph_table(request):
     #
     graph_table = []
     for group in GraphGroup.objects.all():
-        if formatting_dict.get(group.attrib.name) == group.attrib_value:
+
+        if (group.attrib.name in attribute_dict and
+            group.attrib_value in attribute_dict[group.attrib.name]):
+
             for template in GraphTemplate.objects.filter(graph_group=group):
-                params = Formatter().vformat(template.params, (), formatting_dict)
-                base_url = settings.GRAPHITE_URL + '/render?'
 
                 column = []
-                for time_range in GraphTimeRange.objects.filter(graph_group=group):
-                    params = '&'.join((group.params,
-                                       time_range.params,
-                                       template.params))
-                    params = Formatter().vformat(params, (), formatting_dict)
+                for variation in GraphVariation.objects.filter(
+                        graph_group=group,
+                        custom_mode=(custom_params != '')
+                    ):
 
-                    column.append((time_range.name,
+                    formatter = AttributeFormatter(hostname)
+                    params = '&'.join((custom_params, group.params,
+                                       variation.params, template.params))
+                    params = formatter.vformat(params, (), attribute_dict)
+
+                    column.append((variation.name,
                                    settings.GRAPHITE_URL + '/render?' + params))
 
                 graph_table.append((template.name, column))
@@ -159,5 +167,42 @@ def graph_table(request):
         'graph_table': graph_table,
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
-        'link': request.get_full_path()
+        'link': request.get_full_path(),
+        'from': request.GET.get('from', ''),
+        'until': request.GET.get('until', ''),
     })
+
+#
+# Attribute formatter class
+#
+# Attributes and hostname can be used on the params supplied by the Graph
+# templates and variations.  Replacing the variables for hostname is easy.
+# We only need to replace the dots on the hostname with underscores as
+# it is done on Graphite.
+#
+# Replacing variables for attributes requires to override the get_value()
+# method of the base class which is only capable of returning the value
+# of the given dictionary.  To support multiple attributes we have arrays
+# in the given dictionary.  Also, we would like to use all values only once
+# to make a sensible use of multiple attributes.
+#
+class AttributeFormatter(Formatter):
+    """Custom Formatter to replace variables on URL parameters"""
+
+    def __init__(self, hostname):
+        Formatter.__init__(self)
+        self.__hostname = hostname.replace('.', '_')
+        self.__last_item_ids = {}
+
+    def get_value(self, key, args, kwds):
+        if key == 'hostname':
+            return self.__hostname
+
+        # Initialize or increment the last used id for the key.
+        if key not in self.__last_item_ids:
+            self.__last_item_ids[key] = 0
+        else:
+            self.__last_item_ids[key] += 1
+
+        # It will raise an error if there is no value.
+        return kwds[key][self.__last_item_ids[key]]

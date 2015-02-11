@@ -1,25 +1,50 @@
 {% extends base_template %}
 {% load url from future %}
 
-{% block title %}Graphs for  {{ hostname }}{% endblock %}
+{% block title %}Graphs for {{ hostname }}{% endblock %}
 
 {% block content %}
 {% if not is_ajax %}
 <h2>Graphs for {{ hostname }}</h2>
+
+<form action="" method="GET">
+    <table>
+        <tr>
+            <th>From:</th>
+            <td>
+                <input name="from" type="text" value="{{ from }}" />
+            </td>
+        </tr>
+
+        <tr>
+            <th>Until:</th>
+            <td>
+                <input name="until" type="text" value="{{ until }}" />
+            </td>
+        </tr>
+
+        <tr>
+            <th></th>
+            <td>
+                <input name="submit" type="submit" value="Submit" />
+            </td>
+        </tr>
+    </table>
+</form>
 {% endif %}
 
 {% if is_ajax %}
-<p><a href="{{ link }}">
-    <img src="{{ STATIC_URL }}link.png" alt="Link to this page" 
-		title="Link to this page" />
-</a></p>
+<p>
+    <a href="{{ link }}">
+        <img src="{{ STATIC_URL }}link.png" alt="Link to this page"
+		     title="Link to this page" />
+    </a>
+</p>
 {% endif %}
 
 
 {% for name, graph_column in graph_table %}
-<h3>{{ name }}
-  <img src="{{ STATIC_URL}}help.png" class="graph_desc_icon" data-graphname={{ name }} >
-</h3>
+<h3>{{ name }} <img src="{{ STATIC_URL}}help.png" class="graph_desc_icon" /></h3>
 
 <table>
     <tr>
@@ -27,6 +52,7 @@
         <th>{{ column_name }}</th>
 {% endfor %}
     </tr>
+
     <tr>
 {% for column_name, graph in graph_column %}
         <td>
@@ -40,7 +66,4 @@
 {% endblock content %}
 
 {% block additional_body %}
-{% if not is_ajax %}
-<script type="text/javascript" src="{{ STATIC_URL }}servermonitor/servermonitor.js"></script>
-{% endif %}
 {% endblock additional_body %}

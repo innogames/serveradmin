@@ -82,8 +82,11 @@
 {% for hwhost in hosts %}
     <tr>
         <td>
-            <a href="{% url 'graphite_graph_table' %}?hostname={{ hwhost.hostname }}"
-            >{{ hwhost.hostname }}</a>
+            <p>
+                <a href="{% url 'graphite_graph_table' hwhost.hostname %}"
+                   >{{ hwhost.hostname }}</a>
+            </p>
+
             <p class="graph_servertype">({{ hwhost.servertype }})</p>
         </td>
         <td><a class="graph_sprite"
@@ -139,9 +142,9 @@
         </td>
         <td>
 {% for guest_host in hwhost.guests %}
-        <a href="{% url 'servermonitor_graph_table' %}?hostname={{ guest_host }}"
-        {% if guest_host in matched_servers %}style="color:#d00;"{% endif %}
-        >{{ guest_host }}</a>
+        <a href="{% url 'graphite_graph_table' guest_host %}"
+           {% if guest_host in matched_servers %}style="color:#d00;"{% endif %}
+           >{{ guest_host }}</a>
 {% endfor %}
         </td>
     </tr>

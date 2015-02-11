@@ -2,13 +2,13 @@ from django.contrib import admin
 
 from serveradmin.graphite.models import *
 
-class GraphTimeRangeInline(admin.TabularInline):
-    model = GraphTimeRange
-
 class GraphTemplateInline(admin.TabularInline):
     model = GraphTemplate
 
+class GraphVariationInline(admin.TabularInline):
+    model = GraphVariation
+
 class GraphGroupAdmin(admin.ModelAdmin):
-    inlines = (GraphTimeRangeInline, GraphTemplateInline)
+    inlines = (GraphTemplateInline, GraphVariationInline)
 
 admin.site.register(GraphGroup, GraphGroupAdmin)
