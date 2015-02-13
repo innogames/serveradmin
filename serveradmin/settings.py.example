@@ -200,5 +200,17 @@ OBJECTS_PER_PAGE = 25
 SERVERMONITOR_SERVER = ('servermonitor.innogames.de', 5331)
 SERVERMONITOR_URL = 'https://servermonitor.innogames.de'
 
+# Graphite URL is required to generate graphic URL's.  Normal graphs
+# are requested from Graphite on the browser.  User should authenticate
+# to Graphite separately to see them.  Small graphs on the overview
+# page are requested and stored by the Serveradmin from the Graphite.
+# Graphite cookie is required for the Serveradmin to pass authentication
+# on the graphite.  You can create one on the django_session table of
+# the database of the Graphite.  Graphs are stored by the job called
+# "gensprites" under directory graphite/static/graph_sprite.  They are
+# also merged into single images for every server to reduce the requests
+# to the Serveradmin from the browser.
+GRAPHITE_URL = 'https://graphite.innogames.de'
+GRAPHITE_COOKIE = 'f48bb9bcda4647f181c8255577c20313'
 
 raise Exception('Set SECRET_KEY and DATABASE PASSWORD and remove this!')

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from serveradmin.graphite.models import *
+from serveradmin.graphite.models import GraphTemplate, GraphVariation, GraphGroup
 
 class GraphTemplateInline(admin.TabularInline):
     model = GraphTemplate

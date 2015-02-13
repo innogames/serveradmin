@@ -3,3 +3,4 @@ docutils
 python-memcached
 Sphinx
 django-markup-deprecated
+Pillow  # Required to generate sprites from Graphite

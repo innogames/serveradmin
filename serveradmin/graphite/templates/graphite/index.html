@@ -67,13 +67,10 @@
 <table border="1">
     <tr>
         <th>Hardware host</th>
-        <th>CPU hourly</th>
-        <th>CPU daily</th>
-        <th>CPU weekly</th>
+{% for name in graph_names %}
+        <th>{{ name }}</th>
+{% endfor %}
         <th>Hourly<br />Daily<br />-1 Day</th>
-        <th>IO hourly</th>
-        <th>IO daily</th>
-        <th>IO weekly</th>
         <th>Hourly<br />Daily</th>
         <th>Disk free</th>
         <th>Mem free</th>
@@ -89,45 +86,16 @@
 
             <p class="graph_servertype">({{ hwhost.servertype }})</p>
         </td>
+{% for offset in graph_offsets %}
         <td><a class="graph_sprite"
-            style="background:url({{ STATIC_URL }}empty.png) 0px 0;"
+            style="background:url({{ STATIC_URL }}empty.png) -{{ offset }}px 0;"
             data-hostname="{{ hwhost.hostname }}"
-            data-graph="cpu_dom0-hourly"
             data-image="{{ hwhost.image }}"></a>
         </td>
-        <td><a class="graph_sprite"
-            style="background:url({{ STATIC_URL}}empty.png) -120px 0;"
-            data-hostname="{{ hwhost.hostname }}"
-            data-graph="cpu_dom0-daily"
-            data-image="{{ hwhost.image }}"></a>
-        </td>
-        <td><a class="graph_sprite"
-            style="background:url({{ STATIC_URL }}empty.png) -240px 0;"
-            data-hostname="{{ hwhost.hostname }}"
-            data-graph="cpu_dom0-weekly"
-            data-image="{{ hwhost.image }}"></a>
-        </td>
+{% endfor %}
         <td>{% format_percent hwhost.cpu.hourly 50 100 30 %}
             {% format_percent hwhost.cpu.daily 50 100 30 %}
             {% format_percent hwhost.cpu.yesterday 50 100 30 %}
-        </td>
-        <td><a class="graph_sprite"
-            style="background:url({{ STATIC_URL }}empty.png) -360px 0;"
-            data-hostname="{{ hwhost.hostname }}"
-            data-graph="io3-hourly"
-            data-image="{{ hwhost.image }}"></a>
-        </td>
-        <td><a class="graph_sprite"
-            style="background:url({{ STATIC_URL }}empty.png) -480px 0;"
-            data-hostname="{{ hwhost.hostname }}"
-            data-graph="io3-daily"
-            data-image="{{ hwhost.image }}"></a>
-        </td>
-        <td><a class="graph_sprite"
-            style="background:url({{ STATIC_URL }}empty.png) -600px 0;"
-            data-hostname="{{ hwhost.hostname }}"
-            data-graph="io3-weekly"
-            data-image="{{ hwhost.image }}"></a>
         </td>
         <td>{% format_percent hwhost.io.hourly 30 100 30 %}
             {% format_percent hwhost.io.daily 30 100 30 %}
