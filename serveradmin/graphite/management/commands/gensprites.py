@@ -44,16 +44,19 @@ class Command(NoArgsCommand):
                         (len(urls) - 1) * self.graph_spacing)
         spriteimg = Image.new('RGB',
                               (sprite_width, self.graph_height), (255,) * 3)
+        opener = urllib2.build_opener()
+        opener.addheaders.append(('Cookie',
+                                  'sessionid=' + settings.GRAPHITE_COOKIE))
         offset = 0
 
         for url in urls:
-            opener = urllib2.build_opener()
-            opener.addheaders.append(('Cookie',
-                                      'sessionid=' + settings.GRAPHITE_COOKIE))
-            tmpimg = BytesIO(opener.open(url).read())
+            try:
+                tmpimg = BytesIO(opener.open(url).read())
+                box = (offset, 0, offset + self.graph_width, self.graph_height)
+                spriteimg.paste(Image.open(tmpimg), box)
+            except urllib2.HTTPError:
+                print('Warning: Graphite returned error for ' + url)
 
-            box = (offset, 0, offset + self.graph_width, self.graph_height)
-            spriteimg.paste(Image.open(tmpimg), box)
             offset += 120
 
         spriteimg.save(self.sprite_path + '/' + hostname + '.png')
