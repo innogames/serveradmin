@@ -66,7 +66,7 @@ def index(request):
                 'hostname': hw_host['hostname'],
                 'servertype': hw_host['servertype'],
                 'image': '{url}graph_sprite/{hostname}.png'.format(
-                        url=settings.STATIC_URL,
+                        url=settings.MEDIA_URL,
                         hostname=hw_host['hostname']),
                 'cpu': {},
                 'io': {}

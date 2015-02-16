@@ -13,7 +13,7 @@ class Command(NoArgsCommand):
     """
 
     help = __doc__
-    sprite_path = settings.ROOT_DIR + '/graphite/static/graph_sprite'
+    sprite_path = settings.MEDIA_ROOT + '/graph_sprite'
     graph_width = 112
     graph_height = 45
     graph_spacing = 8
