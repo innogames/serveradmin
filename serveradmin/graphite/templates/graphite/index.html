@@ -70,8 +70,8 @@
 {% for name in graph_names %}
         <th>{{ name }}</th>
 {% endfor %}
-        <th>Hourly<br />Daily<br />-1 Day</th>
-        <th>Hourly<br />Daily</th>
+        <th>CPU Usage<br />Hourly<br />Daily<br />-1 Day</th>
+        <th>Disk IO<br />Hourly<br />Daily</th>
         <th>Disk free</th>
         <th>Mem free</th>
         <th>Guests</th>
@@ -119,22 +119,18 @@
     </tr>
 {% endfor %}
     <tr>
-        <th>Sum</th>
-        <td colspan="3"></td>
+        <th style="text-align:right;" colspan="{{ graph_names|length|add:1 }}">Sum</th>
         <td style="text-align:center;">-</td>
-        <td colspan="3"></td>
         <td style="text-align:center;">-</td>
         <td>{{ disk_free_sum|filesizeformat }}</td>
         <td>{{ mem_free_sum|filesizeformat }}/{{ mem_total_sum|filesizeformat }}</td>
         <td></td>
     </tr>
     <tr>
-        <th>Average</th>
-        <td colspan="3"></td>
+        <th style="text-align:right;" colspan="{{ graph_names|length|add:1 }}">Average</th>
         <td>{% format_percent cpu_aggregate.hourly.avg 50 100 30 %}
             {% format_percent cpu_aggregate.daily.avg 50 100 30 %}
             {% format_percent cpu_aggregate.yesterday.avg 50 100 30 %}
-        <td colspan="3"></td>
         <td>{% format_percent io_aggregate.hourly.avg 30 100 30 %}
             {% format_percent io_aggregate.daily.avg 30 100 30 %}</td>
         <td>{{ disk_free_avg|filesizeformat }}</td>
