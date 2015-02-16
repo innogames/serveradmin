@@ -8,7 +8,7 @@
 {% block content %}
 <h2>Graphite</h2>
 
-<form method="get" action="{% url 'servermonitor_index' %}">
+<form method="get" action="{% url 'graphite_index' %}">
 <table class="valign-middle">
 <tr>
     <td>Search: </td>
@@ -90,6 +90,7 @@
         <td><a class="graph_sprite"
             style="background:url({{ STATIC_URL }}empty.png) -{{ offset }}px 0;"
             data-hostname="{{ hwhost.hostname }}"
+            data-graph="{{ forloop.counter0 }}"
             data-image="{{ hwhost.image }}"></a>
         </td>
 {% endfor %}
@@ -147,8 +148,7 @@
 {% block additional_body %}
 <script type="text/javascript" src="{{ STATIC_URL }}servermonitor/servermonitor.js"></script>
 <script type="text/javascript">
-//<[CDATA[
-var monitor_graph_popup_url = '{% url 'servermonitor_graph_popup' %}';
+var monitor_graph_popup_url = '{% url 'graphite_graph_popup' %}';
 var monitor_reload_url = '{% url 'servermonitor_reload' %}';
 $(function() {
     $('.graph_sprite').click(open_graph_popup);
@@ -185,7 +185,6 @@ $(function() {
     $(window).on('scroll', update_sprites);
     update_sprites();
 });
-//]]>
 </script>
 {% serversearch_js 'monitor_search' %}
 {% endblock %}

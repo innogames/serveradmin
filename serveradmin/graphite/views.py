@@ -4,7 +4,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 
 from adminapi.utils.parse import parse_query
-from serveradmin.graphite.models import GraphManager, GraphGroup
+from serveradmin.graphite.models import GraphManager
 from serveradmin.dataset import query, filters, DatasetError
 from serveradmin.serverdb.models import ServerType, Segment
 from serveradmin.servermonitor.getinfo import get_information
@@ -78,14 +78,15 @@ def index(request):
     hostnames = hardware.keys()
     template_info.update(get_information(hostnames, hardware))
 
-    group = GraphGroup.objects.get(overview=True)
-    graph_names = [unicode(t) + ' ' + unicode(v) for t in group.get_templates()
+    manager = GraphManager()
+    group = manager.overview_graph_group()
+    names = [unicode(t) + ' ' + unicode(v) for t in group.get_templates()
                                                  for v in group.get_variations()]
-    graph_offsets = [i * 120 for i in range(len(graph_names))]
+    offsets = [i * 120 for i in range(len(names))]
 
     template_info.update({
-        'graph_names': graph_names,
-        'graph_offsets': graph_offsets,
+        'graph_names': names,
+        'graph_offsets': offsets,
         'matched_servers': matched_servers,
         'understood': understood,
         'error': None
@@ -110,4 +111,23 @@ def graph_table(request, hostname):
         'link': request.get_full_path(),
         'from': request.GET.get('from', ''),
         'until': request.GET.get('until', ''),
+    })
+
+@login_required
+def graph_popup(request):
+    try:
+        hostname = request.GET['hostname']
+        graph = request.GET['graph']
+    except KeyError:
+        return HttpResponseBadRequest('You have to supply hostname and graph')
+
+    manager = GraphManager()
+    group = manager.overview_graph_group()
+    table = group.graph_table(hostname)
+    image = [v2 for k1, v1 in table for k2, v2 in v1][int(graph)]
+
+    return TemplateResponse(request, 'graphite/graph_popup.html', {
+        'hostname': hostname,
+        'graph': graph,
+        'image': image
     })

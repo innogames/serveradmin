@@ -10,27 +10,10 @@ class GraphManager(object):
     """
 
     def __init__(self):
-        self._groups = None    # To cache graph groups
+        self._groups = None    # To cache all graph groups
+        self._overview_group = None # To cache the special overview group
 
-    def graph_table(self, hostname, custom_params='', overview=False):
-        """Generate graph URL table for a server
-
-        Graph table is two dimensional array of tuples.  The arrays are
-        ordered.  The tuples are used to name the elements.  Example:
-
-            [
-                ('CPU Usage', [
-                    ('Hourly', 'http://graphite.innogames.de/render?target=...'),
-                    ('Daily', 'http://graphite.innogames.de/render?target=...'),
-                    ('Weekly', 'http://graphite.innogames.de/render?target=...'),
-                ]),
-                ('Memory Usage', [
-                    ('Hourly', 'http://graphite.innogames.de/render?target=...'),
-                    ('Daily', 'http://graphite.innogames.de/render?target=...'),
-                    ('Weekly', 'http://graphite.innogames.de/render?target=...'),
-                ]),
-            ]
-        """
+    def graph_table(self, hostname, custom_params=''):
 
         # For convenience we will create a dictionary of attributes and store
         # array of values in it.  They will be used to filter the graphs and
@@ -49,34 +32,36 @@ class GraphManager(object):
 
         graph_table = []
         for group in self._groups:
+            if group.attrib.name not in attribute_dict:
+                continue    # The server hasn't got this attribute at all.
+            if group.attrib_value not in attribute_dict[group.attrib.name]:
+                continue    # The server hasn't got this attribute value.
 
-            # We don't check that the graph group is consistent with the server
-            # or not for overview as it is a special case.
-            if not overview:
-                if group.overview:
-                    continue    # This is a special overview group.
-                if group.attrib.name not in attribute_dict:
-                    continue    # The server hasn't got this attribute at all.
-                if group.attrib_value not in attribute_dict[group.attrib.name]:
-                    continue    # The server hasn't got this attribute value.
-            elif not group.overview:
-                continue
-
-            for template in group.get_templates():
-
-                column = []
-                for variation in group.get_variations(custom_params != ''):
-                    formatter = AttributeFormatter(hostname)
-                    params = '&'.join((group.params, variation.params,
-                                       template.params, custom_params))
-                    params = formatter.vformat(params, (), attribute_dict)
-
-                    column.append((variation.name,
-                                   settings.GRAPHITE_URL + '/render?' + params))
-
-                graph_table.append((template.name, column))
+            if custom_params == '':
+                graph_table += group.graph_table(hostname, attribute_dict)
+            else:
+                column = group.graph_column(hostname, attribute_dict,
+                                            custom_params)
+                graph_table += [(k, [('Custom', v)]) for k, v in column]
 
         return graph_table
+
+    overview_attrib_name = 'physical_server'
+    overview_attrib_value = 1
+
+    def overview_graph_group(self):
+        """Caches and returns the special hardcoded graph group for overview
+
+        There must be a group with this attribute and value.
+        """
+
+        if self._overview_group == None:
+            self._overview_group = GraphGroup.objects.get(
+                    attrib__name=self.overview_attrib_name,
+                    attrib_value=self.overview_attrib_value
+                )
+
+        return self._overview_group
 
 class GraphGroup(models.Model):
     """Graph groups to be shown for the servers with defined attribute
@@ -104,15 +89,11 @@ class GraphGroup(models.Model):
 
         [1] https://docs.python.org/2/library/string.html#formatstrings
         """)
-    overview = models.BooleanField(default=False, help_text="""
-        Marks the graph group to be shown on the overview page.  Overview page
-        isn't exactly dynamic, so make sure there is a single group for
-        the server listed on this page.
-        """)
 
     class Meta:
         db_table = 'graph_group'
         ordering = ('graph_group_id', )
+        unique_together = (('attrib', 'attrib_value'), )
 
     def __init__(self, *args, **kwargs):
         models.Model.__init__(self, *args, **kwargs)
@@ -131,14 +112,73 @@ class GraphGroup(models.Model):
 
         return self._templates
 
-    def get_variations(self, custom_mode=False):
+    def get_variations(self):
         """Cache and return the graph variations
         """
 
         if self._variations == None:
             self._variations = list(GraphVariation.objects.filter(graph_group=self))
 
-        return [v for v in self._variations if v.custom_mode == custom_mode]
+        return self._variations
+
+    def graph_column(self, hostname, attribute_dict={}, custom_params=''):
+        """Generate graph URL table for a server
+
+        Graph table is an array of tuples.  The array is ordered.  The tuples
+        are used to name the elements.  Example:
+
+            [
+                ('CPU Usage', 'http://graphite.innogames.de/render?target=...'),
+                ('Memory Usage', 'http://graphite.innogames.de/render?target=...'),
+            ]
+        """
+
+        column = []
+        for template in self.get_templates():
+            formatter = AttributeFormatter(hostname)
+            params = '&'.join((self.params, template.params, custom_params))
+            params = formatter.vformat(params, (), attribute_dict)
+
+            column.append((template.name,
+                           settings.GRAPHITE_URL + '/render?' + params))
+
+        return column
+
+    def graph_table(self, hostname, attribute_dict={}, custom_params=''):
+        """Generate graph URL table for a server
+
+        Graph table is two dimensional array of tuples.  The arrays are
+        ordered.  The tuples are used to name the elements.  Example:
+
+            [
+                ('CPU Usage', [
+                    ('Hourly', 'http://graphite.innogames.de/render?target=...'),
+                    ('Daily', 'http://graphite.innogames.de/render?target=...'),
+                    ('Weekly', 'http://graphite.innogames.de/render?target=...'),
+                ]),
+                ('Memory Usage', [
+                    ('Hourly', 'http://graphite.innogames.de/render?target=...'),
+                    ('Daily', 'http://graphite.innogames.de/render?target=...'),
+                    ('Weekly', 'http://graphite.innogames.de/render?target=...'),
+                ]),
+            ]
+        """
+
+        table = []
+        for template in self.get_templates():
+            column = []
+            for variation in self.get_variations():
+                formatter = AttributeFormatter(hostname)
+                params = '&'.join((self.params, variation.params,
+                                   template.params, custom_params))
+                params = formatter.vformat(params, (), attribute_dict)
+
+                column.append((variation.name,
+                               settings.GRAPHITE_URL + '/render?' + params))
+
+            table.append((template.name, column))
+
+        return table
 
 class GraphTemplate(models.Model):
     """Graph templates of the graph group
@@ -165,11 +205,6 @@ class GraphVariation(models.Model):
 
     graph_group = models.ForeignKey(GraphGroup)
     name = models.CharField(max_length=64)
-    custom_mode = models.BooleanField(default=False, help_text="""
-        Marks the variation to be shown only when the time range is manually
-        set.  Note that other variation are not shown in this case as they
-        can include time range on their params.
-        """)
     params = models.CharField(max_length=1024, blank=True, help_text="""
         Same as the params of the graph groups.
         """)
