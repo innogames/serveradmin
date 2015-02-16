@@ -31,6 +31,7 @@ class GraphGroup(models.Model):
 
         [1] https://docs.python.org/2/library/string.html#formatstrings
         """)
+    sort_order = models.FloatField(default=0)
     overview = models.BooleanField(default=False, help_text="""
         Marks the graph group to be shown on the overview page.  Overview page
         isn't fully dynamic, so make sure there is a single group for
@@ -40,7 +41,7 @@ class GraphGroup(models.Model):
 
     class Meta:
         db_table = 'graph_group'
-        ordering = ('graph_group_id', )
+        ordering = ('sort_order', )
         unique_together = (('attrib', 'attrib_value'), )
 
     def __init__(self, *args, **kwargs):
