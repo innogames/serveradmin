@@ -231,6 +231,10 @@ class AttributeFormatter(Formatter):
     of the given dictionary.  To support multiple attributes we have arrays
     in the given dictionary.  Also, we would like to use all values only once
     to make a sensible use of multiple attributes.
+
+    Furthermore, we don't want to raise an error.  We will just return
+    an empty string, if the key doesn't exists.  We will cycle and use
+    the same multiple attributes again, if we run out of them.
     """
 
     def __init__(self, hostname):
@@ -242,11 +246,18 @@ class AttributeFormatter(Formatter):
         if key == 'hostname':
             return self._hostname
 
-        # Initialize or increment the last used id for the key.
+        if key not in kwds:
+            return ''
+
+        # Initialize the last used id for the key.
         if key not in self._last_item_ids:
             self._last_item_ids[key] = 0
-        else:
-            self._last_item_ids[key] += 1
+            return kwds[key][0]
 
-        # It will raise an error if there is no value.
+        # Increment the last used id for the key.
+        self._last_item_ids[key] += 1
+        
+        # Cycle the last used id for the key.
+        self._last_item_ids[key] %= len(kwds[key])
+
         return kwds[key][self._last_item_ids[key]]
