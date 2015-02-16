@@ -4,12 +4,11 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 
 from adminapi.utils.parse import parse_query
-from serveradmin.graphite.models import GraphManager
+from serveradmin.graphite.models import GraphGroup
 from serveradmin.dataset import query, filters, DatasetError
-from serveradmin.serverdb.models import ServerType, Segment
+from serveradmin.serverdb.models import AttributeValue, ServerType, Segment
 from serveradmin.servermonitor.getinfo import get_information
 
-@login_required
 @ensure_csrf_cookie
 def index(request):
     """Index page of the Graphite tab
@@ -78,8 +77,9 @@ def index(request):
     hostnames = hardware.keys()
     template_info.update(get_information(hostnames, hardware))
 
-    manager = GraphManager()
-    group = manager.overview_graph_group()
+    # All of the graph groups marked as overview should have the same
+    # structure, we will just get one of them for the table headers.
+    group = GraphGroup.objects.filter(overview=True)[0]
     names = [unicode(t) + ' ' + unicode(v) for t in group.get_templates()
                                                  for v in group.get_variations()]
     offsets = [i * 120 for i in range(len(names))]
@@ -101,11 +101,35 @@ def graph_table(request, hostname):
     We will accept all GET parameters and pass them to Graphite.
     """
 
-    manager = GraphManager()
+    custom_params = request.GET.urlencode()
+
+    # For convenience we will create a dictionary of attributes and store
+    # array of values in it.  They will be used to filter the graphs and
+    # to format the URL parameters of the graphs.
+    attribute_dict = {}
+    for row in AttributeValue.objects.filter(server__hostname=hostname):
+        if row.attrib.name not in attribute_dict:
+            attribute_dict[row.attrib.name] = [row.value]
+        else:
+            attribute_dict[row.attrib.name].append(row.value)
+
+    graph_table = []
+    for group in GraphGroup.objects.all():
+        if group.attrib.name not in attribute_dict:
+            continue    # The server hasn't got this attribute at all.
+        if group.attrib_value not in attribute_dict[group.attrib.name]:
+            continue    # The server hasn't got this attribute value.
+
+        if custom_params == '':
+            graph_table += group.graph_table(hostname, attribute_dict)
+        else:
+            column = group.graph_column(hostname, attribute_dict,
+                                        custom_params)
+            graph_table += [(k, [('Custom', v)]) for k, v in column]
 
     return TemplateResponse(request, 'graphite/graph_table.html', {
         'hostname': hostname,
-        'graph_table': manager.graph_table(hostname, request.GET.urlencode()),
+        'graph_table': graph_table,
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
         'link': request.get_full_path(),
@@ -121,13 +145,16 @@ def graph_popup(request):
     except KeyError:
         return HttpResponseBadRequest('You have to supply hostname and graph')
 
-    manager = GraphManager()
-    group = manager.overview_graph_group()
-    table = group.graph_table(hostname)
-    image = [v2 for k1, v1 in table for k2, v2 in v1][int(graph)]
+    # It would be more efficient to filter the groups on the database, but we
+    # don't bother because they are unlikely to be more than a few graph
+    # groups marked as overview.
+    for graph_group in GraphGroup.objects.filter(overview=True):
+        if hostname in graph_group.query_hostnames():
+            table = graph_group.graph_table(hostname)
+            image = [v2 for k1, v1 in table for k2, v2 in v1][int(graph)]
 
-    return TemplateResponse(request, 'graphite/graph_popup.html', {
-        'hostname': hostname,
-        'graph': graph,
-        'image': image
-    })
+            return TemplateResponse(request, 'graphite/graph_popup.html', {
+                'hostname': hostname,
+                'graph': graph,
+                'image': image
+            })

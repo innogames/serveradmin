@@ -3,65 +3,7 @@ from string import Formatter
 from django.db import models
 from django.conf import settings
 
-from serveradmin.serverdb.models import Attribute, AttributeValue
-
-class GraphManager(object):
-    """A helper class to get the graphs
-    """
-
-    def __init__(self):
-        self._groups = None    # To cache all graph groups
-        self._overview_group = None # To cache the special overview group
-
-    def graph_table(self, hostname, custom_params=''):
-
-        # For convenience we will create a dictionary of attributes and store
-        # array of values in it.  They will be used to filter the graphs and
-        # to format the URL parameters of the graphs.
-        attribute_dict = {}
-        for row in AttributeValue.objects.filter(server__hostname=hostname):
-            if row.attrib.name not in attribute_dict:
-                attribute_dict[row.attrib.name] = [row.value]
-            else:
-                attribute_dict[row.attrib.name].append(row.value)
-
-        # We could filter the groups on the database, but we don't bother
-        # because they are unlikely to be more than a few.
-        if self._groups == None:
-            self._groups = list(GraphGroup.objects.all())
-
-        graph_table = []
-        for group in self._groups:
-            if group.attrib.name not in attribute_dict:
-                continue    # The server hasn't got this attribute at all.
-            if group.attrib_value not in attribute_dict[group.attrib.name]:
-                continue    # The server hasn't got this attribute value.
-
-            if custom_params == '':
-                graph_table += group.graph_table(hostname, attribute_dict)
-            else:
-                column = group.graph_column(hostname, attribute_dict,
-                                            custom_params)
-                graph_table += [(k, [('Custom', v)]) for k, v in column]
-
-        return graph_table
-
-    overview_attrib_name = 'physical_server'
-    overview_attrib_value = 1
-
-    def overview_graph_group(self):
-        """Caches and returns the special hardcoded graph group for overview
-
-        There must be a group with this attribute and value.
-        """
-
-        if self._overview_group == None:
-            self._overview_group = GraphGroup.objects.get(
-                    attrib__name=self.overview_attrib_name,
-                    attrib_value=self.overview_attrib_value
-                )
-
-        return self._overview_group
+from serveradmin.serverdb.models import Attribute
 
 class GraphGroup(models.Model):
     """Graph groups to be shown for the servers with defined attribute
@@ -88,6 +30,12 @@ class GraphGroup(models.Model):
             width=500&height=500
 
         [1] https://docs.python.org/2/library/string.html#formatstrings
+        """)
+    overview = models.BooleanField(default=False, help_text="""
+        Marks the graph group to be shown on the overview page.  Overview page
+        isn't fully dynamic, so make sure there is a single group for
+        the servers listed on this page, and make sure all of the graph
+        groups marked as overview have the same structure.
         """)
 
     class Meta:
@@ -120,6 +68,17 @@ class GraphGroup(models.Model):
             self._variations = list(GraphVariation.objects.filter(graph_group=self))
 
         return self._variations
+
+    def query_hostnames(self):
+        """Return the related hostnames
+        """
+
+        from serveradmin.dataset import query
+
+        query_kwargs = {self.attrib.name: self.attrib_value}
+        result = query(**query_kwargs).restrict('hostname')
+
+        return [h['hostname'] for h in result]
 
     def graph_column(self, hostname, attribute_dict={}, custom_params=''):
         """Generate graph URL table for a server
