@@ -2,7 +2,7 @@ from django.db import models
 from django import forms
 from django.core import exceptions
 
-from adminapi.utils import IP
+from adminapi.utils import IP, IPv6
 from serveradmin.common import formfields
 
 class IPv4Field(models.Field):
@@ -38,6 +38,39 @@ class IPv4Field(models.Field):
     def formfield(self, **kwargs):
         return formfields.IPv4Field(**kwargs)
 
+class IPv6Field(models.Field):
+    __metaclass__ = models.SubfieldBase
+
+    def db_type(self, connection):
+        return 'BINARY(16)'
+
+    def to_python(self, value):
+        if isinstance(value, IPv6):
+            return value
+        elif value is None:
+            return None
+        elif value == '':
+            return None
+        return IPv6.from_bytes(value)
+
+    def get_prep_value(self, value):
+        if not isinstance(value, IPv6):
+            if value is None:
+                return None
+            value = IPv6(value)
+        return value.as_bytes()
+
+    def get_prep_lookup(self, lookup_type, value):
+        valid_lookups = ['exact', 'gt', 'gte', 'lt', 'lte']
+        if lookup_type == 'in':
+            return [self.get_prep_value(v) for v in value]
+        elif lookup_type in valid_lookups:
+            return self.get_prep_value(value)
+        raise TypeError('Lookup type {0} is not supported'.format(lookup_type))
+
+    def formfield(self, **kwargs):
+        return formfields.IPv6Field(**kwargs)
+
 class CommaSeparatedOptionField(models.Field):
     __metaclass__ = models.SubfieldBase
 
@@ -61,7 +94,6 @@ class CommaSeparatedOptionField(models.Field):
         kwargs['choices'] = self._choices
         kwargs['widget'] = forms.CheckboxSelectMultiple()
         return forms.MultipleChoiceField(**kwargs)
-
 
 class IPv4CIDRField(models.Field):
     empty_strings_allowed = False

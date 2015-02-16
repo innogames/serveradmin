@@ -1,8 +1,8 @@
-from adminapi.utils import IP
+from adminapi.utils import IP, IPv6
 from serveradmin.api.decorators import api_function
 from serveradmin.api import ApiError
 from serveradmin.dataset import DatasetError
-from serveradmin.iprange.models import IPRange, get_gateways, _get_network_settings, _get_iprange_settings
+from serveradmin.iprange.models import IPRange, get_gateways, get_gateways6, _get_network_settings, _get_network_settings6, _get_iprange_settings
 
 @api_function(group='ip')
 def get_free(range_id, reserve_ip=True):
@@ -22,6 +22,23 @@ def get_free(range_id, reserve_ip=True):
         raise ApiError(e.message)
 
 @api_function(group='ip')
+def get_free6(range_id, reserve_ip=True):
+    """Return a free IP address.
+
+    If ``reserve_ip`` is set to ``True`` it will return a different IP
+    on the next call unless all other IPs are used. This can be used
+    to reserve the IP so other scripts won't get the returned IP if
+    you haven't added a server with this IP yet.
+    """
+    try:
+        r = IPRange.objects.get(range_id=range_id)
+        return r.get_free6(increase_pointer=reserve_ip).as_ip()
+    except IPRange.DoesNotExist:
+        raise ApiError('No such IP range')
+    except DatasetError, e:
+        raise ApiError(e.message)
+
+@api_function(group='ip')
 def get_multiple_free(range_id, num_free=1):
     """Return ``num_free`` free IP addresses as a list.
     """
@@ -34,6 +51,26 @@ def get_multiple_free(range_id, num_free=1):
         free_ips = set()
         for i in xrange(num_free):
             free_ip = r.get_free(increase_pointer=True).as_ip()
+            if free_ip in free_ips:
+                raise ApiError('Not enough free IPs available')
+            free_ips.add(free_ip)
+        return list(free_ips)
+    except DatasetError, e:
+        raise ApiError(e.message)
+
+@api_function(group='ip')
+def get_multiple_free6(range_id, num_free=1):
+    """Return ``num_free`` free IP addresses as a list.
+    """
+    try:
+        r = IPRange.objects.get(range_id=range_id)
+    except IPRange.DoesNotExist:
+        raise ApiError('No such IP range')
+
+    try:
+        free_ips = set()
+        for i in xrange(num_free):
+            free_ip = r.get_free6(increase_pointer=True).as_ip()
             if free_ip in free_ips:
                 raise ApiError('Not enough free IPs available')
             free_ips.add(free_ip)
@@ -106,11 +143,21 @@ def get_ranges(range_ids=None):
 @api_function(group='ip')
 def get_matching_ranges(ip):
     """Return the IP range(s) that belong to the given IP.
-    
+
     See ip.get_range for description of the range object
     """
     ip_int = IP(ip).as_int()
     range_objects =  IPRange.objects.filter(min__lte=ip_int, max__gte=ip_int)
+    return [_build_range_object(r) for r in range_objects]
+
+@api_function(group='ip')
+def get_matching_ranges6(ipv6):
+    """Return the IP range(s) that belong to the given IP.
+
+    See ip.get_range for description of the range object
+    """
+    ip = IPv6(ipv6)
+    range_objects =  IPRange.objects.filter(min6__lte=ip, max6__gte=ip)
     return [_build_range_object(r) for r in range_objects]
 
 def _build_range_object(r):
@@ -123,6 +170,10 @@ def _build_range_object(r):
         'max': r.max,
         'gateway': r.gateway,
         'internal_gateway': r.internal_gateway,
+        'min6': r.min6,
+        'max6': r.max6,
+        'gateway6': r.gateway6,
+        'internal_gateway6': r.internal_gateway6,
         'belongs_to': belongs_to
     }
 
@@ -133,9 +184,19 @@ def get_gateway(ip):
     return get_gateways(ip_int)
 
 @api_function(group='ip')
+def get_gateway6(ip):
+    ipv6 = IPv6(ip)
+    return get_gateways6(ipv6)
+
+@api_function(group='ip')
 def get_network_settings(ip):
     ip_int = IP(ip).as_int()
     return _get_network_settings(ip_int)
+
+@api_function(group='ip')
+def get_network_settings6(ip):
+    ipv6 = IPv6(ip)
+    return _get_network_settings6(ipv6)
 
 @api_function(group='ip')
 def get_iprange_settings(name):

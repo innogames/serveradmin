@@ -17,8 +17,9 @@ def index(request):
     order_dir = request.GET.get('order_dir',
             request.session.get('iprange_order_dir', 'asc'))
 
-    if order_field in ('range_id', 'ip_type', 'min', 'max', 'gateway',
-                       'internal_gateway', 'vlan', 'belongs_to__range_id'):
+    if order_field in ('range_id', 'ip_type', 'gateway',
+                       'internal_gateway', 'vlan', 'belongs_to__range_id',
+                       'gateway6', 'internal_gateway6'):
         request.session['iprange_order_field'] = order_field
         request.session['iprange_order_dir'] = order_dir
 
@@ -47,27 +48,32 @@ def index(request):
 @login_required
 def details(request, range_id):
     iprange = get_object_or_404(IPRange, range_id=range_id)
-    
+
     taken_ips = iprange.get_taken_set() 
     # Divide IP range into continues blocks
     free_blocks = []
     free_block = []
-    for ip_int in xrange(iprange.min.as_int() + 1, iprange.max.as_int()):
-        if ip_int in taken_ips:
-            if free_block:
-                free_blocks.append(free_block)
-                free_block = []
-        else:
-            free_block.append(IP(ip_int))
-    if free_block:
-        free_blocks.append(free_block)
+    if not (iprange.min is None or iprange.max is None):
+        for ip_int in xrange(iprange.min.as_int() + 1, iprange.max.as_int()):
+            if ip_int in taken_ips:
+                if free_block:
+                    free_blocks.append(free_block)
+                    free_block = []
+            else:
+                free_block.append(IP(ip_int))
+        if free_block:
+            free_blocks.append(free_block)
+        num_ips = iprange.max.as_int() - iprange.min.as_int() + 1
+        num_usable = num_ips - 2
+    else:
+        num_ips = 0
+        num_usable = 0
 
-    num_ips = iprange.max.as_int() - iprange.min.as_int() + 1
     return TemplateResponse(request, 'iprange/details.html', {
         'iprange': iprange,
         'free_blocks': free_blocks,
         'num_free_ips': sum([len(block) for block in free_blocks]),
-        'num_usable_ips': num_ips - 2,
+        'num_usable_ips': num_usable,
         'num_ips': num_ips
     })
 
@@ -80,13 +86,18 @@ def add(request):
             IPRange.objects.create(range_id=data['range_id'],
                                    segment=data['segment'],
                                    ip_type=data['ip_type'],
+                                   vlan=data['vlan'],
+                                   belongs_to=data['belongs_to'],
                                    min=data['start'],
                                    max=data['end'],
                                    next_free=data['start'],
                                    gateway=data['gateway'],
                                    internal_gateway=data['internal_gateway'],
-                                   vlan=data['vlan'],
-                                   belongs_to=data['belongs_to'])
+                                   min6=data['start6'],
+                                   max6=data['end6'],
+                                   next_free6=data['start6'],
+                                   gateway6=data['gateway6'],
+                                   internal_gateway6=data['internal_gateway6'])
             messages.success(request, u'Added IP range "{0}"'.format(
                     data['range_id']))
             return HttpResponseRedirect('{0}?segment={1}'.format(
@@ -110,12 +121,18 @@ def edit(request, range_id):
                     range_id=data['range_id'],
                     segment=data['segment'],
                     ip_type=data['ip_type'],
+                    vlan=data['vlan'],
+                    belongs_to=data['belongs_to'],
                     min=data['start'],
                     max=data['end'],
+                    next_free=data['start'],
                     gateway=data['gateway'],
                     internal_gateway=data['internal_gateway'],
-                    vlan=data['vlan'],
-                    belongs_to=data['belongs_to'])
+                    min6=data['start6'],
+                    max6=data['end6'],
+                    next_free6=data['start6'],
+                    gateway6=data['gateway6'],
+                    internal_gateway6=data['internal_gateway6'])
             messages.success(request, u'Edited IP range "{0}"'.format(
                     iprange.range_id))
             return HttpResponseRedirect('{0}?segment={1}'.format(
@@ -125,13 +142,15 @@ def edit(request, range_id):
                    'ip_type': iprange.ip_type, 'gateway': iprange.gateway,
                    'internal_gateway' : iprange.internal_gateway,
                    'vlan' : iprange.vlan,
+                   'gateway6' : iprange.gateway6,
+                   'internal_gateway6' : iprange.internal_gateway6,
                    'belongs_to': iprange.belongs_to}
         cidr = iprange.cidr
         if cidr:
             initial['cidr'] = cidr
-        else:
-            initial['start'] = iprange.min
-            initial['end'] = iprange.max
+        cidr6 = iprange.cidr6
+        if cidr6:
+            initial['cidr6'] = cidr6
         form = IPRangeForm(initial=initial)
 
     return TemplateResponse(request, 'iprange/add_edit.html', {
@@ -146,7 +165,7 @@ def delete(request, range_id):
         iprange.delete()
         return HttpResponseRedirect('{0}?segment={1}'.format(
                 reverse('iprange_index'), iprange.segment))
-    
+
     return TemplateResponse(request, 'iprange/delete.html', {
         'iprange': iprange
     })

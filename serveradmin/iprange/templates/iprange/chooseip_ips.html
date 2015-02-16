@@ -1,5 +1,9 @@
+{% if ip_list %}
 <ul>
 {% for ip in ip_list %}
 <li><span class="ip_select">{{ ip }}</span></li>
 {% endfor %}
 </ul>
+{% else %}
+<p>No free IPs available</p>
+{% endif %}

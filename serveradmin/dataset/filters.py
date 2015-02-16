@@ -480,6 +480,8 @@ class InsideNetwork(Filter):
                 if isinstance(network, basestring) and '/' not in network:
                     try:
                         iprange = IPRange.objects.get(pk=network)
+                        if iprange.min is None or iprange.max is None:
+                            raise DatasetError('Range does not contain an IPv4 network')
                         network_obj = Network(iprange.min, iprange.max)
                         self.iprange_mapping[network_obj] = network
                         network = network_obj

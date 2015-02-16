@@ -23,11 +23,12 @@
     <tr>
         <th>range_id {% include "iprange/ordering.html" with field="range_id" %}</th>
         <th>type {% include "iprange/ordering.html" with field="ip_type" %}</td>
-        <th>start ip {% include "iprange/ordering.html" with field="min" %}</th>
-        <th>end ip {% include "iprange/ordering.html" with field="max" %}</th>
         <th>cidr {% include "iprange/ordering.html" with field="min" %}</th>
         <th>default gateway {% include "iprange/ordering.html" with field="gateway" %}</th>
         <th>internal gateway {% include "iprange/ordering.html" with field="internal_gateway" %}</th>
+        <th>IPv6 cidr {% include "iprange/ordering.html" with field="min6" %}</th>
+        <th>IPv6 default gateway {% include "iprange/ordering.html" with field="gateway6" %}</th>
+        <th>IPv6 int gateway {% include "iprange/ordering.html" with field="internal_gateway6" %}</th>
         <th>VLAN {% include "iprange/ordering.html" with field="vlan" %}</th>
 		<th>belongs to {% include "iprange/ordering.html" with field="belongs_to__range_id" %}</th>
 {% if perms.iprange.change_iprange %}
@@ -42,17 +43,24 @@
         <td><a href="{% url 'iprange_details' iprange.range_id %}"
         >{{ iprange.range_id }}</a></td>
         <td>{{ iprange.get_ip_type_display }}</td>
-        <td>{{ iprange.min }}</td>
-        <td>{{ iprange.max }}</td>
         <td>
         {% if iprange.cidr %}
         {{ iprange.cidr }}
         {% else %}
-        Not possible
+        None
         {% endif %}
         </td>
         <td>{{ iprange.gateway }}</td>
         <td>{{ iprange.internal_gateway }}</td>
+        <td>
+        {% if iprange.cidr6 %}
+        {{ iprange.cidr6 }}
+        {% else %}
+        None
+        {% endif %}
+        </td>
+        <td>{{ iprange.gateway6 }}</td>
+        <td>{{ iprange.internal_gateway6 }}</td>
         <td>{{ iprange.vlan }}</td>
 		<td>
 		{% if iprange.belongs_to %}

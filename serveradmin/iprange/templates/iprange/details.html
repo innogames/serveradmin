@@ -11,20 +11,12 @@
         <td>{{ iprange.get_ip_type_display }}</td>
     </tr>
     <tr>
-        <th>Start IP:</th>
-        <td>{{ iprange.min }}</td>
-    </tr>
-    <tr>
-        <th>End IP:</th>
-        <td>{{ iprange.max }}</th>
-    </tr>
-    <tr>
         <th>CIDR:</th>
         <td>
         {% if iprange.cidr %}
         {{ iprange.cidr }}
         {% else %}
-        Not possible
+        None
         {% endif %}
         </td>
     </tr>

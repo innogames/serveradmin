@@ -24,14 +24,6 @@
     <td>{{ form.ip_type }} {{ form.ip_type.errors }}</td>
 </tr>
 <tr>
-    <th>{{ form.gateway.label }}</th>
-    <td>{{ form.gateway }} {{ form.gateway.errors }}</td>
-</tr>
-<tr>
-    <th>{{ form.internal_gateway.label }}</th>
-    <td>{{ form.internal_gateway }} {{ form.internal_gateway.errors }}</td>
-</tr>
-<tr>
     <th>{{ form.vlan.label }}</th>
     <td>{{ form.vlan }} {{ form.vlan.errors }}</td>
 </tr>
@@ -48,15 +40,27 @@
     <td>{{ form.cidr }} {{ form.cidr.errors }}</td>
 </tr>
 <tr>
-    <td colspan="2" style="text-align:center;">-&nbsp;or&nbsp;-</td>
+    <th>{{ form.gateway.label }}</th>
+    <td>{{ form.gateway }} {{ form.gateway.errors }}</td>
 </tr>
 <tr>
-    <th>{{ form.start.label }}</th>
-    <td>{{ form.start }} {{ form.start.errors }}</td>
+    <th>{{ form.internal_gateway.label }}</th>
+    <td>{{ form.internal_gateway }} {{ form.internal_gateway.errors }}</td>
 </tr>
 <tr>
-    <th>{{ form.end.label }}</th>
-    <td>{{ form.end }} {{ form.end.errors }}</td>
+    <td colspan="2"><hr /></td>
+</tr>
+<tr>
+    <th>{{ form.cidr6.label }}</th>
+    <td>{{ form.cidr6 }} {{ form.cidr6.errors }}</td>
+</tr>
+<tr>
+    <th>{{ form.gateway6.label }}</th>
+    <td>{{ form.gateway6 }} {{ form.gateway6.errors }}</td>
+</tr>
+<tr>
+    <th>{{ form.internal_gateway6.label }}</th>
+    <td>{{ form.internal_gateway6 }} {{ form.internal_gateway6.errors }}</td>
 </tr>
 </table>
 <p>
