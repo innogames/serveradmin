@@ -118,7 +118,7 @@ def graph_table(request):
             else:
                 attr_dicts[hostname][row.attrib.name].append(row.value)
 
-    # Find the graph groups which are related with all of the hostnames.
+    # Find the graph groups which are related with all of the hostnames
     graph_groups = []
     for group in GraphGroup.objects.all():
         for hostname in hostnames:
@@ -130,7 +130,14 @@ def graph_table(request):
         else:
             graph_groups.append(group)
 
-    # Prepare the graph tables for all hosts.
+    # Prepare the graph descriptions
+    graph_descriptions = []
+    for group in graph_groups:
+        for template in group.get_templates():
+            graph_descriptions += ([(template.name, template.description)] *
+                                   len(hostnames))
+
+    # Prepare the graph tables for all hosts
     graph_tables = []
     for hostname in hostnames:
         graph_table = []
@@ -158,6 +165,7 @@ def graph_table(request):
 
     return TemplateResponse(request, 'graphite/graph_table.html', {
         'hostname': hostname,
+        'graph_descriptions': graph_descriptions,
         'graph_table': graph_table,
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',

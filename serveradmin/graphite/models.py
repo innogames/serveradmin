@@ -150,6 +150,7 @@ class GraphTemplate(models.Model):
         Same as the params of the graph groups.
         """)
     sort_order = models.FloatField(default=0)
+    description = models.TextField(blank=True)
 
     class Meta:
         db_table = 'graph_template'

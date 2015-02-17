@@ -42,9 +42,21 @@
 </p>
 {% endif %}
 
+{% if not is_ajax %}
+{% for name, description in graph_descriptions %}
+<div id="graph_desc_{{ forloop.counter }}"
+     title="Graph description for {{ name }}"
+     style="display:none;">{{ description|safe }}</div>
+{% endfor %}
+{% endif %}
 
 {% for name, graph_column in graph_table %}
-<h3>{{ name }} <img src="{{ STATIC_URL}}help.png" class="graph_desc_icon" /></h3>
+<h3>{{ name }}
+{% if not is_ajax %}
+    <img src="{{ STATIC_URL}}help.png" class="graph_desc_icon"
+                                       data-graphname="{{ forloop.counter }}" />
+{% endif %}
+</h3>
 
 <table>
     <tr>
@@ -66,4 +78,9 @@
 {% endblock content %}
 
 {% block additional_body %}
+
+{% if not is_ajax %}
+<script type="text/javascript" src="{{ STATIC_URL }}servermonitor/servermonitor.js"></script>
+{% endif %}
+
 {% endblock additional_body %}
