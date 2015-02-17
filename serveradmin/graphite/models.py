@@ -13,7 +13,7 @@ class GraphGroup(models.Model):
     attrib = models.ForeignKey(Attribute, verbose_name='attribute')
     attrib_value = models.CharField(max_length=1024,
                                     verbose_name='attribute value')
-    params = models.CharField(max_length=1024, blank=True, help_text="""
+    params = models.CharField(max_length=4096, blank=True, help_text="""
         Part of the URL after "?" to GET the graph from the Graphite.  It
         will be concatenated with the params for the graph template and graph
         variation.  Make sure it doesn't include any character that doesn't
@@ -146,7 +146,7 @@ class GraphTemplate(models.Model):
 
     graph_group = models.ForeignKey(GraphGroup)
     name = models.CharField(max_length=64)
-    params = models.CharField(max_length=1024, blank=True, help_text="""
+    params = models.CharField(max_length=4096, blank=True, help_text="""
         Same as the params of the graph groups.
         """)
     sort_order = models.FloatField(default=0)
@@ -165,7 +165,7 @@ class GraphVariation(models.Model):
 
     graph_group = models.ForeignKey(GraphGroup)
     name = models.CharField(max_length=64)
-    params = models.CharField(max_length=1024, blank=True, help_text="""
+    params = models.CharField(max_length=4096, blank=True, help_text="""
         Same as the params of the graph groups.
         """)
     sort_order = models.FloatField(default=0)
