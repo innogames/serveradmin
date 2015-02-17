@@ -216,7 +216,7 @@ class AttributeFormatter(Formatter):
 
         # Increment the last used id for the key.
         self._last_item_ids[key] += 1
-        
+
         # Cycle the last used id for the key.
         self._last_item_ids[key] %= len(kwds[key])
 

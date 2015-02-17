@@ -1,3 +1,4 @@
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -95,37 +96,65 @@ def index(request):
 
 @login_required
 @ensure_csrf_cookie
-def graph_table(request, hostname):
+def graph_table(request):
     """Graph table page
 
     We will accept all GET parameters and pass them to Graphite.
     """
 
-    custom_params = request.GET.urlencode()
+    hostnames = request.GET.getlist('hostname')
+    if len(hostnames) == 0:
+        return HttpResponseBadRequest('You have to provide at least one hostname')
 
     # For convenience we will create a dictionary of attributes and store
-    # array of values in it.  They will be used to filter the graphs and
-    # to format the URL parameters of the graphs.
-    attribute_dict = {}
-    for row in AttributeValue.objects.filter(server__hostname=hostname):
-        if row.attrib.name not in attribute_dict:
-            attribute_dict[row.attrib.name] = [row.value]
-        else:
-            attribute_dict[row.attrib.name].append(row.value)
+    # array of values in it for all hostnames.  They will be used to filter
+    # the graphs and to format the URL parameters of the graphs.
+    attr_dicts = {}
+    for hostname in hostnames:
+        attr_dicts[hostname] = {}
+        for row in AttributeValue.objects.filter(server__hostname=hostname):
+            if row.attrib.name not in attr_dicts[hostname]:
+                attr_dicts[hostname][row.attrib.name] = [row.value]
+            else:
+                attr_dicts[hostname][row.attrib.name].append(row.value)
 
-    graph_table = []
+    # Find the graph groups which are related with all of the hostnames.
+    graph_groups = []
     for group in GraphGroup.objects.all():
-        if group.attrib.name not in attribute_dict:
-            continue    # The server hasn't got this attribute at all.
-        if group.attrib_value not in attribute_dict[group.attrib.name]:
-            continue    # The server hasn't got this attribute value.
-
-        if custom_params == '':
-            graph_table += group.graph_table(hostname, attribute_dict)
+        for hostname in hostnames:
+            attr_dict = attr_dicts[hostname]
+            if group.attrib.name not in attr_dict:
+                break   # The server hasn't got this attribute at all.
+            if group.attrib_value not in attr_dict[group.attrib.name]:
+                break   # The server hasn't got this attribute value.
         else:
-            column = group.graph_column(hostname, attribute_dict,
-                                        custom_params)
-            graph_table += [(k, [('Custom', v)]) for k, v in column]
+            graph_groups.append(group)
+
+    # Prepare the graph tables for all hosts.
+    graph_tables = []
+    for hostname in hostnames:
+        graph_table = []
+        attr_dict = attr_dicts[hostname]
+        if request.method == 'POST':
+            custom_params = request.POST.urlencode()
+            for group in graph_groups:
+                column = group.graph_column(hostname, attr_dict, custom_params)
+                graph_table += [(k, [('Custom', v)]) for k, v in column]
+        else:
+            for group in graph_groups:
+                graph_table += group.graph_table(hostname, attr_dict)
+        graph_tables.append(graph_table)
+
+    if len(hostname) > 1:
+        # Add hostname to the titles
+        for order, hostname in enumerate(hostnames):
+            graph_tables[order] = [(k + ' on ' + hostname, v)
+                                   for k, v in graph_tables[order]]
+
+        # Combine them
+        graph_table = []
+        for combined_tables in zip(*graph_tables):
+            graph_table += list(combined_tables)
 
     return TemplateResponse(request, 'graphite/graph_table.html', {
         'hostname': hostname,
@@ -133,8 +162,8 @@ def graph_table(request, hostname):
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
         'link': request.get_full_path(),
-        'from': request.GET.get('from', ''),
-        'until': request.GET.get('until', ''),
+        'from': request.POST.get('from', ''),
+        'until': request.POST.get('until', ''),
     })
 
 @login_required

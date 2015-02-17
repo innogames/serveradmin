@@ -7,7 +7,7 @@
 {% if not is_ajax %}
 <h2>Graphs for {{ hostname }}</h2>
 
-<form action="" method="GET">
+<form action="" method="POST">
     <table>
         <tr>
             <th>From:</th>
@@ -22,7 +22,7 @@
                 <input name="until" type="text" value="{{ until }}" />
             </td>
         </tr>
-
+{% csrf_token %}
         <tr>
             <th></th>
             <td>
