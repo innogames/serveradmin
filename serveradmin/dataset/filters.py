@@ -7,7 +7,7 @@ try:
 except ImportError:
     OperationalError = DatabaseError
 
-from adminapi.utils import Network, PRIVATE_IP_BLOCKS, PUBLIC_IP_BLOCKS
+from adminapi.utils import Network, Network6, PRIVATE_IP_BLOCKS, PUBLIC_IP_BLOCKS
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.exceptions import DatasetError
 from serveradmin.dataset.typecast import typecast
@@ -538,6 +538,77 @@ class InsideNetwork(Filter):
             return cls(*obj[u'networks'])
         raise ValueError(u'Invalid object for InsideNetwork')
 filter_classes[u'insidenetwork'] = InsideNetwork
+
+class InsideNetwork6(Filter):
+    def __init__(self, *networks):
+        # Avoid cyclic imports. Using other components inside dataset
+        # is really a problem. TODO: Think about solutions
+        from serveradmin.iprange.models import IPRange
+        self.networks = []
+        self.iprange_mapping = {}
+        for network in networks:
+            if not isinstance(network, Network):
+                if isinstance(network, basestring) and '/' not in network:
+                    try:
+                        iprange = IPRange.objects.get(pk=network)
+                        if iprange.min6 is None or iprange.max6 is None:
+                            raise DatasetError('Range does not contain an IPv6 network')
+                        network_obj = Network6(iprange.min6, iprange.max6)
+                        self.iprange_mapping[network_obj] = network
+                        network = network_obj
+                    except IPRange.DoesNotExist:
+                        raise DatasetError('No such IP range: ' + network)
+                else:
+                    network = Network6(network)
+            self.networks.append(network)
+
+    def __repr__(self):
+        args = []
+        for network in self.networks:
+            try:
+                args.append(repr(self.iprange_mapping[network]))
+            except KeyError:
+                args.append(repr(network))
+        return u'InsideNetwork6({0})'.format(u', '.join(args))
+
+    def __eq__(self, other):
+        if isinstance(other, InsideNetwork6):
+            return all(
+                    n1 == n2 for n1, n2 in zip(self.networks, other.networks))
+        return False
+
+    def __hash__(self):
+        h = hash('InsideNetwork6')
+        for network in self.networks:
+            h ^= hash(network)
+        return h
+
+    def as_sql_expr(self, builder, attr_obj, field):
+        betweens = [
+            u'{0} BETWEEN "{1}" AND "{2}"'.format(
+            field, net.min_ip.as_hex(), net.max_ip.as_hex())
+            for net in self.networks]
+
+        return u'({0})'.format(u' OR '.join(betweens))
+
+    def matches(self, server_obj, attr_name):
+        return any(
+            net.min_ip <= server_obj[attr_name] <= net.max_ip
+            for net in self.networks)
+
+    def as_code(self):
+        return u'filters.' + repr(self)
+
+    def typecast(self, attr_name):
+        # Typecast was already done in __init__
+        pass
+
+    @classmethod
+    def from_obj(cls, obj):
+        if u'networks' in obj and isinstance(obj['networks'], (tuple, list)):
+            return cls(*obj[u'networks'])
+        raise ValueError(u'Invalid object for InsideNetwork6')
+filter_classes[u'insidenetwork6'] = InsideNetwork6
 
 class _PrivatePublicIP(Filter):
     def __init__(self):
