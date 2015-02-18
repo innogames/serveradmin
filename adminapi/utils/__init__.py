@@ -217,7 +217,7 @@ class IPv6(object):
         return self.as_ip()
 
     def __sub__(self, other):
-        return IPv6.from_long(self.as_long() + other)
+        return IPv6.from_long(self.as_long() - other)
 
     def __getstate__(self):
         return (self.ip, )
@@ -375,7 +375,15 @@ class Network6(object):
             return u'Network6({0!r}, {1!r})'.format(self.min_ip, self.max_ip)
 
     def inside(self, ip):
-        return self.min_ip <= ip <= self.max_ip
+        if isinstance(ip, IPv6):
+            ip = ip
+        elif isinstance(ip, long) or isinstance(ip, int):
+            ip = IPv6.from_long(ip)
+        elif isinstance(ip, basestring):
+            ip = IPv6(ip)
+        else:
+            raise ValueError('Can not convert given parameter type to a IPv6 address')
+        return self.min_ip.as_long() <= ip.as_long() <= self.max_ip.as_long()
 
 # http://en.wikipedia.org/wiki/Private_network
 PRIVATE_IP_BLOCKS = [
