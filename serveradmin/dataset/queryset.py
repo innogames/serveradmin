@@ -208,7 +208,6 @@ class QuerySet(BaseQuerySet):
         sql_stmt = builder.build_sql()
 
         c = connection.cursor()
-        print sql_stmt
         c.execute(sql_stmt)
         server_data = {}
         servertype_lookup = dict((k, v.name) for k, v in
