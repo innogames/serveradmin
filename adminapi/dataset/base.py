@@ -21,7 +21,7 @@ class BaseQuerySet(object):
             order_keys = self._order
             def key_fn(server):
                 return (server.get(key) for key in order_keys)
-            return sorted(self._results.itervalues(), key=key_fn)
+            return iter(sorted(self._results.itervalues(), key=key_fn))
         return self._results.itervalues()
 
     def __len__(self):
