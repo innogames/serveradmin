@@ -20,7 +20,7 @@ class BaseQuerySet(object):
         if self._order is not None:
             order_keys = self._order
             def key_fn(server):
-                return (server.get(key) for key in order_keys)
+                return tuple(server.get(key) for key in order_keys)
             return iter(sorted(self._results.itervalues(), key=key_fn))
         return self._results.itervalues()
 
