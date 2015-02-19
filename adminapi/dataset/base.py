@@ -13,9 +13,15 @@ class BaseQuerySet(object):
         self._restrict = None
         self._augmentations = None
         self._num_dirty = 0
+        self._order = None
 
     def __iter__(self):
         self._get_results()
+        if self._order is not None:
+            order_keys = self._order
+            def key_fn(server):
+                return (server.get(key) for key in order_keys)
+            return sorted(self._results.itervalues(), key=key_fn)
         return self._results.itervalues()
 
     def __len__(self):
@@ -116,6 +122,9 @@ class BaseQuerySet(object):
                 file.write('\n')
         file.write('\n{0} changed and {1} unchanged.\n'.format(num_dirty,
                 len(self) - num_dirty))
+
+    def order_by(self, *attrs):
+        self._order = attrs
 
     def _get_results(self):
         if self._results is None:
