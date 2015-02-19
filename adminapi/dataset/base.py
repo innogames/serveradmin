@@ -125,6 +125,7 @@ class BaseQuerySet(object):
 
     def order_by(self, *attrs):
         self._order = attrs
+        return self
 
     def _get_results(self):
         if self._results is None:
