@@ -1009,10 +1009,15 @@ function handle_command_setattr(parsed_args)
     var changes = commit['changes'];
     for (var i = 0; i < marked_servers.length; i++) {
         var server_id = marked_servers[i];
+        var server = search['servers'][server_id];
+        if (!search['avail_attributes'][server['servertype']][attr_name]) {
+            continue;
+        }
+
         if (typeof(changes[server_id]) == 'undefined') {
             changes[server_id] = {};
         }
-        var old_value = search['servers'][server_id][attr_name];
+        var old_value = server[attr_name];
         if (typeof(old_value) == 'undefined') {
             changes[server_id][attr_name] = {
                 'action': 'new',
