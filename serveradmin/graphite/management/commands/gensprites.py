@@ -54,7 +54,8 @@ class Command(NoArgsCommand):
                 spriteimg.paste(Image.open(tmpimg), box)
             except urllib2.HTTPError:
                 print('Warning: Graphite returned error for ' + url)
+                break
 
-            offset += 120
-
-        spriteimg.save(self.sprite_path + '/' + hostname + '.png')
+            offset += self.graph_width + self.graph_spacing
+        else:
+            spriteimg.save(self.sprite_path + '/' + hostname + '.png')
