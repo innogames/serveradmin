@@ -22,7 +22,7 @@
                 <input name="until" type="text" value="{{ until }}" />
             </td>
         </tr>
-{% csrf_token %}
+
         <tr>
             <th></th>
             <td>
@@ -30,7 +30,11 @@
             </td>
         </tr>
     </table>
+
+{% csrf_token %}
 </form>
+
+<p>From: and Until: accepts absolute or relative times.  They will be passed to Graphite directly.  Graphite uses at(1) compatible time format.</p>
 {% endif %}
 
 {% if is_ajax %}

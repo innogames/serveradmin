@@ -171,8 +171,8 @@ def graph_table(request):
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
         'link': request.get_full_path(),
-        'from': request.POST.get('from', ''),
-        'until': request.POST.get('until', ''),
+        'from': request.POST.get('from', '-24h'),
+        'until': request.POST.get('until', 'now'),
     })
 
 @login_required
