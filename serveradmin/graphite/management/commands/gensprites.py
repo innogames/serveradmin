@@ -37,9 +37,9 @@ class Command(NoArgsCommand):
 
         table = graph_group.graph_table(hostname,
                                         custom_params=self.custom_params)
-        urls = [v2 for k1, v1 in table for k2, v2 in v1]
-        sprite_width = (len(urls) * self.graph_width +
-                        (len(urls) - 1) * self.graph_spacing)
+        graphs = [v2 for k1, v1 in table for k2, v2 in v1]
+        sprite_width = (len(graphs) * self.graph_width +
+                        (len(graphs) - 1) * self.graph_spacing)
         spriteimg = Image.new('RGB',
                               (sprite_width, self.graph_height), (255,) * 3)
         opener = urllib2.build_opener()
@@ -47,15 +47,17 @@ class Command(NoArgsCommand):
                                   'sessionid=' + settings.GRAPHITE_COOKIE))
         offset = 0
 
-        for url in urls:
+        for graph in graphs:
+            url = settings.GRAPHITE_URL + '/render?' + graph
+
             try:
                 tmpimg = BytesIO(opener.open(url).read())
-                box = (offset, 0, offset + self.graph_width, self.graph_height)
-                spriteimg.paste(Image.open(tmpimg), box)
             except urllib2.HTTPError:
                 print('Warning: Graphite returned error for ' + url)
                 break
 
+            box = (offset, 0, offset + self.graph_width, self.graph_height)
+            spriteimg.paste(Image.open(tmpimg), box)
             offset += self.graph_width + self.graph_spacing
         else:
             spriteimg.save(self.sprite_path + '/' + hostname + '.png')

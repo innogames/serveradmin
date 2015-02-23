@@ -53,7 +53,7 @@
 {% for name, graph_column in graph_table %}
 <h3>{{ name }}
 {% if not is_ajax %}
-    <img src="{{ STATIC_URL}}help.png" class="graph_desc_icon"
+    <img src="{{ STATIC_URL }}help.png" class="graph_desc_icon"
                                        data-graphname="{{ forloop.counter }}" />
 {% endif %}
 </h3>
@@ -61,14 +61,18 @@
 <table>
     <tr>
 {% for column_name, graph in graph_column %}
-        <th>{{ column_name }}</th>
+        <th>{{ column_name }}<a href="{{ GRAPHITE_URL }}/graphlot/?{{ graph }}">
+                <img src="{{ STATIC_URL }}graph_icon.gif"
+                     alt="{{ name }} {{ column_name }} Graphlot" />
+            </a>
+        </th>
 {% endfor %}
     </tr>
 
     <tr>
 {% for column_name, graph in graph_column %}
         <td>
-            <img src="{{ graph }}" alt="{{ name }} {{ column_name }}"
+            <img src="{{ GRAPHITE_URL }}/render?{{ graph }}" alt="{{ name }} {{ column_name }}"
                  class="graph" />
         </td>
 {% endfor %}

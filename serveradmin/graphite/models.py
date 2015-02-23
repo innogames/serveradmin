@@ -1,7 +1,6 @@
 from string import Formatter
 
 from django.db import models
-from django.conf import settings
 
 from serveradmin.serverdb.models import Attribute
 
@@ -88,8 +87,8 @@ class GraphGroup(models.Model):
         are used to name the elements.  Example:
 
             [
-                ('CPU Usage', 'http://graphite.innogames.de/render?target=...'),
-                ('Memory Usage', 'http://graphite.innogames.de/render?target=...'),
+                ('CPU Usage', 'target=...'),
+                ('Memory Usage', 'target=...'),
             ]
         """
 
@@ -97,10 +96,8 @@ class GraphGroup(models.Model):
         for template in self.get_templates():
             formatter = AttributeFormatter(hostname)
             params = '&'.join((self.params, template.params, custom_params))
-            params = formatter.vformat(params, (), attribute_dict)
-
             column.append((template.name,
-                           settings.GRAPHITE_URL + '/render?' + params))
+                           formatter.vformat(params, (), attribute_dict)))
 
         return column
 
@@ -112,14 +109,14 @@ class GraphGroup(models.Model):
 
             [
                 ('CPU Usage', [
-                    ('Hourly', 'http://graphite.innogames.de/render?target=...'),
-                    ('Daily', 'http://graphite.innogames.de/render?target=...'),
-                    ('Weekly', 'http://graphite.innogames.de/render?target=...'),
+                    ('Hourly', 'target=...'),
+                    ('Daily', 'target=...'),
+                    ('Weekly', 'target=...'),
                 ]),
                 ('Memory Usage', [
-                    ('Hourly', 'http://graphite.innogames.de/render?target=...'),
-                    ('Daily', 'http://graphite.innogames.de/render?target=...'),
-                    ('Weekly', 'http://graphite.innogames.de/render?target=...'),
+                    ('Hourly', 'target=...'),
+                    ('Daily', 'target=...'),
+                    ('Weekly', 'target=...'),
                 ]),
             ]
         """
@@ -131,10 +128,8 @@ class GraphGroup(models.Model):
                 formatter = AttributeFormatter(hostname)
                 params = '&'.join((self.params, variation.params,
                                    template.params, custom_params))
-                params = formatter.vformat(params, (), attribute_dict)
-
                 column.append((variation.name,
-                               settings.GRAPHITE_URL + '/render?' + params))
+                               formatter.vformat(params, (), attribute_dict)))
 
             table.append((template.name, column))
 

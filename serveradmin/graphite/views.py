@@ -166,6 +166,7 @@ def graph_table(request):
     return TemplateResponse(request, 'graphite/graph_table.html', {
         'hostname': hostname,
         'graph_descriptions': graph_descriptions,
+        'GRAPHITE_URL': settings.GRAPHITE_URL,
         'graph_table': graph_table,
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
