@@ -189,7 +189,8 @@ def graph_popup(request):
     for graph_group in GraphGroup.objects.filter(overview=True):
         if hostname in graph_group.query_hostnames():
             table = graph_group.graph_table(hostname)
-            image = [v2 for k1, v1 in table for k2, v2 in v1][int(graph)]
+            params = [v2 for k1, v1 in table for k2, v2 in v1][int(graph)]
+            image = settings.GRAPHITE_URL + '/render?' + params
 
             return TemplateResponse(request, 'graphite/graph_popup.html', {
                 'hostname': hostname,
