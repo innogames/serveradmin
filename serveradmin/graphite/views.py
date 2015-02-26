@@ -7,7 +7,7 @@ from django.conf import settings
 from adminapi.utils.parse import parse_query
 from serveradmin.graphite.models import GraphGroup
 from serveradmin.dataset import query, filters, DatasetError
-from serveradmin.serverdb.models import AttributeValue, ServerType, Segment
+from serveradmin.serverdb.models import ServerType, Segment
 from serveradmin.servermonitor.getinfo import get_information
 
 @ensure_csrf_cookie
@@ -106,27 +106,24 @@ def graph_table(request):
     if len(hostnames) == 0:
         return HttpResponseBadRequest('You have to provide at least one hostname')
 
-    # For convenience we will create a dictionary of attributes and store
-    # array of values in it for all hostnames.  They will be used to filter
-    # the graphs and to format the URL parameters of the graphs.
-    attr_dicts = {}
+    # For convenience we will cache the servers in a dictionary.
+    servers = {}
     for hostname in hostnames:
-        attr_dicts[hostname] = {}
-        for row in AttributeValue.objects.filter(server__hostname=hostname):
-            if row.attrib.name not in attr_dicts[hostname]:
-                attr_dicts[hostname][row.attrib.name] = [row.value]
-            else:
-                attr_dicts[hostname][row.attrib.name].append(row.value)
+        servers[hostname] = query(hostname=hostname).get()
 
     # Find the graph groups which are related with all of the hostnames
     graph_groups = []
     for group in GraphGroup.objects.all():
         for hostname in hostnames:
-            attr_dict = attr_dicts[hostname]
-            if group.attrib.name not in attr_dict:
+            if group.attrib.name not in servers[hostname]:
                 break   # The server hasn't got this attribute at all.
-            if group.attrib_value not in attr_dict[group.attrib.name]:
-                break   # The server hasn't got this attribute value.
+            value = servers[hostname][group.attrib.name]
+            if isinstance(value, set):
+                if group.attrib_value not in [str(v) for v in value]:
+                    break   # The server hasn't got this attribute value.
+            else:
+                if group.attrib_value != str(value):
+                    break   # The server attribute is not equal.
         else:
             graph_groups.append(group)
 
@@ -141,15 +138,14 @@ def graph_table(request):
     graph_tables = []
     for hostname in hostnames:
         graph_table = []
-        attr_dict = attr_dicts[hostname]
         if request.method == 'POST':
             custom_params = request.POST.urlencode()
             for group in graph_groups:
-                column = group.graph_column(hostname, attr_dict, custom_params)
+                column = group.graph_column(servers[hostname], custom_params)
                 graph_table += [(k, [('Custom', v)]) for k, v in column]
         else:
             for group in graph_groups:
-                graph_table += group.graph_table(hostname, attr_dict)
+                graph_table += group.graph_table(servers[hostname])
         graph_tables.append(graph_table)
 
     if len(hostname) > 1:

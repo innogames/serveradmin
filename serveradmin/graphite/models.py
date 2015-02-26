@@ -81,7 +81,7 @@ class GraphGroup(models.Model):
 
         return [h['hostname'] for h in result]
 
-    def graph_column(self, hostname, attribute_dict={}, custom_params=''):
+    def graph_column(self, server, custom_params=''):
         """Generate graph URL table for a server
 
         Graph table is an array of tuples.  The array is ordered.  The tuples
@@ -95,14 +95,13 @@ class GraphGroup(models.Model):
 
         column = []
         for template in self.get_templates():
-            formatter = AttributeFormatter(hostname)
+            formatter = AttributeFormatter()
             params = '&'.join((self.params, template.params, custom_params))
-            column.append((template.name,
-                           formatter.vformat(params, (), attribute_dict)))
+            column.append((template.name, formatter.vformat(params, (), server)))
 
         return column
 
-    def graph_table(self, hostname, attribute_dict={}, custom_params=''):
+    def graph_table(self, server, custom_params=''):
         """Generate graph URL table for a server
 
         Graph table is two dimensional array of tuples.  The arrays are
@@ -126,11 +125,11 @@ class GraphGroup(models.Model):
         for template in self.get_templates():
             column = []
             for variation in self.get_variations():
-                formatter = AttributeFormatter(hostname)
+                formatter = AttributeFormatter()
                 params = '&'.join((self.params, variation.params,
                                    template.params, custom_params))
                 column.append((variation.name,
-                               formatter.vformat(params, (), attribute_dict)))
+                               formatter.vformat(params, (), server)))
 
             table.append((template.name, column))
 
@@ -195,27 +194,26 @@ class AttributeFormatter(Formatter):
     the same multiple attributes again, if we run out of them.
     """
 
-    def __init__(self, hostname):
+    def __init__(self):
         Formatter.__init__(self)
-        self._replaced_hostname = hostname.replace('.', '_')
         self._last_item_ids = {}
 
-    def get_value(self, key, args, kwds):
-        if key == 'hostname':
-            return self._replaced_hostname
-
-        if key not in kwds:
+    def get_value(self, key, args, server):
+        if key not in server:
             return ''
+
+        if not isinstance(server[key], set):
+            return str(server[key]).replace('.', '_')
 
         # Initialize the last used id for the key.
         if key not in self._last_item_ids:
             self._last_item_ids[key] = 0
-            return kwds[key][0]
+            return server[key][0].replace('.', '_')
 
         # Increment the last used id for the key.
         self._last_item_ids[key] += 1
 
         # Cycle the last used id for the key.
-        self._last_item_ids[key] %= len(kwds[key])
+        self._last_item_ids[key] %= len(server[key])
 
-        return kwds[key][self._last_item_ids[key]].replace('.', '_')
+        return server[key][self._last_item_ids[key]].replace('.', '_')
