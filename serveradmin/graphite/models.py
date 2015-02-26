@@ -141,7 +141,7 @@ class GraphGroup(models.Model):
         params = self.params
 
         for p in other_params:
-            if other_params:
+            if p:
                 params += '&' + p
 
         for r in (' ', '\t', '\n', '\r', '\v'):
