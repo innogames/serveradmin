@@ -22,7 +22,8 @@ class GraphGroup(models.Model):
         The params can include variables inside curly brackets like "{hostname}".
         Variables can be any string attribute except multiple ones related to
         the servers.  See Python String Formatting documentation [1] for other
-        formatting options.
+        formatting options.  The dots inside the values are replaced with
+        underscores in advance.
 
         Example params:
 
@@ -178,15 +179,16 @@ class AttributeFormatter(Formatter):
     """Custom Formatter to replace variables on URL parameters
 
     Attributes and hostname can be used on the params supplied by the Graph
-    templates and variations.  Replacing the variables for hostname is easy.
-    We only need to replace the dots on the hostname with underscores as
-    it is done on Graphite.
+    templates and variations.  Graphite uses dots as the separator.  We chose
+    to replace them with underscores.  We will apply it to all variables
+    to be replaced..
 
-    Replacing variables for attributes requires to override the get_value()
-    method of the base class which is only capable of returning the value
-    of the given dictionary.  To support multiple attributes we have arrays
-    in the given dictionary.  Also, we would like to use all values only once
-    to make a sensible use of multiple attributes.
+    Replacing the hostname variable is easy.  Replacing variables for
+    attributes requires to override the get_value() method of the base class
+    which is only capable of returning the value of the given dictionary.
+    To support multiple attributes, we are going to have arrays in the given
+    dictionary.  Also, we would like to use all values only once to make
+    a sensible use of multiple attributes.
 
     Furthermore, we don't want to raise an error.  We will just return
     an empty string, if the key doesn't exists.  We will cycle and use
@@ -195,12 +197,12 @@ class AttributeFormatter(Formatter):
 
     def __init__(self, hostname):
         Formatter.__init__(self)
-        self._hostname = hostname.replace('.', '_')
+        self._replaced_hostname = hostname.replace('.', '_')
         self._last_item_ids = {}
 
     def get_value(self, key, args, kwds):
         if key == 'hostname':
-            return self._hostname
+            return self._replaced_hostname
 
         if key not in kwds:
             return ''
@@ -216,4 +218,4 @@ class AttributeFormatter(Formatter):
         # Cycle the last used id for the key.
         self._last_item_ids[key] %= len(kwds[key])
 
-        return kwds[key][self._last_item_ids[key]]
+        return kwds[key][self._last_item_ids[key]].replace('.', '_')
