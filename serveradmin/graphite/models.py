@@ -96,7 +96,7 @@ class GraphGroup(models.Model):
         column = []
         for template in self.get_templates():
             formatter = AttributeFormatter()
-            params = '&'.join((self.params, template.params, custom_params))
+            params = self.merged_params((template.params, custom_params))
             column.append((template.name, formatter.vformat(params, (), server)))
 
         return column
@@ -126,14 +126,28 @@ class GraphGroup(models.Model):
             column = []
             for variation in self.get_variations():
                 formatter = AttributeFormatter()
-                params = '&'.join((self.params, variation.params,
-                                   template.params, custom_params))
+                params = self.merged_params((variation.params, template.params,
+                                             custom_params))
                 column.append((variation.name,
                                formatter.vformat(params, (), server)))
 
             table.append((template.name, column))
 
         return table
+
+    def merged_params(self, other_params):
+        """Get merged and cleaned URL parameters"""
+
+        params = self.params
+
+        for p in other_params:
+            if other_params:
+                params += '&' + p
+
+        for r in (' ', '\t', '\n', '\r', '\v'):
+            params = params.replace(r, '')
+
+        return params
 
 class GraphTemplate(models.Model):
     """Graph templates of the graph group
