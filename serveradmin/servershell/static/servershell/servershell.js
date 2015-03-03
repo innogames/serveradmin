@@ -809,7 +809,7 @@ function handle_command_clone()
             $('<div title="' + title + '"></div>').append(page).dialog({
                 'width': 600
             });
-        ö});
+        });
         return false;
     }
     execute_on_servers(clone_server);
