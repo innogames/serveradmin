@@ -796,6 +796,8 @@ function handle_command_new()
     $.get(shell_new_url, function(page) {
         $('<div title="New server"></div>').append(page).dialog({
             'width': 600
+        }).on('dialogclose', function(event, ui) {
+            $(event.currentTarget).empty().dialog('destroy');
         });
     });
     return '';
