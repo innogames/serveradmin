@@ -217,12 +217,12 @@ class AttributeFormatter(Formatter):
             return ''
 
         if not isinstance(server[key], set):
-            return str(server[key]).replace('.', '_')
+            return self.replace_bad_characters(server, str(server[key]))
 
         # Initialize the last used id for the key.
         if key not in self._last_item_ids:
             self._last_item_ids[key] = 0
-            return server[key][0].replace('.', '_')
+            return self.replace_bad_characters(server, str(server[key][0]))
 
         # Increment the last used id for the key.
         self._last_item_ids[key] += 1
@@ -230,4 +230,18 @@ class AttributeFormatter(Formatter):
         # Cycle the last used id for the key.
         self._last_item_ids[key] %= len(server[key])
 
-        return server[key][self._last_item_ids[key]].replace('.', '_')
+        return self.replace_bad_characters(server, server[key][self._last_item_ids[key]])
+
+    def replace_bad_characters(self, server, value):
+        """ This method addresses the following problems:
+        - dot is a separator in graphite
+        - dot is part of some hostnames we have
+        - minus sign, as well as dot, are not allowed in pf.conf
+        So depending on type of server, those characters can be replaced with underscore.
+        """
+
+        if server['servertype'] == "loadbalancer":
+            return value.replace('.', '_').replace('-', '_')
+        else:
+            return value.replace('.', '_')
+
