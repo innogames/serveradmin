@@ -24,19 +24,18 @@ class Command(NoArgsCommand):
         """
 
         # We will make sure to generate a single sprite for a single hostname.
-        done_hostnames = set()
+        done_servers = set()
         for graph_group in GraphGroup.objects.filter(overview=True):
-            for hostname in graph_group.query_hostnames():
-                if hostname not in done_hostnames:
-                    self.generate_sprite(graph_group, hostname)
-                    done_hostnames.add(hostname)
+            for server in graph_group.query():
+                if server not in done_servers:
+                    self.generate_sprite(graph_group, server)
+                    done_servers.add(server)
 
-    def generate_sprite(self, graph_group, hostname):
+    def generate_sprite(self, graph_group, server):
         """The main function
         """
 
-        table = graph_group.graph_table(hostname,
-                                        custom_params=self.custom_params)
+        table = graph_group.graph_table(server, custom_params=self.custom_params)
         graphs = [v2 for k1, v1 in table for k2, v2 in v1]
         sprite_width = (len(graphs) * self.graph_width +
                         (len(graphs) - 1) * self.graph_spacing)
@@ -60,4 +59,4 @@ class Command(NoArgsCommand):
             spriteimg.paste(Image.open(tmpimg), box)
             offset += self.graph_width + self.graph_spacing
         else:
-            spriteimg.save(self.sprite_path + '/' + hostname + '.png')
+            spriteimg.save(self.sprite_path + '/' + server['hostname'] + '.png')

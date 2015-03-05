@@ -70,16 +70,15 @@ class GraphGroup(models.Model):
 
         return self._variations
 
-    def query_hostnames(self):
-        """Return the related hostnames
+    def query(self, **kwargs):
+        """Decorates serveradmin.dataset.query()
         """
 
-        from serveradmin.dataset import query
+        import serveradmin.dataset
 
-        query_kwargs = {self.attrib.name: self.attrib_value}
-        result = query(**query_kwargs).restrict('hostname')
+        kwargs[self.attrib.name] = self.attrib_value
 
-        return [h['hostname'] for h in result]
+        return serveradmin.dataset.query(**kwargs)
 
     def graph_column(self, server, custom_params=''):
         """Generate graph URL table for a server

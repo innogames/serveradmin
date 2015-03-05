@@ -31,7 +31,7 @@ class BaseQuerySet(object):
     def __bool__(self):
         self._get_results()
         return bool(self._results)
-    
+
     def __repr__(self):
         # QuerySet is not used directly but through query function
         kwargs = ', '.join('{0}={1!r}'.format(k, v) for k, v in
@@ -75,7 +75,7 @@ class BaseQuerySet(object):
         if len(self._results) != 1:
             raise DatasetError('get() requires exactly 1 matched object')
         return self._results.itervalues().next()
-    
+
     def is_dirty(self):
         return bool(self._num_dirty)
 
@@ -160,10 +160,22 @@ class BaseServerObject(dict):
         if attributes:
             dict.update(self, attributes)
 
+    def __hash__(self):
+        """Make the objects hashable
+
+        Note that it will not work for objects which doesn't have object_id.
+        It is the callers responsibility not to use the them in hashable
+        context.  We could try harder to make them hashable with a fallback
+        method, but that would lead them to considered as different objects
+        after they got an object_id.
+        """
+
+        return self.object_id
+
     def __repr__(self):
         if self.object_id:
             return 'ServerObject({0}, {1})'.format(dict.__repr__(self),
-                    self.object_id)
+                                                   self.object_id)
         else:
             return 'ServerObject({0})'.format(dict.__repr__(self))
 
@@ -172,7 +184,7 @@ class BaseServerObject(dict):
 
     def is_deleted(self):
         return self._deleted
-    
+
     def commit(self):
         raise NotImplementedError()
 
@@ -250,16 +262,16 @@ class BaseServerObject(dict):
             elif action == 'multi':
                 change['remove'] = old_value.difference(new_value)
                 change['add'] = new_value.difference(old_value)
-            
+
             changes[key] = change
         return changes
-    
+
     def _confirm_changes(self):
         self.old_values.clear()
         if self._deleted:
             self.object_id = None
             self._deleted = False
-    
+
     def _build_commit_object(self):
         changes = {}
         if self.is_dirty():
@@ -318,7 +330,7 @@ class BaseServerObject(dict):
             self._save_old_value(attr)
         return dict.clear(self)
     clear.__doc__ = dict.clear.__doc__
-    
+
     def pop(self, k, d=None):
         if k in self:
             self._save_old_value(k)
@@ -360,7 +372,7 @@ class MultiAttr(object):
         self._proxied_set = proxied_set
         self._server_object = server_obj
         self._attr_name = attr_name
-    
+
     def __repr__(self):
         return 'MultiAttr({0!r})'.format(self._proxied_set)
 
@@ -372,7 +384,7 @@ class MultiAttr(object):
 
     def __iter__(self):
         return iter(self._proxied_set)
-    
+
     def __len__(self):
         return len(self._proxied_set)
 

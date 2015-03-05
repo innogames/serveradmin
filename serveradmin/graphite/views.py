@@ -183,8 +183,10 @@ def graph_popup(request):
     # don't bother because they are unlikely to be more than a few graph
     # groups marked as overview.
     for graph_group in GraphGroup.objects.filter(overview=True):
-        if hostname in graph_group.query_hostnames():
-            table = graph_group.graph_table(hostname)
+        servers = graph_group.query(hostname=hostname)
+
+        if servers:
+            table = graph_group.graph_table(servers.get())
             params = [v2 for k1, v1 in table for k2, v2 in v1][int(graph)]
             image = settings.GRAPHITE_URL + '/render?' + params
 
