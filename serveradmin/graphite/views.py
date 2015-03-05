@@ -65,8 +65,8 @@ def index(request):
         host_data = {
                 'hostname': hw_host['hostname'],
                 'servertype': hw_host['servertype'],
-                'image': '{url}graph_sprite/{hostname}.png'.format(
-                        url=settings.MEDIA_URL,
+                'image': '{url}/{hostname}.png'.format(
+                        url=settings.GRAPHITE_SPRITE_URL,
                         hostname=hw_host['hostname']),
                 'cpu': {},
                 'io': {}
@@ -82,15 +82,16 @@ def index(request):
     # structure, we will just get one of them for the table headers.
     group = GraphGroup.objects.filter(overview=True)[0]
     names = [unicode(t) + ' ' + unicode(v) for t in group.get_templates()
-                                                 for v in group.get_variations()]
-    offsets = [i * 120 for i in range(len(names))]
+                                           for v in group.get_variations()]
+    offset = settings.GRAPHITE_SPRITE_WIDTH + settings.GRAPHITE_SPRITE_SPACING
+    offsets = [i * offset for i in range(len(names))]
 
     template_info.update({
         'graph_names': names,
         'graph_offsets': offsets,
         'matched_servers': matched_servers,
         'understood': understood,
-        'error': None
+        'error': None,
     })
     return TemplateResponse(request, 'graphite/index.html', template_info)
 

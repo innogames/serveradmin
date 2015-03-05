@@ -212,5 +212,13 @@ SERVERMONITOR_URL = 'https://servermonitor.innogames.de'
 # to the Serveradmin from the browser.
 GRAPHITE_URL = 'https://graphite.innogames.de'
 GRAPHITE_COOKIE = 'f48bb9bcda4647f181c8255577c20313'
+GRAPHITE_SPRITE_PATH = MEDIA_ROOT + '/graph_sprite'
+GRAPHITE_SPRITE_URL = MEDIA_URL + 'graph_sprite'
+GRAPHITE_SPRITE_WIDTH = 112
+GRAPHITE_SPRITE_HEIGHT = 45
+GRAPHITE_SPRITE_SPACING = 8
+GRAPHITE_SPRITE_PARAMS = ('width=' + str(GRAPHITE_SPRITE_WIDTH) + '&' +
+                          'height=' + str(GRAPHITE_SPRITE_HEIGHT) + '&' +
+                          'graphOnly=true')
 
 raise Exception('Set SECRET_KEY and DATABASE PASSWORD and remove this!')

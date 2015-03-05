@@ -13,11 +13,6 @@ class Command(NoArgsCommand):
     """
 
     help = __doc__
-    sprite_path = settings.MEDIA_ROOT + '/graph_sprite'
-    graph_width = 112
-    graph_height = 45
-    graph_spacing = 8
-    custom_params = 'width=112&height=45&graphOnly=true'
 
     def handle_noargs(self, **kwargs):
         """The entry point of the command
@@ -35,12 +30,14 @@ class Command(NoArgsCommand):
         """The main function
         """
 
-        table = graph_group.graph_table(server, custom_params=self.custom_params)
+        table = graph_group.graph_table(server,
+                                custom_params=settings.GRAPHITE_SPRITE_PARAMS)
         graphs = [v2 for k1, v1 in table for k2, v2 in v1]
-        sprite_width = (len(graphs) * self.graph_width +
-                        (len(graphs) - 1) * self.graph_spacing)
-        spriteimg = Image.new('RGB',
-                              (sprite_width, self.graph_height), (255,) * 3)
+        sprite_width = (len(graphs) * settings.GRAPHITE_SPRITE_WIDTH +
+                        (len(graphs) - 1) * settings.GRAPHITE_SPRITE_SPACING)
+        spriteimg = Image.new('RGB', (sprite_width,
+                                      settings.GRAPHITE_SPRITE_HEIGHT),
+                                      (255,) * 3)
         opener = urllib2.build_opener()
         opener.addheaders.append(('Cookie',
                                   'sessionid=' + settings.GRAPHITE_COOKIE))
@@ -55,8 +52,11 @@ class Command(NoArgsCommand):
                 print('Warning: Graphite returned error for ' + url)
                 break
 
-            box = (offset, 0, offset + self.graph_width, self.graph_height)
+            box = (offset, 0, offset + settings.GRAPHITE_SPRITE_WIDTH,
+                   settings.GRAPHITE_SPRITE_HEIGHT)
             spriteimg.paste(Image.open(tmpimg), box)
-            offset += self.graph_width + self.graph_spacing
+            offset += settings.GRAPHITE_SPRITE_WIDTH
+            offset += settings.GRAPHITE_SPRITE_SPACING
         else:
-            spriteimg.save(self.sprite_path + '/' + server['hostname'] + '.png')
+            spriteimg.save(settings.GRAPHITE_SPRITE_PATH + '/' +
+                           server['hostname'] + '.png')

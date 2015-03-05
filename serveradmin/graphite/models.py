@@ -1,6 +1,7 @@
 from string import Formatter
 
 from django.db import models
+from django.conf import settings
 
 from serveradmin.serverdb.models import Attribute
 
@@ -34,10 +35,15 @@ class GraphGroup(models.Model):
     sort_order = models.FloatField(default=0)
     overview = models.BooleanField(default=False, help_text="""
         Marks the graph group to be shown on the overview page.  Overview page
-        isn't fully dynamic, so make sure there is a single group for
-        the servers listed on this page, and make sure all of the graph
-        groups marked as overview have the same structure.
-        """)
+        isn't fully dynamic. Make sure make sure all of the graph groups
+        marked as overview have the same structure.  The graphs for the group
+        with the lowest sort order will be shown for every server on
+        the overview page.
+
+        For the overview page, sprites will be generated and cached on
+        the server in advance to improve the loading time.  {0} will be
+        appended to generated URL's to get the images for overview.
+        """.format(settings.GRAPHITE_SPRITE_PARAMS))
 
     class Meta:
         db_table = 'graph_group'
