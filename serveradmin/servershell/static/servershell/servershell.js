@@ -707,9 +707,7 @@ function handle_command_export()
 function handle_command_graph()
 {
     function show_graphs(server) {
-        console.log(server);
         var query_str = '?' + $.param({'hostname': server['hostname']});
-        console.log(query_str);
         $.get(shell_graph_url + query_str, function(data) {
             var dialog = $('<div title="' + server['hostname'] + '"></div>');
             dialog.append(data)
@@ -761,7 +759,6 @@ function handle_command_custom_cmp(parsed_args)
     query_str += graphs.join('');
 
     function create_custom_cmp(server){
-        console.log('query_str = ' + query_str);
         window.location = shell_custom_cmp_url + query_str;
         return true;
     }
