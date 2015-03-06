@@ -7,15 +7,41 @@
 {% if not is_ajax %}
 <h2>Graphs for {{ hostnames|join:", " }}</h2>
 
+<p>
+    From: and Until: accepts absolute or relative times.  They will be passed
+    to Graphite directly.  Graphite uses at(1) compatible time format.
+</p>
+
 <form method="get">
     <table>
+        <table>
+        <tr>
+            <th>From:</th>
+            <td>
+                <input name="from" type="text" value="{{ from }}" />
+            </td>
+        </tr>
+
+        <tr>
+            <th>Until:</th>
+            <td>
+                <input name="until" type="text" value="{{ until }}" />
+            </td>
+        </tr>
+
+        <tr>
+            <td></td>
+            <td>
+                <input name="action" type="submit" value="Submit" />
+            </td>
+        </tr>
+
 {% for hostname in hostnames %}
         <tr>
             <th>Hostname:</th>
             <td>
                 <input name="hostname" type="text" value="{{ hostname }}" />
             </td>
-            <td></td>
         </tr>
 {% endfor %}
 
@@ -24,47 +50,22 @@
             <td>
                 <input name="hostname" type="text" value="" />
             </td>
-            <td>
-                <input type="submit" value="Add" />
-            </td>
         </tr>
 
         <tr>
-            <th>From:</th>
             <td>
-                <input name="from" type="text" value="{{ from }}" />
-            </td>
-            <td></td>
-        </tr>
-
-        <tr>
-            <th>Until:</th>
-            <td>
-                <input name="until" type="text" value="{{ until }}" />
-            </td>
-            <td></td>
-        </tr>
-
-        <tr>
-            <th></th>
-            <td>
-                <input name="action" type="submit" value="Submit" />
+                <input name="action" type="submit" value="Add" />
             </td>
             <td></td>
         </tr>
     </table>
 </form>
-
-<p>
-    From: and Until: accepts absolute or relative times.  They will be passed
-    to Graphite directly.  Graphite uses at(1) compatible time format.
-</p>
+{% endif %}
 
 <p>
     Images are requested from the Graphite by the browser.  You should login
     to the Graphite, if you cannot see them.
 </p>
-{% endif %}
 
 {% if is_ajax %}
 <p>
