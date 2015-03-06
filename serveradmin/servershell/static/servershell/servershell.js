@@ -30,7 +30,6 @@ function execute_search(term)
         search_request['order_by'] = search['order_by'];
         search_request['order_dir'] = search['order_dir'];
     }
-    $('#shell_search_link').attr('href', '?' + $.param({'term': term})).show();
     $.getJSON(shell_results_url, search_request, function(data) {
 
         if (data['status'] != 'success') {
@@ -38,6 +37,7 @@ function execute_search(term)
             $('#shell_understood').empty().append(error);
             return;
         }
+        search['term'] = term;
         search['servers'] = data['servers'];
         search['num_servers'] = data['num_servers'];
         search['shown_attributes'] = data['shown_attributes'];
@@ -60,7 +60,21 @@ function execute_search(term)
             render_server_table();
             $('#shell_command').focus();
         }
+        regenerate_link();
     });
+}
+
+function regenerate_link()
+{
+    var attrs = $("input[name=attr]:checked").map(function () {
+        return this.value;
+    }).get().join(',');
+    var args = {
+        'term': search['term'],
+        'attrs': attrs
+    };
+    $('#shell_search_link').attr('href', '?' + $.param(args)).show();
+
 }
 
 function build_server_table(servers, attributes, offset)
@@ -1212,11 +1226,6 @@ $(function() {
         $('#shell_servers').empty()
     });
     */
-
-    if ($('#shell_search').val() != '') {
-        search['page'] = 1;
-        execute_search($('#shell_search').val());
-    }
     
     $('#shell_command_form').submit(function(ev) {
         ev.stopPropagation();
@@ -1282,6 +1291,11 @@ $(function() {
 
     $('#shell_command').val('');
 
+    $('#shell_attributes input[name="attr"]').each(function() {
+        if (this.checked) {
+            search['shown_attributes_extra'].push(this.value);
+        }
+    });
     $('#shell_attributes input[name="attr"]').bind('change', function(ev) {
         var s_index = search['shown_attributes'].indexOf(this.value);
         if (s_index != -1 && !this.checked) {
@@ -1295,6 +1309,7 @@ $(function() {
             search['shown_attributes_extra'].splice(index, 1);
         }
         render_server_table();
+        regenerate_link();
     });
     $('#shell_attributes li').each(function() {
         var attr_item = $(this);
@@ -1323,5 +1338,10 @@ $(function() {
             ev.preventDefault();
         }
     });
+    
+    if ($('#shell_search').val() != '') {
+        search['page'] = 1;
+        execute_search($('#shell_search').val());
+    }
 
 });

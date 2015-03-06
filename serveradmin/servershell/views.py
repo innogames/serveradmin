@@ -33,6 +33,7 @@ NUM_SERVERS_DEFAULT = 25
 @ensure_csrf_cookie
 def index(request):
     return TemplateResponse(request, 'servershell/index.html', {
+        'checked_attributes': set(request.GET.get('attrs', '').split(',')),
         'attribute_list': sorted(lookups.attr_names.keys()),
         'search_term': request.GET.get('term', request.session.get('term', '')),
         'per_page': request.session.get('per_page', NUM_SERVERS_DEFAULT),
