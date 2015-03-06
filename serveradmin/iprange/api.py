@@ -142,11 +142,12 @@ def get_ranges(range_ids=None):
 
 @api_function(group='ip')
 def get_ranges_by_type(segment, type):
-    """Return ranges by segment and type. Possible types: 'ip', 'public_ip'.
+    """Return ranges by segment and type. Possible types: 'private', 'public'.
 
     The return value is a list of range objects. See ip.get_range for
     description of a range object.
     """
+    type = {'private': 'ip', 'public': 'public_ip'}.get(type, type)
     range_objects = IPRange.objects.filter(segment=segment, ip_type=type)
     return [_build_range_object(r) for r in range_objects]
 
