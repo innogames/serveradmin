@@ -1,19 +1,40 @@
 {% extends base_template %}
 {% load url from future %}
 
-{% block title %}Graphs for {{ hostname }}{% endblock %}
+{% block title %}Graphs for {{ hostnames|join:", " }}{% endblock %}
 
 {% block content %}
 {% if not is_ajax %}
-<h2>Graphs for {{ hostname }}</h2>
+<h2>Graphs for {{ hostnames|join:", " }}</h2>
 
-<form action="" method="POST">
+<form method="get">
     <table>
+{% for hostname in hostnames %}
+        <tr>
+            <th>Hostname:</th>
+            <td>
+                <input name="hostname" type="text" value="{{ hostname }}" />
+            </td>
+            <td></td>
+        </tr>
+{% endfor %}
+
+        <tr>
+            <th>Hostname:</th>
+            <td>
+                <input name="hostname" type="text" value="" />
+            </td>
+            <td>
+                <input type="submit" value="Add" />
+            </td>
+        </tr>
+
         <tr>
             <th>From:</th>
             <td>
                 <input name="from" type="text" value="{{ from }}" />
             </td>
+            <td></td>
         </tr>
 
         <tr>
@@ -21,20 +42,23 @@
             <td>
                 <input name="until" type="text" value="{{ until }}" />
             </td>
+            <td></td>
         </tr>
 
         <tr>
             <th></th>
             <td>
-                <input name="submit" type="submit" value="Submit" />
+                <input name="action" type="submit" value="Submit" />
             </td>
+            <td></td>
         </tr>
     </table>
-
-{% csrf_token %}
 </form>
 
-<p>From: and Until: accepts absolute or relative times.  They will be passed to Graphite directly.  Graphite uses at(1) compatible time format.</p>
+<p>
+    From: and Until: accepts absolute or relative times.  They will be passed
+    to Graphite directly.  Graphite uses at(1) compatible time format.
+</p>
 {% endif %}
 
 {% if is_ajax %}
@@ -58,14 +82,16 @@
 <h3>{{ name }}
 {% if not is_ajax %}
     <img src="{{ STATIC_URL }}help.png" class="graph_desc_icon"
-                                       data-graphname="{{ forloop.counter }}" />
+         data-graphname="{{ forloop.counter }}" />
 {% endif %}
 </h3>
 
 <table>
     <tr>
 {% for column_name, graph in graph_column %}
-        <th>{{ column_name }}<a href="{{ GRAPHITE_URL }}/graphlot/?{{ graph }}">
+        <th>
+            {{ column_name }}
+            <a href="{{ GRAPHITE_URL }}/graphlot/?{{ graph }}">
                 <img src="{{ STATIC_URL }}graph_icon.gif"
                      alt="{{ name }} {{ column_name }} Graphlot" />
             </a>
@@ -76,7 +102,8 @@
     <tr>
 {% for column_name, graph in graph_column %}
         <td>
-            <img src="{{ GRAPHITE_URL }}/render?{{ graph }}" alt="{{ name }} {{ column_name }}"
+            <img src="{{ GRAPHITE_URL }}/render?{{ graph }}"
+                 alt="{{ name }} {{ column_name }}"
                  class="graph" />
         </td>
 {% endfor %}
@@ -88,7 +115,8 @@
 {% block additional_body %}
 
 {% if not is_ajax %}
-<script type="text/javascript" src="{{ STATIC_URL }}servermonitor/servermonitor.js"></script>
+<script type="text/javascript"
+        src="{{ STATIC_URL }}servermonitor/servermonitor.js"></script>
 {% endif %}
 
 {% endblock additional_body %}

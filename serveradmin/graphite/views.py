@@ -103,7 +103,7 @@ def graph_table(request):
     We will accept all GET parameters and pass them to Graphite.
     """
 
-    hostnames = request.GET.getlist('hostname')
+    hostnames = [h for h in request.GET.getlist('hostname') if h]
     if len(hostnames) == 0:
         return HttpResponseBadRequest('You have to provide at least one hostname')
 
@@ -139,8 +139,8 @@ def graph_table(request):
     graph_tables = []
     for hostname in hostnames:
         graph_table = []
-        if request.method == 'POST':
-            custom_params = request.POST.urlencode()
+        if request.GET.get('action') == 'Submit':
+            custom_params = request.GET.urlencode()
             for group in graph_groups:
                 column = group.graph_column(servers[hostname], custom_params)
                 graph_table += [(k, [('Custom', v)]) for k, v in column]
@@ -161,15 +161,15 @@ def graph_table(request):
             graph_table += list(combined_tables)
 
     return TemplateResponse(request, 'graphite/graph_table.html', {
-        'hostname': hostname,
+        'hostnames': hostnames,
         'graph_descriptions': graph_descriptions,
         'GRAPHITE_URL': settings.GRAPHITE_URL,
         'graph_table': graph_table,
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
         'link': request.get_full_path(),
-        'from': request.POST.get('from', '-24h'),
-        'until': request.POST.get('until', 'now'),
+        'from': request.GET.get('from', '-24h'),
+        'until': request.GET.get('until', 'now'),
     })
 
 @login_required
