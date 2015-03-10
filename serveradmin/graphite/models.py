@@ -3,6 +3,7 @@ from string import Formatter
 from django.db import models
 from django.conf import settings
 
+from adminapi.dataset.base import MultiAttr
 from serveradmin.serverdb.models import Attribute
 
 class GraphGroup(models.Model):
@@ -221,7 +222,7 @@ class AttributeFormatter(Formatter):
         if key not in server:
             return ''
 
-        if not isinstance(server[key], set):
+        if not isinstance(server[key], MultiAttr):
             return self.replace_bad_characters(server, str(server[key]))
 
         # Initialize the last used id for the key.

@@ -5,6 +5,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 
 from adminapi.utils.parse import parse_query
+from adminapi.dataset.base import MultiAttr
 from serveradmin.graphite.models import GraphGroup
 from serveradmin.dataset import query, filters, DatasetError
 from serveradmin.serverdb.models import ServerType, Segment
@@ -119,7 +120,7 @@ def graph_table(request):
             if group.attrib.name not in servers[hostname]:
                 break   # The server hasn't got this attribute at all.
             value = servers[hostname][group.attrib.name]
-            if isinstance(value, set):
+            if isinstance(value, MultiAttr):
                 if group.attrib_value not in [str(v) for v in value]:
                     break   # The server hasn't got this attribute value.
             else:
