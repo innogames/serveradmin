@@ -48,8 +48,8 @@ class Command(NoArgsCommand):
 
             try:
                 tmpimg = BytesIO(opener.open(url).read())
-            except urllib2.HTTPError:
-                print('Warning: Graphite returned error for ' + url)
+            except urllib2.HTTPError as error:
+                print('Warning: Graphite returned ' + str(error) + ' for ' + url)
                 break
 
             box = (offset, 0, offset + settings.GRAPHITE_SPRITE_WIDTH,
