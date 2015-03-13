@@ -25,7 +25,8 @@ class GraphGroup(models.Model):
         Variables can be any string attribute except multiple ones related to
         the servers.  See Python String Formatting documentation [1] for other
         formatting options.  The dots inside the values are replaced with
-        underscores in advance.
+        underscores in advance.  If you need to include a brace character in
+        the parameters, it can be escaped by doubling: '{{ and }}'.
 
         Example params:
 
