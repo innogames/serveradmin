@@ -50,7 +50,7 @@ class GraphGroup(models.Model):
     class Meta:
         db_table = 'graph_group'
         ordering = ('sort_order', )
-        unique_together = (('attrib', 'attrib_value'), )
+        unique_together = (('attrib', 'attrib_value', 'overview'), )
 
     def __init__(self, *args, **kwargs):
         models.Model.__init__(self, *args, **kwargs)
@@ -58,7 +58,12 @@ class GraphGroup(models.Model):
         self._variations = None    # To cache graph variations
 
     def __unicode__(self):
-        return unicode(self.attrib) + ': ' + self.attrib_value
+        name = unicode(self.attrib) + ': ' + self.attrib_value
+
+        if self.overview:
+            name += ' (overview)'
+
+        return name
 
     def get_templates(self):
         """Cache and return the graph templates
