@@ -62,11 +62,6 @@
 </form>
 {% endif %}
 
-<p>
-    Images are requested from the Graphite by the browser.  You should login
-    to the Graphite, if you cannot see them.
-</p>
-
 {% if is_ajax %}
 <p>
     <a href="{{ link }}">
@@ -108,7 +103,7 @@
     <tr>
 {% for column_name, graph in graph_column %}
         <td>
-            <img src="{{ GRAPHITE_URL }}/render?{{ graph }}"
+            <img src="{{ GRAPHITE_URL }}/render?{{ graph }}&__auth_token={{ token }}"
                  alt="{{ name }} {{ column_name }}"
                  class="graph" />
         </td>

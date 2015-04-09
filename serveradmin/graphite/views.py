@@ -4,6 +4,8 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 
+import django_urlauth.utils
+
 from adminapi.utils.parse import parse_query
 from adminapi.dataset.base import MultiAttr
 from serveradmin.graphite.models import GraphGroup
@@ -166,6 +168,8 @@ def graph_table(request):
         'graph_descriptions': graph_descriptions,
         'GRAPHITE_URL': settings.GRAPHITE_URL,
         'graph_table': graph_table,
+        'token': django_urlauth.utils.new_token(request.user.username,
+                                                settings.GRAPHITE_SECRET),
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
         'link': request.get_full_path(),
@@ -190,10 +194,13 @@ def graph_popup(request):
         if servers:
             table = graph_group.graph_table(servers.get())
             params = [v2 for k1, v1 in table for k2, v2 in v1][int(graph)]
-            image = settings.GRAPHITE_URL + '/render?' + params
+            token = django_urlauth.utils.new_token(request.user.username,
+                                                   settings.GRAPHITE_SECRET)
+            url = (settings.GRAPHITE_URL + '/render?' + params + '&' +
+                   '__auth_token=' + token)
 
             return TemplateResponse(request, 'graphite/graph_popup.html', {
                 'hostname': hostname,
                 'graph': graph,
-                'image': image
+                'image': url
             })

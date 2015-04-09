@@ -6,6 +6,7 @@ from django.core.management.base import NoArgsCommand
 from django.core.cache import cache
 from django.conf import settings
 
+import django_urlauth.utils
 from serveradmin.graphite.models import GraphGroup
 
 class Command(NoArgsCommand):
@@ -39,12 +40,13 @@ class Command(NoArgsCommand):
                                       settings.GRAPHITE_SPRITE_HEIGHT),
                                       (255,) * 3)
         opener = urllib2.build_opener()
-        opener.addheaders.append(('Cookie',
-                                  'sessionid=' + settings.GRAPHITE_COOKIE))
         offset = 0
 
         for graph in graphs:
-            url = settings.GRAPHITE_URL + '/render?' + graph
+            token = django_urlauth.utils.new_token('serveradmin',
+                                                   settings.GRAPHITE_SECRET)
+            url = (settings.GRAPHITE_URL + '/render?' + graph + '&' +
+                   '__auth_token=' + token)
 
             try:
                 tmpimg = BytesIO(opener.open(url).read())
