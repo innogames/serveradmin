@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.utils.importlib import import_module
+from importlib import import_module
 
 class ApiMiddleware(object):
     """Load all api functions which reside in APPNAME.api module."""
