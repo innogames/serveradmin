@@ -33,6 +33,7 @@ class Attribute(models.Model):
     multi = models.BooleanField(default=False)
 
     class Meta:
+        app_label = 'serverdb'
         db_table = 'attrib'
         ordering = ('name', )
 
@@ -62,6 +63,7 @@ class ServerType(models.Model):
 
 
     class Meta:
+        app_label = 'serverdb'
         db_table = 'servertype'
 
     def __unicode__(self):
@@ -76,6 +78,7 @@ class ServerTypeAttributes(models.Model):
     default_visible = models.BooleanField(default=False)
 
     class Meta:
+        app_label = 'serverdb'
         db_table = 'servertype_attributes'
         unique_together = (('servertype', 'attrib'), )
 
@@ -88,6 +91,7 @@ class ServerObject(models.Model):
     segment = models.CharField(max_length=10, null=True, blank=True)
 
     class Meta:
+        app_label = 'serverdb'
         db_table = 'admin_server'
 
 class AttributeValue(models.Model):
@@ -96,6 +100,7 @@ class AttributeValue(models.Model):
     value = models.CharField(max_length=1024)
 
     class Meta:
+        app_label = 'serverdb'
         db_table = 'attrib_values'
 
 class ServerObjectCache(models.Model):
@@ -103,6 +108,7 @@ class ServerObjectCache(models.Model):
     repr_hash = models.BigIntegerField()
 
     class Meta:
+        app_label = 'serverdb'
         unique_together = (('server', 'repr_hash'))
 
 class Segment(models.Model):
@@ -110,6 +116,7 @@ class Segment(models.Model):
             primary_key=True)
 
     class Meta:
+        app_label = 'serverdb'
         db_table = 'segment'
 
 class SegmentUsage(models.Model):
@@ -118,6 +125,9 @@ class SegmentUsage(models.Model):
 
     def __unicode__(self):
         return '{0}: {1}'.format(self.segment, self.description)
+
+    class Meta:
+        app_label = 'serverdb'
 
 
 class Change(models.Model):
@@ -133,6 +143,9 @@ class Change(models.Model):
     def __unicode__(self):
         return unicode(self.change_on)
 
+    class Meta:
+        app_label = 'serverdb'
+
 
 class ChangeCommit(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)
@@ -141,6 +154,9 @@ class ChangeCommit(models.Model):
     
     def __unicode__(self):
         return unicode(self.change_on)
+
+    class Meta:
+        app_label = 'serverdb'
 
 
 class ChangeDelete(models.Model):
@@ -155,6 +171,9 @@ class ChangeDelete(models.Model):
     def __unicode__(self):
         return u'{0}: {1}'.format(unicode(self.commit), self.hostname)
 
+    class Meta:
+        app_label = 'serverdb'
+
 
 class ChangeUpdate(models.Model):
     commit = models.ForeignKey(ChangeCommit)
@@ -168,6 +187,9 @@ class ChangeUpdate(models.Model):
     def __unicode__(self):
         return u'{0}: {1}'.format(unicode(self.commit), self.hostname)
 
+    class Meta:
+        app_label = 'serverdb'
+
 
 class ChangeAdd(models.Model):
     commit = models.ForeignKey(ChangeCommit)
@@ -178,6 +200,8 @@ class ChangeAdd(models.Model):
     def attributes(self):
         return json.loads(self.attributes_json)
     
-
     def __unicode__(self):
         return u'{0}: {1}'.format(unicode(self.commit), self.hostname)
+
+    class Meta:
+        app_label = 'serverdb'
