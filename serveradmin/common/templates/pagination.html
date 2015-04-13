@@ -1,4 +1,3 @@
-{% load url from future %}
 <p class="pagination"{% if pagination_id %} id="{{ pagination_id }}"{% endif %}>
 {% if page.has_previous %}
 <a href="{{ url }}{{ sep }}page={{ page.previous_page_number }}" data-page="{{ page.previous_page_number }}" class="page">&laquo;</a>
