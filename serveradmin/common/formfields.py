@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 
 from adminapi.utils import IP, IPv6
 
-class IPv4Field(forms.IPAddressField):
+class IPv4Field(forms.GenericIPAddressField):
     def __init__(self, **kwargs):
         if 'initial' in kwargs:
             if isinstance(kwargs['initial'], IP):

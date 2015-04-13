@@ -300,7 +300,7 @@ def get_values(request):
 def new_server(request):
     class CloneServerForm(forms.Form):
         hostname = forms.CharField()
-        intern_ip = forms.IPAddressField()
+        intern_ip = forms.GenericIPAddressField()
         check_ip = forms.BooleanField(required=False)
 
         def clean_hostname(self):
