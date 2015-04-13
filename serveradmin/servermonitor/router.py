@@ -9,7 +9,7 @@ class ServermonitorRouter(object):
             return 'servermonitor'
         return None
 
-    def allow_syncdb(self, db, model):
+    def allow_migrate(self, db, model):
         if db == 'servermonitor':
             return model._meta.app_label == 'servermonitor'
         elif model._meta.app_label == 'servermonitor':
