@@ -12,7 +12,7 @@ class GraphGroup(models.Model):
 
     graph_group_id = models.AutoField(primary_key=True)
     attrib = models.ForeignKey(Attribute, verbose_name='attribute')
-    attrib_value = models.CharField(max_length=1024,
+    attrib_value = models.CharField(max_length=512,
                                     verbose_name='attribute value')
     params = models.TextField(blank=True, help_text="""
         Part of the URL after "?" to GET the graph from the Graphite.  It
@@ -50,7 +50,7 @@ class GraphGroup(models.Model):
     class Meta:
         db_table = 'graph_group'
         ordering = ('sort_order', )
-        unique_together = (('attrib', 'attrib_value', 'overview'), )
+        #unique_together = (('attrib', 'attrib_value', 'overview'), )
 
     def __init__(self, *args, **kwargs):
         models.Model.__init__(self, *args, **kwargs)
