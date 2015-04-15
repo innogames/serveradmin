@@ -71,7 +71,7 @@
 {% endif %}
 
 {% if not is_ajax %}
-{% for name, description in graph_descriptions %}
+{% for name, description in descriptions %}
 <div id="graph_desc_{{ forloop.counter }}"
      title="Graph description for {{ name }}"
      style="display:none;">{{ description|safe }}</div>

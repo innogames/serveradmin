@@ -8,10 +8,9 @@ import django_urlauth.utils
 
 from adminapi.utils.parse import parse_query
 from adminapi.dataset.base import MultiAttr
-from serveradmin.graphite.models import Collection
+from serveradmin.graphite.models import Collection, NumericCache
 from serveradmin.dataset import query, filters, DatasetError
 from serveradmin.serverdb.models import ServerType, Segment
-from serveradmin.servermonitor.getinfo import get_information
 
 @ensure_csrf_cookie
 def index(request):
@@ -26,26 +25,25 @@ def index(request):
         'servertypes': ServerType.objects.order_by('name')
     }
 
-    hostname_filter = set()
-    matched_servers = set()
+    hostnames = []
+    matched_hostnames = []
     if term:
         try:
             query_args = parse_query(term, filters.filter_classes)
             host_query = query(**query_args).restrict('hostname', 'xen_host')
             for host in host_query:
-                matched_servers.add(host['hostname'])
+                matched_hostnames.append(host['hostname'])
                 if 'xen_host' in host:
-                    hostname_filter.add(host['xen_host'])
+                    hostnames.append(host['xen_host'])
                 else:
                     # If it's not guest, it might be a server, so we add it
-                    hostname_filter.add(host['hostname'])
+                    hostnames.append(host['hostname'])
             understood = host_query.get_representation().as_code()
             request.session['term'] = term
 
-            if not matched_servers:
+            if len(hostnames) == 0:
                 template_info.update({
                     'understood': understood,
-                    'hosts': []
                 })
                 return TemplateResponse(request, 'servermonitor/index.html',
                         template_info)
@@ -58,43 +56,53 @@ def index(request):
     else:
         understood = query().get_representation().as_code() # It's lazy :-)
 
-    hw_query_args = {'physical_server': True, 'cancelled': False}
-    if hostname_filter:
-        hw_query_args['hostname'] = filters.Any(*hostname_filter)
-
-    periods = ('hourly', 'daily', 'yesterday')
-    hardware = {}
-    for hw_host in query(**hw_query_args).restrict('hostname', 'servertype'):
-        host_data = {
-                'hostname': hw_host['hostname'],
-                'servertype': hw_host['servertype'],
-                'image': '{url}/{hostname}.png'.format(
-                        url=settings.GRAPHITE_SPRITE_URL,
-                        hostname=hw_host['hostname']),
-                'cpu': {},
-                'io': {}
-        }
-        for period in periods:
-            for what in ('io', 'cpu'):
-                host_data[what][period] = None
-        hardware[hw_host['hostname']] = host_data
-    hostnames = hardware.keys()
-    template_info.update(get_information(hostnames, hardware))
-
     # All of the collections marked as overview should have the same
     # structure, we will just get one of them for the table headers.
     collection = Collection.objects.filter(overview=True)[0]
-    names = [unicode(t) + ' ' + unicode(v) for t in collection.get_templates()
-                                           for v in collection.get_variations()]
+    names = []
+    for template in collection.template_set.all():
+        if template.numeric_value:
+            names.append(unicode(template))
+        else:
+            for variation in collection.variation_set.all():
+                names.append(unicode(template) + ' ' + unicode(variation))
+
+    hosts = {}
+    query_kwargs = {'physical_server': True, 'cancelled': False}
+    if len(hostnames) > 0:
+        query_kwargs['hostname'] = filters.Any(*hostnames)
+    for server in query(**query_kwargs).restrict('hostname', 'servertype'):
+        guests = query(xen_host=server['hostname']).restrict('hostname')
+        hosts[server['hostname']] = {
+            'hostname': server['hostname'],
+            'servertype': server['servertype'],
+            'guests': [g['hostname'] for g in guests],
+            'cells': [],
+        }
+        for name in names:
+            hosts[server['hostname']]['cells'].append({'numeric_value': False})
+
+    for numericCache in NumericCache.objects.filter(hostname__in=hosts.keys()):
+        index = names.index(unicode(numericCache.template))
+        hosts[numericCache.hostname]['cells'][index]['numeric_value'] = True
+        hosts[numericCache.hostname]['cells'][index]['value'] = numericCache.value
+
     offset = settings.GRAPHITE_SPRITE_WIDTH + settings.GRAPHITE_SPRITE_SPACING
-    offsets = [i * offset for i in range(len(names))]
+    for host in hosts.values():
+        index = 0
+        for cell in host['cells']:
+            if not cell['numeric_value']:
+                cell['graph_index'] = index
+                cell['sprite_offset'] = index * offset
+                index += 1
 
     template_info.update({
-        'graph_names': names,
-        'graph_offsets': offsets,
-        'matched_servers': matched_servers,
+        'names': names,
+        'hosts': hosts.values(),
+        'matched_hostnames': matched_hostnames,
         'understood': understood,
         'error': None,
+        'GRAPHITE_SPRITE_URL': settings.GRAPHITE_SPRITE_URL,
     })
     return TemplateResponse(request, 'graphite/index.html', template_info)
 
@@ -132,11 +140,10 @@ def graph_table(request):
             collections.append(collection)
 
     # Prepare the graph descriptions
-    graph_descriptions = []
+    descriptions = []
     for collection in collections:
-        for template in collection.get_templates():
-            graph_descriptions += ([(template.name, template.description)] *
-                                   len(hostnames))
+        for template in collection.template_set.all():
+            descriptions += ([(template.name, template.description)] * len(hostnames))
 
     # Prepare the graph tables for all hosts
     graph_tables = []
@@ -165,7 +172,7 @@ def graph_table(request):
 
     return TemplateResponse(request, 'graphite/graph_table.html', {
         'hostnames': hostnames,
-        'graph_descriptions': graph_descriptions,
+        'descriptions': descriptions,
         'GRAPHITE_URL': settings.GRAPHITE_URL,
         'graph_table': graph_table,
         'token': django_urlauth.utils.new_token(request.user.username,

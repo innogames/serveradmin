@@ -4,13 +4,12 @@ from django.db import models
 from django.conf import settings
 
 from adminapi.dataset.base import MultiAttr
-from serveradmin.serverdb.models import Attribute
+from serveradmin.serverdb.models import ServerObject, Attribute
 
 class Collection(models.Model):
     """Collection of graphs and values to be shown for the servers
     """
 
-    collection_id = models.AutoField(primary_key=True)
     attrib = models.ForeignKey(Attribute, verbose_name='attribute')
     attrib_value = models.CharField(max_length=512,
                                     verbose_name='attribute value')
@@ -46,6 +45,7 @@ class Collection(models.Model):
         the server in advance to improve the loading time.  {0} will be
         appended to generated URL's to get the images for overview.
         """.format(settings.GRAPHITE_SPRITE_PARAMS))
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'graphite_collection'
@@ -64,24 +64,6 @@ class Collection(models.Model):
             name += ' (overview)'
 
         return name
-
-    def get_templates(self):
-        """Cache and return the graph templates
-        """
-
-        if self._templates == None:
-            self._templates = list(Template.objects.filter(collection=self))
-
-        return self._templates
-
-    def get_variations(self):
-        """Cache and return the graph variations
-        """
-
-        if self._variations == None:
-            self._variations = list(Variation.objects.filter(collection=self))
-
-        return self._variations
 
     def query(self, **kwargs):
         """Decorates serveradmin.dataset.query()
@@ -106,7 +88,7 @@ class Collection(models.Model):
         """
 
         column = []
-        for template in self.get_templates():
+        for template in self.template_set.filter(numeric_value=False):
             formatter = AttributeFormatter()
             params = self.merged_params((template.params, custom_params))
             column.append((template.name, formatter.vformat(params, (), server)))
@@ -134,9 +116,9 @@ class Collection(models.Model):
         """
 
         table = []
-        for template in self.get_templates():
+        for template in self.template_set.filter(numeric_value=False):
             column = []
-            for variation in self.get_variations():
+            for variation in self.variation_set.all():
                 formatter = AttributeFormatter()
                 params = self.merged_params((variation.params, template.params,
                                              custom_params))
@@ -172,6 +154,11 @@ class Template(models.Model):
         """)
     sort_order = models.FloatField(default=0)
     description = models.TextField(blank=True)
+    numeric_value = models.BooleanField(default=False, help_text="""
+        Marks the template as a numeric value instead of a graph.  Numerical
+        values will be queried from the Graphite and saved in a table.
+        """)
+
 
     class Meta:
         db_table = 'graphite_template'
@@ -199,6 +186,19 @@ class Variation(models.Model):
 
     def __unicode__(self):
         return self.name
+
+class NumericCache(models.Model):
+    """Cached value for the servers
+    """
+
+    template = models.ForeignKey(Template)
+    hostname = models.CharField(max_length=64)
+    value = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    last_modified = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'graphite_numeric_cache'
+        unique_together = (('template', 'hostname'), )
 
 class AttributeFormatter(Formatter):
     """Custom Formatter to replace variables on URL parameters

@@ -66,13 +66,9 @@
 <table border="1">
     <tr>
         <th>Hardware host</th>
-{% for name in graph_names %}
+{% for name in names %}
         <th>{{ name }}</th>
 {% endfor %}
-        <th>CPU Usage<br />Hourly<br />Daily<br />-1 Day</th>
-        <th>Disk IO<br />Hourly<br />Daily</th>
-        <th>Disk free</th>
-        <th>Mem free</th>
         <th>Guests</th>
     </tr>
 {% for hwhost in hosts %}
@@ -85,57 +81,28 @@
 
             <p class="graph_servertype">({{ hwhost.servertype }})</p>
         </td>
-{% for offset in graph_offsets %}
-        <td><a class="graph_sprite"
-            style="background:url({{ STATIC_URL }}empty.png) -{{ offset }}px 0;"
-            data-hostname="{{ hwhost.hostname }}"
-            data-graph="{{ forloop.counter0 }}"
-            data-image="{{ hwhost.image }}"></a>
-        </td>
-{% endfor %}
-        <td>{% format_percent hwhost.cpu.hourly 50 100 30 %}
-            {% format_percent hwhost.cpu.daily 50 100 30 %}
-            {% format_percent hwhost.cpu.yesterday 50 100 30 %}
-        </td>
-        <td>{% format_percent hwhost.io.hourly 30 100 30 %}
-            {% format_percent hwhost.io.daily 30 100 30 %}
-        </td>
-        <td>{{ hwhost.disk_free|filesizeformat }}</td>
-        <td>{{ hwhost.mem_free|filesizeformat }} /
-            {% if hwhost.mem_total == None %}
-            unknown
-            {% else %}
-            {{ hwhost.mem_total|filesizeformat }}
-            {% endif %}
-        </td>
+{% for cell in hwhost.cells %}
         <td>
-{% for guest_host in hwhost.guests %}
-        <a href="{% url 'graphite_graph_table' %}?hostname={{ guest_host }}"
-           {% if guest_host in matched_servers %}style="color:#d00;"{% endif %}
-           >{{ guest_host }}</a>
+{% if cell.numeric_value %}
+            {{ cell.value }}
+{% else %}
+            <a class="graph_sprite"
+               style="background:url({{ STATIC_URL }}empty.png) -{{ cell.sprite_offset }}px 0;"
+               data-hostname="{{ hwhost.hostname }}"
+               data-graph="{{ cell.graph_index }}"
+               data-image="{{ GRAPHITE_SPRITE_URL }}/{{ hwhost.hostname }}.png"></a>
+{% endif %}
+        </td>
+{% endfor %}
+        <td>
+{% for guest in hwhost.guests %}
+            <a href="{% url 'graphite_graph_table' %}?hostname={{ guest }}"
+               {% if guest in matched_hostnames  %}style="color:#d00;"{% endif %}
+               >{{ guest }}</a>
 {% endfor %}
         </td>
     </tr>
 {% endfor %}
-    <tr>
-        <th style="text-align:right;" colspan="{{ graph_names|length|add:1 }}">Sum</th>
-        <td style="text-align:center;">-</td>
-        <td style="text-align:center;">-</td>
-        <td>{{ disk_free_sum|filesizeformat }}</td>
-        <td>{{ mem_free_sum|filesizeformat }}/{{ mem_total_sum|filesizeformat }}</td>
-        <td></td>
-    </tr>
-    <tr>
-        <th style="text-align:right;" colspan="{{ graph_names|length|add:1 }}">Average</th>
-        <td>{% format_percent cpu_aggregate.hourly.avg 50 100 30 %}
-            {% format_percent cpu_aggregate.daily.avg 50 100 30 %}
-            {% format_percent cpu_aggregate.yesterday.avg 50 100 30 %}
-        <td>{% format_percent io_aggregate.hourly.avg 30 100 30 %}
-            {% format_percent io_aggregate.daily.avg 30 100 30 %}</td>
-        <td>{{ disk_free_avg|filesizeformat }}</td>
-        <td>{{ mem_free_avg|filesizeformat}}/{{ mem_total_avg|filesizeformat }}</td>
-        <td></td>
-    </tr>
 </table>
 {% endif %} {# else of if not error #}
 {% endblock content %}

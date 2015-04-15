@@ -1,4 +1,4 @@
-import urllib2
+import urllib2, json
 from PIL import Image
 from io import BytesIO
 
@@ -7,13 +7,15 @@ from django.core.cache import cache
 from django.conf import settings
 
 import django_urlauth.utils
-from serveradmin.graphite.models import Collection
+from serveradmin.graphite.models import Collection, NumericCache, AttributeFormatter
 
 class Command(NoArgsCommand):
     """Generate sprites from the overview graphics
     """
 
     help = __doc__
+    opener = urllib2.build_opener()
+    formatter = AttributeFormatter()
 
     def handle_noargs(self, **kwargs):
         """The entry point of the command
@@ -25,10 +27,11 @@ class Command(NoArgsCommand):
             for server in collection.query():
                 if server not in done_servers:
                     self.generate_sprite(collection, server)
+                    self.cache_numeric_values(collection, server)
                     done_servers.add(server)
 
     def generate_sprite(self, collection, server):
-        """The main function
+        """Generates sprites for the given server using the given collection
         """
 
         table = collection.graph_table(server,
@@ -39,26 +42,47 @@ class Command(NoArgsCommand):
         spriteimg = Image.new('RGB', (sprite_width,
                                       settings.GRAPHITE_SPRITE_HEIGHT),
                                       (255,) * 3)
-        opener = urllib2.build_opener()
         offset = 0
 
         for graph in graphs:
-            token = django_urlauth.utils.new_token('serveradmin',
-                                                   settings.GRAPHITE_SECRET)
-            url = (settings.GRAPHITE_URL + '/render?' + graph + '&' +
-                   '__auth_token=' + token)
-
-            try:
-                tmpimg = BytesIO(opener.open(url).read())
-            except urllib2.HTTPError as error:
-                print('Warning: Graphite returned ' + str(error) + ' for ' + url)
+            response = self.get_from_graphite(graph)
+            if not response:
                 break
 
             box = (offset, 0, offset + settings.GRAPHITE_SPRITE_WIDTH,
                    settings.GRAPHITE_SPRITE_HEIGHT)
-            spriteimg.paste(Image.open(tmpimg), box)
+            spriteimg.paste(Image.open(BytesIO(response)), box)
             offset += settings.GRAPHITE_SPRITE_WIDTH
             offset += settings.GRAPHITE_SPRITE_SPACING
         else:
             spriteimg.save(settings.GRAPHITE_SPRITE_PATH + '/' +
                            server['hostname'] + '.png')
+
+
+    def cache_numeric_values(self, collection, server):
+        """Generates sprites for the given server using the given collection
+        """
+
+        for template in collection.template_set.filter(numeric_value=True):
+            params = self.formatter.vformat(template.params, (), server)
+            response = self.get_from_graphite(params)
+            if not response:
+                break
+
+            numeric_cache = NumericCache.objects.get_or_create(
+                    template=template,
+                    hostname=server['hostname'])[0]
+            numeric_cache.value = json.loads(response)[0]['datapoints'][0][0]
+            numeric_cache.save()
+
+    def get_from_graphite(self, params):
+        """Make a GET request to Graphite with the given params
+        """
+
+        token = django_urlauth.utils.new_token('serveradmin', settings.GRAPHITE_SECRET)
+        url = settings.GRAPHITE_URL + '/render?__auth_token=' + token + '&' + params
+
+        try:
+            return self.opener.open(url).read()
+        except urllib2.HTTPError as error:
+            print('Warning: Graphite returned ' + str(error) + ' for ' + url)
