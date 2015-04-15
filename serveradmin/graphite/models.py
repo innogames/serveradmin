@@ -6,20 +6,20 @@ from django.conf import settings
 from adminapi.dataset.base import MultiAttr
 from serveradmin.serverdb.models import Attribute
 
-class GraphGroup(models.Model):
-    """Graph groups to be shown for the servers with defined attribute
+class Collection(models.Model):
+    """Collection of graphs and values to be shown for the servers
     """
 
-    graph_group_id = models.AutoField(primary_key=True)
+    collection_id = models.AutoField(primary_key=True)
     attrib = models.ForeignKey(Attribute, verbose_name='attribute')
     attrib_value = models.CharField(max_length=512,
                                     verbose_name='attribute value')
     params = models.TextField(blank=True, help_text="""
-        Part of the URL after "?" to GET the graph from the Graphite.  It
-        will be concatenated with the params for the graph template and graph
-        variation.  Make sure it doesn't include any character that doesn't
-        allowed on URL's.  Also do not include "?" and do not put "&" at
-        the end.  Example parameters:
+        Part of the URL after "?" to GET the graph or the value from
+        the Graphite.  It will be concatenated with the params for
+        the template and the variation.  Make sure it doesn't include
+        any character that doesn't allowed on URL's.  Also do not include "?"
+        and do not put "&" at the end.
 
         The params can include variables inside curly brackets like "{hostname}".
         Variables can be any string attribute except multiple ones related to
@@ -36,9 +36,9 @@ class GraphGroup(models.Model):
         """)
     sort_order = models.FloatField(default=0)
     overview = models.BooleanField(default=False, help_text="""
-        Marks the graph group to be shown on the overview page.  Overview page
-        isn't fully dynamic. Make sure make sure all of the graph groups
-        marked as overview have the same structure.  The graphs for the group
+        Marks the collection to be shown on the overview page.  Overview page
+        isn't fully dynamic.  Make sure make sure all of the collections
+        marked as overview have the same structure.  The information for them
         with the lowest sort order will be shown for every server on
         the overview page.
 
@@ -48,7 +48,7 @@ class GraphGroup(models.Model):
         """.format(settings.GRAPHITE_SPRITE_PARAMS))
 
     class Meta:
-        db_table = 'graph_group'
+        db_table = 'graphite_collection'
         ordering = ('sort_order', )
         #unique_together = (('attrib', 'attrib_value', 'overview'), )
 
@@ -70,7 +70,7 @@ class GraphGroup(models.Model):
         """
 
         if self._templates == None:
-            self._templates = list(GraphTemplate.objects.filter(graph_group=self))
+            self._templates = list(Template.objects.filter(collection=self))
 
         return self._templates
 
@@ -79,7 +79,7 @@ class GraphGroup(models.Model):
         """
 
         if self._variations == None:
-            self._variations = list(GraphVariation.objects.filter(graph_group=self))
+            self._variations = list(Variation.objects.filter(collection=self))
 
         return self._variations
 
@@ -96,7 +96,7 @@ class GraphGroup(models.Model):
     def graph_column(self, server, custom_params=''):
         """Generate graph URL table for a server
 
-        Graph table is an array of tuples.  The array is ordered.  The tuples
+        The column is an array of tuples.  The array is ordered.  The tuples
         are used to name the elements.  Example:
 
             [
@@ -116,7 +116,7 @@ class GraphGroup(models.Model):
     def graph_table(self, server, custom_params=''):
         """Generate graph URL table for a server
 
-        Graph table is two dimensional array of tuples.  The arrays are
+        The table is two dimensional array of tuples.  The arrays are
         ordered.  The tuples are used to name the elements.  Example:
 
             [
@@ -161,41 +161,41 @@ class GraphGroup(models.Model):
 
         return params
 
-class GraphTemplate(models.Model):
-    """Graph templates of the graph group
+class Template(models.Model):
+    """Templates in the collections
     """
 
-    graph_group = models.ForeignKey(GraphGroup)
+    collection = models.ForeignKey(Collection)
     name = models.CharField(max_length=64)
     params = models.TextField(blank=True, help_text="""
-        Same as the params of the graph groups.
+        Same as the params of the collections.
         """)
     sort_order = models.FloatField(default=0)
     description = models.TextField(blank=True)
 
     class Meta:
-        db_table = 'graph_template'
+        db_table = 'graphite_template'
         ordering = ('sort_order', )
-        unique_together = (('graph_group', 'name'), )
+        unique_together = (('collection', 'name'), )
 
     def __unicode__(self):
         return self.name
 
-class GraphVariation(models.Model):
-    """Graph variation to render the graph templates
+class Variation(models.Model):
+    """Variation to render the templates
     """
 
-    graph_group = models.ForeignKey(GraphGroup)
+    collection = models.ForeignKey(Collection)
     name = models.CharField(max_length=64)
     params = models.TextField(blank=True, help_text="""
-        Same as the params of the graph groups.
+        Same as the params of the collections.
         """)
     sort_order = models.FloatField(default=0)
 
     class Meta:
-        db_table = 'graph_variation'
+        db_table = 'graphite_variation'
         ordering = ('sort_order', )
-        unique_together = (('graph_group', 'name'), )
+        unique_together = (('collection', 'name'), )
 
     def __unicode__(self):
         return self.name
@@ -203,8 +203,8 @@ class GraphVariation(models.Model):
 class AttributeFormatter(Formatter):
     """Custom Formatter to replace variables on URL parameters
 
-    Attributes and hostname can be used on the params supplied by the Graph
-    templates and variations.  Graphite uses dots as the separator.  We chose
+    Attributes and hostname can be used on the params supplied by the templates
+    and the variations.  Graphite uses dots as the separator.  We chose
     to replace them with underscores.  We will apply it to all variables
     to be replaced..
 

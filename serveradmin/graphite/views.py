@@ -8,7 +8,7 @@ import django_urlauth.utils
 
 from adminapi.utils.parse import parse_query
 from adminapi.dataset.base import MultiAttr
-from serveradmin.graphite.models import GraphGroup
+from serveradmin.graphite.models import Collection
 from serveradmin.dataset import query, filters, DatasetError
 from serveradmin.serverdb.models import ServerType, Segment
 from serveradmin.servermonitor.getinfo import get_information
@@ -81,11 +81,11 @@ def index(request):
     hostnames = hardware.keys()
     template_info.update(get_information(hostnames, hardware))
 
-    # All of the graph groups marked as overview should have the same
+    # All of the collections marked as overview should have the same
     # structure, we will just get one of them for the table headers.
-    group = GraphGroup.objects.filter(overview=True)[0]
-    names = [unicode(t) + ' ' + unicode(v) for t in group.get_templates()
-                                           for v in group.get_variations()]
+    collection = Collection.objects.filter(overview=True)[0]
+    names = [unicode(t) + ' ' + unicode(v) for t in collection.get_templates()
+                                           for v in collection.get_variations()]
     offset = settings.GRAPHITE_SPRITE_WIDTH + settings.GRAPHITE_SPRITE_SPACING
     offsets = [i * offset for i in range(len(names))]
 
@@ -115,26 +115,26 @@ def graph_table(request):
     for hostname in hostnames:
         servers[hostname] = query(hostname=hostname).get()
 
-    # Find the graph groups which are related with all of the hostnames
-    graph_groups = []
-    for group in GraphGroup.objects.all():
+    # Find the collections which are related with all of the hostnames
+    collections = []
+    for collection in Collection.objects.all():
         for hostname in hostnames:
-            if group.attrib.name not in servers[hostname]:
+            if collection.attrib.name not in servers[hostname]:
                 break   # The server hasn't got this attribute at all.
-            value = servers[hostname][group.attrib.name]
+            value = servers[hostname][collection.attrib.name]
             if isinstance(value, MultiAttr):
-                if group.attrib_value not in [str(v) for v in value]:
+                if collection.attrib_value not in [str(v) for v in value]:
                     break   # The server hasn't got this attribute value.
             else:
-                if group.attrib_value != str(value):
+                if collection.attrib_value != str(value):
                     break   # The server attribute is not equal.
         else:
-            graph_groups.append(group)
+            collections.append(collection)
 
     # Prepare the graph descriptions
     graph_descriptions = []
-    for group in graph_groups:
-        for template in group.get_templates():
+    for collection in collections:
+        for template in collection.get_templates():
             graph_descriptions += ([(template.name, template.description)] *
                                    len(hostnames))
 
@@ -144,12 +144,12 @@ def graph_table(request):
         graph_table = []
         if request.GET.get('action') == 'Submit':
             custom_params = request.GET.urlencode()
-            for group in graph_groups:
-                column = group.graph_column(servers[hostname], custom_params)
+            for collection in collections:
+                column = collection.graph_column(servers[hostname], custom_params)
                 graph_table += [(k, [('Custom', v)]) for k, v in column]
         else:
-            for group in graph_groups:
-                graph_table += group.graph_table(servers[hostname])
+            for collection in collections:
+                graph_table += collection.graph_table(servers[hostname])
         graph_tables.append(graph_table)
 
     if len(hostname) > 1:
@@ -185,14 +185,14 @@ def graph_popup(request):
     except KeyError:
         return HttpResponseBadRequest('You have to supply hostname and graph')
 
-    # It would be more efficient to filter the groups on the database, but we
-    # don't bother because they are unlikely to be more than a few graph
-    # groups marked as overview.
-    for graph_group in GraphGroup.objects.filter(overview=True):
-        servers = graph_group.query(hostname=hostname)
+    # It would be more efficient to filter the collections on the database,
+    # but we don't bother because they are unlikely to be more than a few
+    # marked as overview.
+    for collection in Collection.objects.filter(overview=True):
+        servers = collection.query(hostname=hostname)
 
         if servers:
-            table = graph_group.graph_table(servers.get())
+            table = collection.graph_table(servers.get())
             params = [v2 for k1, v1 in table for k2, v2 in v1][int(graph)]
             token = django_urlauth.utils.new_token(request.user.username,
                                                    settings.GRAPHITE_SECRET)

@@ -7,7 +7,7 @@ from django.core.cache import cache
 from django.conf import settings
 
 import django_urlauth.utils
-from serveradmin.graphite.models import GraphGroup
+from serveradmin.graphite.models import Collection
 
 class Command(NoArgsCommand):
     """Generate sprites from the overview graphics
@@ -21,17 +21,17 @@ class Command(NoArgsCommand):
 
         # We will make sure to generate a single sprite for a single hostname.
         done_servers = set()
-        for graph_group in GraphGroup.objects.filter(overview=True):
-            for server in graph_group.query():
+        for collection in Collection.objects.filter(overview=True):
+            for server in collection.query():
                 if server not in done_servers:
-                    self.generate_sprite(graph_group, server)
+                    self.generate_sprite(collection, server)
                     done_servers.add(server)
 
-    def generate_sprite(self, graph_group, server):
+    def generate_sprite(self, collection, server):
         """The main function
         """
 
-        table = graph_group.graph_table(server,
+        table = collection.graph_table(server,
                                 custom_params=settings.GRAPHITE_SPRITE_PARAMS)
         graphs = [v2 for k1, v1 in table for k2, v2 in v1]
         sprite_width = (len(graphs) * settings.GRAPHITE_SPRITE_WIDTH +

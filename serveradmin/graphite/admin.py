@@ -1,14 +1,14 @@
 from django.contrib import admin
 
-from serveradmin.graphite.models import GraphTemplate, GraphVariation, GraphGroup
+from serveradmin.graphite.models import Collection, Template, Variation
 
-class GraphTemplateInline(admin.TabularInline):
-    model = GraphTemplate
+class TemplateInline(admin.TabularInline):
+    model = Template
 
-class GraphVariationInline(admin.TabularInline):
-    model = GraphVariation
+class VariationInline(admin.TabularInline):
+    model = Variation
 
-class GraphGroupAdmin(admin.ModelAdmin):
-    inlines = (GraphTemplateInline, GraphVariationInline)
+class CollectionAdmin(admin.ModelAdmin):
+    inlines = (TemplateInline, VariationInline)
 
-admin.site.register(GraphGroup, GraphGroupAdmin)
+admin.site.register(Collection, CollectionAdmin)
