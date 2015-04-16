@@ -1,4 +1,4 @@
-import urllib2, json
+import urllib2, json, time
 from PIL import Image
 from io import BytesIO
 
@@ -82,7 +82,12 @@ class Command(NoArgsCommand):
         token = django_urlauth.utils.new_token('serveradmin', settings.GRAPHITE_SECRET)
         url = settings.GRAPHITE_URL + '/render?__auth_token=' + token + '&' + params
 
+        start = time.time()
         try:
             return self.opener.open(url).read()
         except urllib2.HTTPError as error:
-            print('Warning: Graphite returned ' + str(error) + ' for ' + url)
+            print('Warning: Graphite returned ' + str(error) + ' to ' + url)
+        finally:
+            end = time.time()
+            if end - start > 10:
+                print('Warning: Graphite request took ' + str(end - start) + ' seconds to ' + url)
