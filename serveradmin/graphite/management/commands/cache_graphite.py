@@ -72,8 +72,12 @@ class Command(NoArgsCommand):
             numeric_cache = NumericCache.objects.get_or_create(
                     template=template,
                     hostname=server['hostname'])[0]
-            numeric_cache.value = json.loads(response)[0]['datapoints'][0][0]
-            numeric_cache.save()
+            try:
+                numeric_cache.value = json.loads(response)[0]['datapoints'][0][0]
+            except IndexError:
+                print('Warning: Graphite response couldn\'t be parsed ' + response)
+            else:
+                numeric_cache.save()
 
     def get_from_graphite(self, params):
         """Make a GET request to Graphite with the given params
