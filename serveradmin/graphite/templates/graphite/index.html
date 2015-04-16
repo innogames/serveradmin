@@ -66,8 +66,8 @@
 <table border="1">
     <tr>
         <th>Hardware host</th>
-{% for name in names %}
-        <th>{{ name }}</th>
+{% for column in hosts.0.columns %}
+        <th>{{ column.name }}</th>
 {% endfor %}
         <th>Guests</th>
     </tr>
@@ -81,15 +81,15 @@
 
             <p class="graph_servertype">({{ hwhost.servertype }})</p>
         </td>
-{% for cell in hwhost.cells %}
+{% for column in hwhost.columns %}
         <td>
-{% if cell.numeric_value %}
-            {{ cell.value }}
+{% if column.numeric_value %}
+            {{ column.value }}
 {% else %}
             <a class="graph_sprite"
-               style="background:url({{ STATIC_URL }}empty.png) -{{ cell.sprite_offset }}px 0;"
+               style="background:url({{ STATIC_URL }}empty.png) -{{ column.sprite_offset }}px 0;"
                data-hostname="{{ hwhost.hostname }}"
-               data-graph="{{ cell.graph_index }}"
+               data-graph="{{ column.graph_index }}"
                data-image="{{ GRAPHITE_SPRITE_URL }}/{{ hwhost.hostname }}.png"></a>
 {% endif %}
         </td>

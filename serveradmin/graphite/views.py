@@ -57,47 +57,55 @@ def index(request):
         understood = query().get_representation().as_code() # It's lazy :-)
 
     # All of the collections marked as overview should have the same
-    # structure, we will just get one of them for the table headers.
+    # structure, we will just get one of them for the table structure.
     collection = Collection.objects.filter(overview=True)[0]
-    names = []
-    for template in collection.template_set.all():
+    templates = list(collection.template_set.all())
+    variations = list(collection.variation_set.all())
+
+    columns = []
+    graph_index = 0
+    offset = settings.GRAPHITE_SPRITE_WIDTH + settings.GRAPHITE_SPRITE_SPACING
+    for template in templates:
         if template.numeric_value:
-            names.append(unicode(template))
+            columns.append({
+                'name': unicode(template),
+                'numeric_value': True,
+            })
         else:
-            for variation in collection.variation_set.all():
-                names.append(unicode(template) + ' ' + unicode(variation))
+            for variation in variations:
+                columns.append({
+                    'name': unicode(template) + ' ' + unicode(variation),
+                    'numeric_value': False,
+                    'graph_index': graph_index,
+                    'sprite_offset': graph_index * offset,
+                })
+                graph_index += 1
 
     hosts = {}
     query_kwargs = {'physical_server': True, 'cancelled': False}
     if len(hostnames) > 0:
         query_kwargs['hostname'] = filters.Any(*hostnames)
     for server in query(**query_kwargs).restrict('hostname', 'servertype'):
-        guests = query(xen_host=server['hostname']).restrict('hostname')
         hosts[server['hostname']] = {
             'hostname': server['hostname'],
             'servertype': server['servertype'],
-            'guests': [g['hostname'] for g in guests],
-            'cells': [],
+            'guests': [],
+            'columns': list(columns),
         }
-        for name in names:
-            hosts[server['hostname']]['cells'].append({'numeric_value': False})
 
+    # Add guests for the table cells.
+    query_kwargs = {'xen_host': filters.Any(*hosts.keys()), 'cancelled': False}
+    for server in query(**query_kwargs).restrict('hostname', 'xen_host'):
+        hosts[server['xen_host']]['guests'].append(server['hostname'])
+
+    # Add cached numerical values to the table cells.
     for numericCache in NumericCache.objects.filter(hostname__in=hosts.keys()):
-        index = names.index(unicode(numericCache.template))
-        hosts[numericCache.hostname]['cells'][index]['numeric_value'] = True
-        hosts[numericCache.hostname]['cells'][index]['value'] = numericCache.value
-
-    offset = settings.GRAPHITE_SPRITE_WIDTH + settings.GRAPHITE_SPRITE_SPACING
-    for host in hosts.values():
-        index = 0
-        for cell in host['cells']:
-            if not cell['numeric_value']:
-                cell['graph_index'] = index
-                cell['sprite_offset'] = index * offset
-                index += 1
+        index = [c['name'] for c in columns].index(unicode(numericCache.template))
+        column = dict(columns[index])
+        column['value'] = numericCache.value
+        hosts[numericCache.hostname]['columns'][index] = column
 
     template_info.update({
-        'names': names,
         'hosts': hosts.values(),
         'matched_hostnames': matched_hostnames,
         'understood': understood,
