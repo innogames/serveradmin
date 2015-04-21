@@ -1,10 +1,5 @@
 {% extends "base.html" %}
+
 {% block title %}Colocation{% endblock %}
 
-{% block content %}
-<h2>Colocation plan</h2>
-
-<a href="{% url 'colo_plan' 'suderstrasse' %}">Süderstrasse - AF</a><br />
-<a href="{% url 'colo_plan' 'wendenstrasse' %}">Wendenstrasse - AW</a>
-
-{% endblock %}
+{% block content %}{{ content|safe }}{% endblock %}

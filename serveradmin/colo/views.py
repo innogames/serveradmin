@@ -1,30 +1,24 @@
 # -*- coding: utf-8 -*-
 import os
-import re
-import json
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.template.response import TemplateResponse
-from django.core.exceptions import PermissionDenied
+
+datacenters = {
+    'af': 'Süderstraße',
+    'aw': 'Wendenstraße',
+}
 
 @login_required
 def index(request):
-    return TemplateResponse(request, 'colo/index.html')
+    content = ''
+    for file_name in os.listdir(settings.COLO_DATADIR):
+        code = file_name[:-5]
+        content += '<h2>' + datacenters[code] + ' (' + code + ')</h2>'
 
-@login_required
-def plan(request, cololoc):
-    colofile = os.path.join(settings.COLO_DATADIR, cololoc + '.html')
-    with open(colofile) as f:
-        content = f.read() 
+        with open(settings.COLO_DATADIR + '/' + file_name) as f:
+            content += f.read()
 
-    coloname = ''
-    if cololoc == 'suderstrasse':
-        coloname = 'Süderstrasse - AF'
-    elif cololoc == 'wendenstrasse':
-        coloname = 'Wendenstrasse - AW'
-
-    return TemplateResponse(request, 'colo/plan.html', {
-        'cololoc': cololoc,
-        'coloname': coloname,
+    return TemplateResponse(request, 'colo/index.html', {
         'content': content
     })
