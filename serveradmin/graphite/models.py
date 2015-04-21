@@ -119,7 +119,7 @@ class Collection(models.Model):
         for template in self.template_set.filter(numeric_value=False):
             column = []
             for variation in self.variation_set.all():
-                formatter = AttributeFormatter()
+                formatter = AttributeFormatter(variation.summarize_interval)
                 params = self.merged_params((variation.params, template.params,
                                              custom_params))
                 column.append((variation.name,
@@ -178,6 +178,11 @@ class Variation(models.Model):
         Same as the params of the collections.
         """)
     sort_order = models.FloatField(default=0)
+    summarize_interval = models.CharField(max_length=64, help_text="""
+        Interval string that makes sense to use on the summarize() function on
+        the Graphite for this variation.  It can be used in the params as
+        {summarize_interval}.
+        """)
 
     class Meta:
         db_table = 'graphite_variation'
@@ -220,11 +225,15 @@ class AttributeFormatter(Formatter):
     the same multiple attributes again, if we run out of them.
     """
 
-    def __init__(self):
+    def __init__(self, summarize_interval=''):
         Formatter.__init__(self)
+        self._summarize_interval = summarize_interval
         self._last_item_ids = {}
 
     def get_value(self, key, args, server):
+        if key == 'summarize_interval':
+            return self._summarize_interval
+
         if key not in server:
             return ''
 

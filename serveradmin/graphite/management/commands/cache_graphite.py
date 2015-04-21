@@ -14,8 +14,6 @@ class Command(NoArgsCommand):
     """
 
     help = __doc__
-    opener = urllib2.build_opener()
-    formatter = AttributeFormatter()
 
     def handle_noargs(self, **kwargs):
         """The entry point of the command
@@ -64,7 +62,8 @@ class Command(NoArgsCommand):
         """
 
         for template in collection.template_set.filter(numeric_value=True):
-            params = self.formatter.vformat(template.params, (), server)
+            formatter = AttributeFormatter()
+            params = formatter.vformat(template.params, (), server)
             response = self.get_from_graphite(params)
             if not response:
                 break
@@ -86,9 +85,10 @@ class Command(NoArgsCommand):
         token = django_urlauth.utils.new_token('serveradmin', settings.GRAPHITE_SECRET)
         url = settings.GRAPHITE_URL + '/render?__auth_token=' + token + '&' + params
 
+        opener = urllib2.build_opener()
         start = time.time()
         try:
-            return self.opener.open(url).read()
+            return opener.open(url).read()
         except urllib2.HTTPError as error:
             print('Warning: Graphite returned ' + str(error) + ' to ' + url)
         finally:
