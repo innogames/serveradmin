@@ -7,10 +7,6 @@ from django.template.response import TemplateResponse
 from django.core.exceptions import PermissionDenied
 
 @login_required
-def index(request):
-    return TemplateResponse(request, 'docs/index.html')
-
-@login_required
 def document(request, docname):
     if not re.match('^[a-z0-9-]+$', docname):
         raise PermissionDenied()
