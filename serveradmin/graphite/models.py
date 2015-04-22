@@ -4,7 +4,7 @@ from django.db import models
 from django.conf import settings
 
 from adminapi.dataset.base import MultiAttr
-from serveradmin.serverdb.models import ServerObject, Attribute
+from serveradmin.serverdb.models import Attribute
 
 class Collection(models.Model):
     """Collection of graphs and values to be shown for the servers

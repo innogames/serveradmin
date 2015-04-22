@@ -7,7 +7,7 @@
 {% block content %}
 <h2>Graphite</h2>
 
-<form method="get" action="{% url 'graphite_index' %}">
+<form method="get" action="{% url 'resources_index' %}">
 <table class="valign-middle">
 <tr>
     <td>Search: </td>
@@ -110,7 +110,7 @@
 {% block additional_body %}
 <script type="text/javascript" src="{{ STATIC_URL }}servermonitor/servermonitor.js"></script>
 <script type="text/javascript">
-var monitor_graph_popup_url = '{% url 'graphite_graph_popup' %}';
+var monitor_graph_popup_url = '{% url 'resources_graph_popup' %}';
 var monitor_reload_url = '{% url 'servermonitor_reload' %}';
 $(function() {
     $('.graph_sprite').click(open_graph_popup);

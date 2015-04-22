@@ -23,6 +23,7 @@ urlpatterns = patterns(
     url(r'^admin/', include(admin.site.urls)),
     url(r'^graphite/', include('serveradmin.graphite.urls')),
     url(r'^comments/', include('comments.urls')),
+    url(r'^resources/', include('serveradmin.resources.urls')),
     url(r'^failoverlogin$', 'serveradmin.common.views.failoverlogin'),
     url(r'^check$', 'serveradmin.common.views.check'),
 )
