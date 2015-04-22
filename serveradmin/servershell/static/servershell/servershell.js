@@ -523,7 +523,7 @@ function autocomplete_shell_command(term, autocomplete_cb)
         'commit': 'Commit outstanding changes',
         'export': 'Export all hostnames for usage in shell',
         'perpage': 'Show a specific number of hosts per page (e.g. "perpage 50")',
-        'graph': 'Show available servermonitor graphs for selected hosts',
+        'graph': 'Show configured Graohite graph table for selected hosts',
         'livegraph': 'Show available live graphs for selected hosts',
         'cmp': 'Compare servermonitor graphs for several hosts',
         'list': 'List all attributes of a server',
@@ -706,20 +706,30 @@ function handle_command_export()
 
 function handle_command_graph()
 {
-    function show_graphs(server) {
-        var query_str = '?' + $.param({'hostname': server['hostname']});
+    var hostnames = get_marked_servers().map(function(server_id) {
+        // Find the hostname from the global object search.
+        return search['servers'][server_id]['hostname'];
+    });
+
+    // The established behavior of the Servershell commands is to select
+    // the first server, if none of them are explicitly selected.
+    if (hostnames.length == 0 && search['first_server'] != null)
+        hostnames = [search['first_server']['hostname']];
+
+    if (hostnames.length > 0) {
+        var query_str = '?' + hostnames.map(function(hostname) {
+            return 'hostname=' + hostname;
+        }).join('&');
+
         $.get(shell_graph_url + query_str, function(data) {
-            var dialog = $('<div title="' + server['hostname'] + '"></div>');
+            var dialog = $('<div title="Graphite Graph Table"></div>');
             dialog.append(data)
             dialog.dialog({
                 'width': 1550
             });
-            attach_graph_reload();
-            attach_show_graph_description();
         });
-        return true;
     }
-    execute_on_servers(show_graphs);
+
     return '';
 }
 
