@@ -3,7 +3,14 @@
 {% block title %}Graphs for {{ hostnames|join:", " }}{% endblock %}
 
 {% block content %}
-{% if not is_ajax %}
+{% if is_ajax %}
+<p>
+    <a href="{{ link }}">
+        <img src="{{ STATIC_URL }}link.png" alt="Link to this page"
+		     title="Link to this page" />
+    </a>
+</p>
+{% else %}
 <h2>Graphs for {{ hostnames|join:", " }}</h2>
 
 <p>
@@ -59,18 +66,7 @@
         </tr>
     </table>
 </form>
-{% endif %}
 
-{% if is_ajax %}
-<p>
-    <a href="{{ link }}">
-        <img src="{{ STATIC_URL }}link.png" alt="Link to this page"
-		     title="Link to this page" />
-    </a>
-</p>
-{% endif %}
-
-{% if not is_ajax %}
 {% for name, description in descriptions %}
 <div id="graph_desc_{{ forloop.counter }}"
      title="Graph description for {{ name }}"
@@ -102,9 +98,9 @@
     <tr>
 {% for column_name, graph in graph_column %}
         <td>
-            <img src="{{ GRAPHITE_URL }}/render?{{ graph }}&__auth_token={{ token }}"
-                 alt="{{ name }} {{ column_name }}"
-                 class="graph" />
+            <img class="graph"
+                 src="{{ GRAPHITE_URL }}/render?{{ graph }}&__auth_token={{ token }}"
+                 alt="{{ name }} {{ column_name }}" />
         </td>
 {% endfor %}
     </tr>
@@ -113,10 +109,7 @@
 {% endblock content %}
 
 {% block additional_body %}
-
 {% if not is_ajax %}
-<script type="text/javascript"
-        src="{{ STATIC_URL }}servermonitor/servermonitor.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}graphite/graphite.js"></script>
 {% endif %}
-
 {% endblock additional_body %}

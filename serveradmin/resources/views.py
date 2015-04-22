@@ -46,13 +46,13 @@ def index(request):
                 template_info.update({
                     'understood': understood,
                 })
-                return TemplateResponse(request, 'servermonitor/index.html',
+                return TemplateResponse(request, 'resources/index.html',
                         template_info)
         except (ValueError, DatasetError), e:
             template_info.update({
                 'error': e.message
             })
-            return TemplateResponse(request, 'servermonitor/index.html',
+            return TemplateResponse(request, 'resources/index.html',
                     template_info)
     else:
         understood = query().get_representation().as_code() # It's lazy :-)
