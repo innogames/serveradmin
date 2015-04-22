@@ -16,8 +16,6 @@ from serveradmin.serverdb.models import ServerType, Segment
 @ensure_csrf_cookie
 def graph_table(request):
     """Graph table page
-
-    We will accept all GET parameters and pass them to Graphite.
     """
 
     hostnames = [h for h in request.GET.getlist('hostname') if h]

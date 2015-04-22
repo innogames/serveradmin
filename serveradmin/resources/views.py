@@ -1,3 +1,5 @@
+import collections
+
 from django.http import HttpResponseBadRequest
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
@@ -80,7 +82,7 @@ def index(request):
                 })
                 graph_index += 1
 
-    hosts = {}
+    hosts = collections.OrderedDict()
     query_kwargs = {'physical_server': True, 'cancelled': False}
     if len(hostnames) > 0:
         query_kwargs['hostname'] = filters.Any(*hostnames)
