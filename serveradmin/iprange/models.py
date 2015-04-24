@@ -154,13 +154,24 @@ class IPRange(models.Model):
         return self.range_id
 
 def _is_taken(ip):
+    query_parts = []
+    query_parts.append(
+        '(SELECT COUNT(*) FROM admin_server WHERE intern_ip = %s)')
+    ip_attrs = lookups.attr_names['all_ips'].special.attrs
+    for attr in ip_attrs:
+        attrib_id = lookups.attr_names[attr].pk
+        if attrib_id is None:
+            continue
+        query = ('(SELECT COUNT(*) '
+                 'FROM attrib_values '
+                 'WHERE value = %s AND attrib_id = {0})').format(
+                    attrib_id)
+        query_parts.append(query)
+
     attrib_id = lookups.attr_names['additional_ips'].pk
-    query = ('SELECT (SELECT COUNT(*) FROM admin_server '
-             '        WHERE intern_ip = %s) + '
-             '       (SELECT COUNT(*) FROM attrib_values '
-             '        WHERE value = %s AND attrib_id = {0})').format(attrib_id)
+    query = 'SELECT {0}'.format(' + '.join(query_parts))
     c = connection.cursor()
-    c.execute(query, (ip, ip))
+    c.execute(query, [ip]*len(query_parts))
     result = c.fetchone()[0]
     c.close()
     return result != 0
