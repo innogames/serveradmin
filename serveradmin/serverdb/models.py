@@ -41,8 +41,8 @@ class Attribute(models.Model):
         return self.name
 
     def used_in(self):
-        stype_attrs = ServerTypeAttributes.objects.filter(attrib=self) \
-                      .select_related('servertype')
+        stype_attrs = (ServerTypeAttributes.objects.select_related('servertype')
+                      .filter(attrib=self).order_by('servertype__name'))
         return [x.servertype for x in stype_attrs]
 
 class ServerType(models.Model):
