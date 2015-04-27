@@ -10,6 +10,7 @@
         <th>Name</th>
         <th>Type</th>
         <th>Multi</th>
+        <th>Servertypes</th>
 {% if perms.serverdb.delete_attribute %}
         <th>Delete</th>
 {% endif %}
@@ -19,6 +20,13 @@
         <td>{{ attr.name }}</td>
         <td>{{ attr.get_type_display }}</td>
         <td>{{ attr.multi|yesno }}</td>
+        <td>
+            <ul>
+{% for servertype in attr.used_in %}
+                <li><a href="{% url 'serverdb_view_servertype' servertype.name %}">{{ servertype.name }}</a></li>
+{% endfor %}
+            </ul>
+        </td>
 {% if perms.serverdb.delete_attribute %}
         <td>
         {% if attr.pk %}

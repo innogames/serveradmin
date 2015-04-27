@@ -40,6 +40,11 @@ class Attribute(models.Model):
     def __unicode__(self):
         return self.name
 
+    def used_in(self):
+        stype_attrs = ServerTypeAttributes.objects.filter(attrib=self) \
+                      .select_related('servertype')
+        return [x.servertype for x in stype_attrs]
+
 class ServerType(models.Model):
     servertype_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=64, unique=True)
