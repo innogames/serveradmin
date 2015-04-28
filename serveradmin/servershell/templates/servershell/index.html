@@ -55,7 +55,9 @@
                 <input type="checkbox" name="attr" value="{{ attr.name }}" {% if attr == 'all_ips' %}disabled="disabled" {% endif %}{% if attr.name in checked_attributes %}checked="checked" {% endif %}/>
             {{ attr.name }}
         </label>
+{% if attr.hovertext %}
 		<a class="attr-tooltip" href="{{ attr.wiki_link }}" title="{{ attr.hovertext }}">?</a>
+{% endif %}
         </li>
     {% endfor %}
     </ul>
