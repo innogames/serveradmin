@@ -32,8 +32,8 @@ class Attribute(models.Model):
     type = models.CharField(max_length=64, choices=TYPE_CHOICES)
     base = models.BooleanField(default=False)
     multi = models.BooleanField(default=False)
-    hovertext = models.TextField(blank=True)
-    group = models.CharField(max_length=64)
+    hovertext = models.TextField(blank=True, default='')
+    group = models.CharField(max_length=64, default='other')
 
     class Meta:
         app_label = 'serverdb'

@@ -4,7 +4,7 @@ from serveradmin.serverdb.models import (Attribute, Segment, SegmentUsage,
                                        ChangeDelete)
 
 class AttributeAdmin(admin.ModelAdmin):
-    fields = ('hovertext', )
+    fields = ('hovertext', 'group')
 
 admin.site.register(Attribute, AttributeAdmin)
 admin.site.register(Segment)
