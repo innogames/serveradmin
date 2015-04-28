@@ -37,17 +37,17 @@ def _read_lookups(sender=None, **kwargs):
     # Special attributes that don't have an entry in the attrib table
     special_attributes = [
         Attribute(name=u'object_id', type=u'integer', base=False, multi=False,
-            special=ServerTableSpecial(u'server_id')),
+            group='base', special=ServerTableSpecial(u'server_id')),
         Attribute(name=u'hostname', type=u'string', base=True, multi=False,
-            special=ServerTableSpecial(u'hostname', unique=True)),
+            group='base', special=ServerTableSpecial(u'hostname', unique=True)),
         Attribute(name=u'servertype', type=u'string', base=True, multi=False,
-            special=ServerTableSpecial(u'servertype_id')),
+            group='base', special=ServerTableSpecial(u'servertype_id')),
         Attribute(name=u'intern_ip', type=u'ip', base=True, multi=False,
-            special=ServerTableSpecial(u'intern_ip')),
+            group='base', special=ServerTableSpecial(u'intern_ip')),
         Attribute(name=u'segment', type=u'string', base=True, multi=False,
-            special=ServerTableSpecial(u'segment')),
+            group='base', special=ServerTableSpecial(u'segment')),
         Attribute(name=u'all_ips', type=u'ip', base=False, multi=True,
-            special=CombinedSpecial(u'intern_ip', u'additional_ips', u'ipmi_ip'))
+            group='base', special=CombinedSpecial(u'intern_ip', u'additional_ips', u'ipmi_ip'))
     ]
     lookups.special_attributes = special_attributes
 
