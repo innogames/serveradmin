@@ -35,6 +35,7 @@ class Attribute(models.Model):
     multi = models.BooleanField(default=False)
     hovertext = models.TextField(blank=True, default='')
     group = models.CharField(max_length=64, default='other')
+    help_link = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
         app_label = 'serverdb'
@@ -49,7 +50,12 @@ class Attribute(models.Model):
                       .filter(attrib=self).order_by('servertype__name'))
         return [x.servertype for x in stype_attrs]
 
-    def wiki_link(self):
+    def external_link(self):
+        if self.help_link:
+            return self.help_link
+        return self.search_link()
+
+    def search_link(self):
         return settings.ATTRIBUTE_WIKI_LINK.format(attr=self.name)
 
 class ServerType(models.Model):
