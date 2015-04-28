@@ -1,6 +1,7 @@
 import json
 
 from django.db import models
+from django.db.models.signals import post_save
 from django.core.cache import cache
 from django.utils.timezone import now
 from django.contrib.auth.models import User
@@ -70,7 +71,7 @@ class ServerType(models.Model):
                     attrib_default=attr.attrib_default,
                     regex=attr.regex,
                     default_visible=attr.default_visible)
-            cache.delete('dataset_lookups_version')
+            clear_lookups()
 
 
     class Meta:
@@ -216,3 +217,12 @@ class ChangeAdd(models.Model):
 
     class Meta:
         app_label = 'serverdb'
+
+
+def clear_lookups():
+    cache.delete('dataset_lookups_version')
+
+
+def _attribute_changed(sender, **kwargs):
+    clear_lookups()
+post_save.connect(_attribute_changed, sender=Attribute)

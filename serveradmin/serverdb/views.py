@@ -7,7 +7,6 @@ from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
-from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django import forms
 
@@ -16,7 +15,8 @@ from serveradmin.dataset.create import create_server
 from serveradmin.dataset.exceptions import CommitError
 
 from serveradmin.serverdb.models import (ServerType, Attribute, AttributeValue,
-        ServerTypeAttributes, ChangeCommit, ChangeAdd, ChangeUpdate, ChangeDelete)
+        ServerTypeAttributes, ChangeCommit, ChangeAdd, ChangeUpdate,
+        ChangeDelete, clear_lookups)
 
 @login_required
 def servertypes(request):
@@ -62,7 +62,7 @@ def add_servertype(request):
         form = AddForm(request.POST)
         if form.is_valid():
             stype = form.save()
-            _clear_lookups()
+            clear_lookups()
             return redirect('serverdb_view_servertype', stype.name)
     else:
         form = AddForm()
@@ -78,7 +78,7 @@ def delete_servertype(request, servertype_name):
     if request.method == 'POST':
         if 'confirm' in request.POST:
             stype.delete()
-            _clear_lookups()
+            clear_lookups()
             messages.success(request, u'Servertype deleted.')
         else:
             msg = u'Please confirm the usage of weapons of mass destruction.'
@@ -154,7 +154,7 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
                     stype_attr.attrib_default = None
             
             stype_attr.save()
-            _clear_lookups()
+            clear_lookups()
             messages.success(request, msg)
             return redirect('serverdb_view_servertype', stype.name)
     else:
@@ -209,7 +209,7 @@ def delete_attribute(request, attribute_name):
     attribute = get_object_or_404(Attribute, name=attribute_name)
     if request.method == 'POST' and 'confirm' in request.POST:
         attribute.delete()
-        _clear_lookups()
+        clear_lookups()
         messages.success(request, u'Attribute "{0}" deleted'.format(
                     attribute.name))
         return redirect('serverdb_attributes')
@@ -230,7 +230,7 @@ def add_attribute(request):
         add_form = AddForm(request.POST)
         if add_form.is_valid():
             attribute = add_form.save()
-            _clear_lookups()
+            clear_lookups()
             messages.success(request, u'Attribute "{0}" added'.format(
                     attribute.name))
             return redirect('serverdb_attributes')
@@ -312,7 +312,3 @@ def restore_deleted(request, change_commit):
     else:
         messages.success(request, 'Server restored.')
     return redirect(reverse('serverdb_history') + '?hostname=' + server_obj['hostname'])
-
-def _clear_lookups():
-    cache.delete('dataset_lookups_version')
-
