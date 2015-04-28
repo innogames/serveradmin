@@ -54,7 +54,7 @@
     {% for attr in attribute_list %}
         <li data-attr="{{ attr.name }}">
         <label>
-                <input type="checkbox" name="attr" value="{{ attr.name }}" {% if attr == 'all_ips' %}disabled="disabled" {% endif %}{% if attr.name in checked_attributes %}checked="checked" {% endif %}/>
+                <input type="checkbox" name="attr" value="{{ attr.name }}" {% if attr.name == 'all_ips' %}disabled="disabled" {% endif %}{% if attr.name in checked_attributes %}checked="checked" {% endif %}/>
             {{ attr.name }}
         </label>
 {% if attr.hovertext %}
