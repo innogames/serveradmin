@@ -50,11 +50,12 @@
     <h3>Attributes <span id="shell_attributes_toggle">(hide)</span></h3>
     <ul>
     {% for attr in attribute_list %}
-        <li data-attr="{{ attr }}">
+        <li data-attr="{{ attr.name }}">
         <label>
-                <input type="checkbox" name="attr" value="{{ attr }}" {% if attr == 'all_ips' %}disabled="disabled" {% endif %}{% if attr in checked_attributes %}checked="checked" {% endif %}/>
-            {{ attr }}
+                <input type="checkbox" name="attr" value="{{ attr.name }}" {% if attr == 'all_ips' %}disabled="disabled" {% endif %}{% if attr.name in checked_attributes %}checked="checked" {% endif %}/>
+            {{ attr.name }}
         </label>
+		<a class="attr-tooltip" href="{{ attr.wiki_link }}" title="{{ attr.hovertext }}">?</a>
         </li>
     {% endfor %}
     </ul>

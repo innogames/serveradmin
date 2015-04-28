@@ -1328,6 +1328,9 @@ $(function() {
         });
         attr_item.prepend(link);
     });
+    $('#shell_attributes li .attr-tooltip').each(function() {
+        $(this).tooltip();
+    });
 
     $('#shell_attributes_toggle').click(function () {
         var attribute_list = $('#shell_attributes ul').toggle();

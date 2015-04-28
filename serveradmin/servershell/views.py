@@ -2,6 +2,7 @@ try:
     import simplejson as json
 except ImportError:
     import json
+from operator import attrgetter
 
 from django.http import (HttpResponse, HttpResponseBadRequest, 
         HttpResponseRedirect, Http404)
@@ -34,7 +35,7 @@ NUM_SERVERS_DEFAULT = 25
 def index(request):
     return TemplateResponse(request, 'servershell/index.html', {
         'checked_attributes': set(request.GET.get('attrs', '').split(',')),
-        'attribute_list': sorted(lookups.attr_names.keys()),
+        'attribute_list': sorted(lookups.attr_names.values(), key=attrgetter('name')),
         'search_term': request.GET.get('term', request.session.get('term', '')),
         'per_page': request.session.get('per_page', NUM_SERVERS_DEFAULT),
         'command_history': json.dumps(request.session.get('command_history', []))

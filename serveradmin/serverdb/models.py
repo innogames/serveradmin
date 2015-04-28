@@ -4,6 +4,7 @@ from django.db import models
 from django.core.cache import cache
 from django.utils.timezone import now
 from django.contrib.auth.models import User
+from django.conf import settings
 
 from serveradmin.common import dbfields
 from serveradmin.apps.models import Application
@@ -31,6 +32,8 @@ class Attribute(models.Model):
     type = models.CharField(max_length=64, choices=TYPE_CHOICES)
     base = models.BooleanField(default=False)
     multi = models.BooleanField(default=False)
+    hovertext = models.TextField(blank=True)
+    group = models.CharField(max_length=64)
 
     class Meta:
         app_label = 'serverdb'
@@ -44,6 +47,9 @@ class Attribute(models.Model):
         stype_attrs = (ServerTypeAttributes.objects.select_related('servertype')
                       .filter(attrib=self).order_by('servertype__name'))
         return [x.servertype for x in stype_attrs]
+
+    def wiki_link(self):
+        return settings.ATTRIBUTE_WIKI_LINK.format(attr=self.name)
 
 class ServerType(models.Model):
     servertype_id = models.AutoField(primary_key=True)
