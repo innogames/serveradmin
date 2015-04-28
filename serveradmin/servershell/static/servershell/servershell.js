@@ -149,7 +149,7 @@ function build_server_table(servers, attributes, offset)
             .attr('value', server['object_id'])
             .attr('id', 'server_' + server['object_id']);
         if (marked_servers.indexOf(server['object_id']) != -1) {
-            check.attr('checked', 'checked');
+            check.prop('checked', true);
         }
         row.append($('<td></td>').append(check));
         row.append($('<td></td>').text(offset + i + 1));
@@ -492,10 +492,9 @@ function render_server_table()
             shown_attributes.remove(index);
         }
     }
-    $('#shell_attributes input[name="attr"]').attr('checked', false);
+    $('#shell_attributes input[name="attr"]').prop('checked', false);
     for(var i = 0; i < shown_attributes.length; i++) {
-        $('#shell_attributes input[value="' + shown_attributes[i] + '"]').attr(
-                'checked', 'checked');
+        $('#shell_attributes input[value="' + shown_attributes[i] + '"]').prop('checked', true);
     }
     build_server_table(search['servers'], shown_attributes, offset);
 }
