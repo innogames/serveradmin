@@ -48,6 +48,8 @@
 <div id="shell_servers"></div>
 <div id="shell_attributes">
     <h3>Attributes <span id="shell_attributes_toggle">(hide)</span></h3>
+    {% for attr_group, attribute_list in attribute_groups %}
+    <h4>{{ attr_group }}</h4>
     <ul>
     {% for attr in attribute_list %}
         <li data-attr="{{ attr.name }}">
@@ -61,6 +63,7 @@
         </li>
     {% endfor %}
     </ul>
+    {% endfor %}
 </div>
 
 <div id="shell_search_help" title="Search help">

@@ -33,9 +33,17 @@ NUM_SERVERS_DEFAULT = 25
 @login_required
 @ensure_csrf_cookie
 def index(request):
+    attributes = lookups.attr_names.values()
+    attribute_groups = {}
+    for attribute in attributes:
+        attribute_groups.setdefault(attribute.group, []).append(attribute)
+    for attributes in attribute_groups.itervalues():
+        attributes.sort(key=attrgetter('name'))
+    attribute_groups = sorted(attribute_groups.iteritems(), key=lambda x: x[0])
+
     return TemplateResponse(request, 'servershell/index.html', {
         'checked_attributes': set(request.GET.get('attrs', '').split(',')),
-        'attribute_list': sorted(lookups.attr_names.values(), key=attrgetter('name')),
+        'attribute_groups': attribute_groups,
         'search_term': request.GET.get('term', request.session.get('term', '')),
         'per_page': request.session.get('per_page', NUM_SERVERS_DEFAULT),
         'command_history': json.dumps(request.session.get('command_history', []))
