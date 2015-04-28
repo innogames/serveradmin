@@ -1332,7 +1332,7 @@ $(function() {
     });
 
     $('#shell_attributes_toggle').click(function () {
-        var attribute_list = $('#shell_attributes ul').toggle();
+        var attribute_list = $('#shell_attributes_content').toggle();
         if (attribute_list.is(':visible')) {
             $('#shell_attributes_toggle').text('(hide)')
         } else {
