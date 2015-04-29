@@ -1,4 +1,5 @@
 from datetime import datetime
+from collections import OrderedDict
 
 from django.db import connection
 
@@ -16,7 +17,7 @@ NUM_OBJECTS_FOR_FILECACHE = 50
 
 class QuerySetRepresentation(object):
     """ Object that can be easily pickled without storing to much data.
-    The main use is to compare querysets for caching. 
+    The main use is to compare querysets for caching.
     """
     def __init__(self, filters, restrict, augmentations, offset, limit,
                  order_by, order_dir):
@@ -29,7 +30,7 @@ class QuerySetRepresentation(object):
         self.limit = limit
         self.order_by = order_by
         self.order_dir = order_dir
-    
+
     def __hash__(self):
         h = 0
         if self.restrict:
@@ -49,28 +50,28 @@ class QuerySetRepresentation(object):
         if self.order_by:
             h ^= hash(self.order_by)
             h ^= hash(self.order_dir)
-        
+
         return h
-    
+
     def __eq__(self, other):
         if not isinstance(other, QuerySetRepresentation):
             return False
-        
+
         if self.restrict and other.restrict:
             if set(self.restrict) - set(other.restrict):
                 return False
         elif self.restrict or other.restrict:
             return False
-        
+
         if self.augmentations and other.augmentations:
             if set(self.augmentations) - set(other.augmentations):
                 return False
         elif self.augmentations or other.augmentations:
             return False
-        
+
         if len(self.filters) != len(other.filters):
             return False
-        
+
         for key in self.filters:
             if key not in other.filters:
                 return False
@@ -82,18 +83,18 @@ class QuerySetRepresentation(object):
 
         if self.order_by != other.order_by or self.order_dir != other.order_dir:
             return False
-        
+
         return True
 
     def as_code(self, hide_extra=True):
         args = []
         for attr_name, value in self.filters.iteritems():
             args.append(u'{0}={1}'.format(attr_name, value.as_code()))
-            
+
         if hide_extra:
             # FIXME: Add restrict/limit/augment etc.
             extra = u''
-        
+
         return u'query({0}){1}'.format(u', '.join(args), extra)
 
 class QuerySet(BaseQuerySet):
@@ -136,27 +137,27 @@ class QuerySet(BaseQuerySet):
     def limit(self, offset, limit=None):
         if limit is None:
             limit, offset = offset, 0
-        
+
         if limit < 1:
             raise ValueError('Invalid limit')
         if offset < 0:
             raise ValueError('Invalid offset')
-        
+
         self._offset = offset
         self._limit = limit
-        
+
         return self
 
     def order_by(self, order_by, order_dir='asc'):
         check_attributes([order_by])
         if order_dir not in ('asc', 'desc'):
             raise ValueError('Invalid order direction')
-        
+
         self._order_by = order_by
         self._order_dir = order_dir
-        
+
         return self
-    
+
     def _get_results(self):
         if self._results is not None:
             return
@@ -196,11 +197,11 @@ class QuerySet(BaseQuerySet):
                 order_by = u'hostname'
                 order_dir = u'asc'
             builder.add_limit(self._offset, self._limit)
-        
+
         if order_by:
             builder.add_attribute(order_by, optional=True)
             builder.add_ordering((order_by, order_dir))
-        
+
         for attr in ('object_id', 'hostname', 'intern_ip', 'segment', 'servertype'):
             builder.add_attribute(attr)
             builder.add_select(attr)
@@ -209,7 +210,14 @@ class QuerySet(BaseQuerySet):
 
         c = connection.cursor()
         c.execute(sql_stmt)
-        server_data = {}
+
+        # We need to preserve ordering if ordering is requested, otherwise
+        # we can use normal dict as it performs better.
+        if order_by:
+            server_data = OrderedDict()
+        else:
+            server_data = dict()
+
         servertype_lookup = dict((k, v.name) for k, v in
                 lookups.stype_ids.iteritems())
         restrict = self._restrict
@@ -231,10 +239,10 @@ class QuerySet(BaseQuerySet):
                     attrs[u'segment'] = segment
                 if u'servertype' in restrict:
                     attrs[u'servertype'] = servertype_lookup[stype]
-            
+
             server_object = ServerObject(attrs, server_id, self)
             server_data[server_id] = server_object
-            
+
             for attr in lookups.stype_ids[stype].attributes:
                 if attr.multi:
                     if not restrict or attr.name in restrict:
@@ -242,7 +250,7 @@ class QuerySet(BaseQuerySet):
 
         c.execute('SELECT FOUND_ROWS()')
         self._num_rows = c.fetchone()[0]
-        
+
         # Return early if there are no servers (= empty dict)
         if not server_data:
             return server_data
@@ -258,7 +266,7 @@ class QuerySet(BaseQuerySet):
             # admin_server table. We can return early
             if not restrict:
                 add_attributes = False
-        
+
         if add_attributes:
             self._add_additional_attrs(server_data, restrict)
 
@@ -269,7 +277,7 @@ class QuerySet(BaseQuerySet):
         server_ids = u', '.join(map(str, server_data.iterkeys()))
         sql_stmt = (u'SELECT server_id, attrib_id, value FROM attrib_values '
                     u'WHERE server_id IN({0})').format(server_ids)
-        
+
         if restrict:
             restrict_ids = u', '.join(str(lookups.attr_names[attr_name].pk)
                     for attr_name in restrict)
@@ -277,7 +285,7 @@ class QuerySet(BaseQuerySet):
 
         _getitem = dict.__getitem__
         _setitem = dict.__setitem__
-       
+
         c.execute(sql_stmt)
         attr_ids = lookups.attr_ids
         for server_id, attr_id, value in c.fetchall():
@@ -301,7 +309,7 @@ class QuerySet(BaseQuerySet):
                 _getitem(server_data[server_id], attr.name).add(value)
             else:
                 _setitem(server_data[server_id], attr.name, value)
-    
+
     def _cache_pre_store(self, server_data):
         return server_data
 

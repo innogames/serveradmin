@@ -51,7 +51,7 @@ class QueryBuilder(object):
                 where = (u'av{0}.server_id = adms.server_id AND '
                          u'av{0}.attrib_id = {1}').format(uid, attr_obj.pk)
                 self.sql_where.append(where)
-        
+
         self.aliases[alias] = {'attr': attr_obj, 'field': attr_field}
         return self.aliases[alias]
 
@@ -72,7 +72,7 @@ class QueryBuilder(object):
 
     def add_filter(self, alias, filter_obj):
         self.sql_where.append(self.get_filter_sql(alias, filter_obj))
-    
+
     def add_ordering(self, ordering):
         alias, direction = ordering
         direction = 'DESC' if direction.lower() == 'desc' else 'ASC'
@@ -94,7 +94,7 @@ class QueryBuilder(object):
     def add_group_by(self, *aliases):
         for alias in aliases:
             self.sql_group_by.append(self.aliases[alias]['field'])
-    
+
     def build_sql(self):
         self.sql_from_tables.append(u'admin_server AS adms')
         keywords = u' '.join(self.sql_keywords)
@@ -129,7 +129,7 @@ class QueryBuilder(object):
 # Note: This function is also inlined in queryset.py for performance
 def typecast_attribute(attr_name, value):
     attr_type = lookups.attr_names[attr_name].type
-    
+
     if attr_type == u'integer':
         return int(value)
     elif attr_type == u'boolean':
