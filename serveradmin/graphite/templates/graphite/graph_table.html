@@ -80,13 +80,13 @@
         <td>
             <h4>Table of Contents</h4>
 
-{% for name, graph_column in graph_table %}
             <ul>
+{% for name, graph_column in graph_table %}
                 <li>
                     <a href="#{{ name }}">{{ name }}</a>
                 </li>
-            </ul>
 {% endfor %}
+            </ul>
         </td>
     </tr>
 </table>
