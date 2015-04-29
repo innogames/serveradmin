@@ -86,7 +86,7 @@ def index(request):
     query_kwargs = {'physical_server': True, 'cancelled': False}
     if len(hostnames) > 0:
         query_kwargs['hostname'] = filters.Any(*hostnames)
-    for server in query(**query_kwargs).restrict('hostname', 'servertype'):
+    for server in query(**query_kwargs).restrict('hostname', 'servertype').order_by('hostname'):
         hosts[server['hostname']] = {
             'hostname': server['hostname'],
             'servertype': server['servertype'],
@@ -96,7 +96,7 @@ def index(request):
 
     # Add guests for the table cells.
     query_kwargs = {'xen_host': filters.Any(*hosts.keys()), 'cancelled': False}
-    for server in query(**query_kwargs).restrict('hostname', 'xen_host'):
+    for server in query(**query_kwargs).restrict('hostname', 'xen_host').order_by('hostname'):
         hosts[server['xen_host']]['guests'].append(server['hostname'])
 
     # Add cached numerical values to the table cells.
