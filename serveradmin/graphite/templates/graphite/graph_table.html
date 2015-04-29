@@ -81,7 +81,19 @@
 {% endfor %}
 {% endif %}
 
+<h3>Table of Contents</h3>
+
 {% for name, graph_column in graph_table %}
+<ul>
+    <li>
+        <a href="#{{ name }}">{{ name }}</a>
+    </li>
+</ul>
+{% endfor %}
+
+{% for name, graph_column in graph_table %}
+<a name="{{ name }}"></a>
+
 <h3>{{ name }}
 {% if not is_ajax %}
     <img src="{{ STATIC_URL }}help.png" class="graph_desc_icon"
