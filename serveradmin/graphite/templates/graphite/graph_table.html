@@ -13,66 +13,83 @@
 {% else %}
 <h2>Graphs for {{ hostnames|join:", " }}</h2>
 
-<p>
-    From: and Until: accepts absolute or relative times.  They will be passed
-    to Graphite directly.  Graphite uses at(1) compatible time format.  These
-    are a few examples:
+<table>
+    <tr>
+        <td>
+            <p>
+                From: and Until: accepts absolute or relative times.  They will be passed
+                to Graphite directly.  Graphite uses at(1) compatible time format.  These
+                are a few examples:
 
-    <ul>
-        <li>19:00_20150401</li>
-        <li>-1week</li>
-        <li>1am tomorrow</li>
-    </ul>
-</p>
+                <ul>
+                    <li>19:00_20150401</li>
+                    <li>-1week</li>
+                    <li>1am tomorrow</li>
+                </ul>
+            </p>
 
-<form method="get">
-    <table>
-        <table>
-        <tr>
-            <th>From:</th>
-            <td>
-                <input name="from" type="text" value="{{ from }}" />
-            </td>
-        </tr>
+            <form method="get">
+                <table>
+                    <table>
+                    <tr>
+                        <th>From:</th>
+                        <td>
+                            <input name="from" type="text" value="{{ from }}" />
+                        </td>
+                    </tr>
 
-        <tr>
-            <th>Until:</th>
-            <td>
-                <input name="until" type="text" value="{{ until }}" />
-            </td>
-        </tr>
+                    <tr>
+                        <th>Until:</th>
+                        <td>
+                            <input name="until" type="text" value="{{ until }}" />
+                        </td>
+                    </tr>
 
-        <tr>
-            <td></td>
-            <td>
-                <input name="action" type="submit" value="Submit" />
-            </td>
-        </tr>
+                    <tr>
+                        <td></td>
+                        <td>
+                            <input name="action" type="submit" value="Submit" />
+                        </td>
+                    </tr>
 
 {% for hostname in hostnames %}
-        <tr>
-            <th>Hostname:</th>
-            <td>
-                <input name="hostname" type="text" value="{{ hostname }}" />
-            </td>
-        </tr>
+                    <tr>
+                        <th>Hostname:</th>
+                        <td>
+                            <input name="hostname" type="text" value="{{ hostname }}" />
+                        </td>
+                    </tr>
 {% endfor %}
 
-        <tr>
-            <th>Hostname:</th>
-            <td>
-                <input name="hostname" type="text" value="" />
-            </td>
-        </tr>
+                    <tr>
+                        <th>Hostname:</th>
+                        <td>
+                            <input name="hostname" type="text" value="" />
+                        </td>
+                    </tr>
 
-        <tr>
-            <td>
-                <input name="action" type="submit" value="Add" />
-            </td>
-            <td></td>
-        </tr>
-    </table>
-</form>
+                    <tr>
+                        <td>
+                            <input name="action" type="submit" value="Add" />
+                        </td>
+                        <td></td>
+                    </tr>
+                </table>
+            </form>
+        </td>
+        <td>
+            <h4>Table of Contents</h4>
+
+{% for name, graph_column in graph_table %}
+            <ul>
+                <li>
+                    <a href="#{{ name }}">{{ name }}</a>
+                </li>
+            </ul>
+{% endfor %}
+        </td>
+    </tr>
+</table>
 
 {% for name, description in descriptions %}
 <div id="graph_desc_{{ forloop.counter }}"
@@ -80,16 +97,6 @@
      style="display:none;">{{ description|safe }}</div>
 {% endfor %}
 {% endif %}
-
-<h3>Table of Contents</h3>
-
-{% for name, graph_column in graph_table %}
-<ul>
-    <li>
-        <a href="#{{ name }}">{{ name }}</a>
-    </li>
-</ul>
-{% endfor %}
 
 {% for name, graph_column in graph_table %}
 <a name="{{ name }}"></a>
