@@ -1,7 +1,10 @@
+import urllib2, json
 from string import Formatter
 
 from django.db import models
 from django.conf import settings
+
+import django_urlauth.utils
 
 from adminapi.dataset.base import MultiAttr
 from serveradmin.serverdb.models import Attribute
@@ -50,7 +53,6 @@ class Collection(models.Model):
     class Meta:
         db_table = 'graphite_collection'
         ordering = ('sort_order', )
-        #unique_together = (('attrib', 'attrib_value', 'overview'), )
 
     def __init__(self, *args, **kwargs):
         models.Model.__init__(self, *args, **kwargs)
@@ -89,9 +91,17 @@ class Collection(models.Model):
 
         column = []
         for template in self.template_set.filter(numeric_value=False):
-            formatter = AttributeFormatter()
-            params = self.merged_params((template.params, custom_params))
-            column.append((template.name, formatter.vformat(params, (), server)))
+            for foreach_metric in template.foreach(server):
+                formatter = AttributeFormatter({
+                    'foreach_id': foreach_metric['id'],
+                })
+                params = self.merged_params((template.params, custom_params))
+
+                name = template.name
+                if foreach_metric['text']:
+                    name += ' - ' + foreach_metric['text']
+
+                column.append((name, formatter.vformat(params, (), server)))
 
         return column
 
@@ -117,15 +127,24 @@ class Collection(models.Model):
 
         table = []
         for template in self.template_set.filter(numeric_value=False):
-            column = []
-            for variation in self.variation_set.all():
-                formatter = AttributeFormatter(variation.summarize_interval)
-                params = self.merged_params((variation.params, template.params,
-                                             custom_params))
-                column.append((variation.name,
-                               formatter.vformat(params, (), server)))
+            for foreach_metric in template.foreach(server):
+                column = []
+                for variation in self.variation_set.all():
+                    formatter = AttributeFormatter({
+                        'foreach_id': foreach_metric['id'],
+                        'summarize_interval': variation.summarize_interval,
+                    })
+                    params = self.merged_params((variation.params,
+                                                 template.params,
+                                                 custom_params))
+                    column.append((variation.name,
+                                   formatter.vformat(params, (), server)))
 
-            table.append((template.name, column))
+                name = template.name
+                if foreach_metric['text']:
+                    name += ' - ' + foreach_metric['text']
+
+                table.append((name, column))
 
         return table
 
@@ -158,7 +177,13 @@ class Template(models.Model):
         Marks the template as a numeric value instead of a graph.  Numerical
         values will be queried from the Graphite and saved in a table.
         """)
+    foreach_path = models.CharField(max_length=256, blank=True, help_text="""
+        Generates multiple graphs from the same template.  Variables can be
+        used like "params".  It will be a variable for the "params" that can
+        be used as {foreach_id}.  Example value:
 
+            servers.{hostname}.system.cpu.*
+        """)
 
     class Meta:
         db_table = 'graphite_template'
@@ -167,6 +192,36 @@ class Template(models.Model):
 
     def __unicode__(self):
         return self.name
+
+    def foreach(self, server):
+        """Helper function to iterate Graphite metrics using foreach_path
+
+        We will return an empty element even though foreach_path is not set
+        for convenience of the caller.
+        """
+
+        if self.foreach_path:
+            token = django_urlauth.utils.new_token('serveradmin',
+                                                   settings.GRAPHITE_SECRET)
+            formatter = AttributeFormatter()
+            params = formatter.vformat('query=' + self.foreach_path, (), server)
+            url = (settings.GRAPHITE_URL + '/metrics/find?' +
+                   '__auth_token=' + token + '&' + params)
+            opener = urllib2.build_opener()
+            response = opener.open(url).read()
+
+            if response:
+                return json.loads(response)
+
+        return [{
+            'id': '',
+            'leaf': 0,
+            'context': {},
+            'text': '',
+            'expandable': 0,
+            'allowChildren': 0,
+        }]
+
 
 class Variation(models.Model):
     """Variation to render the templates
@@ -225,14 +280,14 @@ class AttributeFormatter(Formatter):
     the same multiple attributes again, if we run out of them.
     """
 
-    def __init__(self, summarize_interval=''):
+    def __init__(self, variables={}):
         Formatter.__init__(self)
-        self._summarize_interval = summarize_interval
+        self._variables = variables
         self._last_item_ids = {}
 
     def get_value(self, key, args, server):
-        if key == 'summarize_interval':
-            return self._summarize_interval
+        if key in self._variables:
+            return self._variables[key]
 
         if key not in server:
             return ''
@@ -265,4 +320,3 @@ class AttributeFormatter(Formatter):
             return value.replace('.', '_').replace('-', '_')
         else:
             return value.replace('.', '_')
-
