@@ -108,7 +108,7 @@
 {% endblock content %}
 
 {% block additional_body %}
-<script type="text/javascript" src="{{ STATIC_URL }}servermonitor/servermonitor.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}graphite/graphite.js"></script>
 <script type="text/javascript">
 var monitor_graph_popup_url = '{% url 'resources_graph_popup' %}';
 var monitor_reload_url = '{% url 'servermonitor_reload' %}';

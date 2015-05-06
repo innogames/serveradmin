@@ -138,7 +138,5 @@ def graph_popup(request):
                    '__auth_token=' + token)
 
             return TemplateResponse(request, 'resources/graph_popup.html', {
-                'hostname': hostname,
-                'graph': graph,
                 'image': url
             })
