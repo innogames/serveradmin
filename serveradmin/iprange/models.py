@@ -8,6 +8,7 @@ from serveradmin.dataset.base import lookups
 from serveradmin.dataset.exceptions import DatasetError
 from serveradmin.dataset.querybuilder import QueryBuilder
 from serveradmin.dataset import filters
+from serveradmin.serverdb.models import Segment
 
 IP_CHOICES = (
     ('ip', 'Private'),
@@ -16,7 +17,7 @@ IP_CHOICES = (
 
 class IPRange(models.Model):
     range_id = models.CharField(max_length=20, primary_key=True)
-    segment = models.CharField(max_length=30, db_column='segment_id')
+    segment = models.ForeignKey(Segment, db_column='segment_id')
     ip_type = models.CharField(max_length=10, choices=IP_CHOICES)
     min = dbfields.IPv4Field(null=True)
     max = dbfields.IPv4Field(null=True)
@@ -29,7 +30,7 @@ class IPRange(models.Model):
     gateway6 = dbfields.IPv6Field(null=True)
     internal_gateway6 = dbfields.IPv6Field(null=True)
     vlan = models.IntegerField(null=True)
-    belongs_to = models.ForeignKey('IPRange', null=True, blank=True,
+    belongs_to = models.ForeignKey('self', null=True, blank=True,
             related_name='subnet_of')
 
     def get_free(self, increase_pointer=True):
@@ -110,7 +111,7 @@ class IPRange(models.Model):
         builder.add_filter('all_ips', f_between)
         fields = lookups.attr_names['all_ips'].special.attrs
         builder.add_select(*fields)
-        
+
         # Collect taken IPs in set
         taken_ips = set()
         c = connection.cursor()
@@ -130,7 +131,7 @@ class IPRange(models.Model):
         for ip_int in xrange(self.min.as_int() + 1, self.max.as_int()):
             if ip_int not in taken_ips:
                 free_ips.add(ip_int)
-        
+
         return free_ips
 
     @property

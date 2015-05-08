@@ -49,7 +49,7 @@ def index(request):
 def details(request, range_id):
     iprange = get_object_or_404(IPRange, range_id=range_id)
 
-    taken_ips = iprange.get_taken_set() 
+    taken_ips = iprange.get_taken_set()
     # Divide IP range into continues blocks
     free_blocks = []
     free_block = []
@@ -133,18 +133,24 @@ def edit(request, range_id):
                     next_free6=data['start6'],
                     gateway6=data['gateway6'],
                     internal_gateway6=data['internal_gateway6'])
+
             messages.success(request, u'Edited IP range "{0}"'.format(
                     iprange.range_id))
+
             return HttpResponseRedirect('{0}?segment={1}'.format(
                     reverse('iprange_index'), data['segment'].segment))
     else:
-        initial = {'range_id': iprange.range_id, 'segment': iprange.segment,
-                   'ip_type': iprange.ip_type, 'gateway': iprange.gateway,
-                   'internal_gateway' : iprange.internal_gateway,
-                   'vlan' : iprange.vlan,
-                   'gateway6' : iprange.gateway6,
-                   'internal_gateway6' : iprange.internal_gateway6,
-                   'belongs_to': iprange.belongs_to}
+        initial = {
+                'range_id': iprange.range_id,
+                'segment': iprange.segment,
+                'ip_type': iprange.ip_type,
+                'gateway': iprange.gateway,
+                'internal_gateway': iprange.internal_gateway,
+                'vlan': iprange.vlan,
+                'gateway6': iprange.gateway6,
+                'internal_gateway6': iprange.internal_gateway6,
+                'belongs_to': iprange.belongs_to,
+        }
         cidr = iprange.cidr
         if cidr:
             initial['cidr'] = cidr
