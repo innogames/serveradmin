@@ -175,7 +175,7 @@ def _build_range_object(r):
     belongs_to = r.belongs_to.range_id if r.belongs_to else None
     return {
         'range_id': r.range_id,
-        'segment': r.segment,
+        'segment': str(r.segment),
         'type': 'private' if r.ip_type == 'ip' else 'public',
         'min': r.min,
         'max': r.max,
