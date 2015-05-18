@@ -123,7 +123,7 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
         created_server = real_attributes.copy()
         created_server['hostname'] = hostname
         created_server['intern_ip'] = intern_ip
-        created_server['segment'] = segment
+        created_server['segment'] = str(segment)
 
         commit = ChangeCommit.objects.create(app=app, user=user)
         attributes_json = json.dumps(created_server, default=json_encode_extra)
