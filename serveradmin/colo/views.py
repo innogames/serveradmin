@@ -5,18 +5,18 @@ from django.contrib.auth.decorators import login_required
 from django.template.response import TemplateResponse
 
 datacenters = {
-    'af': 'Süderstraße',
-    'aw': 'Wendenstraße',
+    'af': 'Süderstraße S108.1',
+    'aw.1': 'Wendenstraße W408.1',
+    'aw.2': 'Wendenstraße W408.2',
 }
 
 @login_required
 def index(request):
     content = ''
-    for file_name in os.listdir(settings.COLO_DATADIR):
-        code = file_name[:-5]
-        content += '<h2>' + datacenters[code] + ' (' + code + ')</h2>'
+    for colo in datacenters:
+        content += '<h2>' + colo + ' (' + datacenters[colo] + ')</h2>'
 
-        with open(settings.COLO_DATADIR + '/' + file_name) as f:
+        with open(settings.COLO_DATADIR + '/' + colo + '.html') as f:
             content += f.read()
 
     return TemplateResponse(request, 'colo/index.html', {
