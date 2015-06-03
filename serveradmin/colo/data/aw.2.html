@@ -1,0 +1,505 @@
+
+<!-- saved from url=(0053)http://dcp.c.artfiles.de/statistik/coloplan_w408.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Coloplan</title>
+<script type="text/javascript">
+	function showPowergraph(id) {
+		window.open("power.html?meter_id=" + id + "&quantity=current", "_blank");
+		exit;
+	}
+</script>
+<style type="text/css">
+	@import url(/static/colo_formate.css);
+
+	/*
+	@media screen {
+		td.duct {
+			height: 40px;
+			background-image: url(/static/duct.gif);
+		}
+	}
+
+	@media print {
+		td.duct {
+			height: 40px;
+			background-color: #cccccc;
+		}
+	}
+	*/
+
+	body {
+		background-color: #ffffff;
+		font-family: Arial, Verdana, sans-serif;
+	}
+
+	table.root {
+		margin-top: 10px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	table.rack_act_router, table.rack_act_verteiler, table.rack_act_normal,
+	table.rack_nom_router, table.rack_nom_verteiler, table.rack_nom_normal,
+	table.rack_none {
+		margin: 0;
+		margin-left: auto;
+		margin-right: auto;
+		padding: 0;
+		border-spacing: 0;
+		border-collapse: collapse;
+		width: 40px;
+		height: 80px;
+	}
+
+	table.rack_act_router:hover, table.rack_act_verteiler:hover, table.rack_act_normal:hover,
+	table.rack_nom_router:hover, table.rack_nom_verteiler:hover, table.rack_nom_normal:hover,
+	table.rack_none:hover {
+	}
+
+	table.rack_act_router, table.rack_act_verteiler, table.rack_act_normal {
+		border: 1px solid #000000;
+	}
+
+	table.rack_nom_router, table.rack_nom_verteiler, table.rack_nom_normal, table.rack_none {
+		border: 1px dotted #000000;
+	}
+
+	table.rack_act_router {
+		background-color: #ddccaa;
+	}
+
+	table.rack_act_verteiler {
+		background-color: #ccccff;
+	}
+
+	table.rack_act_normal {
+		background-color: #dddddd;
+	}
+
+	table.rack_nom_router {
+		background-color: #ffeeee;
+	}
+
+	table.rack_nom_verteiler {
+		background-color: #eeeeff;
+	}
+
+	table.rack_nom_normal {
+		background-color: #eeeeee;
+	}
+
+	table.rack_amp_exceeded caption {
+		background-color: #ee6060;
+	}
+
+	table.rack_none {
+		background-color: #ffffff;
+	}
+
+	caption.rack_title {
+		caption-side: top;
+		font-size: 9pt;
+	}
+
+	td.colhead {
+		height: 30px;
+		text-align: center;
+		vertical-align: top;
+		font-size: 10pt;
+		font-weight: bold;
+	}
+
+	td.rowhead {
+		text-align: left;
+		vertical-align: middle;
+		font-size: 10pt;
+		font-weight: bold;
+		padding-right: 10px;
+	}
+
+	td.empty {
+		height: 40px;
+		background-color: #ffffff;
+	}
+
+	td.empty2 {
+		height: 20px;
+		background-color: #ffffff;
+	}
+
+	td.duct {
+		height: 40px;
+		background-image: url(/static/duct.gif);
+	}
+
+	td.rack_title {
+		margin: 0;
+		padding: 0;
+		text-align: center;
+	}
+
+	td.rack_remark {
+		padding-left: 1px;
+		font-size: 7pt;
+		height: 99%;
+		text-align: center;
+		vertical-align: top;
+	}
+
+	td.rack_switch {
+		font-size: 6pt;
+		text-align: center;
+		border-bottom: 1px solid #000000;
+		background: #eeeebb;
+	}
+
+	td.rack_meter_full, td.rack_meter_half, td.rack_meter_free, td.rack_meter_nom, td.rack_meter_inactive {
+		font-size: 6pt;
+		text-align: center;
+		padding: 0 1px 0 1px;
+	}
+	td.inno {
+		background: #059E00;
+		color: #FFF;
+	}
+
+	tr.rack_meter_full {
+		border-top: 1px solid #000000;
+		background: #ee6060;
+	}
+
+	tr.rack_meter_half {
+		border-top: 1px solid #000000;
+		background: #dddd60;
+	}
+
+	tr.rack_meter_free {
+		border-top: 1px solid #000000;
+		background: #60dd60;
+	}
+
+	tr.rack_meter_nom {
+		border-top: 1px dotted #000000;
+		background-image: url(/images/raster.gif);
+	}
+
+	tr.rack_meter_inactive {
+		border-top: 1px solid #000000;
+		background: #aaaaaa;
+	}
+
+	div.remark {
+		width: 40px;
+		white-space: normal;
+		overflow: hidden;
+	}
+	div.segment {
+		font-weight: bold;
+		padding: 3px;
+	}
+	div.hardware {
+		width: 40px;
+		overflow: hidden;
+		padding-top: 10px;
+		text-align:left;
+	}
+</style>
+</head>
+
+<body style="zoom: 1;">
+<table class="root">
+	<tbody><tr>
+		<td>&nbsp;</td>
+		<td class="colhead">1</td>
+		<td class="colhead">2</td>
+		<td class="colhead">3</td>
+		<td class="colhead">4</td>
+		<td class="colhead">5</td>
+		<td class="colhead">6</td>
+		<td class="colhead">7</td>
+		<td class="colhead">8</td>
+		<td class="colhead">9</td>
+		<td class="colhead">10</td>
+	</tr>
+	<tr>
+		<td class="rowhead">B</td>
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B1</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark" colspan="2" style=""><div class="remark"></div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B2</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark" colspan="2" style=""><div class="remark"></div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B3</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark" colspan="2" style=""><div class="remark"></div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B4</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark inno" colspan="2" style=""><div class="segment">AW21<br>CMC01<br>HWLBs<br><br>aw31switch-b4-[12]</div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B5</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark" colspan="2" style=""><div class="remark"></div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B6</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark inno" colspan="2" style=""><div class="segment">AW22<br>Hadoop<br>CMC01<br><br>aw-extreme3</div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B7</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark inno" colspan="2" style=""><div class="segment">AW22<br>Hadoop<br><br>aw-extreme4</div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B8</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark" colspan="2" style=""><div class="remark"></div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B9</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark" colspan="2" style=""><div class="remark"></div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">B10</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark" colspan="2" style=""><div class="remark"></div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+	</tr>
+
+	<tr>
+		<td>&nbsp;</td>
+		<td class="duct" colspan="10"></td>
+	</tr>
+
+	<tr>
+		<td class="rowhead">?</td>
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">?</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark" colspan="2" style=""><div class="remark"></div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">?</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark" colspan="2" style=""><div class="remark"></div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">?</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark" colspan="2" style=""><div class="remark"></div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">?</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark" colspan="2" style=""><div class="remark"></div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">?</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark" colspan="2" style=""><div class="remark"></div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">?</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark" colspan="2" style=""><div class="remark"></div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">?</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark" colspan="2" style=""><div class="remark"></div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">?</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark" colspan="2" style=""><div class="remark"></div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">?</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark" colspan="2" style=""><div class="remark"></div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+		
+		<td title="">
+		<table class="rack_none" cellspacing="0" cellpadding="0">
+			<caption class="rack_title">?</caption>
+			
+			<tbody><tr>
+				<td class="rack_remark" colspan="2" style=""><div class="remark"></div></td>
+			</tr>
+			
+		</tbody></table>
+		<table align="center" style="margin-left:auto; margin-right:auto; margin-top:-2px"><tbody><tr><td style="text-align:center; font-size:6pt; font-family:arial,sans-serif">&nbsp;</td></tr></tbody></table>
+		</td>
+	
+	</tr>
+
+	<tr>
+		<td>&nbsp;</td>
+		<td class="empty" colspan="10"></td>
+	</tr>
+</tbody></table>
+
+
+
+</body></html>
