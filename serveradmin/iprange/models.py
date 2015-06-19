@@ -348,7 +348,8 @@ def _get_network_settings6(ip):
         'default_gateway':  str(default_gateway6) if default_gateway6 else None,
         'internal_gateway': str(internal_gateway6) if internal_gateway6 else None,
         'vlan': nonempty_parent(iprange_obj, 'vlan'),
-        'netmask': calculate_prefix(highest_parent(iprange_obj))
+        'prefix_hi': calculate_prefix(highest_parent(iprange_obj)),
+        'prefix_lo': calculate_prefix(iprange_obj)
     }
 
 def _get_iprange_settings(name):
