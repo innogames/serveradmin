@@ -304,7 +304,8 @@ def _get_network_settings(ip):
         'vlan': nonempty_parent(iprange_obj, 'vlan'),
         'broadcast': str(highest_parent(iprange_obj).max),
         'netmask': calculate_netmask(highest_parent(iprange_obj)),
-        'prefix': calculate_prefix(highest_parent(iprange_obj))
+        'prefix_hi': calculate_prefix(highest_parent(iprange_obj)),
+        'prefix_lo': calculate_prefix(iprange_obj)
     }
 
 def _get_network_settings6(ip):
