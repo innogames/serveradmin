@@ -275,6 +275,9 @@ def _get_network_settings(ip):
     def calculate_netmask(iprange_obj):
             return Network(iprange_obj.min, iprange_obj.max).netmask
 
+    def calculate_prefix(iprange_obj):
+            return Network(iprange_obj.min, iprange_obj.max).prefix
+
     # Traverse to parent ip_range if given parameter is not specified.
     def nonempty_parent(iprange_obj, param):
         if getattr(iprange_obj, param, None) is not None:
@@ -300,7 +303,8 @@ def _get_network_settings(ip):
         'internal_gateway': str(internal_gateway) if internal_gateway else None,
         'vlan': nonempty_parent(iprange_obj, 'vlan'),
         'broadcast': str(highest_parent(iprange_obj).max),
-        'netmask': calculate_netmask(highest_parent(iprange_obj))
+        'netmask': calculate_netmask(highest_parent(iprange_obj)),
+        'prefix': calculate_prefix(highest_parent(iprange_obj))
     }
 
 def _get_network_settings6(ip):
