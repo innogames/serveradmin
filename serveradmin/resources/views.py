@@ -19,11 +19,23 @@ def index(request):
     """
 
     term = request.GET.get('term', request.session.get('term', ''))
+    current_collection = request.GET.get('current_collection', request.session.get('current_collection', 0))
+    current_segment    = request.GET.get('current_segment',    request.session.get('current_segment',   ''))
+    current_stype      = request.GET.get('current_stype',      request.session.get('current_stype',     ''))
+
+    try:
+        current_collection = int(current_collection)
+    except ValueError:
+        current_collection = 0
 
     template_info = {
         'search_term': term,
         'segments': Segment.objects.order_by('segment'),
-        'servertypes': ServerType.objects.order_by('name')
+        'servertypes': ServerType.objects.order_by('name'),
+        'collections': Collection.objects.filter(overview=True).order_by('attrib'),
+        'current_collection': current_collection,
+        'current_segment':    current_segment,
+        'current_stype':      current_stype,
     }
 
     hostnames = []
@@ -57,9 +69,13 @@ def index(request):
     else:
         understood = query().get_representation().as_code() # It's lazy :-)
 
-    # All of the collections marked as overview should have the same
-    # structure, we will just get one of them for the table structure.
-    collection = Collection.objects.filter(overview=True)[0]
+    # If a graph collection was specified, use it.
+    if current_collection > 0:
+        collection = Collection.objects.filter(id=current_collection)[0]
+    else:
+    # Otherwise use the 1st one found. Now that is ugly! But it is the one for Dom0s.
+        collection = Collection.objects.filter(overview=True)[0]
+    print "collection:", collection
     templates = list(collection.template_set.all())
     variations = list(collection.variation_set.all())
 
@@ -83,7 +99,13 @@ def index(request):
                 graph_index += 1
 
     hosts = collections.OrderedDict()
-    query_kwargs = {'physical_server': True, 'cancelled': False}
+
+    # If a graph collection was given, do not limit to physical servers.
+    if current_collection > 0:
+        query_kwargs = {'cancelled': False}
+    else:
+        query_kwargs = {'physical_server': True, 'cancelled': False}
+
     if len(hostnames) > 0:
         query_kwargs['hostname'] = filters.Any(*hostnames)
     for server in query(**query_kwargs).restrict('hostname', 'servertype').order_by('hostname'):
@@ -95,8 +117,10 @@ def index(request):
         }
 
     # Add guests for the table cells.
+    guests = False
     query_kwargs = {'xen_host': filters.Any(*hosts.keys()), 'cancelled': False}
     for server in query(**query_kwargs).restrict('hostname', 'xen_host').order_by('hostname'):
+        guests = True
         hosts[server['xen_host']]['guests'].append(server['hostname'])
 
     # Add cached numerical values to the table cells.
@@ -111,6 +135,7 @@ def index(request):
         'matched_hostnames': matched_hostnames,
         'understood': understood,
         'error': None,
+        'guests': guests,
         'GRAPHITE_SPRITE_URL': settings.GRAPHITE_SPRITE_URL,
     })
     return TemplateResponse(request, 'resources/index.html', template_info)
