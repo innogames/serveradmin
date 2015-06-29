@@ -27,9 +27,13 @@ def graph_table(request):
     for hostname in hostnames:
         servers[hostname] = query(hostname=hostname).get()
 
-    # Find the collections which are related with all of the hostnames
+    # Find the collections which are related with all of the hostnames.
+    # If there are two collections with same match, use only the one which is not an overview. 
     collections = []
-    for collection in Collection.objects.all():
+    doubles = set()
+    for collection in Collection.objects.order_by('overview'):
+        if (collection.attrib, collection.attrib_value) in doubles:
+            continue
         for hostname in hostnames:
             if collection.attrib.name not in servers[hostname]:
                 break   # The server hasn't got this attribute at all.
@@ -41,6 +45,7 @@ def graph_table(request):
                 if collection.attrib_value != str(value):
                     break   # The server attribute is not equal.
         else:
+            doubles.add((collection.attrib, collection.attrib_value))
             collections.append(collection)
 
     # Prepare the graph descriptions
