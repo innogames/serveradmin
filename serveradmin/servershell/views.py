@@ -4,7 +4,7 @@ except ImportError:
     import json
 from operator import attrgetter
 
-from django.http import (HttpResponse, HttpResponseBadRequest, 
+from django.http import (HttpResponse, HttpResponseBadRequest,
         HttpResponseRedirect, Http404)
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required, permission_required
@@ -79,7 +79,7 @@ def get_results(request):
     shown_attributes = ['hostname', 'intern_ip', 'servertype']
     try:
         query_args = parse_query(term, filter_classes)
-        
+
         # Add attributes with non-constant values and multi attributes
         # to the shown attributes
         for attr, value in query_args.iteritems():
@@ -97,7 +97,7 @@ def get_results(request):
                     continue
                 if attr not in shown_attributes:
                     shown_attributes.append(attr)
-        
+
         q = query(**query_args).limit(offset, limit)
         if order_by:
             q = q.order_by(order_by, order_dir)
@@ -108,10 +108,10 @@ def get_results(request):
             'status': 'error',
             'message': e.message
         }))
-    
+
     request.session['term'] = term
     request.session['per_page'] = limit
-    
+
     # Add information about available attributes on servertypes
     # It will be encoded as map avail[servertype][attr] = stypeattr
     avail_attributes = {}
@@ -119,7 +119,7 @@ def get_results(request):
         servertype = server['servertype']
         if servertype not in avail_attributes:
             avail_attributes[servertype] = {}
-    
+
     for servertype, attr_info in avail_attributes.iteritems():
         attributes = lookups.stype_names[servertype].attributes
         for attr in attributes:
@@ -165,7 +165,7 @@ def list_and_edit(request, mode='list'):
 
     stype = lookups.stype_names[server['servertype']]
     non_editable = ['servertype']
-    
+
     invalid_attrs = set()
     if mode == 'edit' and request.POST:
         attrs = set(request.POST.getlist('attr'))
@@ -173,7 +173,7 @@ def list_and_edit(request, mode='list'):
             if attr in non_editable:
                 continue
             if lookups.attr_names[attr].multi:
-                values = [raw_value.strip() for raw_value in 
+                values = [raw_value.strip() for raw_value in
                           request.POST.get('attr_' + attr, '').splitlines()]
                 try:
                     value = typecast(attr, values)
@@ -205,7 +205,7 @@ def list_and_edit(request, mode='list'):
 
         if invalid_attrs:
             messages.error(request, 'Attributes contain invalid values')
-    
+
     fields = []
     fields_set = set()
     for key, value in server.iteritems():
@@ -223,7 +223,7 @@ def list_and_edit(request, mode='list'):
             'default': stype_attr.default,
             'error': key in invalid_attrs
         })
-    
+
     if mode == 'edit':
         for attr in stype.attributes:
             if attr.name in fields_set:
@@ -241,14 +241,14 @@ def list_and_edit(request, mode='list'):
                 'default': stype_attr.default,
                 'error': attr.name in invalid_attrs
             })
-    
+
     # Sort keys by some order and then lexographically
     _key_order = ['hostname', 'servertype', 'intern_ip']
     _key_order_lookup = dict((key, i) for i, key in enumerate(_key_order))
     def _sort_key(x):
         return (_key_order_lookup.get(x['key'], 100), x['key'])
     fields.sort(key=_sort_key)
-    
+
     return TemplateResponse(request, 'servershell/{0}.html'.format(mode), {
         'object_id': server.object_id,
         'fields': fields,
@@ -316,7 +316,7 @@ def new_server(request):
             if query(hostname=self.cleaned_data['hostname']):
                 raise forms.ValidationError('Hostname already taken.')
             return self.cleaned_data['hostname']
-        
+
         def clean(self):
             if self.cleaned_data.get('check_ip'):
                 if 'intern_ip' in self.cleaned_data:
@@ -328,7 +328,7 @@ def new_server(request):
     class NewServerForm(CloneServerForm):
         servertype = forms.ModelChoiceField(queryset=ServerType.objects.order_by(
             'name'))
-    
+
     if 'clone_from' in request.REQUEST:
         form_class = CloneServerForm
         try:
@@ -344,7 +344,7 @@ def new_server(request):
         if form.is_valid():
             attributes = form.cleaned_data.copy()
             # remove check_ip, because it's not an attributes
-            del attributes['check_ip'] 
+            del attributes['check_ip']
             attributes['intern_ip'] = IP(attributes['intern_ip'])
 
             if clone_from:
@@ -354,7 +354,7 @@ def new_server(request):
             else:
                 attributes['servertype'] = attributes['servertype'].name
 
-            
+
             server_id = create_server(attributes, skip_validation=True,
                     fill_defaults=True, fill_defaults_all=True,
                     user=request.user)

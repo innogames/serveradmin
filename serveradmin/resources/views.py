@@ -13,6 +13,7 @@ from serveradmin.graphite.models import Collection, NumericCache
 from serveradmin.dataset import query, filters, DatasetError
 from serveradmin.serverdb.models import ServerType, Segment
 
+@login_required
 @ensure_csrf_cookie
 def index(request):
     """The hardware resources page
