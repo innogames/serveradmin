@@ -1,4 +1,5 @@
-Django
+django
+django-extensions
 docutils
 python-memcached
 Sphinx
