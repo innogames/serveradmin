@@ -276,20 +276,6 @@ it will be interpreted as regular expression.</p>
         </td>
     </tr>
     <tr>
-        <td>livegraph</td>
-        <td><span class="noargs">none</span></td>
-        <td>Show live graphs for the selected hosts. If no host
-        is selected, it will show graphs for the first host in the list.
-        </td>
-    </tr>
-    <tr>
-        <td>cmp</td>
-        <td>[graph[, graph ...]]</td>
-        <td>Compares the given graphs of the selected hosts. If no graphs are
-            given it compares all available graphs.
-        </td>
-    </tr>
-    <tr>
         <td>list</td>
         <td><span class="noargs">none</span></td>
         <td>List all attributes of the selected servers. If no servers are
@@ -371,15 +357,9 @@ var shell_list_url = "{% url 'servershell_list' %}";
 var shell_commit_url = "{% url 'servershell_commit' %}";
 var shell_values_url = "{% url 'servershell_values' %}";
 var shell_new_url = "{% url 'servershell_new' %}";
-var shell_compare_url = "{% url 'servermonitor_compare' %}";
 var shell_graph_url = "{% url 'graphite_graph_table' %}";
-var shell_custom_graph_url = "{% url 'servermonitor_custom_graph_table' %}";
-var shell_custom_cmp_url= "{% url 'servermonitor_custom_compare' %}";
-var shell_livegraph_url = "{% url 'servermonitor_livegraph' %}";
 var shell_changes_url = "{% url 'serverdb_changes' %}";
 var shell_store_command_url = "{% url 'servershell_store_command' %}";
-var livegraph_url = "{% url 'servermonitor_livegraph_data' %}";
-var monitor_reload_url = "{% url 'servermonitor_reload' %}";
 var serverdb_history_url = "{% url 'serverdb_history' %}";
 //]]>
 </script>
