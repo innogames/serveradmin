@@ -253,7 +253,7 @@ class NumericCache(models.Model):
 
     template = models.ForeignKey(Template)
     hostname = models.CharField(max_length=64)
-    value = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    value = models.FloatField(default=0)
     last_modified = models.DateTimeField(auto_now=True)
 
     class Meta:
