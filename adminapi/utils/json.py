@@ -19,4 +19,4 @@ def json_encode_extra(obj):
         return int(mktime(obj.timetuple()))
     elif isinstance(obj, timedelta):
         return obj.seconds + obj.days * 24 * 3600
-    raise TypeError()
+    raise TypeError('Type ' + str(type(obj)) + ' is not known')
