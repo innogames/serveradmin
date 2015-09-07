@@ -342,20 +342,17 @@ def new_server(request):
     if request.method == 'POST':
         form = form_class(request.POST)
         if form.is_valid():
-            cleaned_data = form.cleaned_data.copy()
-            attributes = {
-                    'hostname': cleaned_data['hostname'],
-                    'intern_ip': IP(cleaned_data['intern_ip']),
-                    'department': cleaned_data['department'].department_id,
-                    'responsible_admin': [cleaned_data['department'].responsible_admin.username],
-                }
-
             if clone_from:
-                for key, value in clone_from.iteritems():
-                    if key not in attributes:
-                        attributes[key] = value
+                attributes = dict(clone_from)
             else:
-                attributes['servertype'] = cleaned_data['servertype'].name
+                attributes = {'servertype': cleaned_data['servertype'].name}
+
+            attributes['hostname'] = form.cleaned_data['hostname']
+            attributes['intern_ip'] = IP(form.cleaned_data['intern_ip'])
+            attributes['department'] = form.cleaned_data['department'].department_id
+            attributes['responsible_admin'] = [form.cleaned_data['department'].responsible_admin.username]
+            if 'ssh_pubkey' in attributes:
+                del attributes['ssh_pubkey']
 
             server_id = create_server(attributes, skip_validation=True,
                     fill_defaults=True, fill_defaults_all=True,
