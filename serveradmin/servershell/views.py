@@ -25,7 +25,7 @@ from serveradmin.dataset.commit import (commit_changes, CommitValidationFailed,
 from serveradmin.dataset.values import get_attribute_values
 from serveradmin.dataset.typecast import typecast, displaycast
 from serveradmin.dataset.create import create_server
-from serveradmin.serverdb.models import ServerType, Department
+from serveradmin.serverdb.models import ServerType, Project
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 25
@@ -308,7 +308,7 @@ def get_values(request):
 @permission_required('dataset.create_serverobject')
 def new_server(request):
     class CloneServerForm(forms.Form):
-        department = forms.ModelChoiceField(queryset=Department.objects.all())
+        project = forms.ModelChoiceField(queryset=Project.objects.all())
         hostname = forms.CharField()
         intern_ip = forms.GenericIPAddressField()
         check_ip = forms.BooleanField(required=False)
@@ -349,8 +349,8 @@ def new_server(request):
 
             attributes['hostname'] = form.cleaned_data['hostname']
             attributes['intern_ip'] = IP(form.cleaned_data['intern_ip'])
-            attributes['department'] = form.cleaned_data['department'].department_id
-            attributes['responsible_admin'] = [form.cleaned_data['department'].responsible_admin.username]
+            attributes['project'] = form.cleaned_data['project'].project_id
+            attributes['responsible_admin'] = [form.cleaned_data['project'].responsible_admin.username]
             if 'ssh_pubkey' in attributes:
                 del attributes['ssh_pubkey']
 

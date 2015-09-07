@@ -100,18 +100,18 @@ class ServerTypeAttributes(models.Model):
         db_table = 'servertype_attributes'
         unique_together = (('servertype', 'attrib'), )
 
-class Department(models.Model):
-    department_id = models.CharField(max_length=32, primary_key=True)
+class Project(models.Model):
+    project_id = models.CharField(max_length=32, primary_key=True)
     subdomain = models.CharField(max_length=16, unique=True)
     responsible_admin = models.ForeignKey(User)
 
     class Meta:
         app_label = 'serverdb'
-        db_table = 'department'
-        ordering = ('department_id', )
+        db_table = 'project'
+        ordering = ('project_id', )
 
     def __unicode__(self):
-        return self.department_id
+        return self.project_id
 
 class ServerObject(models.Model):
     server_id = models.AutoField(primary_key=True)
@@ -120,7 +120,7 @@ class ServerObject(models.Model):
     comment = models.CharField(max_length=255, null=True, blank=True)
     servertype = models.ForeignKey(ServerType)
     segment = models.CharField(max_length=10)
-    department = models.ForeignKey(Department)
+    project = models.ForeignKey(Project)
 
     class Meta:
         app_label = 'serverdb'
