@@ -36,11 +36,11 @@ class QuerysetCacher(object):
             server_data = self._post_fetch(server_data)
             self._to_cache(server_data, num_servers)
         return server_data
-    
+
     def _get_cache_file(self, qs_repr_hash):
         return os.path.join(settings.DATASET_CACHE_DIR, 'cache_{0}.{1}'.format(
                 qs_repr_hash, self._key))
-    
+
     def _from_cache(self):
         qs_repr = self.queryset.get_representation()
         qs_repr_hash = hash(qs_repr)
@@ -70,12 +70,12 @@ class QuerysetCacher(object):
             # Reset counter after 1 day
             cache.set(count_key, 1, 24 * 3600)
             qs_count = 1
-        
+
         has_limit = qs_repr.limit or qs_repr.offset
         if qs_count >= CACHE_MIN_QS_COUNT and not has_limit:
             self._do_cache = True
         return False, None
-    
+
     def _to_cache(self, server_data, num_servers):
         # Only cache it, if it was a query that was requested often
         if not self._do_cache:
@@ -97,7 +97,7 @@ class QuerysetCacher(object):
         table_name = ServerObjectCache._meta.db_table
         cache_insert_sql = ('REPLACE INTO {0} (server_id, repr_hash) '
                 'VALUES (%s, %s)').format(table_name)
-        
+
         # Large querysets are always pruned from cache when data is
         # comitted
         c = connection.cursor()
@@ -112,7 +112,7 @@ def invalidate_cache(server_ids=None):
     cache_table = ServerObjectCache._meta.db_table
     if server_ids:
         server_ids = ','.join([str(x) for x in server_ids])
-        
+
         # Invalidate all cache values if there are too many
         query_count = ('SELECT COUNT(*) FROM {0} WHERE server_id IN({1}) '
             ' OR server_id IS NULL')
@@ -121,7 +121,7 @@ def invalidate_cache(server_ids=None):
             c.execute('TRUNCATE TABLE {0}'.format(cache_table))
             _new_cache_version()
             return
-        
+
         query_get = ('SELECT repr_hash FROM {0} WHERE server_id IN({1}) '
             ' OR server_id IS NULL')
         c.execute(query_get.format(cache_table, server_ids))

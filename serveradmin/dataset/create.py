@@ -16,11 +16,13 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
                   user=None, app=None):
     # Import here to break cyclic imports.
     from serveradmin.iprange.models import IPRange
-    
+
     if u'hostname' not in attributes:
         raise CommitError(u'Hostname is required')
     if u'servertype' not in attributes:
         raise CommitError(u'Servertype is required')
+    if u'department' not in attributes:
+        raise CommitError(u'Department is required')
     if u'intern_ip' not in attributes:
         raise CommitError(u'Internal IP (intern_ip) is required')
 
@@ -50,19 +52,28 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
         except IndexError:
             raise CommitError('Could not determine segment')
 
+    department = attributes.get(u'department')
+
     real_attributes = attributes.copy()
-    for key in (u'hostname', u'intern_ip', u'comment', u'servertype', u'segment'):
+    for key in (
+            u'hostname',
+            u'intern_ip',
+            u'comment',
+            u'servertype',
+            u'segment',
+            u'department',
+        ):
         try:
             del real_attributes[key]
         except KeyError:
             pass
-    
+
     violations_regexp = []
     violations_required = []
     for attr in stype.attributes:
         stype_attr = lookups.stype_attrs[(stype.name, attr.name)]
         attr_obj = lookups.attr_names[attr.name]
-        
+
         # Handle not existing attributes (fill defaults, validate require)
         if attr.name not in real_attributes:
             if attr_obj.multi:
@@ -87,8 +98,8 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
 
         value = real_attributes[attr.name]
         check_attribute_type(attr.name, value)
-        
-        
+
+
         # Validate regular expression
         regexp = stype_attr.regexp
         if attr_obj.multi:
@@ -99,7 +110,7 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
         else:
             if attr_obj.type == 'string' and regexp and not regexp.match(value):
                 violations_regexp.append(attr.name)
-    
+
     # Check for attributes that are not defined on this servertype
     violations_attribs = []
     attribute_set = set([attr.name for attr in stype.attributes])
@@ -116,7 +127,7 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
         raise CommitError(u'Could not get lock')
     try:
         server_id = _insert_server(hostname, intern_ip, segment,
-                servertype_id, real_attributes)
+                servertype_id, department, real_attributes)
     except:
         raise
     else:
@@ -137,13 +148,11 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
     # Invalidate caches
     invalidate_cache()
 
-
-
     return server_id
 
-def _insert_server(hostname, intern_ip, segment, servertype_id, attributes):
+def _insert_server(hostname, intern_ip, segment, servertype_id, department, attributes):
     c = connection.cursor()
-    
+
     c.execute(u'SELECT COUNT(*) FROM admin_server WHERE hostname = %s',
             (hostname, ))
     if c.fetchone()[0] != 0:
@@ -155,11 +164,11 @@ def _insert_server(hostname, intern_ip, segment, servertype_id, attributes):
               (intern_ip.as_int(), ))
     result = c.fetchone()
     segment_id = result[0] if result else segment
-    
+
     # Insert into admin_server table
     c.execute(u'INSERT INTO admin_server (hostname, intern_ip, servertype_id, '
-            u' segment) VALUES (%s, %s, %s, %s)', (hostname, intern_ip.as_int(),
-            servertype_id, segment_id))
+            u' segment, department_id) VALUES (%s, %s, %s, %s, %s)', (hostname,
+            intern_ip.as_int(), servertype_id, segment_id, department_id))
     server_id = c.lastrowid
 
     # Insert additional attributes

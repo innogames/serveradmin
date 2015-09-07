@@ -33,7 +33,7 @@ def _read_lookups(sender=None, **kwargs):
         return
     else:
         lookups.version = version
-    
+
     # Special attributes that don't have an entry in the attrib table
     special_attributes = [
         Attribute(name=u'object_id', type=u'integer', base=False, multi=False,
@@ -42,6 +42,8 @@ def _read_lookups(sender=None, **kwargs):
             group='base', special=ServerTableSpecial(u'hostname', unique=True)),
         Attribute(name=u'servertype', type=u'string', base=True, multi=False,
             group='base', special=ServerTableSpecial(u'servertype_id')),
+        Attribute(name=u'department', type=u'string', base=True, multi=False,
+            group='base', special=ServerTableSpecial(u'department_id')),
         Attribute(name=u'intern_ip', type=u'ip', base=True, multi=False,
             group='base', special=ServerTableSpecial(u'intern_ip')),
         Attribute(name=u'segment', type=u'string', base=True, multi=False,
@@ -64,7 +66,7 @@ def _read_lookups(sender=None, **kwargs):
             attr.name = 'mac'
         lookups.attr_ids[attr.pk] = attr
         lookups.attr_names[attr.name] = attr
-    
+
     # Read all servertypes
     lookups.stype_ids = {}
     lookups.stype_names = {}
@@ -72,7 +74,7 @@ def _read_lookups(sender=None, **kwargs):
         stype.attributes = []
         lookups.stype_ids[stype.pk] = stype
         lookups.stype_names[stype.name] = stype
-    
+
     # Read all servertype attributes
     # Bypass Django ORM for performance reasons
     lookups.stype_attrs = {}
@@ -95,11 +97,11 @@ def _read_lookups(sender=None, **kwargs):
         stype.attributes.append(attribute)
         index = (stype_attr.servertype_id, stype_attr.attribute_id)
         lookups.stype_attrs[index] = stype_attr
-        
+
         servertype = lookups.stype_ids[stype_attr.servertype_id]
         index = (servertype.name, attribute.name)
         lookups.stype_attrs[index] = stype_attr
-    
+
     # Add attributes from admin_server to servertype attributes
     for servertype in lookups.stype_ids.itervalues():
         special_stype_attr = ServerTypeAttr(servertype.pk, -1, True, None,

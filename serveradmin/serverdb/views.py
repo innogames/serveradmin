@@ -97,7 +97,7 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
             widgets = {
                 'regex': forms.TextInput(attrs={'size': 50})
             }
-        
+
         def __init__(self, servertype, *args, **kwargs):
             self.servertype = servertype
             super(EditForm, self).__init__(*args, **kwargs)
@@ -123,7 +123,7 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
                 error_msg = 'Attribute is already on this servertype'
                 raise forms.ValidationError(error_msg)
             return attrib
-    
+
     stype = get_object_or_404(ServerType, name=servertype_name)
     if attrib_name:
         form_class = EditForm
@@ -147,12 +147,12 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
                 stype_attr.servertype = stype
                 msg = 'Added attribute "{0}" to "{1}"'.format(
                         stype_attr.attrib.name, stype.name)
-            
+
             # Set attrib_default to None if empty and not string
             if stype_attr.attrib.type != 'string':
                 if not form.cleaned_data['attrib_default']:
                     stype_attr.attrib_default = None
-            
+
             stype_attr.save()
             clear_lookups()
             messages.success(request, msg)
@@ -250,7 +250,7 @@ def changes(request):
         page = paginator.page(1)
 
     return TemplateResponse(request, 'serverdb/changes.html', {
-        'commits': page 
+        'commits': page
     })
 
 @login_required
@@ -302,7 +302,7 @@ def restore_deleted(request, change_commit):
     deleted = get_object_or_404(ChangeDelete,
                                 hostname=request.POST.get('hostname'),
                                 commit__pk=change_commit)
-    
+
     server_obj = deleted.attributes
     try:
         create_server(server_obj, skip_validation=True, fill_defaults=False,

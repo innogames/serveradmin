@@ -202,7 +202,14 @@ class QuerySet(BaseQuerySet):
             builder.add_attribute(order_by, optional=True)
             builder.add_ordering((order_by, order_dir))
 
-        for attr in ('object_id', 'hostname', 'intern_ip', 'segment', 'servertype'):
+        for attr in (
+                'object_id',
+                'hostname',
+                'intern_ip',
+                'segment',
+                'servertype',
+                'department',
+            ):
             builder.add_attribute(attr)
             builder.add_select(attr)
         builder.sql_keywords += ['SQL_CALC_FOUND_ROWS', 'DISTINCT']
@@ -221,13 +228,14 @@ class QuerySet(BaseQuerySet):
         servertype_lookup = dict((k, v.name) for k, v in
                 lookups.stype_ids.iteritems())
         restrict = self._restrict
-        for server_id, hostname, intern_ip, segment, stype in c.fetchall():
+        for server_id, hostname, intern_ip, segment, stype, department in c.fetchall():
             if not restrict:
                 attrs = {
                     u'hostname': hostname,
                     u'intern_ip': IP(intern_ip),
                     u'segment': segment,
-                    u'servertype': servertype_lookup[stype]
+                    u'servertype': servertype_lookup[stype],
+                    u'department': department,
                 }
             else:
                 attrs = {}
@@ -239,6 +247,8 @@ class QuerySet(BaseQuerySet):
                     attrs[u'segment'] = segment
                 if u'servertype' in restrict:
                     attrs[u'servertype'] = servertype_lookup[stype]
+                if u'department' in restrict:
+                    attrs[u'department'] = department
 
             server_object = ServerObject(attrs, server_id, self)
             server_data[server_id] = server_object

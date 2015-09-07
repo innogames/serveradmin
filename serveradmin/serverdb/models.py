@@ -100,6 +100,17 @@ class ServerTypeAttributes(models.Model):
         db_table = 'servertype_attributes'
         unique_together = (('servertype', 'attrib'), )
 
+class Department(models.Model):
+    department_id = models.CharField(max_length=32, primary_key=True)
+    subdomain = models.CharField(max_length=16, unique=True)
+
+    class Meta:
+        app_label = 'serverdb'
+        db_table = 'department'
+
+    def __unicode__(self):
+        return self.department_id
+
 class ServerObject(models.Model):
     server_id = models.AutoField(primary_key=True)
     hostname = models.CharField(max_length=64)
@@ -107,6 +118,7 @@ class ServerObject(models.Model):
     comment = models.CharField(max_length=255, null=True, blank=True)
     servertype = models.ForeignKey(ServerType, null=True, blank=True)
     segment = models.CharField(max_length=10, null=True, blank=True)
+    department = models.ForeignKey(Department)
 
     class Meta:
         app_label = 'serverdb'
@@ -132,6 +144,10 @@ class ServerObjectCache(models.Model):
 class Segment(models.Model):
     segment = models.CharField(max_length=20, db_column='segment_id',
             primary_key=True)
+    ip_range = models.CharField(max_length=255, null=True, blank=True)
+
+    def __unicode__(self):
+        return self.segment
 
     class Meta:
         app_label = 'serverdb'
@@ -169,7 +185,7 @@ class ChangeCommit(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)
     user = models.ForeignKey(User, blank=True, null=True)
     app = models.ForeignKey(Application, blank=True, null=True)
-    
+
     def __unicode__(self):
         return unicode(self.change_on)
 
@@ -185,7 +201,7 @@ class ChangeDelete(models.Model):
     @property
     def attributes(self):
         return json.loads(self.attributes_json)
-    
+
     def __unicode__(self):
         return u'{0}: {1}'.format(unicode(self.commit), self.hostname)
 
@@ -217,7 +233,7 @@ class ChangeAdd(models.Model):
     @property
     def attributes(self):
         return json.loads(self.attributes_json)
-    
+
     def __unicode__(self):
         return u'{0}: {1}'.format(unicode(self.commit), self.hostname)
 
