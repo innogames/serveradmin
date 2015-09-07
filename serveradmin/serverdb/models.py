@@ -116,8 +116,8 @@ class ServerObject(models.Model):
     hostname = models.CharField(max_length=64)
     intern_ip = dbfields.IPv4Field()
     comment = models.CharField(max_length=255, null=True, blank=True)
-    servertype = models.ForeignKey(ServerType, null=True, blank=True)
-    segment = models.CharField(max_length=10, null=True, blank=True)
+    servertype = models.ForeignKey(ServerType)
+    segment = models.CharField(max_length=10)
     department = models.ForeignKey(Department)
 
     class Meta:
