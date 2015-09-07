@@ -25,7 +25,7 @@ from serveradmin.dataset.commit import (commit_changes, CommitValidationFailed,
 from serveradmin.dataset.values import get_attribute_values
 from serveradmin.dataset.typecast import typecast, displaycast
 from serveradmin.dataset.create import create_server
-from serveradmin.serverdb.models import ServerType
+from serveradmin.serverdb.models import ServerType, Department
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 25
@@ -308,6 +308,7 @@ def get_values(request):
 @permission_required('dataset.create_serverobject')
 def new_server(request):
     class CloneServerForm(forms.Form):
+        department = forms.ModelChoiceField(queryset=Department.objects.all())
         hostname = forms.CharField()
         intern_ip = forms.GenericIPAddressField()
         check_ip = forms.BooleanField(required=False)
@@ -341,18 +342,20 @@ def new_server(request):
     if request.method == 'POST':
         form = form_class(request.POST)
         if form.is_valid():
-            attributes = form.cleaned_data.copy()
-            # remove check_ip, because it's not an attributes
-            del attributes['check_ip']
-            attributes['intern_ip'] = IP(attributes['intern_ip'])
+            cleaned_data = form.cleaned_data.copy()
+            attributes = {
+                    'hostname': cleaned_data['hostname'],
+                    'intern_ip': IP(cleaned_data['intern_ip']),
+                    'department': cleaned_data['department'].department_id,
+                    'responsible_admin': [cleaned_data['department'].responsible_admin.username],
+                }
 
             if clone_from:
                 for key, value in clone_from.iteritems():
                     if key not in attributes:
                         attributes[key] = value
             else:
-                attributes['servertype'] = attributes['servertype'].name
-
+                attributes['servertype'] = cleaned_data['servertype'].name
 
             server_id = create_server(attributes, skip_validation=True,
                     fill_defaults=True, fill_defaults_all=True,

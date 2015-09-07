@@ -103,10 +103,12 @@ class ServerTypeAttributes(models.Model):
 class Department(models.Model):
     department_id = models.CharField(max_length=32, primary_key=True)
     subdomain = models.CharField(max_length=16, unique=True)
+    responsible_admin = models.ForeignKey(User)
 
     class Meta:
         app_label = 'serverdb'
         db_table = 'department'
+        ordering = ('department_id', )
 
     def __unicode__(self):
         return self.department_id
@@ -162,7 +164,6 @@ class SegmentUsage(models.Model):
 
     class Meta:
         app_label = 'serverdb'
-
 
 class Change(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)

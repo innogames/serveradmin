@@ -52,7 +52,7 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
         except IndexError:
             raise CommitError('Could not determine segment')
 
-    department = attributes.get(u'department')
+    department_id = attributes.get(u'department')
 
     real_attributes = attributes.copy()
     for key in (
@@ -127,7 +127,7 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
         raise CommitError(u'Could not get lock')
     try:
         server_id = _insert_server(hostname, intern_ip, segment,
-                servertype_id, department, real_attributes)
+                servertype_id, department_id, real_attributes)
     except:
         raise
     else:
@@ -150,7 +150,7 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
 
     return server_id
 
-def _insert_server(hostname, intern_ip, segment, servertype_id, department, attributes):
+def _insert_server(hostname, intern_ip, segment, servertype_id, department_id, attributes):
     c = connection.cursor()
 
     c.execute(u'SELECT COUNT(*) FROM admin_server WHERE hostname = %s',
