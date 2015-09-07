@@ -326,8 +326,7 @@ def new_server(request):
             return self.cleaned_data
 
     class NewServerForm(CloneServerForm):
-        servertype = forms.ModelChoiceField(queryset=ServerType.objects.order_by(
-            'name'))
+        servertype = forms.ModelChoiceField(queryset=ServerType.objects.all())
 
     if 'clone_from' in request.REQUEST:
         form_class = CloneServerForm

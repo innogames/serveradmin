@@ -79,10 +79,10 @@ class ServerType(models.Model):
                     default_visible=attr.default_visible)
             clear_lookups()
 
-
     class Meta:
         app_label = 'serverdb'
         db_table = 'servertype'
+        ordering = ('name', )
 
     def __unicode__(self):
         return self.name
