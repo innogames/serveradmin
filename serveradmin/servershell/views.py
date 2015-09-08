@@ -345,7 +345,7 @@ def new_server(request):
             if clone_from:
                 attributes = dict(clone_from)
             else:
-                attributes = {'servertype': cleaned_data['servertype'].name}
+                attributes = {'servertype': form.cleaned_data['servertype'].name}
 
             attributes['hostname'] = form.cleaned_data['hostname']
             attributes['intern_ip'] = IP(form.cleaned_data['intern_ip'])
