@@ -280,7 +280,7 @@ def commit(request):
     except (CommitNewerData, CommitValidationFailed) as e:
         result = {
             'status': 'error',
-            'message': e.message
+            'message': unicode(e),
         }
     else:
         result = {
