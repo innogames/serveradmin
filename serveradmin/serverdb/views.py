@@ -56,7 +56,7 @@ def add_servertype(request):
     class AddForm(forms.ModelForm):
         class Meta:
             model = ServerType
-            fields = ('name', )
+            fields = ('name', 'description', )
 
     if request.method == 'POST':
         form = AddForm(request.POST)

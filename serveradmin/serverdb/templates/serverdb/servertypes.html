@@ -4,11 +4,20 @@
 
 {% block content %}
 <h2>Servertypes</h2>
-<ul>
+
+<table>
 {% for servertype in servertypes %}
-    <li><a href="{% url 'serverdb_view_servertype' servertype.name %}">
-        {{ servertype.name }}</a></li>
+    <tr>
+        <td>
+            <a href="{% url 'serverdb_view_servertype' servertype.name %}"
+                />{{ servertype.name }}</a>
+        </td>
+        <td>{{ servertype.description }}</td>
+    </tr>
 {% endfor %}
-</ul>
-<p><a href="{% url 'serverdb_add_servertype' %}">Add servertype</a></p>
+</table>
+
+<p>
+    <a href="{% url 'serverdb_add_servertype' %}">Add servertype</a>
+</p>
 {% endblock %}
