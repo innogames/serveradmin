@@ -26,7 +26,7 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
     if u'intern_ip' not in attributes:
         raise CommitError(u'Internal IP (intern_ip) is required')
 
-    for attr in (u'hostname', u'servertype', u'intern_ip'):
+    for attr in (u'hostname', u'servertype', u'project', u'intern_ip'):
         check_attribute_type(attr, attributes[attr])
 
     try:
@@ -98,7 +98,6 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
 
         value = real_attributes[attr.name]
         check_attribute_type(attr.name, value)
-
 
         # Validate regular expression
         regexp = stype_attr.regexp

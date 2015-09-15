@@ -28,25 +28,28 @@ def commit_changes(commit, skip_validation=False, force_changes=False,
 
     if not changed_servers and not deleted_servers:
         return
-    
+
     c = connection.cursor()
     c.execute(u"SELECT GET_LOCK('serverobject_commit', 10)")
     try:
         if not c.fetchone()[0]:
             raise CommitError(u'Could not get lock')
         servers = _fetch_servers(changed_servers)
-        
+
         # Attributes must be always validated
         violations_attribs = _validate_attributes(changed_servers, servers)
         if not skip_validation:
+            violations_readonly = _validate_readonly(changed_servers, servers)
             violations_regexp = _validate_regexp(changed_servers, servers)
             violations_required = _validate_required(changed_servers, servers)
-            if violations_attribs or violations_regexp or violations_required:
+            if (violations_attribs or violations_readonly or
+                violations_regexp or violations_required):
                 error_message = _build_error_message(violations_attribs,
-                        violations_regexp, violations_required)
-                raise CommitValidationFailed(error_message,
-                        violations_attribs + violations_regexp +
+                        violations_readonly, violations_regexp,
                         violations_required)
+                raise CommitValidationFailed(error_message,
+                        violations_attribs + violations_readonly +
+                        violations_regexp + violations_required)
         if violations_attribs:
             error_message = _build_error_message(violations_attribs, [], [])
             raise CommitValidationFailed(error_message, violations_attribs)
@@ -54,7 +57,7 @@ def commit_changes(commit, skip_validation=False, force_changes=False,
             newer = _validate_commit(changed_servers, servers)
             if newer:
                 raise CommitNewerData(u'Newer data available', newer)
-        
+
         _log_changes(deleted_servers, changed_servers, app, user)
         if deleted_servers:
             _delete_servers(deleted_servers)
@@ -63,7 +66,7 @@ def commit_changes(commit, skip_validation=False, force_changes=False,
         kill_cache = set()
         kill_cache.update(deleted_servers)
         kill_cache.update(changed_servers)
-        
+
         if kill_cache:
             invalidate_cache(kill_cache)
 
@@ -74,7 +77,7 @@ def commit_changes(commit, skip_validation=False, force_changes=False,
 def _log_changes(deleted_servers, changed_servers, app, user):
     # Import here to break cyclic import
     from serveradmin.dataset import query, filters
-    
+
     if deleted_servers:
         old_servers = list(query(object_id=filters.Any(*deleted_servers)))
     else:
@@ -85,7 +88,7 @@ def _log_changes(deleted_servers, changed_servers, app, user):
     changes = {}
     for server_obj in servers:
         changes[server_obj['hostname']] = changed_servers[server_obj.object_id]
-    
+
     if not (changes or old_servers):
         return
 
@@ -150,6 +153,15 @@ def _validate_attributes(changed_servers, servers):
                 raise CommitValidationFailed(u'Cannot change servertype', [])
 
             if (server[u'servertype'], attr) not in lookups.stype_attrs:
+                violations.append((server_id, attr))
+    return violations
+
+def _validate_readonly(changed_servers, servers):
+    violations = []
+    for server_id, changes in changed_servers.iteritems():
+        server = servers[server_id]
+        for attr, change in changes.iteritems():
+            if lookups.attr_names[attr].readonly:
                 violations.append((server_id, attr))
     return violations
 
@@ -271,9 +283,9 @@ def _apply_changes(changed_servers, servers):
         for attr, change in changes.iteritems():
             attr_obj = lookups.attr_names[attr]
             attr_id = attr_obj.pk
-            
+
             action = change[u'action']
-            
+
             # XXX Dirty hack for old database structure
             if isinstance(attr_obj.special, ServerTableSpecial):
                 field = attr_obj.special.field
@@ -285,7 +297,6 @@ def _apply_changes(changed_servers, servers):
                     # FIXME: This might fail if field it not NULLable
                     c.execute(query.format(field), (None, server_id))
                 continue
-
 
             if action == u'new' or action == u'update':
                 value = _prepare_value(attr, change[u'new'])
@@ -318,12 +329,15 @@ def _prepare_value(attr_name, value):
         value = int(time.mktime(value.timetuple()))
     return value
 
-def _build_error_message(violations_attribs, violations_regexp,
-                         violations_required):
+def _build_error_message(violations_attribs, violations_readonly,
+                         violations_regexp, violations_required):
 
-    violation_types = [(violations_attribs, 'Attribute not on servertype'),
-                       (violations_regexp, 'Regexp does not match'),
-                       (violations_required, 'Attribute is required')]
+    violation_types = [
+            (violations_attribs, 'Attribute not on servertype'),
+            (violations_readonly, 'Attribute is read-only'),
+            (violations_regexp, 'Regexp does not match'),
+            (violations_required, 'Attribute is required'),
+        ]
 
     message = []
     for violations, message_type in violation_types:
@@ -338,4 +352,3 @@ def _build_error_message(violations_attribs, violations_regexp,
                 message.append(u'{0}: {1} (#affected: {2})'.format(
                         message_type, vattr, num_affected))
     return u'. '.join(message)
-

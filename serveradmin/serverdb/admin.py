@@ -9,7 +9,7 @@ from serveradmin.serverdb.models import (
     )
 
 class AttributeAdmin(admin.ModelAdmin):
-    fields = ('hovertext', 'help_link', 'group')
+    fields = ('hovertext', 'help_link', 'group', 'readonly')
 
 admin.site.register(Attribute, AttributeAdmin)
 admin.site.register(Project)

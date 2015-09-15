@@ -36,6 +36,7 @@ class Attribute(models.Model):
     hovertext = models.TextField(blank=True, default='')
     group = models.CharField(max_length=64, default='other')
     help_link = models.CharField(max_length=255, blank=True, null=True)
+    readonly = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'serverdb'
