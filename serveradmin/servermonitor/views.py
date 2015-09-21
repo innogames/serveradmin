@@ -22,7 +22,7 @@ from comments.forms import CommentForm
 
 from adminapi.utils.parse import parse_query
 from serveradmin.dataset import query, filters, DatasetError
-from serveradmin.serverdb.models import Segment, SegmentUsage, ServerType
+from serveradmin.serverdb.models import Segment, ServerType
 from serveradmin.servermonitor.models import (get_available_graphs,
         get_graph_url, split_graph_name, join_graph_name, reload_graphs,
         draw_custom_graph, query_livegraph, ServermonitorError, PERIODS, GraphDescription)
@@ -32,13 +32,13 @@ from serveradmin.servermonitor.getinfo import get_information
 @ensure_csrf_cookie
 def index(request):
     term = request.GET.get('term', request.session.get('term', ''))
-    
+
     template_info = {
         'search_term': term,
         'segments': Segment.objects.order_by('segment'),
         'servertypes': ServerType.objects.order_by('name')
     }
-    
+
     hostname_filter = set()
     matched_servers = set()
     if term:
@@ -70,7 +70,7 @@ def index(request):
                     template_info)
     else:
         understood = query().get_representation().as_code() # It's lazy :-)
-    
+
     hw_query_args = {'physical_server': True, 'cancelled': False}
     if hostname_filter:
         hw_query_args['hostname'] = filters.Any(*hostname_filter)
@@ -112,7 +112,7 @@ def graph_table(request):
         return HttpResponseBadRequest('You have to provide a hostname')
 
     graphs = get_available_graphs(hostname)
-    
+
     graph_table = {}
     for graph in graphs:
         graph_name, period = split_graph_name(graph)
@@ -155,14 +155,14 @@ def custom_graph_table(request):
     class CustomGraphForm(forms.Form):
         start = forms.DateTimeField()
         end = forms.DateTimeField()
-    
+
         def clean(self):
-            check_order = ('start' in self.cleaned_data and 
+            check_order = ('start' in self.cleaned_data and
                            'end' in self.cleaned_data)
 
             if not check_order:
                 return self.cleaned_data
-            
+
             if self.cleaned_data['start']  >= self.cleaned_data['end']:
                 raise forms.ValidationError('Start must be less than end')
 
@@ -180,20 +180,20 @@ def custom_graph_table(request):
         graph_name, period = split_graph_name(graph)
         graph_names.add(graph_name)
 
-    
+
     if request.method == 'POST':
         form = CustomGraphForm(request.POST)
-        
+
         if form.is_valid():
             start = int(time.mktime(form.cleaned_data['start'].timetuple()))
             end = int(time.mktime(form.cleaned_data['end'].timetuple()))
-        
+
             for graph_name in graph_names:
                 try:
                     url = draw_custom_graph(graph_name, hostname, start, end)
                 except ServermonitorError:
                     url = None
-       
+
                 try:
                     graph_description = GraphDescription.objects.get(graph_name=graph_name).description
                 except:
@@ -211,7 +211,7 @@ def custom_graph_table(request):
             'start':datetime.utcnow() - timedelta(minutes=60),
             'end': datetime.utcnow()
         })
-    
+
     graph_table = sorted(graph_table.values(), key=itemgetter('name'))
     return TemplateResponse(request, 'servermonitor/custom_graph_table.html', {
         'hostname': hostname,
@@ -288,7 +288,7 @@ def compare(request):
     compare_table.sort(key=lambda x: _sort_key(x['name']))
     for graph_row in compare_table:
         graph_row['hosts'].sort(key=itemgetter('hostname'))
-    
+
     return TemplateResponse(request, 'servermonitor/compare.html', {
         'compare_table': compare_table,
         'is_ajax': request.is_ajax(),
@@ -303,20 +303,20 @@ def custom_compare(request):
         start = forms.DateTimeField()
         end   = forms.DateTimeField()
 
-        def clean(self):    
+        def clean(self):
             check_order = ('start' in self.cleaned_data and
                            'end' in self.cleaned_data)
 
             if not check_order:
                 return self.cleaned_data
-            
+
             if self.cleaned_data['start'] >= self.cleaned_data['end']:
                 raise forms.ValidationError('Start must be less than end')
-            
+
             return self.cleaned_data
 
-        
-  
+
+
     try:
         hostnames = request.GET.getlist('hostname')
     except KeyError:
@@ -329,26 +329,26 @@ def custom_compare(request):
             if form.is_valid():
                 start = int(time.mktime(form.cleaned_data['start'].timetuple()))
                 end = int(time.mktime(form.cleaned_data['end'].timetuple()))
-    
+
             for graph in request.GET.getlist('graph'):
                 graph_name, period = split_graph_name(graph)
                 use_graphs.add(graph_name)
-        
+
             graph_hosts = {} # Contains mapping from graph_name to list of hosts
             host_graphs = {} # Available graphs [hostname] -> (graph_name, period)
             for hostname in hostnames:
                 host_graphs[hostname] = set([split_graph_name(graph)[0]
                                          for graph in get_available_graphs(hostname)])
-        
+
             if not use_graphs:
                 for graphs in host_graphs.itervalues():
                     use_graphs.update([graph for graph in graphs])
-        
+
             for hostname in hostnames:
                 for graph in host_graphs[hostname]:
                     if graph in use_graphs:
                         graph_hosts.setdefault(graph, set()).add(hostname)
-        
+
             for graph_name in use_graphs:
                 graph_hostnames = graph_hosts.get(graph_name, set())
                 hosts = []
@@ -363,7 +363,7 @@ def custom_compare(request):
                         image = None
                     host['images'].append({    'image': image,
                                                'graph': graph})
-        
+
                     # Pop non existing images at the end
                     for graph_entry in reversed(host['images']):
                         if graph_entry['image'] is None:
@@ -377,19 +377,19 @@ def custom_compare(request):
                         'name': graph_name,
                         'hosts': hosts,
                 })
-        
+
             # Sort table by graph and hostnames
             compare_table.sort(key=lambda x: _sort_key(x['name']))
             for graph_row in compare_table:
                 graph_row['hosts'].sort(key=itemgetter('hostname'))
-        
+
     else:
         form = CustomGraphForm(initial={
             'start':datetime.utcnow() - timedelta(minutes=60),
             'end': datetime.utcnow()
         })
 
-        
+
     return TemplateResponse(request, 'servermonitor/custom_compare.html', {
         'compare_table': compare_table,
         'is_ajax': request.is_ajax(),
@@ -419,7 +419,7 @@ def livegraph(request):
         server_id = query(hostname=hostname).get().object_id
     except (KeyError, DatasetError):
         return HttpResponseBadRequest('No such server')
-    
+
     return TemplateResponse(request, 'servermonitor/livegraph.html', {
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
@@ -434,7 +434,7 @@ def livegraph_data(request):
         server = query(hostname=hostname).get()
     except (KeyError, DatasetError):
         return HttpResponseBadRequest('No such server')
-    
+
     # Ask dom0 about performance data for the domU
     if 'xen_host' in server and server['xen_host'] != server['hostname']:
         try:
@@ -443,7 +443,7 @@ def livegraph_data(request):
             data = {}
     else:
         data = {}
-    
+
     # ask domU itself for performance data
     try:
         server_data = query_livegraph(server['intern_ip'].as_ip(), 'host')
@@ -452,7 +452,7 @@ def livegraph_data(request):
 
     # combine performance data
     data.update(server_data)
-    
+
     return HttpResponse(json.dumps({
         'time': int(time.time() * 1000),
         'data': data
@@ -486,7 +486,7 @@ def custom_graph(request, graph_name):
             if self.cleaned_data['start'] >= self.cleaned_data['end']:
                 raise forms.ValidationError('Start must be less than end')
             return self.cleaned_data
-    
+
     hostname = request.REQUEST.get('hostname')
     if not hostname:
         return HttpResponseBadRequest('No hostname given')
@@ -494,7 +494,7 @@ def custom_graph(request, graph_name):
     graph_url = None
     if request.method == 'POST':
         form = CustomGraphForm(request.POST)
-        
+
         if form.is_valid():
             start = int(time.mktime(form.cleaned_data['start'].timetuple()))
             end = int(time.mktime(form.cleaned_data['end'].timetuple()))
@@ -506,7 +506,7 @@ def custom_graph(request, graph_name):
     else:
         form = CustomGraphForm(initial={
             'start': datetime.utcnow() - timedelta(minutes=60),
-            'end': datetime.utcnow() 
+            'end': datetime.utcnow()
         })
 
     return TemplateResponse(request, 'servermonitor/custom_graph.html', {
@@ -528,22 +528,17 @@ def segments_info(request):
         bin_list.append({'start': start, 'stop': last})
         last = start
     bin_list.reverse()
-    
-    segments = []
-    for segment in Segment.objects.select_related():
-        try:
-            usage = segment.usage.description
-        except SegmentUsage.DoesNotExist:
-            usage = 'unknown'
 
+    segments = []
+    for segment in Segment.objects.all():
         segments.append({
             'name': segment.segment,
             'info': _get_segment_info(segment, bins),
-            'usage': usage
+            'usage': segment.description
         })
 
     comment_form = CommentForm(initial={'type': 'segmentinfo'})
-    
+
     return TemplateResponse(request, 'servermonitor/segments_info.html', {
         'segments': segments,
         'bin_list': bin_list,
@@ -553,12 +548,12 @@ def segments_info(request):
 def _get_segment_info(segment, bins):
     reversed_bins = list(reversed(bins))
     server_hist = [0] * len(bins)
-    
+
     segment_name = segment.segment
     hosts = query(physical_server=True, cancelled=False, segment=segment_name,
                    servertype=filters.Not('hw_loadbalancer')).restrict('hostname')
     hostnames = [host['hostname'] for host in hosts]
-    
+
     info = get_information(hostnames, disabled_features=['vserver'])
     for host in info['hosts']:
         try:
@@ -570,7 +565,7 @@ def _get_segment_info(segment, bins):
                 server_hist[i] += 1
                 break
     server_hist.reverse()
-    
+
     info['num_servers'] = len(hostnames)
     info['server_hist'] = server_hist
     info['cpu_usage'] = info['cpu_aggregate']['daily']['avg'] / 100.0 / 0.7

@@ -149,6 +149,7 @@ class Segment(models.Model):
     segment = models.CharField(max_length=20, db_column='segment_id',
             primary_key=True)
     ip_range = models.CharField(max_length=255, null=True, blank=True)
+    description = models.CharField(max_length=1024)
 
     def __unicode__(self):
         return self.segment
@@ -157,16 +158,6 @@ class Segment(models.Model):
         app_label = 'serverdb'
         db_table = 'segment'
         ordering = ('segment', )
-
-class SegmentUsage(models.Model):
-    segment = models.OneToOneField(Segment, related_name='usage')
-    description = models.TextField()
-
-    def __unicode__(self):
-        return '{0}: {1}'.format(self.segment, self.description)
-
-    class Meta:
-        app_label = 'serverdb'
 
 class Change(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)
