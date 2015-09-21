@@ -156,6 +156,7 @@ class Segment(models.Model):
     class Meta:
         app_label = 'serverdb'
         db_table = 'segment'
+        ordering = ('segment', )
 
 class SegmentUsage(models.Model):
     segment = models.OneToOneField(Segment, related_name='usage')
