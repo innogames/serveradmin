@@ -26,7 +26,7 @@
             <select id="segment_short" name="current_segment">
             <option value="">- all -</option>
             {% for seg in segments %}
-                <option value="{{ seg.segment }}" {% if seg.segment == current_segment %}selected{% endif %}>{{ seg.segment }}</option>
+                <option value="{{ seg }}" {% if seg.segment_id == current_segment %}selected{% endif %}>{{ seg }}</option>
             {% endfor %}
             </select>
             </td>

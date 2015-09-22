@@ -9,9 +9,9 @@
 <p>
 <select name="segment">
 {% for segment in segments %}
-    <option value="{{ segment.segment }}"
+    <option value="{{ segment.segment_id }}"
     {% if displayed_segment == segment %}selected="selected"{% endif %}
-    >{{ segment.segment }}</option>
+    >{{ segment }}</option>
 {% endfor %}
 </select>
 <input type="submit" value="Show" />

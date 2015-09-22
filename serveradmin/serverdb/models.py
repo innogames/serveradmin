@@ -146,18 +146,17 @@ class ServerObjectCache(models.Model):
         unique_together = (('server', 'repr_hash'))
 
 class Segment(models.Model):
-    segment = models.CharField(max_length=20, db_column='segment_id',
-            primary_key=True)
+    segment_id = models.CharField(max_length=20, primary_key=True)
     ip_range = models.CharField(max_length=255, null=True, blank=True)
     description = models.CharField(max_length=1024)
 
     def __unicode__(self):
-        return self.segment
+        return self.segment_id
 
     class Meta:
         app_label = 'serverdb'
         db_table = 'segment'
-        ordering = ('segment', )
+        ordering = ('segment_id', )
 
 class Change(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)

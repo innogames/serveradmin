@@ -532,7 +532,7 @@ def segments_info(request):
     segments = []
     for segment in Segment.objects.all():
         segments.append({
-            'name': segment.segment,
+            'name': segment.segment_id,
             'info': _get_segment_info(segment, bins),
             'usage': segment.description
         })
@@ -549,7 +549,7 @@ def _get_segment_info(segment, bins):
     reversed_bins = list(reversed(bins))
     server_hist = [0] * len(bins)
 
-    segment_name = segment.segment
+    segment_name = segment.segment_id
     hosts = query(physical_server=True, cancelled=False, segment=segment_name,
                    servertype=filters.Not('hw_loadbalancer')).restrict('hostname')
     hostnames = [host['hostname'] for host in hosts]

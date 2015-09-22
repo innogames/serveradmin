@@ -31,10 +31,10 @@ def index(request):
         ordering = 'range_id'
 
     try:
-        segment = Segment.objects.get(segment=request.GET['segment'])
+        segment = Segment.objects.get(segment_id=request.GET['segment'])
     except (KeyError, Segment.DoesNotExist):
         segment = Segment.objects.all()[0]
-    ip_ranges = IPRange.objects.filter(segment=segment.segment).order_by(
+    ip_ranges = IPRange.objects.filter(segment=segment.segment_id).order_by(
             ordering)
 
     return TemplateResponse(request, 'iprange/index.html', {
@@ -101,7 +101,7 @@ def add(request):
             messages.success(request, u'Added IP range "{0}"'.format(
                     data['range_id']))
             return HttpResponseRedirect('{0}?segment={1}'.format(
-                    reverse('iprange_index'), data['segment'].segment))
+                    reverse('iprange_index'), data['segment'].segment_id))
     else:
         form = IPRangeForm()
 
@@ -138,7 +138,7 @@ def edit(request, range_id):
                     iprange.range_id))
 
             return HttpResponseRedirect('{0}?segment={1}'.format(
-                    reverse('iprange_index'), data['segment'].segment))
+                    reverse('iprange_index'), data['segment'].segment_id))
     else:
         initial = {
                 'range_id': iprange.range_id,

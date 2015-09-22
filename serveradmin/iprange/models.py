@@ -17,7 +17,7 @@ IP_CHOICES = (
 
 class IPRange(models.Model):
     range_id = models.CharField(max_length=20, primary_key=True)
-    segment = models.ForeignKey(Segment, db_column='segment_id')
+    segment = models.ForeignKey(Segment)
     ip_type = models.CharField(max_length=10, choices=IP_CHOICES)
     min = dbfields.IPv4Field(null=True)
     max = dbfields.IPv4Field(null=True)
