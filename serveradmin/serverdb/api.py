@@ -10,12 +10,12 @@ def get_servertypes():
 @api_function(group='dataset')
 def get_segments():
     """Returns a list of available segments"""
-    return [seg.segment for seg in Segment.objects.all()]
+    return [seg.segment_id for seg in Segment.objects.all()]
 
 @api_function(group='dataset')
 def get_attribute_info(servertype_name, attr_name):
     """Returns a dictionary with information for an attribute.
-      
+
       .. code-block:: python
 
          {
