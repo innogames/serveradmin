@@ -33,7 +33,7 @@
 
 {% for graph in graph_table %}
 <h3>{{ graph.name }}
-  <img src="{{ STATIC_URL}}help.png" class="graph_desc_icon" data-graphname={{graph.name}} >
+  <img src="{{ STATIC_URL }}help.png" class="graph_desc_icon" data-graphname={{graph.name}} >
 </h3>
 {% if graph.general %}
 <p><img src="{{ graph.general.image }}" alt="{{ graph.name }}"
