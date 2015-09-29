@@ -47,13 +47,15 @@
     {% if field.multi %}
     <textarea rows="3" cols="40" name="attr_{{ field.key }}"
     {% if field.error %} style="border:2px solid #d00"{% endif %} 
+    {% if filed.value|length > 0 and field.readonly %} readonly{% endif %}
     >{% for val in field.value %}{{ val }}
 {% endfor %}</textarea>
     <br />Multiple values, one value per row.
     {% else %}
     <input type="text" name="attr_{{ field.key }}" value="{{ field.value }}" size="30" 
     {% if not field.editable %}disabled="disabled" {% endif %}
-    {% if field.error %} style="border:2px solid #d00;"{% endif %} />
+    {% if field.error %} style="border:2px solid #d00;"{% endif %}
+    {% if field.value != '' and field.readonly %} readonly{% endif %} />
     {% endif %}
     </td>
 </tr>

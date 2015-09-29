@@ -221,6 +221,7 @@ def list_and_edit(request, mode='list'):
             'required': stype_attr.required,
             'regexp': _prepare_regexp_html(stype_attr.regexp),
             'default': stype_attr.default,
+            'readonly': lookups.attr_names[key].readonly,
             'error': key in invalid_attrs
         })
 
@@ -239,6 +240,7 @@ def list_and_edit(request, mode='list'):
                 'required': False,
                 'regexp': _prepare_regexp_html(stype_attr.regexp),
                 'default': stype_attr.default,
+                'readonly': attr.readonly,
                 'error': attr.name in invalid_attrs
             })
 
