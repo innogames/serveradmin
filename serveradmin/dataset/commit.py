@@ -162,7 +162,8 @@ def _validate_readonly(changed_servers, servers):
         server = servers[server_id]
         for attr, change in changes.iteritems():
             if lookups.attr_names[attr].readonly:
-                violations.append((server_id, attr))
+                if attr in server and server[attr] != '':
+                    violations.append((server_id, attr))
     return violations
 
 def _validate_regexp(changed_servers, servers):
