@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Segments information{% endblock %}
+
+{% block content %}
+<h2>Segments information</h2>
+
+<table class="tabular">
+    <tr>
+        <th>Segment</th>
+        <th>Servertypes</th>
+        <th>Projects</th>
+        <th>Total disk_size_gib</th>
+        <th>Total memory</th>
+        <th>Total num_cpu</th>
+        <th>Description</th>
+    </tr>
+
+{% for segment in segments %}
+    <tr class="{% cycle 'row_a' 'row_b' %}">
+        <td><a href="{% url 'resources_index' %}?term=segment%3D{{ segment.name }}"
+                >{{ segment.name }}</a></td>
+
+        <td>{% for servertype, count in segment.servertypes %}{{ servertype }}: {{ count }} {% endfor %}</td>
+
+        <td>{% for project, count in segment.projects %}{{ project }}: {{ count }} {% endfor %}</td>
+
+        <td>{{ segment.disk_size_gib }}</td>
+
+        <td>{{ segment.memory }}</td>
+
+        <td>{{ segment.num_cpu }}</td>
+
+        <td>{{ segment.description }}</td>
+    </tr>
+{% endfor %}
+</table>
+
+{% endblock content %}
