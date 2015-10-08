@@ -75,8 +75,8 @@ def get_results(request):
 
     order_by = request.GET.get('order_by')
     order_dir = request.GET.get('order_dir', 'asc')
-    
-    shown_attributes = ['hostname', 'intern_ip', 'servertype']
+
+    shown_attributes = ['hostname', 'intern_ip', 'servertype', 'project']
     try:
         query_args = parse_query(term, filter_classes)
 
