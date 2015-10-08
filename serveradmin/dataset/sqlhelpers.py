@@ -23,6 +23,8 @@ def value_to_sql(attr_obj, value):
     return _sql_escape(prepare_value(attr_obj, value))
 
 def prepare_value(attr_obj, value):
+
+    # Casts by type
     if attr_obj.type == u'boolean':
         value = 1 if value else 0
     elif attr_obj.type == u'ip':
@@ -36,12 +38,22 @@ def prepare_value(attr_obj, value):
     elif attr_obj.type == u'datetime':
         if isinstance(value, datetime):
             value = int(time.mktime(value.timetuple()))
+
+    # Validations of special attributes
+    if attr_obj.name == u'servertype':
+        if value not in lookups.stype_names:
+            raise ValueError(u'Invalid servertype: ' + value)
+    if attr_obj.name == u'segment':
+        if value not in lookups.segments:
+            raise ValueError(u'Invalid segment: ' + value)
+    if attr_obj.name == u'project':
+        if value not in lookups.projects:
+            raise ValueError(u'Invalid project: ' + value)
+
     # XXX: Dirty hack for the old database structure
     if attr_obj.name == u'servertype':
-        try:
-            value = lookups.stype_names[value].pk
-        except KeyError:
-            raise ValueError(u'Invalid servertype: ' + value)
+        value = lookups.stype_names[value].pk
+
     return value
 
 def raw_sql_escape(value):

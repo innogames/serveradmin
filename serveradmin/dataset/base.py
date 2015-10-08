@@ -8,7 +8,7 @@ from django.db import connection
 from django.core.cache import cache
 from django.core.signals import request_started
 
-from serveradmin.serverdb.models import Attribute, ServerType
+from serveradmin.serverdb.models import Attribute, ServerType, Segment, Project
 
 lookups = local()
 ServerTypeAttr = namedtuple('ServerTypeAttr', ['servertype_id', 'attribute_id',
@@ -74,6 +74,12 @@ def _read_lookups(sender=None, **kwargs):
         stype.attributes = []
         lookups.stype_ids[stype.pk] = stype
         lookups.stype_names[stype.name] = stype
+
+    # Read all segments
+    lookups.segments = dict((s.pk, s) for s in Segment.objects.all())
+
+    # Read all projects
+    lookups.projects = dict((p.pk, p) for p in Project.objects.all())
 
     # Read all servertype attributes
     # Bypass Django ORM for performance reasons
