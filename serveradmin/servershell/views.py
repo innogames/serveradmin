@@ -363,7 +363,15 @@ def new_server(request):
                     server_id)
             return HttpResponseRedirect(url)
     else:
-        form = form_class(initial={'check_ip': True})
+        if clone_from:
+            form = form_class(initial={
+                    'project': clone_from['project'],
+                    'hostname': clone_from['hostname'],
+                    'intern_ip': clone_from['intern_ip'],
+                    'check_ip': True,
+                })
+        else:
+            form = form_class(initial={'check_ip': True})
 
     return TemplateResponse(request, 'servershell/new_server.html', {
         'form': form,
