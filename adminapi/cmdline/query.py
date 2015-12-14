@@ -17,6 +17,7 @@ def main():
     opt_parser.add_option('-t', '--token', dest='token')
     opt_parser.add_option('-n', '--null', dest='null_value', default='-')
     opt_parser.add_option('-e', '--export', action='store_true')
+    opt_parser.add_option('-o', '--orderby', dest='orderby', action='append')
     opt_parser.add_option('-s', '--separator', dest='separator', default=' ')
 
     options, args = opt_parser.parse_args()
@@ -24,7 +25,7 @@ def main():
     if len(args) != 1:
         print('You have to supply a search term.', file=sys.stderr)
         sys.exit(1)
-    
+
     if options.token:
         auth_token = options.token
     else:
@@ -36,6 +37,7 @@ def main():
         sys.exit(1)
 
     attrs = options.attrs if options.attrs else ['hostname']
+    orderby = options.orderby if options.orderby else ['hostname']
 
     adminapi.auth(auth_token)
 
@@ -45,23 +47,16 @@ def main():
     except ValueError, e:
         print(unicode(e), file=sys.stderr)
         sys.exit(1)
-    
-    if not attrs:
-        attrs = ['hostname']
-    
+
     try:
-        q = query(**query_args).restrict(*attrs).fetch_now()
+        host_list = query(**query_args).restrict(*attrs).order_by(*orderby).fetch_now()
     except (ValueError, DatasetError), e:
         print(unicode(e), file=sys.stderr)
         sys.exit(1)
 
     if options.export:
-        print(options.separator.join(host[attrs[0]] for host in q))
+        print(options.separator.join(host[attrs[0]] for host in host_list))
         exit(0)
-
-    host_list = q
-    if 'hostname' in attrs:
-        host_list = sorted(q, key=itemgetter('hostname'))
 
     for host in host_list:
         row_values = []
