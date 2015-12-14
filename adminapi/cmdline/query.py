@@ -22,7 +22,7 @@ def main():
 
     options, args = opt_parser.parse_args()
 
-    if len(args) != 1:
+    if len(args) < 1:
         print('You have to supply a search term.', file=sys.stderr)
         sys.exit(1)
 
@@ -42,7 +42,7 @@ def main():
     adminapi.auth(auth_token)
 
     try:
-        query_args = parse_query(args[0],
+        query_args = parse_query(' '.join(args),
                 filter_classes=filters.filter_classes)
     except ValueError, e:
         print(unicode(e), file=sys.stderr)
