@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% load serversearch %}
-{% load servermonitor %}
 
 {% block title %}Hardware Resources{% endblock %}
 
@@ -128,7 +127,6 @@
 <script type="text/javascript" src="{{ STATIC_URL }}graphite/graphite.js"></script>
 <script type="text/javascript">
 var monitor_graph_popup_url = '{% url 'resources_graph_popup' %}';
-var monitor_reload_url = '{% url 'servermonitor_reload' %}';
 $(function() {
     $('.graph_sprite').click(open_graph_popup);
     function update_sprites() {

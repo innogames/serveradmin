@@ -344,21 +344,24 @@ You will now get a permission named ``iprange.can_get_ip``.
 If you don't have a model class you have to create one. This will normally
 also create a database table, but you can avoid it by setting ``managed``
 to ``False``. This will tell Django that it shouldn't manage the database
-for this model. See the following example (inside servermonitor app)::
+for this model. See the following example::
    
-   class Servermonitor(models.Model):
-       class Meta:
-          managed = False
-          permissions = (
-             ('can_view_graphs', 'Can view graphs'),
-          )
+    class ddosmanager (models.Model):
+
+        class Meta:
+            managed = False
+            permissions = (
+              ('set_state',    'Can enable and disable DDoS Mitigation'),
+              ('set_prefixes', 'Can modify prefixes announced to DDoS Mitigation provider'),
+              ('view', 'Can view DDoS Mitigation state and prefixes'),
+           )
    
 There are several ways to check for permissions at different levels. To check
 permissions on a view, use the ``permission_required`` decorator::
    
    from django.contrib.auth.decorators import permission_required
    
-   @permission_required('servermonitor.can_view_graphs')
+   @permission_required('can_view_graphs')
    def view_graphs(request):
        pass # Do some stuff and render template
          

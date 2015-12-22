@@ -22,17 +22,7 @@ DATABASES = {
         'HOST': '127.0.0.1',                      # Set to empty string for localhost. Not used with sqlite3.
         'PORT': '3306',                      # Set to empty string for default. Not used with sqlite3.
     },
-    'servermonitor': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'rrdd',
-        'USER': 'serveradmin',
-        'PASSWORD': 'INSERT-PASSWORD-HERE',
-        'HOST': '127.0.0.1',
-        'PORT': '3306'
-    }
 }
-
-DATABASE_ROUTERS = ['serveradmin.servermonitor.router.ServermonitorRouter']
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -151,7 +141,6 @@ INSTALLED_APPS = (
     'serveradmin.api',
     'serveradmin.docs',
     'serveradmin.iprange',
-    'serveradmin.servermonitor',
     'serveradmin.graphite',
     'serveradmin.resources',
 )
@@ -197,9 +186,6 @@ CACHES = {
 DATASET_CACHE_DIR = '/tmp'
 
 OBJECTS_PER_PAGE = 25
-
-SERVERMONITOR_SERVER = ('servermonitor.innogames.de', 5331)
-SERVERMONITOR_URL = 'https://servermonitor.innogames.de'
 
 # Graphite URL is required to generate graphic URL's.  Normal graphs
 # are requested from Graphite on the browser.  admin_djangourlauth module

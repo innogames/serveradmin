@@ -139,17 +139,7 @@ simply means that the servers will get additional attributes that can be
 read but can not be changed. You will simply call ``augment`` on the query
 result before using it.
 
-The following augmentations are not available yet, but might be in future:
-
-servermonitor
-   Adds the following attributes to the server if applicable:
-   
-   * cpu_hourly
-   * cpu_daily
-   * io_hourly
-   * io_daily
-   * disk_free
-   * mem_free
+The aren't any augmentations available at the moment, but might be in future.
 
 You can also use additional attributes in your query for filtering, but be
 aware: They are filtered in Python and not on the database level (which is not

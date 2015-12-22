@@ -271,8 +271,9 @@ it will be interpreted as regular expression.</p>
     <tr>
         <td>graph</td>
         <td><span class="noargs">none</span></td>
-        <td>Show available servermonitor graphs for selected hosts. If no host
-        is selected, it will show graphs for the first host in the list.
+        <td>
+            Show available graphs for selected hosts.  If no host is selected,
+            it will show graphs for the first host in the list.
         </td>
     </tr>
     <tr>
@@ -365,9 +366,7 @@ var serverdb_history_url = "{% url 'serverdb_history' %}";
 </script>
 <script type="text/javascript" src="{{ STATIC_URL }}servershell/common.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}servershell/servershell.js"></script>
-<script type="text/javascript" src="{{ STATIC_URL }}servermonitor/servermonitor.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}flot/jquery.flot.min.js"></script>
-<script type="text/javascript" src="{{ STATIC_URL }}servermonitor/livegraph.js"></script>
 <script type="text/javascript">
 //<![CDATA[
 search['per_page'] = {{ per_page }};

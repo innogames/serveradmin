@@ -9,7 +9,6 @@ from django.contrib.auth import login
 from django.contrib.auth.forms import AuthenticationForm
 
 from serveradmin.serverdb.models import Attribute
-from serveradmin.servermonitor.models import ServerData
 
 def failoverlogin(request):
     if not getattr(settings, 'IS_SECONDARY', False):
@@ -32,9 +31,9 @@ def failoverlogin(request):
                 return HttpResponseRedirect('/')
     else:
         form = AuthenticationForm()
-    
+
     request.session.set_test_cookie()
-    
+
     return TemplateResponse(request, 'failoverlogin.html', {
         'form': form,
     })
@@ -43,7 +42,6 @@ def check(request):
     # Doing two database query against most important databases
     try:
         Attribute.objects.all()[0]
-        ServerData.objects.all()[0]
     except Exception:
         return HttpResponseServerError('FAILURE')
     return HttpResponse('OK')
