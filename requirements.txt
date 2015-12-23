@@ -1,4 +1,4 @@
-django
+django==1.8
 django-extensions
 docutils
 python-memcached
