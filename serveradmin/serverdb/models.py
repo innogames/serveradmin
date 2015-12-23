@@ -13,7 +13,8 @@ from django.core.signals import request_started
 from django.utils.timezone import now
 from django.contrib.auth.models import User
 
-from serveradmin.common import dbfields
+import netfields
+
 from serveradmin.apps.models import Application
 
 
@@ -415,9 +416,11 @@ class ServertypeAttribute(LookupModel):
 #
 
 class Server(models.Model):
+    objects = netfields.NetManager()
+
     server_id = models.AutoField(primary_key=True)
     hostname = models.CharField(max_length=64, unique=True)
-    intern_ip = dbfields.IPv4Field(db_index=True)
+    intern_ip = netfields.InetAddressField(db_index=True)
     comment = models.CharField(max_length=255, null=True, blank=True)
     _project = models.ForeignKey(
         Project,

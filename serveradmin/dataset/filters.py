@@ -3,7 +3,7 @@ import operator
 import time
 import dateutil.parser
 from decimal import Decimal
-from ipaddress import IPv4Address, IPv6Address, ip_network
+from ipaddress import IPv6Address, ip_network
 
 from django.core.exceptions import ValidationError
 
@@ -59,7 +59,6 @@ class NoArgFilter(BaseFilter):
 
 
 class NetworkFilter(BaseFilter):
-
     def typecast(self, attribute):
         # We don't really need to cast anything.  The child classes
         # can do that on their __init__() methods as they cannot be
@@ -495,10 +494,8 @@ class InsideNetwork(NetworkFilter):
         return result
 
     def as_sql_expr(self, attribute):
-        return _condition_sql(attribute, '({0})'.format(
-            ' OR '.join('{{0}} BETWEEN {0} AND {1}'.format(
-                int(net.network_address), int(net.broadcast_address)
-            ) for net in self.networks)
+        return _condition_sql(attribute, "{{0}} <<= ANY('{{{{{0}}}}}')".format(
+            ','.join(str(n) for n in self.networks)
         ))
 
     def matches(self, server_obj, attr_name):
@@ -509,7 +506,6 @@ class InsideNetwork(NetworkFilter):
 
     @classmethod
     def from_obj(cls, obj):
-
         if 'networks' in obj and isinstance(obj['networks'], (tuple, list)):
             return cls(*obj['networks'])
 
@@ -674,8 +670,6 @@ def value_to_sql(attribute, value):
         return raw_sql_escape(1 if value else 0)
     if attribute.type == 'integer':
         return raw_sql_escape(int(value))
-    if attribute.type == 'ip':
-        return raw_sql_escape(int(IPv4Address(value)))
     if attribute.type == 'ipv6':
         return raw_sql_escape(
             ''.join('{:02x}'.format(x) for x in IPv6Address(value).packed)

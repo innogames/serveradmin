@@ -2,7 +2,8 @@ from ipaddress import ip_address, summarize_address_range
 
 from django.db import models
 
-from serveradmin.common import dbfields
+import netfields
+
 from serveradmin.serverdb.models import Segment, Server
 
 IP_CHOICES = (
@@ -10,43 +11,42 @@ IP_CHOICES = (
     ('public_ip', 'Public'),
 )
 
+
 class IPRange(models.Model):
     range_id = models.CharField(max_length=20, primary_key=True)
     segment = models.ForeignKey(Segment)
     ip_type = models.CharField(max_length=10, choices=IP_CHOICES)
-    min = dbfields.IPv4Field(null=True)
-    max = dbfields.IPv4Field(null=True)
-    gateway = dbfields.IPv4Field(null=True)
-    internal_gateway = dbfields.IPv4Field(null=True)
-    min6 = dbfields.IPv6Field(null=True)
-    max6 = dbfields.IPv6Field(null=True)
-    gateway6 = dbfields.IPv6Field(null=True)
-    internal_gateway6 = dbfields.IPv6Field(null=True)
+    min = netfields.InetAddressField(null=True)
+    max = netfields.InetAddressField(null=True)
+    gateway = netfields.InetAddressField(null=True)
+    internal_gateway = netfields.InetAddressField(null=True)
+    min6 = netfields.InetAddressField(null=True)
+    max6 = netfields.InetAddressField(null=True)
+    gateway6 = netfields.InetAddressField(null=True)
+    internal_gateway6 = netfields.InetAddressField(null=True)
     vlan = models.IntegerField(null=True)
     belongs_to = models.ForeignKey('self', null=True, blank=True,
             related_name='subnet_of')
 
     def get_network(self):
         if self.min and self.max:
-            networks = tuple(summarize_address_range(self.min, self.max))
-            if len(networks) > 1:
-                raise ValueError(
-                    'The min and max addresses does not represent a CIDR '
-                    'address'
-                )
+            for network in summarize_address_range(self.min.ip, self.max.ip):
+                return network
 
-            return networks[0]
+            raise ValueError(
+                'The min and max addresses does not represent a CIDR '
+                'address'
+            )
 
     def get_network6(self):
         if self.min6 and self.max6:
-            networks = tuple(summarize_address_range(self.min6, self.max6))
-            if len(networks) > 1:
-                raise ValueError(
-                    'The min6 and max6 addresses does not represent a CIDR '
-                    'address'
-                )
+            for network in summarize_address_range(self.min6.ip, self.max6.ip):
+                return network
 
-            return networks[0]
+            raise ValueError(
+                'The min6 and max6 addresses does not represent a CIDR '
+                'address'
+            )
 
     def get_taken_set(self):
         """Query taken IPs"""
@@ -54,12 +54,12 @@ class IPRange(models.Model):
         if self.min is None or self.max is None:
             return set()
 
-        return set(ip_address(i) for i in (
+        return set(
             Server.objects
             .filter(intern_ip__range=(self.min, self.max))
             .order_by()     # Clear ordering for database performance
             .values_list('intern_ip', flat=True)
-        ))
+        )
 
     def get_free_set(self):
         if self.min is None or self.max is None:

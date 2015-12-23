@@ -141,6 +141,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.admin',
+    'netfields',
     'markup_deprecated',
     'serveradmin.common',
     'serveradmin.servershell',
