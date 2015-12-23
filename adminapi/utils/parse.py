@@ -2,7 +2,7 @@ def parse_function_string(args, strict=True):
     state = 'start'
     args_len = len(args)
     parsed_args = []
-    
+
     i = 0
     call_depth = 0
     while i < args_len:
@@ -68,7 +68,7 @@ def parse_function_string(args, strict=True):
             raise ValueError('Unterminated string')
         else:
             parsed_args.append(('str', args[string_start:]))
-    
+
     return parsed_args
 
 def parse_query(term, filter_classes):
@@ -105,7 +105,7 @@ def _parse_query(term, filter_classes, hostname=None):
             hostname = regexp_class(hostname_part)
         else:
             hostname = hostname_part
-        
+
         if u'hostname' in query_args:
             query_args[u'hostname'] = filter_classes['or'](
                     query_args[u'hostname'], hostname)
@@ -113,7 +113,7 @@ def _parse_query(term, filter_classes, hostname=None):
             query_args[u'hostname'] = hostname
 
         return query_args
-    
+
     # Otherwise just parse all attributes
     query_args = {}
     stack = []

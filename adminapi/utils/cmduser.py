@@ -3,7 +3,7 @@ import pwd
 
 def get_user(home_at=['/home', '/var', '/opt', '/usr']):
     """Try to find the user who executed the script originally.
-    
+
     :param home_at: List of directories containing home directories
     :return: User who probably run the script as pwd struct
 
@@ -24,7 +24,7 @@ def _get_user_proc(home_at):
     pid = os.getpid()
     while True:
         pwd_info, ppid = _parse_status(pid)
-        
+
         has_home = False
         if home_at is None:
             has_home = True
@@ -33,11 +33,11 @@ def _get_user_proc(home_at):
 
         if has_home:
             return pwd_info
-        
+
         # We are at init :o
         if pid == 1:
             # Could not find a better user
-            return pwd_info 
+            return pwd_info
         pid = ppid
 
 

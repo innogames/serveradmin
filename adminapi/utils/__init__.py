@@ -16,7 +16,7 @@ def log2(x):
 def print_table(input_table_rows, max_col_len=40, file=sys.stdout):
     if not input_table_rows:
         return
-    
+
     # Format objects for table display
     table_rows = []
     for row in input_table_rows:
@@ -66,7 +66,7 @@ def _base256_encode(n):
 
 class IP(object):
     __slots__ = ('ip', )
-    
+
     def __init__(self, ip):
         if isinstance(ip, basestring):
             ip_int = 0
@@ -111,10 +111,10 @@ class IP(object):
 
     def __gt__(self, other):
         return not (self < other or self == other)
-    
+
     def __ge__(self, other):
         return not self < other
-    
+
     def __add__(self, other):
         return IP(self.ip + other)
 
@@ -124,7 +124,7 @@ class IP(object):
     def __iadd__(self, other):
         self.ip += other
         return self
-    
+
     def __isub__(self, other):
         self.ip -= other
         return self
@@ -144,7 +144,7 @@ class IP(object):
         for i in xrange(4):
             ip[i] = str(ip_int & 0xff)
             ip_int = ip_int >> 8
-        
+
         return '.'.join(reversed(ip))
 
     __str__ = as_ip
