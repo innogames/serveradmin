@@ -14,7 +14,7 @@ def request_exception(request, app_id):
             model = ApplicationException
             fields = ('issue', 'changes', 'tested')
         carefully = forms.BooleanField()
-    
+
     if request.method == 'POST':
         form = ExceptionForm(request.POST)
         if form.is_valid():
