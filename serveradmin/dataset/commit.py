@@ -3,22 +3,31 @@ import json
 
 from django.db import connection
 
-from adminapi.dataset.exceptions import (CommitValidationFailed, CommitNewerData,
-        CommitError)
+from adminapi.dataset.exceptions import (
+        CommitValidationFailed,
+        CommitNewerData,
+        CommitError,
+    )
 from adminapi.utils.json import json_encode_extra
 from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.cache import invalidate_cache
 from serveradmin.dataset.typecast import typecast
 from serveradmin.serverdb.models import ChangeCommit, ChangeUpdate, ChangeDelete
 
-def commit_changes(commit, skip_validation=False, force_changes=False,
-                   app=None, user=None):
+def commit_changes(
+        commit,
+        skip_validation=False,
+        force_changes=False,
+        app=None,
+        user=None,
+    ):
     """Commit server changes to the database after validation.
 
     :param commit: Dictionary with the keys 'deleted' and 'changes' containing
                    a list of deleted servers and a dictionary of the servers'
                    changes.
     """
+
     deleted_servers = commit.get('deleted', [])
     changed_servers = commit.get('changes', {})
 
@@ -44,12 +53,16 @@ def commit_changes(commit, skip_validation=False, force_changes=False,
             violations_required = _validate_required(changed_servers, servers)
             if (violations_attribs or violations_readonly or
                 violations_regexp or violations_required):
-                error_message = _build_error_message(violations_attribs,
-                        violations_readonly, violations_regexp,
-                        violations_required)
+                error_message = _build_error_message(
+                        violations_attribs,
+                        violations_readonly,
+                        violations_regexp,
+                        violations_required,
+                    )
                 raise CommitValidationFailed(error_message,
                         violations_attribs + violations_readonly +
-                        violations_regexp + violations_required)
+                        violations_regexp + violations_required,
+                    )
         if violations_attribs:
             error_message = _build_error_message(violations_attribs, [], [])
             raise CommitValidationFailed(error_message, violations_attribs)
@@ -97,13 +110,15 @@ def _log_changes(deleted_servers, changed_servers, app, user):
         ChangeUpdate.objects.create(
                 commit=commit,
                 hostname=hostname,
-                updates_json=json.dumps(updates, default=json_encode_extra))
+                updates_json=json.dumps(updates, default=json_encode_extra),
+            )
     for attributes in old_servers:
         attributes_json = json.dumps(attributes, default=json_encode_extra)
         ChangeDelete.objects.create(
                 commit=commit,
                 hostname=attributes['hostname'],
-                attributes_json=attributes_json)
+                attributes_json=attributes_json,
+            )
 
 def _fetch_servers(changed_servers):
     # Import here to break cyclic import
@@ -266,19 +281,27 @@ def _clean_changed(changed_servers):
 def _delete_servers(deleted_servers):
     ids = ', '.join(str(x) for x in deleted_servers)
     c = connection.cursor()
-    c.execute(u'DELETE FROM attrib_values WHERE server_id IN({0})'.format(ids))
-    c.execute(u'DELETE FROM admin_server WHERE server_id IN({0})'.format(ids))
+    c.execute(u'DELETE FROM attrib_values WHERE server_id IN ({0})'.format(ids))
+    c.execute(u'DELETE FROM admin_server WHERE server_id IN ({0})'.format(ids))
 
 def _apply_changes(changed_servers, servers):
     c = connection.cursor()
-    query_update = (u'UPDATE attrib_values SET value=%s WHERE server_id = %s '
-            u'AND attrib_id = %s')
-    query_insert = (u'INSERT INTO attrib_values (server_id, attrib_id, value) '
-            u'VALUES (%s, %s, %s)')
-    query_remove = (u'DELETE FROM attrib_values WHERE server_id = %s AND '
-            u'attrib_id = %s AND value=%s')
-    query_remove_all = (u'DELETE FROM attrib_values WHERE server_id = %s AND '
-            u'attrib_id = %s')
+    query_update = (
+            u'UPDATE attrib_values SET value=%s '
+            u'WHERE server_id = %s AND attrib_id = %s'
+        )
+    query_insert = (
+            u'INSERT INTO attrib_values (server_id, attrib_id, value) '
+            u'VALUES (%s, %s, %s)'
+        )
+    query_remove = (
+            u'DELETE FROM attrib_values '
+            u'WHERE server_id = %s AND attrib_id = %s AND value=%s'
+        )
+    query_remove_all = (
+            u'DELETE FROM attrib_values '
+            u'WHERE server_id = %s AND attrib_id = %s'
+        )
     for server_id, changes in changed_servers.iteritems():
         server = servers[server_id]
         for attr, change in changes.iteritems():
@@ -290,7 +313,7 @@ def _apply_changes(changed_servers, servers):
             # XXX Dirty hack for old database structure
             if isinstance(attr_obj.special, ServerTableSpecial):
                 field = attr_obj.special.field
-                query = u'UPDATE admin_server SET {0}=%s WHERE server_id = %s'
+                query = u'UPDATE admin_server SET {0} = %s WHERE server_id = %s'
                 if action == 'new' or action == 'update':
                     value = _prepare_value(attr, change[u'new'])
                     c.execute(query.format(field), (value, server_id))
@@ -348,8 +371,11 @@ def _build_error_message(violations_attribs, violations_readonly,
                 seen[vattr] += 1
             else:
                 seen[vattr] = 1
+
         if seen:
             for vattr, num_affected in seen.iteritems():
                 message.append(u'{0}: {1} (#affected: {2})'.format(
-                        message_type, vattr, num_affected))
+                        message_type, vattr, num_affected
+                    ))
+
     return u'. '.join(message)

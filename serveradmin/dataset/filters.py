@@ -60,7 +60,9 @@ class ExactMatch(Filter):
     def from_obj(cls, obj):
         if u'value' in obj:
             return cls(obj[u'value'])
+
         raise ValueError('Invalid object for ExactMatch')
+
 filter_classes[u'exactmatch'] = ExactMatch
 
 class Regexp(Filter):
@@ -75,7 +77,7 @@ class Regexp(Filter):
             raise ValueError(u'Invalid regexp: ' + unicode(e))
         except (OperationalError, DatabaseError) as e:
             raise ValueError(u'Invalid regexp: ' + e[1])
-        
+
         self.regexp = regexp
 
     def __repr__(self):
@@ -97,7 +99,7 @@ class Regexp(Filter):
                 if self._regexp_obj.search(stype.name):
                     stype_ids.append(unicode(stype.pk))
             if stype_ids:
-                return u'{0} IN({1})'.format(field, ', '.join(stype_ids))
+                return u'{0} IN ({1})'.format(field, ', '.join(stype_ids))
             else:
                 return u'0=1'
         elif attr_obj.type == u'ip':
@@ -113,7 +115,7 @@ class Regexp(Filter):
             value = value.as_ip()
         else:
             value = str(value)
-        
+
         return bool(self._regexp_obj.search(value))
 
     def as_code(self):
@@ -128,6 +130,7 @@ class Regexp(Filter):
         if u'regexp' in obj and isinstance(obj[u'regexp'], basestring):
             return cls(obj[u'regexp'])
         raise ValueError(u'Invalid object for Regexp')
+
 filter_classes[u'regexp'] = Regexp
 
 extended_re = re.compile(r'<((\d+\-\d+|\d+)(,(\d+\-\d+|\d+))*)>')
@@ -146,7 +149,7 @@ class ExtendedRegexp(Regexp):
                     numbers.append(int(part))
             choices = '|'.join(str(num) for num in numbers)
             regexp = '0*({0})'.format(choices)
-            
+
             # We do some magic here to partly support what
             # lookaheads in PCRE would do.
             end = match.end()
@@ -157,12 +160,13 @@ class ExtendedRegexp(Regexp):
 
         regexp = extended_re.sub(expand, extended_regexp)
         Regexp.__init__(self, regexp)
-    
+
     def __repr__(self):
         return u'ExtendedRegexp({0!r})'.format(self.extended_regexp)
 
     def __hash__(self):
         return hash(u'ExtendedRegexp') ^ hash(self.regexp)
+
 filter_classes[u'extendedregexp'] = ExtendedRegexp
 
 class Comparison(Filter):
@@ -185,16 +189,25 @@ class Comparison(Filter):
         return hash(u'Comparison') ^ hash(self.comparator) ^ hash(self.value)
 
     def as_sql_expr(self, builder, attr_obj, field):
-        return u'{0} {1} {2}'.format(field, self.comparator,
-                value_to_sql(attr_obj, self.value))
+        return u'{0} {1} {2}'.format(
+                field,
+                self.comparator,
+                value_to_sql(attr_obj, self.value)
+            )
 
     def matches(self, server_obj, attr_name):
-        op = {
-            u'<': operator.lt,
-            u'>': operator.gt,
-            u'<=': operator.le,
-            u'>=': operator.gt
-        }[self.comparator]
+
+        if self.comparator == '<':
+            op = operator.lt
+        elif self.comparator == '>':
+            op = operator.gt
+        elif operator.le == '<=':
+            op = operator.le
+        elif operator.gt == '>=':
+            op = operator.gt
+        else:
+            raise ValueError('Operator doesn\'t exists')
+
         return op(server_obj[attr_name], self.value)
 
     def as_code(self):
@@ -208,6 +221,7 @@ class Comparison(Filter):
         if u'comparator' in obj and u'value' in obj:
             return cls(obj[u'comparator'], obj[u'value'])
         raise ValueError(u'Invalid object for Comparism')
+
 filter_classes[u'comparison'] = Comparison
 
 class Any(Filter):
@@ -230,11 +244,13 @@ class Any(Filter):
 
     def as_sql_expr(self, builder, attr_obj, field):
         if not self.values:
-            return u'0=1'
-        else:
-            prepared_values = u', '.join(value_to_sql(attr_obj, value)
-                    for value in self.values)
-            return u'{0} IN({1})'.format(field, prepared_values)
+            return u'0 = 1'
+
+        prepared_values = u', '.join(
+                value_to_sql(attr_obj, value) for value in self.values
+            )
+
+        return u'{0} IN ({1})'.format(field, prepared_values)
 
     def matches(self, server_obj, attr_name):
         return server_obj[attr_name] in self.values
@@ -251,6 +267,7 @@ class Any(Filter):
         if u'values' in obj and isinstance(obj[u'values'], list):
             return cls(*obj[u'values'])
         raise ValueError(u'Invalid object for Any')
+
 filter_classes[u'any'] = Any
 
 class _AndOr(Filter):
@@ -274,9 +291,11 @@ class _AndOr(Filter):
 
     def as_sql_expr(self, builder, attr_obj, field):
         joiner = u' {0} '.format(self.name.upper())
-        return u'({0})'.format(joiner.join([filter.as_sql_expr(builder, attr_obj, field)
-                for filter in self.filters]))
-    
+        return u'({0})'.format(joiner.join([
+                filter.as_sql_expr(builder, attr_obj, field)
+                for filter in self.filters
+            ]))
+
     def as_code(self):
         args = u', '.join(filt.as_code() for filt in self.filters)
         return u'filters.{0}({1})'.format(self.name.capitalize(), args)
@@ -302,16 +321,18 @@ class And(_AndOr):
             if not filter.matches(server_obj, attr_name):
                 return False
         return True
+
 filter_classes[u'and'] = And
 
 class Or(_AndOr):
     name = u'or'
-    
+
     def matches(self, server_obj, attr_name):
         for filter in self.filters:
             if filter.matches(server_obj, attr_name):
                 return True
         return False
+
 filter_classes[u'or'] = Or
 
 class Between(Filter):
@@ -350,6 +371,7 @@ class Between(Filter):
         if u'a' in obj and u'b' in obj:
             return cls(obj[u'a'], obj[u'b'])
         raise ValueError(u'Invalid object for Between')
+
 filter_classes[u'between'] = Between
 
 class Not(Filter):
@@ -370,31 +392,41 @@ class Not(Filter):
     def as_sql_expr(self, builder, attr_obj, field):
         if attr_obj.multi:
             uid = builder.get_uid()
-            
+
             # Special case for empty filter, simple negation doesn't work
             # here. It would just return all empty values, instead of values
             # which are NOT empty.
             if isinstance(self.filter, Empty):
-                return ('EXISTS (SELECT id FROM attrib_values AS nav{0} '
-                        '        WHERE nav{0}.server_id = adms.server_id AND '
-                        '              nav{0}.attrib_id = {1})').format(
-                                uid, attr_obj.attrib_id)
-            
-            cond = self.filter.as_sql_expr(builder, attr_obj,
-                    'nav{0}.value'.format(uid))
-            subquery = ('SELECT id FROM attrib_values AS nav{0} '
+                return (
+                        'EXISTS (SELECT 1 FROM attrib_values AS nav{0} '
+                                'WHERE nav{0}.server_id = adms.server_id AND '
+                                        'nav{0}.attrib_id = {1})'
+                    ).format(uid, attr_obj.attrib_id)
+
+            cond = self.filter.as_sql_expr(
+                    builder,
+                    attr_obj,
+                    'nav{0}.value'.format(uid),
+                )
+
+            subquery = (
+                    'SELECT id FROM attrib_values AS nav{0} '
                         'WHERE {1} AND '
-                        'nav{0}.server_id = adms.server_id AND '
-                        'nav{0}.attrib_id = {2}').format(
-                                uid, cond, attr_obj.attrib_id)
+                            'nav{0}.server_id = adms.server_id AND '
+                            'nav{0}.attrib_id = {2}'
+                ).format(uid, cond, attr_obj.attrib_id)
+
             return 'NOT EXISTS ({0})'.format(subquery)
         else:
             if isinstance(self.filter, ExactMatch):
-                return u'{0} != {1}'.format(field, value_to_sql(attr_obj,
-                        self.filter.value))
+                return u'{0} != {1}'.format(
+                        field,
+                        value_to_sql(attr_obj, self.filter.value),
+                    )
             else:
-                return u'NOT {0}'.format(self.filter.as_sql_expr(builder,
-                        attr_obj, field))
+                return u'NOT {0}'.format(
+                        self.filter.as_sql_expr(builder, attr_obj, field),
+                    )
 
     def matches(self, server_obj, attr_name):
         return not self.filter.matches(server_obj, attr_name)
@@ -410,6 +442,7 @@ class Not(Filter):
         if u'filter' in obj:
             return cls(filter_from_obj(obj[u'filter']))
         raise ValueError(u'Invalid object for Not')
+
 filter_classes[u'not'] = Not
 
 class Startswith(Filter):
@@ -418,7 +451,7 @@ class Startswith(Filter):
 
     def __repr__(self):
         return u'Startswith({0!})'.format(self.value)
-    
+
     def __eq__(self, other):
         if isinstance(other, Startswith):
             return self.value == other.value
@@ -434,9 +467,9 @@ class Startswith(Filter):
                 if stype.name.startswith(self.value):
                     stype_ids.append(unicode(stype.pk))
             if stype_ids:
-                return u'{0} IN({1})'.format(field, ', '.join(stype_ids))
+                return u'{0} IN ({1})'.format(field, ', '.join(stype_ids))
             else:
-                return u'0=1'
+                return u'0 = 1'
         elif attr_obj.type == u'ip':
             value = raw_sql_escape(str(self.value) + '%%')
             return u'INET_NTOA({0}) LIKE {1}'.format(field, value)
@@ -448,9 +481,9 @@ class Startswith(Filter):
             try:
                 return u"{0} LIKE '{1}%'".format(int(self.value))
             except ValueError:
-                return u'0=1'
+                return u'0 = 1'
         else:
-            return u'0=1'
+            return u'0 = 1'
 
     def matches(self, server_obj, attr_name):
         return unicode(server_obj[attr_name]).startswith(self.value)
@@ -460,12 +493,13 @@ class Startswith(Filter):
 
     def typecast(self, attr_name):
         self.value = unicode(self.value)
-    
+
     @classmethod
     def from_obj(cls, obj):
         if u'value' in obj and isinstance(obj[u'value'], basestring):
             return cls(obj[u'value'])
         raise ValueError(u'Invalid object for Startswith')
+
 filter_classes[u'startswith'] = Startswith
 
 class InsideNetwork(Filter):
@@ -537,6 +571,7 @@ class InsideNetwork(Filter):
         if u'networks' in obj and isinstance(obj['networks'], (tuple, list)):
             return cls(*obj[u'networks'])
         raise ValueError(u'Invalid object for InsideNetwork')
+
 filter_classes[u'insidenetwork'] = InsideNetwork
 
 class InsideNetwork6(Filter):
@@ -608,12 +643,13 @@ class InsideNetwork6(Filter):
         if u'networks' in obj and isinstance(obj['networks'], (tuple, list)):
             return cls(*obj[u'networks'])
         raise ValueError(u'Invalid object for InsideNetwork6')
+
 filter_classes[u'insidenetwork6'] = InsideNetwork6
 
 class _PrivatePublicIP(Filter):
     def __init__(self):
         self.filt = InsideNetwork(*self.blocks)
-    
+
     def __repr__(self):
         return u'{0}()'.format(self.__class__.__name__)
 
@@ -635,17 +671,19 @@ class _PrivatePublicIP(Filter):
     def typecast(self, attr_name):
         # We don't have values to typecast
         pass
-    
+
     @classmethod
     def from_obj(cls, obj):
         return cls()
 
 class PrivateIP(_PrivatePublicIP):
     blocks = PRIVATE_IP_BLOCKS
+
 filter_classes['privateip'] = PrivateIP
 
 class PublicIP(_PrivatePublicIP):
     blocks = PUBLIC_IP_BLOCKS
+
 filter_classes['publicip'] = PublicIP
 
 class OptionalFilter(BaseFilter):
@@ -667,8 +705,10 @@ class Optional(OptionalFilter):
         return hash(u'Optional') ^ hash(self.filter)
 
     def as_sql_expr(self, builder, attr_obj, field):
-        return u'({0} IS NULL OR {1})'.format(field, self.filter.as_sql_expr(
-                builder, attr_obj, field))
+        return u'({0} IS NULL OR {1})'.format(
+                field,
+                self.filter.as_sql_expr(builder, attr_obj, field),
+            )
 
     def matches(self, server_obj, attr_name):
         value = server_obj.get(attr_name)
@@ -687,6 +727,7 @@ class Optional(OptionalFilter):
         if u'filter' in obj:
             return cls(filter_from_obj(obj[u'filter']))
         raise ValueError(u'Invalid object for Optional')
+
 filter_classes[u'optional'] = Optional
 
 class Empty(OptionalFilter):
@@ -698,7 +739,7 @@ class Empty(OptionalFilter):
 
     def __hash__(self):
         return hash('Empty')
-    
+
     def as_sql_expr(self, builder, attr_obj, field):
         return u'{0} IS NULL'.format(field)
 
@@ -710,12 +751,12 @@ class Empty(OptionalFilter):
 
     def typecast(self, attr_name):
         pass
-    
+
     @classmethod
     def from_obj(cls, obj):
         return cls()
-filter_classes[u'empty'] = Empty
 
+filter_classes[u'empty'] = Empty
 
 def _prepare_filter(filter):
     return filter if isinstance(filter, BaseFilter) else ExactMatch(filter)
@@ -730,4 +771,3 @@ def filter_from_obj(obj):
         return filter_classes[obj[u'name']].from_obj(obj)
     except KeyError:
         raise ValueError(u'No such filter: {0}'.format(obj[u'name']))
-

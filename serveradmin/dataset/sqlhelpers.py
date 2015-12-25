@@ -7,17 +7,22 @@ from adminapi.utils import IP, IPv6
 from serveradmin.dataset.base import lookups
 
 def _sql_escape(value):
+
     if isinstance(value, basestring):
         return raw_sql_escape(value)
-    elif isinstance(value, (int, long, float)):
+
+    if isinstance(value, (int, long, float)):
         return unicode(value)
-    elif isinstance(value, bool):
+
+    if isinstance(value, bool):
         return u'1' if value else u'0'
-    elif isinstance(value, datetime):
+
+    if isinstance(value, datetime):
         return unicode(time.mktime(value.timetuple()))
-    else:
-        raise ValueError(u'Value of type {0} can not be used in SQL'.format(
-                value))
+
+    raise ValueError(
+            u'Value of type {0} can not be used in SQL'.format(value)
+        )
 
 def value_to_sql(attr_obj, value):
     return _sql_escape(prepare_value(attr_obj, value))

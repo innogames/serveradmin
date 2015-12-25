@@ -19,10 +19,21 @@ class QuerySetRepresentation(object):
     """ Object that can be easily pickled without storing to much data.
     The main use is to compare querysets for caching.
     """
-    def __init__(self, filters, restrict, augmentations, offset, limit,
-                 order_by, order_dir):
+
+    def __init__(
+            self,
+            filters,
+            restrict,
+            augmentations,
+            offset,
+            limit,
+            order_by,
+            order_dir,
+        ):
+
         for attr_name, filt in filters.iteritems():
             filt.typecast(attr_name)
+
         self.filters = filters
         self.restrict = restrict
         self.augmentations = augmentations
@@ -110,11 +121,9 @@ class QuerySet(BaseQuerySet):
         self._order_dir = 'asc'
         self._num_rows = 0
 
-    def commit(self, skip_validation=False, force_changes=False, app=None,
-               user=None):
+    def commit(self, *args, **kwargs):
         commit = self._build_commit_object()
-        commit_changes(commit, skip_validation, force_changes, app=app,
-                       user=user)
+        commit_changes(commit, *args, **kwargs)
         self._confirm_changes()
 
     def get_raw_results(self):
@@ -126,9 +135,15 @@ class QuerySet(BaseQuerySet):
         return self._num_rows
 
     def get_representation(self):
-        return QuerySetRepresentation(self._filters, self._restrict,
-                self._augmentations, self._offset, self._limit,
-                self._order_by, self._order_dir)
+        return QuerySetRepresentation(
+                self._filters,
+                self._restrict,
+                self._augmentations,
+                self._offset,
+                self._limit,
+                self._order_by,
+                self._order_dir,
+            )
 
     def restrict(self, *attrs):
         check_attributes(attrs)
@@ -168,9 +183,12 @@ class QuerySet(BaseQuerySet):
                 self._results = self._fetch_results()
             else:
                 self._already_through_cache = True
-                cacher = QuerysetCacher(self, u'qs',
+                cacher = QuerysetCacher(
+                        self,
+                        u'qs',
                         pre_store=self._cache_pre_store,
-                        post_load=self._cache_post_load)
+                        post_load=self._cache_post_load,
+                    )
                 self._results = cacher.get_results()
 
     def _fetch_results(self):
@@ -179,8 +197,11 @@ class QuerySet(BaseQuerySet):
         optional_filters = (filters.OptionalFilter, filters.Not)
         for attr, f in self._filters.iteritems():
             attr_obj = lookups.attr_names[attr]
-            optional = (isinstance(f, optional_filters) or
-                        attr_obj.type == 'boolean')
+            optional = (
+                        isinstance(f, optional_filters)
+                    or
+                        attr_obj.type == 'boolean'
+                )
             builder.add_attribute(attr, optional)
             builder.add_filter(attr, f)
 
@@ -215,8 +236,8 @@ class QuerySet(BaseQuerySet):
         builder.sql_keywords += ['SQL_CALC_FOUND_ROWS', 'DISTINCT']
         sql_stmt = builder.build_sql()
 
-        c = connection.cursor()
-        c.execute(sql_stmt)
+        cursor = connection.cursor()
+        cursor.execute(sql_stmt)
 
         # We need to preserve ordering if ordering is requested, otherwise
         # we can use normal dict as it performs better.
@@ -225,10 +246,12 @@ class QuerySet(BaseQuerySet):
         else:
             server_data = dict()
 
-        servertype_lookup = dict((k, v.name) for k, v in
-                lookups.stype_ids.iteritems())
+        servertype_lookup = dict(
+                (k, v.name) for k, v in lookups.stype_ids.iteritems()
+            )
         restrict = self._restrict
-        for server_id, hostname, intern_ip, segment, stype, project in c.fetchall():
+
+        for server_id, hostname, intern_ip, segment, stype, project in cursor.fetchall():
             if not restrict:
                 attrs = {
                     u'hostname': hostname,
@@ -258,8 +281,8 @@ class QuerySet(BaseQuerySet):
                     if not restrict or attr.name in restrict:
                         dict.__setitem__(server_object, attr.name, set())
 
-        c.execute('SELECT FOUND_ROWS()')
-        self._num_rows = c.fetchone()[0]
+        cursor.execute('SELECT FOUND_ROWS()')
+        self._num_rows = cursor.fetchone()[0]
 
         # Return early if there are no servers (= empty dict)
         if not server_data:
@@ -283,22 +306,27 @@ class QuerySet(BaseQuerySet):
         return server_data
 
     def _add_additional_attrs(self, server_data, restrict):
-        c = connection.cursor()
+        cursor = connection.cursor()
         server_ids = u', '.join(map(str, server_data.iterkeys()))
-        sql_stmt = (u'SELECT server_id, attrib_id, value FROM attrib_values '
-                    u'WHERE server_id IN({0})').format(server_ids)
+        sql_stmt = (
+                u'SELECT server_id, attrib_id, value '
+                u'FROM attrib_values '
+                u'WHERE server_id IN ({0})'
+            ).format(server_ids)
 
         if restrict:
-            restrict_ids = u', '.join(str(lookups.attr_names[attr_name].pk)
-                    for attr_name in restrict)
-            sql_stmt += u' AND attrib_id IN({0})'.format(restrict_ids)
+            restrict_ids = u', '.join(
+                    str(lookups.attr_names[attr_name].pk)
+                    for attr_name in restrict
+                )
+            sql_stmt += u' AND attrib_id IN ({0})'.format(restrict_ids)
 
         _getitem = dict.__getitem__
         _setitem = dict.__setitem__
 
-        c.execute(sql_stmt)
+        cursor.execute(sql_stmt)
         attr_ids = lookups.attr_ids
-        for server_id, attr_id, value in c.fetchall():
+        for server_id, attr_id, value in cursor.fetchall():
             # Typecasting is inlined here for performance reasons
             attr = attr_ids[attr_id]
             attr_type = attr.type

@@ -12,8 +12,15 @@ from serveradmin.dataset.sqlhelpers import prepare_value
 from adminapi.utils.json import json_encode_extra
 from adminapi.utils import IP
 
-def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
-                  user=None, app=None):
+def create_server(
+        attributes,
+        skip_validation,
+        fill_defaults,
+        fill_defaults_all,
+        user=None,
+        app=None,
+    ):
+
     # Import here to break cyclic imports.
     from serveradmin.iprange.models import IPRange
 
@@ -48,7 +55,8 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
         try:
             segment = IPRange.objects.filter(
                     min__lte=intern_ip,
-                    max__gte=intern_ip)[0].segment
+                    max__gte=intern_ip,
+                )[0].segment
         except IndexError:
             raise CommitError('Could not determine segment')
 
@@ -63,10 +71,8 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
             u'segment',
             u'project',
         ):
-        try:
+        if key in real_attributes:
             del real_attributes[key]
-        except KeyError:
-            pass
 
     violations_regexp = []
     violations_required = []
@@ -84,15 +90,19 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
                             stype_attr.default)
             elif stype_attr.required:
                 if fill_defaults and stype_attr.default not in ('', None):
-                    real_attributes[attr.name] = _type_cast_default(attr_obj,
-                            stype_attr.default)
+                    real_attributes[attr.name] = _type_cast_default(
+                            attr_obj,
+                            stype_attr.default,
+                        )
                 else:
                     violations_required.append(attr.name)
                     continue
             else:
                 if fill_defaults_all and stype_attr.default not in ('', None):
-                    real_attributes[attr.name] = _type_cast_default(attr_obj,
-                            stype_attr.default)
+                    real_attributes[attr.name] = _type_cast_default(
+                            attr_obj,
+                            stype_attr.default,
+                        )
                 else:
                     continue
 
@@ -117,16 +127,26 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
         if attr not in attribute_set:
             violations_attribs.append(attr)
 
-    handle_violations(skip_validation, violations_regexp, violations_required,
-                      violations_attribs)
+    handle_violations(
+            skip_validation,
+            violations_regexp,
+            violations_required,
+            violations_attribs,
+        )
 
     c = connection.cursor()
     c.execute(u"SELECT GET_LOCK('serverobject_commit', 10)")
     if not c.fetchone()[0]:
         raise CommitError(u'Could not get lock')
     try:
-        server_id = _insert_server(hostname, intern_ip, segment,
-                servertype_id, project_id, real_attributes)
+        server_id = _insert_server(
+                hostname,
+                intern_ip,
+                segment,
+                servertype_id,
+                project_id,
+                real_attributes,
+            )
     except:
         raise
     else:
@@ -137,9 +157,11 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
 
         commit = ChangeCommit.objects.create(app=app, user=user)
         attributes_json = json.dumps(created_server, default=json_encode_extra)
-        ChangeAdd.objects.create(commit=commit,
-                                 hostname=created_server['hostname'],
-                                 attributes_json=attributes_json)
+        ChangeAdd.objects.create(
+                commit=commit,
+                hostname=created_server['hostname'],
+                attributes_json=attributes_json,
+            )
     finally:
         c.execute(u'COMMIT')
         c.execute(u"SELECT RELEASE_LOCK('serverobject_commit')")
@@ -152,27 +174,47 @@ def create_server(attributes, skip_validation, fill_defaults, fill_defaults_all,
 def _insert_server(hostname, intern_ip, segment, servertype_id, project_id, attributes):
     c = connection.cursor()
 
-    c.execute(u'SELECT COUNT(*) FROM admin_server WHERE hostname = %s',
-            (hostname, ))
+    c.execute(
+            u'SELECT COUNT(*) FROM admin_server WHERE hostname = %s',
+            (hostname, )
+        )
     if c.fetchone()[0] != 0:
         raise CommitError(u'Server with that hostname already exists')
 
     # Get segment
-    c.execute(u'SELECT segment_id FROM ip_range '
-              u'WHERE %s BETWEEN `min` AND `max` LIMIT 1',
-              (intern_ip.as_int(), ))
+    c.execute(
+            u'SELECT segment_id FROM ip_range '
+            u'WHERE %s BETWEEN `min` AND `max` LIMIT 1',
+            (intern_ip.as_int(), )
+        )
     result = c.fetchone()
     segment_id = result[0] if result else segment
 
     # Insert into admin_server table
-    c.execute(u'INSERT INTO admin_server (hostname, intern_ip, servertype_id, '
-            u' segment, project_id) VALUES (%s, %s, %s, %s, %s)', (hostname,
-            intern_ip.as_int(), servertype_id, segment_id, project_id))
+    c.execute(
+            u'INSERT INTO admin_server ('
+                u'hostname, '
+                u'intern_ip, '
+                u'servertype_id, '
+                u'segment, '
+                u'project_id'
+            u') VALUES (%s, %s, %s, %s, %s)',
+            (
+                hostname,
+                intern_ip.as_int(),
+                servertype_id,
+                segment_id,
+                project_id,
+            )
+        )
     server_id = c.lastrowid
 
     # Insert additional attributes
-    attr_query = (u'INSERT INTO attrib_values (server_id, attrib_id, value) '
-                  u'VALUES (%s, %s, %s)')
+    attr_query = (
+            u'INSERT INTO attrib_values (server_id, attrib_id, value) '
+            u'VALUES (%s, %s, %s)'
+        )
+
     for attr_name, value in attributes.iteritems():
         attr_obj = lookups.attr_names[attr_name]
         if attr_obj.multi:
@@ -187,7 +229,9 @@ def _insert_server(hostname, intern_ip, segment, servertype_id, project_id, attr
 
 def _type_cast_default(attr_obj, value):
     if attr_obj.multi:
-        return [typecast(attr_obj.name, val, force_single=True)
-                for val in value.split(',')]
+        return [
+                typecast(attr_obj.name, val, force_single=True)
+                for val in value.split(',')
+            ]
     else:
         return typecast(attr_obj.name, value, force_single=True)

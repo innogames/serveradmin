@@ -11,9 +11,10 @@ def check_attribute_type(attr, value):
     attr_obj = lookups.attr_names[attr]
     if attr_obj.multi:
         if not (isinstance(value, (list, set)) or hasattr(value,'_proxied_set')):
-            raise ValueError((u'{0} is a multi attribute. Require list/set, '
-                u'but {1} of type {2} was given').format(attr, repr(value),
-                type(value).__name__))
+            raise ValueError((
+                    u'{0} is a multi attribute. Require list/set, '
+                    u'but {1} of type {2} was given'
+                ).format(attr, repr(value), type(value).__name__))
 
         if attr_obj.type == 'string':
             for val in value:
@@ -39,18 +40,21 @@ def check_attribute_type(attr, value):
 
 def _require_string(attr, value):
     if not isinstance(value, basestring):
-        raise ValueError((u'Attribute {0} is of type string, but got {1} of '
-            u'type {2}.').format(attr, repr(value), type(value).__name__))
+        raise ValueError((
+                u'Attribute {0} is of type string, but got {1} of type {2}.'
+            ).format(attr, repr(value), type(value).__name__))
 
 def _require_integer(attr, value):
     if not isinstance(value, (int, long)):
-        raise ValueError((u'Attribute {0} is of type integer, but got {1} of '
-            u'type {2}.').format(attr, repr(value), type(value).__name__))
+        raise ValueError((
+                u'Attribute {0} is of type integer, but got {1} of type {2}.'
+            ).format(attr, repr(value), type(value).__name__))
 
 def _require_boolean(attr, value):
     if not isinstance(value, bool):
-        raise ValueError((u'Attribute {0} is of type boolean, but got {1} of '
-            u'type {2}.').format(attr, repr(value), type(value).__name__))
+        raise ValueError((
+                u'Attribute {0} is of type boolean, but got {1} of type {2}.'
+            ).format(attr, repr(value), type(value).__name__))
 
 def _require_ip(attr, value):
     # We will accept IP objects or everything that IP(value) will convert
@@ -68,35 +72,48 @@ def _require_ip(attr, value):
                 if not (0 <= x <= 255):
                     raise ValueError()
         except ValueError:
-            raise ValueError(u'Attribute {0} is of type ip, but got {1}'
-                    .format(attr, repr(value)))
+            raise ValueError((
+                    u'Attribute {0} is of type ip, but got {1}'
+                ).format(attr, repr(value)))
     elif isinstance(value, (int, long)):
         return
     else:
-        raise ValueError((u'Attribute {0} is of type ip, but got {0} of '
-            u'type {1}').format(attr, repr(value), type(value).__name__))
+        raise ValueError((
+                u'Attribute {0} is of type ip, but got {0} of type {1}'
+            ).format(attr, repr(value), type(value).__name__))
 
-def handle_violations(skip_validation, violations_regexp, violations_required,
-                      violations_attribs):
+def handle_violations(
+        skip_validation,
+        violations_regexp,
+        violations_required,
+        violations_attribs,
+    ):
 
     if not skip_validation:
         if violations_regexp or violations_required:
             if violations_regexp:
                 regexp_msg = u'Attributes violating regexp: {0}. '.format(
-                        u', '.join(violations_regexp))
+                        u', '.join(violations_regexp)
+                    )
             else:
                 regexp_msg = u''
             if violations_required:
                 required_msg = u'Attributes violating required: {0}.'.format(
-                        u', '.join(violations_required))
+                        u', '.join(violations_required)
+                    )
             else:
                 required_msg = u''
 
             raise CommitValidationFailed(u'Validation failed. {0}{1}'.format(
-                    regexp_msg, required_msg), violations_regexp +
-                    violations_required)
+                    regexp_msg,
+                    required_msg),
+                    violations_regexp + violations_required,
+                )
     if violations_attribs:
-        raise CommitValidationFailed((u'Attributes {0} are not defined on '
-                'this servertype. You can\'t skip this validation!').format(
-                u', '.join(violations_attribs)), violations_regexp +
-                violations_required + violations_attribs)
+        raise CommitValidationFailed((
+                u'Attributes {0} are not defined on '
+                'this servertype. You can\'t skip this validation!'
+            ).format(
+                    u', '.join(violations_attribs)),
+                    violations_regexp + violations_required + violations_attribs,
+                )

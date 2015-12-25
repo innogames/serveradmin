@@ -19,8 +19,8 @@ class ExactMatch(Filter):
 
     def _serialize(self):
         return {'name': 'exactmatch', 'value': self.value}
-filter_classes['exactmatch'] = ExactMatch
 
+filter_classes['exactmatch'] = ExactMatch
 
 class Regexp(Filter):
     def __init__(self, regexp):
@@ -31,8 +31,8 @@ class Regexp(Filter):
 
     def _serialize(self):
         return {'name': 'regexp', 'regexp': self.regexp}
-filter_classes['regexp'] = Regexp
 
+filter_classes['regexp'] = Regexp
 
 class ExtendedRegexp(Regexp):
     def __repr__(self):
@@ -40,8 +40,8 @@ class ExtendedRegexp(Regexp):
 
     def _serialize(self):
         return {'name': 'extendedregexp', 'regexp': self.regexp}
-filter_classes['extendedregexp'] = ExtendedRegexp
 
+filter_classes['extendedregexp'] = ExtendedRegexp
 
 class Comparison(Filter):
     def __init__(self, comparator, value):
@@ -54,12 +54,15 @@ class Comparison(Filter):
         return 'Comparism({0!r}, {1!r})'.format(self.comparator, self.value)
 
     def _serialize(self):
-        return {'name': 'comparison', 'comparator': self.comparator,
-                'value': self.value}
-filter_classes['comparison'] = Comparison
-        
-Comparism = Comparison # Backward compatibilty
+        return {
+                'name': 'comparison',
+                'comparator': self.comparator,
+                'value': self.value,
+            }
 
+filter_classes['comparison'] = Comparison
+
+Comparism = Comparison # Backward compatibilty
 
 class Any(Filter):
     def __init__(self, *values):
@@ -70,8 +73,8 @@ class Any(Filter):
 
     def _serialize(self):
         return {'name': 'any', 'values': self.values}
-filter_classes['any'] = Any
 
+filter_classes['any'] = Any
 
 class _AndOr(Filter):
     def __init__(self, *filters):
@@ -85,16 +88,15 @@ class _AndOr(Filter):
         return {'name': self.name, 'filters': [f._serialize() for f in
             self.filters]}
 
-
 class And(_AndOr):
     name = 'and'
-filter_classes['and'] = And
 
+filter_classes['and'] = And
 
 class Or(_AndOr):
     name = 'or'
-filter_classes['or'] = Or
 
+filter_classes['or'] = Or
 
 class Between(Filter):
     def __init__(self, a, b):
@@ -106,8 +108,8 @@ class Between(Filter):
 
     def _serialize(self):
         return {'name': 'between', 'a': self.a, 'b': self.b}
-filter_classes['between'] = Between
 
+filter_classes['between'] = Between
 
 class Not(Filter):
     def __init__(self, filter):
@@ -115,11 +117,11 @@ class Not(Filter):
 
     def __repr__(self):
         return 'Not({0!r})'.format(self.filter)
-    
+
     def _serialize(self):
         return {'name': 'not', 'filter': self.filter._serialize()}
-filter_classes['not'] = Not
 
+filter_classes['not'] = Not
 
 class Startswith(Filter):
     def __init__(self, value):
@@ -130,8 +132,8 @@ class Startswith(Filter):
 
     def _serialize(self):
         return {'name': 'startswith', 'value': self.value}
-filter_classes['startswith'] = Startswith
 
+filter_classes['startswith'] = Startswith
 
 class Optional(BaseFilter):
     def __init__(self, filter):
@@ -142,6 +144,7 @@ class Optional(BaseFilter):
 
     def _serialize(self):
         return {'name': 'optional', 'filter': self.filter._serialize()}
+
 filter_classes['optional'] = Optional
 
 class InsideNetwork(Filter):
@@ -154,6 +157,7 @@ class InsideNetwork(Filter):
 
     def _serialize(self):
         return {'name': 'insidenetwork', 'networks': self.networks}
+
 filter_classes['insidenetwork'] = InsideNetwork
 
 class PublicIP(Filter):
@@ -162,6 +166,7 @@ class PublicIP(Filter):
 
     def _serialize(self):
         return {'name': 'publicip'}
+
 filter_classes['publicip'] = PublicIP
 
 class PrivateIP(Filter):
@@ -170,6 +175,7 @@ class PrivateIP(Filter):
 
     def _serialize(self):
         return {'name': 'privateip'}
+
 filter_classes['privateip'] = PrivateIP
 
 class Empty(Filter):
@@ -178,6 +184,7 @@ class Empty(Filter):
 
     def _serialize(self):
         return {'name': 'empty'}
+
 filter_classes['empty'] = Empty
 
 def _prepare_filter(filter):

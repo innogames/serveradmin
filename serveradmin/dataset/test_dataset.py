@@ -27,7 +27,7 @@ class TestQuery(TestCase):
         hostnames = set()
         for s in query(hostname=filters.Regexp(ur'^test[02]$')):
             hostnames.add(s[u'hostname'])
-        
+
         self.assertIn(u'test0', hostnames)
         self.assertNotIn(u'test1', hostnames)
         self.assertIn(u'test2', hostnames)
@@ -35,7 +35,7 @@ class TestQuery(TestCase):
     def test_filter_regexp_servertype(self):
         s = query(servertype=filters.Regexp(ur'^test[870]')).get()
         self.assertEquals(s[u'hostname'], u'test0')
-    
+
     def test_filter_comparism(self):
         hostnames = set()
         for s in query(game_world=filters.Comparison('<', 2)):
@@ -58,7 +58,7 @@ class TestQuery(TestCase):
 
     def test_and(self):
         pass
-    
+
     def test_or(self):
         q = query(game_world=filters.Or(filters.Comparison(u'<', 2),
                 filters.Comparison(u'>', 7)))
@@ -70,7 +70,7 @@ class TestQuery(TestCase):
         self.assertIn(u'test1', hostnames)
         self.assertNotIn(u'test2', hostnames)
         self.assertIn(u'test3', hostnames)
-    
+
     def test_not(self):
         s = query(os=filters.Not('squeeze')).get()
         self.assertEquals(s[u'hostname'], u'test0')
@@ -83,7 +83,7 @@ class TestQuery(TestCase):
         hostnames = set()
         for s in query(game_world=filters.Between(2, 10)):
             hostnames.add(s[u'hostname'])
-        
+
         self.assertNotIn(u'test0', hostnames)
         self.assertNotIn(u'test1', hostnames)
         self.assertIn(u'test2', hostnames)
@@ -140,10 +140,10 @@ class TestCommit(TestCase):
 
     def test_commit_intern_ip(self):
         pass
-    
+
     def test_commit_newer_data(self):
         pass
-    
+
 class TestCreate(TestCase):
     def test_create(self):
         s = {

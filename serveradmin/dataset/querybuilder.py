@@ -40,17 +40,23 @@ class QueryBuilder(object):
             uid = self.get_uid()
 
             attr_field = u'av{0}.value'.format(uid)
+
             if optional:
-                join = (u'LEFT JOIN attrib_values AS av{0} '
+                self.sql_left_joins.append((
+                        u'LEFT JOIN attrib_values AS av{0} '
                         u'ON av{0}.server_id = adms.server_id AND '
-                        u'av{0}.attrib_id = {1}').format(uid, attr_obj.pk)
-                self.sql_left_joins.append(join)
+                        u'av{0}.attrib_id = {1}'
+                    ).format(uid, attr_obj.pk))
+
             else:
-                self.sql_from_tables.append(u'attrib_values AS av{0}'.format(
-                        uid))
-                where = (u'av{0}.server_id = adms.server_id AND '
-                         u'av{0}.attrib_id = {1}').format(uid, attr_obj.pk)
-                self.sql_where.append(where)
+                self.sql_from_tables.append(
+                        u'attrib_values AS av{0}'.format(uid)
+                    )
+
+                self.sql_where.append((
+                        u'av{0}.server_id = adms.server_id AND '
+                        u'av{0}.attrib_id = {1}'
+                    ).format(uid, attr_obj.pk))
 
         self.aliases[alias] = {'attr': attr_obj, 'field': attr_field}
         return self.aliases[alias]
@@ -64,11 +70,14 @@ class QueryBuilder(object):
             conds = []
             for attr in attr_obj.special.attrs:
                 extra = self.aliases[attr]
-                conds.append(filter_obj.as_sql_expr(self, extra['attr'],
-                    extra['field']))
+                conds.append(
+                        filter_obj.as_sql_expr(self, extra['attr'],
+                        extra['field']),
+                    )
+
             return u'({0})'.format(u' OR '.join(conds))
-        else:
-            return filter_obj.as_sql_expr(self, attr_obj, attr_field)
+
+        return filter_obj.as_sql_expr(self, attr_obj, attr_field)
 
     def add_filter(self, alias, filter_obj):
         self.sql_where.append(self.get_filter_sql(alias, filter_obj))
@@ -132,13 +141,17 @@ def typecast_attribute(attr_name, value):
 
     if attr_type == u'integer':
         return int(value)
-    elif attr_type == u'boolean':
+
+    if attr_type == u'boolean':
         return value == '1'
-    elif attr_type == u'ip':
+
+    if attr_type == u'ip':
         return IP(value)
-    elif attr_type == u'ipv6':
+
+    if attr_type == u'ipv6':
         return IPv6.from_hex(value)
-    elif attr_type == u'datetime':
+
+    if attr_type == u'datetime':
         return datetime.fromtimestamp(int(value))
-    else:
-        return value
+
+    return value
