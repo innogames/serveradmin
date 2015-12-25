@@ -1,8 +1,6 @@
 import time
 from datetime import datetime
 
-from django.db import connection
-
 from adminapi.utils import IP, IPv6
 from serveradmin.dataset.base import lookups
 
@@ -62,7 +60,15 @@ def prepare_value(attr_obj, value):
     return value
 
 def raw_sql_escape(value):
+
     # escape_string just takes bytestrings, so convert unicode back and forth
     if isinstance(value, unicode):
         value = value.encode('utf-8')
-    return u"'{0}'".format(connection.connection.escape_string(value).decode('utf-8'))
+
+    if "'" in value:
+        raise ValueError(u'Single quote cannot be used')
+
+    if value.endswith('\\'):
+        raise ValueError(u'Escape character cannot be used in the end')
+
+    return "'" + value.decode('utf-8') + "'"
