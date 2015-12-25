@@ -235,9 +235,6 @@ class QuerySet(BaseQuerySet):
         builder.sql_keywords.append('DISTINCT')
         sql_stmt = builder.build_sql()
 
-        cursor = connection.cursor()
-        cursor.execute(sql_stmt)
-
         # We need to preserve ordering if ordering is requested, otherwise
         # we can use normal dict as it performs better.
         if order_by:
@@ -250,35 +247,46 @@ class QuerySet(BaseQuerySet):
             )
         restrict = self._restrict
 
-        for server_id, hostname, intern_ip, segment, stype, project in cursor.fetchall():
-            if not restrict:
-                attrs = {
-                    u'hostname': hostname,
-                    u'intern_ip': IP(intern_ip),
-                    u'segment': segment,
-                    u'servertype': servertype_lookup[stype],
-                    u'project': project,
-                }
-            else:
-                attrs = {}
-                if u'hostname' in restrict:
-                    attrs[u'hostname'] = hostname
-                if u'intern_ip' in restrict:
-                    attrs[u'intern_ip'] = IP(intern_ip)
-                if u'segment' in restrict:
-                    attrs[u'segment'] = segment
-                if u'servertype' in restrict:
-                    attrs[u'servertype'] = servertype_lookup[stype]
-                if u'project' in restrict:
-                    attrs[u'project'] = project
+        with connection.cursor() as cursor:
+            cursor.execute(sql_stmt)
 
-            server_object = ServerObject(attrs, server_id, self)
-            server_data[server_id] = server_object
+            for (
+                    server_id,
+                    hostname,
+                    intern_ip,
+                    segment,
+                    stype,
+                    project,
+                ) in cursor.fetchall():
 
-            for attr in lookups.stype_ids[stype].attributes:
-                if attr.multi:
-                    if not restrict or attr.name in restrict:
-                        dict.__setitem__(server_object, attr.name, set())
+                if not restrict:
+                    attrs = {
+                        u'hostname': hostname,
+                        u'intern_ip': IP(intern_ip),
+                        u'segment': segment,
+                        u'servertype': servertype_lookup[stype],
+                        u'project': project,
+                    }
+                else:
+                    attrs = {}
+                    if u'hostname' in restrict:
+                        attrs[u'hostname'] = hostname
+                    if u'intern_ip' in restrict:
+                        attrs[u'intern_ip'] = IP(intern_ip)
+                    if u'segment' in restrict:
+                        attrs[u'segment'] = segment
+                    if u'servertype' in restrict:
+                        attrs[u'servertype'] = servertype_lookup[stype]
+                    if u'project' in restrict:
+                        attrs[u'project'] = project
+
+                server_object = ServerObject(attrs, server_id, self)
+                server_data[server_id] = server_object
+
+                for attr in lookups.stype_ids[stype].attributes:
+                    if attr.multi:
+                        if not restrict or attr.name in restrict:
+                            dict.__setitem__(server_object, attr.name, set())
 
         # Return early if there are no servers (= empty dict)
         if not server_data:
@@ -302,7 +310,7 @@ class QuerySet(BaseQuerySet):
         return server_data
 
     def _add_additional_attrs(self, server_data, restrict):
-        cursor = connection.cursor()
+
         server_ids = u', '.join(map(str, server_data.iterkeys()))
         sql_stmt = (
                 u'SELECT server_id, attrib_id, value '
@@ -320,29 +328,30 @@ class QuerySet(BaseQuerySet):
         _getitem = dict.__getitem__
         _setitem = dict.__setitem__
 
-        cursor.execute(sql_stmt)
-        attr_ids = lookups.attr_ids
-        for server_id, attr_id, value in cursor.fetchall():
-            # Typecasting is inlined here for performance reasons
-            attr = attr_ids[attr_id]
-            attr_type = attr.type
-            if attr_type == u'integer':
-                value = int(value)
-            elif attr_type == u'boolean':
-                value = value == '1'
-            elif attr_type == u'ip':
-                value = IP(value)
-            elif attr_type == u'ipv6':
-                value = IPv6.from_hex(value)
-            elif attr_type == u'datetime':
-                value = datetime.fromtimestamp(int(value))
+        with connection.cursor() as cursor:
+            cursor.execute(sql_stmt)
+            attr_ids = lookups.attr_ids
+            for server_id, attr_id, value in cursor.fetchall():
+                # Typecasting is inlined here for performance reasons
+                attr = attr_ids[attr_id]
+                attr_type = attr.type
+                if attr_type == u'integer':
+                    value = int(value)
+                elif attr_type == u'boolean':
+                    value = value == '1'
+                elif attr_type == u'ip':
+                    value = IP(value)
+                elif attr_type == u'ipv6':
+                    value = IPv6.from_hex(value)
+                elif attr_type == u'datetime':
+                    value = datetime.fromtimestamp(int(value))
 
-            # Using dict-methods to bypass ServerObject's special properties
-            if attr.multi:
-                # Bypass MultiAttr wrapping in ServerObject.__getitem__
-                _getitem(server_data[server_id], attr.name).add(value)
-            else:
-                _setitem(server_data[server_id], attr.name, value)
+                # Using dict-methods to bypass ServerObject's special properties
+                if attr.multi:
+                    # Bypass MultiAttr wrapping in ServerObject.__getitem__
+                    _getitem(server_data[server_id], attr.name).add(value)
+                else:
+                    _setitem(server_data[server_id], attr.name, value)
 
 class ServerObject(BaseServerObject):
     def commit(self, app=None, user=None):

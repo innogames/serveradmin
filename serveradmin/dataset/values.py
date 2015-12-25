@@ -15,6 +15,6 @@ def get_attribute_values(attr_name, max_values=20):
 
     sql = builder.build_sql()
 
-    c = connection.cursor()
-    c.execute(sql)
-    return [typecast_attribute(attr_name, x[0]) for x in c.fetchall()]
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+        return [typecast_attribute(attr_name, x[0]) for x in cursor.fetchall()]

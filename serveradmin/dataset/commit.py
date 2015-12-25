@@ -37,47 +37,49 @@ def commit_changes(
     if not changed_servers and not deleted_servers:
         return
 
-    c = connection.cursor()
-    c.execute(u"SELECT GET_LOCK('serverobject_commit', 10)")
-    try:
-        if not c.fetchone()[0]:
-            raise CommitError(u'Could not get lock')
-        servers = _fetch_servers(changed_servers)
+    with connection.cursor() as cursor:
+        cursor.execute(u"SELECT GET_LOCK('serverobject_commit', 10)")
 
-        # Attributes must be always validated
-        violations_attribs = _validate_attributes(changed_servers, servers)
-        if not skip_validation:
-            violations_readonly = _validate_readonly(changed_servers, servers)
-            violations_regexp = _validate_regexp(changed_servers, servers)
-            violations_required = _validate_required(changed_servers, servers)
-            if (violations_attribs or violations_readonly or
-                violations_regexp or violations_required):
-                error_message = _build_error_message(
-                        violations_attribs,
-                        violations_readonly,
-                        violations_regexp,
-                        violations_required,
-                    )
-                raise CommitValidationFailed(error_message,
-                        violations_attribs + violations_readonly +
-                        violations_regexp + violations_required,
-                    )
-        if violations_attribs:
-            error_message = _build_error_message(violations_attribs, [], [])
-            raise CommitValidationFailed(error_message, violations_attribs)
-        if not force_changes:
-            newer = _validate_commit(changed_servers, servers)
-            if newer:
-                raise CommitNewerData(u'Newer data available', newer)
+        try:
+            if not cursor.fetchone()[0]:
+                raise CommitError(u'Could not get lock')
 
-        _log_changes(deleted_servers, changed_servers, app, user)
-        if deleted_servers:
-            _delete_servers(deleted_servers)
-        _apply_changes(changed_servers, servers)
+            servers = _fetch_servers(changed_servers)
 
-    finally:
-        c.execute(u'COMMIT')
-        c.execute(u"SELECT RELEASE_LOCK('serverobject_commit')")
+            # Attributes must be always validated
+            violations_attribs = _validate_attributes(changed_servers, servers)
+            if not skip_validation:
+                violations_readonly = _validate_readonly(changed_servers, servers)
+                violations_regexp = _validate_regexp(changed_servers, servers)
+                violations_required = _validate_required(changed_servers, servers)
+                if (violations_attribs or violations_readonly or
+                    violations_regexp or violations_required):
+                    error_message = _build_error_message(
+                            violations_attribs,
+                            violations_readonly,
+                            violations_regexp,
+                            violations_required,
+                        )
+                    raise CommitValidationFailed(error_message,
+                            violations_attribs + violations_readonly +
+                            violations_regexp + violations_required,
+                        )
+            if violations_attribs:
+                error_message = _build_error_message(violations_attribs, [], [])
+                raise CommitValidationFailed(error_message, violations_attribs)
+            if not force_changes:
+                newer = _validate_commit(changed_servers, servers)
+                if newer:
+                    raise CommitNewerData(u'Newer data available', newer)
+
+            _log_changes(deleted_servers, changed_servers, app, user)
+            if deleted_servers:
+                _delete_servers(deleted_servers)
+            _apply_changes(changed_servers, servers)
+
+        finally:
+            cursor.execute(u'COMMIT')
+            cursor.execute(u"SELECT RELEASE_LOCK('serverobject_commit')")
 
 def _log_changes(deleted_servers, changed_servers, app, user):
     # Import here to break cyclic import
@@ -275,12 +277,12 @@ def _clean_changed(changed_servers):
 
 def _delete_servers(deleted_servers):
     ids = ', '.join(str(x) for x in deleted_servers)
-    c = connection.cursor()
-    c.execute(u'DELETE FROM attrib_values WHERE server_id IN ({0})'.format(ids))
-    c.execute(u'DELETE FROM admin_server WHERE server_id IN ({0})'.format(ids))
+    with connection.cursor() as cursor:
+        cursor.execute(u'DELETE FROM attrib_values WHERE server_id IN ({0})'.format(ids))
+        cursor.execute(u'DELETE FROM admin_server WHERE server_id IN ({0})'.format(ids))
 
 def _apply_changes(changed_servers, servers):
-    c = connection.cursor()
+
     query_update = (
             u'UPDATE attrib_values SET value=%s '
             u'WHERE server_id = %s AND attrib_id = %s'
@@ -297,44 +299,46 @@ def _apply_changes(changed_servers, servers):
             u'DELETE FROM attrib_values '
             u'WHERE server_id = %s AND attrib_id = %s'
         )
-    for server_id, changes in changed_servers.iteritems():
-        server = servers[server_id]
-        for attr, change in changes.iteritems():
-            attr_obj = lookups.attr_names[attr]
-            attr_id = attr_obj.pk
 
-            action = change[u'action']
+    with connection.cursor() as cursor:
+        for server_id, changes in changed_servers.iteritems():
+            server = servers[server_id]
+            for attr, change in changes.iteritems():
+                attr_obj = lookups.attr_names[attr]
+                attr_id = attr_obj.pk
 
-            # XXX Dirty hack for old database structure
-            if isinstance(attr_obj.special, ServerTableSpecial):
-                field = attr_obj.special.field
-                query = u'UPDATE admin_server SET {0} = %s WHERE server_id = %s'
-                if action == 'new' or action == 'update':
+                action = change[u'action']
+
+                # XXX Dirty hack for old database structure
+                if isinstance(attr_obj.special, ServerTableSpecial):
+                    field = attr_obj.special.field
+                    query = u'UPDATE admin_server SET {0} = %s WHERE server_id = %s'
+                    if action == 'new' or action == 'update':
+                        value = _prepare_value(attr, change[u'new'])
+                        cursor.execute(query.format(field), (value, server_id))
+                    elif action == 'delete':
+                        # FIXME: This might fail if field it not NULLable
+                        cursor.execute(query.format(field), (None, server_id))
+                    continue
+
+                if action == u'new' or action == u'update':
                     value = _prepare_value(attr, change[u'new'])
-                    c.execute(query.format(field), (value, server_id))
-                elif action == 'delete':
-                    # FIXME: This might fail if field it not NULLable
-                    c.execute(query.format(field), (None, server_id))
-                continue
-
-            if action == u'new' or action == u'update':
-                value = _prepare_value(attr, change[u'new'])
-                if attr in server:
-                    c.execute(query_update, (value, server_id, attr_id))
-                else:
-                    c.execute(query_insert, (server_id, attr_id, value))
-            elif action == u'delete':
-                c.execute(query_remove_all, (server_id, attr_id))
-            elif action == u'multi':
-                for value in change[u'remove']:
-                    value = _prepare_value(attr, value)
-                    c.execute(query_remove, (server_id, attr_id, value))
-                for value in change[u'add']:
-                    value = _prepare_value(attr, value)
-                    if value in server[attr]:
-                        continue # Avoid duplicate entries
-                    c.execute(query_insert, (server_id, attr_id, value))
-    c.execute('COMMIT')
+                    if attr in server:
+                        cursor.execute(query_update, (value, server_id, attr_id))
+                    else:
+                        cursor.execute(query_insert, (server_id, attr_id, value))
+                elif action == u'delete':
+                    cursor.execute(query_remove_all, (server_id, attr_id))
+                elif action == u'multi':
+                    for value in change[u'remove']:
+                        value = _prepare_value(attr, value)
+                        cursor.execute(query_remove, (server_id, attr_id, value))
+                    for value in change[u'add']:
+                        value = _prepare_value(attr, value)
+                        if value in server[attr]:
+                            continue # Avoid duplicate entries
+                        cursor.execute(query_insert, (server_id, attr_id, value))
+        cursor.execute('COMMIT')
 
 def _prepare_value(attr_name, value):
     if value is None:

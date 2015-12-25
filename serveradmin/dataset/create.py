@@ -133,93 +133,93 @@ def create_server(
             violations_attribs,
         )
 
-    c = connection.cursor()
-    c.execute(u"SELECT GET_LOCK('serverobject_commit', 10)")
-    if not c.fetchone()[0]:
-        raise CommitError(u'Could not get lock')
-    try:
-        server_id = _insert_server(
-                hostname,
-                intern_ip,
-                segment,
-                servertype_id,
-                project_id,
-                real_attributes,
-            )
-    except:
-        raise
-    else:
-        created_server = real_attributes.copy()
-        created_server['hostname'] = hostname
-        created_server['intern_ip'] = intern_ip
-        created_server['segment'] = str(segment)
+    with connection.cursor() as cursor:
+        cursor.execute(u"SELECT GET_LOCK('serverobject_commit', 10)")
+        if not cursor.fetchone()[0]:
+            raise CommitError(u'Could not get lock')
+        try:
+            server_id = _insert_server(
+                    hostname,
+                    intern_ip,
+                    segment,
+                    servertype_id,
+                    project_id,
+                    real_attributes,
+                )
+        except:
+            raise
+        else:
+            created_server = real_attributes.copy()
+            created_server['hostname'] = hostname
+            created_server['intern_ip'] = intern_ip
+            created_server['segment'] = str(segment)
 
-        commit = ChangeCommit.objects.create(app=app, user=user)
-        attributes_json = json.dumps(created_server, default=json_encode_extra)
-        ChangeAdd.objects.create(
-                commit=commit,
-                hostname=created_server['hostname'],
-                attributes_json=attributes_json,
-            )
-    finally:
-        c.execute(u'COMMIT')
-        c.execute(u"SELECT RELEASE_LOCK('serverobject_commit')")
+            commit = ChangeCommit.objects.create(app=app, user=user)
+            attributes_json = json.dumps(created_server, default=json_encode_extra)
+            ChangeAdd.objects.create(
+                    commit=commit,
+                    hostname=created_server['hostname'],
+                    attributes_json=attributes_json,
+                )
+        finally:
+            cursor.execute(u'COMMIT')
+            cursor.execute(u"SELECT RELEASE_LOCK('serverobject_commit')")
 
     return server_id
 
 def _insert_server(hostname, intern_ip, segment, servertype_id, project_id, attributes):
-    c = connection.cursor()
 
-    c.execute(
-            u'SELECT COUNT(*) FROM admin_server WHERE hostname = %s',
-            (hostname, )
-        )
-    if c.fetchone()[0] != 0:
-        raise CommitError(u'Server with that hostname already exists')
-
-    # Get segment
-    c.execute(
-            u'SELECT segment_id FROM ip_range '
-            u'WHERE %s BETWEEN `min` AND `max` LIMIT 1',
-            (intern_ip.as_int(), )
-        )
-    result = c.fetchone()
-    segment_id = result[0] if result else segment
-
-    # Insert into admin_server table
-    c.execute(
-            u'INSERT INTO admin_server ('
-                u'hostname, '
-                u'intern_ip, '
-                u'servertype_id, '
-                u'segment, '
-                u'project_id'
-            u') VALUES (%s, %s, %s, %s, %s)',
-            (
-                hostname,
-                intern_ip.as_int(),
-                servertype_id,
-                segment_id,
-                project_id,
+    with connection.cursor() as cursor:
+        cursor.execute(
+                u'SELECT COUNT(*) FROM admin_server WHERE hostname = %s',
+                (hostname, )
             )
-        )
-    server_id = c.lastrowid
+        if cursor.fetchone()[0] != 0:
+            raise CommitError(u'Server with that hostname already exists')
 
-    # Insert additional attributes
-    attr_query = (
-            u'INSERT INTO attrib_values (server_id, attrib_id, value) '
-            u'VALUES (%s, %s, %s)'
-        )
+        # Get segment
+        cursor.execute(
+                u'SELECT segment_id FROM ip_range '
+                u'WHERE %s BETWEEN `min` AND `max` LIMIT 1',
+                (intern_ip.as_int(), )
+            )
+        result = cursor.fetchone()
+        segment_id = result[0] if result else segment
 
-    for attr_name, value in attributes.iteritems():
-        attr_obj = lookups.attr_names[attr_name]
-        if attr_obj.multi:
-            for single_value in value:
-                single_value = prepare_value(attr_obj, single_value)
-                c.execute(attr_query, (server_id, attr_obj.pk, single_value))
-        else:
-            value = prepare_value(attr_obj, value)
-            c.execute(attr_query, (server_id, attr_obj.pk, value))
+        # Insert into admin_server table
+        cursor.execute(
+                u'INSERT INTO admin_server ('
+                    u'hostname, '
+                    u'intern_ip, '
+                    u'servertype_id, '
+                    u'segment, '
+                    u'project_id'
+                u') VALUES (%s, %s, %s, %s, %s)',
+                (
+                    hostname,
+                    intern_ip.as_int(),
+                    servertype_id,
+                    segment_id,
+                    project_id,
+                )
+            )
+        server_id = cursor.lastrowid
+
+        # Insert additional attributes
+        attr_query = (
+                u'INSERT INTO attrib_values (server_id, attrib_id, value) '
+                u'VALUES (%s, %s, %s)'
+            )
+
+        for attr_name, value in attributes.iteritems():
+            attr_obj = lookups.attr_names[attr_name]
+            if attr_obj.multi:
+                for single_value in value:
+                    single_value = prepare_value(attr_obj, single_value)
+                    cursor.execute(attr_query, (server_id, attr_obj.pk, single_value))
+            else:
+                value = prepare_value(attr_obj, value)
+                cursor.execute(attr_query, (server_id, attr_obj.pk, value))
 
     return server_id
 

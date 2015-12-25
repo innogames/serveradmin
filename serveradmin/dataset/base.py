@@ -132,32 +132,32 @@ def _read_lookups(sender=None, **kwargs):
     # Read all servertype attributes
     # Bypass Django ORM for performance reasons
     lookups.stype_attrs = {}
-    cursor = connection.cursor()
-    cursor.execute(
-            u'SELECT servertype_id, attrib_id, required, attrib_default, '
-            u'regex, default_visible FROM servertype_attributes'
-        )
+    with connection.cursor() as cursor:
+        cursor.execute(
+                u'SELECT servertype_id, attrib_id, required, attrib_default, '
+                u'regex, default_visible FROM servertype_attributes'
+            )
 
-    for row in cursor.fetchall():
-        row = list(row)
-        attribute = lookups.attr_ids[row[1]]
-        if attribute.type == 'string':
-            try:
-                row[4] = re.compile(row[4])
-            except (TypeError, re.error):
+        for row in cursor.fetchall():
+            row = list(row)
+            attribute = lookups.attr_ids[row[1]]
+            if attribute.type == 'string':
+                try:
+                    row[4] = re.compile(row[4])
+                except (TypeError, re.error):
+                    row[4] = None
+            else:
                 row[4] = None
-        else:
-            row[4] = None
-        row[2] = bool(row[2])
-        stype_attr = ServerTypeAttr._make(row)
-        stype = lookups.stype_ids[stype_attr.servertype_id]
-        stype.attributes.append(attribute)
-        index = (stype_attr.servertype_id, stype_attr.attribute_id)
-        lookups.stype_attrs[index] = stype_attr
+            row[2] = bool(row[2])
+            stype_attr = ServerTypeAttr._make(row)
+            stype = lookups.stype_ids[stype_attr.servertype_id]
+            stype.attributes.append(attribute)
+            index = (stype_attr.servertype_id, stype_attr.attribute_id)
+            lookups.stype_attrs[index] = stype_attr
 
-        servertype = lookups.stype_ids[stype_attr.servertype_id]
-        index = (servertype.name, attribute.name)
-        lookups.stype_attrs[index] = stype_attr
+            servertype = lookups.stype_ids[stype_attr.servertype_id]
+            index = (servertype.name, attribute.name)
+            lookups.stype_attrs[index] = stype_attr
 
     # Add attributes from admin_server to servertype attributes
     for servertype in lookups.stype_ids.itervalues():
