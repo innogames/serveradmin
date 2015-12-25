@@ -115,7 +115,6 @@ class QuerySet(BaseQuerySet):
         self._offset = None
         self._order_by = None
         self._order_dir = 'asc'
-        self._num_rows = 0
 
     def commit(self, *args, **kwargs):
         commit = self._build_commit_object()
@@ -127,8 +126,12 @@ class QuerySet(BaseQuerySet):
         return self._results
 
     def get_num_rows(self):
-        self._get_results()
-        return self._num_rows
+        builder = self._get_query_builder_with_filters()
+        builder.sql_keywords.append('count(*)')
+
+        with connection.cursor() as cursor:
+            cursor.execute(builder.build_sql())
+            return cursor.fetchone()[0]
 
     def get_representation(self):
         return QuerySetRepresentation(
@@ -173,7 +176,8 @@ class QuerySet(BaseQuerySet):
         if self._results is None:
             self._results = self._fetch_results()
 
-    def _fetch_results(self):
+    def _get_query_builder_with_filters(self):
+
         # XXX: Dirty hack for the old database structure
         builder = QueryBuilder()
         optional_filters = (filters.OptionalFilter, filters.Not)
@@ -187,6 +191,10 @@ class QuerySet(BaseQuerySet):
             builder.add_attribute(attr, optional)
             builder.add_filter(attr, f)
 
+        return builder
+
+    def _fetch_results(self):
+        builder = self._get_query_builder_with_filters()
 
         # Copy order_by from instance to local variable to allow LIMIT
         # to set it in the query (but not in the instance) if it is
@@ -215,7 +223,7 @@ class QuerySet(BaseQuerySet):
             ):
             builder.add_attribute(attr)
             builder.add_select(attr)
-        builder.sql_keywords += ['SQL_CALC_FOUND_ROWS', 'DISTINCT']
+        builder.sql_keywords.append('DISTINCT')
         sql_stmt = builder.build_sql()
 
         cursor = connection.cursor()
@@ -262,9 +270,6 @@ class QuerySet(BaseQuerySet):
                 if attr.multi:
                     if not restrict or attr.name in restrict:
                         dict.__setitem__(server_object, attr.name, set())
-
-        cursor.execute('SELECT FOUND_ROWS()')
-        self._num_rows = cursor.fetchone()[0]
 
         # Return early if there are no servers (= empty dict)
         if not server_data:

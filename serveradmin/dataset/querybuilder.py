@@ -115,8 +115,6 @@ class QueryBuilder(object):
         group_by = u', '.join(self.sql_group_by)
 
         sql = []
-        if not select:
-            raise ValueError('You have to supply select fields')
         sql.append(u'SELECT ' + keywords + ' ' + select)
         sql.append(u'FROM ' + from_tables)
         if left_joins:
