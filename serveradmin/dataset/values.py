@@ -11,7 +11,7 @@ def get_attribute_values(attr_name, max_values=20):
         return []
 
     builder.sql_keywords.append('DISTINCT')
-    builder.add_limit(0, max_values)
+    builder.add_limit(max_values)
 
     sql = builder.build_sql()
 

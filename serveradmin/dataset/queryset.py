@@ -23,10 +23,10 @@ class QuerySetRepresentation(object):
             filters,
             restrict,
             augmentations,
-            offset,
-            limit,
             order_by,
             order_dir,
+            limit,
+            offset,
         ):
 
         for attr_name, filt in filters.iteritems():
@@ -35,10 +35,10 @@ class QuerySetRepresentation(object):
         self.filters = filters
         self.restrict = restrict
         self.augmentations = augmentations
-        self.offset = offset
-        self.limit = limit
         self.order_by = order_by
         self.order_dir = order_dir
+        self.limit = limit
+        self.offset = offset
 
     def __hash__(self):
         h = 0
@@ -53,8 +53,10 @@ class QuerySetRepresentation(object):
             h ^= hash(attr_filter)
 
         if self.limit:
-            h ^=  hash(self.offset)
-            h ^=  hash(self.limit)
+            h ^= hash(self.limit)
+
+        if self.offset:
+            h ^= hash(self.offset)
 
         if self.order_by:
             h ^= hash(self.order_by)
@@ -87,10 +89,16 @@ class QuerySetRepresentation(object):
             if self.filters[key] != other.filters[key]:
                 return False
 
-        if self.offset != other.offset or self.limit != other.limit:
+        if self.order_by != other.order_by:
             return False
 
-        if self.order_by != other.order_by or self.order_dir != other.order_dir:
+        if self.order_dir != other.order_dir:
+            return False
+
+        if self.limit != other.limit:
+            return False
+
+        if self.offset != other.offset:
             return False
 
         return True
@@ -111,10 +119,10 @@ class QuerySet(BaseQuerySet):
         check_attributes(filters.keys())
         super(QuerySet, self).__init__(filters)
         self.attributes = lookups.attr_names
-        self._limit = None
-        self._offset = None
         self._order_by = None
         self._order_dir = 'asc'
+        self._limit = None
+        self._offset = None
 
     def commit(self, *args, **kwargs):
         commit = self._build_commit_object()
@@ -138,28 +146,28 @@ class QuerySet(BaseQuerySet):
                 self._filters,
                 self._restrict,
                 self._augmentations,
-                self._offset,
-                self._limit,
                 self._order_by,
                 self._order_dir,
+                self._limit,
+                self._offset,
             )
 
     def restrict(self, *attrs):
         check_attributes(attrs)
         return super(QuerySet, self).restrict(*attrs)
 
-    def limit(self, offset, limit=None):
-        if limit is None:
-            limit, offset = offset, 0
-
-        if limit < 1:
+    def limit(self, value):
+        if value < 1:
             raise ValueError('Invalid limit')
-        if offset < 0:
+
+        self._limit = value
+        return self
+
+    def offset(self, value):
+        if value < 1:
             raise ValueError('Invalid offset')
 
-        self._offset = offset
-        self._limit = limit
-
+        self._offset = value
         return self
 
     def order_by(self, order_by, order_dir='asc'):
@@ -199,19 +207,20 @@ class QuerySet(BaseQuerySet):
         # Copy order_by from instance to local variable to allow LIMIT
         # to set it in the query (but not in the instance) if it is
         # not set
-        order_by = self._order_by
-        order_dir = self._order_dir
-
-        # Add LIMIT
-        if self._limit:
-            if not order_by:
-                order_by = u'hostname'
-                order_dir = u'asc'
-            builder.add_limit(self._offset, self._limit)
-
-        if order_by:
+        if self._order_by:
+            order_by = self._order_by
+            order_dir = self._order_dir
             builder.add_attribute(order_by, optional=True)
             builder.add_ordering((order_by, order_dir))
+        else:
+            order_by = u'hostname'
+            order_dir = u'asc'
+
+        if self._limit:
+            builder.add_limit(self._limit)
+
+        if self._offset:
+            builder.add_offset(self._offset)
 
         for attr in (
                 'object_id',

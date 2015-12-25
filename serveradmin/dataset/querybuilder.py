@@ -12,9 +12,10 @@ class QueryBuilder(object):
         self.sql_left_joins = []
         self.sql_from_tables = []
         self.sql_where = []
-        self.sql_limit = []
         self.sql_order_by = []
         self.sql_group_by = []
+        self.sql_limit = []
+        self.sql_offset = []
         self.sql_extra = []
 
     def get_uid(self):
@@ -97,8 +98,11 @@ class QueryBuilder(object):
             else:
                 self.sql_select.append(field)
 
-    def add_limit(self, offset, limit):
-        self.sql_limit = [offset, limit]
+    def add_limit(self, limit):
+        self.sql_limit = limit
+
+    def add_offset(self, offset):
+        self.sql_offset = offset
 
     def add_group_by(self, *aliases):
         for alias in aliases:
@@ -128,7 +132,9 @@ class QueryBuilder(object):
         if self.sql_extra:
             sql.append(self.sql_extra)
         if self.sql_limit:
-            sql.append(u'LIMIT {0}, {1}'.format(*self.sql_limit))
+            sql.append(u'LIMIT ' + str(self.sql_limit))
+        if self.sql_offset:
+            sql.append(u'OFFSET ' + str(self.sql_offset))
 
         sql_stmt = u'\n'.join(sql)
         return sql_stmt

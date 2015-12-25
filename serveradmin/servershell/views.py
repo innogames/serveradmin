@@ -98,16 +98,20 @@ def get_results(request):
                 if attr not in shown_attributes:
                     shown_attributes.append(attr)
 
-        q = query(**query_args).limit(offset, limit)
+        queryset = query(**query_args)
         if order_by:
-            q = q.order_by(order_by, order_dir)
-        results = q.get_raw_results()
-        num_servers = q.get_num_rows()
+            queryset.order_by(order_by, order_dir)
+        queryset.limit(limit)
+        if offset:
+            queryset.offset(offset)
+
+        results = queryset.get_raw_results()
+        num_servers = queryset.get_num_rows()
     except (ValueError, DatasetError), e:
         return HttpResponse(json.dumps({
-            'status': 'error',
-            'message': e.message
-        }))
+                'status': 'error',
+                'message': e.message
+            }))
 
     request.session['term'] = term
     request.session['per_page'] = limit
@@ -134,7 +138,7 @@ def get_results(request):
 
     return HttpResponse(json.dumps({
         'status': 'success',
-        'understood': q.get_representation().as_code(hide_extra=True),
+        'understood': queryset.get_representation().as_code(hide_extra=True),
         'servers': results,
         'num_servers': num_servers,
         'shown_attributes': shown_attributes,
@@ -197,8 +201,10 @@ def list_and_edit(request, mode='list'):
             try:
                 server.commit(user=request.user)
                 messages.success(request, 'Edited server successfully')
-                url = '{0}?object_id={1}'.format(reverse('servershell_list'),
-                        server.object_id)
+                url = '{0}?object_id={1}'.format(
+                        reverse('servershell_list'),
+                        server.object_id,
+                    )
                 return HttpResponseRedirect(url)
             except CommitValidationFailed as e:
                 invalid_attrs.update([attr for obj_id, attr in e.violations])
