@@ -69,14 +69,8 @@ class Regexp(Filter):
     def __init__(self, regexp):
         try:
             self._regexp_obj = re.compile(regexp)
-            c = connection.cursor()
-            sql_regexp = raw_sql_escape(regexp)
-            c.execute("SELECT '' REGEXP {0}".format(sql_regexp))
-            c.close()
         except re.error as e:
             raise ValueError(u'Invalid regexp: ' + unicode(e))
-        except (OperationalError, DatabaseError) as e:
-            raise ValueError(u'Invalid regexp: ' + e[1])
 
         self.regexp = regexp
 
