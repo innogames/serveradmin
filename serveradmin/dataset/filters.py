@@ -127,42 +127,6 @@ class Regexp(Filter):
 
 filter_classes[u'regexp'] = Regexp
 
-extended_re = re.compile(r'<((\d+\-\d+|\d+)(,(\d+\-\d+|\d+))*)>')
-class ExtendedRegexp(Regexp):
-    def __init__(self, extended_regexp):
-        self.extended_regexp = extended_regexp
-
-        def expand(match):
-            numbers = []
-            parts = match.group(1).split(',')
-            for part in parts:
-                if '-' in part:
-                    start, stop = part.split('-')
-                    numbers += range(int(start), int(stop) + 1)
-                else:
-                    numbers.append(int(part))
-            choices = '|'.join(str(num) for num in numbers)
-            regexp = '0*({0})'.format(choices)
-
-            # We do some magic here to partly support what
-            # lookaheads in PCRE would do.
-            end = match.end()
-            if end == len(extended_regexp):
-                regexp += '($|[^0-9])'
-
-            return regexp
-
-        regexp = extended_re.sub(expand, extended_regexp)
-        Regexp.__init__(self, regexp)
-
-    def __repr__(self):
-        return u'ExtendedRegexp({0!r})'.format(self.extended_regexp)
-
-    def __hash__(self):
-        return hash(u'ExtendedRegexp') ^ hash(self.regexp)
-
-filter_classes[u'extendedregexp'] = ExtendedRegexp
-
 class Comparison(Filter):
     def __init__(self, comparator, value):
         if comparator not in (u'<', u'>', u'<=', u'>='):

@@ -97,10 +97,7 @@ def _parse_query(term, filter_classes, hostname=None):
             query_args = {}
 
         if any(x in hostname_part for x in _trigger_re_chars):
-            if '<' in term:
-                regexp_class = filter_classes['extendedregexp']
-            else:
-                regexp_class = filter_classes['regexp']
+            regexp_class = filter_classes['regexp']
 
             hostname = regexp_class(hostname_part)
         else:
