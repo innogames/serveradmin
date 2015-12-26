@@ -4,7 +4,6 @@ from django.db import connection
 
 from serveradmin.serverdb.models import ChangeCommit, ChangeAdd
 from serveradmin.dataset.base import lookups
-from serveradmin.dataset.cache import invalidate_cache
 from serveradmin.dataset.validation import handle_violations, check_attribute_type
 from serveradmin.dataset.typecast import typecast
 from serveradmin.dataset.exceptions import CommitError
@@ -165,9 +164,6 @@ def create_server(
     finally:
         c.execute(u'COMMIT')
         c.execute(u"SELECT RELEASE_LOCK('serverobject_commit')")
-
-    # Invalidate caches
-    invalidate_cache()
 
     return server_id
 

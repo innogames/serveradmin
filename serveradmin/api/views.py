@@ -19,7 +19,6 @@ from serveradmin.dataset import QuerySet
 from serveradmin.dataset.filters import filter_from_obj, ExactMatch
 from serveradmin.dataset.commit import commit_changes, CommitError
 from serveradmin.dataset.create import create_server
-from serveradmin.dataset.cache import QuerysetCacher
 
 @login_required
 def doc_functions(request):
@@ -82,29 +81,22 @@ def dataset_query(request, app, data):
         for attr, filter_obj in data['filters'].iteritems():
             filters[attr] = filter_from_obj(filter_obj)
 
-        # We do our own caching which caches the json is much faster
-        # than loading the normal cache and encode it as json
-        q = QuerySet(filters=filters, bypass_cache=True)
+        queryset = QuerySet(filters=filters)
         if data['restrict']:
-            q.restrict(*data['restrict'])
+            queryset.restrict(*data['restrict'])
         if data['augmentations']:
-            q.augment(*data['augmentations'])
+            queryset.augment(*data['augmentations'])
 
-        def _build_response(server_data):
-            return json.dumps({
-                'status': 'success',
-                'servers': q.get_raw_results(),
-                'attributes': _build_attributes()
-            }, default=json_encode_extra)
-
-        cacher = QuerysetCacher(q, 'api', encoder=StringEncoder(),
-                post_fetch=_build_response)
-        return cacher.get_results()
-    except ValueError, e:
+        return json.dumps({
+            'status': 'success',
+            'servers': queryset.get_raw_results(),
+            'attributes': _build_attributes(),
+        }, default=json_encode_extra)
+    except ValueError as error:
         return json.dumps({
             'status': 'error',
             'type': 'ValueError',
-            'message': e.message
+            'message': error.message,
         })
 
 dataset_query.encode_json = False

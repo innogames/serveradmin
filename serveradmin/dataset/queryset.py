@@ -9,15 +9,13 @@ from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.validation import check_attributes
 from serveradmin.dataset import filters
 from serveradmin.dataset.commit import commit_changes
-from serveradmin.dataset.cache import QuerysetCacher
 from serveradmin.dataset.querybuilder import QueryBuilder
 
 CACHE_MIN_QS_COUNT = 3
 NUM_OBJECTS_FOR_FILECACHE = 50
 
 class QuerySetRepresentation(object):
-    """ Object that can be easily pickled without storing to much data.
-    The main use is to compare querysets for caching.
+    """Object that can be easily pickled without storing to much data.
     """
 
     def __init__(
@@ -109,12 +107,10 @@ class QuerySetRepresentation(object):
         return u'query({0}){1}'.format(u', '.join(args), extra)
 
 class QuerySet(BaseQuerySet):
-    def __init__(self, filters, bypass_cache=False):
+    def __init__(self, filters):
         check_attributes(filters.keys())
         super(QuerySet, self).__init__(filters)
         self.attributes = lookups.attr_names
-        self._bypass_cache = bypass_cache
-        self._already_through_cache = False
         self._limit = None
         self._offset = None
         self._order_by = None
@@ -174,22 +170,8 @@ class QuerySet(BaseQuerySet):
         return self
 
     def _get_results(self):
-        if self._results is not None:
-            return
-        if self._bypass_cache:
+        if self._results is None:
             self._results = self._fetch_results()
-        else:
-            if self._already_through_cache:
-                self._results = self._fetch_results()
-            else:
-                self._already_through_cache = True
-                cacher = QuerysetCacher(
-                        self,
-                        u'qs',
-                        pre_store=self._cache_pre_store,
-                        post_load=self._cache_post_load,
-                    )
-                self._results = cacher.get_results()
 
     def _fetch_results(self):
         # XXX: Dirty hack for the old database structure
@@ -347,14 +329,6 @@ class QuerySet(BaseQuerySet):
                 _getitem(server_data[server_id], attr.name).add(value)
             else:
                 _setitem(server_data[server_id], attr.name, value)
-
-    def _cache_pre_store(self, server_data):
-        return server_data
-
-    def _cache_post_load(self, server_data):
-        for server in server_data.itervalues():
-            server._queryset = self
-        return server_data
 
 class ServerObject(BaseServerObject):
     def commit(self, app=None, user=None):

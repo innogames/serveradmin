@@ -10,7 +10,6 @@ from adminapi.dataset.exceptions import (
     )
 from adminapi.utils.json import json_encode_extra
 from serveradmin.dataset.base import lookups, ServerTableSpecial
-from serveradmin.dataset.cache import invalidate_cache
 from serveradmin.dataset.typecast import typecast
 from serveradmin.serverdb.models import ChangeCommit, ChangeUpdate, ChangeDelete
 
@@ -76,13 +75,6 @@ def commit_changes(
             _delete_servers(deleted_servers)
         _apply_changes(changed_servers, servers)
 
-        kill_cache = set()
-        kill_cache.update(deleted_servers)
-        kill_cache.update(changed_servers)
-
-        if kill_cache:
-            invalidate_cache(kill_cache)
-
     finally:
         c.execute(u'COMMIT')
         c.execute(u"SELECT RELEASE_LOCK('serverobject_commit')")
@@ -129,8 +121,11 @@ def _fetch_servers(changed_servers):
     for changes in changed_servers.itervalues():
         for attr in changes:
             changed_attrs.add(attr)
-    return QuerySet({'object_id': Any(*changed_servers.keys())},
-            bypass_cache=True).restrict(*changed_attrs).get_raw_results()
+
+    queryset = QuerySet({'object_id': Any(*changed_servers.keys())})
+    queryset.restrict(*changed_attrs)
+
+    return queryset.get_raw_results()
 
 def _validate_structure(deleted_servers, changed_servers):
     if not isinstance(deleted_servers, (list, set)):

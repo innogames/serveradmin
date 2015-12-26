@@ -152,14 +152,6 @@ class AttributeValue(models.Model):
         app_label = 'serverdb'
         db_table = 'attrib_values'
 
-class ServerObjectCache(models.Model):
-    server = models.ForeignKey(ServerObject, null=True, blank=True)
-    repr_hash = models.BigIntegerField()
-
-    class Meta:
-        app_label = 'serverdb'
-        unique_together = (('server', 'repr_hash'))
-
 class Change(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)
     user = models.ForeignKey(User, blank=True, null=True)
@@ -201,7 +193,6 @@ class ChangeDelete(models.Model):
 
     class Meta:
         app_label = 'serverdb'
-
 
 class ChangeUpdate(models.Model):
     commit = models.ForeignKey(ChangeCommit)
