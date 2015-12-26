@@ -147,12 +147,12 @@ class Regexp(BaseFilter):
                 '{{0}} IN ('
                 '   SELECT server_id'
                 '   FROM admin_server'
-                '   WHERE hostname REGEXP {0}'
+                '   WHERE hostname ~ {0}'
                 ')'
                 .format(value)
             )
         else:
-            template = '{0} REGEXP ' + value
+            template = '{0} ~ ' + value
 
         return _condition_sql(attribute, template)
 
