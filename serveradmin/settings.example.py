@@ -15,12 +15,18 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'serveradmin',                      # Or path to database file if using sqlite3.
-        'USER': 'serveradmin',                      # Not used with sqlite3.
-        'PASSWORD': 'INSERT-PASSWORD-HERE',                  # Not used with sqlite3.
-        'HOST': '127.0.0.1',                      # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '3306',                      # Set to empty string for default. Not used with sqlite3.
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'serveradmin',
+        'USER': 'serveradmin',
+        'PASSWORD': '',
+        'HOST': '',
+        'PORT': '',
+        'OPTIONS': {
+            'connect_timeout': 1,
+            'client_encoding': 'UTF8',
+            'options': '-c lock_timeout=10000',
+        },
+        # Wrap the requests into a database transaction
         'ATOMIC_REQUESTS': True,
     },
 }
