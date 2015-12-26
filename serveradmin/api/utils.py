@@ -9,16 +9,16 @@ def build_function_description(fn):
         extra_args = 1
     else:
         extra_args = 0
-    
+
     arguments = list(code.co_varnames[:code.co_argcount + extra_args])
-    
+
     if is_kwargs:
         arguments[-1] = '**' + arguments[-1]
         if is_args:
             arguments[-2] = '*' + arguments[-2]
     elif is_args:
         arguments[-1] = '*' + arguments[-1]
-    
+
     defaults = fn.func_defaults if fn.func_defaults else []
     for i, default_value in enumerate(reversed(defaults)):
         idx = code.co_argcount - i - 1

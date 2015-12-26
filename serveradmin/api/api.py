@@ -6,17 +6,17 @@ from serveradmin.api import ApiError
 @api_function(group='debug')
 def echo(*args, **kwargs):
     """Return the given positional and keyword arguments.
-    
+
     Example::
-       
+
        dbg = api.get('debug')
        print dbg.echo('hello', 'world', numbers=[23, 42])
-       
+
     """
     return {
-        'args': args,
-        'kwargs': kwargs
-    }
+            'args': args,
+            'kwargs': kwargs,
+        }
 
 class RaiseExceptionError(ApiError):
     pass
@@ -24,9 +24,9 @@ class RaiseExceptionError(ApiError):
 @api_function(group='debug')
 def raise_exception():
     """Just raise an exception of type ``RaiseExceptionError``.
-    
+
     Example::
-       
+
        dbg = api.get('debug')
        try:
            result = dbg.raise_exception()
@@ -34,8 +34,9 @@ def raise_exception():
            print 'Catched specific exception!'
        except api.exc.ApiError:
            print 'I will catch all API exceptions'
-       
+
     """
+
     raise RaiseExceptionError('Test exception')
 
 @api_function(group='debug')
@@ -45,7 +46,7 @@ def raise_random_exception(*names):
     It will make up exceptions from the given names and choose on of
     them at random -- or a completely different exception.
     """
-    
+
     names = names + (None, )
     name = random.choice(names)
 

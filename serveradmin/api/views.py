@@ -9,7 +9,7 @@ from django.core.exceptions import PermissionDenied
 from django.contrib.auth.decorators import login_required
 from django.contrib.admindocs.utils import trim_docstring, parse_docstring
 
-from adminapi.utils.json import json_encode_extra 
+from adminapi.utils.json import json_encode_extra
 
 from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
 from serveradmin.api.decorators import api_view
@@ -30,20 +30,22 @@ def doc_functions(request):
             heading, body, metadata = parse_docstring(function.__doc__)
             body = trim_docstring(body)
             function_list.append({
-                'name': name,
-                'description': build_function_description(function),
-                'docstring': trim_docstring('{0}\n\n{1}'.format(heading, body))
-            })
+                    'name': name,
+                    'description': build_function_description(function),
+                    'docstring': trim_docstring(
+                            '{0}\n\n{1}'.format(heading, body)
+                        ),
+                })
         function_list.sort(key=itemgetter('name'))
-            
+
         group_list.append({
-            'name': group_name,
-            'function_list': function_list
-        })
+                'name': group_name,
+                'function_list': function_list
+            })
     group_list.sort(key=itemgetter('name'))
     return TemplateResponse(request, 'api/list_functions.html', {
-        'group_list': group_list
-    })
+            'group_list': group_list
+        })
 
 @api_view
 def echo(request, app, data):
@@ -63,14 +65,14 @@ def dataset_query(request, app, data):
 
         def dump(self, val, file):
             return file.write(val)
-    
+
     if not all(x in data for x in ('filters', 'restrict', 'augmentations')):
         return {
-            'status': 'error',
-            'type': 'ValueError',
-            'message': 'Invalid query object'
-        }
-   
+                'status': 'error',
+                'type': 'ValueError',
+                'message': 'Invalid query object',
+            }
+
     try:
         if 'filters' not in data:
             raise ValueError('You need a filters keys.')
@@ -79,7 +81,7 @@ def dataset_query(request, app, data):
         filters = {}
         for attr, filter_obj in data['filters'].iteritems():
             filters[attr] = filter_from_obj(filter_obj)
-        
+
         # We do our own caching which caches the json is much faster
         # than loading the normal cache and encode it as json
         q = QuerySet(filters=filters, bypass_cache=True)
@@ -124,15 +126,16 @@ def dataset_commit(request, app, data):
 
         commit = {'deleted': data['deleted'], 'changes': changes}
         commit_changes(commit, skip_validation, force_changes, app=app)
+
         return {
-            'status': 'success'
-        }
-    except (ValueError, CommitError), e:
+                'status': 'success',
+            }
+    except (ValueError, CommitError) as error:
         return {
-            'status': 'error',
-            'type': e.__class__.__name__,
-            'message': e.message
-        }
+                'status': 'error',
+                'type': error.__class__.__name__,
+                'message': error.message,
+            }
 
 @api_view
 def dataset_create(request, app, data):
@@ -147,26 +150,29 @@ def dataset_create(request, app, data):
         create_server(data['attributes'], data['skip_validation'],
             data['fill_defaults'], data['fill_defaults_all'],
             app=app)
+
         return {
-            'status': 'success',
-            'attributes': _build_attributes(),
-            'servers': QuerySet(filters={'hostname': ExactMatch(
-                data['attributes']['hostname'])}).get_raw_results()
-        }
-    except (ValueError, CommitError), e:
+                'status': 'success',
+                'attributes': _build_attributes(),
+                'servers': QuerySet(
+                        filters={'hostname': ExactMatch(data['attributes']['hostname'])}
+                    ).get_raw_results()
+            }
+    except (ValueError, CommitError) as error:
         return {
-            'status': 'error',
-            'type': e.__class__.__name__,
-            'message': e.message
-        }
+                'status': 'error',
+                'type': error.__class__.__name__,
+                'message': error.message,
+            }
 
 def _build_attributes():
     attributes = {}
     for attr in lookups.attr_names.itervalues():
         attributes[attr.name] = {
-            'multi': attr.multi,
-            'type': attr.type
-        }
+                'multi': attr.multi,
+                'type': attr.type
+            }
+
     return attributes
 
 @api_view
@@ -179,7 +185,7 @@ def api_call(request, app, data):
         method_name = u'{0}.{1}'.format(data['group'], data['name'])
         if app.readonly and method_name not in allowed_methods:
             raise PermissionDenied(u'Method {0} not allowed'.format(method_name))
-        
+
         try:
             fn = AVAILABLE_API_FUNCTIONS[data['group']][data['name']]
         except KeyError:
@@ -187,13 +193,13 @@ def api_call(request, app, data):
 
         retval = fn(*data['args'], **data['kwargs'])
         return {
-            'status': 'success',
-            'retval': retval
-        }
+                'status': 'success',
+                'retval': retval,
+            }
 
-    except (ValueError, TypeError, ApiError), e:
+    except (ValueError, TypeError, ApiError) as error:
         return {
-            'status': 'error',
-            'type': e.__class__.__name__,
-            'message': unicode(e)
-        }
+                'status': 'error',
+                'type': error.__class__.__name__,
+                'message': unicode(error),
+            }
