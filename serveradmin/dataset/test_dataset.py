@@ -36,7 +36,7 @@ class TestQuery(TestCase):
         s = query(servertype=filters.Regexp(ur'^test[870]')).get()
         self.assertEquals(s[u'hostname'], u'test0')
 
-    def test_filter_comparism(self):
+    def test_filter_comparison(self):
         hostnames = set()
         for s in query(game_world=filters.Comparison('<', 2)):
             hostnames.add(s['hostname'])

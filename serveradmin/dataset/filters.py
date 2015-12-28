@@ -178,7 +178,7 @@ class Comparison(Filter):
     def from_obj(cls, obj):
         if u'comparator' in obj and u'value' in obj:
             return cls(obj[u'comparator'], obj[u'value'])
-        raise ValueError(u'Invalid object for Comparism')
+        raise ValueError(u'Invalid object for Comparison')
 
 filter_classes[u'comparison'] = Comparison
 
@@ -724,8 +724,6 @@ def filter_from_obj(obj):
             isinstance(obj[u'name'], basestring)):
         raise ValueError(u'Invalid filter object')
     try:
-        if obj[u'name'] == 'comparism':
-            obj[u'name'] = 'comparison' # Backward compatibility
         return filter_classes[obj[u'name']].from_obj(obj)
     except KeyError:
         raise ValueError(u'No such filter: {0}'.format(obj[u'name']))

@@ -56,7 +56,7 @@ match. You can either use strings, integers or booleans for exact value matching
 All filter conditions will be ANDed.
 
 More often you need filtering with more complex conditions, for example regular
-expression matching, comparism (less than, greating than) etc. For this kind
+expression matching, comparison (less than, greating than) etc. For this kind
 of queries there is a filters modules which defines some filters you can use.
 The following example will give you all Tribal Wars webservers, which world
 number is between 20 and 30::
@@ -73,10 +73,10 @@ The following filters are available:
    Filters the attribute by matching a regular expression. Use this sparingly
    because it requires a sequence scan over the dataset.
 
-:class:`adminapi.dataset.filters.Comparism`
-   Implement simple comparism functions. The first argument is the comparism
+:class:`adminapi.dataset.filters.Comparison`
+   Implement simple comparison functions. The first argument is the comparison
    operator (one of ``<``, ``>``, ``>=`` and ``<=``) and the second is the
-   value that should be compared. ``game_world=Comparism('<' 20)`` will be
+   value that should be compared. ``game_world=Comparison('<' 20)`` will be
    evaluated as ``game_world < 20``.
 
 :class:`adminapi.dataset.filters.Any`
@@ -120,7 +120,7 @@ The following filters are available:
    Negates the given filter or value.
 
 :class:`adminapi.dataset.filters.Between`
-   Shorthand for ``filters.And(filters.Comparism('>=', a), filters.Comparism('<=', b))``
+   Shorthand for ``filters.And(filters.Comparison('>=', a), filters.Comparison('<=', b))``
 
 :class:`adminapi.dataset.filters.Optional`
    Normally, if you filter for an attribute the filter will evaluate to False
@@ -278,7 +278,7 @@ supports iteration and some additional methods.
       If ``skip_validation`` is ``True`` it will neither validate regular
       expressions nor whether the attribute is required.
 
-      If ``force_changes`` is ``True`` it will overrride any changes
+      If ``force_changes`` is ``True`` it will override any changes
       which were done in the meantime.
    
    .. method:: rollback()

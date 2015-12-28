@@ -37,12 +37,12 @@ filter_classes['regexp'] = Regexp
 class Comparison(Filter):
     def __init__(self, comparator, value):
         if comparator not in ('<', '>', '<=', '>='):
-            raise ValueError('Invalid comparism operator: ' + comparator)
+            raise ValueError('Invalid comparison operator: ' + comparator)
         self.comparator = comparator
         self.value = value
 
     def __repr__(self):
-        return 'Comparism({0!r}, {1!r})'.format(self.comparator, self.value)
+        return 'Comparison({0!r}, {1!r})'.format(self.comparator, self.value)
 
     def _serialize(self):
         return {
@@ -52,8 +52,6 @@ class Comparison(Filter):
             }
 
 filter_classes['comparison'] = Comparison
-
-Comparism = Comparison # Backward compatibilty
 
 class Any(Filter):
     def __init__(self, *values):
