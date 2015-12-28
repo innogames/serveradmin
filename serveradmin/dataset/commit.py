@@ -345,9 +345,9 @@ def _prepare_value(attr_name, value):
         raise ValueError('Value is empty')
     attr_obj = lookups.attr_names[attr_name]
     if attr_obj.type == u'ip':
-        value = value.as_int()
+        value = int(value)
     elif attr_obj.type == u'ipv6':
-        value = value.as_hex()
+        value = ''.join('{:02x}'.format(x) for x in value.packed)
     elif attr_obj.type == u'datetime':
         value = int(time.mktime(value.timetuple()))
     return value

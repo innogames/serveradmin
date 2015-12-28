@@ -1,4 +1,11 @@
 import json
+from ipaddress import (
+    ip_address,
+    IPv4Address,
+    IPv6Address,
+    IPv4Network,
+    IPv6Network,
+)
 
 from django.db import connection
 
@@ -9,7 +16,6 @@ from serveradmin.dataset.typecast import typecast
 from serveradmin.dataset.exceptions import CommitError
 from serveradmin.dataset.sqlhelpers import prepare_value
 from adminapi.utils.json import json_encode_extra
-from adminapi.utils import IP
 
 def create_server(
         attributes,
@@ -41,10 +47,15 @@ def create_server(
         raise CommitError(u'Unknown servertype: ' + attributes[u'servertype'])
 
     hostname = attributes[u'hostname']
-    if isinstance(attributes['intern_ip'], IP):
+    if isinstance(attributes['intern_ip'], (
+        IPv4Address,
+        IPv6Address,
+        IPv4Network,
+        IPv6Network,
+    )):
         intern_ip = attributes['intern_ip']
     else:
-        intern_ip = IP(attributes[u'intern_ip'])
+        intern_ip = ip_address(attributes[u'intern_ip'])
     servertype_id = stype.pk
     segment = attributes.get(u'segment')
 
@@ -181,7 +192,7 @@ def _insert_server(hostname, intern_ip, segment, servertype_id, project_id, attr
         cursor.execute(
                 u'SELECT segment_id FROM ip_range '
                 u'WHERE %s BETWEEN `min` AND `max` LIMIT 1',
-                (intern_ip.as_int(), )
+                (int(intern_ip), )
             )
         result = cursor.fetchone()
         segment_id = result[0] if result else segment
@@ -197,7 +208,7 @@ def _insert_server(hostname, intern_ip, segment, servertype_id, project_id, attr
                 u') VALUES (%s, %s, %s, %s, %s)',
                 (
                     hostname,
-                    intern_ip.as_int(),
+                    int(intern_ip),
                     servertype_id,
                     segment_id,
                     project_id,

@@ -1,4 +1,5 @@
-from adminapi.utils import IP, IPv6
+from ipaddress import IPv4Address, IPv6Address
+
 from serveradmin.api.decorators import api_function
 from serveradmin.api import ApiError
 from serveradmin.dataset import DatasetError
@@ -58,6 +59,7 @@ def get_range(range_id):
     internal_gateway
        Internal (10.0.0.0/8) gateway of this range
     """
+
     try:
         r = IPRange.objects.get(range_id=range_id)
     except IPRange.DoesNotExist:
@@ -72,6 +74,7 @@ def get_ranges(range_ids=None):
     The return value is a list of range objects. See ip.get_range for
     description of a range object.
     """
+
     if range_ids is None:
         range_objects = IPRange.objects.all()
     else:
@@ -86,18 +89,20 @@ def get_ranges_by_type(segment, type):
     The return value is a list of range objects. See ip.get_range for
     description of a range object.
     """
+
     type = {'private': 'ip', 'public': 'public_ip'}.get(type, type)
     range_objects = IPRange.objects.filter(segment=segment, ip_type=type)
     return [_build_range_object(r) for r in range_objects]
 
 @api_function(group='ip')
-def get_matching_ranges(ip):
+def get_matching_ranges(ip_string):
     """Return the IP range(s) that belong to the given IP.
 
     See ip.get_range for description of the range object
     """
-    ip_int = IP(ip).as_int()
-    range_objects =  IPRange.objects.filter(min__lte=ip_int, max__gte=ip_int)
+
+    ip_addr = IPv4Address(ip_string)
+    range_objects = IPRange.objects.filter(min__lte=ip_addr, max__gte=ip_addr)
     return [_build_range_object(r) for r in range_objects]
 
 @api_function(group='ip')
@@ -106,7 +111,8 @@ def get_matching_ranges6(ipv6):
 
     See ip.get_range for description of the range object
     """
-    ip = IPv6(ipv6)
+
+    ip = IPv6Address(ipv6)
     range_objects =  IPRange.objects.filter(min6__lte=ip, max6__gte=ip)
     return [_build_range_object(r) for r in range_objects]
 
@@ -127,28 +133,22 @@ def _build_range_object(r):
         'belongs_to': belongs_to
     }
 
-
 @api_function(group='ip')
 def get_gateway(ip):
-    ip_int = IP(ip).as_int()
-    return get_gateways(ip_int)
+    return get_gateways(IPv4Address(ip))
 
 @api_function(group='ip')
 def get_gateway6(ip):
-    ipv6 = IPv6(ip)
-    return get_gateways6(ipv6)
+    return get_gateways6(IPv6Address(ip))
 
 @api_function(group='ip')
 def get_network_settings(ip):
-    ip_int = IP(ip).as_int()
-    return _get_network_settings(ip_int)
+    return _get_network_settings(IPv4Address(ip))
 
 @api_function(group='ip')
 def get_network_settings6(ip):
-    ipv6 = IPv6(ip)
-    return _get_network_settings6(ipv6)
+    return _get_network_settings6(IPv6Address(ip))
 
 @api_function(group='ip')
 def get_iprange_settings(name):
     return _get_iprange_settings(name)
-
