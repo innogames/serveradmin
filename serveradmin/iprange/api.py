@@ -22,63 +22,6 @@ def get_free(range_id, reserve_ip=True):
         raise ApiError(e.message)
 
 @api_function(group='ip')
-def get_free6(range_id, reserve_ip=True):
-    """Return a free IP address.
-
-    If ``reserve_ip`` is set to ``True`` it will return a different IP
-    on the next call unless all other IPs are used. This can be used
-    to reserve the IP so other scripts won't get the returned IP if
-    you haven't added a server with this IP yet.
-    """
-    try:
-        r = IPRange.objects.get(range_id=range_id)
-        return r.get_free6(increase_pointer=reserve_ip).as_ip()
-    except IPRange.DoesNotExist:
-        raise ApiError('No such IP range')
-    except DatasetError, e:
-        raise ApiError(e.message)
-
-@api_function(group='ip')
-def get_multiple_free(range_id, num_free=1):
-    """Return ``num_free`` free IP addresses as a list.
-    """
-    try:
-        r = IPRange.objects.get(range_id=range_id)
-    except IPRange.DoesNotExist:
-        raise ApiError('No such IP range')
-
-    try:
-        free_ips = set()
-        for i in xrange(num_free):
-            free_ip = r.get_free(increase_pointer=True).as_ip()
-            if free_ip in free_ips:
-                raise ApiError('Not enough free IPs available')
-            free_ips.add(free_ip)
-        return list(free_ips)
-    except DatasetError, e:
-        raise ApiError(e.message)
-
-@api_function(group='ip')
-def get_multiple_free6(range_id, num_free=1):
-    """Return ``num_free`` free IP addresses as a list.
-    """
-    try:
-        r = IPRange.objects.get(range_id=range_id)
-    except IPRange.DoesNotExist:
-        raise ApiError('No such IP range')
-
-    try:
-        free_ips = set()
-        for i in xrange(num_free):
-            free_ip = r.get_free6(increase_pointer=True).as_ip()
-            if free_ip in free_ips:
-                raise ApiError('Not enough free IPs available')
-            free_ips.add(free_ip)
-        return list(free_ips)
-    except DatasetError, e:
-        raise ApiError(e.message)
-
-@api_function(group='ip')
 def get_free_set(range_id):
     """Return all free IPs"""
     try:
