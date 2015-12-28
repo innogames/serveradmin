@@ -75,6 +75,7 @@ def parse_query(term, filter_classes):
     return _parse_query(term, filter_classes)
 
 _trigger_re_chars = ('.*', '.+', '[', ']', '|', '\\', '$', '^', '<')
+
 def _parse_query(term, filter_classes, hostname=None):
     parsed_args = parse_function_string(term, strict=True)
     if not parsed_args:
@@ -86,6 +87,7 @@ def _parse_query(term, filter_classes, hostname=None):
         if hostname:
             # We already parsed a hostname, so we don't expect another one
             raise ValueError(u"Garbled hostname: {0}".format(hostname))
+
         term_parts = term.split(None, 1)
         if len(term_parts) == 2:
             hostname_part, remaining_part = term_parts
@@ -117,11 +119,13 @@ def _parse_query(term, filter_classes, hostname=None):
     call_depth = 0
     for arg in parsed_args:
         token, value = arg
+
         if token == 'key':
             if stack:
                 query_args[stack[0][1]] = stack[1][1]
                 stack = []
             stack.append(arg)
+
         elif token == 'func':
             # Do not allow functions without preceeding key
             # if they are on top level (e.g. call_depth = 0)
@@ -130,6 +134,7 @@ def _parse_query(term, filter_classes, hostname=None):
                                  'preceding attribute')
             call_depth += 1
             stack.append(arg)
+
         elif token == 'endfunc':
             call_depth -= 1
             fn_args = []
@@ -141,6 +146,7 @@ def _parse_query(term, filter_classes, hostname=None):
                     fn_args.append(s_value)
             fn_name = s_value.lower()
             fn_args.reverse()
+
             try:
                 instance = filter_classes[fn_name](*fn_args)
             except KeyError:
@@ -148,6 +154,7 @@ def _parse_query(term, filter_classes, hostname=None):
             except TypeError:
                 raise ValueError('Invalid function args ' + fn_name)
             stack.append(('instance', instance))
+
         elif token == 'str':
             # Do not allow strings without key or function context
             if not stack or (call_depth == 0 and stack[-1][0] != 'key'):
@@ -159,4 +166,5 @@ def _parse_query(term, filter_classes, hostname=None):
         if len(stack) != 2:
             raise ValueError('Invalid term: Attribute requires one argument')
         query_args[stack[0][1]] = stack[1][1]
+
     return query_args

@@ -2,16 +2,17 @@ from adminapi.request import PermissionDenied
 from adminapi.cmdline.utils import get_auth_token
 
 _api_settings = {
-    'auth_token': '',
-    'timeout_api': None,
-    'timeout_dataset': 10
-}
+        'auth_token': '',
+        'timeout_api': None,
+        'timeout_dataset': 10,
+    }
 
 def auth(auth_token=None):
     if auth_token is None:
         auth_token = get_auth_token()
         if not auth_token:
             raise Exception('No auth token found')
+
     _api_settings['auth_token'] = auth_token
 
 def set_timeout(timeout, what='api'):

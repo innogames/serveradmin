@@ -3,8 +3,12 @@ from adminapi.utils import IP
 from adminapi.request import send_request
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 from adminapi.dataset.filters import _prepare_filter
-from adminapi.dataset.exceptions import (DatasetError, CommitError, 
-        CommitValidationFailed, CommitNewerData) # Import into this Namespace
+from adminapi.dataset.exceptions import ( # Import into this Namespace
+        DatasetError,
+        CommitError,
+        CommitValidationFailed,
+        CommitNewerData,
+    )
 
 COMMIT_ENDPOINT = '/dataset/commit'
 QUERY_ENDPOINT = '/dataset/query'
@@ -45,14 +49,15 @@ class QuerySet(BaseQuerySet):
         return len(self)
 
     def _fetch_results(self):
-        serialized_filters = dict((k, v._serialize()) for k, v in
-                self._filters.iteritems())
-        
+        serialized_filters = dict(
+                (k, v._serialize()) for k, v in self._filters.iteritems()
+            )
+
         request_data = {
-            'filters': serialized_filters,
-            'restrict': self._restrict,
-            'augmentations': self._augmentations
-        }
+                'filters': serialized_filters,
+                'restrict': self._restrict,
+                'augmentations': self._augmentations,
+            }
         result = send_request(QUERY_ENDPOINT, request_data, self.auth_token,
                               self.timeout)
         return self._handle_result(result)
@@ -65,11 +70,15 @@ class QuerySet(BaseQuerySet):
                         attr['multi'])
             self.attributes = attributes
             # The attributes in convert_set must be converted to sets
-            # and attributes in convert_ip musst be converted to ips
-            convert_set = frozenset(attr_name for attr_name, attr in
-                    self.attributes.iteritems() if attr.multi)
-            convert_ip = frozenset(attr_name for attr_name, attr in
-                    self.attributes.iteritems() if attr.type == 'ip')
+            # and attributes in convert_ip must be converted to ips
+            convert_set = frozenset(
+                    attr_name for attr_name, attr in self.attributes.iteritems()
+                    if attr.multi
+                )
+            convert_ip = frozenset(
+                    attr_name for attr_name, attr in self.attributes.iteritems()
+                    if attr.type == 'ip'
+                )
             servers = {}
             for object_id, server in result['servers'].iteritems():
                 object_id = int(object_id)
@@ -89,12 +98,9 @@ class QuerySet(BaseQuerySet):
                 dict.update(server_obj, server)
                 servers[object_id] = server_obj
             return servers
-        elif result['status'] == 'error':
-            exception_class = {
-                'ValueError': ValueError
-            }.get(result['type'], DatasetError)
-            raise exception_class(result['message'])
 
+        elif result['status'] == 'error':
+            _handle_exception(result)
 
 class ServerObject(BaseServerObject):
     def __init__(self, object_id=None, queryset=None, auth_token=None,
@@ -104,7 +110,7 @@ class ServerObject(BaseServerObject):
         self.timeout = timeout
 
     def commit(self, skip_validation=False, force_changes=False):
-        commit = self._build_commit_object() 
+        commit = self._build_commit_object()
         commit['skip_validation'] = skip_validation
         commit['force_changes'] = force_changes
         result = send_request(COMMIT_ENDPOINT, commit, self.auth_token,
@@ -117,29 +123,40 @@ class ServerObject(BaseServerObject):
             _handle_exception(result)
 
 def _handle_exception(result):
-    exception_class = {
-        'ValueError': ValueError
-    }.get(result['type'], DatasetError)
-    # Dear traceback reader,
-    # this is not the location of the exception, please read the
-    # exception message and figure out what's wrong with your code
-    raise exception_class(result['message'])
 
+    if result['type'] == 'ValueError':
+        exception_class = ValueError
+    else:
+        exception_class = DatasetError
+
+    #
+    # Dear traceback reader,
+    #
+    # This is not the location of the exception, please read the
+    # exception message and figure out what's wrong with your
+    # code.
+    #
+    raise exception_class(result['message'])
 
 def query(**kwargs):
     filters = dict((k, _prepare_filter(v)) for k, v in kwargs.iteritems())
     return QuerySet(filters=filters, auth_token=_api_settings['auth_token'],
                     timeout=_api_settings['timeout_dataset'])
 
-def create(attributes, skip_validation=False, fill_defaults=True,
-        fill_defaults_all=False, auth_token=None):
-    
+def create(
+        attributes,
+        skip_validation=False,
+        fill_defaults=True,
+        fill_defaults_all=False,
+        auth_token=None,
+    ):
+
     request_data = {
-        'attributes': attributes,
-        'skip_validation': skip_validation,
-        'fill_defaults': fill_defaults,
-        'fill_defaults_all': fill_defaults_all
-    }
+            'attributes': attributes,
+            'skip_validation': skip_validation,
+            'fill_defaults': fill_defaults,
+            'fill_defaults_all': fill_defaults_all,
+        }
 
     if auth_token is None:
         auth_token = _api_settings['auth_token']
@@ -149,4 +166,5 @@ def create(attributes, skip_validation=False, fill_defaults=True,
     qs = QuerySet(filters={'hostname': _prepare_filter(attributes['hostname'])},
             auth_token=auth_token, timeout=_api_settings['timeout_dataset'])
     qs._handle_result(result)
+
     return qs.get()

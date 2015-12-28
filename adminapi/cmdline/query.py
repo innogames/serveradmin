@@ -36,22 +36,22 @@ def main():
         print('Use -t auth_token or create ~/.adminapirc', file=sys.stderr)
         sys.exit(1)
 
-    attrs = options.attrs if options.attrs else ['hostname']
-    orderby = options.orderby if options.orderby else ['hostname']
+    attrs = options.attrs if options.attrs else ('hostname', )
+    orderby = options.orderby if options.orderby else ('hostname', )
 
     adminapi.auth(auth_token)
 
     try:
         query_args = parse_query(' '.join(args),
                 filter_classes=filters.filter_classes)
-    except ValueError, e:
-        print(unicode(e), file=sys.stderr)
+    except ValueError as error:
+        print(unicode(error), file=sys.stderr)
         sys.exit(1)
 
     try:
         host_list = query(**query_args).restrict(*attrs).order_by(*orderby).fetch_now()
-    except (ValueError, DatasetError), e:
-        print(unicode(e), file=sys.stderr)
+    except (ValueError, DatasetError) as error:
+        print(unicode(error), file=sys.stderr)
         sys.exit(1)
 
     if options.export:

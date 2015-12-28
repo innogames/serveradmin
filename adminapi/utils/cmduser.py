@@ -1,7 +1,7 @@
 import os
 import pwd
 
-def get_user(home_at=['/home', '/var', '/opt', '/usr']):
+def get_user(home_at=('/home', '/var', '/opt', '/usr')):
     """Try to find the user who executed the script originally.
 
     :param home_at: List of directories containing home directories
@@ -16,7 +16,6 @@ def get_user(home_at=['/home', '/var', '/opt', '/usr']):
         return _get_user_proc(home_at)
     else:
         return _get_user_psutil()
-
 
 def _get_user_proc(home_at):
     home_at = [home_dir + '/' for home_dir in home_at if home_dir[-1] != '/']
@@ -38,32 +37,36 @@ def _get_user_proc(home_at):
         if pid == 1:
             # Could not find a better user
             return pwd_info
-        pid = ppid
 
+        pid = ppid
 
 def _parse_status(pid):
     uid = None
     ppid = None
-    with open('/proc/{0}/status'.format(pid)) as f:
-        for line in f:
+
+    with open('/proc/{0}/status'.format(pid)) as fd:
+        for line in fd:
             if line.startswith('Uid:'):
                 uid = int(line.split()[1])
             elif line.startswith('PPid:'):
                 ppid = int(line.split()[1])
+
             if not (uid is None or ppid is None):
                 break
         else:
             # Should never happen, but who knows ;-)
             raise Exception('Could not find Uid/PPid in /proc/PID/status')
-    return pwd.getpwuid(uid), ppid
 
+    return pwd.getpwuid(uid), ppid
 
 def _get_user_psutil():
     import psutil
     uid = os.getuid()
     pid = os.getpid()
     ppid = pid
+
     while uid == 0:
         ppid = psutil.Process(ppid).ppid()
         uid, effective,saved =  psutil.Process(ppid).uids()
+
     return pwd.getpwuid(uid)

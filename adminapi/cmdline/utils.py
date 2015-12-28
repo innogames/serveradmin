@@ -6,8 +6,8 @@ def get_auth_token():
     user = get_user()
     config_file = os.path.join(user.pw_dir, '.adminapirc')
     try:
-        with open(config_file) as f:
-            for line in f:
+        with open(config_file) as fp:
+            for line in fp:
                 if line.startswith('#'):
                     continue
                 try:

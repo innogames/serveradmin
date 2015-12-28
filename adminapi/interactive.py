@@ -53,7 +53,7 @@ Parsing an query:
 
 Parse an query from the servershell and return the arguments for the
 query function.
-   
+
    query_args = parse_query('servertype=ds game_world=comparison(> 10)')
    servers = query(**query_args)
 
@@ -73,4 +73,3 @@ print('   | Please note that this module is only |   ')
 print('   |   for use in an interactive shell!   |   ')
 print('   +--------------------------------------+   ')
 print('                                              ')
-

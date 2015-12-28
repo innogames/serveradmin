@@ -22,6 +22,7 @@ class BaseQuerySet(object):
             def key_fn(server):
                 return tuple(server.get(key) for key in order_keys)
             return iter(sorted(self._results.itervalues(), key=key_fn))
+
         return self._results.itervalues()
 
     def __len__(self):
@@ -37,8 +38,10 @@ class BaseQuerySet(object):
         kwargs = ', '.join('{0}={1!r}'.format(k, v) for k, v in
                 self._filters.iteritems())
         query_repr = 'query({0})'.format(kwargs)
+
         if self._restrict:
             query_repr += '.restrict({0})'.format(', '.join(self._restrict))
+
         return query_repr
 
     def get_lookup(self, attr):
@@ -59,12 +62,16 @@ class BaseQuerySet(object):
     def restrict(self, *attrs):
         if not attrs:
             return self
+
         if isinstance(attrs[0], (list, set, tuple)):
             attrs = attrs[0]
+
         for attr in attrs:
             if not isinstance(attr, basestring):
                 raise ValueError('Invalid restriction')
+
         self._restrict = set(attrs)
+
         return self
 
     def count(self):
@@ -74,6 +81,7 @@ class BaseQuerySet(object):
         self._get_results()
         if len(self._results) != 1:
             raise DatasetError('get() requires exactly 1 matched object')
+
         return self._results.itervalues().next()
 
     def is_dirty(self):
@@ -120,6 +128,7 @@ class BaseQuerySet(object):
                 num_dirty += 1
                 obj.print_changes(title, file=file)
                 file.write('\n')
+
         file.write('\n{0} changed and {1} unchanged.\n'.format(num_dirty,
                 len(self) - num_dirty))
 
@@ -140,14 +149,16 @@ class BaseQuerySet(object):
 
     def _build_commit_object(self):
         commit = {
-            'deleted': [],
-            'changes': {}
-        }
+                'deleted': [],
+                'changes': {},
+            }
+
         for obj in self:
             if obj.is_deleted():
                 commit['deleted'].append(obj.object_id)
             elif obj.is_dirty():
                 commit['changes'][obj.object_id] = obj._serialize_changes()
+
         return commit
 
 
@@ -211,6 +222,7 @@ class BaseServerObject(dict):
         else:
             for attr in attrs:
                 table.append((attr, _format_value(self.get(attr))))
+
         print_table(table, file=file)
 
     def print_changes(self, title=None, file=sys.stdout):
@@ -264,6 +276,7 @@ class BaseServerObject(dict):
                 change['add'] = new_value.difference(old_value)
 
             changes[key] = change
+
         return changes
 
     def _confirm_changes(self):
@@ -276,65 +289,81 @@ class BaseServerObject(dict):
         changes = {}
         if self.is_dirty():
             changes[self.object_id] = self._serialize_changes()
+
         return {
-            'deleted': [self.object_id] if self.is_deleted() else [],
-            'changes': changes
-        }
+                'deleted': [self.object_id] if self.is_deleted() else [],
+                'changes': changes,
+            }
 
     def _save_old_value(self, attr):
         was_dirty_before = self.is_dirty()
+
         if attr not in self.old_values:
             old_value = self.get(attr, NonExistingAttribute)
             if isinstance(old_value, set):
                 self.old_values[attr] = old_value.copy()
             else:
                 self.old_values[attr] = old_value
+
         if self._queryset and not was_dirty_before:
             self._queryset._num_dirty += 1
 
     def __getitem__(self, k):
         if self._queryset.attributes[k].multi:
             return MultiAttr(dict.__getitem__(self, k), self, k)
+
         return dict.__getitem__(self, k)
 
     def __setitem__(self, k, v):
         if self._deleted:
             raise DatasetError('Can not set attributes on deleted servers')
+
         if k not in self._queryset.attributes:
             raise DatasetError('No such attribute')
+
         if self._queryset.attributes[k].type == 'ip':
             if self._queryset.attributes[k].multi:
                 v = set(x if isinstance(x, IP) else IP(x) for x in v)
             else:
                 v = v if isinstance(v, IP) else IP(v)
+
         if self._queryset.attributes[k].type == 'ipv6':
             if self._queryset.attributes[k].multi:
                 v = set(x if isinstance(x, IPv6) else IPv6(x) for x in v)
             else:
                 v = v if isinstance(v, IPv6) else IPv6(v)
+
         if self._queryset.attributes[k].multi:
             if not isinstance(v, set):
                 raise DatasetError('Multi attributes must be sets')
+
         if k not in self.old_values or self.old_values[k] != v:
             self._save_old_value(k)
+
         return dict.__setitem__(self, k, v)
+
     __setitem__.__doc__ = dict.__setitem__.__doc__
 
     def __delitem__(self, k):
         self._save_old_value(k)
         return dict.__delitem__(self, k)
+
     __delitem__.__doc__ = dict.__delitem__.__doc__
 
     def clear(self):
         for attr in self:
             self._save_old_value(attr)
+
         return dict.clear(self)
+
     clear.__doc__ = dict.clear.__doc__
 
     def pop(self, k, d=None):
         if k in self:
             self._save_old_value(k)
+
         return dict.pop(self, k, d)
+
     pop.__doc__ = dict.pop.__doc__
 
     def popitem(self):
@@ -343,13 +372,17 @@ class BaseServerObject(dict):
             if self._queryset and self.is_dirty():
                 self._queryset._num_dirty += 1
             self.old_values[k] = v
+
         return k, v
+
     popitem.__doc__ = dict.popitem.__doc__
 
     def setdefault(self, k, d=None):
         if k not in self:
             self._save_old_value(k)
+
         return dict.setdefault(k, d)
+
     setdefault.__doc__ = dict.setdefault.__doc__
 
     def update(self, E, **F):
@@ -361,12 +394,21 @@ class BaseServerObject(dict):
                 self[k] = v
         for k in F:
             self[k] = F[k]
+
     update.__doc__ = dict.update.__doc__
 
 class MultiAttr(object):
-    dirty_methods = frozenset(['add', 'clear', 'difference_update', 'discard',
-            'intersection_update', 'pop', 'remove', 'update',
-            'symmetric_difference_update'])
+    dirty_methods = frozenset((
+            'add',
+            'clear',
+            'difference_update',
+            'discard',
+            'intersection_update',
+            'pop',
+            'remove',
+            'update',
+            'symmetric_difference_update',
+        ))
 
     def __init__(self, proxied_set, server_obj, attr_name):
         self._proxied_set = proxied_set
@@ -403,23 +445,30 @@ class MultiAttr(object):
     def __getattr__(self, attr):
         if not hasattr(self._proxied_set, attr):
             raise AttributeError('Cannot proxy attribute {0}'.format(attr))
+
         proxied_set_attr = getattr(self._proxied_set, attr)
+
         if attr in self.dirty_methods:
             def _method(*args, **kwargs):
                 self._server_object._save_old_value(self._attr_name)
                 return proxied_set_attr(*args, **kwargs)
+
             return _method
+
         return proxied_set_attr
 
     def __reduce__(self):
         return dict.__reduce__(self)
 
 def _format_value(value):
+
     if not value:
         return ''
-    elif value is NonExistingAttribute:
+
+    if value is NonExistingAttribute:
         return u'(does not exist)'
-    elif isinstance(value, set):
+
+    if isinstance(value, set):
         return u', '.join(unicode(val) for val in value)
-    else:
-        return value
+
+    return value
