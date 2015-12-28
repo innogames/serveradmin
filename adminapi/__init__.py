@@ -1,4 +1,3 @@
-from adminapi.request import PermissionDenied
 from adminapi.cmdline.utils import get_auth_token
 
 _api_settings = {
