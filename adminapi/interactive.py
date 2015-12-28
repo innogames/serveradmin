@@ -4,7 +4,6 @@ from adminapi.dataset import query, filters, create
 from adminapi.dataset.filters import *
 from adminapi.utils.parse import parse_query
 from adminapi import api
-from adminapi.utils import IP, Network
 
 import adminapi
 

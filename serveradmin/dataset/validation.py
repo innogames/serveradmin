@@ -1,4 +1,5 @@
-from adminapi.utils import IP
+from ipaddress import IPv4Address
+
 from adminapi.dataset.exceptions import CommitValidationFailed
 from serveradmin.dataset.base import lookups
 
@@ -57,12 +58,14 @@ def _require_boolean(attr, value):
             ).format(attr, repr(value), type(value).__name__))
 
 def _require_ip(attr, value):
-    # We will accept IP objects or everything that IP(value) will convert
-    if isinstance(value, IP):
+    # We will accept IPv4Address objects or everything that can be converted
+    if isinstance(value, IPv4Address):
         return
-    elif isinstance(value, basestring):
+
+    if isinstance(value, basestring):
         if value.isdigit():
             return
+
         segs = value.split('.')
         try:
             if len(segs) != 4:
@@ -73,14 +76,15 @@ def _require_ip(attr, value):
                     raise ValueError()
         except ValueError:
             raise ValueError((
-                    u'Attribute {0} is of type ip, but got {1}'
-                ).format(attr, repr(value)))
-    elif isinstance(value, (int, long)):
+                u'Attribute {0} is of type "ip", but got {1}'
+            ).format(attr, repr(value)))
+
+    if isinstance(value, (int, long)):
         return
-    else:
-        raise ValueError((
-                u'Attribute {0} is of type ip, but got {0} of type {1}'
-            ).format(attr, repr(value), type(value).__name__))
+
+    raise ValueError((
+        'Attribute {0} is of type "ip", but got {0} of type {1}'
+    ).format(attr, repr(value), type(value).__name__))
 
 def handle_violations(
         skip_validation,

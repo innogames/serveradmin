@@ -1,8 +1,9 @@
+from ipaddress import IPv4Address, IPv6Address
+
 from django.db import models
 from django import forms
 from django.core import exceptions
 
-from adminapi.utils import IP, IPv6
 from serveradmin.common import formfields
 
 class IPv4Field(models.Field):
@@ -12,20 +13,20 @@ class IPv4Field(models.Field):
         return 'integer unsigned'
 
     def to_python(self, value):
-        if isinstance(value, IP):
+        if isinstance(value, IPv4Address):
             return value
         elif value is None:
             return None
         elif value == '':
             return None
-        return IP(value)
+        return IPv4Address(value)
 
     def get_prep_value(self, value):
-        if not isinstance(value, IP):
+        if not isinstance(value, IPv4Address):
             if value is None:
                 return None
-            value = IP(value)
-        return value.as_int()
+            value = IPv4Address(value)
+        return int(value)
 
     def get_prep_lookup(self, lookup_type, value):
         valid_lookups = ['exact', 'gt', 'gte', 'lt', 'lte']
@@ -45,20 +46,20 @@ class IPv6Field(models.Field):
         return 'BINARY(16)'
 
     def to_python(self, value):
-        if isinstance(value, IPv6):
+        if isinstance(value, IPv6Address):
             return value
         elif value is None:
             return None
         elif value == '':
             return None
-        return IPv6.from_bytes(value)
+        return IPv6Address(bytearray(value))
 
     def get_prep_value(self, value):
-        if not isinstance(value, IPv6):
+        if not isinstance(value, IPv6Address):
             if value is None:
                 return None
-            value = IPv6(value)
-        return value.as_bytes()
+            value = IPv6Address(value)
+        return ''.join('{:02x}'.format(x) for x in value.packed)
 
     def get_prep_lookup(self, lookup_type, value):
         valid_lookups = ['exact', 'gt', 'gte', 'lt', 'lte']
