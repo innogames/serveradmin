@@ -21,79 +21,15 @@ class IPRange(models.Model):
     ip_type = models.CharField(max_length=10, choices=IP_CHOICES)
     min = dbfields.IPv4Field(null=True)
     max = dbfields.IPv4Field(null=True)
-    next_free = dbfields.IPv4Field(null=True)
     gateway = dbfields.IPv4Field(null=True)
     internal_gateway = dbfields.IPv4Field(null=True)
     min6 = dbfields.IPv6Field(null=True)
     max6 = dbfields.IPv6Field(null=True)
-    next_free6 = dbfields.IPv6Field(null=True)
     gateway6 = dbfields.IPv6Field(null=True)
     internal_gateway6 = dbfields.IPv6Field(null=True)
     vlan = models.IntegerField(null=True)
     belongs_to = models.ForeignKey('self', null=True, blank=True,
             related_name='subnet_of')
-
-    def get_free(self, increase_pointer=True):
-        c = connection.cursor()
-        if self.max is None or self.max is None:
-            raise DatasetError('this Network does not have an IPv4 network')
-        c.execute("SELECT GET_LOCK('serverobject_commit', 10)")
-        try:
-            next_free = copy(self.next_free)
-            if next_free >= self.max:
-                next_free = self.min + 1
-            # do not use .0 and .255 as they can cause problems with shitty routers
-            elif next_free <= self.min:
-                next_free = self.min + 1
-            for second_loop in (False, True):
-                while next_free <= self.max - 1:
-                    if _is_taken(next_free.as_int()):
-                        next_free += 1
-                    elif (next_free.as_int() & 0xff) in (0x00, 0xff):
-                        next_free += 1
-                    else:
-                        if increase_pointer:
-                            IPRange.objects.filter(next_free=next_free).update(
-                                    next_free=next_free + 1)
-                            self.next_free = next_free + 1
-                            self.save()
-                        return next_free
-                next_free = self.min + 1
-                if second_loop:
-                    raise DatasetError('No more free addresses, sorry')
-        finally:
-            c.execute("SELECT RELEASE_LOCK('serverobject_commit')")
-
-    def get_free6(self, increase_pointer=True):
-        c = connection.cursor()
-        if self.max6 is None or self.max6 is None:
-            raise DatasetError('this Network does not have an IPv6 network')
-        c.execute("SELECT GET_LOCK('serverobject_commit', 10)")
-        try:
-            next_free6 = copy(self.next_free6)
-            if next_free6 >= self.max6:
-                next_free6 = self.min6 + 1
-            elif next_free6 <= self.min6:
-                next_free6 = self.min6 + 1
-            for second_loop in (False, True):
-                while next_free6 <= self.max6 - 1:
-                    if _is_taken6(next_free6.as_hex()):
-                        next_free6 += 1
-                    # ::/64 is a router anycast address
-                    elif (next_free6.as_long() & 0xffffffffffffffff) == 0x0000000000000000:
-                        next_free6 += 1
-                    else:
-                        if increase_pointer:
-                            IPRange.objects.filter(next_free6=next_free6).update(
-                                    next_free6=next_free6 + 1)
-                            self.next_free6 = next_free6 + 1
-                            self.save()
-                        return next_free6
-                next_free6 = self.min6 + 1
-                if second_loop:
-                    raise DatasetError('No more free IPv6 addresses, sorry')
-        finally:
-            c.execute("SELECT RELEASE_LOCK('serverobject_commit')")
 
     def get_network(self):
         return Network(self.min, self.max)

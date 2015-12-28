@@ -13,13 +13,17 @@ def get_free(range_id, reserve_ip=True):
     to reserve the IP so other scripts won't get the returned IP if
     you haven't added a server with this IP yet.
     """
+
     try:
-        r = IPRange.objects.get(range_id=range_id)
-        return r.get_free(increase_pointer=reserve_ip).as_ip()
+        iprange = IPRange.objects.get(range_id=range_id)
     except IPRange.DoesNotExist:
         raise ApiError('No such IP range')
-    except DatasetError, e:
-        raise ApiError(e.message)
+
+    free_addresses = igrange.get_free_set(increase_pointer=reserve_ip)
+    if not free_addresses:
+        raise ApiError('No more free addresses')
+
+    return free_addresses[0]
 
 @api_function(group='ip')
 def get_free_set(range_id):
