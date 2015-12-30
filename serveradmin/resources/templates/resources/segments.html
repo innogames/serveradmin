@@ -21,9 +21,19 @@
         <td><a href="{% url 'resources_index' %}?term=segment%3D{{ segment.name }}"
                 >{{ segment.name }}</a></td>
 
-        <td>{% for servertype, count in segment.servertypes %}{{ servertype }}: {{ count }} {% endfor %}</td>
+        <td>
+{% for servertype, count in segment.servertypes %}
+            {{ servertype }}: 
+            <a href="{% url 'servershell_index' %}?term=servertype={{ servertype }}+segment={{ segment.name }}">{{ count }}</a> 
+{% endfor %}
+        </td>
 
-        <td>{% for project, count in segment.projects %}{{ project }}: {{ count }} {% endfor %}</td>
+        <td>
+{% for project, count in segment.projects %}
+            {{ project }}: 
+            <a href="{% url 'servershell_index' %}?term=project={{ project }}+segment={{ segment.name }}">{{ count }}</a> 
+{% endfor %}
+        </td>
 
         <td>{{ segment.disk_size_gib }}</td>
 
