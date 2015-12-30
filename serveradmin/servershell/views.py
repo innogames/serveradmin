@@ -11,7 +11,6 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.core.urlresolvers import reverse
 from django.contrib import messages
-from django import forms
 from django.utils.html import mark_safe, escape as escape_html
 
 from adminapi.utils import IP
@@ -25,7 +24,7 @@ from serveradmin.dataset.commit import (commit_changes, CommitValidationFailed,
 from serveradmin.dataset.values import get_attribute_values
 from serveradmin.dataset.typecast import typecast, displaycast
 from serveradmin.dataset.create import create_server
-from serveradmin.serverdb.models import ServerType, Project
+from serveradmin.servershell.forms import CloneServerForm, NewServerForm
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 25
@@ -309,40 +308,21 @@ def get_values(request):
 @login_required
 @permission_required('dataset.create_serverobject')
 def new_server(request):
-    class CloneServerForm(forms.Form):
-        project = forms.ModelChoiceField(queryset=Project.objects.all())
-        hostname = forms.CharField()
-        intern_ip = forms.GenericIPAddressField()
-        check_ip = forms.BooleanField(required=False)
-
-        def clean_hostname(self):
-            if query(hostname=self.cleaned_data['hostname']):
-                raise forms.ValidationError('Hostname already taken.')
-            return self.cleaned_data['hostname']
-
-        def clean(self):
-            if self.cleaned_data.get('check_ip'):
-                if 'intern_ip' in self.cleaned_data:
-                    if query(intern_ip=self.cleaned_data['intern_ip']):
-                        msg = 'IP already taken'
-                        self._errors['intern_ip'] = self.error_class([msg])
-            return self.cleaned_data
-
-    class NewServerForm(CloneServerForm):
-        servertype = forms.ModelChoiceField(queryset=ServerType.objects.all())
 
     if 'clone_from' in request.REQUEST:
-        form_class = CloneServerForm
         try:
             clone_from = query(hostname=request.REQUEST['clone_from']).get()
         except DatasetError:
             raise Http404
     else:
-        form_class = NewServerForm
         clone_from = None
 
     if request.method == 'POST':
-        form = form_class(request.POST)
+        if clone_from:
+            form = CloneServerForm(clone_from['servertype'], request.POST)
+        else:
+            form = NewServerForm(request.POST)
+
         if form.is_valid():
             if clone_from:
                 attributes = dict(clone_from)
@@ -364,14 +344,14 @@ def new_server(request):
             return HttpResponseRedirect(url)
     else:
         if clone_from:
-            form = form_class(initial={
+            form = CloneServerForm(clone_from['servertype'], initial={
                     'project': clone_from['project'],
                     'hostname': clone_from['hostname'],
                     'intern_ip': clone_from['intern_ip'],
                     'check_ip': True,
                 })
         else:
-            form = form_class(initial={'check_ip': True})
+            form = NewServerForm(initial={'check_ip': True})
 
     return TemplateResponse(request, 'servershell/new_server.html', {
         'form': form,

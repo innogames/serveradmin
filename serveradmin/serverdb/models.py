@@ -37,6 +37,7 @@ class ServerType(models.Model):
     servertype_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=64, unique=True)
     description = models.CharField(max_length=1024)
+    fixed_project = models.ForeignKey(Project, null=True)
 
     def copy(self, new_name):
         target, created = ServerType.objects.get_or_create(name=new_name)
