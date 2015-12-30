@@ -136,7 +136,7 @@ class ServerObject(models.Model):
     comment = models.CharField(max_length=255, null=True, blank=True)
     project = models.ForeignKey(Project)
     servertype = models.ForeignKey(ServerType)
-    segment = models.CharField(max_length=10)
+    segment = models.ForeignKey(Segment, db_column='segment')
 
     class Meta:
         app_label = 'serverdb'
