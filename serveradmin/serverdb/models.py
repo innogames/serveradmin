@@ -17,11 +17,55 @@ TYPE_CHOICES = (
         ('ipv6', 'IPv6 address'),
         ('boolean', 'Boolean'),
         ('datetime', 'Datetime'),
-        ('mac', 'MAC address')
-)
+        ('mac', 'MAC address'),
+    )
+
+class Project(models.Model):
+    project_id = models.CharField(max_length=32, primary_key=True)
+    subdomain = models.CharField(max_length=16, unique=True)
+    responsible_admin = models.ForeignKey(User)
+
+    class Meta:
+        app_label = 'serverdb'
+        db_table = 'project'
+        ordering = ('project_id', )
+
+    def __unicode__(self):
+        return self.project_id
+
+class ServerType(models.Model):
+    servertype_id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=64, unique=True)
+    description = models.CharField(max_length=1024)
+
+    def copy(self, new_name):
+        target, created = ServerType.objects.get_or_create(name=new_name)
+        skip = set([attr.attrib.name for attr in
+                target.used_attributes.select_related()])
+
+        for attr in self.used_attributes.select_related():
+            if attr.attrib.name in skip:
+                continue
+            ServerTypeAttributes.objects.create(
+                    servertype=target,
+                    attrib=attr.attrib,
+                    required=attr.required,
+                    attrib_default=attr.attrib_default,
+                    regex=attr.regex,
+                    default_visible=attr.default_visible)
+            clear_lookups()
+
+    class Meta:
+        app_label = 'serverdb'
+        db_table = 'servertype'
+        ordering = ('name', )
+
+    def __unicode__(self):
+        return self.name
 
 class Attribute(models.Model):
     special = None
+
     def __init__(self, *args, **kwargs):
         if 'special' in kwargs:
             self.special = kwargs[u'special']
@@ -59,36 +103,6 @@ class Attribute(models.Model):
     def search_link(self):
         return settings.ATTRIBUTE_WIKI_LINK.format(attr=self.name)
 
-class ServerType(models.Model):
-    servertype_id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=64, unique=True)
-    description = models.CharField(max_length=1024)
-
-    def copy(self, new_name):
-        target, created = ServerType.objects.get_or_create(name=new_name)
-        skip = set([attr.attrib.name for attr in
-                target.used_attributes.select_related()])
-
-        for attr in self.used_attributes.select_related():
-            if attr.attrib.name in skip:
-                continue
-            ServerTypeAttributes.objects.create(
-                    servertype=target,
-                    attrib=attr.attrib,
-                    required=attr.required,
-                    attrib_default=attr.attrib_default,
-                    regex=attr.regex,
-                    default_visible=attr.default_visible)
-            clear_lookups()
-
-    class Meta:
-        app_label = 'serverdb'
-        db_table = 'servertype'
-        ordering = ('name', )
-
-    def __unicode__(self):
-        return self.name
-
 class ServerTypeAttributes(models.Model):
     servertype = models.ForeignKey(ServerType, related_name='used_attributes')
     attrib = models.ForeignKey(Attribute)
@@ -102,27 +116,27 @@ class ServerTypeAttributes(models.Model):
         db_table = 'servertype_attributes'
         unique_together = (('servertype', 'attrib'), )
 
-class Project(models.Model):
-    project_id = models.CharField(max_length=32, primary_key=True)
-    subdomain = models.CharField(max_length=16, unique=True)
-    responsible_admin = models.ForeignKey(User)
+class Segment(models.Model):
+    segment_id = models.CharField(max_length=20, primary_key=True)
+    ip_range = models.CharField(max_length=255, null=True, blank=True)
+    description = models.CharField(max_length=1024)
+
+    def __unicode__(self):
+        return self.segment_id
 
     class Meta:
         app_label = 'serverdb'
-        db_table = 'project'
-        ordering = ('project_id', )
-
-    def __unicode__(self):
-        return self.project_id
+        db_table = 'segment'
+        ordering = ('segment_id', )
 
 class ServerObject(models.Model):
     server_id = models.AutoField(primary_key=True)
     hostname = models.CharField(max_length=64)
     intern_ip = dbfields.IPv4Field()
     comment = models.CharField(max_length=255, null=True, blank=True)
+    project = models.ForeignKey(Project)
     servertype = models.ForeignKey(ServerType)
     segment = models.CharField(max_length=10)
-    project = models.ForeignKey(Project)
 
     class Meta:
         app_label = 'serverdb'
@@ -145,19 +159,6 @@ class ServerObjectCache(models.Model):
         app_label = 'serverdb'
         unique_together = (('server', 'repr_hash'))
 
-class Segment(models.Model):
-    segment_id = models.CharField(max_length=20, primary_key=True)
-    ip_range = models.CharField(max_length=255, null=True, blank=True)
-    description = models.CharField(max_length=1024)
-
-    def __unicode__(self):
-        return self.segment_id
-
-    class Meta:
-        app_label = 'serverdb'
-        db_table = 'segment'
-        ordering = ('segment_id', )
-
 class Change(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)
     user = models.ForeignKey(User, blank=True, null=True)
@@ -174,7 +175,6 @@ class Change(models.Model):
     class Meta:
         app_label = 'serverdb'
 
-
 class ChangeCommit(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)
     user = models.ForeignKey(User, blank=True, null=True)
@@ -185,7 +185,6 @@ class ChangeCommit(models.Model):
 
     class Meta:
         app_label = 'serverdb'
-
 
 class ChangeDelete(models.Model):
     commit = models.ForeignKey(ChangeCommit)
@@ -218,7 +217,6 @@ class ChangeUpdate(models.Model):
     class Meta:
         app_label = 'serverdb'
 
-
 class ChangeAdd(models.Model):
     commit = models.ForeignKey(ChangeCommit)
     hostname = models.CharField(max_length=64, db_index=True)
@@ -234,11 +232,7 @@ class ChangeAdd(models.Model):
     class Meta:
         app_label = 'serverdb'
 
-
-def clear_lookups():
+def clear_lookups(*args, **kwargs):
     cache.delete('dataset_lookups_version')
 
-
-def _attribute_changed(sender, **kwargs):
-    clear_lookups()
-post_save.connect(_attribute_changed, sender=Attribute)
+post_save.connect(clear_lookups, sender=Attribute)
