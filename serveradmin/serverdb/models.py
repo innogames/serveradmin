@@ -119,7 +119,6 @@ class ServerTypeAttributes(models.Model):
 
 class Segment(models.Model):
     segment_id = models.CharField(max_length=20, primary_key=True)
-    ip_range = models.CharField(max_length=255, null=True, blank=True)
     description = models.CharField(max_length=1024)
 
     def __unicode__(self):
