@@ -25,6 +25,7 @@ from serveradmin.dataset.values import get_attribute_values
 from serveradmin.dataset.typecast import typecast, displaycast
 from serveradmin.dataset.create import create_server
 from serveradmin.servershell.forms import CloneServerForm, NewServerForm
+from serveradmin.serverdb.models import ServerType
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 25
@@ -314,12 +315,14 @@ def new_server(request):
             clone_from = query(hostname=request.REQUEST['clone_from']).get()
         except DatasetError:
             raise Http404
+
+        servertype = ServerType.objects.get(name=clone_from['servertype'])
     else:
         clone_from = None
 
     if request.method == 'POST':
         if clone_from:
-            form = CloneServerForm(clone_from['servertype'], request.POST)
+            form = CloneServerForm(servertype, request.POST)
         else:
             form = NewServerForm(request.POST)
 
@@ -344,7 +347,7 @@ def new_server(request):
             return HttpResponseRedirect(url)
     else:
         if clone_from:
-            form = CloneServerForm(clone_from['servertype'], initial={
+            form = CloneServerForm(servertype, initial={
                     'project': clone_from['project'],
                     'hostname': clone_from['hostname'],
                     'intern_ip': clone_from['intern_ip'],
