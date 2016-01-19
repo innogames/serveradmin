@@ -78,6 +78,9 @@ class ExactMatch(BaseFilter):
 
     def as_sql_expr(self, builder, attribute, field):
 
+        if attribute.type == 'hostname':
+            return _exists_sql(attribute, '=', self.value.server_id)
+
         if attribute.type == 'boolean' and not self.value:
             return u"({0} = '0' OR {0} IS NULL)".format(field)
 
@@ -133,12 +136,25 @@ class Regexp(BaseFilter):
             else:
                 return u'0=1'
 
+        sql_regexp = raw_sql_escape(self.regexp)
+
+        if attribute.type == 'hostname':
+            return _exists_sql(
+                attribute,
+                'IN',
+                (
+                    '('
+                        'SELECT server_id '
+                        'FROM admin_server '
+                        'WHERE hostname REGEXP {0}'
+                    ')'
+                ).format(sql_regexp),
+            )
+
         if attribute.type == u'ip':
-            sql_regexp = raw_sql_escape(self.regexp)
             return u'INET_NTOA({0}) REGEXP {1}'.format(field, sql_regexp)
-        else:
-            sql_regexp = raw_sql_escape(self.regexp)
-            return u'{0} REGEXP {1}'.format(field, sql_regexp)
+
+        return u'{0} REGEXP {1}'.format(field, sql_regexp)
 
     def matches(self, server_obj, attr_name):
         value = str(server_obj[attr_name])
@@ -173,6 +189,10 @@ class Comparison(BaseFilter):
         return hash(u'Comparison') ^ hash(self.comparator) ^ hash(self.value)
 
     def typecast(self, attribute):
+
+        if attribute.type == 'hostname':
+            raise ValueError('Hostnames cannot be compared.')
+
         self.value = typecast(attribute, self.value, force_single=True)
 
     def as_sql_expr(self, builder, attribute, field):
@@ -233,6 +253,13 @@ class Any(BaseFilter):
     def as_sql_expr(self, builder, attribute, field):
         if not self.values:
             return u'0 = 1'
+
+        if attribute.type == 'hostname':
+            return _exists_sql(
+                attribute,
+                'IN',
+                '(' + ', '.join(str(s.server_id) for s in self.values) + ')'
+            )
 
         prepared_values = u', '.join(
             value_to_sql(attribute, value) for value in self.values
@@ -338,6 +365,10 @@ class Between(BaseFilter):
         return hash(u'Between') ^ hash(self.a) ^ hash(self.b)
 
     def typecast(self, attribute):
+
+        if attribute.type == 'hostname':
+            raise ValueError('Hostnames cannot be compared.')
+
         self.a = typecast(attribute, self.a, force_single=True)
         self.b = typecast(attribute, self.b, force_single=True)
 
@@ -384,18 +415,14 @@ class Not(BaseFilter):
 
     def as_sql_expr(self, builder, attribute, field):
 
+        # Special case for empty filter, simple negation doesn't work
+        # here. It would just return all empty values, instead of values
+        # which are NOT empty.
+        if isinstance(self.filter, Empty):
+            return _exists_sql(attribute, 'IS', 'NOT NULL')
+
         if attribute.multi:
             uid = builder.get_uid()
-
-            # Special case for empty filter, simple negation doesn't work
-            # here. It would just return all empty values, instead of values
-            # which are NOT empty.
-            if isinstance(self.filter, Empty):
-                return (
-                    'EXISTS (SELECT 1 FROM attrib_values AS nav{0} '
-                            'WHERE nav{0}.server_id = adms.server_id AND '
-                                    'nav{0}.attrib_id = {1})'
-                ).format(uid, attribute.attrib_id)
 
             cond = self.filter.as_sql_expr(
                     builder,
@@ -461,15 +488,26 @@ class Startswith(BaseFilter):
             else:
                 return u'0 = 1'
 
-        if attribute.type == u'ip':
-            value = raw_sql_escape(str(self.value) + '%%')
+        value = self.value.replace('_', '\\_').replace(u'%', u'\\%%')
+        value = raw_sql_escape(value + u'%%')
 
+        if attribute.type == 'hostname':
+            return _exists_sql(
+                attribute,
+                'IN',
+                (
+                    '('
+                        'SELECT server_id '
+                        'FROM admin_server '
+                        'WHERE hostname LIKE {0}'
+                    ')'
+                ).format(value),
+            )
+
+        if attribute.type == u'ip':
             return u'INET_NTOA({0}) LIKE {1}'.format(field, value)
 
         if attribute.type == 'string':
-            value = self.value.replace('_', '\\_').replace(u'%', u'\\%%')
-            value = raw_sql_escape(value + u'%%')
-
             return u'{0} LIKE {1}'.format(field, value)
 
         if attribute.type == 'integer':
@@ -701,6 +739,32 @@ def value_to_sql(attribute, value):
         value = lookups.stype_names[value].pk
 
     return _sql_escape(value)
+
+def _exists_sql(attribute, operator, argument):
+
+    if attribute.type == 'hostname':
+        table = 'server_hostname_attrib'
+    else:
+        table = 'attrib_values'
+
+    return (
+        'EXISTS ('
+            'SELECT 1 '
+            'FROM {0} AS sub{1} '
+            'WHERE ('
+                    'sub{1}.server_id = adms.server_id'
+                ' AND '
+                    'sub{1}.attrib_id = {1}'
+                ' AND '
+                    'sub{1}.value {2} {3}'
+            ')'
+        ')'
+    ).format(
+        table,
+        attribute.attrib_id,
+        operator,
+        argument,
+    )
 
 def _sql_escape(value):
 

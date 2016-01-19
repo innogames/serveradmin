@@ -5,6 +5,8 @@ from ipaddress import ip_address, IPv4Address, IPv6Address
 from django.db import connection
 
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
+
+from serveradmin.serverdb.models import ServerHostnameAttribute
 from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.validation import check_attributes
 from serveradmin.dataset import filters
@@ -288,24 +290,46 @@ class QuerySet(BaseQuerySet):
         if not server_data:
             return server_data
 
-        # Remove attributes from adm_server from the restrict set
-        add_attributes = True
+        hostname_attributes = []
+        string_attributes = []
         if restrict:
-            for attr_obj in lookups.attr_names.itervalues():
-                if isinstance(attr_obj.special, ServerTableSpecial):
-                    restrict.discard(attr_obj.name)
-            # if restrict is empty now, there are no attributes to fetch
-            # from the attrib_values table, but just attributes from
-            # admin_server table. We can return early
-            if not restrict:
-                add_attributes = False
+            for name in restrict:
+                attribute = lookups.attr_names[name]
 
-        if add_attributes:
-            self._add_additional_attrs(server_data, restrict)
+                if not isinstance(attribute.special, ServerTableSpecial):
+                    if attribute.type == 'hostname':
+                        hostname_attributes.append(attribute)
+                    else:
+                        string_attributes.append(attribute)
+
+        if not restrict or hostname_attributes:
+            self._add_hostname_attrs(server_data, hostname_attributes)
+        if not restrict or string_attributes:
+            self._add_additional_attrs(server_data, string_attributes)
 
         return server_data
 
-    def _add_additional_attrs(self, server_data, restrict):
+    def _add_hostname_attrs(self, server_data, attributes):
+
+        queryset = ServerHostnameAttribute.objects
+        queryset = queryset.filter(server_id__in=server_data.keys())
+        if attributes:
+            queryset = queryset.filter(attrib__in=attributes)
+
+        for relation in queryset.all():
+            if relation.attrib.multi:
+                dict.__getitem__(
+                    server_data[relation.server_id],
+                    relation.attrib.name,
+                ).add(relation.value)
+            else:
+                dict.__setitem__(
+                    server_data[relation.server_id],
+                    relation.attrib.name,
+                    relation.value,
+                )
+
+    def _add_additional_attrs(self, server_data, attributes):
 
         server_ids = u', '.join(map(str, server_data.iterkeys()))
         sql_stmt = (
@@ -314,12 +338,10 @@ class QuerySet(BaseQuerySet):
                 u'WHERE server_id IN ({0})'
             ).format(server_ids)
 
-        if restrict:
-            restrict_ids = u', '.join(
-                    str(lookups.attr_names[attr_name].pk)
-                    for attr_name in restrict
-                )
-            sql_stmt += u' AND attrib_id IN ({0})'.format(restrict_ids)
+        if attributes:
+            sql_stmt += u' AND attrib_id IN ({0})'.format(', '.join(
+                str(a.attrib_id) for a in attributes
+            ))
 
         _getitem = dict.__getitem__
         _setitem = dict.__setitem__

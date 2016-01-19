@@ -2,6 +2,7 @@ from ipaddress import IPv4Address
 
 from adminapi.dataset.exceptions import CommitValidationFailed
 from serveradmin.dataset.base import lookups
+from serveradmin.serverdb.models import ServerObject
 
 def check_attributes(attributes):
     for attr in attributes:
@@ -29,6 +30,9 @@ def check_attribute_type(attr, value):
         elif attr_obj.type == 'ip':
             for val in value:
                 _require_ip(attr, val)
+        elif attr_obj.type == 'hostname':
+            for val in value:
+                _require_hostname(attr, val)
     else:
         if attr_obj.type == 'string':
             _require_string(attr, value)
@@ -38,6 +42,8 @@ def check_attribute_type(attr, value):
             _require_boolean(attr, value)
         elif attr_obj.type == 'ip':
             _require_ip(attr, value)
+        elif attr_obj.type == 'hostname':
+            _require_hostname(attr, value)
 
 def _require_string(attr, value):
     if not isinstance(value, basestring):
@@ -87,6 +93,18 @@ def _require_ip(attr, value):
     raise ValueError((
         'Attribute {0} is of type "ip", but got {0} of type {1}'
     ).format(attr, repr(value), type(value).__name__))
+
+def _require_hostname(attr, value):
+
+    servers = ServerObject.objects.filter(hostname=value)
+
+    if not servers:
+        raise ValueError('No server with hostname "{0}"'.format(value))
+
+    # Hostname is unique
+    assert len(servers) == 1
+
+    return servers[0]
 
 def handle_violations(
         skip_validation,

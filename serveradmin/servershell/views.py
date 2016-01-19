@@ -23,7 +23,7 @@ from serveradmin.dataset.commit import (commit_changes, CommitValidationFailed,
 from serveradmin.dataset.typecast import typecast, displaycast
 from serveradmin.dataset.create import create_server
 from serveradmin.servershell.forms import CloneServerForm, NewServerForm
-from serveradmin.serverdb.models import ServerType, StringAttributeValue
+from serveradmin.serverdb.models import ServerType, ServerStringAttribute
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 100
@@ -309,7 +309,7 @@ def get_values(request):
     except KeyError:
         raise Http404
 
-    queryset = StringAttributeValue.objects.filter(attrib=attr_obj)
+    queryset = ServerStringAttribute.objects.filter(attrib=attr_obj)
     value_queryset = queryset.values('value').distinct().order_by('value')
 
     return TemplateResponse(request, 'servershell/values.html', {

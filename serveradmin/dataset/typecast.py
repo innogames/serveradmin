@@ -2,6 +2,8 @@ import re
 from datetime import datetime
 from ipaddress import IPv4Address, IPv6Address
 
+from serveradmin.serverdb.models import ServerObject
+
 _to_datetime_re = re.compile(
     r'(\d{4})-(\d{1,2})-(\d{1,2})(T(\d{1,2}):(\d{1,2})(:(\d{1,2}))?)?'
 )
@@ -57,15 +59,27 @@ def _to_mac(mac):
 
     raise ValueError(u'Invalid MAC "{0}"'.format(mac))
 
+def _to_server(hostname):
+
+    servers = ServerObject.objects.filter(hostname=hostname)
+    if not servers:
+        raise ValueError('No server with hostname "{0}"'.format(hostname))
+
+    # Hostnames are unique.
+    assert len(servers) == 1
+
+    return servers[0]
+
 _typecast_fns = {
-        'integer': int,
-        'boolean': lambda x: x in ('1', 'True', 'true', 1, True),
-        'string': lambda x: x if isinstance(x, basestring) else unicode(x),
-        'ip': lambda x: x if isinstance(x, IPv4Address) else IPv4Address(x),
-        'ipv6': lambda x: x if isinstance(x, IPv6Address) else IPv6Address(x),
-        'datetime': _to_datetime,
-        'mac': _to_mac,
-    }
+    'integer': int,
+    'boolean': lambda x: x in ('1', 'True', 'true', 1, True),
+    'string': lambda x: x if isinstance(x, basestring) else unicode(x),
+    'ip': lambda x: x if isinstance(x, IPv4Address) else IPv4Address(x),
+    'ipv6': lambda x: x if isinstance(x, IPv6Address) else IPv6Address(x),
+    'datetime': _to_datetime,
+    'mac': _to_mac,
+    'hostname': _to_server,
+}
 
 def typecast(attribute, value, force_single=False):
     if value is None:

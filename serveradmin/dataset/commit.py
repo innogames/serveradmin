@@ -287,29 +287,25 @@ def _apply_changes(changed_servers):
                     setattr(server, attribute.special.field, None)
 
             elif action == 'new':
-                server.add_attribute_value(attribute, change['new'])
+                server.add_attribute(attribute, change['new'])
 
             elif action == 'update':
-                attribute_value = server.attributevalue_set.get(attrib=attribute)
-                attribute_value.reset(change['new'])
-                attribute_value.save()
+                server_attribute = server.get_attributes(attribute).get()
+                server_attribute.reset(change['new'])
+                server_attribute.save()
 
             elif action == 'delete':
-                server.attributevalue_set.filter(attrib=attribute).delete()
+                server.get_attributes(attribute).delete()
 
             elif action == 'multi':
 
                 if change['remove']:
-                    server.attributevalue_set.filter(
-                        attrib=attribute,
-                        value__in=(
-                            attribute.serialize_value(value)
-                            for value in change['remove']
-                        ),
-                    ).delete()
+                    for server_attribute in server.get_attributes(attribute):
+                        if server_attribute.matches(change['remove']):
+                            server_attribute.delete()
 
                 for value in change['add']:
-                    server.add_attribute_value(attribute, value)
+                    server.add_attribute(attribute, value)
 
         server.save()
 

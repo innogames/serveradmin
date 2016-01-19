@@ -13,10 +13,17 @@ from django import forms
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.create import create_server
 from serveradmin.dataset.exceptions import CommitError
-
-from serveradmin.serverdb.models import (ServerType, Attribute, AttributeValue,
-        ServerTypeAttributes, ChangeCommit, ChangeAdd, ChangeUpdate,
-        ChangeDelete, clear_lookups)
+from serveradmin.serverdb.models import (
+    ServerType,
+    Attribute,
+    ServerStringAttribute,
+    ServerTypeAttributes,
+    ChangeCommit,
+    ChangeAdd,
+    ChangeUpdate,
+    ChangeDelete,
+    clear_lookups,
+)
 
 @login_required
 def servertypes(request):
@@ -177,8 +184,10 @@ def delete_servertype_attr(request, servertype_name, attrib_name):
                                    attrib__name=attrib_name,
                                    servertype__name=servertype_name)
     if request.method == 'POST' and 'confirm' in request.POST:
-        AttributeValue.objects.filter(server__servertype=stype_attr.servertype,
-                attrib=stype_attr.attrib).delete()
+        ServerStringAttribute.objects.filter(
+            server__servertype=stype_attr.servertype,
+            attrib=stype_attr.attrib
+        ).delete()
         stype_attr.delete()
         messages.success(request, 'Deleted attribute {0}'.format(attrib_name))
         return redirect('serverdb_view_servertype', servertype_name)

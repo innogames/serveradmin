@@ -37,6 +37,8 @@ class QueryBuilder(object):
             attr_field = None
             for extra_attr in attr_obj.special.attrs:
                 self.add_attribute(extra_attr, optional=True)
+        elif attr_obj.type == 'hostname':
+            attr_field = None
         else:
             uid = self.get_uid()
 

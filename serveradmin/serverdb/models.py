@@ -22,6 +22,7 @@ TYPE_CHOICES = (
     ('boolean', 'Boolean'),
     ('datetime', 'Datetime'),
     ('mac', 'MAC address'),
+    ('hostname', 'Hostname'),
 )
 
 class Project(models.Model):
@@ -191,6 +192,9 @@ class ServerObject(models.Model):
         on_delete=models.PROTECT,
     )
 
+    def __str__(self):
+        return self.hostname
+
     class Meta:
         app_label = 'serverdb'
         db_table = 'admin_server'
@@ -198,21 +202,67 @@ class ServerObject(models.Model):
     def __str__(self):
         return self.hostname
 
+    def get_attributes(self, attribute):
+
+        if attribute.type == 'hostname':
+            queryset = self.serverhostnameattribute_set
+        else:
+            queryset = self.serverstringattribute_set
+
+        return queryset.filter(attrib=attribute)
+
     def add_attribute(self, attribute, value):
 
-        attribute_value = AttributeValue(
-            attrib=attribute,
-            value=attribute.serialize_value(value),
-        )
-        self.attributevalue_set.add(attribute_value)
+        if attribute.type == 'hostname':
+            server_attribute = ServerHostnameAttribute(
+                attrib=attribute,
+                value=value,
+            )
+            self.serverhostnameattribute_set.add(server_attribute)
 
-        return attribute_value
+        else:
+            server_attribute = ServerStringAttribute(
+                attrib=attribute,
+                value=attribute.serialize_value(value),
+            )
+            self.serverstringattribute_set.add(server_attribute)
 
-class AttributeValue(models.Model):
+        return server_attribute
+
+class ServerAttribute(models.Model):
     server = models.ForeignKey(
         ServerObject,
         on_delete=models.CASCADE,
     )
+
+    class Meta:
+        abstract = True
+
+    def reset(self, value):
+        self.value = value
+
+    def matches(self, value):
+        return self.value in value
+
+class ServerHostnameAttribute(ServerAttribute):
+    attrib = models.ForeignKey(
+        Attribute,
+        on_delete=models.CASCADE,
+        limit_choices_to={'type': 'hostname'},
+    )
+    value = models.ForeignKey(
+        ServerObject,
+        db_column='value',
+        on_delete=models.PROTECT,
+        related_name='hostname_attribute_servers',
+        related_query_name='hostname_attribute_server',
+    )
+
+    class Meta:
+        app_label = 'serverdb'
+        db_table = 'server_hostname_attrib'
+
+class ServerStringAttribute(ServerAttribute):
     attrib = models.ForeignKey(
         Attribute,
         on_delete=models.CASCADE,
@@ -225,6 +275,9 @@ class AttributeValue(models.Model):
 
     def reset(self, value):
         self.value = self.attrib.serialize_value(value)
+
+    def matches(self, values):
+        return self.value in (self.attrib.serialize_value(v) for v in values)
 
 class Change(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)
