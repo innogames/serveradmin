@@ -302,6 +302,7 @@ def _get_network_settings(ip):
         'default_gateway':  str(default_gateway) if default_gateway else None,
         'internal_gateway': str(internal_gateway) if internal_gateway else None,
         'vlan': nonempty_parent(iprange_obj, 'vlan'),
+        'ip_type': str(iprange_obj.ip_type),
         'broadcast': str(highest_parent(iprange_obj).max),
         'netmask': calculate_netmask(highest_parent(iprange_obj)),
         'prefix_hi': calculate_prefix(highest_parent(iprange_obj)),
@@ -349,6 +350,7 @@ def _get_network_settings6(ip):
         'default_gateway':  str(default_gateway6) if default_gateway6 else None,
         'internal_gateway': str(internal_gateway6) if internal_gateway6 else None,
         'vlan': nonempty_parent(iprange_obj, 'vlan'),
+        'ip_type': str(iprange_obj.ip_type),
         'prefix_hi': calculate_prefix(highest_parent(iprange_obj)),
         'prefix_lo': calculate_prefix(iprange_obj)
     }
@@ -375,6 +377,7 @@ def _get_iprange_settings(name):
         'internal_gateway': str(iprange_obj.internal_gateway) if iprange_obj.internal_gateway else None,
         'internal_gateway6': str(iprange_obj.internal_gateway6) if iprange_obj.internal_gateway6 else None,
         'vlan': iprange_obj.vlan,
+        'ip_type': iprange_obj.ip_type,
         'broadcast': str(iprange_obj.max) if iprange_obj.max else None,
         'netmask': calculate_netmask(iprange_obj),
         'netmask6': calculate_netmask6(iprange_obj),
