@@ -28,7 +28,7 @@ from serveradmin.servershell.forms import CloneServerForm, NewServerForm
 from serveradmin.serverdb.models import ServerType
 
 MAX_DISTINGUISHED_VALUES = 50
-NUM_SERVERS_DEFAULT = 25
+NUM_SERVERS_DEFAULT = 100
 
 @login_required
 @ensure_csrf_cookie
