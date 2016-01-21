@@ -1,5 +1,4 @@
 {% extends base_template %}
-{% load serverdb %}
 
 {% block title %}History for {{ hostname }}{% endblock %}
 
@@ -20,13 +19,58 @@
 {% if type == 'add' %}
 <h3>Added server on {{ change.commit.change_on|date:"DATETIME_FORMAT" }}
 by {{ change.commit.commit_by }}</h3>
-{% format_server change.attributes %}
+<table>
+{% for key, value in change.attributes.items %}
+    <tr>
+        <th>{{ key }}:</th>
+        <td>{{ value }}</td>
+    </tr>
+{% endfor %}
+</table>
 {% endif %}
 
 {% if type == 'update' %}
 <h3>Changed attributes on {{ change.commit.change_on|date:"DATETIME_FORMAT" }}
 by {{ change.commit.commit_by }}</h3>
-{% format_changes change.updates %}
+<table>
+    <tr>
+        <th>Attribute</th>
+        <th>Old/Removed</th>
+        <th>New/Added</th>
+    </tr>
+{% for key, value in change.updates.items %}
+    <tr>
+        <td>{{ key }}</td>
+    {% if value.action == 'multi' %}
+        <td>
+        {% if value.remove %}
+        <ul>
+        {% for val in value.remove %}
+            <li>{{ val }}</li>
+        {% endfor %}
+        </ul>
+        {% else %}
+        <i>nothing removed</i>
+        {% endif %}
+        </td>
+        <td>
+        {% if value.add %}
+        <ul>
+        {% for val in value.add %}
+            <li>{{ val }}</li>
+        {% endfor %}
+        </ul>
+        {% else %}
+        <i>nothing added</i>
+        {% endif %}
+        </td>
+    {% else %}
+        <td>{{ value.old }}</td>
+        <td>{{ value.new }}</td>
+    {% endif %}
+    </tr>
+{% endfor %}
+</table>
 {% endif %}
 
 {% if type == 'delete' %}
@@ -34,7 +78,14 @@ by {{ change.commit.commit_by }}</h3>
 by {{ change.commit.commit_by }}</h3>
 {% endif %}
 {% if change.attributes %}
-{% format_server change.attributes %}
+<table>
+{% for key, value in change.attributes.items %}
+    <tr>
+        <th>{{ key }}:</th>
+        <td>{{ value }}</td>
+    </tr>
+{% endfor %}
+</table>
 
 <form method="post" action="{% url 'serverdb_restore_deleted' change.commit.pk %}">
 {% csrf_token %}
