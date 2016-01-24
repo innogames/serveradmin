@@ -11,19 +11,22 @@ from serveradmin.common import dbfields
 from serveradmin.apps.models import Application
 
 TYPE_CHOICES = (
-        ('integer', 'Integer'),
-        ('string', 'String'),
-        ('ip', 'IPv4 address'),
-        ('ipv6', 'IPv6 address'),
-        ('boolean', 'Boolean'),
-        ('datetime', 'Datetime'),
-        ('mac', 'MAC address'),
-    )
+    ('integer', 'Integer'),
+    ('string', 'String'),
+    ('ip', 'IPv4 address'),
+    ('ipv6', 'IPv6 address'),
+    ('boolean', 'Boolean'),
+    ('datetime', 'Datetime'),
+    ('mac', 'MAC address'),
+)
 
 class Project(models.Model):
     project_id = models.CharField(max_length=32, primary_key=True)
     subdomain = models.CharField(max_length=16, unique=True)
-    responsible_admin = models.ForeignKey(User)
+    responsible_admin = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+    )
 
     class Meta:
         app_label = 'serverdb'
@@ -37,7 +40,11 @@ class ServerType(models.Model):
     servertype_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=64, unique=True)
     description = models.CharField(max_length=1024)
-    fixed_project = models.ForeignKey(Project, null=True)
+    fixed_project = models.ForeignKey(
+        Project,
+        null=True,
+        on_delete=models.PROTECT,
+    )
 
     def copy(self, new_name):
         target, created = ServerType.objects.get_or_create(name=new_name)
@@ -47,13 +54,16 @@ class ServerType(models.Model):
         for attr in self.used_attributes.select_related():
             if attr.attrib.name in skip:
                 continue
+
             ServerTypeAttributes.objects.create(
-                    servertype=target,
-                    attrib=attr.attrib,
-                    required=attr.required,
-                    attrib_default=attr.attrib_default,
-                    regex=attr.regex,
-                    default_visible=attr.default_visible)
+                servertype=target,
+                attrib=attr.attrib,
+                required=attr.required,
+                attrib_default=attr.attrib_default,
+                regex=attr.regex,
+                default_visible=attr.default_visible,
+            )
+
             clear_lookups()
 
     class Meta:
@@ -105,8 +115,15 @@ class Attribute(models.Model):
         return settings.ATTRIBUTE_WIKI_LINK.format(attr=self.name)
 
 class ServerTypeAttributes(models.Model):
-    servertype = models.ForeignKey(ServerType, related_name='used_attributes')
-    attrib = models.ForeignKey(Attribute)
+    servertype = models.ForeignKey(
+        ServerType,
+        related_name='used_attributes',
+        on_delete=models.CASCADE,
+    )
+    attrib = models.ForeignKey(
+        Attribute,
+        on_delete=models.CASCADE,
+    )
     required = models.BooleanField(default=False)
     attrib_default = models.CharField(max_length=255, null=True, blank=True)
     regex = models.CharField(max_length=255, null=True, blank=True)
@@ -122,30 +139,46 @@ class Segment(models.Model):
     ip_range = models.CharField(max_length=255, null=True, blank=True)
     description = models.CharField(max_length=1024)
 
-    def __unicode__(self):
-        return self.segment_id
-
     class Meta:
         app_label = 'serverdb'
         db_table = 'segment'
         ordering = ('segment_id', )
+
+    def __unicode__(self):
+        return self.segment_id
 
 class ServerObject(models.Model):
     server_id = models.AutoField(primary_key=True)
     hostname = models.CharField(max_length=64, unique=True)
     intern_ip = dbfields.IPv4Field()
     comment = models.CharField(max_length=255, null=True, blank=True)
-    project = models.ForeignKey(Project)
-    servertype = models.ForeignKey(ServerType)
-    segment = models.ForeignKey(Segment, db_column='segment')
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.PROTECT,
+    )
+    servertype = models.ForeignKey(
+        ServerType,
+        on_delete=models.PROTECT,
+    )
+    segment = models.ForeignKey(
+        Segment,
+        db_column='segment',
+        on_delete=models.PROTECT,
+    )
 
     class Meta:
         app_label = 'serverdb'
         db_table = 'admin_server'
 
 class AttributeValue(models.Model):
-    server = models.ForeignKey(ServerObject)
-    attrib = models.ForeignKey(Attribute)
+    server = models.ForeignKey(
+        ServerObject,
+        on_delete=models.CASCADE,
+    )
+    attrib = models.ForeignKey(
+        Attribute,
+        on_delete=models.CASCADE,
+    )
     value = models.CharField(max_length=1024)
 
     class Meta:
@@ -154,9 +187,20 @@ class AttributeValue(models.Model):
 
 class Change(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)
-    user = models.ForeignKey(User, blank=True, null=True)
-    app = models.ForeignKey(Application, blank=True, null=True)
+    user = models.ForeignKey(
+        User,
+        null=True,
+        on_delete=models.PROTECT,
+    )
+    app = models.ForeignKey(
+        Application,
+        null=True,
+        on_delete=models.PROTECT,
+    )
     changes_json = models.TextField()
+
+    class Meta:
+        app_label = 'serverdb'
 
     @property
     def changes(self):
@@ -165,24 +209,35 @@ class Change(models.Model):
     def __unicode__(self):
         return unicode(self.change_on)
 
-    class Meta:
-        app_label = 'serverdb'
-
 class ChangeCommit(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)
-    user = models.ForeignKey(User, blank=True, null=True)
-    app = models.ForeignKey(Application, blank=True, null=True)
+    user = models.ForeignKey(
+        User,
+        null=True,
+        on_delete=models.PROTECT,
+    )
+    app = models.ForeignKey(
+        Application,
+        null=True,
+        on_delete=models.PROTECT,
+    )
+
+    class Meta:
+        app_label = 'serverdb'
 
     def __unicode__(self):
         return unicode(self.change_on)
 
-    class Meta:
-        app_label = 'serverdb'
-
 class ChangeDelete(models.Model):
-    commit = models.ForeignKey(ChangeCommit)
+    commit = models.ForeignKey(
+        ChangeCommit,
+        on_delete=models.CASCADE,
+    )
     hostname = models.CharField(max_length=64, db_index=True)
     attributes_json = models.TextField()
+
+    class Meta:
+        app_label = 'serverdb'
 
     @property
     def attributes(self):
@@ -191,13 +246,16 @@ class ChangeDelete(models.Model):
     def __unicode__(self):
         return u'{0}: {1}'.format(unicode(self.commit), self.hostname)
 
-    class Meta:
-        app_label = 'serverdb'
-
 class ChangeUpdate(models.Model):
-    commit = models.ForeignKey(ChangeCommit)
+    commit = models.ForeignKey(
+        ChangeCommit,
+        on_delete=models.CASCADE,
+    )
     hostname = models.CharField(max_length=64, db_index=True)
     updates_json = models.TextField()
+
+    class Meta:
+        app_label = 'serverdb'
 
     @property
     def updates(self):
@@ -206,13 +264,16 @@ class ChangeUpdate(models.Model):
     def __unicode__(self):
         return u'{0}: {1}'.format(unicode(self.commit), self.hostname)
 
-    class Meta:
-        app_label = 'serverdb'
-
 class ChangeAdd(models.Model):
-    commit = models.ForeignKey(ChangeCommit)
+    commit = models.ForeignKey(
+        ChangeCommit,
+        on_delete=models.CASCADE,
+    )
     hostname = models.CharField(max_length=64, db_index=True)
     attributes_json = models.TextField()
+
+    class Meta:
+        app_label = 'serverdb'
 
     @property
     def attributes(self):
@@ -220,9 +281,6 @@ class ChangeAdd(models.Model):
 
     def __unicode__(self):
         return u'{0}: {1}'.format(unicode(self.commit), self.hostname)
-
-    class Meta:
-        app_label = 'serverdb'
 
 def clear_lookups(*args, **kwargs):
     cache.delete('dataset_lookups_version')
