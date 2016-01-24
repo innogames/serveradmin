@@ -132,7 +132,7 @@ class Segment(models.Model):
 
 class ServerObject(models.Model):
     server_id = models.AutoField(primary_key=True)
-    hostname = models.CharField(max_length=64)
+    hostname = models.CharField(max_length=64, unique=True)
     intern_ip = dbfields.IPv4Field()
     comment = models.CharField(max_length=255, null=True, blank=True)
     project = models.ForeignKey(Project)
