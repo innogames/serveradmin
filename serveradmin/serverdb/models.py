@@ -1,4 +1,8 @@
 import json
+import time
+
+from datetime import datetime
+from ipaddress import IPv4Address, IPv6Address
 
 from django.db import models
 from django.db.models.signals import post_save
@@ -114,6 +118,27 @@ class Attribute(models.Model):
     def search_link(self):
         return settings.ATTRIBUTE_WIKI_LINK.format(attr=self.name)
 
+    def serialize_value(self, value):
+
+        if self.type == u'boolean':
+            value = 1 if value else 0
+
+        if self.type == u'ip':
+            if not isinstance(value, IPv4Address):
+                value = IPv4Address(value)
+            value = int(value)
+
+        if self.type == u'ipv6':
+            if not isinstance(value, IPv6Address):
+                value = IPv6Address(value)
+            value = value.packed
+
+        if self.type == u'datetime':
+            if isinstance(value, datetime):
+                value = int(time.mktime(value.timetuple()))
+
+        return str(value)
+
 class ServerTypeAttributes(models.Model):
     servertype = models.ForeignKey(
         ServerType,
@@ -169,6 +194,19 @@ class ServerObject(models.Model):
     class Meta:
         app_label = 'serverdb'
         db_table = 'admin_server'
+
+    def __str__(self):
+        return self.hostname
+
+    def add_attribute(self, attribute, value):
+
+        attribute_value = AttributeValue(
+            attrib=attribute,
+            value=attribute.serialize_value(value),
+        )
+        self.attributevalue_set.add(attribute_value)
+
+        return attribute_value
 
 class AttributeValue(models.Model):
     server = models.ForeignKey(

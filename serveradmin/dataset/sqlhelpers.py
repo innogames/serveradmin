@@ -23,9 +23,6 @@ def _sql_escape(value):
         )
 
 def value_to_sql(attr_obj, value):
-    return _sql_escape(prepare_value(attr_obj, value))
-
-def prepare_value(attr_obj, value):
 
     # Casts by type
     if attr_obj.type == u'boolean':
@@ -57,7 +54,7 @@ def prepare_value(attr_obj, value):
     if attr_obj.name == u'servertype':
         value = lookups.stype_names[value].pk
 
-    return value
+    return _sql_escape(value)
 
 def raw_sql_escape(value):
 

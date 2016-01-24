@@ -9,12 +9,15 @@ from ipaddress import (
 
 from django.db import connection
 
-from serveradmin.serverdb.models import ChangeCommit, ChangeAdd
+from serveradmin.serverdb.models import (
+    ServerObject,
+    ChangeCommit,
+    ChangeAdd,
+)
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.validation import handle_violations, check_attribute_type
 from serveradmin.dataset.typecast import typecast
 from serveradmin.dataset.exceptions import CommitError
-from serveradmin.dataset.sqlhelpers import prepare_value
 from adminapi.utils.json import json_encode_extra
 
 def create_server(
@@ -180,14 +183,10 @@ def create_server(
 
 def _insert_server(hostname, intern_ip, segment, servertype_id, project_id, attributes):
 
-    with connection.cursor() as cursor:
-        cursor.execute(
-                u'SELECT COUNT(*) FROM admin_server WHERE hostname = %s',
-                (hostname, )
-            )
-        if cursor.fetchone()[0] != 0:
-            raise CommitError(u'Server with that hostname already exists')
+    if ServerObject.objects.filter(hostname=hostname).exists():
+        raise CommitError(u'Server with that hostname already exists')
 
+    with connection.cursor() as cursor:
         # Get segment
         cursor.execute(
                 u'SELECT segment_id FROM ip_range '
@@ -197,42 +196,26 @@ def _insert_server(hostname, intern_ip, segment, servertype_id, project_id, attr
         result = cursor.fetchone()
         segment_id = result[0] if result else segment
 
-        # Insert into admin_server table
-        cursor.execute(
-                u'INSERT INTO admin_server ('
-                    u'hostname, '
-                    u'intern_ip, '
-                    u'servertype_id, '
-                    u'segment, '
-                    u'project_id'
-                u') VALUES (%s, %s, %s, %s, %s)',
-                (
-                    hostname,
-                    int(intern_ip),
-                    servertype_id,
-                    segment_id,
-                    project_id,
-                )
-            )
-        server_id = cursor.lastrowid
+    server = ServerObject.objects.create(
+        hostname=hostname,
+        intern_ip=intern_ip,
+        project_id=project_id,
+        servertype_id=servertype_id,
+        segment_id=segment_id,
+    )
 
-        # Insert additional attributes
-        attr_query = (
-                u'INSERT INTO attrib_values (server_id, attrib_id, value) '
-                u'VALUES (%s, %s, %s)'
-            )
+    for attr_name, value in attributes.iteritems():
+        attr_obj = lookups.attr_names[attr_name]
 
-        for attr_name, value in attributes.iteritems():
-            attr_obj = lookups.attr_names[attr_name]
-            if attr_obj.multi:
-                for single_value in value:
-                    single_value = prepare_value(attr_obj, single_value)
-                    cursor.execute(attr_query, (server_id, attr_obj.pk, single_value))
-            else:
-                value = prepare_value(attr_obj, value)
-                cursor.execute(attr_query, (server_id, attr_obj.pk, value))
+        if attr_obj.multi:
+            for single_value in value:
+                server.add_attribute(attr_obj, single_value)
+        else:
+            server.add_attribute(attr_obj, value)
 
-    return server_id
+    server.save()
+
+    return server.server_id
 
 def _type_cast_default(attr_obj, value):
     if attr_obj.multi:
