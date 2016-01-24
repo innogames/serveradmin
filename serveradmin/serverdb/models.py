@@ -223,6 +223,9 @@ class AttributeValue(models.Model):
         app_label = 'serverdb'
         db_table = 'attrib_values'
 
+    def reset(self, value):
+        self.value = self.attrib.serialize_value(value)
+
 class Change(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)
     user = models.ForeignKey(

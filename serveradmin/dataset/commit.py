@@ -11,7 +11,12 @@ from adminapi.dataset.exceptions import (
 from adminapi.utils.json import json_encode_extra
 from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.typecast import typecast
-from serveradmin.serverdb.models import ChangeCommit, ChangeUpdate, ChangeDelete
+from serveradmin.serverdb.models import (
+    ServerObject,
+    ChangeCommit,
+    ChangeUpdate,
+    ChangeDelete,
+)
 
 def commit_changes(
         commit,
@@ -74,8 +79,8 @@ def commit_changes(
 
             _log_changes(deleted_servers, changed_servers, app, user)
             if deleted_servers:
-                _delete_servers(deleted_servers)
-            _apply_changes(changed_servers, servers)
+                ServerObject.objects.filter(server_id__in=deleted_servers).delete()
+            _apply_changes(changed_servers)
 
         finally:
             cursor.execute(u'COMMIT')
@@ -275,82 +280,52 @@ def _clean_changed(changed_servers):
         if not server_changed:
             del changed_servers[server_id]
 
-def _delete_servers(deleted_servers):
-    ids = ', '.join(str(x) for x in deleted_servers)
-    with connection.cursor() as cursor:
-        cursor.execute(u'DELETE FROM attrib_values WHERE server_id IN ({0})'.format(ids))
-        cursor.execute(u'DELETE FROM admin_server WHERE server_id IN ({0})'.format(ids))
+def _apply_changes(changed_servers):
 
-def _apply_changes(changed_servers, servers):
+    servers = {
+        server.server_id: server
+        for server in ServerObject.objects.filter(server_id__in=changed_servers.keys())
+    }
 
-    query_update = (
-            u'UPDATE attrib_values SET value=%s '
-            u'WHERE server_id = %s AND attrib_id = %s'
-        )
-    query_insert = (
-            u'INSERT INTO attrib_values (server_id, attrib_id, value) '
-            u'VALUES (%s, %s, %s)'
-        )
-    query_remove = (
-            u'DELETE FROM attrib_values '
-            u'WHERE server_id = %s AND attrib_id = %s AND value=%s'
-        )
-    query_remove_all = (
-            u'DELETE FROM attrib_values '
-            u'WHERE server_id = %s AND attrib_id = %s'
-        )
+    for server_id, changes in changed_servers.iteritems():
+        server = servers[server_id]
 
-    with connection.cursor() as cursor:
-        for server_id, changes in changed_servers.iteritems():
-            server = servers[server_id]
-            for attr, change in changes.iteritems():
-                attr_obj = lookups.attr_names[attr]
-                attr_id = attr_obj.pk
+        for key, change in changes.iteritems():
+            attribute = lookups.attr_names[key]
+            action = change['action']
 
-                action = change[u'action']
+            if isinstance(attribute.special, ServerTableSpecial):
+                if action == 'new' or action == 'update':
+                    setattr(server, attribute.special.field, change['new'])
+                elif action == 'delete':
+                    setattr(server, attribute.special.field, None)
 
-                # XXX Dirty hack for old database structure
-                if isinstance(attr_obj.special, ServerTableSpecial):
-                    field = attr_obj.special.field
-                    query = u'UPDATE admin_server SET {0} = %s WHERE server_id = %s'
-                    if action == 'new' or action == 'update':
-                        value = _prepare_value(attr, change[u'new'])
-                        cursor.execute(query.format(field), (value, server_id))
-                    elif action == 'delete':
-                        # FIXME: This might fail if field it not NULLable
-                        cursor.execute(query.format(field), (None, server_id))
-                    continue
+            elif action == 'new':
+                server.add_attribute_value(attribute, change['new'])
 
-                if action == u'new' or action == u'update':
-                    value = _prepare_value(attr, change[u'new'])
-                    if attr in server:
-                        cursor.execute(query_update, (value, server_id, attr_id))
-                    else:
-                        cursor.execute(query_insert, (server_id, attr_id, value))
-                elif action == u'delete':
-                    cursor.execute(query_remove_all, (server_id, attr_id))
-                elif action == u'multi':
-                    for value in change[u'remove']:
-                        value = _prepare_value(attr, value)
-                        cursor.execute(query_remove, (server_id, attr_id, value))
-                    for value in change[u'add']:
-                        value = _prepare_value(attr, value)
-                        if value in server[attr]:
-                            continue # Avoid duplicate entries
-                        cursor.execute(query_insert, (server_id, attr_id, value))
-        cursor.execute('COMMIT')
+            elif action == 'update':
+                attribute_value = server.attributevalue_set.get(attrib=attribute)
+                attribute_value.reset(change['new'])
+                attribute_value.save()
 
-def _prepare_value(attr_name, value):
-    if value is None:
-        raise ValueError('Value is empty')
-    attr_obj = lookups.attr_names[attr_name]
-    if attr_obj.type == u'ip':
-        value = int(value)
-    elif attr_obj.type == u'ipv6':
-        value = ''.join('{:02x}'.format(x) for x in value.packed)
-    elif attr_obj.type == u'datetime':
-        value = int(time.mktime(value.timetuple()))
-    return value
+            elif action == 'delete':
+                server.attributevalue_set.filter(attrib=attribute).delete()
+
+            elif action == 'multi':
+
+                if change['remove']:
+                    server.attributevalue_set.filter(
+                        attrib=attribute,
+                        value__in=(
+                            attribute.serialize_value(value)
+                            for value in change['remove']
+                        ),
+                    ).delete()
+
+                for value in change['add']:
+                    server.add_attribute_value(attribute, value)
+
+        server.save()
 
 def _build_error_message(violations_attribs, violations_readonly,
                          violations_regexp, violations_required):
