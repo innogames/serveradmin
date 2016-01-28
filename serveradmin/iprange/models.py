@@ -306,7 +306,8 @@ def _get_network_settings(ip):
         'broadcast': str(highest_parent(iprange_obj).max),
         'netmask': calculate_netmask(highest_parent(iprange_obj)),
         'prefix_hi': calculate_prefix(highest_parent(iprange_obj)),
-        'prefix_lo': calculate_prefix(iprange_obj)
+        'prefix_lo': calculate_prefix(iprange_obj),
+        'subnet_name': highest_parent(iprange_obj).range_id,
     }
 
 def _get_network_settings6(ip):
