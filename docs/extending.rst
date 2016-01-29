@@ -61,7 +61,7 @@ environment::
    ln -s /usr/share/pyshared/MySQLdb
    
 You can also install memcache if you want to use fast caching, but it is not
-required. See the comments in the ``settings.py.example`` (next section).
+required. See the comments in the ``settings.example.py`` (next section).
 
 
 Setting up Django
@@ -69,7 +69,7 @@ Setting up Django
 
 We will copy the example settings to create our local development settings::
    
-   cp serveradmin/settings.py.example serveradmin/settings.py
+   cp serveradmin/settings.example.py serveradmin/settings.py
    vim serveradmin/settings.py
    
 For development you just need to change ``DATABASES['default']['PASSWORD']``.
