@@ -21,6 +21,7 @@ DATABASES = {
         'PASSWORD': 'INSERT-PASSWORD-HERE',                  # Not used with sqlite3.
         'HOST': '127.0.0.1',                      # Set to empty string for localhost. Not used with sqlite3.
         'PORT': '3306',                      # Set to empty string for default. Not used with sqlite3.
+        'ATOMIC_REQUESTS': True,
     },
 }
 
