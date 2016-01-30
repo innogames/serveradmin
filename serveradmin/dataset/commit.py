@@ -1,13 +1,7 @@
 import time
 import json
 
-from django.db import connection
-
-from adminapi.dataset.exceptions import (
-        CommitValidationFailed,
-        CommitNewerData,
-        CommitError,
-    )
+from adminapi.dataset.exceptions import CommitValidationFailed, CommitNewerData
 from adminapi.utils.json import json_encode_extra
 from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.typecast import typecast
@@ -42,49 +36,40 @@ def commit_changes(
     if not changed_servers and not deleted_servers:
         return
 
-    with connection.cursor() as cursor:
-        cursor.execute(u"SELECT GET_LOCK('serverobject_commit', 10)")
+    servers = _fetch_servers(changed_servers)
 
-        try:
-            if not cursor.fetchone()[0]:
-                raise CommitError(u'Could not get lock')
+    # Attributes must be always validated
+    violations_attribs = _validate_attributes(changed_servers, servers)
+    if not skip_validation:
+        violations_readonly = _validate_readonly(changed_servers, servers)
+        violations_regexp = _validate_regexp(changed_servers, servers)
+        violations_required = _validate_required(changed_servers, servers)
+        if (violations_attribs or violations_readonly or
+            violations_regexp or violations_required):
+            error_message = _build_error_message(
+                violations_attribs,
+                violations_readonly,
+                violations_regexp,
+                violations_required,
+            )
+            raise CommitValidationFailed(error_message,
+                violations_attribs + violations_readonly +
+                violations_regexp + violations_required,
+            )
 
-            servers = _fetch_servers(changed_servers)
+    if violations_attribs:
+        error_message = _build_error_message(violations_attribs, [], [])
+        raise CommitValidationFailed(error_message, violations_attribs)
 
-            # Attributes must be always validated
-            violations_attribs = _validate_attributes(changed_servers, servers)
-            if not skip_validation:
-                violations_readonly = _validate_readonly(changed_servers, servers)
-                violations_regexp = _validate_regexp(changed_servers, servers)
-                violations_required = _validate_required(changed_servers, servers)
-                if (violations_attribs or violations_readonly or
-                    violations_regexp or violations_required):
-                    error_message = _build_error_message(
-                            violations_attribs,
-                            violations_readonly,
-                            violations_regexp,
-                            violations_required,
-                        )
-                    raise CommitValidationFailed(error_message,
-                            violations_attribs + violations_readonly +
-                            violations_regexp + violations_required,
-                        )
-            if violations_attribs:
-                error_message = _build_error_message(violations_attribs, [], [])
-                raise CommitValidationFailed(error_message, violations_attribs)
-            if not force_changes:
-                newer = _validate_commit(changed_servers, servers)
-                if newer:
-                    raise CommitNewerData(u'Newer data available', newer)
+    if not force_changes:
+        newer = _validate_commit(changed_servers, servers)
+        if newer:
+            raise CommitNewerData(u'Newer data available', newer)
 
-            _log_changes(deleted_servers, changed_servers, app, user)
-            if deleted_servers:
-                ServerObject.objects.filter(server_id__in=deleted_servers).delete()
-            _apply_changes(changed_servers)
-
-        finally:
-            cursor.execute(u'COMMIT')
-            cursor.execute(u"SELECT RELEASE_LOCK('serverobject_commit')")
+    _log_changes(deleted_servers, changed_servers, app, user)
+    if deleted_servers:
+        ServerObject.objects.filter(server_id__in=deleted_servers).delete()
+    _apply_changes(changed_servers)
 
 def _log_changes(deleted_servers, changed_servers, app, user):
     # Import here to break cyclic import
@@ -282,10 +267,9 @@ def _clean_changed(changed_servers):
 
 def _apply_changes(changed_servers):
 
-    servers = {
-        server.server_id: server
-        for server in ServerObject.objects.filter(server_id__in=changed_servers.keys())
-    }
+    queryset = ServerObject.objects.select_for_update()
+    queryset = queryset.filter(server_id__in=changed_servers.keys())
+    servers = {s.server_id: s for s in queryset}
 
     for server_id, changes in changed_servers.iteritems():
         server = servers[server_id]

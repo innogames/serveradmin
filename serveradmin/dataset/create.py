@@ -141,43 +141,33 @@ def create_server(
             violations_attribs.append(attr)
 
     handle_violations(
-            skip_validation,
-            violations_regexp,
-            violations_required,
-            violations_attribs,
-        )
+        skip_validation,
+        violations_regexp,
+        violations_required,
+        violations_attribs,
+    )
 
-    with connection.cursor() as cursor:
-        cursor.execute(u"SELECT GET_LOCK('serverobject_commit', 10)")
-        if not cursor.fetchone()[0]:
-            raise CommitError(u'Could not get lock')
-        try:
-            server_id = _insert_server(
-                    hostname,
-                    intern_ip,
-                    segment,
-                    servertype_id,
-                    project_id,
-                    real_attributes,
-                )
-        except:
-            raise
-        else:
-            created_server = real_attributes.copy()
-            created_server['hostname'] = hostname
-            created_server['intern_ip'] = intern_ip
-            created_server['segment'] = str(segment)
+    server_id = _insert_server(
+        hostname,
+        intern_ip,
+        segment,
+        servertype_id,
+        project_id,
+        real_attributes,
+    )
 
-            commit = ChangeCommit.objects.create(app=app, user=user)
-            attributes_json = json.dumps(created_server, default=json_encode_extra)
-            ChangeAdd.objects.create(
-                    commit=commit,
-                    hostname=created_server['hostname'],
-                    attributes_json=attributes_json,
-                )
-        finally:
-            cursor.execute(u'COMMIT')
-            cursor.execute(u"SELECT RELEASE_LOCK('serverobject_commit')")
+    created_server = real_attributes.copy()
+    created_server['hostname'] = hostname
+    created_server['intern_ip'] = intern_ip
+    created_server['segment'] = str(segment)
+
+    commit = ChangeCommit.objects.create(app=app, user=user)
+    attributes_json = json.dumps(created_server, default=json_encode_extra)
+    ChangeAdd.objects.create(
+        commit=commit,
+        hostname=created_server['hostname'],
+        attributes_json=attributes_json,
+    )
 
     return server_id
 
