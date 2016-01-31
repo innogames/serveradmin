@@ -33,6 +33,10 @@ class NoArgFilter(BaseFilter):
     def __hash__(self):
         return hash(self.__class__.__name__)
 
+    def typecast(self, attr_name):
+        # We don't have values to typecast
+        pass
+
     def as_sql_expr(self, builder, attr_obj, field):
         return self.filt.as_sql_expr(builder, attr_obj, field)
 
@@ -41,10 +45,6 @@ class NoArgFilter(BaseFilter):
 
     def as_code(self):
         return u'filters.{0}()'.format(self.__class__.__name__)
-
-    def typecast(self, attr_name):
-        # We don't have values to typecast
-        pass
 
     @classmethod
     def from_obj(cls, obj):
@@ -69,6 +69,9 @@ class ExactMatch(BaseFilter):
     def __hash__(self):
         return hash(u'ExactMatch') ^ hash(self.value)
 
+    def typecast(self, attr_name):
+        self.value = typecast(attr_name, self.value, force_single=True)
+
     def as_sql_expr(self, builder, attr_obj, field):
         if attr_obj.type == 'boolean' and not self.value:
             return u"({0} = '0' OR {0} IS NULL)".format(field)
@@ -79,9 +82,6 @@ class ExactMatch(BaseFilter):
 
     def as_code(self):
         return repr(self.value)
-
-    def typecast(self, attr_name):
-        self.value = typecast(attr_name, self.value, force_single=True)
 
     @classmethod
     def from_obj(cls, obj):
@@ -109,6 +109,10 @@ class Regexp(BaseFilter):
 
     def __hash__(self):
         return hash(u'Regexp') ^ hash(self.regexp)
+
+    def typecast(self, attr_name):
+        # Regexp value is always string, no need to typecast
+        pass
 
     def as_sql_expr(self, builder, attr_obj, field):
         # XXX Dirty hack for servertype regexp checking
@@ -140,10 +144,6 @@ class Regexp(BaseFilter):
     def as_code(self):
         return u'filters.' + repr(self)
 
-    def typecast(self, attr_name):
-        # Regexp value is always string, no need to typecast
-        pass
-
     @classmethod
     def from_obj(cls, obj):
         if u'regexp' in obj and isinstance(obj[u'regexp'], basestring):
@@ -168,6 +168,9 @@ class Comparison(BaseFilter):
 
     def __hash__(self):
         return hash(u'Comparison') ^ hash(self.comparator) ^ hash(self.value)
+
+    def typecast(self, attr_name):
+        self.value = typecast(attr_name, self.value, force_single=True)
 
     def as_sql_expr(self, builder, attr_obj, field):
         return u'{0} {1} {2}'.format(
@@ -194,9 +197,6 @@ class Comparison(BaseFilter):
     def as_code(self):
         return u'filters.' + repr(self)
 
-    def typecast(self, attr_name):
-        self.value = typecast(attr_name, self.value, force_single=True)
-
     @classmethod
     def from_obj(cls, obj):
         if u'comparator' in obj and u'value' in obj:
@@ -221,6 +221,12 @@ class Any(BaseFilter):
             h ^= hash(val)
         return h
 
+    def typecast(self, attr_name):
+        self.values = set(
+            typecast(attr_name, x, force_single=True)
+            for x in self.values
+        )
+
     def as_sql_expr(self, builder, attr_obj, field):
         if not self.values:
             return u'0 = 1'
@@ -236,10 +242,6 @@ class Any(BaseFilter):
 
     def as_code(self):
         return u'filters.' + repr(self)
-
-    def typecast(self, attr_name):
-        self.values = set(typecast(attr_name, x, force_single=True)
-                          for x in self.values)
 
     @classmethod
     def from_obj(cls, obj):
@@ -270,6 +272,10 @@ class _AndOr(BaseFilter):
 
         return result
 
+    def typecast(self, attr_name):
+        for filt in self.filters:
+            filt.typecast(attr_name)
+
     def as_sql_expr(self, builder, attr_obj, field):
 
         joiner = u' {0} '.format(self.name.upper())
@@ -284,10 +290,6 @@ class _AndOr(BaseFilter):
         args = u', '.join(filt.as_code() for filt in self.filters)
 
         return u'filters.{0}({1})'.format(self.name.capitalize(), args)
-
-    def typecast(self, attr_name):
-        for filt in self.filters:
-            filt.typecast(attr_name)
 
     @classmethod
     def from_obj(cls, obj):
@@ -341,6 +343,10 @@ class Between(BaseFilter):
     def __hash__(self):
         return hash(u'Between') ^ hash(self.a) ^ hash(self.b)
 
+    def typecast(self, attr_name):
+        self.a = typecast(attr_name, self.a, force_single=True)
+        self.b = typecast(attr_name, self.b, force_single=True)
+
     def as_sql_expr(self, builder, attr_obj, field):
 
         a_prepared = value_to_sql(attr_obj, self.a)
@@ -353,10 +359,6 @@ class Between(BaseFilter):
 
     def as_code(self):
         return u'filters.' + repr(self)
-
-    def typecast(self, attr_name):
-        self.a = typecast(attr_name, self.a, force_single=True)
-        self.b = typecast(attr_name, self.b, force_single=True)
 
     @classmethod
     def from_obj(cls, obj):
@@ -382,6 +384,9 @@ class Not(BaseFilter):
 
     def __hash__(self):
         return hash(u'Not') ^ hash(self.filter)
+
+    def typecast(self, attr_name):
+       self.filter.typecast(attr_name)
 
     def as_sql_expr(self, builder, attr_obj, field):
 
@@ -429,9 +434,6 @@ class Not(BaseFilter):
     def as_code(self):
         return u'filters.Not({0})'.format(self.filter.as_code())
 
-    def typecast(self, attr_name):
-       self.filter.typecast(attr_name)
-
     @classmethod
     def from_obj(cls, obj):
 
@@ -453,6 +455,9 @@ class Startswith(BaseFilter):
 
     def __hash__(self):
         return hash(u'Startswith') ^ hash(self.value)
+
+    def typecast(self, attr_name):
+        self.value = unicode(self.value)
 
     def as_sql_expr(self, builder, attr_obj, field):
 
@@ -493,9 +498,6 @@ class Startswith(BaseFilter):
     def as_code(self):
         return u'filters.Startswith({0!r})'.format(self.value)
 
-    def typecast(self, attr_name):
-        self.value = unicode(self.value)
-
     @classmethod
     def from_obj(cls, obj):
         if u'value' in obj and isinstance(obj[u'value'], basestring):
@@ -534,6 +536,10 @@ class InsideNetwork(BaseFilter):
 
         return result
 
+    def typecast(self, attr_name):
+        # Typecast was already done in __init__
+        pass
+
     def as_sql_expr(self, builder, attr_obj, field):
         betweens = ['{0} BETWEEN {1} AND {2}'.format(
             field, net.min_ip.as_int(), net.max_ip.as_int()
@@ -549,10 +555,6 @@ class InsideNetwork(BaseFilter):
 
     def as_code(self):
         return u'filters.' + repr(self)
-
-    def typecast(self, attr_name):
-        # Typecast was already done in __init__
-        pass
 
     @classmethod
     def from_obj(cls, obj):
@@ -585,6 +587,9 @@ class Optional(OptionalFilter):
     def __hash__(self):
         return hash(u'Optional') ^ hash(self.filter)
 
+    def typecast(self, attr_name):
+        self.filter.typecast(attr_name)
+
     def as_sql_expr(self, builder, attr_obj, field):
         return u'({0} IS NULL OR {1})'.format(
             field,
@@ -601,9 +606,6 @@ class Optional(OptionalFilter):
 
     def as_code(self):
         return u'filters.Optional({0})'.format(self.filter.as_code())
-
-    def typecast(self, attr_name):
-        self.filter.typecast(attr_name)
 
     @classmethod
     def from_obj(cls, obj):
@@ -623,6 +625,9 @@ class Empty(OptionalFilter):
     def __hash__(self):
         return hash('Empty')
 
+    def typecast(self, attr_name):
+        pass
+
     def as_sql_expr(self, builder, attr_obj, field):
         return u'{0} IS NULL'.format(field)
 
@@ -631,9 +636,6 @@ class Empty(OptionalFilter):
 
     def as_code(self):
         return u'filters.Empty()'
-
-    def typecast(self, attr_name):
-        pass
 
     @classmethod
     def from_obj(cls, obj):

@@ -19,19 +19,15 @@ class QuerySetRepresentation(object):
     """
 
     def __init__(
-            self,
-            filters,
-            restrict,
-            augmentations,
-            order_by,
-            order_dir,
-            limit,
-            offset,
-        ):
-
-        for attr_name, filt in filters.iteritems():
-            filt.typecast(attr_name)
-
+        self,
+        filters,
+        restrict,
+        augmentations,
+        order_by,
+        order_dir,
+        limit,
+        offset,
+    ):
         self.filters = filters
         self.restrict = restrict
         self.augmentations = augmentations
@@ -117,6 +113,8 @@ class QuerySetRepresentation(object):
 class QuerySet(BaseQuerySet):
     def __init__(self, filters):
         check_attributes(filters.keys())
+        for attribute_name, filter_obj in filters.items():
+            filter_obj.typecast(attribute_name)
         super(QuerySet, self).__init__(filters)
         self.attributes = lookups.attr_names
         self._order_by = None
@@ -130,7 +128,9 @@ class QuerySet(BaseQuerySet):
         self._confirm_changes()
 
     def get_raw_results(self):
-        self._get_results()
+        if self._results is None:
+            self._results = self._fetch_results()
+
         return self._results
 
     def get_num_rows(self):
@@ -179,10 +179,6 @@ class QuerySet(BaseQuerySet):
         self._order_dir = order_dir
 
         return self
-
-    def _get_results(self):
-        if self._results is None:
-            self._results = self._fetch_results()
 
     def _get_query_builder_with_filters(self):
 
