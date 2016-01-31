@@ -5,15 +5,21 @@ from ipaddress import IPv4Address, IPv6Address
 from serveradmin.dataset.base import lookups
 
 _to_datetime_re = re.compile(
-        r'(\d{4})-(\d{1,2})-(\d{1,2})(T(\d{1,2}):(\d{1,2})(:(\d{1,2}))?)?')
+    r'(\d{4})-(\d{1,2})-(\d{1,2})(T(\d{1,2}):(\d{1,2})(:(\d{1,2}))?)?'
+)
+
 def _to_datetime(x):
+
     if isinstance(x, datetime):
         return x
+
     if isinstance(x, (int, long)):
         return datetime.fromtimestamp(x)
-    elif isinstance(x, basestring):
+
+    if isinstance(x, basestring):
         if x.isdigit():
             return datetime.fromtimestamp(int(x))
+
         match = _to_datetime_re.match(x)
         if not match:
             raise ValueError('Could not cast {0!r} to datetime'.format(x))
@@ -26,15 +32,15 @@ def _to_datetime(x):
             second = int(match.group(8))
 
         return datetime(
-                int(match.group(1)),
-                int(match.group(2)),
-                int(match.group(3)),
-                hour,
-                minute,
-                second,
-            )
-    else:
-        raise ValueError('Could not cast {0!r} to datetime', x)
+            int(match.group(1)),
+            int(match.group(2)),
+            int(match.group(3)),
+            hour,
+            minute,
+            second,
+        )
+
+    raise ValueError('Could not cast {0!r} to datetime', x)
 
 _hex_sep = '([a-fA-F0-9]{,2})[^a-fA-Z0-9]'
 _mac_re = re.compile('^' + _hex_sep * 5 + '([a-fA-F0-9]{,2})$')
@@ -66,19 +72,22 @@ _typecast_fns = {
 def typecast(attr_name, value, force_single=False):
     if value is None:
         return value
+
     attr_obj = lookups.attr_names[attr_name]
     typecast_fn = _typecast_fns[attr_obj.type]
+
     if attr_obj.multi and not force_single:
         if not isinstance(value, (list, set)):
             raise ValueError('Attr is multi, but value is not a list/set')
+
         return set(typecast_fn(x) for x in value)
-    else:
-        return typecast_fn(value)
+
+    return typecast_fn(value)
 
 _displaycast_fns = {
-        'datetime': lambda x: x.strftime('%Y-%m-%dT%H:%M'),
-        'boolean': lambda x: u'true' if x else u'false',
-    }
+    'datetime': lambda x: x.strftime('%Y-%m-%dT%H:%M'),
+    'boolean': lambda x: u'true' if x else u'false',
+}
 
 def displaycast(attr_name, value):
 
@@ -88,8 +97,10 @@ def displaycast(attr_name, value):
     if attr_obj.multi:
         if not isinstance(value, (list, set)):
             raise ValueError('Attr is multi, but value is not a list/set')
+
         result = [displaycast_fn(x) for x in value]
         result.sort()
+
         return result
 
     return displaycast_fn(value)
