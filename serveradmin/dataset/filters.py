@@ -27,12 +27,12 @@ class NoArgFilter(BaseFilter):
     def __hash__(self):
         return hash(self.__class__.__name__)
 
-    def typecast(self, attr_name):
+    def typecast(self, attribute):
         # We don't have values to typecast
         pass
 
-    def as_sql_expr(self, builder, attr_obj, field):
-        return self.filt.as_sql_expr(builder, attr_obj, field)
+    def as_sql_expr(self, builder, attribute, field):
+        return self.filt.as_sql_expr(builder, attribute, field)
 
     def matches(self, server_obj, attr_name):
         return self.filt.matches(server_obj, attr_name)
@@ -63,13 +63,15 @@ class ExactMatch(BaseFilter):
     def __hash__(self):
         return hash(u'ExactMatch') ^ hash(self.value)
 
-    def typecast(self, attr_name):
-        self.value = typecast(attr_name, self.value, force_single=True)
+    def typecast(self, attribute):
+        self.value = typecast(attribute, self.value, force_single=True)
 
-    def as_sql_expr(self, builder, attr_obj, field):
-        if attr_obj.type == 'boolean' and not self.value:
+    def as_sql_expr(self, builder, attribute, field):
+
+        if attribute.type == 'boolean' and not self.value:
             return u"({0} = '0' OR {0} IS NULL)".format(field)
-        return u'{0} = {1}'.format(field, value_to_sql(attr_obj, self.value))
+
+        return u'{0} = {1}'.format(field, value_to_sql(attribute, self.value))
 
     def matches(self, server_obj, attr_name):
         return server_obj[attr_name] == self.value
@@ -104,13 +106,14 @@ class Regexp(BaseFilter):
     def __hash__(self):
         return hash(u'Regexp') ^ hash(self.regexp)
 
-    def typecast(self, attr_name):
+    def typecast(self, attribute):
         # Regexp value is always string, no need to typecast
         pass
 
-    def as_sql_expr(self, builder, attr_obj, field):
-        # XXX Dirty hack for servertype regexp checking
-        if attr_obj.name == u'servertype':
+    def as_sql_expr(self, builder, attribute, field):
+
+        if attribute.name == u'servertype':
+            # XXX Dirty hack for servertype regexp checking
             stype_ids = []
             for stype in lookups.stype_ids.itervalues():
                 if self._regexp_obj.search(stype.name):
@@ -119,7 +122,8 @@ class Regexp(BaseFilter):
                 return u'{0} IN ({1})'.format(field, ', '.join(stype_ids))
             else:
                 return u'0=1'
-        elif attr_obj.type == u'ip':
+
+        if attribute.type == u'ip':
             sql_regexp = raw_sql_escape(self.regexp)
             return u'INET_NTOA({0}) REGEXP {1}'.format(field, sql_regexp)
         else:
@@ -158,14 +162,14 @@ class Comparison(BaseFilter):
     def __hash__(self):
         return hash(u'Comparison') ^ hash(self.comparator) ^ hash(self.value)
 
-    def typecast(self, attr_name):
-        self.value = typecast(attr_name, self.value, force_single=True)
+    def typecast(self, attribute):
+        self.value = typecast(attribute, self.value, force_single=True)
 
-    def as_sql_expr(self, builder, attr_obj, field):
+    def as_sql_expr(self, builder, attribute, field):
         return u'{0} {1} {2}'.format(
                 field,
                 self.comparator,
-                value_to_sql(attr_obj, self.value)
+                value_to_sql(attribute, self.value)
             )
 
     def matches(self, server_obj, attr_name):
@@ -210,18 +214,18 @@ class Any(BaseFilter):
             h ^= hash(val)
         return h
 
-    def typecast(self, attr_name):
+    def typecast(self, attribute):
         self.values = set(
-            typecast(attr_name, x, force_single=True)
+            typecast(attribute, x, force_single=True)
             for x in self.values
         )
 
-    def as_sql_expr(self, builder, attr_obj, field):
+    def as_sql_expr(self, builder, attribute, field):
         if not self.values:
             return u'0 = 1'
 
         prepared_values = u', '.join(
-            value_to_sql(attr_obj, value) for value in self.values
+            value_to_sql(attribute, value) for value in self.values
         )
 
         return u'{0} IN ({1})'.format(field, prepared_values)
@@ -261,16 +265,16 @@ class _AndOr(BaseFilter):
 
         return result
 
-    def typecast(self, attr_name):
+    def typecast(self, attribute):
         for filt in self.filters:
-            filt.typecast(attr_name)
+            filt.typecast(attribute)
 
-    def as_sql_expr(self, builder, attr_obj, field):
+    def as_sql_expr(self, builder, attribute, field):
 
         joiner = u' {0} '.format(self.name.upper())
 
         return u'({0})'.format(joiner.join([
-            filter.as_sql_expr(builder, attr_obj, field)
+            filter.as_sql_expr(builder, attribute, field)
             for filter in self.filters
         ]))
 
@@ -332,14 +336,14 @@ class Between(BaseFilter):
     def __hash__(self):
         return hash(u'Between') ^ hash(self.a) ^ hash(self.b)
 
-    def typecast(self, attr_name):
-        self.a = typecast(attr_name, self.a, force_single=True)
-        self.b = typecast(attr_name, self.b, force_single=True)
+    def typecast(self, attribute):
+        self.a = typecast(attribute, self.a, force_single=True)
+        self.b = typecast(attribute, self.b, force_single=True)
 
-    def as_sql_expr(self, builder, attr_obj, field):
+    def as_sql_expr(self, builder, attribute, field):
 
-        a_prepared = value_to_sql(attr_obj, self.a)
-        b_prepared = value_to_sql(attr_obj, self.b)
+        a_prepared = value_to_sql(attribute, self.a)
+        b_prepared = value_to_sql(attribute, self.b)
 
         return u'{0} BETWEEN {1} AND {2}'.format(field, a_prepared, b_prepared)
 
@@ -374,12 +378,12 @@ class Not(BaseFilter):
     def __hash__(self):
         return hash(u'Not') ^ hash(self.filter)
 
-    def typecast(self, attr_name):
-       self.filter.typecast(attr_name)
+    def typecast(self, attribute):
+       self.filter.typecast(attribute)
 
-    def as_sql_expr(self, builder, attr_obj, field):
+    def as_sql_expr(self, builder, attribute, field):
 
-        if attr_obj.multi:
+        if attribute.multi:
             uid = builder.get_uid()
 
             # Special case for empty filter, simple negation doesn't work
@@ -390,11 +394,11 @@ class Not(BaseFilter):
                     'EXISTS (SELECT 1 FROM attrib_values AS nav{0} '
                             'WHERE nav{0}.server_id = adms.server_id AND '
                                     'nav{0}.attrib_id = {1})'
-                ).format(uid, attr_obj.attrib_id)
+                ).format(uid, attribute.attrib_id)
 
             cond = self.filter.as_sql_expr(
                     builder,
-                    attr_obj,
+                    attribute,
                     'nav{0}.value'.format(uid),
                 )
 
@@ -403,18 +407,18 @@ class Not(BaseFilter):
                         'WHERE {1} AND '
                             'nav{0}.server_id = adms.server_id AND '
                             'nav{0}.attrib_id = {2}'
-                ).format(uid, cond, attr_obj.attrib_id)
+                ).format(uid, cond, attribute.attrib_id)
 
             return 'NOT EXISTS ({0})'.format(subquery)
         else:
             if isinstance(self.filter, ExactMatch):
                 return u'{0} != {1}'.format(
                     field,
-                    value_to_sql(attr_obj, self.filter.value),
+                    value_to_sql(attribute, self.filter.value),
                 )
             else:
                 return u'NOT {0}'.format(
-                    self.filter.as_sql_expr(builder, attr_obj, field),
+                    self.filter.as_sql_expr(builder, attribute, field),
                 )
 
     def matches(self, server_obj, attr_name):
@@ -445,13 +449,13 @@ class Startswith(BaseFilter):
     def __hash__(self):
         return hash(u'Startswith') ^ hash(self.value)
 
-    def typecast(self, attr_name):
+    def typecast(self, attribute):
         self.value = unicode(self.value)
 
-    def as_sql_expr(self, builder, attr_obj, field):
+    def as_sql_expr(self, builder, attribute, field):
 
         # XXX Dirty hack for servertype checking
-        if attr_obj.name == u'servertype':
+        if attribute.name == u'servertype':
             stype_ids = []
 
             for stype in lookups.stype_ids.itervalues():
@@ -462,18 +466,18 @@ class Startswith(BaseFilter):
             else:
                 return u'0 = 1'
 
-        if attr_obj.type == u'ip':
+        if attribute.type == u'ip':
             value = raw_sql_escape(str(self.value) + '%%')
 
             return u'INET_NTOA({0}) LIKE {1}'.format(field, value)
 
-        if attr_obj.type == 'string':
+        if attribute.type == 'string':
             value = self.value.replace('_', '\\_').replace(u'%', u'\\%%')
             value = raw_sql_escape(value + u'%%')
 
             return u'{0} LIKE {1}'.format(field, value)
 
-        if attr_obj.type == 'integer':
+        if attribute.type == 'integer':
             try:
                 return u"{0} LIKE '{1}%'".format(int(self.value))
             except ValueError:
@@ -519,11 +523,11 @@ class InsideNetwork(BaseFilter):
 
         return result
 
-    def typecast(self, attr_name):
+    def typecast(self, attribute):
         # Typecast was already done in __init__
         pass
 
-    def as_sql_expr(self, builder, attr_obj, field):
+    def as_sql_expr(self, builder, attribute, field):
 
         betweens = ['{0} BETWEEN {1} AND {2}'.format(
             field,
@@ -582,13 +586,13 @@ class Optional(OptionalFilter):
     def __hash__(self):
         return hash(u'Optional') ^ hash(self.filter)
 
-    def typecast(self, attr_name):
-        self.filter.typecast(attr_name)
+    def typecast(self, attribute):
+        self.filter.typecast(attribute)
 
-    def as_sql_expr(self, builder, attr_obj, field):
+    def as_sql_expr(self, builder, attribute, field):
         return u'({0} IS NULL OR {1})'.format(
             field,
-            self.filter.as_sql_expr(builder, attr_obj, field),
+            self.filter.as_sql_expr(builder, attribute, field),
         )
 
     def matches(self, server_obj, attr_name):
@@ -620,10 +624,10 @@ class Empty(OptionalFilter):
     def __hash__(self):
         return hash('Empty')
 
-    def typecast(self, attr_name):
+    def typecast(self, attribute):
         pass
 
-    def as_sql_expr(self, builder, attr_obj, field):
+    def as_sql_expr(self, builder, attribute, field):
         return u'{0} IS NULL'.format(field)
 
     def matches(self, server_obj, attr_name):
@@ -673,36 +677,36 @@ filter_classes = {
     'empty': Empty,
 }
 
-def value_to_sql(attr_obj, value):
+def value_to_sql(attribute, value):
 
     # Casts by type
-    if attr_obj.type == u'boolean':
+    if attribute.type == u'boolean':
         value = 1 if value else 0
-    elif attr_obj.type == u'ip':
+    elif attribute.type == u'ip':
         if not isinstance(value, IPv4Address):
             value = IPv4Address(value)
         value = int(value)
-    elif attr_obj.type == u'ipv6':
+    elif attribute.type == u'ipv6':
         if not isinstance(value, IPv6Address):
             value = IPv6Address(value)
         value = ''.join('{:02x}'.format(x) for x in value.packed)
-    elif attr_obj.type == u'datetime':
+    elif attribute.type == u'datetime':
         if isinstance(value, datetime):
             value = int(time.mktime(value.timetuple()))
 
     # Validations of special attributes
-    if attr_obj.name == u'servertype':
+    if attribute.name == u'servertype':
         if value not in lookups.stype_names:
             raise ValueError(u'Invalid servertype: ' + value)
-    if attr_obj.name == u'segment':
+    if attribute.name == u'segment':
         if value not in lookups.segments:
             raise ValueError(u'Invalid segment: ' + value)
-    if attr_obj.name == u'project':
+    if attribute.name == u'project':
         if value not in lookups.projects:
             raise ValueError(u'Invalid project: ' + value)
 
     # XXX: Dirty hack for the old database structure
-    if attr_obj.name == u'servertype':
+    if attribute.name == u'servertype':
         value = lookups.stype_names[value].pk
 
     return _sql_escape(value)

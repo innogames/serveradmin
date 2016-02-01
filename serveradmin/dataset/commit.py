@@ -222,18 +222,20 @@ def _validate_commit(changed_servers, servers):
 
 def _typecast_values(changed_servers):
     for server_id, changes in changed_servers.iteritems():
-        for attr, change in changes.iteritems():
+        for key, change in changes.iteritems():
+            attribute = lookups.attr_names[key]
             action = change['action']
+
             if action == 'new':
-                change['new'] = typecast(attr, change['new'])
+                change['new'] = typecast(attribute, change['new'])
             elif action == 'update':
-                change['new'] = typecast(attr, change['new'])
-                change['old'] = typecast(attr, change['old'])
+                change['new'] = typecast(attribute, change['new'])
+                change['old'] = typecast(attribute, change['old'])
             elif action == 'multi':
-                change['add'] = typecast(attr, change['add'])
-                change['remove'] = typecast(attr, change['remove'])
+                change['add'] = typecast(attribute, change['add'])
+                change['remove'] = typecast(attribute, change['remove'])
             elif action == 'delete':
-                change['old'] = typecast(attr, change['old'])
+                change['old'] = typecast(attribute, change['old'])
 
 def _clean_changed(changed_servers):
     for server_id, changes in changed_servers.items():

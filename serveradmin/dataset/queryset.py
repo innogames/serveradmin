@@ -114,7 +114,7 @@ class QuerySet(BaseQuerySet):
     def __init__(self, filters):
         check_attributes(filters.keys())
         for attribute_name, filter_obj in filters.items():
-            filter_obj.typecast(attribute_name)
+            filter_obj.typecast(lookups.attr_names[attribute_name])
         super(QuerySet, self).__init__(filters)
         self.attributes = lookups.attr_names
         self._order_by = None

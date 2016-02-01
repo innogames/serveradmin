@@ -174,18 +174,21 @@ def list_and_edit(request, mode='list'):
         for attr in attrs:
             if attr in non_editable:
                 continue
-            if lookups.attr_names[attr].multi:
+
+            attribute = lookups.attr_names[attr]
+
+            if attribute.multi:
                 values = [raw_value.strip() for raw_value in
                           request.POST.get('attr_' + attr, '').splitlines()]
                 try:
-                    value = typecast(attr, values)
+                    value = typecast(attribute, values)
                 except ValueError:
                     invalid_attrs.add(attr)
                     value = set(values)
             else:
                 value = request.POST.get('attr_' + attr, '')
                 try:
-                    value = typecast(attr, value)
+                    value = typecast(attribute, value)
                 except ValueError:
                     invalid_attrs.add(attr)
             server[attr] = value
@@ -217,7 +220,7 @@ def list_and_edit(request, mode='list'):
         stype_attr = lookups.stype_attrs[(stype.name, key)]
         fields.append({
             'key': key,
-            'value': displaycast(key, value),
+            'value': displaycast(lookups.attr_names[key], value),
             'has_value': True,
             'editable': key not in non_editable,
             'type': lookups.attr_names[key].type,

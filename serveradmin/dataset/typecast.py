@@ -2,8 +2,6 @@ import re
 from datetime import datetime
 from ipaddress import IPv4Address, IPv6Address
 
-from serveradmin.dataset.base import lookups
-
 _to_datetime_re = re.compile(
     r'(\d{4})-(\d{1,2})-(\d{1,2})(T(\d{1,2}):(\d{1,2})(:(\d{1,2}))?)?'
 )
@@ -69,14 +67,13 @@ _typecast_fns = {
         'mac': _to_mac,
     }
 
-def typecast(attr_name, value, force_single=False):
+def typecast(attribute, value, force_single=False):
     if value is None:
         return value
 
-    attr_obj = lookups.attr_names[attr_name]
-    typecast_fn = _typecast_fns[attr_obj.type]
+    typecast_fn = _typecast_fns[attribute.type]
 
-    if attr_obj.multi and not force_single:
+    if attribute.multi and not force_single:
         if not isinstance(value, (list, set)):
             raise ValueError('Attr is multi, but value is not a list/set')
 
@@ -89,12 +86,11 @@ _displaycast_fns = {
     'boolean': lambda x: u'true' if x else u'false',
 }
 
-def displaycast(attr_name, value):
+def displaycast(attribute, value):
 
-    attr_obj = lookups.attr_names[attr_name]
-    displaycast_fn = _displaycast_fns.get(attr_obj.type, lambda x: x)
+    displaycast_fn = _displaycast_fns.get(attribute.type, lambda x: x)
 
-    if attr_obj.multi:
+    if attribute.multi:
         if not isinstance(value, (list, set)):
             raise ValueError('Attr is multi, but value is not a list/set')
 

@@ -91,20 +91,20 @@ def create_server(
     violations_required = []
     for attr in stype.attributes:
         stype_attr = lookups.stype_attrs[(stype.name, attr.name)]
-        attr_obj = lookups.attr_names[attr.name]
+        attribute = lookups.attr_names[attr.name]
 
         # Handle not existing attributes (fill defaults, validate require)
         if attr.name not in real_attributes:
-            if attr_obj.multi:
+            if attribute.multi:
                 if stype_attr.default in ('', None):
                     real_attributes[attr.name] = []
                 else:
-                    real_attributes[attr.name] = _type_cast_default(attr_obj,
+                    real_attributes[attr.name] = _type_cast_default(attribute,
                             stype_attr.default)
             elif stype_attr.required:
                 if fill_defaults and stype_attr.default not in ('', None):
                     real_attributes[attr.name] = _type_cast_default(
-                            attr_obj,
+                            attribute,
                             stype_attr.default,
                         )
                 else:
@@ -113,7 +113,7 @@ def create_server(
             else:
                 if fill_defaults_all and stype_attr.default not in ('', None):
                     real_attributes[attr.name] = _type_cast_default(
-                            attr_obj,
+                            attribute,
                             stype_attr.default,
                         )
                 else:
@@ -124,13 +124,13 @@ def create_server(
 
         # Validate regular expression
         regexp = stype_attr.regexp
-        if attr_obj.multi:
-            if attr_obj.type == 'string' and regexp:
+        if attribute.multi:
+            if attribute.type == 'string' and regexp:
                 for val in value:
                     if not regexp.match(unicode(val)):
                         violations_regexp.append(attr.name)
         else:
-            if attr_obj.type == 'string' and regexp and not regexp.match(value):
+            if attribute.type == 'string' and regexp and not regexp.match(value):
                 violations_regexp.append(attr.name)
 
     # Check for attributes that are not defined on this servertype
@@ -195,23 +195,23 @@ def _insert_server(hostname, intern_ip, segment, servertype_id, project_id, attr
     )
 
     for attr_name, value in attributes.iteritems():
-        attr_obj = lookups.attr_names[attr_name]
+        attribute = lookups.attr_names[attr_name]
 
-        if attr_obj.multi:
+        if attribute.multi:
             for single_value in value:
-                server.add_attribute(attr_obj, single_value)
+                server.add_attribute(attribute, single_value)
         else:
-            server.add_attribute(attr_obj, value)
+            server.add_attribute(attribute, value)
 
     server.save()
 
     return server.server_id
 
-def _type_cast_default(attr_obj, value):
-    if attr_obj.multi:
+def _type_cast_default(attribute, value):
+    if attribute.multi:
         return [
-                typecast(attr_obj.name, val, force_single=True)
+                typecast(attribute, val, force_single=True)
                 for val in value.split(',')
             ]
     else:
-        return typecast(attr_obj.name, value, force_single=True)
+        return typecast(attribute, value, force_single=True)
