@@ -138,24 +138,3 @@ class QueryBuilder(object):
 
         sql_stmt = u'\n'.join(sql)
         return sql_stmt
-
-# Note: This function is also inlined in queryset.py for performance
-def typecast_attribute(attr_name, value):
-    attr_type = lookups.attr_names[attr_name].type
-
-    if attr_type == u'integer':
-        return int(value)
-
-    if attr_type == u'boolean':
-        return value == '1'
-
-    if attr_type == u'ip':
-        return IPv4Address(value)
-
-    if attr_type == u'ipv6':
-        return IPv6Address(value)
-
-    if attr_type == u'datetime':
-        return datetime.fromtimestamp(int(value))
-
-    return value

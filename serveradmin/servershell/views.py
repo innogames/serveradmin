@@ -20,11 +20,10 @@ from serveradmin.dataset.filters import filter_classes
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.commit import (commit_changes, CommitValidationFailed,
         CommitNewerData)
-from serveradmin.dataset.values import get_attribute_values
 from serveradmin.dataset.typecast import typecast, displaycast
 from serveradmin.dataset.create import create_server
 from serveradmin.servershell.forms import CloneServerForm, NewServerForm
-from serveradmin.serverdb.models import ServerType
+from serveradmin.serverdb.models import ServerType, StringAttributeValue
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 100
@@ -307,11 +306,12 @@ def get_values(request):
     except KeyError:
         raise Http404
 
-    values = get_attribute_values(attr_obj.name, MAX_DISTINGUISHED_VALUES)
+    queryset = StringAttributeValue.objects.filter(attrib=attr_obj)
+    value_queryset = queryset.values('value').distinct().order_by('value')
 
     return TemplateResponse(request, 'servershell/values.html', {
         'attribute': attr_obj,
-        'values': values,
+        'values': (v['value'] for v in value_queryset[:MAX_DISTINGUISHED_VALUES]),
         'num_values': MAX_DISTINGUISHED_VALUES
     })
 
