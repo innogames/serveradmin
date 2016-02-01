@@ -504,38 +504,18 @@ class Startswith(BaseFilter):
 
 class InsideNetwork(BaseFilter):
     def __init__(self, *networks):
-        # Avoid cyclic imports. Using other components inside dataset
-        # is really a problem. TODO: Think about solutions
-        from serveradmin.iprange.models import IPRange
+
         self.networks = []
-        self.iprange_mapping = {}
         for network in networks:
             if not isinstance(network, Network):
-                if isinstance(network, basestring) and '/' not in network:
-                    try:
-                        iprange = IPRange.objects.get(pk=network)
+                network = Network(network)
 
-                        if iprange.min is None or iprange.max is None:
-                            raise DatasetError('Range does not contain an IPv4 network')
-
-                        network_obj = Network(iprange.min, iprange.max)
-                        self.iprange_mapping[network_obj] = network
-                        network = network_obj
-                    except IPRange.DoesNotExist:
-                        raise DatasetError('No such IP range: ' + network)
-                else:
-                    network = Network(network)
             self.networks.append(network)
 
     def __repr__(self):
-        args = []
-        for network in self.networks:
-            try:
-                args.append(repr(self.iprange_mapping[network]))
-            except KeyError:
-                args.append(repr(network))
-
-        return u'InsideNetwork({0})'.format(u', '.join(args))
+        return u'InsideNetwork({0})'.format(
+            ', '.join(repr(n) for n in self.networks)
+        )
 
     def __eq__(self, other):
 
