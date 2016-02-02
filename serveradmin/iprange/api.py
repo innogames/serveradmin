@@ -19,11 +19,12 @@ def get_free(range_id, reserve_ip=True):
     except IPRange.DoesNotExist:
         raise ApiError('No such IP range')
 
-    free_addresses = igrange.get_free_set(increase_pointer=reserve_ip)
+    free_addresses = iprange.get_free_set()
     if not free_addresses:
         raise ApiError('No more free addresses')
 
-    return free_addresses[0]
+    for address in free_addresses:
+        return address
 
 @api_function(group='ip')
 def get_free_set(range_id):
