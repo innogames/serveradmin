@@ -90,12 +90,10 @@ def add(request):
                                    belongs_to=data['belongs_to'],
                                    min=data['start'],
                                    max=data['end'],
-                                   next_free=data['start'],
                                    gateway=data['gateway'],
                                    internal_gateway=data['internal_gateway'],
                                    min6=data['start6'],
                                    max6=data['end6'],
-                                   next_free6=data['start6'],
                                    gateway6=data['gateway6'],
                                    internal_gateway6=data['internal_gateway6'])
             messages.success(request, u'Added IP range "{0}"'.format(
@@ -125,12 +123,10 @@ def edit(request, range_id):
                     belongs_to=data['belongs_to'],
                     min=data['start'],
                     max=data['end'],
-                    next_free=data['start'],
                     gateway=data['gateway'],
                     internal_gateway=data['internal_gateway'],
                     min6=data['start6'],
                     max6=data['end6'],
-                    next_free6=data['start6'],
                     gateway6=data['gateway6'],
                     internal_gateway6=data['internal_gateway6'])
 
