@@ -1,6 +1,7 @@
 from time import mktime
 from datetime import datetime, date, timedelta
-from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
+
+from adminapi.utils import IP, IPv6, Network
 
 def json_encode_extra(obj):
 
@@ -11,13 +12,14 @@ def json_encode_extra(obj):
     if isinstance(obj, set):
         return list(obj)
 
-    if isinstance(obj, (
-        IPv4Address,
-        IPv6Address,
-        IPv4Network,
-        IPv6Network,
-    )):
-        return str(obj)
+    if isinstance(obj, IP):
+        return obj.ip
+
+    if isinstance(obj, IPv6):
+        return obj.as_ip()
+
+    if isinstance(obj, Network):
+        return [obj.min_ip, obj.max_ip]
 
     if isinstance(obj, (datetime, date)):
         return int(mktime(obj.timetuple()))

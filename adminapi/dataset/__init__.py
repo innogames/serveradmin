@@ -1,6 +1,5 @@
-from ipaddress import ip_address
-
 from adminapi import _api_settings
+from adminapi.utils import IP
 from adminapi.request import send_request
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 from adminapi.dataset.filters import _prepare_filter
@@ -53,6 +52,7 @@ class QuerySet(BaseQuerySet):
         serialized_filters = dict(
                 (k, v._serialize()) for k, v in self._filters.iteritems()
             )
+
         request_data = {
                 'filters': serialized_filters,
                 'restrict': self._restrict,
@@ -88,16 +88,15 @@ class QuerySet(BaseQuerySet):
                     if attr not in server:
                         continue
                     if attr in convert_ip:
-                        server[attr] = set(ip_address(x) for x in server[attr])
+                        server[attr] = set(IP(x) for x in server[attr])
                     else:
                         server[attr] = set(server[attr])
                 for attr in convert_ip:
                     if attr not in server or attr in convert_set:
                         continue
-                    server[attr] = ip_address(server[attr])
+                    server[attr] = IP(server[attr])
                 dict.update(server_obj, server)
                 servers[object_id] = server_obj
-
             return servers
 
         elif result['status'] == 'error':

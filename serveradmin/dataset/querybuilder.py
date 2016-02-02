@@ -1,6 +1,6 @@
 from datetime import datetime
-from ipaddress import IPv4Address, IPv6Address
 
+from adminapi.utils import IP, IPv6
 from serveradmin.dataset.base import lookups, ServerTableSpecial, CombinedSpecial
 
 class QueryBuilder(object):
@@ -150,10 +150,10 @@ def typecast_attribute(attr_name, value):
         return value == '1'
 
     if attr_type == u'ip':
-        return IPv4Address(value)
+        return IP(value)
 
     if attr_type == u'ipv6':
-        return IPv6Address(value)
+        return IPv6.from_hex(value)
 
     if attr_type == u'datetime':
         return datetime.fromtimestamp(int(value))

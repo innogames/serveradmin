@@ -1,8 +1,7 @@
 from __future__ import print_function
 import sys
-from ipaddress import IPv4Address, IPv6Address
 
-from adminapi.utils import print_table, print_heading
+from adminapi.utils import IP, IPv6, print_table, print_heading
 from adminapi.dataset.exceptions import DatasetError
 
 NonExistingAttribute = object()
@@ -324,21 +323,15 @@ class BaseServerObject(dict):
 
         if self._queryset.attributes[k].type == 'ip':
             if self._queryset.attributes[k].multi:
-                v = set(
-                    x if isinstance(x, IPv4Address) else IPv4Address(x)
-                    for x in v
-                )
+                v = set(x if isinstance(x, IP) else IP(x) for x in v)
             else:
-                v = v if isinstance(v, IPv4Address) else IPv4Address(v)
+                v = v if isinstance(v, IP) else IP(v)
 
         if self._queryset.attributes[k].type == 'ipv6':
             if self._queryset.attributes[k].multi:
-                v = set(
-                    x if isinstance(x, IPv6Address)
-                    else IPv6Address(x) for x in v
-                )
+                v = set(x if isinstance(x, IPv6) else IPv6(x) for x in v)
             else:
-                v = v if isinstance(v, IPv6Address) else IPv6Address(v)
+                v = v if isinstance(v, IPv6) else IPv6(v)
 
         if self._queryset.attributes[k].multi:
             if not isinstance(v, set):

@@ -1,10 +1,10 @@
 from datetime import datetime
 from collections import OrderedDict
-from ipaddress import ip_address, IPv4Address, IPv6Address
 
 from django.db import connection
 
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
+from adminapi.utils import IP, IPv6
 from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.validation import check_attributes
 from serveradmin.dataset import filters
@@ -262,7 +262,7 @@ class QuerySet(BaseQuerySet):
                 if not restrict:
                     attrs = {
                         u'hostname': hostname,
-                        u'intern_ip': ip_address(intern_ip),
+                        u'intern_ip': IP(intern_ip),
                         u'segment': segment,
                         u'servertype': servertype_lookup[stype],
                         u'project': project,
@@ -272,7 +272,7 @@ class QuerySet(BaseQuerySet):
                     if u'hostname' in restrict:
                         attrs[u'hostname'] = hostname
                     if u'intern_ip' in restrict:
-                        attrs[u'intern_ip'] = ip_address(intern_ip)
+                        attrs[u'intern_ip'] = IP(intern_ip)
                     if u'segment' in restrict:
                         attrs[u'segment'] = segment
                     if u'servertype' in restrict:
@@ -340,9 +340,9 @@ class QuerySet(BaseQuerySet):
                 elif attr_type == u'boolean':
                     value = value == '1'
                 elif attr_type == u'ip':
-                    value = IPv4Address(int(value))
+                    value = IP(value)
                 elif attr_type == u'ipv6':
-                    value = IPv6Address(bytearray.fromhex(value))
+                    value = IPv6.from_hex(value)
                 elif attr_type == u'datetime':
                     value = datetime.fromtimestamp(int(value))
 

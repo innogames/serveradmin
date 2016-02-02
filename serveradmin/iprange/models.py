@@ -1,8 +1,8 @@
 from copy import copy
-from ipaddress import summarize_address_range, IPv4Address
 
 from django.db import models, connection
 
+from adminapi.utils import Network, Network6
 from serveradmin.common import dbfields
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.exceptions import DatasetError
@@ -32,30 +32,15 @@ class IPRange(models.Model):
             related_name='subnet_of')
 
     def get_network(self):
-        networks = tuple(summarize_address_range(self.min, self.max))
-        if len(networks) > 1:
-            raise ValueError(
-                'The min and max addresses does not represent a CIDR '
-                'address'
-            )
-
-        return networks[0]
+        return Network(self.min, self.max)
 
     def get_network6(self):
-        networks = tuple(summarize_address_range(self.min6, self.max6))
-        if len(networks) > 1:
-            raise ValueError(
-                'The min and max addresses does not represent a CIDR '
-                'address'
-            )
-
-        return networks[0]
+        return Network6(self.min6, self.max6)
 
     def get_taken_set(self):
         # Query taken IPs
         if self.min is None or self.max is None:
             return set()
-
         f_between = filters.Between(self.min, self.max)
         builder = QueryBuilder()
         builder.add_attribute('all_ips')
@@ -69,36 +54,33 @@ class IPRange(models.Model):
         c.execute(builder.build_sql())
         for ip_tuple in c.fetchall():
             for ip in ip_tuple:
-                if ip is not None:
-                    ip = IPv4Address(ip)
-                    if self.min <= ip <= self.max:
-                        taken_ips.add(ip)
+                if ip is not None and self.min <= ip <= self.max:
+                    taken_ips.add(int(ip))
 
         return taken_ips
 
     def get_free_set(self):
         if self.min is None or self.max is None:
             return set()
-
         free_ips = set()
         taken_ips = self.get_taken_set()
-        for ip in self.get_network().hosts():
-            if ip not in taken_ips:
-                free_ips.add(ip)
+        for ip_int in xrange(self.min.as_int() + 1, self.max.as_int()):
+            if ip_int not in taken_ips:
+                free_ips.add(ip_int)
 
         return free_ips
 
     @property
     def cidr(self):
         try:
-            return str(self.get_network())
+            return self.get_network().as_cidr()
         except (TypeError, ValueError):
             return None
 
     @property
     def cidr6(self):
         try:
-            return str(self.get_network6())
+            return self.get_network6().as_cidr()
         except (TypeError, ValueError):
             return None
 
@@ -126,7 +108,7 @@ def _is_taken(ip):
     attrib_id = lookups.attr_names['additional_ips'].pk
     query = 'SELECT {0}'.format(' + '.join(query_parts))
     c = connection.cursor()
-    c.execute(query, [int(ip)]*len(query_parts))
+    c.execute(query, [ip]*len(query_parts))
     result = c.fetchone()[0]
     c.close()
     return result != 0
@@ -136,7 +118,7 @@ def _is_taken6(ipv6):
     query = ('SELECT COUNT(*) FROM attrib_values '
              '        WHERE value = %s AND attrib_id = {0}').format(attrib_id)
     c = connection.cursor()
-    c.execute(query, (''.join('{:02x}'.format(x) for x in value.packed), ))
+    c.execute(query, (ipv6,))
     result = c.fetchone()[0]
     c.close()
     return result != 0
@@ -150,7 +132,7 @@ def get_gateways(ip):
         raise ValueError('IP is not in known IP ranges')
 
     def get_range_size(iprange_obj):
-        return int(iprange_obj.max) - int(iprange_obj.min)
+        return iprange_obj.max.as_int() - iprange_obj.min.as_int()
 
     iprange_obj = min(ipranges, key=get_range_size)
 
@@ -158,7 +140,7 @@ def get_gateways(ip):
         if iprange_obj.ip_type == 'ip':
             return '255.255.0.0'
         else:
-            return str(iprange_obj.get_network().netmask)
+            return Network(iprange_obj.min, iprange_obj.max).netmask
 
     def get_gw(iprange_obj, gw_attr):
         if getattr(iprange_obj, gw_attr, None) is not None:
@@ -183,20 +165,20 @@ def get_gateways6(ip):
         raise ValueError('IP is not in known IP ranges')
 
     def get_range_size(iprange_obj):
-        return int(iprange_obj.max6) - int(iprange_obj.min6)
+        return iprange_obj.max6.as_long() - iprange_obj.min6.as_long()
 
     iprange_obj = min(ipranges, key=get_range_size)
 
     def get_prefix(iprange_obj):
         if iprange_obj.ip_type == 'ip':
             # return only /64 or larger nets
-            size = iprange_obj.get_network6().prefixlen
+            size = Network6(iprange_obj.min6, iprange_obj.max6)
             if size > 64:
                 return 64
             else:
                 return size
         else:
-            return iprange_obj.get_network6().prefixlen
+            return Network6(iprange_obj.min, iprange_obj.max).prefix
 
     def get_gw(iprange_obj, gw_attr):
         if getattr(iprange_obj, gw_attr, None) is not None:
@@ -220,17 +202,17 @@ def _get_network_settings(ip):
         raise ValueError('IP is not in known IP ranges')
 
     def get_range_size(iprange_obj):
-        return int(iprange_obj.max) - int(iprange_obj.min)
+        return iprange_obj.max.as_int() - iprange_obj.min.as_int()
 
     # This is the smallest matching IP range.
     # For most of things we will traverse to his parents.
     iprange_obj = min(ipranges, key=get_range_size)
 
     def calculate_netmask(iprange_obj):
-            return iprange_obj.get_network().netmask
+            return Network(iprange_obj.min, iprange_obj.max).netmask
 
     def calculate_prefix(iprange_obj):
-            return iprange_obj.get_network().prefixlen
+            return Network(iprange_obj.min, iprange_obj.max).prefix
 
     # Traverse to parent ip_range if given parameter is not specified.
     def nonempty_parent(iprange_obj, param):
@@ -272,14 +254,14 @@ def _get_network_settings6(ip):
         raise ValueError('IP is not in known IP ranges')
 
     def get_range_size(iprange_obj):
-        return int(iprange_obj.max6) - int(iprange_obj.min6)
+        return iprange_obj.max6.as_long() - iprange_obj.min6.as_long()
 
     # This is the smallest matching IP range.
     # For most of things we will traverse to his parents.
     iprange_obj = min(ipranges, key=get_range_size)
 
     def calculate_prefix(iprange_obj):
-            return iprange_obj.get_network6().prefixlen
+            return Network6(iprange_obj.min6, iprange_obj.max6).prefix
 
     # Traverse to parent ip_range if given parameter is not specified.
     def nonempty_parent(iprange_obj, param):
@@ -319,12 +301,12 @@ def _get_iprange_settings(name):
     def calculate_netmask(iprange_obj):
         if iprange_obj.min is None or iprange_obj.min is None:
             return str(None)
-        return iprange_obj.get_network6().netmask
+        return Network(iprange_obj.min, iprange_obj.max).netmask
 
     def calculate_netmask6(iprange_obj):
         if iprange_obj.min6 is None or iprange_obj.min6 is None:
             return str(None)
-        return iprange_obj.get_network6().prefixlen
+        return Network6(iprange_obj.min6, iprange_obj.max6).prefix
 
     return {
         'default_gateway':  str(iprange_obj.gateway) if iprange_obj.gateway else None,
@@ -339,3 +321,4 @@ def _get_iprange_settings(name):
         'network': str(iprange_obj.min) if iprange_obj.min else None,
         'network6': str(iprange_obj.min6) if iprange_obj.min6 else None
     }
+

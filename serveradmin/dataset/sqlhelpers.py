@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
-from ipaddress import IPv4Address, IPv6Address
 
+from adminapi.utils import IP, IPv6
 from serveradmin.dataset.base import lookups
 
 def _sql_escape(value):
@@ -31,13 +31,13 @@ def prepare_value(attr_obj, value):
     if attr_obj.type == u'boolean':
         value = 1 if value else 0
     elif attr_obj.type == u'ip':
-        if not isinstance(value, IPv4Address):
-            value = IPv4Address(value)
-        value = int(value)
+        if not isinstance(value, IP):
+            value = IP(value)
+        value = value.as_int()
     elif attr_obj.type == u'ipv6':
-        if not isinstance(value, IPv6Address):
-            value = IPv6Address(value)
-        value = ''.join('{:02x}'.format(x) for x in value.packed)
+        if not isinstance(value, IPv6):
+            value = IPv6(value)
+        value = value.as_hex()
     elif attr_obj.type == u'datetime':
         if isinstance(value, datetime):
             value = int(time.mktime(value.timetuple()))

@@ -1,14 +1,13 @@
 import re
 import operator
 
-from ipaddress import ip_network
-
 from django.db import connection, DatabaseError
 try:
     from oursql import OperationalError
 except ImportError:
     OperationalError = DatabaseError
 
+from adminapi.utils import Network, PRIVATE_IP_BLOCKS, PUBLIC_IP_BLOCKS
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.exceptions import DatasetError
 from serveradmin.dataset.typecast import typecast
@@ -130,7 +129,12 @@ class Regexp(BaseFilter):
             return u'{0} REGEXP {1}'.format(field, sql_regexp)
 
     def matches(self, server_obj, attr_name):
-        value = str(server_obj[attr_name])
+        value = server_obj[attr_name]
+        if lookups.attr_names[attr_name].type == u'ip':
+            value = value.as_ip()
+        else:
+            value = str(value)
+
         return bool(self._regexp_obj.search(value))
 
     def as_code(self):
@@ -500,7 +504,13 @@ class Startswith(BaseFilter):
 
 class InsideNetwork(BaseFilter):
     def __init__(self, *networks):
-        self.networks = [ip_network(n) for n in networks]
+
+        self.networks = []
+        for network in networks:
+            if not isinstance(network, Network):
+                network = Network(network)
+
+            self.networks.append(network)
 
     def __repr__(self):
         return u'InsideNetwork({0})'.format(
@@ -525,17 +535,13 @@ class InsideNetwork(BaseFilter):
         return result
 
     def as_sql_expr(self, builder, attr_obj, field):
-
         betweens = ['{0} BETWEEN {1} AND {2}'.format(
-            field,
-            int(net.network_address),
-            int(net.broadcast_address),
+            field, net.min_ip.as_int(), net.max_ip.as_int()
         ) for net in self.networks]
 
         return u'({0})'.format(u' OR '.join(betweens))
 
     def matches(self, server_obj, attr_name):
-
         return any(
             net.min_ip <= server_obj[attr_name] <= net.max_ip
             for net in self.networks
@@ -550,27 +556,19 @@ class InsideNetwork(BaseFilter):
 
     @classmethod
     def from_obj(cls, obj):
-
         if u'networks' in obj and isinstance(obj['networks'], (tuple, list)):
             return cls(*obj[u'networks'])
-
         raise ValueError(u'Invalid object for InsideNetwork')
 
 class PrivateIP(NoArgFilter):
 
-    blocks = (
-        ip_network('10.0.0.0/8'),
-        ip_network('172.16.0.0/12'),
-        ip_network('192.168.0.0/16'),
-    )
-
     def __init__(self):
-        self.filt = InsideNetwork(*PrivateIP.blocks)
+        self.filt = InsideNetwork(*PRIVATE_IP_BLOCKS)
 
 class PublicIP(NoArgFilter):
 
     def __init__(self):
-        self.filt = Not(InsideNetwork(*PrivateIP.blocks))
+        self.filt = InsideNetwork(*PUBLIC_IP_BLOCKS)
 
 class Optional(OptionalFilter):
     def __init__(self, filter):

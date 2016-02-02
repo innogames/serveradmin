@@ -1,8 +1,7 @@
-from ipaddress import IPv4Network, IPv6Network
-
 from django import forms
 from django.core import validators, exceptions
 
+from adminapi.utils import Network, Network6
 from serveradmin.common import formfields
 from serveradmin.serverdb.models import Segment
 from serveradmin.iprange.models import IPRange, IP_CHOICES
@@ -44,10 +43,10 @@ class IPRangeForm(forms.Form):
             except (ValueError, exceptions.ValidationError):
                 raise forms.ValidationError('Invalid CIDR')
 
-            net = IPv4Network(data['cidr'])
+            net = Network(data['cidr'])
 
-            data['start'] = net.network_address
-            data['end'] = net.broadcast_address
+            data['start'] = net.min_ip
+            data['end'] = net.max_ip
         else:
             data['start'] = None
             data['end'] = None
@@ -61,9 +60,9 @@ class IPRangeForm(forms.Form):
             except (ValueError, exceptions.ValidationError):
                 raise forms.ValidationError('Invalid IPv6 Network')
 
-            net = IPv6Network(data['cidr6'])
-            data['start6'] = net.network_address
-            data['end6'] = net.broadcast_address
+            net = Network6(data['cidr6'])
+            data['start6'] = net.min_ip
+            data['end6'] = net.max_ip
         else:
             data['start6'] = None
             data['end6'] = None

@@ -13,6 +13,7 @@ from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django.utils.html import mark_safe, escape as escape_html
 
+from adminapi.utils import IP
 from adminapi.utils.json import json_encode_extra
 from adminapi.utils.parse import parse_query
 from serveradmin.dataset import query, filters, DatasetError
@@ -338,7 +339,7 @@ def new_server(request):
                 attributes = {'servertype': form.cleaned_data['servertype'].name}
 
             attributes['hostname'] = form.cleaned_data['hostname']
-            attributes['intern_ip'] = form.cleaned_data['intern_ip']
+            attributes['intern_ip'] = IP(form.cleaned_data['intern_ip'])
             attributes['project'] = form.cleaned_data['project'].project_id
             attributes['responsible_admin'] = [form.cleaned_data['project'].responsible_admin.username]
             if 'ssh_pubkey' in attributes:
