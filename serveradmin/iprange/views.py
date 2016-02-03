@@ -54,13 +54,16 @@ def details(request, range_id):
     free_blocks = []
     free_block = []
     if not (iprange.min is None or iprange.max is None):
-        for ip_int in xrange(iprange.min.as_int() + 1, iprange.max.as_int()):
-            if ip_int in taken_ips:
+        for addr_as_int in xrange(iprange.min.as_int() + 1, iprange.max.as_int()):
+            addr = IP(addr_as_int)
+
+            if addr in taken_ips:
                 if free_block:
                     free_blocks.append(free_block)
                     free_block = []
             else:
-                free_block.append(IP(ip_int))
+                free_block.append(addr)
+
         if free_block:
             free_blocks.append(free_block)
         num_ips = iprange.max.as_int() - iprange.min.as_int() + 1
@@ -177,7 +180,7 @@ def chooseip(request):
     if 'range_id' in request.GET:
         iprange = get_object_or_404(IPRange, range_id=request.GET['range_id'])
         return TemplateResponse(request, 'iprange/chooseip_ips.html', {
-            'ip_list': [IP(ip) for ip in sorted(iprange.get_free_set())]
+            'ip_list': iprange.get_free_set(),
         })
     else:
         return TemplateResponse(request, 'iprange/chooseip_ranges.html', {

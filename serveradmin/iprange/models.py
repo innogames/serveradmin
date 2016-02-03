@@ -2,7 +2,7 @@ from copy import copy
 
 from django.db import models, connection
 
-from adminapi.utils import Network, Network6
+from adminapi.utils import IP, Network, Network6
 from serveradmin.common import dbfields
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.exceptions import DatasetError
@@ -55,7 +55,7 @@ class IPRange(models.Model):
         for ip_tuple in c.fetchall():
             for ip in ip_tuple:
                 if ip is not None and self.min <= ip <= self.max:
-                    taken_ips.add(int(ip))
+                    taken_ips.add(IP(ip))
 
         return taken_ips
 
@@ -64,9 +64,11 @@ class IPRange(models.Model):
             return set()
         free_ips = set()
         taken_ips = self.get_taken_set()
-        for ip_int in xrange(self.min.as_int() + 1, self.max.as_int()):
-            if ip_int not in taken_ips:
-                free_ips.add(ip_int)
+        for addr_as_int in xrange(self.min.as_int() + 1, self.max.as_int()):
+            addr = IP(addr_as_int)
+
+            if addr not in taken_ips:
+                free_ips.add(addr)
 
         return free_ips
 
