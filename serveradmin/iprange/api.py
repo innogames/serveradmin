@@ -6,14 +6,10 @@ from serveradmin.iprange.models import IPRange, get_gateways, get_gateways6, _ge
 
 @api_function(group='ip')
 def get_free(range_id, reserve_ip=True):
-    """Return a free IP address.
+    """Return a free IP address
 
-    If ``reserve_ip`` is set to ``True`` it will return a different IP
-    on the next call unless all other IPs are used. This can be used
-    to reserve the IP so other scripts won't get the returned IP if
-    you haven't added a server with this IP yet.
+    XXX reserve_ip argument is not used anymore.
     """
-
     free_addresses = get_free_set(range_id)
     if not free_addresses:
         raise ApiError('No more free addresses')
