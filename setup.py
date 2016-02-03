@@ -3,8 +3,8 @@ from distutils.core import setup
 setup(
     name='adminapi',
     url='https://serveradmin.innogames.de/',
-    author='Henning Pridoehl',
-    author_email='henning.pridoehl@innogames.de',
+    author='InnoGames System Administration',
+    author_email='it@innogames.com',
     packages=(
         'adminapi',
         'adminapi.dataset',
