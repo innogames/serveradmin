@@ -44,17 +44,16 @@ class Command(NoArgsCommand):
 
         for graph in graphs:
             response = self.get_from_graphite(graph)
-            if not response:
-                break
+            if response:
+                box = (offset, 0, offset + settings.GRAPHITE_SPRITE_WIDTH,
+                       settings.GRAPHITE_SPRITE_HEIGHT)
+                spriteimg.paste(Image.open(BytesIO(response)), box)
 
-            box = (offset, 0, offset + settings.GRAPHITE_SPRITE_WIDTH,
-                   settings.GRAPHITE_SPRITE_HEIGHT)
-            spriteimg.paste(Image.open(BytesIO(response)), box)
             offset += settings.GRAPHITE_SPRITE_WIDTH
             offset += settings.GRAPHITE_SPRITE_SPACING
-        else:
-            spriteimg.save(settings.GRAPHITE_SPRITE_PATH + '/' +
-                           server['hostname'] + '.png')
+
+        spriteimg.save(settings.GRAPHITE_SPRITE_PATH + '/' +
+                       server['hostname'] + '.png')
 
 
     def cache_numeric_values(self, collection, server):
@@ -65,18 +64,18 @@ class Command(NoArgsCommand):
             formatter = AttributeFormatter()
             params = formatter.vformat(template.params, (), server)
             response = self.get_from_graphite(params)
-            if not response:
-                break
-
-            numeric_cache = NumericCache.objects.get_or_create(
-                    template=template,
-                    hostname=server['hostname'])[0]
-            try:
-                numeric_cache.value = json.loads(response)[0]['datapoints'][0][0]
-            except IndexError:
-                print('Warning: Graphite response couldn\'t be parsed ' + response)
-            else:
-                numeric_cache.save()
+            if response:
+                try:
+                    value = json.loads(response)[0]['datapoints'][0][0]
+                except IndexError:
+                    print('Warning: Graphite response couldn\'t be parsed ' + response)
+                else:
+                    numeric_cache = NumericCache.objects.get_or_create(
+                        template=template,
+                        hostname=server['hostname'],
+                    )[0]
+                    numeric_cache.value = value
+                    numeric_cache.save()
 
     def get_from_graphite(self, params):
         """Make a GET request to Graphite with the given params
