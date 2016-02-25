@@ -5,6 +5,7 @@ from io import BytesIO
 from django.core.management.base import NoArgsCommand
 from django.core.cache import cache
 from django.conf import settings
+from django.db import transaction
 
 import django_urlauth.utils
 from serveradmin.graphite.models import Collection, NumericCache, AttributeFormatter
@@ -70,12 +71,19 @@ class Command(NoArgsCommand):
                 except IndexError:
                     print('Warning: Graphite response couldn\'t be parsed ' + response)
                 else:
-                    numeric_cache = NumericCache.objects.get_or_create(
-                        template=template,
-                        hostname=server['hostname'],
-                    )[0]
-                    numeric_cache.value = value
-                    numeric_cache.save()
+
+                    # Django can be setted up to encapsulate thing
+                    # into database transactions.  We don't want that
+                    # behavior in here, even when it is setted up like
+                    # this.  This process takes a long time.  We want
+                    # the values to be immediately available to
+                    # the users.
+                    with transaction.atomic():
+                        NumericCache.objects.update_or_create(
+                            template=template,
+                            hostname=server['hostname'],
+                            defaults={'value': value},
+                        )
 
     def get_from_graphite(self, params):
         """Make a GET request to Graphite with the given params
