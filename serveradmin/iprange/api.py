@@ -14,12 +14,7 @@ def get_free(range_id, reserve_ip=True):
     you haven't added a server with this IP yet.
     """
 
-    try:
-        iprange = IPRange.objects.get(range_id=range_id)
-    except IPRange.DoesNotExist:
-        raise ApiError('No such IP range')
-
-    free_addresses = iprange.get_free_set()
+    free_addresses = get_free_set(range_id)
     if not free_addresses:
         raise ApiError('No more free addresses')
 
