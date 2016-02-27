@@ -410,16 +410,10 @@ class Not(BaseFilter):
                 ).format(uid, cond, attribute.attrib_id)
 
             return 'NOT EXISTS ({0})'.format(subquery)
-        else:
-            if isinstance(self.filter, ExactMatch):
-                return u'{0} != {1}'.format(
-                    field,
-                    value_to_sql(attribute, self.filter.value),
-                )
-            else:
-                return u'NOT {0}'.format(
-                    self.filter.as_sql_expr(builder, attribute, field),
-                )
+
+        return u'NOT ({0})'.format(
+            self.filter.as_sql_expr(builder, attribute, field),
+        )
 
     def matches(self, server_obj, attr_name):
         return not self.filter.matches(server_obj, attr_name)
