@@ -44,6 +44,16 @@ class NoArgFilter(BaseFilter):
     def from_obj(cls, obj):
         return cls()
 
+class NetworkFilter(BaseFilter):
+
+    def typecast(self, attribute):
+        # We don't really need to cast anything.  The child classes
+        # can do that on their __init__() methods as they cannot be
+        # initialised anything other than Network objects.  In here,
+        # we took our chance to validate the attribute.
+        if attribute.type != 'ip':
+            raise ValueError('Only IP addresses can be used by this filter.')
+
 # We need this class to group optional filters.
 class OptionalFilter(BaseFilter):
     pass
@@ -491,7 +501,7 @@ class Startswith(BaseFilter):
             return cls(obj[u'value'])
         raise ValueError(u'Invalid object for Startswith')
 
-class InsideNetwork(BaseFilter):
+class InsideNetwork(NetworkFilter):
     def __init__(self, *networks):
         self.networks = [ip_network(n) for n in networks]
 
@@ -516,10 +526,6 @@ class InsideNetwork(BaseFilter):
             result ^= hash(network)
 
         return result
-
-    def typecast(self, attribute):
-        # Typecast was already done in __init__
-        pass
 
     def as_sql_expr(self, builder, attribute, field):
 
@@ -549,7 +555,7 @@ class InsideNetwork(BaseFilter):
 
         raise ValueError(u'Invalid object for InsideNetwork')
 
-class PrivateIP(NoArgFilter):
+class PrivateIP(NetworkFilter, NoArgFilter):
 
     blocks = (
         ip_network('10.0.0.0/8'),
@@ -560,7 +566,7 @@ class PrivateIP(NoArgFilter):
     def __init__(self):
         self.filt = InsideNetwork(*PrivateIP.blocks)
 
-class PublicIP(NoArgFilter):
+class PublicIP(NetworkFilter, NoArgFilter):
 
     def __init__(self):
         self.filt = Not(InsideNetwork(*PrivateIP.blocks))
