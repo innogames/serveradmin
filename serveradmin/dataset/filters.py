@@ -19,13 +19,13 @@ class BaseFilter(object):
 
 class NoArgFilter(BaseFilter):
     def __repr__(self):
-        return u'{0}()'.format(self.__class__.__name__)
+        return u'{0}()'.format(type(self).__name__)
 
     def __eq__(self, other):
-        return isinstance(other, self.__class__)
+        return isinstance(other, type(self))
 
     def __hash__(self):
-        return hash(self.__class__.__name__)
+        return hash(type(self).__name__)
 
     def typecast(self, attribute):
         # We don't have values to typecast
@@ -38,7 +38,7 @@ class NoArgFilter(BaseFilter):
         return self.filt.matches(server_obj, attr_name)
 
     def as_code(self):
-        return u'filters.{0}()'.format(self.__class__.__name__)
+        return u'filters.{0}()'.format(type(self).__name__)
 
     @classmethod
     def from_obj(cls, obj):
@@ -258,18 +258,19 @@ class _AndOr(BaseFilter):
 
     def __repr__(self):
         args = u', '.join(repr(filt) for filt in self.filters)
-        return u'{0}({1})'.format(self.name.capitalize(), args)
+
+        return u'{0}({1})'.format(type(self), args)
 
     def __eq__(self, other):
 
-        if isinstance(other, self.__class__):
+        if isinstance(other, type(self)):
             return self.filters == other.filters
 
         return False
 
     def __hash__(self):
 
-        result = hash(self.name)
+        result = hash(type(self))
         for value in self.filters:
             result ^= hash(value)
 
@@ -281,18 +282,18 @@ class _AndOr(BaseFilter):
 
     def as_sql_expr(self, builder, attribute, field):
 
-        joiner = u' {0} '.format(self.name.upper())
+        joiner = u' {0} '.format(type(self).__name__.upper())
 
-        return u'({0})'.format(joiner.join([
+        return u'({0})'.format(joiner.join(
             filter.as_sql_expr(builder, attribute, field)
             for filter in self.filters
-        ]))
+        ))
 
     def as_code(self):
 
         args = u', '.join(filt.as_code() for filt in self.filters)
 
-        return u'filters.{0}({1})'.format(self.name.capitalize(), args)
+        return u'filters.{0}({1})'.format(type(self), args)
 
     @classmethod
     def from_obj(cls, obj):
@@ -303,30 +304,20 @@ class _AndOr(BaseFilter):
 
             return cls(*[filter_from_obj(filter) for filter in obj[u'filters']])
 
-        raise ValueError(u'Invalid object for {0}'.format(
-            cls.__name__.capitalize())
-        )
+        raise ValueError(u'Invalid object for {0}'.format(cls.__name__))
 
 class And(_AndOr):
-    name = u'and'
-
     def matches(self, server_obj, attr_name):
-
         for filter in self.filters:
             if not filter.matches(server_obj, attr_name):
                 return False
-
         return True
 
 class Or(_AndOr):
-    name = u'or'
-
     def matches(self, server_obj, attr_name):
-
         for filter in self.filters:
             if filter.matches(server_obj, attr_name):
                 return True
-
         return False
 
 class Between(BaseFilter):
