@@ -269,30 +269,34 @@ def list_and_edit(request, mode='list'):
 def commit(request):
     try:
         commit = json.loads(request.POST['commit'])
-    except (KeyError, ValueError):
-        return HttpResponseBadRequest('ups')
-
-    if 'changes' in commit:
-        changes = {}
-        for key, value in commit['changes'].iteritems():
-            if not key.isdigit():
-                continue
-            changes[int(key)] = value
-        commit['changes'] = changes
-
-    try:
-        commit_changes(commit, user=request.user)
-    except (ValueError, DatasetError) as e:
-        return HttpResponseBadRequest()
-    except (CommitNewerData, CommitValidationFailed) as e:
+    except (KeyError, ValueError) as error:
         result = {
             'status': 'error',
-            'message': unicode(e),
+            'message': unicode(error),
         }
     else:
-        result = {
-            'status': 'success'
-        }
+        if 'changes' in commit:
+            changes = {}
+            for key, value in commit['changes'].iteritems():
+                if not key.isdigit():
+                    continue
+                changes[int(key)] = value
+            commit['changes'] = changes
+
+        try:
+            commit_changes(commit, user=request.user)
+        except (
+            ValueError,
+            DatasetError,
+            CommitNewerData,
+            CommitValidationFailed,
+        ) as error:
+            result = {
+                'status': 'error',
+                'message': unicode(error),
+            }
+        else:
+            result = {'status': 'success'}
 
     return HttpResponse(json.dumps(result), content_type='application/x-json')
 
