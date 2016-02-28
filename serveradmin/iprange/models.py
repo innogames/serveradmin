@@ -110,39 +110,6 @@ class IPRange(models.Model):
     def __unicode__(self):
         return self.range_id
 
-def _is_taken(ip):
-    query_parts = []
-    query_parts.append(
-        '(SELECT COUNT(*) FROM admin_server WHERE intern_ip = %s)')
-    ip_attrs = lookups.attr_names['all_ips'].special.attrs
-    for attr in ip_attrs:
-        attrib_id = lookups.attr_names[attr].pk
-        if attrib_id is None:
-            continue
-        query = ('(SELECT COUNT(*) '
-                 'FROM attrib_values '
-                 'WHERE value = %s AND attrib_id = {0})').format(
-                    attrib_id)
-        query_parts.append(query)
-
-    attrib_id = lookups.attr_names['additional_ips'].pk
-    query = 'SELECT {0}'.format(' + '.join(query_parts))
-    c = connection.cursor()
-    c.execute(query, [int(ip)]*len(query_parts))
-    result = c.fetchone()[0]
-    c.close()
-    return result != 0
-
-def _is_taken6(ipv6):
-    attrib_id = lookups.attr_names['primary_ip6'].pk
-    query = ('SELECT COUNT(*) FROM attrib_values '
-             '        WHERE value = %s AND attrib_id = {0}').format(attrib_id)
-    c = connection.cursor()
-    c.execute(query, (''.join('{:02x}'.format(x) for x in value.packed), ))
-    result = c.fetchone()[0]
-    c.close()
-    return result != 0
-
 def get_gateways(ip):
 
     ipranges = IPRange.objects.filter(min__lte=ip, max__gte=ip)
