@@ -60,7 +60,7 @@ class ServerType(models.Model):
             if attr.attrib.name in skip:
                 continue
 
-            ServerTypeAttributes.objects.create(
+            ServerTypeAttribute.objects.create(
                 servertype=target,
                 attrib=attr.attrib,
                 required=attr.required,
@@ -107,9 +107,9 @@ class Attribute(models.Model):
         return self.name
 
     def used_in(self):
-        stype_attrs = (ServerTypeAttributes.objects.select_related('servertype')
-                      .filter(attrib=self).order_by('servertype__name'))
-        return [x.servertype for x in stype_attrs]
+        queryset = ServerTypeAttribute.objects.select_related('servertype')
+        queryset = queryset.filter(attrib=self).order_by('servertype__name')
+        return [x.servertype for x in queryset]
 
     def external_link(self):
         if self.help_link:
@@ -140,7 +140,7 @@ class Attribute(models.Model):
 
         return str(value)
 
-class ServerTypeAttributes(models.Model):
+class ServerTypeAttribute(models.Model):
     servertype = models.ForeignKey(
         ServerType,
         related_name='used_attributes',

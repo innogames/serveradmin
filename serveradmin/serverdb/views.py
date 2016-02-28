@@ -17,7 +17,7 @@ from serveradmin.serverdb.models import (
     ServerType,
     Attribute,
     ServerStringAttribute,
-    ServerTypeAttributes,
+    ServerTypeAttribute,
     ChangeCommit,
     ChangeAdd,
     ChangeUpdate,
@@ -99,7 +99,7 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
     class EditForm(forms.ModelForm):
         attrib_default = forms.CharField(label='Default', required=False)
         class Meta:
-            model = ServerTypeAttributes
+            model = ServerTypeAttribute
             fields = ('required', 'attrib_default', 'regex')
             widgets = {
                 'regex': forms.TextInput(attrs={'size': 50})
@@ -124,19 +124,25 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
 
         def clean_attrib(self):
             attrib = self.cleaned_data['attrib']
-            exists = ServerTypeAttributes.objects.filter(attrib=attrib,
-                    servertype=self.servertype)
-            if exists:
-                error_msg = 'Attribute is already on this servertype'
-                raise forms.ValidationError(error_msg)
+            if ServerTypeAttribute.objects.filter(
+                attrib=attrib,
+                servertype=self.servertype,
+            ).exists():
+                raise forms.ValidationError(
+                    'Attribute is already on this servertype'
+                )
+
             return attrib
 
     stype = get_object_or_404(ServerType, name=servertype_name)
     if attrib_name:
         form_class = EditForm
         attrib = get_object_or_404(Attribute, name=attrib_name)
-        stype_attr = get_object_or_404(ServerTypeAttributes, attrib=attrib,
-                servertype=stype)
+        stype_attr = get_object_or_404(
+            ServerTypeAttribute,
+            attrib=attrib,
+            servertype=stype,
+        )
     else:
         form_class = AddForm
         stype_attr = None
@@ -180,9 +186,12 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
 @login_required
 @permission_required('serverdb.change_servertype')
 def delete_servertype_attr(request, servertype_name, attrib_name):
-    stype_attr = get_object_or_404(ServerTypeAttributes,
-                                   attrib__name=attrib_name,
-                                   servertype__name=servertype_name)
+    stype_attr = get_object_or_404(
+        ServerTypeAttribute,
+        attrib__name=attrib_name,
+        servertype__name=servertype_name,
+    )
+
     if request.method == 'POST' and 'confirm' in request.POST:
         ServerStringAttribute.objects.filter(
             server__servertype=stype_attr.servertype,
