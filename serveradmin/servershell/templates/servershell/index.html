@@ -53,7 +53,7 @@
     <h4>{{ attr_group }}</h4>
     <ul>
     {% for attr in attribute_list %}
-        <li data-attr="{{ attr.name }}">
+        <li data-attr="{{ attr.name }}" data-attr-type="{{ attr.type }}">
         <label>
                 <input type="checkbox" name="attr" value="{{ attr.name }}" {% if attr.name == 'all_ips' %}disabled="disabled" {% endif %}{% if attr.name in checked_attributes %}checked="checked" {% endif %}/>
             {{ attr.name }}

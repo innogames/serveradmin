@@ -1201,11 +1201,18 @@ $(function() {
     $('#shell_attributes li').each(function() {
         var attr_item = $(this);
         var attr_name = attr_item.attr('data-attr');
-        var link = $('<span class="link">{}</span>').click(function(ev) {
-            $.get(shell_values_url + '?attribute=' + attr_name, function(data) {
-                $('<div title="' + attr_name + '"></div>').append(data).dialog();
+        var attr_type = attr_item.attr('data-attr-type');
+        var symbol = attr_type == 'hostname' ? 'H' : "''";
+        var link = $('<span class="link">' + symbol + '</span>');
+
+        if (attr_type != 'hostname') {
+            link.click(function(ev) {
+                $.get(shell_values_url + '?attribute=' + attr_name, function(data) {
+                    $('<div title="' + attr_name + '"></div>').append(data).dialog();
+                });
             });
-        });
+        }
+
         attr_item.prepend(link);
     });
     $('#shell_attributes li .attr-tooltip').each(function() {
