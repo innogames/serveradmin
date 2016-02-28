@@ -30,10 +30,11 @@ class IPv4Field(models.Field):
         return int(value)
 
     def get_prep_lookup(self, lookup_type, value):
-        if lookup_type == 'in':
+        if lookup_type in ('in', 'range'):
             return [self.get_prep_value(v) for v in value]
         if lookup_type in ('exact', 'gt', 'gte', 'lt', 'lte'):
             return self.get_prep_value(value)
+
         raise TypeError('Lookup type {0} is not supported'.format(lookup_type))
 
     def formfield(self, **kwargs):
@@ -63,10 +64,11 @@ class IPv6Field(models.Field):
         return value.packed
 
     def get_prep_lookup(self, lookup_type, value):
-        if lookup_type == 'in':
+        if lookup_type in ('in', 'range'):
             return [self.get_prep_value(v) for v in value]
         if lookup_type in ('exact', 'gt', 'gte', 'lt', 'lte'):
             return self.get_prep_value(value)
+
         raise TypeError('Lookup type {0} is not supported'.format(lookup_type))
 
     def formfield(self, **kwargs):

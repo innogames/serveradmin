@@ -1,14 +1,9 @@
-from copy import copy
-from ipaddress import summarize_address_range, IPv4Address
+from ipaddress import ip_address, summarize_address_range
 
-from django.db import models, connection
+from django.db import models
 
 from serveradmin.common import dbfields
-from serveradmin.dataset.base import lookups
-from serveradmin.dataset.exceptions import DatasetError
-from serveradmin.dataset.querybuilder import QueryBuilder
-from serveradmin.dataset import filters
-from serveradmin.serverdb.models import Segment
+from serveradmin.serverdb.models import Segment, ServerObject
 
 IP_CHOICES = (
     ('ip', 'Private'),
@@ -54,29 +49,17 @@ class IPRange(models.Model):
             return networks[0]
 
     def get_taken_set(self):
-        # Query taken IPs
+        """Query taken IPs"""
+
         if self.min is None or self.max is None:
             return set()
 
-        f_between = filters.Between(self.min, self.max)
-        builder = QueryBuilder()
-        builder.add_attribute('all_ips')
-        builder.add_filter('all_ips', f_between)
-        fields = lookups.attr_names['all_ips'].special.attrs
-        builder.add_select(*fields)
-
-        # Collect taken IPs in set
-        taken_ips = set()
-        c = connection.cursor()
-        c.execute(builder.build_sql())
-        for ip_tuple in c.fetchall():
-            for ip in ip_tuple:
-                if ip is not None:
-                    ip = IPv4Address(int(ip))
-                    if self.min <= ip <= self.max:
-                        taken_ips.add(ip)
-
-        return taken_ips
+        return set(ip_address(i) for i in (
+            ServerObject.objects
+            .filter(intern_ip__range=(self.min, self.max))
+            .order_by()     # Clear ordering for database performance
+            .values_list('intern_ip', flat=True)
+        ))
 
     def get_free_set(self):
         if self.min is None or self.max is None:

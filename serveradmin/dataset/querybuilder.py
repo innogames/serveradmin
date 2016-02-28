@@ -1,7 +1,7 @@
 from datetime import datetime
 from ipaddress import IPv4Address, IPv6Address
 
-from serveradmin.dataset.base import lookups, ServerTableSpecial, CombinedSpecial
+from serveradmin.dataset.base import lookups, ServerTableSpecial
 
 class QueryBuilder(object):
     def __init__(self):
@@ -33,10 +33,6 @@ class QueryBuilder(object):
 
         if isinstance(attr_obj.special, ServerTableSpecial):
             attr_field = u'adms.' + attr_obj.special.field
-        elif isinstance(attr_obj.special, CombinedSpecial):
-            attr_field = None
-            for extra_attr in attr_obj.special.attrs:
-                self.add_attribute(extra_attr, optional=True)
         elif attr_obj.type == 'hostname':
             attr_field = None
         else:
@@ -69,17 +65,6 @@ class QueryBuilder(object):
         attr_field = alias_info['field']
         attr_obj = alias_info['attr']
 
-        if isinstance(attr_obj.special, CombinedSpecial):
-            conds = []
-            for attr in attr_obj.special.attrs:
-                extra = self.aliases[attr]
-                conds.append(
-                        filter_obj.as_sql_expr(self, extra['attr'],
-                        extra['field']),
-                    )
-
-            return u'({0})'.format(u' OR '.join(conds))
-
         return filter_obj.as_sql_expr(self, attr_obj, attr_field)
 
     def add_filter(self, alias, filter_obj):
@@ -95,10 +80,7 @@ class QueryBuilder(object):
         for alias in aliases:
             field = self.aliases[alias]['field']
             attr_obj = self.aliases[alias]['attr']
-            if isinstance(attr_obj.special, CombinedSpecial):
-                self.add_select(*attr_obj.special.attrs)
-            else:
-                self.sql_select.append(field)
+            self.sql_select.append(field)
 
     def add_limit(self, limit):
         self.sql_limit = limit

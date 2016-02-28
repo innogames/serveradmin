@@ -25,10 +25,6 @@ class ServerTableSpecial(object):
         self.field = field
         self.unique = unique
 
-class CombinedSpecial(object):
-    def __init__(self, *attrs):
-        self.attrs = attrs
-
 def _read_lookups(sender=None, **kwargs):
     version = cache.get(u'dataset_lookups_version')
     if not version:
@@ -89,14 +85,6 @@ def _read_lookups(sender=None, **kwargs):
                     multi=False,
                     group='base',
                     special=ServerTableSpecial(u'segment_id'),
-                ),
-            Attribute(
-                    name=u'all_ips',
-                    type=u'ip',
-                    base=False,
-                    multi=True,
-                    group='base',
-                    special=CombinedSpecial(u'intern_ip', u'additional_ips'),
                 ),
         ]
     lookups.special_attributes = special_attributes

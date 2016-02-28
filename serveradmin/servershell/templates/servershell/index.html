@@ -55,7 +55,7 @@
     {% for attr in attribute_list %}
         <li data-attr="{{ attr.name }}" data-attr-type="{{ attr.type }}">
         <label>
-                <input type="checkbox" name="attr" value="{{ attr.name }}" {% if attr.name == 'all_ips' %}disabled="disabled" {% endif %}{% if attr.name in checked_attributes %}checked="checked" {% endif %}/>
+                <input type="checkbox" name="attr" value="{{ attr.name }}" {% if attr.name in checked_attributes %}checked="checked" {% endif %}/>
             {{ attr.name }}
         </label>
 {% if attr.hovertext %}
@@ -80,7 +80,7 @@ and finally followed by ")". It's like function calls in most programming
 languages. The arguments are <i>separated by space, not comma</i></p>
 
 <p>Values are automatically typecasted according to the type of the attribute.
-This means <code>all_ips=between(10.16.1.3 10.16.1.17)</code> doesn't do
+This means <code>intern_ip=between(10.16.1.3 10.16.1.17)</code> doesn't do
 string comparison, but comparison based on IP semantics. Also
 you don't need quotes around strings, unless your string contains spaces
 or other quotes.</p>
@@ -215,9 +215,10 @@ it will be interpreted as regular expression.</p>
     <tr>
         <td>attr</td>
         <td>attr_name[&nbsp;...]</td>
-        <td>Show one or more attribute(s) in the server table. If it is already
-            shown, it will be hidden. The attribute "all_ips" is a virtual one
-            - it can't be used here. Example: "<code>attr os game_function</code>".
+        <td>
+            Show one or more attribute(s) in the server table.  If it is
+            already shown, it will be hidden.  Example:
+            "<code>attr os game_function</code>".
         </td>
     </tr>
     <tr>
