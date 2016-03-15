@@ -59,7 +59,7 @@ class IPv6Field(models.Field):
             if value is None:
                 return None
             value = IPv6Address(value)
-        return ''.join('{:02x}'.format(x) for x in value.packed)
+        return value.packed
 
     def get_prep_lookup(self, lookup_type, value):
         valid_lookups = ['exact', 'gt', 'gte', 'lt', 'lte']
