@@ -92,17 +92,17 @@ class IPRange(models.Model):
 
     @property
     def cidr(self):
-        try:
-            return str(self.get_network())
-        except (TypeError, ValueError):
-            return None
+        network = self.get_network()
+
+        if network:
+            return str(network)
 
     @property
     def cidr6(self):
-        try:
-            return str(self.get_network6())
-        except (TypeError, ValueError):
-            return None
+        network6 = self.get_network6()
+
+        if network6:
+            return str(network6)
 
     class Meta:
         db_table = 'ip_range'
