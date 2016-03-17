@@ -91,7 +91,7 @@ def _require_ip(attr, value):
         return
 
     raise ValueError((
-        'Attribute {0} is of type "ip", but got {0} of type {1}'
+        'Attribute {0} is of type "ip", but got {1} of type {2}'
     ).format(attr, repr(value), type(value).__name__))
 
 def _require_hostname(attr, value):
