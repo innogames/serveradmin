@@ -88,7 +88,7 @@ def _read_lookups(sender=None, **kwargs):
                     base=True,
                     multi=False,
                     group='base',
-                    special=ServerTableSpecial(u'segment'),
+                    special=ServerTableSpecial(u'segment_id'),
                 ),
             Attribute(
                     name=u'all_ips',

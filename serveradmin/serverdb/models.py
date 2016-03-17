@@ -188,7 +188,6 @@ class ServerObject(models.Model):
     )
     segment = models.ForeignKey(
         Segment,
-        db_column='segment',
         on_delete=models.PROTECT,
     )
 
