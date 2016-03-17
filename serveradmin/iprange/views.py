@@ -177,7 +177,7 @@ def chooseip(request):
     if 'range_id' in request.GET:
         iprange = get_object_or_404(IPRange, range_id=request.GET['range_id'])
         return TemplateResponse(request, 'iprange/chooseip_ips.html', {
-            'ip_list': iprange.get_free_set(),
+            'ip_list': sorted(iprange.get_free_set()),
         })
     else:
         return TemplateResponse(request, 'iprange/chooseip_ranges.html', {
