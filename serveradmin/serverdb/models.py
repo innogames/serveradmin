@@ -47,6 +47,7 @@ class ServerType(models.Model):
     description = models.CharField(max_length=1024)
     fixed_project = models.ForeignKey(
         Project,
+        blank=True,
         null=True,
         on_delete=models.PROTECT,
     )
