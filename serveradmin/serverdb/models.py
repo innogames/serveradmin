@@ -261,6 +261,7 @@ class ServerHostnameAttribute(ServerAttribute):
     class Meta:
         app_label = 'serverdb'
         db_table = 'server_hostname_attrib'
+        unique_together = (('server', 'attrib', 'value'), )
 
 class ServerStringAttribute(ServerAttribute):
     attrib = models.ForeignKey(
