@@ -13,7 +13,6 @@ class QueryBuilder(object):
         self.sql_from_tables = []
         self.sql_where = []
         self.sql_order_by = []
-        self.sql_group_by = []
         self.sql_limit = []
         self.sql_offset = []
         self.sql_extra = []
@@ -33,7 +32,7 @@ class QueryBuilder(object):
 
         if isinstance(attr_obj.special, ServerTableSpecial):
             attr_field = u'adms.' + attr_obj.special.field
-        elif attr_obj.type == 'hostname':
+        elif attr_obj.type == 'hostname' or attr_obj.multi:
             attr_field = None
         else:
             uid = self.get_uid()
@@ -88,10 +87,6 @@ class QueryBuilder(object):
     def add_offset(self, offset):
         self.sql_offset = offset
 
-    def add_group_by(self, *aliases):
-        for alias in aliases:
-            self.sql_group_by.append(self.aliases[alias]['field'])
-
     def build_sql(self):
         self.sql_from_tables.append(u'admin_server AS adms')
         keywords = u' '.join(self.sql_keywords)
@@ -100,7 +95,6 @@ class QueryBuilder(object):
         left_joins = u'\n'.join(self.sql_left_joins)
         where = u' AND '.join(self.sql_where)
         order_by = u', '.join(self.sql_order_by)
-        group_by = u', '.join(self.sql_group_by)
 
         sql = []
         sql.append(u'SELECT ' + keywords + ' ' + select)
@@ -111,8 +105,6 @@ class QueryBuilder(object):
             sql.append(u'WHERE ' + where)
         if order_by:
             sql.append(u'ORDER BY ' + order_by)
-        if group_by:
-            sql.append(u'GROUP BY ' + group_by)
         if self.sql_extra:
             sql.append(self.sql_extra)
         if self.sql_limit:

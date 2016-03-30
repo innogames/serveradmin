@@ -190,10 +190,10 @@ class QuerySet(BaseQuerySet):
         for attr, f in self._filters.iteritems():
             attr_obj = lookups.attr_names[attr]
             optional = (
-                        isinstance(f, optional_filters)
-                    or
-                        attr_obj.type == 'boolean'
-                )
+                    isinstance(f, optional_filters)
+                or
+                    attr_obj.type == 'boolean'
+            )
             builder.add_attribute(attr, optional)
             builder.add_filter(attr, f)
 
@@ -230,7 +230,6 @@ class QuerySet(BaseQuerySet):
             ):
             builder.add_attribute(attr)
             builder.add_select(attr)
-        builder.sql_keywords.append('DISTINCT')
         sql_stmt = builder.build_sql()
 
         # We need to preserve ordering if ordering is requested, otherwise

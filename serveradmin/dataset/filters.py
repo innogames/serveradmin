@@ -81,7 +81,7 @@ class ExactMatch(BaseFilter):
 
         value = value_to_sql(attribute, self.value)
 
-        if attribute.type == 'hostname':
+        if attribute.type == 'hostname' or attribute.multi:
             return _exists_sql(attribute, 'value = ' + value)
 
         if attribute.type == 'boolean' and not self.value:
@@ -141,6 +141,9 @@ class Regexp(BaseFilter):
                     ')'
                 ).format(sql_regexp),
             )
+
+        if attribute.multi:
+            return _exists_sql(attribute, 'value REGEXP ' + sql_regexp)
 
         if attribute.type == u'ip':
             return u'INET_NTOA({0}) REGEXP {1}'.format(field, sql_regexp)
@@ -247,7 +250,7 @@ class Any(BaseFilter):
 
         values_csv = ', '.join(value_to_sql(attribute, v) for v in self.values)
 
-        if attribute.type == 'hostname':
+        if attribute.type == 'hostname' or attribute.multi:
             return _exists_sql(attribute, 'value IN ({0})'.format(values_csv))
 
         return u'{0} IN ({1})'.format(field, values_csv)
@@ -399,30 +402,6 @@ class Not(BaseFilter):
        self.filter.typecast(attribute)
 
     def as_sql_expr(self, builder, attribute, field):
-
-        # Special case for empty filter, simple negation doesn't work
-        # here. It would just return all empty values, instead of values
-        # which are NOT empty.
-        if isinstance(self.filter, Empty):
-            return _exists_sql(attribute, 'value IS NOT NULL')
-
-        if attribute.multi:
-            uid = builder.get_uid()
-
-            cond = self.filter.as_sql_expr(
-                    builder,
-                    attribute,
-                    'nav{0}.value'.format(uid),
-                )
-
-            subquery = (
-                    'SELECT id FROM attrib_values AS nav{0} '
-                        'WHERE {1} AND '
-                            'nav{0}.server_id = adms.server_id AND '
-                            'nav{0}.attrib_id = {2}'
-                ).format(uid, cond, attribute.attrib_id)
-
-            return 'NOT EXISTS ({0})'.format(subquery)
 
         return u'NOT ({0})'.format(
             self.filter.as_sql_expr(builder, attribute, field),
@@ -630,7 +609,7 @@ class Empty(OptionalFilter):
 
     def as_sql_expr(self, builder, attribute, field):
 
-        if attribute.type == 'hostname':
+        if attribute.type == 'hostname' or attribute.multi:
             return 'NOT {0}'.format(_exists_sql(attribute))
 
         return u'{0} IS NULL'.format(field)
