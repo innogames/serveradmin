@@ -240,9 +240,6 @@ class QuerySet(BaseQuerySet):
         else:
             server_data = dict()
 
-        servertype_lookup = dict(
-                (k, v.name) for k, v in lookups.stype_ids.iteritems()
-            )
         restrict = self._restrict
 
         with connection.cursor() as cursor:
@@ -262,7 +259,7 @@ class QuerySet(BaseQuerySet):
                         u'hostname': hostname,
                         u'intern_ip': ip_address(intern_ip),
                         u'segment': segment,
-                        u'servertype': servertype_lookup[stype],
+                        u'servertype': stype,
                         u'project': project,
                     }
                 else:
@@ -274,14 +271,14 @@ class QuerySet(BaseQuerySet):
                     if u'segment' in restrict:
                         attrs[u'segment'] = segment
                     if u'servertype' in restrict:
-                        attrs[u'servertype'] = servertype_lookup[stype]
+                        attrs[u'servertype'] = stype
                     if u'project' in restrict:
                         attrs[u'project'] = project
 
                 server_object = ServerObject(attrs, server_id, self)
                 server_data[server_id] = server_object
 
-                for attr in lookups.stype_ids[stype].attributes:
+                for attr in lookups.servertypes[stype].attributes:
                     if attr.multi:
                         if not restrict or attr.name in restrict:
                             dict.__setitem__(server_object, attr.name, set())

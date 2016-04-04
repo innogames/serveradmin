@@ -123,7 +123,7 @@ def get_results(request):
             avail_attributes[servertype] = {}
 
     for servertype, attr_info in avail_attributes.iteritems():
-        attributes = lookups.stype_names[servertype].attributes
+        attributes = lookups.servertypes[servertype].attributes
         for attr in attributes:
             stype_attr = lookups.stype_attrs[(servertype, attr.name)]
             regexp = stype_attr.regexp.pattern if stype_attr.regexp else None
@@ -165,7 +165,7 @@ def list_and_edit(request, mode='list'):
     if not request.user.has_perm('dataset.change_serverobject'):
         mode = 'list'
 
-    stype = lookups.stype_names[server['servertype']]
+    stype = lookups.servertypes[server['servertype']]
     non_editable = ['servertype']
 
     invalid_attrs = set()
@@ -217,7 +217,7 @@ def list_and_edit(request, mode='list'):
     fields_set = set()
     for key, value in server.iteritems():
         fields_set.add(key)
-        stype_attr = lookups.stype_attrs[(stype.name, key)]
+        stype_attr = lookups.stype_attrs[(stype.pk, key)]
         fields.append({
             'key': key,
             'value': displaycast(lookups.attr_names[key], value),
@@ -236,7 +236,7 @@ def list_and_edit(request, mode='list'):
         for attr in stype.attributes:
             if attr.name in fields_set:
                 continue
-            stype_attr = lookups.stype_attrs[(stype.name, attr.name)]
+            stype_attr = lookups.stype_attrs[(stype.pk, attr.name)]
             fields.append({
                 'key': attr.name,
                 'value': [] if attr.multi else '',
@@ -328,7 +328,7 @@ def new_server(request):
         except DatasetError:
             raise Http404
 
-        servertype = ServerType.objects.get(name=clone_from['servertype'])
+        servertype = ServerType.objects.get(pk=clone_from['servertype'])
     else:
         clone_from = None
 
@@ -342,7 +342,7 @@ def new_server(request):
             if clone_from:
                 attributes = dict(clone_from)
             else:
-                attributes = {'servertype': form.cleaned_data['servertype'].name}
+                attributes = {'servertype': form.cleaned_data['servertype'].pk}
 
             attributes['hostname'] = form.cleaned_data['hostname']
             attributes['intern_ip'] = form.cleaned_data['intern_ip']

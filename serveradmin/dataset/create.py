@@ -44,9 +44,9 @@ def create_server(
     for attr in (u'hostname', u'servertype', u'project', u'intern_ip'):
         check_attribute_type(attr, attributes[attr])
 
-    try:
-        stype = lookups.stype_names[attributes[u'servertype']]
-    except KeyError:
+    if attributes[u'servertype'] in lookups.servertypes:
+        servertype = lookups.servertypes[attributes[u'servertype']]
+    else:
         raise CommitError(u'Unknown servertype: ' + attributes[u'servertype'])
 
     hostname = attributes[u'hostname']
@@ -59,7 +59,7 @@ def create_server(
         intern_ip = attributes['intern_ip']
     else:
         intern_ip = ip_address(attributes[u'intern_ip'])
-    servertype_id = stype.pk
+    servertype_id = servertype.pk
     segment = attributes.get(u'segment')
 
     if segment:
@@ -89,42 +89,41 @@ def create_server(
 
     violations_regexp = []
     violations_required = []
-    for attr in stype.attributes:
-        stype_attr = lookups.stype_attrs[(stype.name, attr.name)]
-        attribute = lookups.attr_names[attr.name]
+    for attribute in servertype.attributes:
+        stype_attr = lookups.stype_attrs[(servertype.pk, attribute.name)]
 
         # Handle not existing attributes (fill defaults, validate require)
-        if attr.name not in real_attributes:
+        if attribute.name not in real_attributes:
             if attribute.multi:
                 if stype_attr.default in ('', None):
-                    real_attributes[attr.name] = []
+                    real_attributes[attribute.name] = []
                 else:
-                    real_attributes[attr.name] = _type_cast_default(attribute,
+                    real_attributes[attribute.name] = _type_cast_default(attribute,
                             stype_attr.default)
             elif stype_attr.required:
                 if fill_defaults and stype_attr.default not in ('', None):
-                    real_attributes[attr.name] = _type_cast_default(
+                    real_attributes[attribute.name] = _type_cast_default(
                             attribute,
                             stype_attr.default,
                         )
                 else:
-                    violations_required.append(attr.name)
+                    violations_required.append(attribute.name)
                     continue
             else:
                 if fill_defaults_all and stype_attr.default not in ('', None):
-                    real_attributes[attr.name] = _type_cast_default(
+                    real_attributes[attribute.name] = _type_cast_default(
                             attribute,
                             stype_attr.default,
                         )
                 else:
                     continue
 
-        value = real_attributes[attr.name]
-        check_attribute_type(attr.name, value)
+        value = real_attributes[attribute.name]
+        check_attribute_type(attribute.name, value)
 
         # Cast hostname attributes
         if attribute.type == 'hostname':
-            real_attributes[attr.name] = ServerObject.objects.get(hostname=value)
+            real_attributes[attribute.name] = ServerObject.objects.get(hostname=value)
 
         # Validate regular expression
         regexp = stype_attr.regexp
@@ -132,14 +131,14 @@ def create_server(
             if attribute.type == 'string' and regexp:
                 for val in value:
                     if not regexp.match(unicode(val)):
-                        violations_regexp.append(attr.name)
+                        violations_regexp.append(attribute.name)
         else:
             if attribute.type == 'string' and regexp and not regexp.match(value):
-                violations_regexp.append(attr.name)
+                violations_regexp.append(attribute.name)
 
     # Check for attributes that are not defined on this servertype
     violations_attribs = []
-    attribute_set = set([attr.name for attr in stype.attributes])
+    attribute_set = set([attr.name for attr in servertype.attributes])
     for attr in real_attributes:
         if attr not in attribute_set:
             violations_attribs.append(attr)

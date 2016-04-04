@@ -36,7 +36,7 @@
             <select id="servertype_short" name="current_stype">
             <option value="">- all -</option>
             {% for stype in servertypes %}
-                <option value="{{ stype.name }}" {% if stype.name == current_stype %}selected{% endif %}>{{ stype.name }}</option>
+                <option value="{{ stype }}" {% if stype.pk == current_stype %}selected{% endif %}>{{ stype }}</option>
             {% endfor %}
             </select>
             </td>

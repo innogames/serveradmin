@@ -125,17 +125,6 @@ class Regexp(BaseFilter):
 
     def as_sql_expr(self, builder, attribute, field):
 
-        if attribute.name == u'servertype':
-            # XXX Dirty hack for servertype regexp checking
-            stype_ids = []
-            for stype in lookups.stype_ids.itervalues():
-                if self._regexp_obj.search(stype.name):
-                    stype_ids.append(unicode(stype.pk))
-            if stype_ids:
-                return u'{0} IN ({1})'.format(field, ', '.join(stype_ids))
-            else:
-                return u'0=1'
-
         sql_regexp = raw_sql_escape(self.regexp)
 
         if attribute.type == 'hostname':
@@ -476,18 +465,6 @@ class Startswith(BaseFilter):
 
     def as_sql_expr(self, builder, attribute, field):
 
-        # XXX Dirty hack for servertype checking
-        if attribute.name == u'servertype':
-            stype_ids = []
-
-            for stype in lookups.stype_ids.itervalues():
-                if stype.name.startswith(self.value):
-                    stype_ids.append(unicode(stype.pk))
-            if stype_ids:
-                return u'{0} IN ({1})'.format(field, ', '.join(stype_ids))
-            else:
-                return u'0 = 1'
-
         value = self.value.replace('_', '\\_').replace(u'%', u'\\%%')
         value = raw_sql_escape(value + u'%%')
 
@@ -725,7 +702,7 @@ def value_to_sql(attribute, value):
 
     # Validations of special attributes
     if attribute.name == u'servertype':
-        if value not in lookups.stype_names:
+        if value not in lookups.servertypes:
             raise ValueError(u'Invalid servertype: ' + value)
     if attribute.name == u'segment':
         if value not in lookups.segments:
@@ -733,10 +710,6 @@ def value_to_sql(attribute, value):
     if attribute.name == u'project':
         if value not in lookups.projects:
             raise ValueError(u'Invalid project: ' + value)
-
-    # XXX: Dirty hack for the old database structure
-    if attribute.name == u'servertype':
-        value = lookups.stype_names[value].pk
 
     return _sql_escape(value)
 

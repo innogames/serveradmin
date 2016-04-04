@@ -3,15 +3,15 @@
 {% block title %}
 {% if edit %}
 {% else %}
-Add attribute to servertype {{ servertype.name }}
+Add attribute to servertype {{ servertype }}
 {% endif %}
 {% endblock %}
 
 {% block content %}
 {% if edit %}
-<h2>Edit attribute {{ attrib.name }} of servertype {{ servertype.name }}</h2>
+<h2>Edit attribute {{ attrib.name }} of servertype {{ servertype }}</h2>
 {% else %}
-<h2>Add attribute to servertype {{ servertype.name }}</h2>
+<h2>Add attribute to servertype {{ servertype }}</h2>
 {% endif %}
 <form method="post" action="">
 {% csrf_token %}
@@ -19,7 +19,7 @@ Add attribute to servertype {{ servertype.name }}
 {{ form }}
 </table>
 <p>
-    <a href="{% url 'serverdb_view_servertype' servertype.name %}">Cancel</a>&nbsp;
+    <a href="{% url 'serverdb_view_servertype' servertype.pk %}">Cancel</a>&nbsp;
     <input type="submit" value="{% if edit %}Edit {{ attrib.name }}{% else %}Add attribute{% endif %}" />
     </p>
 </form>

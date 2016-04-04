@@ -4,18 +4,18 @@
 
 {% block content %}
 {% with stype=stype_attr.servertype attr=stype_attr.attrib %}
-<h2>Delete {{ attr.name}} on {{ stype.name }}</h2>
+<h2>Delete {{ attr.name}} on {{ stype }}</h2>
 <form method="post" action="">
 {% csrf_token %}
 <p>Do you really want to delete <strong>{{ attr.name }}</strong> on
-servertype <strong>{{ stype.name }}</strong>?</p>
+servertype <strong>{{ stype }}</strong>?</p>
 <p>
 <label><input type="checkbox" name="confirm" value="1" />
 I know that this will also kill all affected values on the servers
 </label>
 </p>
 <p>
-    <a href="{% url 'serverdb_view_servertype' stype.name %}">Cancel</a>&nbsp;
+    <a href="{% url 'serverdb_view_servertype' stype.pk %}">Cancel</a>&nbsp;
     <input type="submit" value="Delete attribute and values">
 </p>
 </form>

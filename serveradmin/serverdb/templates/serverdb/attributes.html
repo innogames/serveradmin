@@ -23,7 +23,7 @@
         <td>
             <ul>
 {% for servertype in attr.used_in %}
-                <li><a href="{% url 'serverdb_view_servertype' servertype.name %}">{{ servertype.name }}</a></li>
+                <li><a href="{% url 'serverdb_view_servertype' servertype.pk %}">{{ servertype }}</a></li>
 {% endfor %}
             </ul>
         </td>

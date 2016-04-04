@@ -42,8 +42,7 @@ class Project(models.Model):
         return self.project_id
 
 class ServerType(models.Model):
-    servertype_id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=64, unique=True)
+    servertype_id = models.CharField(max_length=32, primary_key=True)
     description = models.CharField(max_length=1024)
     fixed_project = models.ForeignKey(
         Project,
@@ -52,8 +51,8 @@ class ServerType(models.Model):
         on_delete=models.PROTECT,
     )
 
-    def copy(self, new_name):
-        target, created = ServerType.objects.get_or_create(name=new_name)
+    def copy(self, new_id):
+        target, created = ServerType.objects.get_or_create(servertype_id=new_id)
         skip = set([attr.attrib.name for attr in
                 target.used_attributes.select_related()])
 
@@ -75,10 +74,10 @@ class ServerType(models.Model):
     class Meta:
         app_label = 'serverdb'
         db_table = 'servertype'
-        ordering = ('name', )
+        ordering = ('servertype_id', )
 
     def __unicode__(self):
-        return self.name
+        return self.servertype_id
 
 class Attribute(models.Model):
     special = None
@@ -109,7 +108,7 @@ class Attribute(models.Model):
 
     def used_in(self):
         queryset = ServerTypeAttribute.objects.select_related('servertype')
-        queryset = queryset.filter(attrib=self).order_by('servertype__name')
+        queryset = queryset.filter(attrib=self).order_by('servertype')
         return [x.servertype for x in queryset]
 
     def external_link(self):

@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}Servertype {{ servertype.name }}{% endblock %}
+{% block title %}Servertype {{ servertype }}{% endblock %}
 
 {% block content %}
-<h2>Servertype {{ servertype.name }}</h2>
+<h2>Servertype {{ servertype }}</h2>
 
 <table>
     <tr>
@@ -27,8 +27,8 @@
         <td>{% if attr.default %}{{ attr.default }}{% else %}<i>None</i>{% endif %}</td>
 {% if perms.serverdb.change_servertype %}
         <td>
-            <a href="{% url 'serverdb_edit_servertype_attr' servertype.name attr.name %}">edit</a>
-            <a href="{% url 'serverdb_delete_servertype_attr' servertype.name attr.name %}">delete</a>
+            <a href="{% url 'serverdb_edit_servertype_attr' servertype.pk attr.name %}">edit</a>
+            <a href="{% url 'serverdb_delete_servertype_attr' servertype.pk attr.name %}">delete</a>
         </td>
 {% endif %}
     </tr>
@@ -36,13 +36,13 @@
 </table>
 
 {% if perms.serverdb.change_servertype %}
-<p><a href="{% url 'serverdb_add_servertype_attr' servertype.name %}">Add
+<p><a href="{% url 'serverdb_add_servertype_attr' servertype.pk %}">Add
 attribute</a></p>
 {% endif %}
 
 {% if perms.serverdb.delete_servertype %}
 <h3>Delete servertype</h3>
-<form method="post" action="{% url 'serverdb_delete_servertype' servertype.name %}">
+<form method="post" action="{% url 'serverdb_delete_servertype' servertype.pk %}">
 {% csrf_token %}
 <p><label><input type="checkbox" name="confirm" />
  I know that I will kill <strong>ALL</strong> servers which belong
@@ -53,7 +53,7 @@ attribute</a></p>
 
 {% if perms.serverdb.add_servertype %}
 <h3>Copy servertype</h3>
-<form method="post" action="{% url 'serverdb_copy_servertype' servertype.name %}">
+<form method="post" action="{% url 'serverdb_copy_servertype' servertype.pk %}">
 {% csrf_token %}
 <p>Target servertype: <input type="text" name="name" /> <input type="submit" value="Copy" /></p>
  <p>If the target servertype doesn't exist it will be automatically created.</p>

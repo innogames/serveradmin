@@ -28,19 +28,19 @@ from serveradmin.serverdb.models import (
 @login_required
 def servertypes(request):
     return TemplateResponse(request, 'serverdb/servertypes.html', {
-        'servertypes': ServerType.objects.order_by('name')
+        'servertypes': ServerType.objects.all()
     })
 
 @login_required
 def view_servertype(request, servertype_name):
     try:
-        servertype = lookups.stype_names[servertype_name]
+        servertype = lookups.servertypes[servertype_name]
     except KeyError:
         raise Http404
 
     stype_attributes = []
     for attr in servertype.attributes:
-        stype_attr = lookups.stype_attrs[(servertype.name, attr.name)]
+        stype_attr = lookups.stype_attrs[(servertype.pk, attr.name)]
         attr_obj = lookups.attr_ids[stype_attr.attribute_id]
         stype_attributes.append({
             'name': attr_obj.name,
@@ -70,7 +70,7 @@ def add_servertype(request):
         if form.is_valid():
             stype = form.save()
             clear_lookups()
-            return redirect('serverdb_view_servertype', stype.name)
+            return redirect('serverdb_view_servertype', stype.pk)
     else:
         form = AddForm()
 
@@ -81,7 +81,7 @@ def add_servertype(request):
 @login_required
 @permission_required('serverdb.delete_servertype')
 def delete_servertype(request, servertype_name):
-    stype = get_object_or_404(ServerType, name=servertype_name)
+    stype = get_object_or_404(ServerType, pk=servertype_name)
     if request.method == 'POST':
         if 'confirm' in request.POST:
             stype.delete()
@@ -134,7 +134,7 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
 
             return attrib
 
-    stype = get_object_or_404(ServerType, name=servertype_name)
+    stype = get_object_or_404(ServerType, pk=servertype_name)
     if attrib_name:
         form_class = EditForm
         attrib = get_object_or_404(Attribute, name=attrib_name)
@@ -154,12 +154,14 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
             if stype_attr:
                 stype_attr = form.save(commit=False)
                 msg = 'Edited attribute "{0}" of "{1}"'.format(
-                        stype_attr.attrib.name, stype.name)
+                    stype_attr.attrib, stype
+                )
             else:
                 stype_attr = form.save(commit=False)
                 stype_attr.servertype = stype
                 msg = 'Added attribute "{0}" to "{1}"'.format(
-                        stype_attr.attrib.name, stype.name)
+                    stype_attr.attrib, stype
+                )
 
             # Set attrib_default to None if empty and not string
             if stype_attr.attrib.type != 'string':
@@ -169,7 +171,7 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
             stype_attr.save()
             clear_lookups()
             messages.success(request, msg)
-            return redirect('serverdb_view_servertype', stype.name)
+            return redirect('serverdb_view_servertype', stype.pk)
     else:
         if stype_attr:
             form = form_class(stype, instance=stype_attr)
@@ -208,7 +210,7 @@ def delete_servertype_attr(request, servertype_name, attrib_name):
 @login_required
 @permission_required('serverdb.add_servertype')
 def copy_servertype(request, servertype_name):
-    stype = get_object_or_404(ServerType, name=servertype_name)
+    stype = get_object_or_404(ServerType, pk=servertype_name)
     if request.method == 'POST' and 'name' in request.POST:
         stype.copy(request.POST['name'])
         messages.success(request, u'Copied servertype')
@@ -228,8 +230,7 @@ def delete_attribute(request, attribute_name):
     if request.method == 'POST' and 'confirm' in request.POST:
         attribute.delete()
         clear_lookups()
-        messages.success(request, u'Attribute "{0}" deleted'.format(
-                    attribute.name))
+        messages.success(request, u'Attribute "{0}" deleted'.format(attribute))
         return redirect('serverdb_attributes')
     else:
         return TemplateResponse(request, 'serverdb/delete_attribute.html', {
@@ -249,8 +250,7 @@ def add_attribute(request):
         if add_form.is_valid():
             attribute = add_form.save()
             clear_lookups()
-            messages.success(request, u'Attribute "{0}" added'.format(
-                    attribute.name))
+            messages.success(request, u'Attribute "{0}" added'.format(attribute))
             return redirect('serverdb_attributes')
     else:
         add_form = AddForm()

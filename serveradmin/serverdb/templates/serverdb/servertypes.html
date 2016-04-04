@@ -13,8 +13,8 @@
 {% for servertype in servertypes %}
     <tr>
         <td>
-            <a href="{% url 'serverdb_view_servertype' servertype.name %}"
-                />{{ servertype.name }}</a>
+            <a href="{% url 'serverdb_view_servertype' servertype.pk %}"
+                />{{ servertype }}</a>
         </td>
         <td>{{ servertype.description }}</td>
     </tr>

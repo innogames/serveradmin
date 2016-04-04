@@ -32,7 +32,7 @@ def index(request):
     template_info = {
         'search_term': term,
         'segments': Segment.objects.all(),
-        'servertypes': ServerType.objects.order_by('name'),
+        'servertypes': ServerType.objects.all(),
         'collections': Collection.objects.filter(overview=True).order_by('attrib'),
         'current_collection': current_collection,
         'current_segment': current_segment,

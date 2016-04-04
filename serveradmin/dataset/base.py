@@ -116,12 +116,10 @@ def _read_lookups(sender=None, **kwargs):
         lookups.attr_names[attr.name] = attr
 
     # Read all servertypes
-    lookups.stype_ids = {}
-    lookups.stype_names = {}
-    for stype in ServerType.objects.all():
-        stype.attributes = []
-        lookups.stype_ids[stype.pk] = stype
-        lookups.stype_names[stype.name] = stype
+    lookups.servertypes = {}
+    for servertype in ServerType.objects.all():
+        servertype.attributes = []
+        lookups.servertypes[servertype.pk] = servertype
 
     # Read all segments
     lookups.segments = dict((s.pk, s) for s in Segment.objects.all())
@@ -150,17 +148,17 @@ def _read_lookups(sender=None, **kwargs):
                 row[4] = None
             row[2] = bool(row[2])
             stype_attr = ServerTypeAttr._make(row)
-            stype = lookups.stype_ids[stype_attr.servertype_id]
+            stype = lookups.servertypes[stype_attr.servertype_id]
             stype.attributes.append(attribute)
             index = (stype_attr.servertype_id, stype_attr.attribute_id)
             lookups.stype_attrs[index] = stype_attr
 
-            servertype = lookups.stype_ids[stype_attr.servertype_id]
-            index = (servertype.name, attribute.name)
+            servertype = lookups.servertypes[stype_attr.servertype_id]
+            index = (servertype.pk, attribute.name)
             lookups.stype_attrs[index] = stype_attr
 
     # Add attributes from admin_server to servertype attributes
-    for servertype in lookups.stype_ids.itervalues():
+    for servertype in lookups.servertypes.itervalues():
         special_stype_attr = ServerTypeAttr(
                 servertype.pk,
                 -1,
@@ -172,7 +170,7 @@ def _read_lookups(sender=None, **kwargs):
 
         for attr in special_attributes:
             if attr.base:
-                index = (servertype.name, attr.name)
+                index = (servertype.pk, attr.name)
                 lookups.stype_attrs[index] = special_stype_attr
 
 _read_lookups()

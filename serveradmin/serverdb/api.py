@@ -5,7 +5,7 @@ from serveradmin.dataset.base import lookups
 @api_function(group='dataset')
 def get_servertypes():
     """Returns a list of available servertypes"""
-    return [stype.name for stype in ServerType.objects.all()]
+    return [stype.pk for stype in ServerType.objects.all()]
 
 @api_function(group='dataset')
 def get_segments():
@@ -37,7 +37,7 @@ def get_servertype_attributes_info(servertype_name):
     result = {}
 
     try:
-        stype =  lookups.stype_names[servertype_name]
+        stype =  lookups.servertypes[servertype_name]
     except KeyError:
         raise ValueError('Invalid servertype: {0}'.format(servertype_name))
 
