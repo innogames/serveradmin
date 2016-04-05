@@ -96,7 +96,7 @@ def _read_lookups(sender=None, **kwargs):
                     base=False,
                     multi=True,
                     group='base',
-                    special=CombinedSpecial(u'intern_ip', u'additional_ips', u'ipmi_ip'),
+                    special=CombinedSpecial(u'intern_ip', u'additional_ips'),
                 ),
         ]
     lookups.special_attributes = special_attributes
