@@ -321,12 +321,12 @@ class QuerySet(BaseQuerySet):
                 dict.__getitem__(
                     server_data[relation.server_id],
                     relation.attrib.name,
-                ).add(relation.value)
+                ).add(relation.value.hostname)
             else:
                 dict.__setitem__(
                     server_data[relation.server_id],
                     relation.attrib.name,
-                    relation.value,
+                    relation.value.hostname,
                 )
 
     def _add_additional_attrs(self, server_data, attributes):
