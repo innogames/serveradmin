@@ -137,7 +137,7 @@ class Attribute(models.Model):
         if self.type == u'ipv6':
             if not isinstance(value, IPv6Address):
                 value = IPv6Address(value)
-            value = value.packed
+            value = ''.join('{:02x}'.format(x) for x in value.packed)
 
         if self.type == u'datetime':
             if isinstance(value, datetime):
