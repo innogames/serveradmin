@@ -73,7 +73,7 @@ class Collection(models.Model):
 
         import serveradmin.dataset
 
-        kwargs[self.attrib.name] = self.attrib_value
+        kwargs[self.attrib_id] = self.attrib_value
 
         return serveradmin.dataset.query(**kwargs)
 

@@ -22,17 +22,17 @@ class QueryBuilder(object):
         return self.uid
 
     def add_attribute(self, attr, optional=False, alias=None):
-        attr_obj = lookups.attr_names[attr]
+        attribute = lookups.attributes[attr]
 
         if alias is None:
-            alias = attr_obj.name
+            alias = attribute.pk
 
         if alias in self.aliases:
             return self.aliases[alias]
 
-        if isinstance(attr_obj.special, ServerTableSpecial):
-            attr_field = u'adms.' + attr_obj.special.field
-        elif attr_obj.type == 'hostname' or attr_obj.multi:
+        if isinstance(attribute.special, ServerTableSpecial):
+            attr_field = u'adms.' + attribute.special.field
+        elif attribute.type == 'hostname' or attribute.multi:
             attr_field = None
         else:
             uid = self.get_uid()
@@ -43,8 +43,8 @@ class QueryBuilder(object):
                 self.sql_left_joins.append((
                         u'LEFT JOIN attrib_values AS av{0} '
                         u'ON av{0}.server_id = adms.server_id AND '
-                        u'av{0}.attrib_id = {1}'
-                    ).format(uid, attr_obj.pk))
+                        u"av{0}.attrib_id = '{1}'"
+                    ).format(uid, attribute.pk))
 
             else:
                 self.sql_from_tables.append(
@@ -53,18 +53,18 @@ class QueryBuilder(object):
 
                 self.sql_where.append((
                         u'av{0}.server_id = adms.server_id AND '
-                        u'av{0}.attrib_id = {1}'
-                    ).format(uid, attr_obj.pk))
+                        u"av{0}.attrib_id = '{1}'"
+                    ).format(uid, attribute.pk))
 
-        self.aliases[alias] = {'attr': attr_obj, 'field': attr_field}
+        self.aliases[alias] = {'attr': attribute, 'field': attr_field}
         return self.aliases[alias]
 
     def get_filter_sql(self, alias, filter_obj):
         alias_info = self.aliases[alias]
         attr_field = alias_info['field']
-        attr_obj = alias_info['attr']
+        attribute = alias_info['attr']
 
-        return filter_obj.as_sql_expr(self, attr_obj, attr_field)
+        return filter_obj.as_sql_expr(self, attribute, attr_field)
 
     def add_filter(self, alias, filter_obj):
         self.sql_where.append(self.get_filter_sql(alias, filter_obj))
@@ -78,7 +78,7 @@ class QueryBuilder(object):
     def add_select(self, *aliases):
         for alias in aliases:
             field = self.aliases[alias]['field']
-            attr_obj = self.aliases[alias]['attr']
+            attribute = self.aliases[alias]['attr']
             self.sql_select.append(field)
 
     def add_limit(self, limit):

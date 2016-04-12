@@ -46,12 +46,12 @@ def view_servertype(request, servertype_name):
 
     stype_attributes = []
     for attr in servertype.attributes:
-        stype_attr = lookups.stype_attrs[(servertype.pk, attr.name)]
-        attr_obj = lookups.attr_ids[stype_attr.attribute_id]
+        stype_attr = lookups.stype_attrs[(servertype.pk, attr.pk)]
+        attribute = lookups.attributes[stype_attr.attribute_id]
         stype_attributes.append({
-            'name': attr_obj.name,
-            'type': attr_obj.type,
-            'multi': attr_obj.multi,
+            'name': attribute.pk,
+            'type': attribute.type,
+            'multi': attribute.multi,
             'required': stype_attr.required,
             'regexp': stype_attr.regexp.pattern if stype_attr.regexp else None,
             'default': stype_attr.default
@@ -103,7 +103,7 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
     stype = get_object_or_404(ServerType, pk=servertype_name)
     if attrib_name:
         form_class = EditServertypeAttributeForm
-        attrib = get_object_or_404(Attribute, name=attrib_name)
+        attrib = get_object_or_404(Attribute, pk=attrib_name)
         stype_attr = get_object_or_404(
             ServerTypeAttribute,
             attrib=attrib,
@@ -157,7 +157,7 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
 def delete_servertype_attr(request, servertype_name, attrib_name):
     stype_attr = get_object_or_404(
         ServerTypeAttribute,
-        attrib__name=attrib_name,
+        attrib_id=attrib_name,
         servertype_id=servertype_name,
     )
 
@@ -188,8 +188,8 @@ def copy_servertype(request, servertype_name):
 @login_required
 def attributes(request):
     return TemplateResponse(request, 'serverdb/attributes.html', {
-        'attributes': sorted(lookups.attr_names.values(),
-                             key=attrgetter('name'))
+        'attributes': sorted(lookups.attributes.values(),
+                             key=attrgetter('pk'))
     })
 
 

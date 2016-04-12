@@ -6,38 +6,38 @@ from serveradmin.serverdb.models import ServerObject
 
 def check_attributes(attributes):
     for attr in attributes:
-        if attr not in lookups.attr_names:
+        if attr not in lookups.attributes:
             raise ValueError(u'Invalid attribute: {0}'.format(attr))
 
 def check_attribute_type(attr, value):
-    attr_obj = lookups.attr_names[attr]
-    if attr_obj.multi:
+    attribute = lookups.attributes[attr]
+    if attribute.multi:
         if not (isinstance(value, (list, set)) or hasattr(value,'_proxied_set')):
             raise ValueError((
                     u'{0} is a multi attribute. Require list/set, '
                     u'but {1} of type {2} was given'
                 ).format(attr, repr(value), type(value).__name__))
 
-        if attr_obj.type == 'string':
+        if attribute.type == 'string':
             for val in value:
                 _require_string(attr, val)
-        elif attr_obj.type == 'integer':
+        elif attribute.type == 'integer':
             for val in value:
                 _require_integer(attr, val)
-        elif attr_obj.type == 'boolean':
+        elif attribute.type == 'boolean':
             for val in value:
                 _require_boolean(attr, val)
-        elif attr_obj.type == 'ip':
+        elif attribute.type == 'ip':
             for val in value:
                 _require_ip(attr, val)
     else:
-        if attr_obj.type == 'string':
+        if attribute.type == 'string':
             _require_string(attr, value)
-        elif attr_obj.type == 'integer':
+        elif attribute.type == 'integer':
             _require_integer(attr, value)
-        elif attr_obj.type == 'boolean':
+        elif attribute.type == 'boolean':
             _require_boolean(attr, value)
-        elif attr_obj.type == 'ip':
+        elif attribute.type == 'ip':
             _require_ip(attr, value)
 
 def _require_string(attr, value):

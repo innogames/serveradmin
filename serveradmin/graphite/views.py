@@ -38,9 +38,9 @@ def graph_table(request):
         if (collection.attrib, collection.attrib_value) in doubles:
             continue
         for hostname in hostnames:
-            if collection.attrib.name not in servers[hostname]:
+            if collection.attrib_id not in servers[hostname]:
                 break   # The server hasn't got this attribute at all.
-            value = servers[hostname][collection.attrib.name]
+            value = servers[hostname][collection.attrib_id]
             if isinstance(value, MultiAttr):
                 if collection.attrib_value not in [str(v) for v in value]:
                     break   # The server hasn't got this attribute value.

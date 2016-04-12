@@ -55,22 +55,19 @@ class ServerType(models.Model):
 
     def copy(self, new_id):
         target, created = ServerType.objects.get_or_create(pk=new_id)
-        skip = {
-            attr.attrib.name
-            for attr in target.used_attributes.select_related()
-        }
+        skip = [a.attrib for a in target.used_attributes.select_related()]
 
-        for attr in self.used_attributes.select_related():
-            if attr.attrib.name in skip:
+        for servertype_attribute in self.used_attributes.select_related():
+            if servertype_attribute.attrib in skip:
                 continue
 
             ServerTypeAttribute.objects.create(
                 servertype=target,
-                attrib=attr.attrib,
-                required=attr.required,
-                attrib_default=attr.attrib_default,
-                regex=attr.regex,
-                default_visible=attr.default_visible,
+                attrib=servertype_attribute.attrib,
+                required=servertype_attribute.required,
+                attrib_default=servertype_attribute.attrib_default,
+                regex=servertype_attribute.regex,
+                default_visible=servertype_attribute.default_visible,
             )
 
             clear_lookups()
@@ -93,23 +90,22 @@ class Attribute(models.Model):
             del kwargs[u'special']
         super(Attribute, self).__init__(*args, **kwargs)
 
-    attrib_id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=64)
-    type = models.CharField(max_length=64, choices=TYPE_CHOICES)
+    attrib_id = models.CharField(max_length=32, primary_key=True)
+    type = models.CharField(max_length=32, choices=TYPE_CHOICES)
     base = models.BooleanField(default=False)
     multi = models.BooleanField(default=False)
     hovertext = models.TextField(blank=True, default='')
-    group = models.CharField(max_length=64, default='other')
+    group = models.CharField(max_length=32, default='other')
     help_link = models.CharField(max_length=255, blank=True, null=True)
     readonly = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'serverdb'
         db_table = 'attrib'
-        ordering = ('name', )
+        ordering = ('attrib_id', )
 
     def __unicode__(self):
-        return self.name
+        return self.attrib_id
 
     def used_in(self):
         queryset = ServerTypeAttribute.objects.select_related('servertype')
@@ -122,7 +118,7 @@ class Attribute(models.Model):
         return self.search_link()
 
     def search_link(self):
-        return settings.ATTRIBUTE_WIKI_LINK.format(attr=self.name)
+        return settings.ATTRIBUTE_WIKI_LINK.format(attr=self.pk)
 
     def serialize_value(self, value):
 

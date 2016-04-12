@@ -10,12 +10,13 @@ register = template.Library()
 
 @register.inclusion_tag('serversearch.html')
 def serversearch_js(search_id):
-    attributes = {}
-    for attr in lookups.attr_names.itervalues():
-        attributes[attr.name] = {
-            'multi': attr.multi,
-            'type': attr.type
+    attributes = {
+        k: {
+            'multi': v.multi,
+            'type': v.type,
         }
+        for k, v in lookups.attributes.items()
+    }
 
     filter_dict = {}
     for filt in filters.filter_classes.iterkeys():

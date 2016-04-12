@@ -175,14 +175,13 @@ def dataset_create(request, app, data):
 
 
 def _build_attributes():
-    attributes = {}
-    for attr in lookups.attr_names.itervalues():
-        attributes[attr.name] = {
-                'multi': attr.multi,
-                'type': attr.type
-            }
-
-    return attributes
+    return {
+        k: {
+            'multi': v.multi,
+            'type': v.type,
+        }
+        for k, v in lookups.attributes.items()
+    }
 
 
 @api_view

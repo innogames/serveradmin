@@ -39,7 +39,7 @@ def _read_lookups(sender=None, **kwargs):
     # Special attributes that don't have an entry in the attrib table
     special_attributes = [
             Attribute(
-                    name=u'object_id',
+                    attrib_id=u'object_id',
                     type=u'integer',
                     base=False,
                     multi=False,
@@ -47,7 +47,7 @@ def _read_lookups(sender=None, **kwargs):
                     special=ServerTableSpecial(u'server_id'),
                 ),
             Attribute(
-                    name=u'hostname',
+                    attrib_id=u'hostname',
                     type=u'string',
                     base=True,
                     multi=False,
@@ -55,7 +55,7 @@ def _read_lookups(sender=None, **kwargs):
                     special=ServerTableSpecial(u'hostname', unique=True),
                 ),
             Attribute(
-                    name=u'servertype',
+                    attrib_id=u'servertype',
                     type=u'string',
                     base=True,
                     multi=False,
@@ -63,7 +63,7 @@ def _read_lookups(sender=None, **kwargs):
                     special=ServerTableSpecial(u'servertype_id'),
                 ),
             Attribute(
-                    name=u'project',
+                    attrib_id=u'project',
                     type=u'string',
                     base=True,
                     multi=False,
@@ -71,7 +71,7 @@ def _read_lookups(sender=None, **kwargs):
                     special=ServerTableSpecial(u'project_id'),
                 ),
             Attribute(
-                    name=u'intern_ip',
+                    attrib_id=u'intern_ip',
                     type=u'ip',
                     base=True,
                     multi=False,
@@ -79,7 +79,7 @@ def _read_lookups(sender=None, **kwargs):
                     special=ServerTableSpecial(u'intern_ip'),
                 ),
             Attribute(
-                    name=u'segment',
+                    attrib_id=u'segment',
                     type=u'string',
                     base=True,
                     multi=False,
@@ -90,11 +90,9 @@ def _read_lookups(sender=None, **kwargs):
     lookups.special_attributes = special_attributes
 
     # Read all attributes
-    lookups.attr_ids = {}
-    lookups.attr_names = {}
-    for attr in chain(Attribute.objects.all(), special_attributes):
-        lookups.attr_ids[attr.pk] = attr
-        lookups.attr_names[attr.name] = attr
+    lookups.attributes = {}
+    for attribute in chain(Attribute.objects.all(), special_attributes):
+        lookups.attributes[attribute.pk] = attribute
 
     # Read all servertypes
     lookups.servertypes = {}
@@ -119,7 +117,7 @@ def _read_lookups(sender=None, **kwargs):
 
         for row in cursor.fetchall():
             row = list(row)
-            attribute = lookups.attr_ids[row[1]]
+            attribute = lookups.attributes[row[1]]
             if attribute.type == 'string':
                 try:
                     row[4] = re.compile(row[4])
@@ -132,10 +130,6 @@ def _read_lookups(sender=None, **kwargs):
             stype = lookups.servertypes[stype_attr.servertype_id]
             stype.attributes.append(attribute)
             index = (stype_attr.servertype_id, stype_attr.attribute_id)
-            lookups.stype_attrs[index] = stype_attr
-
-            servertype = lookups.servertypes[stype_attr.servertype_id]
-            index = (servertype.pk, attribute.name)
             lookups.stype_attrs[index] = stype_attr
 
     # Add attributes from admin_server to servertype attributes
@@ -151,7 +145,7 @@ def _read_lookups(sender=None, **kwargs):
 
         for attr in special_attributes:
             if attr.base:
-                index = (servertype.pk, attr.name)
+                index = (servertype.pk, attr.pk)
                 lookups.stype_attrs[index] = special_stype_attr
 
 _read_lookups()

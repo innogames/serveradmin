@@ -116,9 +116,9 @@ class QuerySet(BaseQuerySet):
     def __init__(self, filters):
         check_attributes(filters.keys())
         for attribute_name, filter_obj in filters.items():
-            filter_obj.typecast(lookups.attr_names[attribute_name])
+            filter_obj.typecast(lookups.attributes[attribute_name])
         super(QuerySet, self).__init__(filters)
-        self.attributes = lookups.attr_names
+        self.attributes = lookups.attributes
         self._order_by = None
         self._order_dir = 'asc'
         self._limit = None
@@ -188,11 +188,11 @@ class QuerySet(BaseQuerySet):
         builder = QueryBuilder()
         optional_filters = (filters.OptionalFilter, filters.Not)
         for attr, f in self._filters.iteritems():
-            attr_obj = lookups.attr_names[attr]
+            attribute = lookups.attributes[attr]
             optional = (
                     isinstance(f, optional_filters)
                 or
-                    attr_obj.type == 'boolean'
+                    attribute.type == 'boolean'
             )
             builder.add_attribute(attr, optional)
             builder.add_filter(attr, f)
@@ -277,10 +277,10 @@ class QuerySet(BaseQuerySet):
                 server_object = ServerObject(attrs, server_id, self)
                 server_data[server_id] = server_object
 
-                for attr in lookups.servertypes[stype].attributes:
-                    if attr.multi:
-                        if not restrict or attr.name in restrict:
-                            dict.__setitem__(server_object, attr.name, set())
+                for attribute in lookups.servertypes[stype].attributes:
+                    if attribute.multi:
+                        if not restrict or attribute.pk in restrict:
+                            dict.__setitem__(server_object, attribute.pk, set())
 
         # Return early if there are no servers (= empty dict)
         if not server_data:
@@ -290,7 +290,7 @@ class QuerySet(BaseQuerySet):
         string_attributes = []
         if restrict:
             for name in restrict:
-                attribute = lookups.attr_names[name]
+                attribute = lookups.attributes[name]
 
                 if not isinstance(attribute.special, ServerTableSpecial):
                     if attribute.type == 'hostname':
@@ -316,12 +316,12 @@ class QuerySet(BaseQuerySet):
             if relation.attrib.multi:
                 dict.__getitem__(
                     server_data[relation.server_id],
-                    relation.attrib.name,
+                    relation.attrib.pk,
                 ).add(relation.value.hostname)
             else:
                 dict.__setitem__(
                     server_data[relation.server_id],
-                    relation.attrib.name,
+                    relation.attrib.pk,
                     relation.value.hostname,
                 )
 
@@ -335,8 +335,8 @@ class QuerySet(BaseQuerySet):
             ).format(server_ids)
 
         if attributes:
-            sql_stmt += u' AND attrib_id IN ({0})'.format(', '.join(
-                str(a.attrib_id) for a in attributes
+            sql_stmt += ' AND attrib_id IN ({0})'.format(', '.join(
+                "'{0}'".format(a.attrib_id) for a in attributes
             ))
 
         _getitem = dict.__getitem__
@@ -344,28 +344,27 @@ class QuerySet(BaseQuerySet):
 
         with connection.cursor() as cursor:
             cursor.execute(sql_stmt)
-            attr_ids = lookups.attr_ids
             for server_id, attr_id, value in cursor.fetchall():
                 # Typecasting is inlined here for performance reasons
-                attr = attr_ids[attr_id]
-                attr_type = attr.type
-                if attr_type == u'integer':
+                attribute = lookups.attributes[attr_id]
+
+                if attribute.type == u'integer':
                     value = int(value)
-                elif attr_type == u'boolean':
+                elif attribute.type == u'boolean':
                     value = value == '1'
-                elif attr_type == u'ip':
+                elif attribute.type == u'ip':
                     value = IPv4Address(int(value))
-                elif attr_type == u'ipv6':
+                elif attribute.type == u'ipv6':
                     value = IPv6Address(bytearray.fromhex(value))
-                elif attr_type == u'datetime':
+                elif attribute.type == u'datetime':
                     value = datetime.fromtimestamp(int(value))
 
                 # Using dict-methods to bypass ServerObject's special properties
-                if attr.multi:
+                if attribute.multi:
                     # Bypass MultiAttr wrapping in ServerObject.__getitem__
-                    _getitem(server_data[server_id], attr.name).add(value)
+                    _getitem(server_data[server_id], attribute.pk).add(value)
                 else:
-                    _setitem(server_data[server_id], attr.name, value)
+                    _setitem(server_data[server_id], attribute.pk, value)
 
 class ServerObject(BaseServerObject):
     def commit(self, app=None, user=None):

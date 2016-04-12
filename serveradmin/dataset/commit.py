@@ -231,7 +231,7 @@ def _validate_structure(deleted_servers, changed_servers):
     # FIXME: Validation of the inner structure
     for server_id, changes in changed_servers.iteritems():
         for attr, change in changes.iteritems():
-            if attr not in lookups.attr_names:
+            if attr not in lookups.attributes:
                 raise ValueError('No such attribute')
             action = change['action']
             if action == 'update':
@@ -246,7 +246,7 @@ def _validate_structure(deleted_servers, changed_servers):
             elif action == 'multi':
                 if not all(x in change for x in ('add', 'remove')):
                     raise ValueError('Invalid multi change')
-                if not lookups.attr_names[attr].multi:
+                if not lookups.attributes[attr].multi:
                     raise ValueError('Not a multi attribute')
 
 
@@ -268,7 +268,7 @@ def _validate_readonly(changed_servers, servers):
     for server_id, changes in changed_servers.iteritems():
         server = servers[server_id]
         for attr, change in changes.iteritems():
-            if lookups.attr_names[attr].readonly:
+            if lookups.attributes[attr].readonly:
                 if attr in server and server[attr] != '':
                     violations.append((server_id, attr))
     return violations
@@ -332,7 +332,7 @@ def _validate_commit(changed_servers, servers):
 def _typecast_values(changed_servers):
     for server_id, changes in changed_servers.iteritems():
         for key, change in changes.iteritems():
-            attribute = lookups.attr_names[key]
+            attribute = lookups.attributes[key]
             action = change['action']
 
             if action == 'new':
@@ -388,7 +388,7 @@ def _apply_changes(changed_servers):
         server = servers[server_id]
 
         for key, change in changes.iteritems():
-            attribute = lookups.attr_names[key]
+            attribute = lookups.attributes[key]
             action = change['action']
 
             if isinstance(attribute.special, ServerTableSpecial):

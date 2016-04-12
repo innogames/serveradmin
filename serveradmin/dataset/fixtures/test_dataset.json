@@ -1,60 +1,54 @@
 [
     {
-        "pk": 1,
+        "pk": "os",
         "model": "dataset.attribute",
         "fields": {
             "multi": false,
             "base": false,
             "type": "string",
-            "name": "os",
             "modifier": null
         }
     },
     {
-        "pk": 2,
+        "pk": "game_world",
         "model": "dataset.attribute",
         "fields": {
             "multi": false,
             "base": false,
             "type": "integer",
-            "name": "game_world",
             "modifier": null
         }
     },
     {
-        "pk": 3,
+        "pk": "additional_ips",
         "model": "dataset.attribute",
         "fields": {
             "multi": false,
             "base": false,
             "type": "integer",
-            "name": "additional_ips",
             "modifier": null
         }
     },
     {
-        "pk": 4,
+        "pk": "database",
         "model": "dataset.attribute",
         "fields": {
             "multi": true,
             "base": false,
             "type": "string",
-            "name": "database",
             "modifier": null
         }
     },
     {
-        "pk": 1,
+        "pk": "test0",
         "model": "dataset.servertype",
         "fields": {
-            "name": "test0"
         }
     },
     {
-        "pk": 2,
+        "pk": "test2",
         "model": "dataset.servertype",
         "fields": {
-            "name": "test2"
         }
     },
     {
@@ -66,7 +60,7 @@
             "attrib_default": "squeeze",
             "servertype": 1,
             "default_visible": false,
-            "attrib": 1
+            "attrib": "os"
         }
     },
     {
@@ -78,7 +72,7 @@
             "attrib_default": null,
             "servertype": 2,
             "default_visible": false,
-            "attrib": 1
+            "attrib": "ox"
         }
     },
     {
@@ -90,7 +84,7 @@
             "attrib_default": null,
             "servertype": 2,
             "default_visible": false,
-            "attrib": 2
+            "attrib": "game_world"
         }
     },
     {
@@ -102,7 +96,7 @@
             "attrib_default": null,
             "servertype": 1,
             "default_visible": false,
-            "attrib": 4
+            "attrib": "database"
         }
     },
     {
@@ -153,7 +147,7 @@
         "pk": 1,
         "model": "dataset.attributevalue",
         "fields": {
-            "attrib": 1,
+            "attrib": "os",
             "value": "wheezy",
             "server": 1
         }
@@ -162,7 +156,7 @@
         "pk": 2,
         "model": "dataset.attributevalue",
         "fields": {
-            "attrib": 1,
+            "attrib": "os",
             "value": "squeeze",
             "server": 2
         }
@@ -171,7 +165,7 @@
         "pk": 3,
         "model": "dataset.attributevalue",
         "fields": {
-            "attrib": 1,
+            "attrib": "os",
             "value": "squeeze",
             "server": 3
         }
@@ -180,7 +174,7 @@
         "pk": 4,
         "model": "dataset.attributevalue",
         "fields": {
-            "attrib": 1,
+            "attrib": "os",
             "value": "squeeze",
             "server": 4
         }
@@ -189,7 +183,7 @@
         "pk": 5,
         "model": "dataset.attributevalue",
         "fields": {
-            "attrib": 2,
+            "attrib": "game_world",
             "value": "1",
             "server": 2
         }
@@ -198,7 +192,7 @@
         "pk": 6,
         "model": "dataset.attributevalue",
         "fields": {
-            "attrib": 2,
+            "attrib": "game_world",
             "value": "2",
             "server": 3
         }
@@ -207,7 +201,7 @@
         "pk": 7,
         "model": "dataset.attributevalue",
         "fields": {
-            "attrib": 2,
+            "attrib": "game_world",
             "value": "10",
             "server": 4
         }

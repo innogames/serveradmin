@@ -19,7 +19,7 @@
     </tr>
 {% for attr in attributes %}
     <tr class="{% cycle 'row_a' 'row_b' %}">
-        <td>{{ attr.name }}</td>
+        <td>{{ attr }}</td>
         <td>{{ attr.type }}</td>
         <td>{{ attr.multi }}</td>
         <td>{{ attr.required }}</td>
@@ -27,8 +27,8 @@
         <td>{% if attr.default %}{{ attr.default }}{% else %}<i>None</i>{% endif %}</td>
 {% if perms.serverdb.change_servertype %}
         <td>
-            <a href="{% url 'serverdb_edit_servertype_attr' servertype.pk attr.name %}">edit</a>
-            <a href="{% url 'serverdb_delete_servertype_attr' servertype.pk attr.name %}">delete</a>
+            <a href="{% url 'serverdb_edit_servertype_attr' servertype.pk attr.pk %}">edit</a>
+            <a href="{% url 'serverdb_delete_servertype_attr' servertype.pk attr.pk %}">delete</a>
         </td>
 {% endif %}
     </tr>

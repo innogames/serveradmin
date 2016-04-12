@@ -40,12 +40,12 @@ NUM_SERVERS_DEFAULT = 100
 @login_required
 @ensure_csrf_cookie
 def index(request):
-    attributes = lookups.attr_names.values()
+    attributes = lookups.attributes.values()
     attribute_groups = {}
     for attribute in attributes:
         attribute_groups.setdefault(attribute.group, []).append(attribute)
     for attributes in attribute_groups.itervalues():
-        attributes.sort(key=attrgetter('name'))
+        attributes.sort(key=attrgetter('pk'))
     attribute_groups = sorted(attribute_groups.iteritems(), key=lambda x: x[0])
 
     return TemplateResponse(request, 'servershell/index.html', {
@@ -93,7 +93,7 @@ def get_results(request):
         # to the shown attributes
         for attr, value in query_args.iteritems():
             try:
-                multi = lookups.attr_names[attr].multi
+                multi = lookups.attributes[attr].multi
             except KeyError:
                 continue
 
@@ -130,14 +130,14 @@ def get_results(request):
     for servertype, attr_info in avail_attributes.iteritems():
         attributes = lookups.servertypes[servertype].attributes
         for attr in attributes:
-            stype_attr = lookups.stype_attrs[(servertype, attr.name)]
+            stype_attr = lookups.stype_attrs[(servertype, attr.pk)]
             regexp = stype_attr.regexp.pattern if stype_attr.regexp else None
-            attr_info[attr.name] = {
+            attr_info[attr.pk] = {
                 'regexp': regexp,
                 'default': stype_attr.default
             }
         for attr in lookups.special_attributes:
-            attr_info[attr.name] = {'regexp': None, 'default': None}
+            attr_info[attr.pk] = {'regexp': None, 'default': None}
 
     return HttpResponse(json.dumps({
         'status': 'success',
@@ -182,7 +182,7 @@ def list_and_edit(request, mode='list'):
             if attr in non_editable:
                 continue
 
-            attribute = lookups.attr_names[attr]
+            attribute = lookups.attributes[attr]
 
             if attribute.multi:
                 values = [raw_value.strip() for raw_value in
@@ -227,35 +227,35 @@ def list_and_edit(request, mode='list'):
         stype_attr = lookups.stype_attrs[(stype.pk, key)]
         fields.append({
             'key': key,
-            'value': displaycast(lookups.attr_names[key], value),
+            'value': displaycast(lookups.attributes[key], value),
             'has_value': True,
             'editable': key not in non_editable,
-            'type': lookups.attr_names[key].type,
-            'multi': lookups.attr_names[key].multi,
+            'type': lookups.attributes[key].type,
+            'multi': lookups.attributes[key].multi,
             'required': stype_attr.required,
             'regexp': _prepare_regexp_html(stype_attr.regexp),
             'default': stype_attr.default,
-            'readonly': lookups.attr_names[key].readonly,
+            'readonly': lookups.attributes[key].readonly,
             'error': key in invalid_attrs
         })
 
     if mode == 'edit':
-        for attr in stype.attributes:
-            if attr.name in fields_set:
+        for attribute in stype.attributes:
+            if attribute.pk in fields_set:
                 continue
-            stype_attr = lookups.stype_attrs[(stype.pk, attr.name)]
+            stype_attr = lookups.stype_attrs[(stype.pk, attribute.pk)]
             fields.append({
-                'key': attr.name,
-                'value': [] if attr.multi else '',
+                'key': attribute.pk,
+                'value': [] if attribute.multi else '',
                 'has_value': False,
                 'editable': True,
-                'type': attr.type,
-                'multi': attr.multi,
+                'type': attribute.type,
+                'multi': attribute.multi,
                 'required': False,
                 'regexp': _prepare_regexp_html(stype_attr.regexp),
                 'default': stype_attr.default,
-                'readonly': attr.readonly,
-                'error': attr.name in invalid_attrs
+                'readonly': attribute.readonly,
+                'error': attribute.pk in invalid_attrs
             })
 
     # Sort keys by some order and then lexographically
@@ -321,15 +321,15 @@ def commit(request):
 @login_required
 def get_values(request):
     try:
-        attr_obj = lookups.attr_names[request.GET['attribute']]
+        attribute = lookups.attributes[request.GET['attribute']]
     except KeyError:
         raise Http404
 
-    queryset = ServerStringAttribute.objects.filter(attrib=attr_obj)
+    queryset = ServerStringAttribute.objects.filter(attrib=attribute)
     value_queryset = queryset.values('value').distinct().order_by('value')
 
     return TemplateResponse(request, 'servershell/values.html', {
-        'attribute': attr_obj,
+        'attribute': attribute,
         'values': (v['value'] for v in value_queryset[:MAX_DISTINGUISHED_VALUES]),
         'num_values': MAX_DISTINGUISHED_VALUES
     })

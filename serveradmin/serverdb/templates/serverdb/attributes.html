@@ -17,7 +17,7 @@
     </tr>
 {% for attr in attributes %}
     <tr class="{% cycle 'row_a' 'row_b' %}">
-        <td>{{ attr.name }}</td>
+        <td>{{ attr }}</td>
         <td>{{ attr.get_type_display }}</td>
         <td>{{ attr.multi|yesno }}</td>
         <td>
@@ -30,7 +30,7 @@
 {% if perms.serverdb.delete_attribute %}
         <td>
         {% if attr.pk %}
-            <a href="{% url 'serverdb_delete_attribute' attr.name %}">delete</a>
+            <a href="{% url 'serverdb_delete_attribute' attr.pk %}">delete</a>
         {% else %}
         not deletable
         {% endif %}

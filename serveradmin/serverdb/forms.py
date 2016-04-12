@@ -22,7 +22,7 @@ class AddServertypeForm(forms.ModelForm):
 class AddAttributeForm(forms.ModelForm):
     class Meta:
         model = Attribute
-        fields = ('name', 'type', 'multi')
+        fields = ('attrib_id', 'type', 'multi')
 
 
 class EditServertypeAttributeForm(forms.ModelForm):

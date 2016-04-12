@@ -684,13 +684,13 @@ def value_to_sql(attribute, value):
             raise ValueError('No server with hostname "{0}"'.format(value))
 
     # Validations of special attributes
-    if attribute.name == u'servertype':
+    if attribute.pk == u'servertype':
         if value not in lookups.servertypes:
             raise ValueError(u'Invalid servertype: ' + value)
-    if attribute.name == u'segment':
+    if attribute.pk == u'segment':
         if value not in lookups.segments:
             raise ValueError(u'Invalid segment: ' + value)
-    if attribute.name == u'project':
+    if attribute.pk == u'project':
         if value not in lookups.projects:
             raise ValueError(u'Invalid project: ' + value)
 
@@ -715,7 +715,7 @@ def _exists_sql(attribute, cond=None):
         '   WHERE'
         '           sub{1}.server_id = adms.server_id'
         '       AND'
-        '           sub{1}.attrib_id = {1}'
+        "           sub{1}.attrib_id = '{1}'"
         '       {2}'
         ')'
     ).format(

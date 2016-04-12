@@ -9,7 +9,7 @@ Add attribute to servertype {{ servertype }}
 
 {% block content %}
 {% if edit %}
-<h2>Edit attribute {{ attrib.name }} of servertype {{ servertype }}</h2>
+<h2>Edit attribute {{ attrib }} of servertype {{ servertype }}</h2>
 {% else %}
 <h2>Add attribute to servertype {{ servertype }}</h2>
 {% endif %}
@@ -20,7 +20,7 @@ Add attribute to servertype {{ servertype }}
 </table>
 <p>
     <a href="{% url 'serverdb_view_servertype' servertype.pk %}">Cancel</a>&nbsp;
-    <input type="submit" value="{% if edit %}Edit {{ attrib.name }}{% else %}Add attribute{% endif %}" />
+    <input type="submit" value="{% if edit %}Edit {{ attrib }}{% else %}Add attribute{% endif %}" />
     </p>
 </form>
 {% endblock content %}

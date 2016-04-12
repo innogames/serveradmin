@@ -88,36 +88,36 @@ def create_server(
     violations_regexp = []
     violations_required = []
     for attribute in servertype.attributes:
-        stype_attr = lookups.stype_attrs[(servertype.pk, attribute.name)]
+        stype_attr = lookups.stype_attrs[(servertype.pk, attribute.pk)]
 
         # Handle not existing attributes (fill defaults, validate require)
-        if attribute.name not in real_attributes:
+        if attribute.pk not in real_attributes:
             if attribute.multi:
                 if stype_attr.default in ('', None):
-                    real_attributes[attribute.name] = []
+                    real_attributes[attribute.pk] = []
                 else:
-                    real_attributes[attribute.name] = _type_cast_default(attribute,
+                    real_attributes[attribute.pk] = _type_cast_default(attribute,
                             stype_attr.default)
             elif stype_attr.required:
                 if fill_defaults and stype_attr.default not in ('', None):
-                    real_attributes[attribute.name] = _type_cast_default(
+                    real_attributes[attribute.pk] = _type_cast_default(
                             attribute,
                             stype_attr.default,
                         )
                 else:
-                    violations_required.append(attribute.name)
+                    violations_required.append(attribute.pk)
                     continue
             else:
                 if fill_defaults_all and stype_attr.default not in ('', None):
-                    real_attributes[attribute.name] = _type_cast_default(
+                    real_attributes[attribute.pk] = _type_cast_default(
                             attribute,
                             stype_attr.default,
                         )
                 else:
                     continue
 
-        value = real_attributes[attribute.name]
-        check_attribute_type(attribute.name, value)
+        value = real_attributes[attribute.pk]
+        check_attribute_type(attribute.pk, value)
 
         # Validate regular expression
         regexp = stype_attr.regexp
@@ -125,16 +125,16 @@ def create_server(
             if attribute.type == 'string' and regexp:
                 for val in value:
                     if not regexp.match(unicode(val)):
-                        violations_regexp.append(attribute.name)
+                        violations_regexp.append(attribute.pk)
         else:
             if attribute.type == 'string' and regexp and not regexp.match(value):
-                violations_regexp.append(attribute.name)
+                violations_regexp.append(attribute.pk)
 
     # Check for attributes that are not defined on this servertype
     violations_attribs = []
-    attribute_set = set([attr.name for attr in servertype.attributes])
+    servertype_attributes = set([a.pk for a in servertype.attributes])
     for attr in real_attributes:
-        if attr not in attribute_set:
+        if attr not in servertype_attributes:
             violations_attribs.append(attr)
 
     handle_violations(
@@ -181,7 +181,7 @@ def _insert_server(hostname, intern_ip, segment_id, servertype_id, project_id, a
     )
 
     for attr_name, value in attributes.iteritems():
-        attribute = lookups.attr_names[attr_name]
+        attribute = lookups.attributes[attr_name]
 
         if attribute.multi:
             for single_value in value:
