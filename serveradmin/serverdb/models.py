@@ -25,6 +25,7 @@ TYPE_CHOICES = (
     ('hostname', 'Hostname'),
 )
 
+
 class Project(models.Model):
     project_id = models.CharField(max_length=32, primary_key=True)
     subdomain = models.CharField(max_length=16, unique=True)
@@ -41,6 +42,7 @@ class Project(models.Model):
     def __unicode__(self):
         return self.project_id
 
+
 class ServerType(models.Model):
     servertype_id = models.CharField(max_length=32, primary_key=True)
     description = models.CharField(max_length=1024)
@@ -52,9 +54,11 @@ class ServerType(models.Model):
     )
 
     def copy(self, new_id):
-        target, created = ServerType.objects.get_or_create(servertype_id=new_id)
-        skip = set([attr.attrib.name for attr in
-                target.used_attributes.select_related()])
+        target, created = ServerType.objects.get_or_create(pk=new_id)
+        skip = {
+            attr.attrib.name
+            for attr in target.used_attributes.select_related()
+        }
 
         for attr in self.used_attributes.select_related():
             if attr.attrib.name in skip:
@@ -78,6 +82,7 @@ class ServerType(models.Model):
 
     def __unicode__(self):
         return self.servertype_id
+
 
 class Attribute(models.Model):
     special = None
@@ -140,6 +145,7 @@ class Attribute(models.Model):
 
         return str(value)
 
+
 class ServerTypeAttribute(models.Model):
     servertype = models.ForeignKey(
         ServerType,
@@ -160,6 +166,7 @@ class ServerTypeAttribute(models.Model):
         db_table = 'servertype_attributes'
         unique_together = (('servertype', 'attrib'), )
 
+
 class Segment(models.Model):
     segment_id = models.CharField(max_length=20, primary_key=True)
     ip_range = models.CharField(max_length=255, null=True, blank=True)
@@ -172,6 +179,7 @@ class Segment(models.Model):
 
     def __unicode__(self):
         return self.segment_id
+
 
 class ServerObject(models.Model):
     server_id = models.AutoField(primary_key=True)
@@ -197,9 +205,6 @@ class ServerObject(models.Model):
     class Meta:
         app_label = 'serverdb'
         db_table = 'admin_server'
-
-    def __str__(self):
-        return self.hostname
 
     def get_attributes(self, attribute):
 
@@ -228,6 +233,7 @@ class ServerObject(models.Model):
 
         return server_attribute
 
+
 class ServerAttribute(models.Model):
     server = models.ForeignKey(
         ServerObject,
@@ -242,6 +248,7 @@ class ServerAttribute(models.Model):
 
     def matches(self, value):
         return self.value in value
+
 
 class ServerHostnameAttribute(ServerAttribute):
     attrib = models.ForeignKey(
@@ -262,6 +269,7 @@ class ServerHostnameAttribute(ServerAttribute):
         db_table = 'server_hostname_attrib'
         unique_together = (('server', 'attrib', 'value'), )
 
+
 class ServerStringAttribute(ServerAttribute):
     attrib = models.ForeignKey(
         Attribute,
@@ -278,6 +286,7 @@ class ServerStringAttribute(ServerAttribute):
 
     def matches(self, values):
         return self.value in (self.attrib.serialize_value(v) for v in values)
+
 
 class Change(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)
@@ -303,6 +312,7 @@ class Change(models.Model):
     def __unicode__(self):
         return unicode(self.change_on)
 
+
 class ChangeCommit(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)
     user = models.ForeignKey(
@@ -322,6 +332,7 @@ class ChangeCommit(models.Model):
     def __unicode__(self):
         return unicode(self.change_on)
 
+
 class ChangeDelete(models.Model):
     commit = models.ForeignKey(
         ChangeCommit,
@@ -339,6 +350,7 @@ class ChangeDelete(models.Model):
 
     def __unicode__(self):
         return u'{0}: {1}'.format(unicode(self.commit), self.hostname)
+
 
 class ChangeUpdate(models.Model):
     commit = models.ForeignKey(
@@ -358,6 +370,7 @@ class ChangeUpdate(models.Model):
     def __unicode__(self):
         return u'{0}: {1}'.format(unicode(self.commit), self.hostname)
 
+
 class ChangeAdd(models.Model):
     commit = models.ForeignKey(
         ChangeCommit,
@@ -375,6 +388,7 @@ class ChangeAdd(models.Model):
 
     def __unicode__(self):
         return u'{0}: {1}'.format(unicode(self.commit), self.hostname)
+
 
 def clear_lookups(*args, **kwargs):
     cache.delete('dataset_lookups_version')
