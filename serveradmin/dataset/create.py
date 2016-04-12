@@ -122,8 +122,14 @@ def create_server(
         check_attribute_type(attribute.name, value)
 
         # Cast hostname attributes
-        if attribute.type == 'hostname':
-            real_attributes[attribute.name] = ServerObject.objects.get(hostname=value)
+        if attribute.type == 'hostname' and value:
+            if attribute.multi:
+                real_attributes[attribute.name] = [
+                    s['hostname']
+                    for s in ServerObject.objects.filter(hostname__in=value)
+                ]
+            else:
+                real_attributes[attribute.name] = ServerObject.objects.get(hostname=value)
 
         # Validate regular expression
         regexp = stype_attr.regexp
