@@ -20,6 +20,7 @@ from serveradmin.dataset.exceptions import CommitError
 from serveradmin.dataset.filters import filter_from_obj, ExactMatch
 from serveradmin.dataset.commit import commit_changes
 from serveradmin.dataset.create import create_server
+from serveradmin.serverdb.models import ServerObject
 
 @login_required
 def doc_functions(request):
@@ -123,7 +124,11 @@ def dataset_commit(request, app, data):
         return {
                 'status': 'success',
             }
-    except (ValueError, CommitError) as error:
+    except (
+        ValueError,
+        CommitError,
+        ServerObject.DoesNotExist,
+    ) as error:
         return {
                 'status': 'error',
                 'type': error.__class__.__name__,
@@ -151,7 +156,11 @@ def dataset_create(request, app, data):
                         filters={'hostname': ExactMatch(data['attributes']['hostname'])}
                     ).get_raw_results()
             }
-    except (ValueError, CommitError) as error:
+    except (
+        ValueError,
+        CommitError,
+        ServerObject.DoesNotExist,
+    ) as error:
         return {
                 'status': 'error',
                 'type': error.__class__.__name__,

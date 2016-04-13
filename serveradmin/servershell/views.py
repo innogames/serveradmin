@@ -23,7 +23,11 @@ from serveradmin.dataset.commit import (commit_changes, CommitValidationFailed,
 from serveradmin.dataset.typecast import typecast, displaycast
 from serveradmin.dataset.create import create_server
 from serveradmin.servershell.forms import CloneServerForm, NewServerForm
-from serveradmin.serverdb.models import ServerType, ServerStringAttribute
+from serveradmin.serverdb.models import (
+    ServerType,
+    ServerObject,
+    ServerStringAttribute,
+)
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 100
@@ -292,6 +296,7 @@ def commit(request):
             DatasetError,
             CommitNewerData,
             CommitValidationFailed,
+            ServerObject.DoesNotExist,
         ) as error:
             result = {
                 'status': 'error',

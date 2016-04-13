@@ -6,6 +6,7 @@ from ipaddress import IPv4Address, IPv6Address, ip_network
 
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.typecast import typecast
+from serveradmin.serverdb.models import ServerObject
 
 class BaseFilter(object):
     def __and__(self, other):
@@ -78,13 +79,15 @@ class ExactMatch(BaseFilter):
 
     def as_sql_expr(self, builder, attribute, field):
 
+        value = value_to_sql(attribute, self.value)
+
         if attribute.type == 'hostname':
-            return _exists_sql(attribute, '=', self.value.server_id)
+            return _exists_sql(attribute, 'value = ' + value)
 
         if attribute.type == 'boolean' and not self.value:
             return u"({0} = '0' OR {0} IS NULL)".format(field)
 
-        return u'{0} = {1}'.format(field, value_to_sql(attribute, self.value))
+        return u'{0} = {1}'.format(field, value)
 
     def matches(self, server_obj, attr_name):
         return server_obj[attr_name] == self.value
@@ -130,12 +133,11 @@ class Regexp(BaseFilter):
         if attribute.type == 'hostname':
             return _exists_sql(
                 attribute,
-                'IN',
                 (
-                    '('
-                        'SELECT server_id '
-                        'FROM admin_server '
-                        'WHERE hostname REGEXP {0}'
+                    'value IN ('
+                    '   SELECT server_id'
+                    '   FROM admin_server'
+                    '   WHERE hostname REGEXP {0}'
                     ')'
                 ).format(sql_regexp),
             )
@@ -243,18 +245,12 @@ class Any(BaseFilter):
         if not self.values:
             return u'0 = 1'
 
+        values_csv = ', '.join(value_to_sql(attribute, v) for v in self.values)
+
         if attribute.type == 'hostname':
-            return _exists_sql(
-                attribute,
-                'IN',
-                '(' + ', '.join(str(s.server_id) for s in self.values) + ')'
-            )
+            return _exists_sql(attribute, 'value IN ({0})'.format(values_csv))
 
-        prepared_values = u', '.join(
-            value_to_sql(attribute, value) for value in self.values
-        )
-
-        return u'{0} IN ({1})'.format(field, prepared_values)
+        return u'{0} IN ({1})'.format(field, values_csv)
 
     def matches(self, server_obj, attr_name):
         return server_obj[attr_name] in self.values
@@ -408,7 +404,7 @@ class Not(BaseFilter):
         # here. It would just return all empty values, instead of values
         # which are NOT empty.
         if isinstance(self.filter, Empty):
-            return _exists_sql(attribute, 'IS', 'NOT NULL')
+            return _exists_sql(attribute, 'value IS NOT NULL')
 
         if attribute.multi:
             uid = builder.get_uid()
@@ -471,12 +467,11 @@ class Startswith(BaseFilter):
         if attribute.type == 'hostname':
             return _exists_sql(
                 attribute,
-                'IN',
                 (
-                    '('
-                        'SELECT server_id '
-                        'FROM admin_server '
-                        'WHERE hostname LIKE {0}'
+                    'value IN ('
+                    '   SELECT server_id'
+                    '   FROM admin_server'
+                    '   WHERE hostname LIKE {0}'
                     ')'
                 ).format(value),
             )
@@ -634,6 +629,10 @@ class Empty(OptionalFilter):
         pass
 
     def as_sql_expr(self, builder, attribute, field):
+
+        if attribute.type == 'hostname':
+            return 'NOT {0}'.format(_exists_sql(attribute))
+
         return u'{0} IS NULL'.format(field)
 
     def matches(self, server_obj, attr_name):
@@ -699,6 +698,11 @@ def value_to_sql(attribute, value):
     elif attribute.type == u'datetime':
         if isinstance(value, datetime):
             value = int(time.mktime(value.timetuple()))
+    elif attribute.type == 'hostname':
+        try:
+            value = ServerObject.objects.get(hostname=value).server_id
+        except ServerObject.DoesNotExist:
+            raise ValueError('No server with hostname "{0}"'.format(value))
 
     # Validations of special attributes
     if attribute.name == u'servertype':
@@ -713,30 +717,32 @@ def value_to_sql(attribute, value):
 
     return _sql_escape(value)
 
-def _exists_sql(attribute, operator, argument):
+def _exists_sql(attribute, cond=None):
 
     if attribute.type == 'hostname':
         table = 'server_hostname_attrib'
     else:
         table = 'attrib_values'
 
+    if cond:
+        and_cond = ' AND sub{0}.{1}'.format(attribute.attrib_id, cond)
+    else:
+        and_cond = ''
+
     return (
         'EXISTS ('
-            'SELECT 1 '
-            'FROM {0} AS sub{1} '
-            'WHERE ('
-                    'sub{1}.server_id = adms.server_id'
-                ' AND '
-                    'sub{1}.attrib_id = {1}'
-                ' AND '
-                    'sub{1}.value {2} {3}'
-            ')'
+        '   SELECT 1'
+        '   FROM {0} AS sub{1}'
+        '   WHERE'
+        '           sub{1}.server_id = adms.server_id'
+        '       AND'
+        '           sub{1}.attrib_id = {1}'
+        '       {2}'
         ')'
     ).format(
         table,
         attribute.attrib_id,
-        operator,
-        argument,
+        and_cond,
     )
 
 def _sql_escape(value):

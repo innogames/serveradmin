@@ -220,7 +220,7 @@ class ServerObject(models.Model):
         if attribute.type == 'hostname':
             server_attribute = ServerHostnameAttribute(
                 attrib=attribute,
-                value=value,
+                value=ServerObject.objects.get(hostname=value),
             )
             self.serverhostnameattribute_set.add(server_attribute)
 
@@ -268,6 +268,14 @@ class ServerHostnameAttribute(ServerAttribute):
         app_label = 'serverdb'
         db_table = 'server_hostname_attrib'
         unique_together = (('server', 'attrib', 'value'), )
+
+    def reset(self, value):
+        self.value = ServerObject.objects.get(hostname=value)
+
+    def matches(self, values):
+        return self.value in (
+            ServerObject.objects.get(hostname=v) for v in values
+        )
 
 
 class ServerStringAttribute(ServerAttribute):
