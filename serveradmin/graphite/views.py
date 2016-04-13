@@ -1,4 +1,4 @@
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponseBadRequest
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -6,11 +6,10 @@ from django.conf import settings
 
 import django_urlauth.utils
 
-from adminapi.utils.parse import parse_query
 from adminapi.dataset.base import MultiAttr
-from serveradmin.graphite.models import Collection, NumericCache
-from serveradmin.dataset import query, filters, DatasetError
-from serveradmin.serverdb.models import ServerType, Segment
+from serveradmin.graphite.models import Collection
+from serveradmin.dataset import query
+
 
 @login_required
 @ensure_csrf_cookie
@@ -20,7 +19,7 @@ def graph_table(request):
 
     hostnames = [h for h in request.GET.getlist('hostname') if h]
     if len(hostnames) == 0:
-        return HttpResponseBadRequest('You have to provide at least one hostname')
+        return HttpResponseBadRequest('No hostname provided')
 
     # For convenience we will cache the servers in a dictionary.
     servers = {}
@@ -28,7 +27,8 @@ def graph_table(request):
         servers[hostname] = query(hostname=hostname).get()
 
     # Find the collections which are related with all of the hostnames.
-    # If there are two collections with same match, use only the one which is not an overview. 
+    # If there are two collections with same match, use only the one which
+    # is not an overview.
     collections = []
     doubles = set()
     for collection in Collection.objects.order_by('overview'):
@@ -52,7 +52,9 @@ def graph_table(request):
     descriptions = []
     for collection in collections:
         for template in collection.template_set.all():
-            descriptions += ([(template.name, template.description)] * len(hostnames))
+            descriptions += (
+                [(template.name, template.description)] * len(hostnames)
+            )
 
     # Prepare the graph tables for all hosts
     graph_tables = []
@@ -61,7 +63,9 @@ def graph_table(request):
         if request.GET.get('action') == 'Submit':
             custom_params = request.GET.urlencode()
             for collection in collections:
-                column = collection.graph_column(servers[hostname], custom_params)
+                column = collection.graph_column(
+                    servers[hostname], custom_params
+                )
                 graph_table += [(k, [('Custom', v)]) for k, v in column]
         else:
             for collection in collections:
