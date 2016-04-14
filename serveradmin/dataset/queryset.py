@@ -137,10 +137,9 @@ class QuerySet(BaseQuerySet):
 
     def get_num_rows(self):
         builder = self._get_query_builder_with_filters()
-        builder.sql_keywords.append('count(*)')
 
         with connection.cursor() as cursor:
-            cursor.execute(builder.build_sql())
+            cursor.execute(builder.build_sql(count=True))
             return cursor.fetchone()[0]
 
     def get_representation(self):
@@ -177,25 +176,15 @@ class QuerySet(BaseQuerySet):
         if order_dir not in ('asc', 'desc'):
             raise ValueError('Invalid order direction')
 
-        self._order_by = order_by
+        self._order_by = lookups.attributes[order_by]
         self._order_dir = order_dir
 
         return self
 
     def _get_query_builder_with_filters(self):
-
-        # XXX: Dirty hack for the old database structure
         builder = QueryBuilder()
-        optional_filters = (filters.OptionalFilter, filters.Not)
-        for attr, f in self._filters.iteritems():
-            attribute = lookups.attributes[attr]
-            optional = (
-                    isinstance(f, optional_filters)
-                or
-                    attribute.type == 'boolean'
-            )
-            builder.add_attribute(attr, optional)
-            builder.add_filter(attr, f)
+        for attr, filt in self._filters.iteritems():
+            builder.add_filter(lookups.attributes[attr], filt)
 
         return builder
 
@@ -206,35 +195,17 @@ class QuerySet(BaseQuerySet):
         # to set it in the query (but not in the instance) if it is
         # not set
         if self._order_by:
-            order_by = self._order_by
-            order_dir = self._order_dir
-            builder.add_attribute(order_by, optional=True)
-            builder.add_ordering((order_by, order_dir))
-        else:
-            order_by = u'hostname'
-            order_dir = u'asc'
-
+            builder.add_order_by(self._order_by, self._order_dir)
         if self._limit:
             builder.add_limit(self._limit)
-
         if self._offset:
             builder.add_offset(self._offset)
 
-        for attr in (
-                'object_id',
-                'hostname',
-                'intern_ip',
-                'segment',
-                'servertype',
-                'project',
-            ):
-            builder.add_attribute(attr)
-            builder.add_select(attr)
         sql_stmt = builder.build_sql()
 
         # We need to preserve ordering if ordering is requested, otherwise
         # we can use normal dict as it performs better.
-        if order_by:
+        if self._order_by:
             server_data = OrderedDict()
         else:
             server_data = dict()
@@ -245,13 +216,13 @@ class QuerySet(BaseQuerySet):
             cursor.execute(sql_stmt)
 
             for (
-                    server_id,
-                    hostname,
-                    intern_ip,
-                    segment,
-                    stype,
-                    project,
-                ) in cursor.fetchall():
+                server_id,
+                hostname,
+                intern_ip,
+                segment,
+                stype,
+                project,
+            ) in cursor.fetchall():
 
                 if not restrict:
                     attrs = {

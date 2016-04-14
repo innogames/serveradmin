@@ -110,11 +110,11 @@ def get_results(request):
 
         results = queryset.get_raw_results()
         num_servers = queryset.get_num_rows()
-    except (ValueError, DatasetError), e:
+    except DatasetError as error:
         return HttpResponse(json.dumps({
-                'status': 'error',
-                'message': e.message
-            }))
+            'status': 'error',
+            'message': error.message
+        }))
 
     request.session['term'] = term
     request.session['per_page'] = limit
