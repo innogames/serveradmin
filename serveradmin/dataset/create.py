@@ -7,8 +7,6 @@ from ipaddress import (
     IPv6Network,
 )
 
-from django.db import connection
-
 from serveradmin.serverdb.models import (
     ServerObject,
     ChangeCommit,
@@ -60,13 +58,13 @@ def create_server(
     else:
         intern_ip = ip_address(attributes[u'intern_ip'])
     servertype_id = servertype.pk
-    segment = attributes.get(u'segment')
+    segment_id = attributes.get(u'segment')
 
-    if segment:
-        check_attribute_type(u'segment', segment)
+    if segment_id:
+        check_attribute_type(u'segment', segment_id)
     else:
         try:
-            segment = IPRange.objects.filter(
+            segment_id = IPRange.objects.filter(
                     min__lte=intern_ip,
                     max__gte=intern_ip,
                 )[0].segment
@@ -149,7 +147,7 @@ def create_server(
     server_id = _insert_server(
         hostname,
         intern_ip,
-        segment,
+        segment_id,
         servertype_id,
         project_id,
         real_attributes,
@@ -158,7 +156,6 @@ def create_server(
     created_server = real_attributes.copy()
     created_server['hostname'] = hostname
     created_server['intern_ip'] = intern_ip
-    created_server['segment'] = str(segment)
 
     commit = ChangeCommit.objects.create(app=app, user=user)
     attributes_json = json.dumps(created_server, default=json_encode_extra)
@@ -170,20 +167,10 @@ def create_server(
 
     return server_id
 
-def _insert_server(hostname, intern_ip, segment, servertype_id, project_id, attributes):
+def _insert_server(hostname, intern_ip, segment_id, servertype_id, project_id, attributes):
 
     if ServerObject.objects.filter(hostname=hostname).exists():
         raise CommitError(u'Server with that hostname already exists')
-
-    with connection.cursor() as cursor:
-        # Get segment
-        cursor.execute(
-                u'SELECT segment_id FROM ip_range '
-                u'WHERE %s BETWEEN `min` AND `max` LIMIT 1',
-                (int(intern_ip), )
-            )
-        result = cursor.fetchone()
-        segment_id = result[0] if result else segment
 
     server = ServerObject.objects.create(
         hostname=hostname,
