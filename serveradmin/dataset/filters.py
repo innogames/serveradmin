@@ -2,11 +2,12 @@ import re
 import operator
 import time
 from datetime import datetime
+from decimal import Decimal
 from ipaddress import IPv4Address, IPv6Address, ip_network
 
 from serveradmin.dataset.base import lookups, DatasetError
 from serveradmin.dataset.typecast import typecast
-from serveradmin.serverdb.models import Server
+from serveradmin.serverdb.models import Server, ServerAttribute
 
 
 class FilterValueError(DatasetError):
@@ -694,11 +695,6 @@ def value_to_sql(attribute, value):
 
 
 def _exists_sql(attribute, cond=None):
-    if attribute.type == 'hostname':
-        table = 'server_hostname_attrib'
-    else:
-        table = 'attrib_values'
-
     if cond:
         and_cond = ' AND {0}'.format(cond)
     else:
@@ -715,7 +711,7 @@ def _exists_sql(attribute, cond=None):
         '       {2}'
         ')'
     ).format(
-        table,
+        ServerAttribute.get_model(attribute.type)._meta.db_table,
         attribute.pk,
         and_cond,
     )
@@ -725,7 +721,7 @@ def _sql_escape(value):
     if isinstance(value, basestring):
         return raw_sql_escape(value)
 
-    if isinstance(value, (int, long, float)):
+    if isinstance(value, (int, long, float, Decimal)):
         return unicode(value)
 
     if isinstance(value, bool):

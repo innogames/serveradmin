@@ -1,6 +1,5 @@
-from datetime import datetime
 from collections import defaultdict, OrderedDict
-from ipaddress import ip_address, IPv4Address, IPv6Address
+from ipaddress import ip_address
 
 from django.db import connection
 
@@ -8,7 +7,7 @@ from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 
 from serveradmin.serverdb.models import (
     ServertypeAttribute,
-    ServerHostnameAttribute,
+    ServerAttribute,
 )
 from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.validation import check_attributes
@@ -263,82 +262,31 @@ class QuerySet(BaseQuerySet):
         if not self._results:
             return
 
-        hostname_attributes = []
-        string_attributes = []
-        if restrict:
-            for name in restrict:
-                attribute = lookups.attributes[name]
+        attributes_by_type = defaultdict(list)
+        for attribute in lookups.attributes.values():
+            if not isinstance(attribute.special, ServerTableSpecial):
+                if not restrict or attribute.pk in restrict:
+                    attributes_by_type[attribute.type].append(attribute)
 
-                if not isinstance(attribute.special, ServerTableSpecial):
-                    if attribute.type == 'hostname':
-                        hostname_attributes.append(attribute)
-                    else:
-                        string_attributes.append(attribute)
+        for attribute_type, attributes in attributes_by_type.items():
+            self._add_attributes(attribute_type, attributes)
 
-        if not restrict or hostname_attributes:
-            self._add_hostname_attrs(hostname_attributes)
-        if not restrict or string_attributes:
-            self._add_additional_attrs(string_attributes)
-
-    def _add_hostname_attrs(self, attributes):
-        queryset = ServerHostnameAttribute.objects
-        queryset = queryset.filter(server_id__in=self._results.keys())
-        if attributes:
-            queryset = queryset.filter(_attribute__in=attributes)
-
-        for relation in queryset.all():
-            if relation.attribute.multi:
+    def _add_attributes(self, attribute_type, attributes):
+        for sa in ServerAttribute.get_model(attribute_type).objects.filter(
+            server_id__in=self._results.keys(),
+            _attribute__in=attributes,
+        ):
+            if sa.attribute.multi:
                 dict.__getitem__(
-                    self._results[relation.server_id],
-                    relation.attribute.pk,
-                ).add(relation.value.hostname)
+                    self._results[sa.server_id],
+                    sa.attribute.pk,
+                ).add(sa.get_value())
             else:
                 dict.__setitem__(
-                    self._results[relation.server_id],
-                    relation.attribute.pk,
-                    relation.value.hostname,
+                    self._results[sa.server_id],
+                    sa.attribute.pk,
+                    sa.get_value(),
                 )
-
-    def _add_additional_attrs(self, attributes):
-
-        server_ids = u', '.join(map(str, self._results.iterkeys()))
-        sql_stmt = (
-                u'SELECT server_id, attrib_id, value '
-                u'FROM attrib_values '
-                u'WHERE server_id IN ({0})'
-            ).format(server_ids)
-
-        if attributes:
-            sql_stmt += ' AND attrib_id IN ({0})'.format(
-                ', '.join("'{0}'".format(a.pk) for a in attributes)
-            )
-
-        _getitem = dict.__getitem__
-        _setitem = dict.__setitem__
-
-        with connection.cursor() as cursor:
-            cursor.execute(sql_stmt)
-            for server_id, attr_id, value in cursor.fetchall():
-                # Typecasting is inlined here for performance reasons
-                attribute = lookups.attributes[attr_id]
-
-                if attribute.type == u'integer':
-                    value = int(value)
-                elif attribute.type == u'boolean':
-                    value = value == '1'
-                elif attribute.type == u'ip':
-                    value = IPv4Address(int(value))
-                elif attribute.type == u'ipv6':
-                    value = IPv6Address(bytearray.fromhex(value))
-                elif attribute.type == u'datetime':
-                    value = datetime.fromtimestamp(int(value))
-
-                # Using dict-methods to bypass ServerObject's special properties
-                if attribute.multi:
-                    # Bypass MultiAttr wrapping in ServerObject.__getitem__
-                    _getitem(self._results[server_id], attribute.pk).add(value)
-                else:
-                    _setitem(self._results[server_id], attribute.pk, value)
 
 
 class ServerObject(BaseServerObject):

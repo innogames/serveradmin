@@ -475,9 +475,9 @@ def _apply_changes(changed_servers):
                 server.add_attribute(attribute, change['new'])
 
             elif action == 'update':
-                server_attribute = server.get_attributes(attribute).get()
-                server_attribute.reset(change['new'])
-                server_attribute.save()
+                server.get_attributes(attribute).get().save_value(
+                    change['new']
+                )
 
             elif action == 'delete':
                 server.get_attributes(attribute).delete()
@@ -486,12 +486,13 @@ def _apply_changes(changed_servers):
 
                 if change['remove']:
                     for server_attribute in server.get_attributes(attribute):
-                        if server_attribute.matches(change['remove']):
+                        if server_attribute.get_value() in change['remove']:
                             server_attribute.delete()
 
                 for value in change['add']:
                     server.add_attribute(attribute, value)
 
+        # Save the special attributes.
         server.save()
 
 

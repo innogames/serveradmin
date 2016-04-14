@@ -243,27 +243,6 @@ class Attribute(LookupModel):
     def search_link(self):
         return settings.ATTRIBUTE_WIKI_LINK.format(attr=self.pk)
 
-    def serialize_value(self, value):
-
-        if self.type == u'boolean':
-            value = 1 if value else 0
-
-        if self.type == u'ip':
-            if not isinstance(value, IPv4Address):
-                value = IPv4Address(value)
-            value = int(value)
-
-        if self.type == u'ipv6':
-            if not isinstance(value, IPv6Address):
-                value = IPv6Address(value)
-            value = ''.join('{:02x}'.format(x) for x in value.packed)
-
-        if self.type == u'datetime':
-            if isinstance(value, datetime):
-                value = int(time.mktime(value.timetuple()))
-
-        return str(value)
-
 
 class ServertypeAttribute(LookupModel):
     _servertype = models.ForeignKey(
@@ -319,7 +298,8 @@ class ServertypeAttribute(LookupModel):
 # Server Models
 #
 # Servers are the main objects of the system.  They are stored in
-# entity-attribute-value schema.
+# entity-attribute-value schema.  There are multiple models to store
+# the attribute values of the servers by different data types.
 #
 
 class Server(models.Model):
@@ -354,29 +334,13 @@ class Server(models.Model):
         db_table = 'admin_server'
 
     def get_attributes(self, attribute):
-
-        if attribute.type == 'hostname':
-            queryset = self.serverhostnameattribute_set
-        else:
-            queryset = self.serverstringattribute_set
-
-        return queryset.filter(_attribute=attribute)
+        model = ServerAttribute.get_model(attribute.type)
+        return model.objects.filter(server=self, _attribute=attribute)
 
     def add_attribute(self, attribute, value):
-        if attribute.type == 'hostname':
-            server_attribute = ServerHostnameAttribute(
-                _attribute=attribute,
-                value=Server.objects.get(hostname=value),
-            )
-            self.serverhostnameattribute_set.add(server_attribute)
-        else:
-            server_attribute = ServerStringAttribute(
-                _attribute=attribute,
-                value=attribute.serialize_value(value),
-            )
-            self.serverstringattribute_set.add(server_attribute)
-
-        return server_attribute
+        model = ServerAttribute.get_model(attribute.type)
+        server_attribute = model(server=self, _attribute=attribute)
+        server_attribute.save_value(value)
 
 
 class ServerAttribute(models.Model):
@@ -392,11 +356,21 @@ class ServerAttribute(models.Model):
     def __unicode__(self):
         return '{0}->{1}={2}'.format(self.server, self.attribute, self.value)
 
-    def reset(self, value):
-        self.value = value
+    def get_value(self):
+        return self.value
 
-    def matches(self, value):
-        return self.value in value
+    def save_value(self, value):
+        # Normally, there shouldn't be any transformation necessary.
+        self.value = value
+        self.save()
+
+    @staticmethod
+    def get_model(attribute_type):
+        if attribute_type == 'hostname':
+            return ServerHostnameAttribute
+        if attribute_type == 'number':
+            return ServerNumberAttribute
+        return ServerStringAttribute
 
 
 class ServerHostnameAttributeManager(models.Manager):
@@ -431,13 +405,31 @@ class ServerHostnameAttribute(ServerAttribute):
         unique_together = (('server', '_attribute', 'value'), )
         index_together = (('_attribute', 'value'), )
 
-    def reset(self, value):
-        self.value = Server.objects.get(hostname=value)
+    def get_value(self):
+        return self.value.hostname
 
-    def matches(self, values):
-        return self.value in (
-            Server.objects.get(hostname=v) for v in values
+    def save_value(self, value):
+        ServerAttribute.save_value(
+            self, Server.objects.get(hostname=value)
         )
+
+
+class ServerNumberAttribute(ServerAttribute):
+    _attribute = models.ForeignKey(
+        Attribute,
+        db_column='attrib_id',
+        db_index=False,
+        on_delete=models.CASCADE,
+        limit_choices_to={'type': 'number'},
+    )
+    attribute = Attribute.foreign_key_lookup('_attribute_id')
+    value = models.DecimalField(max_digits=65, decimal_places=0)
+
+    class Meta:
+        app_label = 'serverdb'
+        db_table = 'server_number_attrib'
+        unique_together = (('server', '_attribute', 'value'), )
+        index_together = (('_attribute', 'value'), )
 
 
 class ServerStringAttribute(ServerAttribute):
@@ -454,13 +446,35 @@ class ServerStringAttribute(ServerAttribute):
         app_label = 'serverdb'
         db_table = 'attrib_values'
 
-    def reset(self, value):
-        self.value = self.attribute.serialize_value(value)
+    def get_value(self):
+        if self.attribute.type == 'integer':
+            return int(self.value)
+        if self.attribute.type == 'boolean':
+            return self.value == '1'
+        if self.attribute.type == 'ip':
+            return IPv4Address(int(self.value))
+        if self.attribute.type == 'ipv6':
+            return IPv6Address(bytearray.fromhex(self.value))
+        if self.attribute.type == 'datetime':
+            return datetime.fromtimestamp(int(self.value))
+        return self.value
 
-    def matches(self, values):
-        return self.value in (
-            self.attribute.serialize_value(v) for v in values
-        )
+    def save_value(self, value):
+        if self.attribute.type == 'boolean':
+            value = 1 if value else 0
+        elif self.attribute.type == 'ip':
+            if not isinstance(value, IPv4Address):
+                value = IPv4Address(value)
+            value = int(value)
+        elif self.attribute.type == 'ipv6':
+            if not isinstance(value, IPv6Address):
+                value = IPv6Address(value)
+            value = ''.join('{:02x}'.format(x) for x in value.packed)
+        elif self.attribute.type == 'datetime':
+            if isinstance(value, datetime):
+                value = int(time.mktime(value.timetuple()))
+
+        ServerAttribute.save_value(self, value)
 
 
 #

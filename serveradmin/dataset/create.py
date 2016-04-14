@@ -196,6 +196,7 @@ def _insert_server(
         _servertype_id=servertype_id,
         _segment_id=segment_id,
     )
+    server.save()
 
     for attr_name, value in attributes.iteritems():
         attribute = lookups.attributes[attr_name]
@@ -205,8 +206,6 @@ def _insert_server(
                 server.add_attribute(attribute, single_value)
         else:
             server.add_attribute(attribute, value)
-
-    server.save()
 
     return server.server_id
 

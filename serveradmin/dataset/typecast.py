@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from decimal import Decimal
 from ipaddress import IPv4Address, IPv6Address
 
 _to_datetime_re = re.compile(
@@ -66,6 +67,7 @@ _typecast_fns = {
     'datetime': _to_datetime,
     'mac': _to_mac,
     'hostname': str,
+    'number': Decimal,
 }
 
 def typecast(attribute, value, force_single=False):
