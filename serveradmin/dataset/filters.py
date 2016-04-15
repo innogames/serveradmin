@@ -7,7 +7,11 @@ from ipaddress import IPv4Address, IPv6Address, ip_network
 
 from serveradmin.dataset.base import lookups, DatasetError
 from serveradmin.dataset.typecast import typecast
-from serveradmin.serverdb.models import Server, ServerAttribute
+from serveradmin.serverdb.models import (
+    ServertypeAttribute,
+    Server,
+    ServerAttribute,
+)
 
 
 class FilterValueError(DatasetError):
@@ -610,7 +614,7 @@ class Empty(OptionalFilter):
     def as_sql_expr(self, attribute):
         if attribute.special:
             return '{0} IS NULL'.format(attribute.special.field)
-        return 'NOT {0}'.format(_exists_sql(attribute))
+        return 'NOT {0}'.format(_exists_sql(attribute), 'value IS NOT NULL')
 
     def matches(self, server_obj, attr_name):
         return attr_name not in server_obj or len(server_obj[attr_name]) == 0
@@ -694,26 +698,46 @@ def value_to_sql(attribute, value):
     return _sql_escape(value)
 
 
-def _exists_sql(attribute, cond=None):
-    if cond:
-        and_cond = ' AND {0}'.format(cond)
-    else:
-        and_cond = ''
+def _exists_sql(attribute, main_condition):
+
+    # We start with the condition for the attributes the server has on
+    # its own.  Then, add the conditions for all possible relations.
+    # They are going to be OR'ed together.
+    relation_conditions = ['sub.server_id = adms.server_id']
+
+    for sa in ServertypeAttribute.objects.all():
+        if sa.attribute == attribute and sa.related_via_attribute:
+            assert sa.related_via_attribute.type == 'hostname'
+
+            relation_conditions.append(
+                'EXISTS ('
+                '   SELECT 1'
+                '   FROM {0} AS sub_rel'
+                '   WHERE'
+                '           sub_rel.server_id = adms.server_id'
+                '       AND'
+                "           sub_rel.attrib_id = '{1}'"
+                '       AND'
+                '           sub_rel.value = sub.server_id'
+                ')'
+                .format(
+                    ServerAttribute.get_model('hostname')._meta.db_table,
+                    sa.related_via_attribute.pk,
+                )
+            )
 
     return (
         'EXISTS ('
         '   SELECT 1'
         '   FROM {0} AS sub'
-        '   WHERE'
-        '           sub.server_id = adms.server_id'
-        '       AND'
-        "           sub.attrib_id = '{1}'"
-        '       {2}'
+        "   WHERE sub.attrib_id = '{1}' AND {2} AND ({3})"
         ')'
-    ).format(
-        ServerAttribute.get_model(attribute.type)._meta.db_table,
-        attribute.pk,
-        and_cond,
+        .format(
+            ServerAttribute.get_model(attribute.type)._meta.db_table,
+            attribute.pk,
+            main_condition,
+            ' OR '.join(relation_conditions),
+        )
     )
 
 

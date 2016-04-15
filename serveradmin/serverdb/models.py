@@ -260,6 +260,22 @@ class ServertypeAttribute(LookupModel):
         on_delete=models.CASCADE,
     )
     attribute = Attribute.foreign_key_lookup('_attribute_id')
+    _related_via_attribute = models.ForeignKey(
+        Attribute,
+        related_name='related_via_servertype_set',
+        null=True,
+        blank=True,
+        db_column='related_via_attribute_id',
+        limit_choices_to=dict(
+
+            # It can only be related via a relation (AKA as an hostname
+            # attribute).
+            type='hostname',
+        ),
+    )
+    related_via_attribute = Attribute.foreign_key_lookup(
+        '_related_via_attribute_id'
+    )
     required = models.BooleanField(default=False)
     default_value = models.CharField(
         max_length=255,
@@ -292,6 +308,12 @@ class ServertypeAttribute(LookupModel):
     def regexp_match(self, value):
         if self.regexp:
             return self.get_compiled_regexp().match(str(value))
+
+    def get_related_via_servertype_attribute(self):
+        return ServertypeAttribute.objects.get(
+            servertype_id=self.servertype_id,
+            attribute=self._related_via_attribute,
+        )
 
 
 #

@@ -9,10 +9,10 @@ from serveradmin.serverdb.models import (
     ServertypeAttribute,
     ServerAttribute,
 )
-from serveradmin.dataset.base import lookups, ServerTableSpecial
-from serveradmin.dataset.validation import check_attributes
+from serveradmin.dataset.base import lookups
 from serveradmin.dataset.commit import commit_changes
 from serveradmin.dataset.querybuilder import QueryBuilder
+from serveradmin.dataset.validation import check_attributes
 
 CACHE_MIN_QS_COUNT = 3
 NUM_OBJECTS_FOR_FILECACHE = 50
@@ -106,13 +106,13 @@ class QuerySetRepresentation(object):
     def as_code(self, hide_extra=True):
         args = []
         for attr_name, value in self.filters.iteritems():
-            args.append(u'{0}={1}'.format(attr_name, value.as_code()))
+            args.append('{0}={1}'.format(attr_name, value.as_code()))
 
         if hide_extra:
             # FIXME: Add restrict/limit/augment etc.
-            extra = u''
+            extra = ''
 
-        return u'query({0}){1}'.format(u', '.join(args), extra)
+        return 'query({0}){1}'.format(', '.join(args), extra)
 
 
 class QuerySet(BaseQuerySet):
@@ -262,31 +262,87 @@ class QuerySet(BaseQuerySet):
         if not self._results:
             return
 
-        attributes_by_type = defaultdict(list)
-        for attribute in lookups.attributes.values():
-            if not isinstance(attribute.special, ServerTableSpecial):
-                if not restrict or attribute.pk in restrict:
-                    attributes_by_type[attribute.type].append(attribute)
+        self._select_attributes(servers_by_type)
+        self._add_attributes(servers_by_type)
 
-        for attribute_type, attributes in attributes_by_type.items():
-            self._add_attributes(attribute_type, attributes)
+    def _select_attributes(self, servers_by_type):
+        self._materalized_attributes_by_type = defaultdict(set)
+        self._related_servertype_attributes = []
 
-    def _add_attributes(self, attribute_type, attributes):
-        for sa in ServerAttribute.get_model(attribute_type).objects.filter(
-            server_id__in=self._results.keys(),
-            _attribute__in=attributes,
-        ):
-            if sa.attribute.multi:
-                dict.__getitem__(
-                    self._results[sa.server_id],
-                    sa.attribute.pk,
-                ).add(sa.get_value())
-            else:
-                dict.__setitem__(
-                    self._results[sa.server_id],
-                    sa.attribute.pk,
-                    sa.get_value(),
+        for sa in ServertypeAttribute.objects.all():
+            if (
+                sa.servertype.pk in servers_by_type and (
+                    not self._restrict or sa.attribute.pk in self._restrict
                 )
+            ):
+                self._select_attribute(sa)
+
+    def _select_attribute(self, servertype_attribute):
+        attribute = servertype_attribute.attribute
+
+        if not servertype_attribute.related_via_attribute:
+            self._materalized_attributes_by_type[attribute.type].add(attribute)
+        else:
+            self._related_servertype_attributes.append(servertype_attribute)
+
+            # If we have related attributes in the restrict list, we have
+            # to add the relations in there, too.  We are going to use those
+            # to query the related attributes.
+            if self._restrict:
+                self._select_attribute(
+                    servertype_attribute.get_related_via_servertype_attribute()
+                )
+
+    def _add_attributes(self, servers_by_type):
+        """Add the attributes to the results"""
+
+        # Step 1: Query the materialized attributes by their types
+        for key, attributes in self._materalized_attributes_by_type.items():
+            for sa in ServerAttribute.get_model(key).objects.filter(
+                server_id__in=self._results.keys(),
+                _attribute__in=attributes,
+            ):
+                self._add_attribute_value(sa.server_id, sa)
+
+        # Step 2: Add the related attributes
+        #
+        # TODO Order the list in a way to support recursive related
+        # attributes.
+        for servertype_attribute in self._related_servertype_attributes:
+            self._add_related_attribute(servertype_attribute, servers_by_type)
+
+    def _add_related_attribute(self, servertype_attribute, servers_by_type):
+        attribute = servertype_attribute.attribute
+        related_via_attribute = servertype_attribute.related_via_attribute
+
+        # First, index the related servers for fast access later
+        servers_by_related_hostnames = defaultdict(list)
+        for server in servers_by_type[servertype_attribute.servertype.pk]:
+            if related_via_attribute.pk in server:
+                if related_via_attribute.multi:
+                    for hostname in server[related_via_attribute.pk]:
+                        servers_by_related_hostnames[hostname].append(server)
+                else:
+                    hostname = server[related_via_attribute.pk]
+                    servers_by_related_hostnames[hostname].append(server)
+
+        # Then, query and set the related attributes
+        for sa in ServerAttribute.get_model(attribute.type).objects.filter(
+            server__hostname__in=servers_by_related_hostnames.keys(),
+            _attribute=attribute,
+        ).select_related('server'):
+            for server in servers_by_related_hostnames[sa.server.hostname]:
+                self._add_attribute_value(server.pk, sa)
+
+    def _add_attribute_value(self, server_id, server_attribute):
+        server = self._results[server_id]
+        attribute = server_attribute.attribute
+        value = server_attribute.get_value()
+
+        if attribute.multi:
+            dict.__getitem__(server, attribute.pk).add(value)
+        else:
+            dict.__setitem__(server, attribute.pk, value)
 
 
 class ServerObject(BaseServerObject):
@@ -299,5 +355,5 @@ class ServerObject(BaseServerObject):
         # Just pickle it as normal dict
         tpl = dict.__reduce__(self)
         instance_dict = tpl[2].copy()
-        del instance_dict[u'_queryset']
+        del instance_dict['_queryset']
         return (tpl[0], tpl[1], instance_dict)

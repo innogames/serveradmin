@@ -121,7 +121,7 @@ def commit_changes(
     app=None,
     user=None,
 ):
-    """Commit server changes to the database after validation.
+    """Commit server changes to the database after validation
 
     :param commit: Dictionary with the keys 'deleted' and 'changes' containing
                    a list of deleted servers and a dictionary of the servers'
@@ -330,6 +330,10 @@ def _validate_attributes(changed_servers, servers, servertype_attributes):
             if attribute_id not in attributes:
                 violations.append((server_id, attribute_id))
 
+            # Attributes related via another one, cannot be changed.
+            if attributes[attribute_id].related_via_attribute:
+                violations.append((server_id, attribute_id))
+
     return violations
 
 
@@ -483,7 +487,6 @@ def _apply_changes(changed_servers):
                 server.get_attributes(attribute).delete()
 
             elif action == 'multi':
-
                 if change['remove']:
                     for server_attribute in server.get_attributes(attribute):
                         if server_attribute.get_value() in change['remove']:
