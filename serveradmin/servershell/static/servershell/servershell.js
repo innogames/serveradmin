@@ -1,6 +1,5 @@
 var search = {
-    'shown_attributes': ['hostname', 'intern_ip', 'servertype'],
-    'shown_attributes_extra': [],
+    'shown_attributes': ['hostname', 'intern_ip', 'servertype', 'project'],
     'avail_attributes': {},
     'servers': {},
     'num_servers': 0,
@@ -22,6 +21,7 @@ function execute_search(term)
     var offset = (search['page'] - 1) * search['per_page'];
     var search_request = {
         'term': term,
+        'shown_attributes': search['shown_attributes'].join(','),
         'offset': offset,
         'limit': search['per_page'],
         'no_mapping': {}
@@ -40,16 +40,6 @@ function execute_search(term)
         search['term'] = term;
         search['servers'] = data['servers'];
         search['num_servers'] = data['num_servers'];
-        search['shown_attributes'] = data['shown_attributes'];
-
-        // Remove shown_attributes from shown_attributes_extra
-        for (var i = 0; i < search['shown_attributes'].length; ++i) {
-            var index = search['shown_attributes_extra'].indexOf(search['shown_attributes'][i]);
-            if (index !== -1) {
-                search['shown_attributes_extra'].remove(index);
-            }
-        }
-
         search['avail_attributes'] = data['avail_attributes'];
         search['num_pages'] = Math.max(1, Math.ceil(search['num_servers'] / search['per_page']));
         if (search['page'] > search['num_pages']) {
@@ -489,15 +479,6 @@ function render_server_table()
     for(var i = 0; i < search['shown_attributes'].length; i++) {
         shown_attributes.push(search['shown_attributes'][i]);
     }
-    for(var i = 0; i < search['shown_attributes_extra'].length; i++) {
-        var extra = search['shown_attributes_extra'][i];
-        var index = shown_attributes.indexOf(extra);
-        if (index == -1) {
-            shown_attributes.push(extra);
-        } else {
-            shown_attributes.remove(index);
-        }
-    }
     $('#shell_attributes input[name="attr"]').prop('checked', false);
     for(var i = 0; i < shown_attributes.length; i++) {
         $('#shell_attributes input[value="' + shown_attributes[i] + '"]').prop('checked', true);
@@ -865,6 +846,8 @@ function handle_command_other(command)
 
 function handle_command_attr(parsed_args)
 {
+    var value_added = false;
+
     for(var i = 1; i < parsed_args.length; i++) {
         if (parsed_args[i]['token'] == 'str') {
             var attr_name = parsed_args[i]['value'];
@@ -872,15 +855,21 @@ function handle_command_attr(parsed_args)
                 return;
             }
 
-            var index = search['shown_attributes_extra'].indexOf(attr_name);
+            var index = search['shown_attributes'].indexOf(attr_name);
             if (index == -1) {
-                search['shown_attributes_extra'].push(attr_name);
+                value_added = true;
+                search['shown_attributes'].push(attr_name);
             } else {
-                search['shown_attributes_extra'].remove(index);
+                search['shown_attributes'].remove(index);
             }
         }
     }
-    render_server_table();
+
+    if (value_added)
+        execute_search($('#shell_search').val());
+    else
+        render_server_table();
+
     return '';
 }
 
@@ -1183,7 +1172,7 @@ $(function() {
 
     $('#shell_attributes input[name="attr"]').each(function() {
         if (this.checked) {
-            search['shown_attributes_extra'].push(this.value);
+            search['shown_attributes'].push(this.value);
         }
     });
     $('#shell_attributes input[name="attr"]').bind('change', function(ev) {
@@ -1192,11 +1181,11 @@ $(function() {
             search['shown_attributes'].splice(s_index, 1);
         }
 
-        var index = search['shown_attributes_extra'].indexOf(this.value);
+        var index = search['shown_attributes'].indexOf(this.value);
         if (index == -1 && this.checked) {
-            search['shown_attributes_extra'].push(this.value);
+            search['shown_attributes'].push(this.value);
         } else if (index != -1 && !this.checked) {
-            search['shown_attributes_extra'].splice(index, 1);
+            search['shown_attributes'].splice(index, 1);
         }
         render_server_table();
         regenerate_link();

@@ -68,8 +68,10 @@ def autocomplete(request):
     if 'hostname' in request.GET:
         hostname = request.GET['hostname']
         try:
-            hosts = query(hostname=filters.Startswith(hostname)).limit(10)
-            autocomplete_list += (host['hostname'] for host in hosts)
+            queryset = query(hostname=filters.Startswith(hostname))
+            queryset.restrict('hostname')
+            queryset.limit(10)
+            autocomplete_list += (h['hostname'] for h in queryset)
         except DatasetError:
             pass    # If there is no valid query, just don't auto-complete
 
@@ -82,6 +84,8 @@ def autocomplete(request):
 @login_required
 def get_results(request):
     term = request.GET.get('term', '')
+    shown_attributes = request.GET.get('shown_attributes')
+    shown_attributes = shown_attributes.split(',') if shown_attributes else []
     try:
         offset = int(request.GET.get('offset', '0'))
         limit = int(request.GET.get('limit', '0'))
@@ -92,23 +96,11 @@ def get_results(request):
     order_by = request.GET.get('order_by')
     order_dir = request.GET.get('order_dir', 'asc')
 
-    shown_attributes = ['hostname', 'intern_ip', 'servertype', 'project']
     try:
-        query_args = parse_query(term, filter_classes)
+        query_kwargs = parse_query(term, filter_classes)
 
-        # Add attributes with non-constant values and multi attributes
-        # to the shown attributes
-        for attr, value in query_args.iteritems():
-            try:
-                multi = lookups.attributes[attr].multi
-            except KeyError:
-                continue
-
-            if not isinstance(value, (filters.ExactMatch, basestring)) or multi:
-                if attr not in shown_attributes:
-                    shown_attributes.append(attr)
-
-        queryset = query(**query_args)
+        queryset = query(**query_kwargs)
+        queryset.restrict(*shown_attributes)
         if order_by:
             queryset.order_by(order_by, order_dir)
         queryset.limit(limit)
@@ -151,7 +143,6 @@ def get_results(request):
         'understood': queryset.get_representation().as_code(hide_extra=True),
         'servers': results,
         'num_servers': num_servers,
-        'shown_attributes': shown_attributes,
         'avail_attributes': avail_attributes
     }, default=json_encode_extra), content_type='application/x-json')
 
