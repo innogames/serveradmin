@@ -66,10 +66,18 @@ def commit_changes(
         if newer:
             raise CommitNewerData(u'Newer data available', newer)
 
-    _log_changes(deleted_servers, changed_servers, app, user)
     if deleted_servers:
         ServerObject.objects.filter(server_id__in=deleted_servers).delete()
-    _apply_changes(changed_servers)
+
+        # We should ignore the changes to the deleted servers.
+        for server_id in deleted_servers:
+            if server_id in changed_servers:
+                del changed_servers[server_id]
+
+    if changed_servers:
+        _apply_changes(changed_servers)
+
+    _log_changes(deleted_servers, changed_servers, app, user)
 
 def _log_changes(deleted_servers, changed_servers, app, user):
     # Import here to break cyclic import
