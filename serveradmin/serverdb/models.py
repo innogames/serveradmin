@@ -1,3 +1,4 @@
+import re
 import json
 import time
 
@@ -68,6 +69,14 @@ class Servertype(models.Model):
         on_delete=models.PROTECT,
     )
 
+    class Meta:
+        app_label = 'serverdb'
+        db_table = 'servertype'
+        ordering = ('servertype_id', )
+
+    def __unicode__(self):
+        return self.servertype_id
+
     def copy(self, new_id):
         target, created = Servertype.objects.get_or_create(pk=new_id)
         skip = [a.attrib for a in target.used_attributes.select_related()]
@@ -86,14 +95,6 @@ class Servertype(models.Model):
             )
 
             clear_lookups()
-
-    class Meta:
-        app_label = 'serverdb'
-        db_table = 'servertype'
-        ordering = ('servertype_id', )
-
-    def __unicode__(self):
-        return self.servertype_id
 
 
 class Attribute(models.Model):
@@ -179,12 +180,22 @@ class ServertypeAttribute(models.Model):
     required = models.BooleanField(default=False)
     attrib_default = models.CharField(max_length=255, null=True, blank=True)
     regex = models.CharField(max_length=255, null=True, blank=True)
+    _compiled_regexp = None
     default_visible = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'serverdb'
         db_table = 'servertype_attributes'
         unique_together = (('servertype', 'attrib'), )
+
+    def get_compiled_regexp(self):
+        if self.regex and not self._compiled_regexp:
+            self._compiled_regexp = re.compile(self.regex)
+        return self._compiled_regexp
+
+    def regexp_match(self, value):
+        if self.regex:
+            return self.get_compiled_regexp().match(str(value))
 
 
 class Server(models.Model):

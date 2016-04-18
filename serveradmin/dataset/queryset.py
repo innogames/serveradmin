@@ -1,12 +1,15 @@
 from datetime import datetime
-from collections import OrderedDict
+from collections import defaultdict, OrderedDict
 from ipaddress import ip_address, IPv4Address, IPv6Address
 
 from django.db import connection
 
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 
-from serveradmin.serverdb.models import ServerHostnameAttribute
+from serveradmin.serverdb.models import (
+    ServertypeAttribute,
+    ServerHostnameAttribute,
+)
 from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.validation import check_attributes
 from serveradmin.dataset.commit import commit_changes
@@ -14,6 +17,7 @@ from serveradmin.dataset.querybuilder import QueryBuilder
 
 CACHE_MIN_QS_COUNT = 3
 NUM_OBJECTS_FOR_FILECACHE = 50
+
 
 class QuerySetRepresentation(object):
     """Object that can be easily pickled without storing to much data.
@@ -111,6 +115,7 @@ class QuerySetRepresentation(object):
 
         return u'query({0}){1}'.format(u', '.join(args), extra)
 
+
 class QuerySet(BaseQuerySet):
     def __init__(self, filters):
         check_attributes(filters.keys())
@@ -204,6 +209,7 @@ class QuerySet(BaseQuerySet):
             self._results = dict()
 
         restrict = self._restrict
+        servers_by_type = defaultdict(list)
 
         with connection.cursor() as cursor:
             cursor.execute(sql_stmt)
@@ -240,11 +246,18 @@ class QuerySet(BaseQuerySet):
 
                 server_object = ServerObject(attrs, server_id, self)
                 self._results[server_id] = server_object
+                servers_by_type[stype].append(server_object)
 
-                for attribute in lookups.servertypes[stype].attributes:
-                    if attribute.multi:
-                        if not restrict or attribute.pk in restrict:
-                            dict.__setitem__(server_object, attribute.pk, set())
+        # Initialise multi attributes
+        for sa in ServertypeAttribute.objects.all():
+            if (
+                sa.servertype.pk in servers_by_type and
+                sa.attribute.multi and (
+                    not self._restrict or sa.attrib_id in self._restrict
+                )
+            ):
+                for server in servers_by_type[sa.servertype.pk]:
+                    dict.__setitem__(server, sa.attrib_id, set())
 
         # Return early if there are no servers (= empty dict)
         if not self._results:
@@ -326,6 +339,7 @@ class QuerySet(BaseQuerySet):
                     _getitem(self._results[server_id], attribute.pk).add(value)
                 else:
                     _setitem(self._results[server_id], attribute.pk, value)
+
 
 class ServerObject(BaseServerObject):
     def commit(self, app=None, user=None):

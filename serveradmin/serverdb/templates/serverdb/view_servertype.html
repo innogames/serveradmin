@@ -36,8 +36,10 @@
 </table>
 
 {% if perms.serverdb.change_servertype %}
-<p><a href="{% url 'serverdb_add_servertype_attr' servertype.pk %}">Add
-attribute</a></p>
+<p>
+    <a href="{% url 'serverdb_add_servertype_attr' servertype.pk %}"
+        >Add attribute</a>
+</p>
 {% endif %}
 
 {% if perms.serverdb.delete_servertype %}

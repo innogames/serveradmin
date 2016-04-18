@@ -30,6 +30,8 @@ class IPv4Field(models.Field):
         return int(value)
 
     def get_prep_lookup(self, lookup_type, value):
+        if lookup_type == 'isnull':
+            return bool(value)
         if lookup_type in ('in', 'range'):
             return [self.get_prep_value(v) for v in value]
         if lookup_type in ('exact', 'gt', 'gte', 'lt', 'lte'):

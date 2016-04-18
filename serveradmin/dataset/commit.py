@@ -1,3 +1,4 @@
+from collections import defaultdict
 import json
 
 from django.db import IntegrityError
@@ -7,6 +8,7 @@ from serveradmin.dataset.base import lookups, DatasetError, ServerTableSpecial
 from serveradmin.dataset.typecast import typecast
 from serveradmin.hooks.slots import HookSlot
 from serveradmin.serverdb.models import (
+    ServertypeAttribute,
     Server,
     ServerHostnameAttribute,
     ChangeCommit,
@@ -69,7 +71,9 @@ class CommitNewerData(CommitError):
 
 
 class CommitIncomplete(CommitError):
-    """Indicates that a commit was successfully stored, but some hooks failed."""
+    """This is a skip-able error.  It indicates that a commit was
+    successfully stored, but some hooks have failed.
+    """
     pass
 
 
@@ -135,13 +139,23 @@ def commit_changes(
         return
 
     servers = commit.servers
+    servertype_attributes = _get_servertype_attributes(servers)
 
     # Attributes must be always validated
-    violations_attribs = _validate_attributes(changed_servers, servers)
+    violations_attribs = _validate_attributes(
+        changed_servers, servers, servertype_attributes
+    )
+
     if not skip_validation:
         violations_readonly = _validate_readonly(changed_servers, servers)
-        violations_regexp = _validate_regexp(changed_servers, servers)
-        violations_required = _validate_required(changed_servers, servers)
+        violations_regexp = _validate_regexp(
+            changed_servers,
+            servers,
+            servertype_attributes,
+        )
+        violations_required = _validate_required(
+            changed_servers, servers, servertype_attributes
+        )
         if (
             violations_attribs or violations_readonly or
             violations_regexp or violations_required
@@ -283,16 +297,39 @@ def _validate_structure(deleted_servers, changed_servers):
                     raise ValueError('Not a multi attribute')
 
 
-def _validate_attributes(changed_servers, servers):
+def _get_servertype_attributes(servers):
+    servertype_ids = {s['servertype'] for s in servers.values()}
+    servertype_attributes = defaultdict(dict)
+    for item in ServertypeAttribute.objects.all():
+        if item.servertype_id in servertype_ids:
+            servertype_attributes[item.servertype_id][item.attrib_id] = item
+
+    return servertype_attributes
+
+
+def _validate_attributes(changed_servers, servers, servertype_attributes):
+    special_attribute_ids = [a.pk for a in lookups.special_attributes]
+
     violations = []
     for server_id, changes in changed_servers.iteritems():
         server = servers[server_id]
-        for attr, change in changes.iteritems():
-            if attr == 'servertype':
+        attributes = servertype_attributes[server['servertype']]
+
+        for attribute_id, change in changes.iteritems():
+
+            # If servertype is attempted to be changed, we immediately
+            # error out.
+            if attribute_id == 'servertype':
                 raise CommitValidationFailed('Cannot change servertype', [])
 
-            if (server['servertype'], attr) not in lookups.stype_attrs:
-                violations.append((server_id, attr))
+            # We have no more checks for the special attributes.
+            if attribute_id in special_attribute_ids:
+                continue
+
+            # No such attribute.
+            if attribute_id not in attributes:
+                violations.append((server_id, attribute_id))
+
     return violations
 
 
@@ -307,39 +344,43 @@ def _validate_readonly(changed_servers, servers):
     return violations
 
 
-def _validate_regexp(changed_servers, servers):
+def _validate_regexp(changed_servers, servers, servertype_attributes):
     violations = []
     for server_id, changes in changed_servers.iteritems():
         server = servers[server_id]
         for attr, change in changes.iteritems():
-            index = (server['servertype'], attr)
             try:
-                regexp = lookups.stype_attrs[index].regexp
+                lookup = servertype_attributes[server['servertype']][attr]
             except KeyError:
                 continue
+
+            if not lookup.regex:
+                continue
+
             action = change['action']
+
             if action == 'update' or action == 'new':
-                if regexp and not regexp.match(change['new']):
-                        violations.append((server_id, attr))
+                if not lookup.regexp_match(change['new']):
+                    violations.append((server_id, attr))
             elif action == 'multi':
                 for value in change['add']:
-                    if regexp and not regexp.match(value):
+                    if not lookup.regexp_match(value):
                         violations.append((server_id, attr))
                         break
     return violations
 
 
-def _validate_required(changed_servers, servers):
+def _validate_required(changed_servers, servers, servertype_attributes):
     violations = []
     for server_id, changes in changed_servers.iteritems():
         server = servers[server_id]
         for attr, change in changes.iteritems():
-            index = (server['servertype'], attr)
             try:
-                required = lookups.stype_attrs[index].required
+                lookup = servertype_attributes[server['servertype']][attr]
             except KeyError:
                 continue
-            if change['action'] == 'delete' and required:
+
+            if change['action'] == 'delete' and lookup.required:
                 violations.append((server_id, attr))
     return violations
 

@@ -8,46 +8,51 @@ from ipaddress import (
 )
 
 from serveradmin.serverdb.models import (
+    ServertypeAttribute,
     Server,
     ChangeCommit,
     ChangeAdd,
 )
 from serveradmin.dataset.base import lookups
-from serveradmin.dataset.validation import handle_violations, check_attribute_type
+from serveradmin.dataset.validation import (
+    handle_violations,
+    check_attribute_type,
+)
 from serveradmin.dataset.typecast import typecast
 from serveradmin.dataset.commit import CommitError
 from adminapi.utils.json import json_encode_extra
 
+
 def create_server(
-        attributes,
-        skip_validation,
-        fill_defaults,
-        fill_defaults_all,
-        user=None,
-        app=None,
-    ):
+    attributes,
+    skip_validation,
+    fill_defaults,
+    fill_defaults_all,
+    user=None,
+    app=None,
+):
 
     # Import here to break cyclic imports.
     from serveradmin.iprange.models import IPRange
 
-    if u'hostname' not in attributes:
-        raise CommitError(u'Hostname is required')
-    if u'servertype' not in attributes:
-        raise CommitError(u'Servertype is required')
-    if u'project' not in attributes:
-        raise CommitError(u'Project is required')
-    if u'intern_ip' not in attributes:
-        raise CommitError(u'Internal IP (intern_ip) is required')
+    if 'hostname' not in attributes:
+        raise CommitError('Hostname is required')
+    if 'servertype' not in attributes:
+        raise CommitError('Servertype is required')
+    if 'project' not in attributes:
+        raise CommitError('Project is required')
+    if 'intern_ip' not in attributes:
+        raise CommitError('Internal IP (intern_ip) is required')
 
-    for attr in (u'hostname', u'servertype', u'project', u'intern_ip'):
+    for attr in ('hostname', 'servertype', 'project', 'intern_ip'):
         check_attribute_type(attr, attributes[attr])
 
-    if attributes[u'servertype'] in lookups.servertypes:
-        servertype = lookups.servertypes[attributes[u'servertype']]
+    if attributes['servertype'] in lookups.servertypes:
+        servertype = lookups.servertypes[attributes['servertype']]
     else:
-        raise CommitError(u'Unknown servertype: ' + attributes[u'servertype'])
+        raise CommitError('Unknown servertype: ' + attributes['servertype'])
 
-    hostname = attributes[u'hostname']
+    hostname = attributes['hostname']
     if isinstance(attributes['intern_ip'], (
         IPv4Address,
         IPv6Address,
@@ -56,85 +61,89 @@ def create_server(
     )):
         intern_ip = attributes['intern_ip']
     else:
-        intern_ip = ip_address(attributes[u'intern_ip'])
+        intern_ip = ip_address(attributes['intern_ip'])
     servertype_id = servertype.pk
-    segment_id = attributes.get(u'segment')
+    segment_id = attributes.get('segment')
 
     if segment_id:
-        check_attribute_type(u'segment', segment_id)
+        check_attribute_type('segment', segment_id)
     else:
         try:
             segment_id = IPRange.objects.filter(
-                    min__lte=intern_ip,
-                    max__gte=intern_ip,
-                )[0].segment
+                min__lte=intern_ip,
+                max__gte=intern_ip,
+            )[0].segment
         except IndexError:
             raise CommitError('Could not determine segment')
 
-    project_id = attributes.get(u'project')
+    project_id = attributes.get('project')
 
     real_attributes = attributes.copy()
     for key in (
-            u'hostname',
-            u'intern_ip',
-            u'comment',
-            u'servertype',
-            u'segment',
-            u'project',
-        ):
+        'hostname',
+        'intern_ip',
+        'comment',
+        'servertype',
+        'segment',
+        'project',
+    ):
         if key in real_attributes:
             del real_attributes[key]
 
     violations_regexp = []
     violations_required = []
-    for attribute in servertype.attributes:
-        stype_attr = lookups.stype_attrs[(servertype.pk, attribute.pk)]
+    for lookup in servertype.used_attributes.all():
 
         # Handle not existing attributes (fill defaults, validate require)
-        if attribute.pk not in real_attributes:
-            if attribute.multi:
-                if stype_attr.default in ('', None):
-                    real_attributes[attribute.pk] = []
+        if lookup.attrib_id not in real_attributes:
+            if lookup.attrib.multi:
+                if lookup.default in ('', None):
+                    real_attributes[lookup.attrib_id] = []
                 else:
-                    real_attributes[attribute.pk] = _type_cast_default(attribute,
-                            stype_attr.default)
-            elif stype_attr.required:
-                if fill_defaults and stype_attr.default not in ('', None):
-                    real_attributes[attribute.pk] = _type_cast_default(
-                            attribute,
-                            stype_attr.default,
-                        )
+                    real_attributes[lookup.attrib_id] = _type_cast_default(
+                        lookup.attrib,
+                        lookup.default,
+                    )
+            elif lookup.required:
+                if fill_defaults and lookup.default not in ('', None):
+                    real_attributes[lookup.attrib_id] = _type_cast_default(
+                        lookup.attrib,
+                        lookup.default,
+                    )
                 else:
-                    violations_required.append(attribute.pk)
+                    violations_required.append(lookup.attrib_id)
                     continue
             else:
-                if fill_defaults_all and stype_attr.default not in ('', None):
-                    real_attributes[attribute.pk] = _type_cast_default(
-                            attribute,
-                            stype_attr.default,
-                        )
+                if fill_defaults_all and lookup.default not in ('', None):
+                    real_attributes[lookup.attrib_id] = _type_cast_default(
+                        lookup.attrib,
+                        lookup.default,
+                    )
                 else:
                     continue
 
-        value = real_attributes[attribute.pk]
-        check_attribute_type(attribute.pk, value)
+        value = real_attributes[lookup.attrib_id]
+        check_attribute_type(lookup.attrib_id, value)
 
         # Validate regular expression
-        regexp = stype_attr.regexp
-        if attribute.multi:
-            if attribute.type == 'string' and regexp:
+        if lookup.regex:
+            if lookup.attrib.multi:
                 for val in value:
-                    if not regexp.match(unicode(val)):
-                        violations_regexp.append(attribute.pk)
-        else:
-            if attribute.type == 'string' and regexp and not regexp.match(value):
-                violations_regexp.append(attribute.pk)
+                    if not lookup.regexp_match(unicode(val)):
+                        violations_regexp.append(lookup.attrib_id)
+            else:
+                if lookup.regexp_match(value):
+                    violations_regexp.append(lookup.attrib_id)
 
     # Check for attributes that are not defined on this servertype
     violations_attribs = []
-    servertype_attributes = set([a.pk for a in servertype.attributes])
+    servertype_attribute_ids = {
+        sa.attrib_id
+        for sa in ServertypeAttribute.objects.all()
+        if sa.servertype == servertype
+    }
     for attr in real_attributes:
-        if attr not in servertype_attributes:
+        if attr not in servertype_attribute_ids:
             violations_attribs.append(attr)
 
     handle_violations(
@@ -167,7 +176,15 @@ def create_server(
 
     return server_id
 
-def _insert_server(hostname, intern_ip, segment_id, servertype_id, project_id, attributes):
+
+def _insert_server(
+    hostname,
+    intern_ip,
+    segment_id,
+    servertype_id,
+    project_id,
+    attributes,
+):
 
     if Server.objects.filter(hostname=hostname).exists():
         raise CommitError(u'Server with that hostname already exists')
@@ -193,11 +210,12 @@ def _insert_server(hostname, intern_ip, segment_id, servertype_id, project_id, a
 
     return server.server_id
 
+
 def _type_cast_default(attribute, value):
     if attribute.multi:
         return [
-                typecast(attribute, val, force_single=True)
-                for val in value.split(',')
-            ]
+            typecast(attribute, val, force_single=True)
+            for val in value.split(',')
+        ]
     else:
         return typecast(attribute, value, force_single=True)

@@ -21,7 +21,6 @@ from serveradmin.dataset.base import lookups
 from serveradmin.dataset.commit import (
     commit_changes,
     CommitValidationFailed,
-    CommitNewerData,
     CommitIncomplete,
 )
 from serveradmin.dataset.typecast import typecast, displaycast
@@ -29,6 +28,7 @@ from serveradmin.dataset.create import create_server
 from serveradmin.serverdb.forms import CloneServerForm, NewServerForm
 from serveradmin.serverdb.models import (
     Servertype,
+    ServertypeAttribute,
     Server,
     ServerStringAttribute,
 )
@@ -119,23 +119,21 @@ def get_results(request):
 
     # Add information about available attributes on servertypes
     # It will be encoded as map avail[servertype][attr] = stypeattr
-    avail_attributes = {}
-    for server in results.itervalues():
-        servertype = server['servertype']
-        if servertype not in avail_attributes:
-            avail_attributes[servertype] = {}
-
-    for servertype, attr_info in avail_attributes.iteritems():
-        attributes = lookups.servertypes[servertype].attributes
-        for attr in attributes:
-            stype_attr = lookups.stype_attrs[(servertype, attr.pk)]
-            regexp = stype_attr.regexp.pattern if stype_attr.regexp else None
-            attr_info[attr.pk] = {
-                'regexp': regexp,
-                'default': stype_attr.default
+    servertype_ids = {s['servertype'] for s in results.values()}
+    specials = tuple(
+        (a.attrib_id, {
+            'regexp': None,
+            'default': None,
+        })
+        for a in lookups.special_attributes
+    )
+    avail_attributes = {s: dict(specials) for s in servertype_ids}
+    for sa in ServertypeAttribute.objects.all():
+        if sa.servertype_id in servertype_ids:
+            avail_attributes[sa.servertype_id][sa.attrib_id] = {
+                'regexp': sa.regex,
+                'default': sa.attrib_default,
             }
-        for attr in lookups.special_attributes:
-            attr_info[attr.pk] = {'regexp': None, 'default': None}
 
     return HttpResponse(json.dumps({
         'status': 'success',
@@ -170,13 +168,12 @@ def list_and_edit(request, mode='list'):
         mode = 'list'
 
     stype = lookups.servertypes[server['servertype']]
-    non_editable = ['servertype']
 
     invalid_attrs = set()
     if mode == 'edit' and request.POST:
         attrs = set(request.POST.getlist('attr'))
         for attr in attrs:
-            if attr in non_editable:
+            if attr in (a.pk for a in lookups.special_attributes):
                 continue
 
             attribute = lookups.attributes[attr]
@@ -197,8 +194,6 @@ def list_and_edit(request, mode='list'):
                     invalid_attrs.add(attr)
             server[attr] = value
         for attr in server.keys():
-            if attr in non_editable:
-                continue
             if attr not in attrs:
                 del server[attr]
 
@@ -217,57 +212,57 @@ def list_and_edit(request, mode='list'):
         if invalid_attrs:
             messages.error(request, 'Attributes contain invalid values')
 
+    servertype_attributes = {
+        sa.attrib_id: sa
+        for sa in ServertypeAttribute.objects.all()
+        if sa.servertype == stype
+    }
+
     fields = []
     fields_set = set()
     for key, value in server.iteritems():
+        if key in (a.pk for a in lookups.special_attributes):
+            continue
         fields_set.add(key)
-        stype_attr = lookups.stype_attrs[(stype.pk, key)]
+        servertype_attribute = servertype_attributes[key]
         fields.append({
             'key': key,
-            'value': displaycast(lookups.attributes[key], value),
+            'value': displaycast(servertype_attribute.attrib, value),
             'has_value': True,
-            'editable': key not in non_editable,
-            'type': lookups.attributes[key].type,
-            'multi': lookups.attributes[key].multi,
-            'required': stype_attr.required,
-            'regexp': _prepare_regexp_html(stype_attr.regexp),
-            'default': stype_attr.default,
-            'readonly': lookups.attributes[key].readonly,
-            'error': key in invalid_attrs
+            'editable': True,
+            'type': servertype_attribute.attrib.type,
+            'multi': servertype_attribute.attrib.multi,
+            'required': servertype_attribute.required,
+            'regexp': _prepare_regexp_html(servertype_attribute.regexp),
+            'default': servertype_attribute.default,
+            'readonly': servertype_attribute.attrib.readonly,
+            'error': key in invalid_attrs,
         })
 
     if mode == 'edit':
-        for attribute in stype.attributes:
-            if attribute.pk in fields_set:
+        for servertype_attribute in servertype_attributes.values():
+            if servertype_attribute.attrib_id in fields_set:
                 continue
-            stype_attr = lookups.stype_attrs[(stype.pk, attribute.pk)]
             fields.append({
-                'key': attribute.pk,
-                'value': [] if attribute.multi else '',
+                'key': servertype_attribute.attrib_id,
+                'value': [] if servertype_attribute.attrib.multi else '',
                 'has_value': False,
                 'editable': True,
-                'type': attribute.type,
-                'multi': attribute.multi,
+                'type': servertype_attribute.attrib.type,
+                'multi': servertype_attribute.attrib.multi,
                 'required': False,
-                'regexp': _prepare_regexp_html(stype_attr.regexp),
-                'default': stype_attr.default,
-                'readonly': attribute.readonly,
-                'error': attribute.pk in invalid_attrs
+                'regexp': _prepare_regexp_html(servertype_attribute.regexp),
+                'default': servertype_attribute.default,
+                'readonly': servertype_attribute.attrib.readonly,
+                'error': servertype_attribute.attrib_id in invalid_attrs,
             })
-
-    # Sort keys by some order and then lexographically
-    _key_order = ['hostname', 'servertype', 'intern_ip']
-    _key_order_lookup = dict((key, i) for i, key in enumerate(_key_order))
-    def _sort_key(x):
-        return (_key_order_lookup.get(x['key'], 100), x['key'])
-    fields.sort(key=_sort_key)
 
     return TemplateResponse(request, 'servershell/{0}.html'.format(mode), {
         'object_id': server.object_id,
         'fields': fields,
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
-        'link': request.get_full_path()
+        'link': request.get_full_path(),
     })
 
 
@@ -412,6 +407,6 @@ def _prepare_regexp_html(regexp):
     if not regexp:
         return ''
     else:
-        regexp_html = (escape_html(regexp.pattern).replace('|', '|&#8203;')
+        regexp_html = (escape_html(regexp).replace('|', '|&#8203;')
                        .replace(']', ']&#8203;').replace(')', ')&#8203;'))
         return mark_safe(regexp_html)
