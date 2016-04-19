@@ -5,7 +5,7 @@ except ImportError:
     import json
 
 from django.template.response import TemplateResponse
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.contrib.auth.decorators import login_required
 from django.contrib.admindocs.utils import trim_docstring, parse_docstring
 
@@ -106,6 +106,7 @@ def dataset_query(request, app, data):
 dataset_query.encode_json = False
 dataset_query = api_view(dataset_query)
 
+
 @api_view
 def dataset_commit(request, app, data):
     try:
@@ -171,6 +172,7 @@ def dataset_create(request, app, data):
         ValueError,
         CommitError,
         Server.DoesNotExist,
+        ValidationError,
     ) as error:
         return {
             'status': 'error',

@@ -196,6 +196,7 @@ def _insert_server(
         _servertype_id=servertype_id,
         _segment_id=segment_id,
     )
+    server.full_clean()
     server.save()
 
     for attr_name, value in attributes.iteritems():

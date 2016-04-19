@@ -8,6 +8,7 @@ from ipaddress import IPv4Address, IPv6Address
 from django.db import models
 from django.db.models.signals import post_save
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.utils.timezone import now
 from django.contrib.auth.models import User
 from django.conf import settings
@@ -54,6 +55,18 @@ attribute_types = (
     'hostname',
     'number',
 )
+
+ip_addr_types = (
+    'host',
+    'loadbalancer',
+)
+
+
+def get_choices(types):
+    # Django allows the choices to be stored and named differently,
+    # but we don't need it.  We are zipping the tuple to itself
+    # to use the same names.
+    return zip(*((types, ) * 2))
 
 
 class LookupManager(models.Manager):
@@ -168,6 +181,10 @@ class Servertype(LookupModel):
         on_delete=models.PROTECT,
     )
     fixed_project = Project.foreign_key_lookup('_fixed_project_id')
+    ip_addr_type = models.CharField(
+        max_length=32,
+        choices=get_choices(ip_addr_types),
+    )
 
     class Meta:
         app_label = 'serverdb'
@@ -210,11 +227,7 @@ class Attribute(LookupModel):
     )
     type = models.CharField(
         max_length=32,
-
-        # Django allows the choices to be stored and named differently,
-        # but we don't need it.  We are zipping the tuple to itself
-        # to use the same names.
-        choices=zip(*((attribute_types, ) * 2)),
+        choices=get_choices(attribute_types),
     )
     base = models.BooleanField(default=False)
     multi = models.BooleanField(default=False)
@@ -348,12 +361,40 @@ class Server(models.Model):
     )
     servertype = Servertype.foreign_key_lookup('_servertype_id')
 
-    def __str__(self):
-        return self.hostname
-
     class Meta:
         app_label = 'serverdb'
         db_table = 'admin_server'
+
+    def __str__(self):
+        return self.hostname
+
+    def clean(self, *args, **kwargs):
+        super(Server, self).clean(*args, **kwargs)
+
+        servers_with_same_ip_addr = Server.objects.filter(
+            intern_ip=self.intern_ip,
+        ).exclude(pk=self.pk).all()
+
+        if self.servertype.ip_addr_type == 'host':
+            if servers_with_same_ip_addr:
+                raise ValidationError('IP already taken.')
+
+        elif self.servertype.ip_addr_type == 'loadbalancer':
+            for server in servers_with_same_ip_addr:
+                if server.servertype.ip_addr_type != 'loadbalancer':
+                    raise ValidationError(
+                        'IP already taken by a different servertype.'
+                    )
+                if server.project != self.project:
+                    raise ValidationError(
+                        'IP already taken by a different project.'
+                    )
+
+        fixed_project = self.servertype.fixed_project
+        if fixed_project and self.project != fixed_project:
+            raise ValidationError(
+                'Project has to be "{0}".'.format(fixed_project)
+            )
 
     def get_attributes(self, attribute):
         model = ServerAttribute.get_model(attribute.type)

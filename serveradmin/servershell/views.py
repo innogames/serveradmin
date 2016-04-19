@@ -8,6 +8,7 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required, permission_required
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django.utils.html import mark_safe, escape as escape_html
@@ -25,9 +26,8 @@ from serveradmin.dataset.commit import (
 )
 from serveradmin.dataset.typecast import typecast, displaycast
 from serveradmin.dataset.create import create_server
-from serveradmin.serverdb.forms import CloneServerForm, NewServerForm
+from serveradmin.serverdb.forms import ServerForm
 from serveradmin.serverdb.models import (
-    Servertype,
     ServertypeAttribute,
     Server,
     ServerStringAttribute,
@@ -291,6 +291,7 @@ def commit(request):
             ValueError,
             DatasetError,
             Server.DoesNotExist,
+            ValidationError,
         ) as error:
             result = {
                 'status': 'error',
@@ -335,28 +336,25 @@ def new_server(request):
             clone_from = query(hostname=request.REQUEST['clone_from']).get()
         except DatasetError:
             raise Http404
-
-        servertype = Servertype.objects.get(pk=clone_from['servertype'])
     else:
         clone_from = None
 
     if request.method == 'POST':
-        if clone_from:
-            form = CloneServerForm(servertype, request.POST)
-        else:
-            form = NewServerForm(request.POST)
+        form = ServerForm(request.POST)
 
         if form.is_valid():
             if clone_from:
                 attributes = dict(clone_from)
             else:
-                attributes = {'servertype': form.cleaned_data['servertype'].pk}
+                attributes = {
+                    'servertype': form.cleaned_data['_servertype'].pk,
+                }
 
             attributes['hostname'] = form.cleaned_data['hostname']
             attributes['intern_ip'] = form.cleaned_data['intern_ip']
-            attributes['project'] = form.cleaned_data['project'].project_id
+            attributes['project'] = form.cleaned_data['_project'].pk
             attributes['responsible_admin'] = [
-                form.cleaned_data['project'].responsible_admin.username
+                form.cleaned_data['_project'].responsible_admin.username
             ]
             if 'ssh_pubkey' in attributes:
                 del attributes['ssh_pubkey']
@@ -374,20 +372,20 @@ def new_server(request):
             return HttpResponseRedirect(url)
     else:
         if clone_from:
-            form = CloneServerForm(servertype, initial={
-                    'project': clone_from['project'],
-                    'hostname': clone_from['hostname'],
-                    'intern_ip': clone_from['intern_ip'],
-                    'check_ip': True,
-                })
+            form = ServerForm(initial={
+                'servertype': clone_from['servertype'],
+                'project': clone_from['project'],
+                'hostname': clone_from['hostname'],
+                'intern_ip': clone_from['intern_ip'],
+            })
         else:
-            form = NewServerForm(initial={'check_ip': True})
+            form = ServerForm()
 
     return TemplateResponse(request, 'servershell/new_server.html', {
         'form': form,
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
-        'clone_from': clone_from
+        'clone_from': clone_from,
     })
 
 

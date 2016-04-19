@@ -496,6 +496,7 @@ def _apply_changes(changed_servers):
                     server.add_attribute(attribute, value)
 
         # Save the special attributes.
+        server.full_clean()
         server.save()
 
 
