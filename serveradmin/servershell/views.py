@@ -4,13 +4,13 @@ except ImportError:
     import json
 from operator import attrgetter
 
-from django.http import (HttpResponse, HttpResponseBadRequest,
-        HttpResponseRedirect, Http404)
+from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required, permission_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.core.urlresolvers import reverse
 from django.contrib import messages
+from django.db import IntegrityError
 from django.utils.html import mark_safe, escape as escape_html
 
 from adminapi.utils.json import json_encode_extra
@@ -18,8 +18,11 @@ from adminapi.utils.parse import parse_query
 from serveradmin.dataset import query, filters, DatasetError
 from serveradmin.dataset.filters import filter_classes
 from serveradmin.dataset.base import lookups
-from serveradmin.dataset.commit import (commit_changes, CommitValidationFailed,
-        CommitNewerData)
+from serveradmin.dataset.commit import (
+    commit_changes,
+    CommitValidationFailed,
+    CommitNewerData,
+)
 from serveradmin.dataset.typecast import typecast, displaycast
 from serveradmin.dataset.create import create_server
 from serveradmin.servershell.forms import CloneServerForm, NewServerForm
@@ -31,6 +34,7 @@ from serveradmin.serverdb.models import (
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 100
+
 
 @login_required
 @ensure_csrf_cookie
@@ -51,6 +55,7 @@ def index(request):
         'command_history': json.dumps(request.session.get('command_history', []))
     })
 
+
 @login_required
 def autocomplete(request):
     autocomplete_list = []
@@ -60,10 +65,11 @@ def autocomplete(request):
             hosts = query(hostname=filters.Startswith(hostname)).limit(10)
             autocomplete_list += (host['hostname'] for host in hosts)
         except DatasetError:
-            pass # If there is no valid query, just don't autocomplete
+            pass    # If there is no valid query, just don't auto-complete
 
     return HttpResponse(json.dumps({'autocomplete': autocomplete_list}),
             content_type='application/x-json')
+
 
 @login_required
 def get_results(request):
@@ -147,6 +153,7 @@ def get_results(request):
         'avail_attributes': avail_attributes
     }, default=json_encode_extra), content_type='application/x-json')
 
+
 @login_required
 def export(request):
     term = request.GET.get('term', '')
@@ -158,6 +165,7 @@ def export(request):
 
     hostnames = u' '.join(server['hostname'] for server in q)
     return HttpResponse(hostnames, content_type='text/plain')
+
 
 def list_and_edit(request, mode='list'):
     try:
@@ -270,6 +278,7 @@ def list_and_edit(request, mode='list'):
         'link': request.get_full_path()
     })
 
+
 @login_required
 @permission_required('dataset.change_serverobject')
 def commit(request):
@@ -297,6 +306,7 @@ def commit(request):
             CommitNewerData,
             CommitValidationFailed,
             ServerObject.DoesNotExist,
+            IntegrityError,
         ) as error:
             result = {
                 'status': 'error',
@@ -306,6 +316,7 @@ def commit(request):
             result = {'status': 'success'}
 
     return HttpResponse(json.dumps(result), content_type='application/x-json')
+
 
 @login_required
 def get_values(request):
@@ -322,6 +333,7 @@ def get_values(request):
         'values': (v['value'] for v in value_queryset[:MAX_DISTINGUISHED_VALUES]),
         'num_values': MAX_DISTINGUISHED_VALUES
     })
+
 
 @login_required
 @permission_required('dataset.create_serverobject')
@@ -380,15 +392,17 @@ def new_server(request):
         'clone_from': clone_from
     })
 
+
 @login_required
 def store_command(request):
     command = request.POST.get('command')
     if command:
         command_history = request.session.setdefault('command_history', [])
-        if not command in command_history:
+        if command not in command_history:
             command_history.append(command)
             request.session.modified = True
     return HttpResponse('{"status": "OK"}', content_type='application/x-json')
+
 
 def _prepare_regexp_html(regexp):
     """Return HTML for a given regexp. Includes wordbreaks."""

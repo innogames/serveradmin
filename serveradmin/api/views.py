@@ -8,6 +8,7 @@ from django.template.response import TemplateResponse
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.decorators import login_required
 from django.contrib.admindocs.utils import trim_docstring, parse_docstring
+from django.db import IntegrityError
 
 from adminapi.utils.json import json_encode_extra
 
@@ -21,6 +22,7 @@ from serveradmin.dataset.filters import filter_from_obj, ExactMatch
 from serveradmin.dataset.commit import commit_changes
 from serveradmin.dataset.create import create_server
 from serveradmin.serverdb.models import ServerObject
+
 
 @login_required
 def doc_functions(request):
@@ -48,9 +50,11 @@ def doc_functions(request):
             'group_list': group_list
         })
 
+
 @api_view
 def echo(request, app, data):
     return data
+
 
 #@api_view decorator is used after setting an attribute on this function
 def dataset_query(request, app, data):
@@ -128,12 +132,14 @@ def dataset_commit(request, app, data):
         ValueError,
         CommitError,
         ServerObject.DoesNotExist,
+        IntegrityError,
     ) as error:
         return {
                 'status': 'error',
                 'type': error.__class__.__name__,
                 'message': error.message,
             }
+
 
 @api_view
 def dataset_create(request, app, data):
@@ -167,6 +173,7 @@ def dataset_create(request, app, data):
                 'message': error.message,
             }
 
+
 def _build_attributes():
     attributes = {}
     for attr in lookups.attr_names.itervalues():
@@ -176,6 +183,7 @@ def _build_attributes():
             }
 
     return attributes
+
 
 @api_view
 def api_call(request, app, data):
