@@ -1,4 +1,4 @@
-from django.http import HttpResponseBadRequest
+from django.http import Http404, HttpResponseBadRequest
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -8,7 +8,7 @@ import django_urlauth.utils
 
 from adminapi.dataset.base import MultiAttr
 from serveradmin.graphite.models import Collection
-from serveradmin.dataset import query
+from serveradmin.dataset import query, DatasetError
 
 
 @login_required
@@ -24,7 +24,10 @@ def graph_table(request):
     # For convenience we will cache the servers in a dictionary.
     servers = {}
     for hostname in hostnames:
-        servers[hostname] = query(hostname=hostname).get()
+        try:
+            servers[hostname] = query(hostname=hostname).get()
+        except DatasetError:
+            raise Http404
 
     # Find the collections which are related with all of the hostnames.
     # If there are two collections with same match, use only the one which
