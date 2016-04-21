@@ -130,7 +130,8 @@ def _build_range_object(r):
         'max6': r.max6,
         'gateway6': r.gateway6,
         'internal_gateway6': r.internal_gateway6,
-        'belongs_to': belongs_to
+        'belongs_to': belongs_to,
+        'vlan': r.vlan
     }
 
 @api_function(group='ip')
