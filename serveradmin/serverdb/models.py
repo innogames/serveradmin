@@ -150,10 +150,12 @@ class ServerTypeAttribute(models.Model):
     servertype = models.ForeignKey(
         ServerType,
         related_name='used_attributes',
+        db_index=False,
         on_delete=models.CASCADE,
     )
     attrib = models.ForeignKey(
         Attribute,
+        db_index=False,
         on_delete=models.CASCADE,
     )
     required = models.BooleanField(default=False)
@@ -184,7 +186,7 @@ class Segment(models.Model):
 class ServerObject(models.Model):
     server_id = models.AutoField(primary_key=True)
     hostname = models.CharField(max_length=64, unique=True)
-    intern_ip = dbfields.IPv4Field()
+    intern_ip = dbfields.IPv4Field(db_index=True)
     comment = models.CharField(max_length=255, null=True, blank=True)
     project = models.ForeignKey(
         Project,
@@ -237,6 +239,7 @@ class ServerObject(models.Model):
 class ServerAttribute(models.Model):
     server = models.ForeignKey(
         ServerObject,
+        db_index=False,
         on_delete=models.CASCADE,
     )
 
@@ -253,12 +256,14 @@ class ServerAttribute(models.Model):
 class ServerHostnameAttribute(ServerAttribute):
     attrib = models.ForeignKey(
         Attribute,
+        db_index=False,
         on_delete=models.CASCADE,
         limit_choices_to={'type': 'hostname'},
     )
     value = models.ForeignKey(
         ServerObject,
         db_column='value',
+        db_index=False,
         on_delete=models.PROTECT,
         related_name='hostname_attribute_servers',
         related_query_name='hostname_attribute_server',
@@ -268,6 +273,7 @@ class ServerHostnameAttribute(ServerAttribute):
         app_label = 'serverdb'
         db_table = 'server_hostname_attrib'
         unique_together = (('server', 'attrib', 'value'), )
+        index_together = (('attrib', 'value'), )
 
     def reset(self, value):
         self.value = ServerObject.objects.get(hostname=value)
@@ -281,6 +287,7 @@ class ServerHostnameAttribute(ServerAttribute):
 class ServerStringAttribute(ServerAttribute):
     attrib = models.ForeignKey(
         Attribute,
+        db_index=False,
         on_delete=models.CASCADE,
     )
     value = models.CharField(max_length=1024)
@@ -288,6 +295,8 @@ class ServerStringAttribute(ServerAttribute):
     class Meta:
         app_label = 'serverdb'
         db_table = 'attrib_values'
+        unique_together = (('server', 'attrib', 'value'), )
+        index_together = (('attrib', 'value'), )
 
     def reset(self, value):
         self.value = self.attrib.serialize_value(value)
