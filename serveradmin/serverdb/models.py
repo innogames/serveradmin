@@ -246,6 +246,9 @@ class ServerAttribute(models.Model):
     class Meta:
         abstract = True
 
+    def __unicode__(self):
+        return '{0}->{1}={2}'.format(self.server, self.attrib, self.value)
+
     def reset(self, value):
         self.value = value
 
