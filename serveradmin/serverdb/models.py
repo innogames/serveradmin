@@ -235,6 +235,13 @@ class Attribute(LookupModel):
     group = models.CharField(max_length=32, default='other')
     help_link = models.CharField(max_length=255, blank=True, null=True)
     readonly = models.BooleanField(default=False)
+    _target_servertype = models.ForeignKey(
+        Servertype,
+        db_column='target_servertype_id',
+        blank=True,
+        null=True,
+    )
+    target_servertype = Servertype.foreign_key_lookup('_target_servertype_id')
 
     class Meta:
         app_label = 'serverdb'
@@ -472,9 +479,32 @@ class ServerHostnameAttribute(ServerAttribute):
         return self.value.hostname
 
     def save_value(self, value):
-        ServerAttribute.save_value(
-            self, Server.objects.get(hostname=value)
-        )
+        target_servertype = self.attribute.target_servertype
+        target_server = Server.objects.get(hostname=value)
+
+        # Temporary check until all relations have a servertype
+        if not target_servertype:
+            return ServerAttribute.save_value(self, target_server)
+
+        if target_server.servertype != target_servertype:
+            raise ValidationError(
+                'Attribute "{0}" has to be from servertype "{1}".'
+                .format(self.attribute, self.attribute.target_servertype)
+            )
+
+        # We are also going to check that the servers have the same
+        # project, but only if this servertype doesn't have a fixed
+        # project.
+        if (
+            not target_servertype.fixed_project and
+            target_server.project != self.server.project
+        ):
+            raise ValidationError(
+                'Attribute "{0}" has to be from the project {1}.'
+                .format(self.attribute, self.server.project)
+            )
+
+        ServerAttribute.save_value(self, target_server)
 
 
 class ServerNumberAttribute(ServerAttribute):
