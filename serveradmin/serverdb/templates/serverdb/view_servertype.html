@@ -24,7 +24,7 @@
         <td>{{ sa.attrib.multi }}</td>
         <td>{{ sa.required }}</td>
         <td>{{ sa.regexp }}</td>
-        <td>{{ sa.attrib_default }}</td>
+        <td>{{ sa.default_value }}</td>
 {% if perms.serverdb.change_servertype %}
         <td>
             <a href="{% url 'serverdb_edit_servertype_attr' servertype.pk sa.attrib_id %}">edit</a>

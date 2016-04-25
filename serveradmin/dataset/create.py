@@ -97,27 +97,27 @@ def create_server(
         # Handle not existing attributes (fill defaults, validate require)
         if lookup.attrib_id not in real_attributes:
             if lookup.attrib.multi:
-                if lookup.default in ('', None):
+                if lookup.default_value in ('', None):
                     real_attributes[lookup.attrib_id] = []
                 else:
                     real_attributes[lookup.attrib_id] = _type_cast_default(
                         lookup.attrib,
-                        lookup.default,
+                        lookup.default_value,
                     )
             elif lookup.required:
-                if fill_defaults and lookup.default not in ('', None):
+                if fill_defaults and lookup.default_value not in ('', None):
                     real_attributes[lookup.attrib_id] = _type_cast_default(
                         lookup.attrib,
-                        lookup.default,
+                        lookup.default_value,
                     )
                 else:
                     violations_required.append(lookup.attrib_id)
                     continue
             else:
-                if fill_defaults_all and lookup.default not in ('', None):
+                if fill_defaults_all and lookup.default_value not in ('', None):
                     real_attributes[lookup.attrib_id] = _type_cast_default(
                         lookup.attrib,
-                        lookup.default,
+                        lookup.default_value,
                     )
                 else:
                     continue

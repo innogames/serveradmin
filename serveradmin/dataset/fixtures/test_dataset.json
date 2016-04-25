@@ -57,7 +57,7 @@
         "fields": {
             "regexp": "(wheezy|squeeze)",
             "required": true,
-            "attrib_default": "squeeze",
+            "default_value": "squeeze",
             "servertype": 1,
             "default_visible": false,
             "attrib": "os"
@@ -69,7 +69,7 @@
         "fields": {
             "regexp": "(wheezy|squeeze)",
             "required": true,
-            "attrib_default": null,
+            "default_value": null,
             "servertype": 2,
             "default_visible": false,
             "attrib": "ox"
@@ -81,7 +81,7 @@
         "fields": {
             "regexp": null,
             "required": false,
-            "attrib_default": null,
+            "default_value": null,
             "servertype": 2,
             "default_visible": false,
             "attrib": "game_world"
@@ -93,7 +93,7 @@
         "fields": {
             "regexp": null,
             "required": false,
-            "attrib_default": null,
+            "default_value": null,
             "servertype": 1,
             "default_visible": false,
             "attrib": "database"

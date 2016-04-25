@@ -89,7 +89,7 @@ class Servertype(models.Model):
                 servertype=target,
                 attrib=servertype_attribute.attrib,
                 required=servertype_attribute.required,
-                attrib_default=servertype_attribute.attrib_default,
+                default_value=servertype_attribute.default_value,
                 regexp=servertype_attribute.regexp,
                 default_visible=servertype_attribute.default_visible,
             )
@@ -178,7 +178,12 @@ class ServertypeAttribute(models.Model):
         on_delete=models.CASCADE,
     )
     required = models.BooleanField(default=False)
-    attrib_default = models.CharField(max_length=255, null=True, blank=True)
+    default_value = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        db_column='attrib_default',
+    )
     regexp = models.CharField(
         max_length=255,
         null=True,

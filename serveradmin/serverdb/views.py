@@ -111,10 +111,10 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
                     stype_attr.attrib, stype
                 )
 
-            # Set attrib_default to None if empty and not string
+            # Set default_value to None if empty and not string
             if stype_attr.attrib.type != 'string':
-                if not form.cleaned_data['attrib_default']:
-                    stype_attr.attrib_default = None
+                if not form.cleaned_data['default_value']:
+                    stype_attr.default_value = None
 
             stype_attr.save()
             clear_lookups()

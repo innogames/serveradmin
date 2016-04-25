@@ -132,7 +132,7 @@ def get_results(request):
         if sa.servertype_id in servertype_ids:
             avail_attributes[sa.servertype_id][sa.attrib_id] = {
                 'regexp': sa.regexp,
-                'default': sa.attrib_default,
+                'default': sa.default_value,
             }
 
     return HttpResponse(json.dumps({
@@ -234,7 +234,7 @@ def list_and_edit(request, mode='list'):
             'multi': servertype_attribute.attrib.multi,
             'required': servertype_attribute.required,
             'regexp': _prepare_regexp_html(servertype_attribute.regexp),
-            'default': servertype_attribute.default,
+            'default': servertype_attribute.default_value,
             'readonly': servertype_attribute.attrib.readonly,
             'error': key in invalid_attrs,
         })
@@ -252,7 +252,7 @@ def list_and_edit(request, mode='list'):
                 'multi': servertype_attribute.attrib.multi,
                 'required': False,
                 'regexp': _prepare_regexp_html(servertype_attribute.regexp),
-                'default': servertype_attribute.default,
+                'default': servertype_attribute.default_value,
                 'readonly': servertype_attribute.attrib.readonly,
                 'error': servertype_attribute.attrib_id in invalid_attrs,
             })
