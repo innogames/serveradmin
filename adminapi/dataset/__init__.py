@@ -76,10 +76,10 @@ class QuerySet(BaseQuerySet):
                     if attr.multi
                 )
             convert_ip = frozenset(
-                    attr_name for attr_name, attr in self.attributes.iteritems()
-                    if attr.type == 'ip'
-                )
-            servers = {}
+                attr_name for attr_name, attr in self.attributes.iteritems()
+                if attr.type == 'ip'
+            )
+            self._results = {}
             for object_id, server in result['servers'].iteritems():
                 object_id = int(object_id)
                 server_obj = ServerObject(object_id, self, self.auth_token,
@@ -96,9 +96,7 @@ class QuerySet(BaseQuerySet):
                         continue
                     server[attr] = ip_address(unicode(server[attr]))
                 dict.update(server_obj, server)
-                servers[object_id] = server_obj
-
-            return servers
+                self._results[object_id] = server_obj
 
         elif result['status'] == 'error':
             _handle_exception(result)

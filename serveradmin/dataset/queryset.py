@@ -129,12 +129,6 @@ class QuerySet(BaseQuerySet):
         commit_changes(commit, *args, **kwargs)
         self._confirm_changes()
 
-    def get_raw_results(self):
-        if self._results is None:
-            self._results = self._fetch_results()
-
-        return self._results
-
     def get_num_rows(self):
         builder = self._get_query_builder_with_filters()
 
@@ -206,9 +200,9 @@ class QuerySet(BaseQuerySet):
         # We need to preserve ordering if ordering is requested, otherwise
         # we can use normal dict as it performs better.
         if self._order_by:
-            server_data = OrderedDict()
+            self._results = OrderedDict()
         else:
-            server_data = dict()
+            self._results = dict()
 
         restrict = self._restrict
 
@@ -246,7 +240,7 @@ class QuerySet(BaseQuerySet):
                         attrs[u'project'] = project
 
                 server_object = ServerObject(attrs, server_id, self)
-                server_data[server_id] = server_object
+                self._results[server_id] = server_object
 
                 for attribute in lookups.servertypes[stype].attributes:
                     if attribute.multi:
@@ -254,8 +248,8 @@ class QuerySet(BaseQuerySet):
                             dict.__setitem__(server_object, attribute.pk, set())
 
         # Return early if there are no servers (= empty dict)
-        if not server_data:
-            return server_data
+        if not self._results:
+            return
 
         hostname_attributes = []
         string_attributes = []
@@ -270,35 +264,32 @@ class QuerySet(BaseQuerySet):
                         string_attributes.append(attribute)
 
         if not restrict or hostname_attributes:
-            self._add_hostname_attrs(server_data, hostname_attributes)
+            self._add_hostname_attrs(hostname_attributes)
         if not restrict or string_attributes:
-            self._add_additional_attrs(server_data, string_attributes)
+            self._add_additional_attrs(string_attributes)
 
-        return server_data
-
-    def _add_hostname_attrs(self, server_data, attributes):
-
+    def _add_hostname_attrs(self, attributes):
         queryset = ServerHostnameAttribute.objects
-        queryset = queryset.filter(server_id__in=server_data.keys())
+        queryset = queryset.filter(server_id__in=self._results.keys())
         if attributes:
             queryset = queryset.filter(attrib__in=attributes)
 
         for relation in queryset.all():
             if relation.attrib.multi:
                 dict.__getitem__(
-                    server_data[relation.server_id],
+                    self._results[relation.server_id],
                     relation.attrib.pk,
                 ).add(relation.value.hostname)
             else:
                 dict.__setitem__(
-                    server_data[relation.server_id],
+                    self._results[relation.server_id],
                     relation.attrib.pk,
                     relation.value.hostname,
                 )
 
-    def _add_additional_attrs(self, server_data, attributes):
+    def _add_additional_attrs(self, attributes):
 
-        server_ids = u', '.join(map(str, server_data.iterkeys()))
+        server_ids = u', '.join(map(str, self._results.iterkeys()))
         sql_stmt = (
                 u'SELECT server_id, attrib_id, value '
                 u'FROM attrib_values '
@@ -333,9 +324,9 @@ class QuerySet(BaseQuerySet):
                 # Using dict-methods to bypass ServerObject's special properties
                 if attribute.multi:
                     # Bypass MultiAttr wrapping in ServerObject.__getitem__
-                    _getitem(server_data[server_id], attribute.pk).add(value)
+                    _getitem(self._results[server_id], attribute.pk).add(value)
                 else:
-                    _setitem(server_data[server_id], attribute.pk, value)
+                    _setitem(self._results[server_id], attribute.pk, value)
 
 class ServerObject(BaseServerObject):
     def commit(self, app=None, user=None):

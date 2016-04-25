@@ -51,9 +51,13 @@ def index(request):
     return TemplateResponse(request, 'servershell/index.html', {
         'checked_attributes': set(request.GET.get('attrs', '').split(',')),
         'attribute_groups': attribute_groups,
-        'search_term': request.GET.get('term', request.session.get('term', '')),
+        'search_term': request.GET.get(
+            'term', request.session.get('term', '')
+        ),
         'per_page': request.session.get('per_page', NUM_SERVERS_DEFAULT),
-        'command_history': json.dumps(request.session.get('command_history', []))
+        'command_history': json.dumps(
+            request.session.get('command_history', [])
+        ),
     })
 
 
@@ -68,8 +72,10 @@ def autocomplete(request):
         except DatasetError:
             pass    # If there is no valid query, just don't auto-complete
 
-    return HttpResponse(json.dumps({'autocomplete': autocomplete_list}),
-            content_type='application/x-json')
+    return HttpResponse(
+        json.dumps({'autocomplete': autocomplete_list}),
+        content_type='application/x-json',
+    )
 
 
 @login_required
@@ -108,7 +114,7 @@ def get_results(request):
         if offset:
             queryset.offset(offset)
 
-        results = queryset.get_raw_results()
+        results = queryset.get_results()
         num_servers = queryset.get_num_rows()
     except DatasetError as error:
         return HttpResponse(json.dumps({
@@ -330,7 +336,9 @@ def get_values(request):
 
     return TemplateResponse(request, 'servershell/values.html', {
         'attribute': attribute,
-        'values': (v['value'] for v in value_queryset[:MAX_DISTINGUISHED_VALUES]),
+        'values': (
+            v['value'] for v in value_queryset[:MAX_DISTINGUISHED_VALUES]
+        ),
         'num_values': MAX_DISTINGUISHED_VALUES
     })
 
@@ -364,15 +372,22 @@ def new_server(request):
             attributes['hostname'] = form.cleaned_data['hostname']
             attributes['intern_ip'] = form.cleaned_data['intern_ip']
             attributes['project'] = form.cleaned_data['project'].project_id
-            attributes['responsible_admin'] = [form.cleaned_data['project'].responsible_admin.username]
+            attributes['responsible_admin'] = [
+                form.cleaned_data['project'].responsible_admin.username
+            ]
             if 'ssh_pubkey' in attributes:
                 del attributes['ssh_pubkey']
 
-            server_id = create_server(attributes, skip_validation=True,
-                    fill_defaults=True, fill_defaults_all=True,
-                    user=request.user)
-            url = '{0}?object_id={1}'.format(reverse('servershell_edit'),
-                    server_id)
+            server_id = create_server(
+                attributes,
+                skip_validation=True,
+                fill_defaults=True,
+                fill_defaults_all=True,
+                user=request.user,
+            )
+            url = '{0}?object_id={1}'.format(
+                reverse('servershell_edit'), server_id
+            )
             return HttpResponseRedirect(url)
     else:
         if clone_from:

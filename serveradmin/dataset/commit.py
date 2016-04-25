@@ -219,7 +219,7 @@ def _fetch_servers(changed_servers):
     queryset = QuerySet({'object_id': Any(*changed_servers.keys())})
     queryset.restrict(*changed_attrs)
 
-    return queryset.get_raw_results()
+    return queryset.get_results()
 
 
 def _validate_structure(deleted_servers, changed_servers):

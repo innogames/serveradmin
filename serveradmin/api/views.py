@@ -18,7 +18,7 @@ from serveradmin.api.utils import build_function_description
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset import QuerySet
 from serveradmin.dataset.exceptions import CommitError
-from serveradmin.dataset.filters import filter_from_obj, ExactMatch
+from serveradmin.dataset.filters import filter_from_obj
 from serveradmin.dataset.commit import commit_changes
 from serveradmin.dataset.create import create_server
 from serveradmin.serverdb.models import ServerObject
@@ -33,22 +33,22 @@ def doc_functions(request):
             heading, body, metadata = parse_docstring(function.__doc__)
             body = trim_docstring(body)
             function_list.append({
-                    'name': name,
-                    'description': build_function_description(function),
-                    'docstring': trim_docstring(
-                            '{0}\n\n{1}'.format(heading, body)
-                        ),
-                })
+                'name': name,
+                'description': build_function_description(function),
+                'docstring': trim_docstring(
+                    '{0}\n\n{1}'.format(heading, body)
+                ),
+            })
         function_list.sort(key=itemgetter('name'))
 
         group_list.append({
-                'name': group_name,
-                'function_list': function_list
-            })
+            'name': group_name,
+            'function_list': function_list
+        })
     group_list.sort(key=itemgetter('name'))
     return TemplateResponse(request, 'api/list_functions.html', {
-            'group_list': group_list
-        })
+        'group_list': group_list
+    })
 
 
 @api_view
@@ -56,7 +56,7 @@ def echo(request, app, data):
     return data
 
 
-#@api_view decorator is used after setting an attribute on this function
+# api_view decorator is used after setting an attribute on this function
 def dataset_query(request, app, data):
     class StringEncoder(object):
         def loads(self, x):
@@ -73,10 +73,10 @@ def dataset_query(request, app, data):
 
     if not all(x in data for x in ('filters', 'restrict', 'augmentations')):
         return {
-                'status': 'error',
-                'type': 'ValueError',
-                'message': 'Invalid query object',
-            }
+            'status': 'error',
+            'type': 'ValueError',
+            'message': 'Invalid query object',
+        }
 
     try:
         if 'filters' not in data:
@@ -95,7 +95,7 @@ def dataset_query(request, app, data):
 
         return json.dumps({
             'status': 'success',
-            'servers': queryset.get_raw_results(),
+            'servers': queryset.get_results(),
             'attributes': _build_attributes(),
         }, default=json_encode_extra)
     except ValueError as error:
@@ -144,34 +144,42 @@ def dataset_commit(request, app, data):
 @api_view
 def dataset_create(request, app, data):
     try:
-        required = ['attributes', 'skip_validation', 'fill_defaults',
-                'fill_defaults_all']
+        required = [
+            'attributes',
+            'skip_validation',
+            'fill_defaults',
+            'fill_defaults_all',
+        ]
         if not all(key in data for key in required):
             raise ValueError('Invalid create request')
         if not isinstance(data['attributes'], dict):
             raise ValueError('Attributes must be a dictionary')
 
-        create_server(data['attributes'], data['skip_validation'],
-            data['fill_defaults'], data['fill_defaults_all'],
-            app=app)
+        create_server(
+            data['attributes'],
+            data['skip_validation'],
+            data['fill_defaults'],
+            data['fill_defaults_all'],
+            app=app,
+        )
 
         return {
-                'status': 'success',
-                'attributes': _build_attributes(),
-                'servers': QuerySet(
-                        filters={'hostname': ExactMatch(data['attributes']['hostname'])}
-                    ).get_raw_results()
-            }
+            'status': 'success',
+            'attributes': _build_attributes(),
+            'servers': QuerySet(
+                filters={'hostname': data['attributes']['hostname']}
+            ).get_results()
+        }
     except (
         ValueError,
         CommitError,
         ServerObject.DoesNotExist,
     ) as error:
         return {
-                'status': 'error',
-                'type': error.__class__.__name__,
-                'message': error.message,
-            }
+            'status': 'error',
+            'type': error.__class__.__name__,
+            'message': error.message,
+        }
 
 
 def _build_attributes():
@@ -193,7 +201,9 @@ def api_call(request, app, data):
         allowed_methods = app.allowed_methods.splitlines()
         method_name = u'{0}.{1}'.format(data['group'], data['name'])
         if app.readonly and method_name not in allowed_methods:
-            raise PermissionDenied(u'Method {0} not allowed'.format(method_name))
+            raise PermissionDenied(
+                'Method {0} not allowed'.format(method_name)
+            )
 
         try:
             fn = AVAILABLE_API_FUNCTIONS[data['group']][data['name']]
@@ -202,13 +212,13 @@ def api_call(request, app, data):
 
         retval = fn(*data['args'], **data['kwargs'])
         return {
-                'status': 'success',
-                'retval': retval,
-            }
+            'status': 'success',
+            'retval': retval,
+        }
 
     except (ValueError, TypeError, ApiError) as error:
         return {
-                'status': 'error',
-                'type': error.__class__.__name__,
-                'message': unicode(error),
-            }
+            'status': 'error',
+            'type': error.__class__.__name__,
+            'message': unicode(error),
+        }

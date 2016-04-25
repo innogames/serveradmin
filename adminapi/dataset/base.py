@@ -17,7 +17,7 @@ class BaseQuerySet(object):
         self._order = None
 
     def __iter__(self):
-        self._get_results()
+        self.get_results()
         if self._order is not None:
             order_keys = self._order
             def key_fn(server):
@@ -27,11 +27,11 @@ class BaseQuerySet(object):
         return self._results.itervalues()
 
     def __len__(self):
-        self._get_results()
+        self.get_results()
         return len(self._results)
 
     def __bool__(self):
-        self._get_results()
+        self.get_results()
         return bool(self._results)
 
     def __repr__(self):
@@ -53,7 +53,7 @@ class BaseQuerySet(object):
         return lookup
 
     def fetch_now(self):
-        self._get_results()
+        self.get_results()
         return self
 
     def augment(self, *augmentations):
@@ -79,7 +79,7 @@ class BaseQuerySet(object):
         raise NotImplementedError()
 
     def get(self):
-        self._get_results()
+        self.get_results()
         if len(self._results) != 1:
             raise DatasetError('get() requires exactly 1 matched object')
 
@@ -137,9 +137,10 @@ class BaseQuerySet(object):
         self._order = attrs
         return self
 
-    def _get_results(self):
+    def get_results(self):
         if self._results is None:
-            self._results = self._fetch_results()
+            self._fetch_results()
+        return self._results
 
     def _fetch_results(self):
         raise NotImplementedError()
