@@ -354,7 +354,7 @@ def _validate_regexp(changed_servers, servers, servertype_attributes):
             except KeyError:
                 continue
 
-            if not lookup.regex:
+            if not lookup.regexp:
                 continue
 
             action = change['action']

@@ -131,7 +131,7 @@ def get_results(request):
     for sa in ServertypeAttribute.objects.all():
         if sa.servertype_id in servertype_ids:
             avail_attributes[sa.servertype_id][sa.attrib_id] = {
-                'regexp': sa.regex,
+                'regexp': sa.regexp,
                 'default': sa.attrib_default,
             }
 

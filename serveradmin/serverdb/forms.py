@@ -30,23 +30,23 @@ class EditServertypeAttributeForm(forms.ModelForm):
 
     class Meta:
         model = ServertypeAttribute
-        fields = ('required', 'attrib_default', 'regex')
+        fields = ('required', 'attrib_default', 'regexp')
         widgets = {
-            'regex': forms.TextInput(attrs={'size': 50})
+            'regexp': forms.TextInput(attrs={'size': 50})
         }
 
     def __init__(self, servertype, *args, **kwargs):
         self.servertype = servertype
         super(EditServertypeAttributeForm, self).__init__(*args, **kwargs)
 
-    def clean_regex(self):
-        regex = self.cleaned_data['regex']
-        if regex is not None:
+    def clean_regexp(self):
+        regexp = self.cleaned_data['regexp']
+        if regexp is not None:
             try:
-                re.compile(regex)
+                re.compile(regexp)
             except re.error:
                 raise forms.ValidationError('Invalid regular expression')
-        return regex
+        return regexp
 
 
 class AddServertypeAttributeForm(EditServertypeAttributeForm):

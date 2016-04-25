@@ -126,7 +126,7 @@ def create_server(
         check_attribute_type(lookup.attrib_id, value)
 
         # Validate regular expression
-        if lookup.regex:
+        if lookup.regexp:
             if lookup.attrib.multi:
                 for val in value:
                     if not lookup.regexp_match(unicode(val)):

@@ -90,7 +90,7 @@ class Servertype(models.Model):
                 attrib=servertype_attribute.attrib,
                 required=servertype_attribute.required,
                 attrib_default=servertype_attribute.attrib_default,
-                regex=servertype_attribute.regex,
+                regexp=servertype_attribute.regexp,
                 default_visible=servertype_attribute.default_visible,
             )
 
@@ -179,7 +179,12 @@ class ServertypeAttribute(models.Model):
     )
     required = models.BooleanField(default=False)
     attrib_default = models.CharField(max_length=255, null=True, blank=True)
-    regex = models.CharField(max_length=255, null=True, blank=True)
+    regexp = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        db_column='regex',
+    )
     _compiled_regexp = None
     default_visible = models.BooleanField(default=False)
 
@@ -189,12 +194,12 @@ class ServertypeAttribute(models.Model):
         unique_together = (('servertype', 'attrib'), )
 
     def get_compiled_regexp(self):
-        if self.regex and not self._compiled_regexp:
-            self._compiled_regexp = re.compile(self.regex)
+        if self.regexp and not self._compiled_regexp:
+            self._compiled_regexp = re.compile(self.regexp)
         return self._compiled_regexp
 
     def regexp_match(self, value):
-        if self.regex:
+        if self.regexp:
             return self.get_compiled_regexp().match(str(value))
 
 

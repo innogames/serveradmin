@@ -55,7 +55,7 @@
         "pk": 1,
         "model": "dataset.servertypeattributes",
         "fields": {
-            "regex": "(wheezy|squeeze)",
+            "regexp": "(wheezy|squeeze)",
             "required": true,
             "attrib_default": "squeeze",
             "servertype": 1,
@@ -67,7 +67,7 @@
         "pk": 2,
         "model": "dataset.servertypeattributes",
         "fields": {
-            "regex": "(wheezy|squeeze)",
+            "regexp": "(wheezy|squeeze)",
             "required": true,
             "attrib_default": null,
             "servertype": 2,
@@ -79,7 +79,7 @@
         "pk": 3,
         "model": "dataset.servertypeattributes",
         "fields": {
-            "regex": null,
+            "regexp": null,
             "required": false,
             "attrib_default": null,
             "servertype": 2,
@@ -91,7 +91,7 @@
         "pk": 4,
         "model": "dataset.servertypeattributes",
         "fields": {
-            "regex": null,
+            "regexp": null,
             "required": false,
             "attrib_default": null,
             "servertype": 1,
