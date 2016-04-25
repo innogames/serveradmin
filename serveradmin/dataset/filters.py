@@ -146,7 +146,7 @@ class Regexp(BaseFilter):
             template = (
                 '{{0}} IN ('
                 '   SELECT server_id'
-                '   FROM admin_server'
+                '   FROM server'
                 '   WHERE hostname ~ {0}'
                 ')'
                 .format(value)
@@ -443,7 +443,7 @@ class Startswith(BaseFilter):
             template = (
                 '{{0}} IN ('
                 '   SELECT server_id'
-                '   FROM admin_server'
+                '   FROM server'
                 '   WHERE hostname LIKE {0}'
                 ')'
                 .format(value),
@@ -693,27 +693,27 @@ def _condition_sql(attribute, template):
     # its own.  Then, add the conditions for all possible relations.
     # They are going to be OR'ed together.
     if attribute.type == 'reverse_hostname':
-        relation_conditions = ['adms.server_id = sub.value']
+        relation_conditions = ['server.server_id = sub.value']
     else:
-        relation_conditions = ['adms.server_id = sub.server_id']
+        relation_conditions = ['server.server_id = sub.server_id']
 
     for sa in ServertypeAttribute.objects.all():
         if sa.attribute == attribute and sa.related_via_attribute:
             if sa.related_via_attribute.type == 'reverse_hostname':
                 sub_conditions = (
-                    "sub_rel.attrib_id = '{0}'".format(
+                    "sub_rel.attribute_id = '{0}'".format(
                         sa.related_via_attribute.reversed_attribute.pk
                     ),
-                    'sub_rel.value = adms.server_id',
+                    'sub_rel.value = server.server_id',
                     'sub_rel.server_id = sub.server_id',
                 )
             else:
                 assert sa.related_via_attribute.type == 'hostname'
                 sub_conditions = (
-                    "sub_rel.attrib_id = '{0}'".format(
+                    "sub_rel.attribute_id = '{0}'".format(
                         sa.related_via_attribute.pk
                     ),
-                    'sub_rel.server_id = adms.server_id',
+                    'sub_rel.server_id = server.server_id',
                     'sub_rel.value = sub.server_id',
                 )
 
@@ -731,14 +731,14 @@ def _condition_sql(attribute, template):
         return condition.format(
             ServerAttribute.get_model('hostname')._meta.db_table,
             ' OR '.join(relation_conditions),
-            "sub.attrib_id = '{0}'".format(attribute.reversed_attribute.pk),
+            "sub.attribute_id = '{0}'".format(attribute.reversed_attribute.pk),
             template.format('sub.server_id'),
         )
 
     return condition.format(
         ServerAttribute.get_model(attribute.type)._meta.db_table,
         ' OR '.join(relation_conditions),
-        "sub.attrib_id = '{0}'".format(attribute.pk),
+        "sub.attribute_id = '{0}'".format(attribute.pk),
         template.format('sub.value'),
     )
 

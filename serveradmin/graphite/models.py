@@ -15,14 +15,8 @@ class Collection(models.Model):
     """Collection of graphs and values to be shown for the servers
     """
 
-    attribute = models.ForeignKey(
-        Attribute,
-        db_column='attrib_id',
-    )
-    attribute_value = models.CharField(
-        max_length=512,
-        db_column='attrib_value',
-    )
+    attribute = models.ForeignKey(Attribute)
+    attribute_value = models.CharField(max_length=512)
     params = models.TextField(blank=True, help_text="""
         Part of the URL after "?" to GET the graph or the value from
         the Graphite.  It will be concatenated with the params for

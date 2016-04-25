@@ -35,15 +35,15 @@ class QueryBuilder(object):
         else:
             sql.append(
                 'SELECT'
-                '   adms.server_id,'
-                '   adms.hostname,'
-                '   adms.intern_ip,'
-                '   adms.segment_id,'
-                '   adms.servertype_id,'
-                '   adms.project_id'
+                '   server.server_id,'
+                '   server.hostname,'
+                '   server.intern_ip,'
+                '   server.segment_id,'
+                '   server.servertype_id,'
+                '   server.project_id'
             )
 
-        sql.append(u'FROM admin_server AS adms')
+        sql.append('FROM server')
 
         if self.sql_where:
             sql.append(u'WHERE {0}'.format(' AND '.join(self.sql_where)))

@@ -240,7 +240,6 @@ class Attribute(LookupModel):
     attribute_id = models.CharField(
         max_length=32,
         primary_key=True,
-        db_column='attrib_id',
     )
     type = models.CharField(
         max_length=32,
@@ -273,7 +272,7 @@ class Attribute(LookupModel):
 
     class Meta:
         app_label = 'serverdb'
-        db_table = 'attrib'
+        db_table = 'attribute'
         ordering = ('pk', )
 
     def used_in(self):
@@ -355,7 +354,7 @@ class ServertypeAttribute(LookupModel):
     servertype = Servertype.foreign_key_lookup('_servertype_id')
     _attribute = models.ForeignKey(
         Attribute,
-        db_column='attrib_id',
+        db_column='attribute_id',
         db_index=False,
         on_delete=models.CASCADE,
     )
@@ -378,20 +377,18 @@ class ServertypeAttribute(LookupModel):
         max_length=255,
         null=True,
         blank=True,
-        db_column='attrib_default',
     )
     regexp = models.CharField(
         max_length=255,
         null=True,
         blank=True,
-        db_column='regex',
     )
     _compiled_regexp = None
     default_visible = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'serverdb'
-        db_table = 'servertype_attributes'
+        db_table = 'servertype_attribute'
         unique_together = (('_servertype', '_attribute'), )
 
     def __unicode__(self):
@@ -443,7 +440,7 @@ class Server(models.Model):
 
     class Meta:
         app_label = 'serverdb'
-        db_table = 'admin_server'
+        db_table = 'server'
 
     def __str__(self):
         return self.hostname
@@ -521,7 +518,7 @@ class ServerAttribute(models.Model):
 class ServerStringAttribute(ServerAttribute):
     _attribute = models.ForeignKey(
         Attribute,
-        db_column='attrib_id',
+        db_column='attribute_id',
         db_index=False,
         on_delete=models.CASCADE,
         limit_choices_to=models.Q(type__in=(
@@ -533,7 +530,7 @@ class ServerStringAttribute(ServerAttribute):
 
     class Meta:
         app_label = 'serverdb'
-        db_table = 'attrib_values'
+        db_table = 'server_string_attribute'
 
     def get_value(self):
         if self.attribute.type == 'integer':
@@ -577,7 +574,7 @@ class ServerHostnameAttribute(ServerAttribute):
 
     _attribute = models.ForeignKey(
         Attribute,
-        db_column='attrib_id',
+        db_column='attribute_id',
         db_index=False,
         on_delete=models.CASCADE,
         limit_choices_to=dict(type='hostname'),
@@ -594,7 +591,7 @@ class ServerHostnameAttribute(ServerAttribute):
 
     class Meta:
         app_label = 'serverdb'
-        db_table = 'server_hostname_attrib'
+        db_table = 'server_hostname_attribute'
         unique_together = (('server', '_attribute', 'value'), )
         index_together = (('_attribute', 'value'), )
 
@@ -642,7 +639,7 @@ class ServerHostnameAttribute(ServerAttribute):
 class ServerNumberAttribute(ServerAttribute):
     _attribute = models.ForeignKey(
         Attribute,
-        db_column='attrib_id',
+        db_column='attribute_id',
         db_index=False,
         on_delete=models.CASCADE,
         limit_choices_to=dict(type='number'),
@@ -652,7 +649,7 @@ class ServerNumberAttribute(ServerAttribute):
 
     class Meta:
         app_label = 'serverdb'
-        db_table = 'server_number_attrib'
+        db_table = 'server_number_attribute'
         unique_together = (('server', '_attribute', 'value'), )
         index_together = (('_attribute', 'value'), )
 
