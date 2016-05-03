@@ -141,6 +141,12 @@ function build_server_table(servers, attributes, offset)
         var row_class = i & 1 ? 'row_a' : 'row_b';
         if (delete_set[server['object_id']]) {
             row_class = 'row_del';
+        } else if (server['state'] == 'retired') {
+            row_class = 'row_state_retired';
+        } else if (server['state'] == 'maintenance') {
+            row_class = 'row_state_maintenance';
+        } else if ([' ', 'deploy_offline', 'deploy_online'].indexOf(server['state']) > 0 ) {
+            row_class = 'row_state_deploy';
         } else if (server['cancelled']) {
             row_class = 'row_cancelled';
         }

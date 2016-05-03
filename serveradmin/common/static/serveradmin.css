@@ -153,6 +153,18 @@ del {
  background:#fdd;
 }
 
+.row_state_retired {
+ background:#f88;
+}
+
+.row_state_maintenance {
+ background:#fa0;
+}
+
+.row_state_deploy {
+ background:#aff;
+}
+
 .page {
  border:1px solid #67a13a;
  padding:3px;
