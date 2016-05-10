@@ -7,6 +7,7 @@ from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.typecast import typecast
 from serveradmin.serverdb.models import (
     ServerObject,
+    ServerHostnameAttribute,
     ChangeCommit,
     ChangeUpdate,
     ChangeDelete,
@@ -67,7 +68,11 @@ def commit_changes(
             raise CommitNewerData(u'Newer data available', newer)
 
     if deleted_servers:
-        ServerObject.objects.filter(server_id__in=deleted_servers).delete()
+        # We first have to delete all of the hostname attributes
+        # to avoid integrity errors.  Other attributes will just go away
+        # with the servers.
+        for model in (ServerHostnameAttribute, ServerObject):
+            model.objects.filter(server_id__in=deleted_servers).delete()
 
         # We should ignore the changes to the deleted servers.
         for server_id in deleted_servers:
