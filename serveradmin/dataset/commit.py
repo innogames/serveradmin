@@ -1,10 +1,12 @@
+from collections import defaultdict
 import time
 import json
 
-from adminapi.dataset.exceptions import CommitValidationFailed, CommitNewerData
+from adminapi.dataset.exceptions import CommitValidationFailed, CommitNewerData, CommitIncomplete
 from adminapi.utils.json import json_encode_extra
 from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.typecast import typecast
+from serveradmin.hooks.slots import HookSlot
 from serveradmin.serverdb.models import (
     ServerObject,
     ChangeCommit,
@@ -12,6 +14,60 @@ from serveradmin.serverdb.models import (
     ChangeDelete,
 )
 
+class Commit(object):
+    """Context class for all commit hooks."""
+
+    def __init__(self, commit, user):
+        self.user = user
+        self.deleted_servers = commit.get('deleted', [])
+        self.changed_servers = commit.get('changes', {})
+        self.servers = _fetch_servers(self.changed_servers)
+
+        # If non-empty, the commit will go through the backend, but an error
+        # will be shown on the client.
+        self.warnings = []
+
+    def apply_changes(self):
+        # TODO: Move _apply_changes in here
+        _apply_changes(self.changed_servers)
+
+        # Re-fetch servers before invoking hook, otherwise the hook will receive incomplete data.
+        self.servers = _fetch_servers(self.changed_servers)
+        try:
+            on_server_attribute_changed.invoke(commit=self,
+                    servers=self.servers.values(),
+                    changes=self.changed_servers)
+        except ValueError as error:
+            self.warnings.append('Commit hook failed: {}'.format(
+                        unicode(error)
+                ))
+
+
+class _ServerAttributedChangedHook(HookSlot):
+    """Specialized hook that filters based on changes attributes."""
+    def connect(self, hookfn, attrib, filter=None):
+        def filtered_fn(servers, changes, **kwargs):
+            filtered_servers = []
+            for server in servers:
+                server_changes = changes[server.object_id]
+                if not attrib in server_changes:
+                    continue
+
+                old = server_changes[attrib]['old']
+                new = server_changes[attrib]['new']
+                if filter and not filter(server, old, new):
+                    continue
+                filtered_servers.append(server)
+            hookfn(servers=filtered_servers, changes=changes, **kwargs)
+        return HookSlot.connect(self, filtered_fn)
+
+on_server_attribute_changed = _ServerAttributedChangedHook('commit_server_changed',
+        servers=list,
+        changes=dict,
+        commit=Commit)
+
+
+# TODO: Move to commit object?
 def commit_changes(
         commit,
         skip_validation=False,
@@ -25,9 +81,9 @@ def commit_changes(
                    a list of deleted servers and a dictionary of the servers'
                    changes.
     """
-
-    deleted_servers = commit.get('deleted', [])
-    changed_servers = commit.get('changes', {})
+    commit = Commit(commit, user)
+    deleted_servers = commit.deleted_servers
+    changed_servers = commit.changed_servers
 
     _validate_structure(deleted_servers, changed_servers)
     _typecast_values(changed_servers)
@@ -36,7 +92,7 @@ def commit_changes(
     if not changed_servers and not deleted_servers:
         return
 
-    servers = _fetch_servers(changed_servers)
+    servers = commit.servers
 
     # Attributes must be always validated
     violations_attribs = _validate_attributes(changed_servers, servers)
@@ -75,9 +131,14 @@ def commit_changes(
                 del changed_servers[server_id]
 
     if changed_servers:
-        _apply_changes(changed_servers)
+        commit.apply_changes()
 
     _log_changes(deleted_servers, changed_servers, app, user)
+
+    if commit.warnings:
+        warnings = '\n'.join(commit.warnings)
+        raise CommitIncomplete('Commit was written, but hooks failed:\n\n{}'.format(
+                warnings))
 
 def _log_changes(deleted_servers, changed_servers, app, user):
     # Import here to break cyclic import
@@ -117,7 +178,7 @@ def _fetch_servers(changed_servers):
     from serveradmin.dataset.queryset import QuerySet
     from serveradmin.dataset.filters import Any
     # Only load attributes that will be changed (for performance reasons)
-    changed_attrs = set([u'servertype'])
+    changed_attrs = set([u'servertype', u'hostname', u'intern_ip'])
     for changes in changed_servers.itervalues():
         for attr in changes:
             changed_attrs.add(attr)

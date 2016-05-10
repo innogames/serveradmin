@@ -18,3 +18,6 @@ class CommitNewerData(CommitError):
             newer = []
         self.newer = newer
 
+class CommitIncomplete(CommitError):
+    """Indicates that a commit was successfully stored, but some hooks failed."""
+    pass

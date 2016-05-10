@@ -113,6 +113,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'serveradmin.api.middleware.ApiMiddleware',
+    'serveradmin.hooks.middleware.HooksMiddleware',
 )
 
 ROOT_URLCONF = 'serveradmin.urls'

@@ -1084,6 +1084,8 @@ function handle_command_commit(parsed_args)
         if (result['status'] == 'error') {
             $('<div title="Commit error"></div>').text(result['message']).dialog();
             return;
+        } else if (result['message']) {
+            $('<div title="Commit message"></div>').text(result['message']).dialog();
         }
         commit = {'deleted': [], 'changes': {}};
         execute_search($('#shell_search').val());
