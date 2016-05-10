@@ -531,6 +531,8 @@ class ServerStringAttribute(ServerAttribute):
     class Meta:
         app_label = 'serverdb'
         db_table = 'server_string_attribute'
+        unique_together = (('server', '_attribute', 'value'), )
+        index_together = (('_attribute', 'value'), )
 
     def get_value(self):
         if self.attribute.type == 'integer':
