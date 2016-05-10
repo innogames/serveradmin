@@ -295,8 +295,6 @@ class ServerStringAttribute(ServerAttribute):
     class Meta:
         app_label = 'serverdb'
         db_table = 'attrib_values'
-        unique_together = (('server', 'attrib', 'value'), )
-        index_together = (('attrib', 'value'), )
 
     def reset(self, value):
         self.value = self.attrib.serialize_value(value)
