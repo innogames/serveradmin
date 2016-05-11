@@ -22,6 +22,7 @@ from serveradmin.dataset.commit import (
     commit_changes,
     CommitValidationFailed,
     CommitNewerData,
+    CommitIncomplete,
 )
 from serveradmin.dataset.typecast import typecast, displaycast
 from serveradmin.dataset.create import create_server
@@ -311,6 +312,11 @@ def commit(request):
             result = {
                 'status': 'error',
                 'message': unicode(error),
+            }
+        except CommitIncomplete as error:
+            result = {
+                'status': 'success',
+                'message': unicode(error)
             }
         else:
             result = {'status': 'success'}
