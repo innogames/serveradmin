@@ -152,7 +152,7 @@ def index(request):
                         rack_attr = '{}-{}{}'.format(dc_k, row['row'], col)
                         hardware = query(
                             rack = rack_attr,
-                            cmc_slot = filters.Empty()
+                            bladecenter = filters.Empty()
                         )
                     row['igcolumns'].append( {
                         'style': 'extreme' if [ hw for hw in hardware if 'arch' in hw and hw['arch']=='EX670' ] else 'normal',
