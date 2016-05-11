@@ -60,6 +60,7 @@ class _ServerAttributedChangedHook(HookSlot):
                     continue
                 filtered_servers.append(server)
             hookfn(servers=filtered_servers, changes=changes, **kwargs)
+        filtered_fn.__name__ = hookfn.__name__
         return HookSlot.connect(self, filtered_fn)
 
 on_server_attribute_changed = _ServerAttributedChangedHook('commit_server_changed',

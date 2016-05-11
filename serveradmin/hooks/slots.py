@@ -57,7 +57,14 @@ class HookSlot(object):
         self.validate(**kwargs)
 
         results = {}
+        failures = []
         for hookfn in self._hooks:
-            results[hookfn.__name__] = hookfn(**kwargs)
+            try:
+                hookfn(**kwargs)
+            except ValueError as e:
+                failures.append('{}: {}'.format(hookfn.__name__, e.message))
+
+        if failures:
+            raise ValueError('\n'.join(failures))
 
         return results
