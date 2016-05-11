@@ -9,4 +9,6 @@ class ApiMiddleware(object):
             try:
                 import_module(app + '.api')
             except ImportError:
+                if not 'No module named' in e.message:
+                    raise
                 pass

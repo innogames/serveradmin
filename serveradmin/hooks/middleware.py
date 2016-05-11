@@ -9,4 +9,6 @@ class HooksMiddleware(object):
             try:
                 import_module(app + '.hooks')
             except ImportError as e:
+                if not 'No module named' in e.message:
+                    raise
                 pass
