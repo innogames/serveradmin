@@ -54,8 +54,8 @@ class _ServerAttributedChangedHook(HookSlot):
                 if not attrib in server_changes:
                     continue
 
-                old = server_changes[attrib]['old']
-                new = server_changes[attrib]['new']
+                old = server_changes[attrib].get('old', None)
+                new = server_changes[attrib].get('new', None)
                 if filter and not filter(server, old, new):
                     continue
                 filtered_servers.append(server)
