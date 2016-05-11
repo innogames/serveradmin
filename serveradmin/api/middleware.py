@@ -8,7 +8,7 @@ class ApiMiddleware(object):
         for app in settings.INSTALLED_APPS:
             try:
                 import_module(app + '.api')
-            except ImportError:
+            except ImportError as e:
                 if not 'No module named' in e.message:
                     raise
                 pass
