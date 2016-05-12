@@ -252,3 +252,7 @@ ul.nolist {
  padding:0;
  margin:0;
 }
+
+.commit-message {
+ white-space: pre-wrap;
+}
