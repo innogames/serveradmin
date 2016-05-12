@@ -46,10 +46,14 @@ class Commit(object):
 
 class _ServerAttributedChangedHook(HookSlot):
     """Specialized hook that filters based on changes attributes."""
-    def connect(self, hookfn, attrib, filter=None):
+    def connect(self, hookfn, attrib, servertypes=None, filter=None):
+        if servertypes and not isinstance(servertypes, tuple):
+            raise ValueError('Servertypes filter must be tuple: {}'.format(servertypes))
         def filtered_fn(servers, changes, **kwargs):
             filtered_servers = []
             for server in servers:
+                if servertypes and server[u'servertype'] not in servertypes:
+                    continue
                 server_changes = changes[server.object_id]
                 if not attrib in server_changes:
                     continue
@@ -59,6 +63,8 @@ class _ServerAttributedChangedHook(HookSlot):
                 if filter and not filter(server, old, new):
                     continue
                 filtered_servers.append(server)
+            if not filtered_servers:
+                return
             hookfn(servers=filtered_servers, changes=changes, **kwargs)
         filtered_fn.__name__ = hookfn.__name__
         return HookSlot.connect(self, filtered_fn)
