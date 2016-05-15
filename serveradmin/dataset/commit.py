@@ -1,8 +1,10 @@
-from collections import defaultdict
-import time
 import json
 
-from adminapi.dataset.exceptions import CommitValidationFailed, CommitNewerData, CommitIncomplete
+from adminapi.dataset.exceptions import (
+    CommitValidationFailed,
+    CommitNewerData,
+    CommitIncomplete,
+)
 from adminapi.utils.json import json_encode_extra
 from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.typecast import typecast
@@ -14,6 +16,7 @@ from serveradmin.serverdb.models import (
     ChangeUpdate,
     ChangeDelete,
 )
+
 
 class Commit(object):
     """Context class for all commit hooks."""
@@ -32,30 +35,36 @@ class Commit(object):
         # TODO: Move _apply_changes in here
         _apply_changes(self.changed_servers)
 
-        # Re-fetch servers before invoking hook, otherwise the hook will receive incomplete data.
+        # Re-fetch servers before invoking hook, otherwise the hook will
+        # receive incomplete data.
         self.servers = _fetch_servers(self.changed_servers)
         try:
-            on_server_attribute_changed.invoke(commit=self,
-                    servers=self.servers.values(),
-                    changes=self.changed_servers)
+            on_server_attribute_changed.invoke(
+                commit=self,
+                servers=self.servers.values(),
+                changes=self.changed_servers,
+            )
         except ValueError as error:
             self.warnings.append('Commit hook failed: {}'.format(
-                        unicode(error)
-                ))
+                unicode(error)
+            ))
 
 
 class _ServerAttributedChangedHook(HookSlot):
     """Specialized hook that filters based on changes attributes."""
     def connect(self, hookfn, attrib, servertypes=None, filter=None):
         if servertypes and not isinstance(servertypes, tuple):
-            raise ValueError('Servertypes filter must be tuple: {}'.format(servertypes))
+            raise ValueError(
+                'Servertypes filter must be tuple: {}'.format(servertypes)
+            )
+
         def filtered_fn(servers, changes, **kwargs):
             filtered_servers = []
             for server in servers:
-                if servertypes and server[u'servertype'] not in servertypes:
+                if servertypes and server['servertype'] not in servertypes:
                     continue
                 server_changes = changes[server.object_id]
-                if not attrib in server_changes:
+                if attrib not in server_changes:
                     continue
 
                 old = server_changes[attrib].get('old', None)
@@ -69,20 +78,22 @@ class _ServerAttributedChangedHook(HookSlot):
         filtered_fn.__name__ = hookfn.__name__
         return HookSlot.connect(self, filtered_fn)
 
-on_server_attribute_changed = _ServerAttributedChangedHook('commit_server_changed',
-        servers=list,
-        changes=dict,
-        commit=Commit)
+on_server_attribute_changed = _ServerAttributedChangedHook(
+    'commit_server_changed',
+    servers=list,
+    changes=dict,
+    commit=Commit,
+)
 
 
 # TODO: Move to commit object?
 def commit_changes(
-        commit,
-        skip_validation=False,
-        force_changes=False,
-        app=None,
-        user=None,
-    ):
+    commit,
+    skip_validation=False,
+    force_changes=False,
+    app=None,
+    user=None,
+):
     """Commit server changes to the database after validation.
 
     :param commit: Dictionary with the keys 'deleted' and 'changes' containing
@@ -108,17 +119,22 @@ def commit_changes(
         violations_readonly = _validate_readonly(changed_servers, servers)
         violations_regexp = _validate_regexp(changed_servers, servers)
         violations_required = _validate_required(changed_servers, servers)
-        if (violations_attribs or violations_readonly or
-            violations_regexp or violations_required):
+        if (
+            violations_attribs or violations_readonly or
+            violations_regexp or violations_required
+        ):
             error_message = _build_error_message(
                 violations_attribs,
                 violations_readonly,
                 violations_regexp,
                 violations_required,
             )
-            raise CommitValidationFailed(error_message,
-                violations_attribs + violations_readonly +
-                violations_regexp + violations_required,
+            raise CommitValidationFailed(
+                error_message,
+                violations_attribs +
+                violations_readonly +
+                violations_regexp +
+                violations_required,
             )
 
     if violations_attribs:
@@ -128,7 +144,7 @@ def commit_changes(
     if not force_changes:
         newer = _validate_commit(changed_servers, servers)
         if newer:
-            raise CommitNewerData(u'Newer data available', newer)
+            raise CommitNewerData('Newer data available', newer)
 
     if deleted_servers:
         # We first have to delete all of the hostname attributes
@@ -149,8 +165,10 @@ def commit_changes(
 
     if commit.warnings:
         warnings = '\n'.join(commit.warnings)
-        raise CommitIncomplete('Commit was written, but hooks failed:\n\n{}'.format(
-                warnings))
+        raise CommitIncomplete(
+            'Commit was written, but hooks failed:\n\n{}'.format(warnings)
+        )
+
 
 def _log_changes(deleted_servers, changed_servers, app, user):
     # Import here to break cyclic import
@@ -161,8 +179,10 @@ def _log_changes(deleted_servers, changed_servers, app, user):
     else:
         old_servers = []
 
-    servers = (query(object_id=filters.Any(*changed_servers.keys()))
-            .restrict('hostname'))
+    servers = query(
+        object_id=filters.Any(*changed_servers.keys())
+    ).restrict('hostname')
+
     changes = {}
     for server_obj in servers:
         changes[server_obj['hostname']] = changed_servers[server_obj.object_id]
@@ -185,12 +205,13 @@ def _log_changes(deleted_servers, changed_servers, app, user):
                 attributes_json=attributes_json,
             )
 
+
 def _fetch_servers(changed_servers):
     # Import here to break cyclic import
     from serveradmin.dataset.queryset import QuerySet
     from serveradmin.dataset.filters import Any
     # Only load attributes that will be changed (for performance reasons)
-    changed_attrs = set([u'servertype', u'hostname', u'intern_ip'])
+    changed_attrs = set(['servertype', 'hostname', 'intern_ip'])
     for changes in changed_servers.itervalues():
         for attr in changes:
             changed_attrs.add(attr)
@@ -200,44 +221,47 @@ def _fetch_servers(changed_servers):
 
     return queryset.get_raw_results()
 
+
 def _validate_structure(deleted_servers, changed_servers):
     if not isinstance(deleted_servers, (list, set)):
-        raise ValueError(u'Invalid deleted servers')
+        raise ValueError('Invalid deleted servers')
     if not all(isinstance(x, (int, long)) for x in deleted_servers):
-        raise ValueError(u'Invalid deleted servers')
+        raise ValueError('Invalid deleted servers')
 
     # FIXME: Validation of the inner structure
     for server_id, changes in changed_servers.iteritems():
         for attr, change in changes.iteritems():
             if attr not in lookups.attr_names:
-                raise ValueError(u'No such attribute')
-            action = change[u'action']
-            if action == u'update':
-                if not all(x in change for x in (u'old', u'new')):
-                    raise ValueError(u'Invalid update change')
-            elif action == u'new':
-                if u'new' not in change:
-                    raise ValueError(u'Invalid new change')
-            elif action == u'delete':
-                if u'old' not in change:
-                    raise ValueError(u'Invalid delete change')
-            elif action == u'multi':
-                if not all(x in change for x in (u'add', u'remove')):
-                    raise ValueError(u'Invalid multi change')
+                raise ValueError('No such attribute')
+            action = change['action']
+            if action == 'update':
+                if not all(x in change for x in ('old', 'new')):
+                    raise ValueError('Invalid update change')
+            elif action == 'new':
+                if 'new' not in change:
+                    raise ValueError('Invalid new change')
+            elif action == 'delete':
+                if 'old' not in change:
+                    raise ValueError('Invalid delete change')
+            elif action == 'multi':
+                if not all(x in change for x in ('add', 'remove')):
+                    raise ValueError('Invalid multi change')
                 if not lookups.attr_names[attr].multi:
-                    raise ValueError(u'Not a multi attribute')
+                    raise ValueError('Not a multi attribute')
+
 
 def _validate_attributes(changed_servers, servers):
     violations = []
     for server_id, changes in changed_servers.iteritems():
         server = servers[server_id]
         for attr, change in changes.iteritems():
-            if attr == u'servertype':
-                raise CommitValidationFailed(u'Cannot change servertype', [])
+            if attr == 'servertype':
+                raise CommitValidationFailed('Cannot change servertype', [])
 
-            if (server[u'servertype'], attr) not in lookups.stype_attrs:
+            if (server['servertype'], attr) not in lookups.stype_attrs:
                 violations.append((server_id, attr))
     return violations
+
 
 def _validate_readonly(changed_servers, servers):
     violations = []
@@ -249,57 +273,61 @@ def _validate_readonly(changed_servers, servers):
                     violations.append((server_id, attr))
     return violations
 
+
 def _validate_regexp(changed_servers, servers):
     violations = []
     for server_id, changes in changed_servers.iteritems():
         server = servers[server_id]
         for attr, change in changes.iteritems():
-            index = (server[u'servertype'], attr)
+            index = (server['servertype'], attr)
             try:
                 regexp = lookups.stype_attrs[index].regexp
             except KeyError:
                 continue
-            action = change[u'action']
-            if action == u'update' or action == u'new':
-                if regexp and not regexp.match(change[u'new']):
+            action = change['action']
+            if action == 'update' or action == 'new':
+                if regexp and not regexp.match(change['new']):
                         violations.append((server_id, attr))
-            elif action == u'multi':
-                for value in change[u'add']:
+            elif action == 'multi':
+                for value in change['add']:
                     if regexp and not regexp.match(value):
                         violations.append((server_id, attr))
                         break
     return violations
+
 
 def _validate_required(changed_servers, servers):
     violations = []
     for server_id, changes in changed_servers.iteritems():
         server = servers[server_id]
         for attr, change in changes.iteritems():
-            index = (server[u'servertype'], attr)
+            index = (server['servertype'], attr)
             try:
                 required = lookups.stype_attrs[index].required
             except KeyError:
                 continue
-            if change[u'action'] == u'delete' and required:
+            if change['action'] == 'delete' and required:
                 violations.append((server_id, attr))
     return violations
+
 
 def _validate_commit(changed_servers, servers):
     newer = []
     for server_id, changes in changed_servers.iteritems():
         server = servers[server_id]
         for attr, change in changes.iteritems():
-            action = change[u'action']
-            if action == u'new':
+            action = change['action']
+            if action == 'new':
                 if attr in server:
                     newer.append((server_id, attr, server[attr]))
-            elif action == u'update' or action == u'delete':
+            elif action == 'update' or action == 'delete':
                 try:
-                    if server[attr] != change[u'old']:
+                    if server[attr] != change['old']:
                         newer.append((server_id, attr, server[attr]))
                 except KeyError:
                     newer.append((server_id, attr, None))
     return newer
+
 
 def _typecast_values(changed_servers):
     for server_id, changes in changed_servers.iteritems():
@@ -317,6 +345,7 @@ def _typecast_values(changed_servers):
                 change['remove'] = typecast(attribute, change['remove'])
             elif action == 'delete':
                 change['old'] = typecast(attribute, change['old'])
+
 
 def _clean_changed(changed_servers):
     for server_id, changes in changed_servers.items():
@@ -347,6 +376,7 @@ def _clean_changed(changed_servers):
                 server_changed = True
         if not server_changed:
             del changed_servers[server_id]
+
 
 def _apply_changes(changed_servers):
 
@@ -390,6 +420,7 @@ def _apply_changes(changed_servers):
 
         server.save()
 
+
 def _build_error_message(violations_attribs, violations_readonly,
                          violations_regexp, violations_required):
 
@@ -411,8 +442,8 @@ def _build_error_message(violations_attribs, violations_readonly,
 
         if seen:
             for vattr, num_affected in seen.iteritems():
-                message.append(u'{0}: {1} (#affected: {2})'.format(
+                message.append('{0}: {1} (#affected: {2})'.format(
                         message_type, vattr, num_affected
                     ))
 
-    return u'. '.join(message)
+    return '. '.join(message)
