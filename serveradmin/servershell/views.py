@@ -305,8 +305,6 @@ def commit(request):
         except (
             ValueError,
             DatasetError,
-            CommitNewerData,
-            CommitValidationFailed,
             ServerObject.DoesNotExist,
             IntegrityError,
         ) as error:
