@@ -4,9 +4,13 @@ import time
 from datetime import datetime
 from ipaddress import IPv4Address, IPv6Address, ip_network
 
-from serveradmin.dataset.base import lookups
+from serveradmin.dataset.base import lookups, DatasetError
 from serveradmin.dataset.typecast import typecast
 from serveradmin.serverdb.models import ServerObject
+
+
+class FilterValueError(DatasetError):
+    pass
 
 
 class BaseFilter(object):
@@ -672,19 +676,19 @@ def value_to_sql(attribute, value):
     elif attribute.type == 'hostname':
         try:
             value = ServerObject.objects.get(hostname=value).server_id
-        except ServerObject.DoesNotExist:
-            raise ValueError('No server with hostname "{0}"'.format(value))
+        except ServerObject.DoesNotExist as error:
+            raise FilterValueError(str(error))
 
     # Validations of special attributes
     if attribute.pk == 'servertype':
         if value not in lookups.servertypes:
-            raise ValueError('Invalid servertype: ' + value)
+            raise FilterValueError('Invalid servertype: ' + value)
     if attribute.pk == 'segment':
         if value not in lookups.segments:
-            raise ValueError('Invalid segment: ' + value)
+            raise FilterValueError('Invalid segment: ' + value)
     if attribute.pk == 'project':
         if value not in lookups.projects:
-            raise ValueError('Invalid project: ' + value)
+            raise FilterValueError('Invalid project: ' + value)
 
     return _sql_escape(value)
 
@@ -742,10 +746,10 @@ def raw_sql_escape(value):
         value = value.encode('utf-8')
 
     if "'" in value:
-        raise ValueError('Single quote cannot be used')
+        raise FilterValueError('Single quote cannot be used')
 
     if value.endswith('\\'):
-        raise ValueError('Escape character cannot be used in the end')
+        raise FilterValueError('Escape character cannot be used in the end')
 
     return "'" + value.decode('utf-8') + "'"
 
