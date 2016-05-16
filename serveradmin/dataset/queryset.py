@@ -176,6 +176,10 @@ class QuerySet(BaseQuerySet):
         self._order_by = lookups.attributes[order_by]
         self._order_dir = order_dir
 
+        # We need the attribute to order by.
+        if self._restrict:
+            self._restrict.add(order_by)
+
         return self
 
     def _get_query_builder_with_filters(self):
@@ -188,21 +192,20 @@ class QuerySet(BaseQuerySet):
     def _fetch_results(self):
         builder = self._get_query_builder_with_filters()
 
-        # Copy order_by from instance to local variable to allow LIMIT
-        # to set it in the query (but not in the instance) if it is
-        # not set
-        if self._order_by:
-            builder.add_order_by(self._order_by, self._order_dir)
-        if self._limit:
-            builder.add_limit(self._limit)
-        if self._offset:
-            builder.add_offset(self._offset)
+        # We can only push-down the order-by to the database, if
+        # it is one of the special attributes.  The query-builder
+        # is not capable of doing order by for real attributes.
+        # Otherwise we have to do ordering ourself, later.
+        if not self._order_by or self._order_by.special:
+            if self._order_by:
+                builder.add_order_by(self._order_by, self._order_dir)
+            if self._limit:
+                builder.add_limit(self._limit)
+            if self._offset:
+                builder.add_offset(self._offset)
 
-        sql_stmt = builder.build_sql()
-
-        # We need to preserve ordering if ordering is requested, otherwise
-        # we can use normal dict as it performs better.
-        if self._order_by:
+            # In this case we need to preserve ordering, otherwise
+            # we can use normal dict as it performs better.
             self._results = OrderedDict()
         else:
             self._results = dict()
@@ -211,7 +214,7 @@ class QuerySet(BaseQuerySet):
         servers_by_type = defaultdict(list)
 
         with connection.cursor() as cursor:
-            cursor.execute(sql_stmt)
+            cursor.execute(builder.build_sql())
 
             for (
                 server_id,
@@ -264,6 +267,8 @@ class QuerySet(BaseQuerySet):
 
         self._select_attributes(servers_by_type)
         self._add_attributes(servers_by_type)
+        if self._order_by and not self._order_by.special:
+            self._sort_and_limit()
 
     def _select_attributes(self, servers_by_type):
         self._materalized_attributes_by_type = defaultdict(set)
@@ -343,6 +348,24 @@ class QuerySet(BaseQuerySet):
             dict.__getitem__(server, attribute.pk).add(value)
         else:
             dict.__setitem__(server, attribute.pk, value)
+
+    def _sort_and_limit(self):
+        items = self._results.items()
+        items.sort(
+            key=lambda x: x[1].get(self._order_by.pk),
+            reverse=self._order_dir == 'desc'
+        )
+
+        if self._offset:
+            offset = self._offset
+            items = items[offset:]
+        else:
+            offset = 0
+
+        if self._limit:
+            items = items[:(offset + self._limit)]
+
+        self._results = OrderedDict(items)
 
 
 class ServerObject(BaseServerObject):
