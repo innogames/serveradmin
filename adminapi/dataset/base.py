@@ -3,9 +3,13 @@ import sys
 from ipaddress import IPv4Address, IPv6Address
 
 from adminapi.utils import print_table, print_heading
-from adminapi.dataset.exceptions import DatasetError
 
 NonExistingAttribute = object()
+
+
+class DatasetError(Exception):
+    pass
+
 
 class BaseQuerySet(object):
     def __init__(self, filters):

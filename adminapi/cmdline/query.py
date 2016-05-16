@@ -3,13 +3,14 @@ from __future__ import print_function
 
 import sys
 from optparse import OptionParser
-from operator import itemgetter
 
 import adminapi
-from adminapi.dataset import query, filters, DatasetError
+from adminapi.dataset import query, filters
+from adminapi.dataset.base import DatasetError
 from adminapi.utils import format_obj
 from adminapi.utils.parse import parse_query
 from adminapi.cmdline.utils import get_auth_token
+
 
 def main():
     opt_parser = OptionParser()

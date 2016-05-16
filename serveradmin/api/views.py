@@ -17,9 +17,8 @@ from serveradmin.api.decorators import api_view
 from serveradmin.api.utils import build_function_description
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset import QuerySet
-from serveradmin.dataset.exceptions import CommitError
 from serveradmin.dataset.filters import ExactMatch, filter_from_obj
-from serveradmin.dataset.commit import commit_changes
+from serveradmin.dataset.commit import CommitError, commit_changes
 from serveradmin.dataset.create import create_server
 from serveradmin.serverdb.models import ServerObject
 

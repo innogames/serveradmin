@@ -10,7 +10,8 @@ import django_urlauth.utils
 
 from adminapi.utils.parse import parse_query
 from serveradmin.graphite.models import Collection, NumericCache
-from serveradmin.dataset import query, filters, DatasetError
+from serveradmin.dataset import query, filters
+from serveradmin.dataset.base import DatasetError
 from serveradmin.serverdb.models import ServerType, Segment
 
 @login_required

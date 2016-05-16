@@ -6,9 +6,9 @@ from django.conf import settings
 
 import django_urlauth.utils
 
-from adminapi.dataset.base import MultiAttr
+from adminapi.dataset.base import DatasetError, MultiAttr
 from serveradmin.graphite.models import Collection
-from serveradmin.dataset import query, DatasetError
+from serveradmin.dataset import query
 
 
 @login_required

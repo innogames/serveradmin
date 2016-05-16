@@ -2,14 +2,8 @@ from ipaddress import ip_address
 
 from adminapi import _api_settings
 from adminapi.request import send_request
-from adminapi.dataset.base import BaseQuerySet, BaseServerObject
+from adminapi.dataset.base import BaseQuerySet, BaseServerObject, DatasetError
 from adminapi.dataset.filters import _prepare_filter
-from adminapi.dataset.exceptions import ( # Import into this Namespace
-        DatasetError,
-        CommitError,
-        CommitValidationFailed,
-        CommitNewerData,
-    )
 
 COMMIT_ENDPOINT = '/dataset/commit'
 QUERY_ENDPOINT = '/dataset/query'

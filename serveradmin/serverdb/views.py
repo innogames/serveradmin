@@ -10,7 +10,7 @@ from django.core.urlresolvers import reverse
 
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.create import create_server
-from serveradmin.dataset.exceptions import CommitError
+from serveradmin.dataset.commit import CommitError
 from serveradmin.serverdb.models import (
     ServerType,
     Attribute,

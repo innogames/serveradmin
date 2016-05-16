@@ -2,8 +2,8 @@ from ipaddress import IPv4Address, IPv6Address
 
 from serveradmin.api.decorators import api_function
 from serveradmin.api import ApiError
-from serveradmin.dataset import DatasetError
 from serveradmin.iprange.models import IPRange, get_gateways, get_gateways6, _get_network_settings, _get_network_settings6, _get_iprange_settings
+
 
 @api_function(group='ip')
 def get_free(range_id, reserve_ip=True):

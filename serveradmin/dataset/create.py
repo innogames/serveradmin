@@ -15,7 +15,7 @@ from serveradmin.serverdb.models import (
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.validation import handle_violations, check_attribute_type
 from serveradmin.dataset.typecast import typecast
-from serveradmin.dataset.exceptions import CommitError
+from serveradmin.dataset.commit import CommitError
 from adminapi.utils.json import json_encode_extra
 
 def create_server(

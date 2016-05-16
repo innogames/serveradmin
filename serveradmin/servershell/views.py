@@ -15,7 +15,8 @@ from django.utils.html import mark_safe, escape as escape_html
 
 from adminapi.utils.json import json_encode_extra
 from adminapi.utils.parse import parse_query
-from serveradmin.dataset import query, filters, DatasetError
+from serveradmin.dataset import query, filters
+from serveradmin.dataset.base import DatasetError
 from serveradmin.dataset.filters import filter_classes
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.commit import (
