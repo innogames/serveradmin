@@ -6,8 +6,10 @@ from django.db import connection
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 
 from serveradmin.serverdb.models import (
+    Attribute,
     ServertypeAttribute,
     ServerAttribute,
+    ServerHostnameAttribute,
 )
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.commit import commit_changes
@@ -271,48 +273,84 @@ class QuerySet(BaseQuerySet):
             self._sort_and_limit()
 
     def _select_attributes(self, servers_by_type):
-        self._materalized_attributes_by_type = defaultdict(set)
+        self._attributes_by_type = defaultdict(set)
+        self._reverse_attributes = list()
         self._related_servertype_attributes = []
 
+        # First, the normal attributes
         for sa in ServertypeAttribute.objects.all():
             if (
                 sa.servertype.pk in servers_by_type and (
                     not self._restrict or sa.attribute.pk in self._restrict
                 )
             ):
-                self._select_attribute(sa)
+                self._attributes_by_type[sa.attribute.type].add(sa.attribute)
+                if sa.related_via_attribute:
+                    self._select_related_attribute(sa)
 
-    def _select_attribute(self, servertype_attribute):
-        attribute = servertype_attribute.attribute
+        # Then, the reversed attributes
+        #
+        # They are not related with the Servertypes the normal way.  We
+        # have to use target_servertype of the Attribute model.
+        for attribute in Attribute.objects.all():
+            if not self._restrict or attribute.pk in self._restrict:
+                reversed_attribute = attribute.reversed_attribute
+                if (
+                    reversed_attribute and
+                    reversed_attribute.target_servertype.pk in servers_by_type
+                ):
+                    self._reverse_attributes.append(attribute)
 
-        if not servertype_attribute.related_via_attribute:
-            self._materalized_attributes_by_type[attribute.type].add(attribute)
-        else:
-            self._related_servertype_attributes.append(servertype_attribute)
+    def _select_related_attribute(self, servertype_attribute):
 
-            # If we have related attributes in the restrict list, we have
-            # to add the relations in there, too.  We are going to use those
-            # to query the related attributes.
-            if self._restrict:
-                self._select_attribute(
-                    servertype_attribute.get_related_via_servertype_attribute()
-                )
+        # TODO Order the list in a way to support recursive related
+        # attributes.
+        self._related_servertype_attributes.append(servertype_attribute)
+
+        # If we have related attributes in the restrict list, we have
+        # to add the relations in there, too.  We are going to use those
+        # to query the related attributes.
+        if self._restrict:
+            related_via_attribute = servertype_attribute.related_via_attribute
+            self._attributes_by_type[related_via_attribute.type].add(
+                related_via_attribute
+            )
+
+            objects = ServertypeAttribute.objects.filter(
+                _servertype_id=servertype_attribute.servertype.pk,
+                _attribute_id=related_via_attribute.pk,
+            ).all()
+            if objects and objects[0].related_via_attribute:
+                self._select_related_attribute(objects[0])
 
     def _add_attributes(self, servers_by_type):
         """Add the attributes to the results"""
 
         # Step 1: Query the materialized attributes by their types
-        for key, attributes in self._materalized_attributes_by_type.items():
+        for key, attributes in self._attributes_by_type.items():
             for sa in ServerAttribute.get_model(key).objects.filter(
                 server_id__in=self._results.keys(),
                 _attribute__in=attributes,
             ):
-                self._add_attribute_value(sa.server_id, sa)
+                self._add_attribute_value(
+                    self._results[sa.server_id],
+                    sa.attribute,
+                    sa.get_value(),
+                )
 
-        # Step 2: Add the related attributes
-        #
-        # TODO Order the list in a way to support recursive related
-        # attributes.
+        # Step 2: Add the reversed attributes
+        for attribute in self._reverse_attributes:
+            for sa in ServerHostnameAttribute.objects.filter(
+                value_id__in=self._results.keys(),
+                _attribute_id=attribute.reversed_attribute.pk,
+            ):
+                self._add_attribute_value(
+                    self._results[sa.value_id],
+                    attribute,
+                    sa.get_reverse_value(),
+                )
+
+        # Step 3: Add the related attributes
         for servertype_attribute in self._related_servertype_attributes:
             self._add_related_attribute(servertype_attribute, servers_by_type)
 
@@ -337,13 +375,9 @@ class QuerySet(BaseQuerySet):
             _attribute=attribute,
         ).select_related('server'):
             for server in servers_by_related_hostnames[sa.server.hostname]:
-                self._add_attribute_value(server.pk, sa)
+                self._add_attribute_value(server, sa.attribute, sa.get_value())
 
-    def _add_attribute_value(self, server_id, server_attribute):
-        server = self._results[server_id]
-        attribute = server_attribute.attribute
-        value = server_attribute.get_value()
-
+    def _add_attribute_value(self, server, attribute, value):
         if attribute.multi:
             dict.__getitem__(server, attribute.pk).add(value)
         else:
@@ -353,7 +387,7 @@ class QuerySet(BaseQuerySet):
         items = self._results.items()
         items.sort(
             key=lambda x: x[1].get(self._order_by.pk),
-            reverse=self._order_dir == 'desc'
+            reverse=(self._order_dir == 'desc'),
         )
 
         if self._offset:

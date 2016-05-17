@@ -238,8 +238,28 @@ class Attribute(LookupModel):
     _target_servertype = models.ForeignKey(
         Servertype,
         db_column='target_servertype_id',
-        blank=True,
         null=True,
+        blank=True,
+    )
+    _reversed_attribute = models.ForeignKey(
+        'self',
+        related_name='reversed_attribute_set',
+        null=True,
+        blank=True,
+        db_column='reversed_attribute_id',
+        limit_choices_to=dict(
+
+            # We can only reverse a relation (AKA an hostname attribute).
+            # The type of the reverse attribute must also be the same,
+            # but it is not possible to put this constraint in here.
+            type='hostname',
+
+            # We cannot reverse a reversed attribute.
+            _reversed_attribute=None,
+        ),
+    )
+    reversed_attribute = LookupModel.foreign_key_lookup(
+        '_reversed_attribute_id'
     )
     target_servertype = Servertype.foreign_key_lookup('_target_servertype_id')
 
@@ -276,6 +296,13 @@ class ServertypeAttribute(LookupModel):
     _attribute = models.ForeignKey(
         Attribute,
         db_column='attrib_id',
+        limit_choices_to=dict(
+
+            # Reversed attributes cannot be related with the servertypes
+            # directly, because they are included by the target servertype
+            # of the attribute only and automatically.
+            _reversed_attribute=None,
+        ),
         db_index=False,
         on_delete=models.CASCADE,
     )
@@ -328,12 +355,6 @@ class ServertypeAttribute(LookupModel):
     def regexp_match(self, value):
         if self.regexp:
             return self.get_compiled_regexp().match(str(value))
-
-    def get_related_via_servertype_attribute(self):
-        return ServertypeAttribute.objects.get(
-            servertype_id=self.servertype_id,
-            attribute=self._related_via_attribute,
-        )
 
 
 #
@@ -457,7 +478,12 @@ class ServerHostnameAttribute(ServerAttribute):
         db_column='attrib_id',
         db_index=False,
         on_delete=models.CASCADE,
-        limit_choices_to={'type': 'hostname'},
+        limit_choices_to=dict(
+            type='hostname',
+
+            # Reversed attributes cannot be materialised.
+            reversed_attribute=None,
+        ),
     )
     attribute = Attribute.foreign_key_lookup('_attribute_id')
     value = models.ForeignKey(
@@ -477,6 +503,9 @@ class ServerHostnameAttribute(ServerAttribute):
 
     def get_value(self):
         return self.value.hostname
+
+    def get_reverse_value(self):
+        return self.server.hostname
 
     def save_value(self, value):
         target_servertype = self.attribute.target_servertype

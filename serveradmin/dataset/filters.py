@@ -89,15 +89,12 @@ class ExactMatch(BaseFilter):
         self.value = typecast(attribute, self.value, force_single=True)
 
     def as_sql_expr(self, attribute):
-        value = value_to_sql(attribute, self.value)
-
-        if attribute.special:
-            return '{0} = {1}'.format(attribute.special.field, value)
-
         if attribute.type == 'boolean' and not self.value:
-            return 'NOT {0}'.format(_exists_sql(attribute, "value = '1'"))
+            return 'NOT ' + _condition_sql(attribute, "{0} = '1'")
 
-        return _exists_sql(attribute, 'value = ' + value)
+        return _condition_sql(
+            attribute, '{0} = ' + value_to_sql(attribute, self.value)
+        )
 
     def matches(self, server_obj, attr_name):
         return server_obj[attr_name] == self.value
@@ -140,21 +137,19 @@ class Regexp(BaseFilter):
     def as_sql_expr(self, attribute):
         value = raw_sql_escape(self.regexp)
 
-        if attribute.special:
-            return '{0} REGEXP {1}'.format(attribute.special.field, value)
-
         if attribute.type == 'hostname':
-            return _exists_sql(
-                attribute,
-                'value IN ('
+            template = (
+                '{{0}} IN ('
                 '   SELECT server_id'
                 '   FROM admin_server'
                 '   WHERE hostname REGEXP {0}'
                 ')'
-                .format(value),
+                .format(value)
             )
+        else:
+            template = '{0} REGEXP ' + value
 
-        return _exists_sql(attribute, 'value REGEXP {0}'.format(value))
+        return _condition_sql(attribute, template)
 
     def matches(self, server_obj, attr_name):
         value = str(server_obj[attr_name])
@@ -197,15 +192,8 @@ class Comparison(BaseFilter):
         self.value = typecast(attribute, self.value, force_single=True)
 
     def as_sql_expr(self, attribute):
-        value = value_to_sql(attribute, self.value)
-
-        if attribute.special:
-            return '{0} {1} {2}'.format(
-                attribute.special.field, self.comparator, value
-            )
-
-        return _exists_sql(attribute, 'value {0} {1}'.format(
-            self.operator, value
+        return _condition_sql(attribute, '{{0}} {0} {1}'.format(
+            self.comparator, value_to_sql(attribute, self.value)
         ))
 
     def matches(self, server_obj, attr_name):
@@ -260,12 +248,9 @@ class Any(BaseFilter):
         if not self.values:
             return '0 = 1'
 
-        values_csv = ', '.join(value_to_sql(attribute, v) for v in self.values)
-
-        if attribute.special:
-            return '{0} IN ({1})'.format(attribute.special.field, values_csv)
-
-        return _exists_sql(attribute, 'value IN ({0})'.format(values_csv))
+        return _condition_sql(attribute, '{{0}} IN ({0})'.format(
+            ', '.join(value_to_sql(attribute, v) for v in self.values)
+        ))
 
     def matches(self, server_obj, attr_name):
         return server_obj[attr_name] in self.values
@@ -370,16 +355,8 @@ class Between(BaseFilter):
         self.b = typecast(attribute, self.b, force_single=True)
 
     def as_sql_expr(self, attribute):
-        a_prepared = value_to_sql(attribute, self.a)
-        b_prepared = value_to_sql(attribute, self.b)
-
-        if attribute.special:
-            return '{0} BETWEEN {1} AND {2}'.format(
-                attribute.special.field, a_prepared, b_prepared
-            )
-
-        return _exists_sql(attribute, 'value BETWEEN {0} AND {1}'.format(
-            a_prepared, b_prepared
+        return _condition_sql(attribute, '{{0}} BETWEEN {0} AND {1}'.format(
+            value_to_sql(attribute, self.a), value_to_sql(attribute, self.b)
         ))
 
     def matches(self, server_obj, attr_name):
@@ -455,21 +432,19 @@ class Startswith(BaseFilter):
         value = self.value.replace('_', '\\_').replace('%', '\\%%')
         value = raw_sql_escape(value + '%%')
 
-        if attribute.special:
-            return '{0} LIKE {1}'.format(attribute.special.field, value)
-
         if attribute.type == 'hostname':
-            return _exists_sql(
-                attribute,
-                'value IN ('
+            template = (
+                '{{0}} IN ('
                 '   SELECT server_id'
                 '   FROM admin_server'
                 '   WHERE hostname LIKE {0}'
                 ')'
                 .format(value),
             )
+        else:
+            template = '{0} LIKE ' + value
 
-        return _exists_sql(attribute, 'value LIKE {0}'.format(value))
+        return _condition_sql(attribute, template)
 
     def matches(self, server_obj, attr_name):
         return unicode(server_obj[attr_name]).startswith(self.value)
@@ -509,16 +484,11 @@ class InsideNetwork(NetworkFilter):
         return result
 
     def as_sql_expr(self, attribute):
-        template = '({0})'.format(
+        return _condition_sql(attribute, '({0})'.format(
             ' OR '.join('{{0}} BETWEEN {0} AND {1}'.format(
                 int(net.network_address), int(net.broadcast_address)
             ) for net in self.networks)
-        )
-
-        if attribute.special:
-            return template.format(attribute.special.field)
-
-        return _exists_sql(attribute, template)
+        ))
 
     def matches(self, server_obj, attr_name):
         return any(server_obj[attr_name] in n for n in self.networks)
@@ -612,9 +582,7 @@ class Empty(OptionalFilter):
         pass
 
     def as_sql_expr(self, attribute):
-        if attribute.special:
-            return '{0} IS NULL'.format(attribute.special.field)
-        return 'NOT {0}'.format(_exists_sql(attribute), 'value IS NOT NULL')
+        return 'NOT ' + _condition_sql(attribute, '{0} IS NOT NULL')
 
     def matches(self, server_obj, attr_name):
         return attr_name not in server_obj or len(server_obj[attr_name]) == 0
@@ -698,12 +666,24 @@ def value_to_sql(attribute, value):
     return _sql_escape(value)
 
 
-def _exists_sql(attribute, main_condition):
+def _condition_sql(attribute, template):
+    if attribute.special:
+        return template.format(attribute.special.field)
+
+    if attribute.reversed_attribute:
+        attribute = attribute.reversed_attribute
+        assert attribute.type == 'hostname'
+
+        relation_column = 'sub.value'
+        main_condition = template.format('sub.server_id')
+    else:
+        relation_column = 'sub.server_id'
+        main_condition = template.format('sub.value')
 
     # We start with the condition for the attributes the server has on
     # its own.  Then, add the conditions for all possible relations.
     # They are going to be OR'ed together.
-    relation_conditions = ['sub.server_id = adms.server_id']
+    relation_conditions = ['adms.server_id = ' + relation_column]
 
     for sa in ServertypeAttribute.objects.all():
         if sa.attribute == attribute and sa.related_via_attribute:
@@ -718,11 +698,12 @@ def _exists_sql(attribute, main_condition):
                 '       AND'
                 "           sub_rel.attrib_id = '{1}'"
                 '       AND'
-                '           sub_rel.value = sub.server_id'
+                '           sub_rel.value = {2}'
                 ')'
                 .format(
                     ServerAttribute.get_model('hostname')._meta.db_table,
                     sa.related_via_attribute.pk,
+                    relation_column,
                 )
             )
 
