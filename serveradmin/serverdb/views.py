@@ -1,4 +1,3 @@
-import re
 from operator import attrgetter, itemgetter
 
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -8,7 +7,6 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from django.core.urlresolvers import reverse
-from django import forms
 
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.create import create_server
@@ -24,12 +22,20 @@ from serveradmin.serverdb.models import (
     ChangeDelete,
     clear_lookups,
 )
+from serveradmin.serverdb.forms import (
+    AddServertypeForm,
+    AddAttributeForm,
+    EditServertypeAttributeForm,
+    AddServertypeAttributeForm,
+)
+
 
 @login_required
 def servertypes(request):
     return TemplateResponse(request, 'serverdb/servertypes.html', {
         'servertypes': ServerType.objects.all()
     })
+
 
 @login_required
 def view_servertype(request, servertype_name):
@@ -57,26 +63,23 @@ def view_servertype(request, servertype_name):
         'attributes': stype_attributes
     })
 
+
 @login_required
 @permission_required('serverdb.add_servertype')
 def add_servertype(request):
-    class AddForm(forms.ModelForm):
-        class Meta:
-            model = ServerType
-            fields = ('name', 'description', )
-
     if request.method == 'POST':
-        form = AddForm(request.POST)
+        form = AddServertypeForm(request.POST)
         if form.is_valid():
             stype = form.save()
             clear_lookups()
             return redirect('serverdb_view_servertype', stype.pk)
     else:
-        form = AddForm()
+        form = AddServertypeForm()
 
     return TemplateResponse(request, 'serverdb/add_servertype.html', {
         'add_form': form
     })
+
 
 @login_required
 @permission_required('serverdb.delete_servertype')
@@ -93,50 +96,13 @@ def delete_servertype(request, servertype_name):
             return redirect('serverdb_view_servertype', servertype_name)
     return redirect('serverdb_servertypes')
 
+
 @login_required
 @permission_required('serverdb.change_servertype')
 def manage_servertype_attr(request, servertype_name, attrib_name=None):
-    class EditForm(forms.ModelForm):
-        attrib_default = forms.CharField(label='Default', required=False)
-        class Meta:
-            model = ServerTypeAttribute
-            fields = ('required', 'attrib_default', 'regex')
-            widgets = {
-                'regex': forms.TextInput(attrs={'size': 50})
-            }
-
-        def __init__(self, servertype, *args, **kwargs):
-            self.servertype = servertype
-            super(EditForm, self).__init__(*args, **kwargs)
-
-        def clean_regex(self):
-            regex = self.cleaned_data['regex']
-            if regex is not None:
-                try:
-                    re.compile(regex)
-                except re.error:
-                    raise forms.ValidationError('Invalid regular expression')
-            return regex
-
-    class AddForm(EditForm):
-        class Meta(EditForm.Meta):
-            fields = ('attrib', ) + EditForm.Meta.fields
-
-        def clean_attrib(self):
-            attrib = self.cleaned_data['attrib']
-            if ServerTypeAttribute.objects.filter(
-                attrib=attrib,
-                servertype=self.servertype,
-            ).exists():
-                raise forms.ValidationError(
-                    'Attribute is already on this servertype'
-                )
-
-            return attrib
-
     stype = get_object_or_404(ServerType, pk=servertype_name)
     if attrib_name:
-        form_class = EditForm
+        form_class = EditServertypeAttributeForm
         attrib = get_object_or_404(Attribute, name=attrib_name)
         stype_attr = get_object_or_404(
             ServerTypeAttribute,
@@ -144,7 +110,7 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
             servertype=stype,
         )
     else:
-        form_class = AddForm
+        form_class = AddServertypeAttributeForm
         stype_attr = None
         attrib = None
 
@@ -185,6 +151,7 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
         'attrib': attrib
     })
 
+
 @login_required
 @permission_required('serverdb.change_servertype')
 def delete_servertype_attr(request, servertype_name, attrib_name):
@@ -207,6 +174,7 @@ def delete_servertype_attr(request, servertype_name, attrib_name):
         'stype_attr': stype_attr
     })
 
+
 @login_required
 @permission_required('serverdb.add_servertype')
 def copy_servertype(request, servertype_name):
@@ -216,12 +184,14 @@ def copy_servertype(request, servertype_name):
         messages.success(request, u'Copied servertype')
     return redirect('serverdb_servertypes')
 
+
 @login_required
 def attributes(request):
     return TemplateResponse(request, 'serverdb/attributes.html', {
         'attributes': sorted(lookups.attr_names.values(),
                              key=attrgetter('name'))
     })
+
 
 @login_required
 @permission_required('serverdb.delete_attribute')
@@ -237,26 +207,25 @@ def delete_attribute(request, attribute_name):
             'attribute': attribute
         })
 
+
 @login_required
 @permission_required('serverdb.add_attribute')
 def add_attribute(request):
-    class AddForm(forms.ModelForm):
-        class Meta:
-            model = Attribute
-            fields = ('name', 'type', 'multi')
-
     if request.method == 'POST':
-        add_form = AddForm(request.POST)
+        add_form = AddAttributeForm(request.POST)
         if add_form.is_valid():
             attribute = add_form.save()
             clear_lookups()
-            messages.success(request, u'Attribute "{0}" added'.format(attribute))
+            messages.success(
+                request, 'Attribute "{0}" added'.format(attribute)
+            )
             return redirect('serverdb_attributes')
     else:
-        add_form = AddForm()
+        add_form = AddAttributeForm()
     return TemplateResponse(request, 'serverdb/add_attribute.html', {
         'form': add_form
     })
+
 
 @login_required
 def changes(request):
@@ -270,6 +239,7 @@ def changes(request):
     return TemplateResponse(request, 'serverdb/changes.html', {
         'commits': page
     })
+
 
 @login_required
 def history(request):
@@ -329,4 +299,6 @@ def restore_deleted(request, change_commit):
         messages.error(request, unicode(e))
     else:
         messages.success(request, 'Server restored.')
-    return redirect(reverse('serverdb_history') + '?hostname=' + server_obj['hostname'])
+    return redirect(
+        reverse('serverdb_history') + '?hostname=' + server_obj['hostname']
+    )
