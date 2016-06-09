@@ -219,7 +219,7 @@ class Comparison(BaseFilter):
 
 class Any(BaseFilter):
     def __init__(self, *values):
-        self.values = set(values)
+        self.values = set(flatten(values))
 
     def __repr__(self):
         return u'Any({0})'.format(', '.join(repr(val) for val in self.values))
@@ -745,6 +745,7 @@ def _exists_sql(attribute, cond=None):
         and_cond,
     )
 
+
 def _sql_escape(value):
 
     if isinstance(value, basestring):
@@ -763,6 +764,7 @@ def _sql_escape(value):
         u'Value of type {0} can not be used in SQL'.format(value)
     )
 
+
 def raw_sql_escape(value):
 
     # escape_string just takes bytestrings, so convert unicode back and forth
@@ -776,3 +778,13 @@ def raw_sql_escape(value):
         raise ValueError(u'Escape character cannot be used in the end')
 
     return "'" + value.decode('utf-8') + "'"
+
+
+def flatten(values):
+    for value in values:
+        if isinstance(value, (tuple, list, set)):
+            for subvalue in flatten(value):
+                yield subvalue
+        else:
+            yield value
+
