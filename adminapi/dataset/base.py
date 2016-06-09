@@ -137,13 +137,12 @@ class BaseQuerySet(object):
 
 
 class BaseServerObject(dict):
-    def __init__(self, attributes=None, object_id=None, queryset=None):
+    def __init__(self, attributes=[], object_id=None, queryset=None):
+        super(BaseServerObject, self).__init__(attributes)
         self.object_id = object_id
         self._deleted = False
         self._queryset = queryset
         self.old_values = {}
-        if attributes:
-            super(BaseServerObject, self).update(attributes)
 
     def __hash__(self):
         """Make the objects hashable
@@ -270,65 +269,54 @@ class BaseServerObject(dict):
             self[key] = value
 
 
-class MultiAttr(object):
-    dirty_methods = frozenset((
-        'add',
-        'clear',
-        'difference_update',
-        'discard',
-        'intersection_update',
-        'pop',
-        'remove',
-        'update',
-        'symmetric_difference_update',
-    ))
+class MultiAttr(set):
+    """This class must redefine all mutable methods of the set class
+    to maintain the old values on the BaseServerObject.
+    """
 
-    def __init__(self, proxied_set, server_obj, attr_name):
-        self._proxied_set = proxied_set
-        self._server_object = server_obj
-        self._attr_name = attr_name
-
-    def __repr__(self):
-        return 'MultiAttr({0!r})'.format(self._proxied_set)
+    def __init__(self, other, server_object, attribute_id):
+        super(MultiAttr, self).__init__(other)
+        self._server_object = server_object
+        self._attribute_id = attribute_id
 
     def __str__(self):
-        return ' '.join(str(x) for x in self._proxied_set)
+        return ' '.join(str(x) for x in self)
 
     def __unicode__(self):
-        return unicode(self).encode('utf-8')
+        return u' '.join(unicode(x) for x in self)
 
-    def __iter__(self):
-        return iter(self._proxied_set)
+    def add(self, elem):
+        self._server_object._save_old_value(self._attribute_id)
+        super(MultiAttr, self).add(elem)
 
-    def __len__(self):
-        return len(self._proxied_set)
+    def remove(self, elem):
+        self._server_object._save_old_value(self._attribute_id)
+        super(MultiAttr, self).remove(elem)
 
-    def __contains__(self, value):
-        return value in self._proxied_set
+    def discard(self, elem):
+        self._server_object._save_old_value(self._attribute_id)
+        super(MultiAttr, self).discard(elem)
 
-    def __bool__(self):
-        return bool(self._proxied_set)
+    def pop(self):
+        self._server_object._save_old_value(self._attribute_id)
+        return super(MultiAttr, self).pop()
 
-    def __eq__(self, other):
-        return self._proxied_set == other
+    def clear(self):
+        self._server_object._save_old_value(self._attribute_id)
+        super(MultiAttr, self).clear()
 
-    def __neq__(self, other):
-        return self._proxied_set == other
+    def update(self, *others):
+        self._server_object._save_old_value(self._attribute_id)
+        super(MultiAttr, self).update(*others)
 
-    def __getattr__(self, attr):
-        if not hasattr(self._proxied_set, attr):
-            raise AttributeError('Cannot proxy attribute {0}'.format(attr))
+    def intersection_update(self, *others):
+        self._server_object._save_old_value(self._attribute_id)
+        super(MultiAttr, self).intersection_update(*others)
 
-        proxied_set_attr = getattr(self._proxied_set, attr)
+    def difference_update(self, *others):
+        self._server_object._save_old_value(self._attribute_id)
+        super(MultiAttr, self).difference_update(*others)
 
-        if attr in self.dirty_methods:
-            def _method(*args, **kwargs):
-                self._server_object._save_old_value(self._attr_name)
-                return proxied_set_attr(*args, **kwargs)
-
-            return _method
-
-        return proxied_set_attr
-
-    def __reduce__(self):
-        return dict.__reduce__(self)
+    def symmetric_difference_update(self, other):
+        self._server_object._save_old_value(self._attribute_id)
+        super(MultiAttr, self).symmetric_difference_update(other)
