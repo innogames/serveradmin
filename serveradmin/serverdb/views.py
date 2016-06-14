@@ -158,7 +158,7 @@ def delete_servertype_attr(request, servertype_name, attrib_name):
     stype_attr = get_object_or_404(
         ServerTypeAttribute,
         attrib__name=attrib_name,
-        servertype__name=servertype_name,
+        servertype_id=servertype_name,
     )
 
     if request.method == 'POST' and 'confirm' in request.POST:
