@@ -26,7 +26,7 @@ from serveradmin.dataset.commit import (
 )
 from serveradmin.dataset.typecast import typecast, displaycast
 from serveradmin.dataset.create import create_server
-from serveradmin.servershell.forms import CloneServerForm, NewServerForm
+from serveradmin.serverdb.forms import CloneServerForm, NewServerForm
 from serveradmin.serverdb.models import (
     ServerType,
     ServerObject,
@@ -418,4 +418,3 @@ def _prepare_regexp_html(regexp):
         regexp_html = (escape_html(regexp.pattern).replace('|', '|&#8203;')
                        .replace(']', ']&#8203;').replace(')', ')&#8203;'))
         return mark_safe(regexp_html)
-
