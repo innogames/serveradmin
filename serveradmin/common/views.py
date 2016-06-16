@@ -2,13 +2,18 @@ import urllib2
 import socket
 
 from django.template.response import TemplateResponse
-from django.http import (HttpResponse, HttpResponseRedirect,
-        HttpResponseForbidden, HttpResponseServerError)
+from django.http import (
+    HttpResponse,
+    HttpResponseRedirect,
+    HttpResponseForbidden,
+    HttpResponseServerError,
+)
 from django.conf import settings
 from django.contrib.auth import login
 from django.contrib.auth.forms import AuthenticationForm
 
 from serveradmin.serverdb.models import Attribute
+
 
 def failoverlogin(request):
     if not getattr(settings, 'IS_SECONDARY', False):
@@ -37,6 +42,7 @@ def failoverlogin(request):
     return TemplateResponse(request, 'failoverlogin.html', {
         'form': form,
     })
+
 
 def check(request):
     # Doing two database query against most important databases
