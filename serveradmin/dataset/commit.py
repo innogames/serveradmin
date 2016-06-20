@@ -1,5 +1,7 @@
 import json
 
+from django.db import IntegrityError
+
 from adminapi.utils.json import json_encode_extra
 from serveradmin.dataset.base import lookups, DatasetError, ServerTableSpecial
 from serveradmin.dataset.typecast import typecast
@@ -168,11 +170,21 @@ def commit_changes(
             raise CommitNewerData('Newer data available', newer)
 
     if deleted_servers:
+
         # We first have to delete all of the hostname attributes
         # to avoid integrity errors.  Other attributes will just go away
         # with the servers.
-        for model in (ServerHostnameAttribute, ServerObject):
-            model.objects.filter(server_id__in=deleted_servers).delete()
+        (ServerHostnameAttribute.objects
+            .filter(server_id__in=deleted_servers)
+            .delete())
+
+        try:
+            ServerObject.objects.filter(server_id__in=deleted_servers).delete()
+        except IntegrityError as error:
+            raise CommitError(
+                'Cannot delete servers because they are referenced by {0}'
+                .format(', '.join(str(o) for o in error.protected_objects))
+            )
 
         # We should ignore the changes to the deleted servers.
         for server_id in deleted_servers:

@@ -8,7 +8,6 @@ from django.template.response import TemplateResponse
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.decorators import login_required
 from django.contrib.admindocs.utils import trim_docstring, parse_docstring
-from django.db import IntegrityError
 
 from adminapi.utils.json import json_encode_extra
 
@@ -131,7 +130,6 @@ def dataset_commit(request, app, data):
         ValueError,
         CommitError,
         ServerObject.DoesNotExist,
-        IntegrityError,
     ) as error:
         return {
                 'status': 'error',
