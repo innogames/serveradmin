@@ -1,5 +1,5 @@
 var search = {
-    'shown_attributes': ['hostname', 'intern_ip', 'servertype', 'project'],
+    'shown_attributes': ['hostname', 'intern_ip', 'servertype', 'project', 'state'],
     'avail_attributes': {},
     'servers': {},
     'num_servers': 0,
