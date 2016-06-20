@@ -28,7 +28,6 @@ from serveradmin.dataset.create import create_server
 from serveradmin.serverdb.forms import ServerForm
 from serveradmin.serverdb.models import (
     ServertypeAttribute,
-    Server,
     ServerStringAttribute,
 )
 
@@ -286,7 +285,6 @@ def commit(request):
             commit_changes(commit, user=request.user)
         except (
             ValueError,
-            Server.DoesNotExist,
             ValidationError,
         ) as error:
             result = {

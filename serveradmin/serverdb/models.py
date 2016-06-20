@@ -500,7 +500,13 @@ class ServerHostnameAttribute(ServerAttribute):
 
     def save_value(self, value):
         target_servertype = self.attribute.target_servertype
-        target_server = Server.objects.get(hostname=value)
+
+        try:
+            target_server = Server.objects.get(hostname=value)
+        except Server.DoesNotExist:
+            raise ValidationError(
+                'No server with hostname "{0}" exist.'.format(value)
+            )
 
         # Temporary check until all relations have a servertype
         if not target_servertype:
