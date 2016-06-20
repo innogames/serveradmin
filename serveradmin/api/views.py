@@ -18,7 +18,7 @@ from serveradmin.api.utils import build_function_description
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset import QuerySet
 from serveradmin.dataset.exceptions import CommitError
-from serveradmin.dataset.filters import filter_from_obj
+from serveradmin.dataset.filters import ExactMatch, filter_from_obj
 from serveradmin.dataset.commit import commit_changes
 from serveradmin.dataset.create import create_server
 from serveradmin.serverdb.models import ServerObject
@@ -166,9 +166,9 @@ def dataset_create(request, app, data):
         return {
             'status': 'success',
             'attributes': _build_attributes(),
-            'servers': QuerySet(
-                filters={'hostname': data['attributes']['hostname']}
-            ).get_results()
+            'servers': QuerySet(filters={
+                'hostname': ExactMatch(data['attributes']['hostname'])
+            }).get_results(),
         }
     except (
         ValueError,

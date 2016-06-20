@@ -9,7 +9,6 @@ from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 from serveradmin.serverdb.models import ServerHostnameAttribute
 from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.validation import check_attributes
-from serveradmin.dataset import filters
 from serveradmin.dataset.commit import commit_changes
 from serveradmin.dataset.querybuilder import QueryBuilder
 
