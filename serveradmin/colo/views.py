@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-import os
 from copy import deepcopy
-from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.template.response import TemplateResponse
-from serveradmin.dataset import query, filters, DatasetError
+
+from serveradmin.dataset import query, filters
+
 from pprint import pprint
 
 datacenters = {
