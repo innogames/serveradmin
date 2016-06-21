@@ -64,8 +64,11 @@ number is between 20 and 30::
     # see above for usual imports and authentication
     from adminapi.dataset import filters
 
-    hosts = query(servertype='vm', game_function='web', game_world=
-            filters.GreaterEqual(20) and filters.GreaterEqual(30))
+    hosts = query(
+        servertype='vm',
+        game_function='web',
+        game_world=filters.And(filters.GreaterEqual(20), filters.GreaterEqual(30)),
+    )
 
 The following filters are available:
 
