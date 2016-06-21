@@ -477,7 +477,9 @@ function render_server_table()
     var offset = (search['page'] - 1) * search['per_page'];
     var shown_attributes = [];
     for(var i = 0; i < search['shown_attributes'].length; i++) {
-        shown_attributes.push(search['shown_attributes'][i]);
+        if (shown_attributes.indexOf(search['shown_attributes'][i]) == -1) {
+            shown_attributes.push(search['shown_attributes'][i]);
+        }
     }
     $('#shell_attributes input[name="attr"]').prop('checked', false);
     for(var i = 0; i < shown_attributes.length; i++) {
