@@ -45,7 +45,7 @@ webservers of Tribal Wars::
 
     adminapi.auth('yourScriptsAuthToken')
 
-    hosts = query(servertype='ds', game_function='web')
+    hosts = query(servertype='vm', game_function='web')
 
     for host in hosts:
         print host['hostname']
@@ -64,7 +64,7 @@ number is between 20 and 30::
     # see above for usual imports and authentication
     from adminapi.dataset import filters
 
-    hosts = query(servertype='ds', game_function='web', game_world=
+    hosts = query(servertype='vm', game_function='web', game_world=
             filters.GreaterEqual(20) and filters.GreaterEqual(30))
 
 The following filters are available:
@@ -179,19 +179,19 @@ Here is an example which cancels all servers for Seven Lands::
 
     # BAD WAY! DON'T DO THIS!
     # It will send a HTTP request for every server!
-    hosts = query(servertype='sl')
+    hosts = query(servertype='hardware')
     for host in hosts:
          host['canceled'] = True
          host.commit()
 
     # GOOD WAY:
-    hosts = query(servertype='sl')
+    hosts = query(servertype='hardware')
     for host in hosts:
         hosts['canceled'] = True
     hosts.commit()
 
     # EVEN BETTER WAY:
-    query(servertype='sl').update(canceled=True).commit()
+    query(servertype='hardware').update(canceled=True).commit()
 
 Another example will print all attributes of the techerror server and check
 for the existence of the ``game_function`` attribute::
@@ -300,7 +300,7 @@ supports iteration and some additional methods.
         Mass update for all servers in the query set using keyword args.
         Example: You want to cancel all Seven Land servers::
 
-            query(servertype='sl').update(canceled=True)
+            query(servertype='hardware').update(canceled=True)
 
         This method will skip servers that are marked for deletion.
 
@@ -318,7 +318,7 @@ supports iteration and some additional methods.
 
         Print a table with given attributes, for example::
 
-            query(servertype='ds').print_table('hostname', 'game_function')
+            query(servertype='vm').print_table('hostname', 'game_function')
 
         will print the following table::
 
