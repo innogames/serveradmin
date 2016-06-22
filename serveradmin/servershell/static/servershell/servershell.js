@@ -1177,6 +1177,7 @@ $(function() {
             search['shown_attributes'].push(this.value);
         }
     });
+
     $('#shell_attributes input[name="attr"]').bind('change', function(ev) {
         var s_index = search['shown_attributes'].indexOf(this.value);
         if (s_index != -1 && !this.checked) {
@@ -1189,9 +1190,15 @@ $(function() {
         } else if (index != -1 && !this.checked) {
             search['shown_attributes'].splice(index, 1);
         }
-        render_server_table();
+
+        if (this.checked)
+            execute_search($('#shell_search').val());
+        else
+            render_server_table();
+
         regenerate_link();
     });
+
     $('#shell_attributes li').each(function() {
         var attr_item = $(this);
         var attr_name = attr_item.attr('data-attr');
