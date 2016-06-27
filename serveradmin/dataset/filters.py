@@ -716,7 +716,7 @@ def _exists_sql(attribute, cond=None):
         ')'
     ).format(
         table,
-        attribute.attrib_id,
+        attribute.attribute_id,
         and_cond,
     )
 

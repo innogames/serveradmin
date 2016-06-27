@@ -35,20 +35,20 @@ def graph_table(request):
     collections = []
     doubles = set()
     for collection in Collection.objects.order_by('overview'):
-        if (collection.attrib, collection.attrib_value) in doubles:
+        if (collection.attribute_id, collection.attribute_value) in doubles:
             continue
         for hostname in hostnames:
-            if collection.attrib_id not in servers[hostname]:
+            if collection.attribute_id not in servers[hostname]:
                 break   # The server hasn't got this attribute at all.
-            value = servers[hostname][collection.attrib_id]
+            value = servers[hostname][collection.attribute_id]
             if isinstance(value, MultiAttr):
-                if collection.attrib_value not in [str(v) for v in value]:
+                if collection.attribute_value not in [str(v) for v in value]:
                     break   # The server hasn't got this attribute value.
             else:
-                if collection.attrib_value != str(value):
+                if collection.attribute_value != str(value):
                     break   # The server attribute is not equal.
         else:
-            doubles.add((collection.attrib, collection.attrib_value))
+            doubles.add((collection.attribute_id, collection.attribute_value))
             collections.append(collection)
 
     # Prepare the graph descriptions

@@ -1,7 +1,6 @@
 import uuid
 from threading import local
 from itertools import chain
-from collections import namedtuple
 
 from django.core.cache import cache
 from django.core.signals import request_started
@@ -34,10 +33,10 @@ def _read_lookups(sender=None, **kwargs):
     else:
         lookups.version = version
 
-    # Special attributes that don't have an entry in the attrib table
+    # Special attributes that don't have an entry in the attribute table
     lookups.special_attributes = [
             Attribute(
-                    attrib_id=u'object_id',
+                    attribute_id=u'object_id',
                     type=u'integer',
                     base=False,
                     multi=False,
@@ -45,7 +44,7 @@ def _read_lookups(sender=None, **kwargs):
                     special=ServerTableSpecial(u'server_id'),
                 ),
             Attribute(
-                    attrib_id=u'hostname',
+                    attribute_id=u'hostname',
                     type=u'string',
                     base=True,
                     multi=False,
@@ -53,7 +52,7 @@ def _read_lookups(sender=None, **kwargs):
                     special=ServerTableSpecial(u'hostname', unique=True),
                 ),
             Attribute(
-                    attrib_id=u'servertype',
+                    attribute_id=u'servertype',
                     type=u'string',
                     base=True,
                     multi=False,
@@ -61,7 +60,7 @@ def _read_lookups(sender=None, **kwargs):
                     special=ServerTableSpecial(u'servertype_id'),
                 ),
             Attribute(
-                    attrib_id=u'project',
+                    attribute_id=u'project',
                     type=u'string',
                     base=True,
                     multi=False,
@@ -69,7 +68,7 @@ def _read_lookups(sender=None, **kwargs):
                     special=ServerTableSpecial(u'project_id'),
                 ),
             Attribute(
-                    attrib_id=u'intern_ip',
+                    attribute_id=u'intern_ip',
                     type=u'ip',
                     base=True,
                     multi=False,
@@ -77,7 +76,7 @@ def _read_lookups(sender=None, **kwargs):
                     special=ServerTableSpecial(u'intern_ip'),
                 ),
             Attribute(
-                    attrib_id=u'segment',
+                    attribute_id=u'segment',
                     type=u'string',
                     base=True,
                     multi=False,

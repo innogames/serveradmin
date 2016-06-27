@@ -79,7 +79,7 @@ class CommitIncomplete(CommitError):
 
 class _ServerAttributedChangedHook(HookSlot):
     """Specialized hook that filters based on changes attributes."""
-    def connect(self, hookfn, attrib, servertypes=None, filter=None):
+    def connect(self, hookfn, attribute_id, servertypes=None, filter=None):
         if servertypes and not isinstance(servertypes, tuple):
             raise ValueError(
                 'Servertypes filter must be tuple: {}'.format(servertypes)
@@ -91,11 +91,11 @@ class _ServerAttributedChangedHook(HookSlot):
                 if servertypes and server['servertype'] not in servertypes:
                     continue
                 server_changes = changes[server.object_id]
-                if attrib not in server_changes:
+                if attribute_id not in server_changes:
                     continue
 
-                old = server_changes[attrib].get('old', None)
-                new = server_changes[attrib].get('new', None)
+                old = server_changes[attribute_id].get('old', None)
+                new = server_changes[attribute_id].get('new', None)
                 if filter and not filter(server, old, new):
                     continue
                 filtered_servers.append(server)
@@ -302,7 +302,7 @@ def _get_servertype_attributes(servers):
     servertype_attributes = defaultdict(dict)
     for item in ServertypeAttribute.objects.all():
         if item.servertype_id in servertype_ids:
-            servertype_attributes[item.servertype_id][item.attrib_id] = item
+            servertype_attributes[item.servertype_id][item.attribute_id] = item
 
     return servertype_attributes
 

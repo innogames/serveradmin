@@ -253,11 +253,11 @@ class QuerySet(BaseQuerySet):
             if (
                 sa.servertype.pk in servers_by_type and
                 sa.attribute.multi and (
-                    not self._restrict or sa.attrib_id in self._restrict
+                    not self._restrict or sa.attribute_id in self._restrict
                 )
             ):
                 for server in servers_by_type[sa.servertype.pk]:
-                    dict.__setitem__(server, sa.attrib_id, set())
+                    dict.__setitem__(server, sa.attribute_id, set())
 
         # Return early if there are no servers (= empty dict)
         if not self._results:
@@ -284,18 +284,18 @@ class QuerySet(BaseQuerySet):
         queryset = ServerHostnameAttribute.objects
         queryset = queryset.filter(server_id__in=self._results.keys())
         if attributes:
-            queryset = queryset.filter(attrib__in=attributes)
+            queryset = queryset.filter(attribute__in=attributes)
 
         for relation in queryset.all():
-            if relation.attrib.multi:
+            if relation.attribute.multi:
                 dict.__getitem__(
                     self._results[relation.server_id],
-                    relation.attrib.pk,
+                    relation.attribute_id,
                 ).add(relation.value.hostname)
             else:
                 dict.__setitem__(
                     self._results[relation.server_id],
-                    relation.attrib.pk,
+                    relation.attribute_id,
                     relation.value.hostname,
                 )
 
@@ -310,7 +310,7 @@ class QuerySet(BaseQuerySet):
 
         if attributes:
             sql_stmt += ' AND attrib_id IN ({0})'.format(', '.join(
-                "'{0}'".format(a.attrib_id) for a in attributes
+                "'{0}'".format(a.attribute_id) for a in attributes
             ))
 
         _getitem = dict.__getitem__

@@ -81,20 +81,20 @@ def delete_servertype(request, servertype_name):
 
 @login_required
 @permission_required('serverdb.change_servertype')
-def manage_servertype_attr(request, servertype_name, attrib_name=None):
+def manage_servertype_attr(request, servertype_name, attribute_name=None):
     stype = get_object_or_404(Servertype, pk=servertype_name)
-    if attrib_name:
+    if attribute_name:
         form_class = EditServertypeAttributeForm
-        attrib = get_object_or_404(Attribute, pk=attrib_name)
+        attribute = get_object_or_404(Attribute, pk=attribute_name)
         stype_attr = get_object_or_404(
             ServertypeAttribute,
-            attrib=attrib,
+            attribute=attribute,
             servertype=stype,
         )
     else:
         form_class = AddServertypeAttributeForm
         stype_attr = None
-        attrib = None
+        attribute = None
 
     if request.method == 'POST':
         form = form_class(stype, request.POST, instance=stype_attr)
@@ -102,17 +102,17 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
             if stype_attr:
                 stype_attr = form.save(commit=False)
                 msg = 'Edited attribute "{0}" of "{1}"'.format(
-                    stype_attr.attrib, stype
+                    stype_attr.attribute, stype
                 )
             else:
                 stype_attr = form.save(commit=False)
                 stype_attr.servertype = stype
                 msg = 'Added attribute "{0}" to "{1}"'.format(
-                    stype_attr.attrib, stype
+                    stype_attr.attribute, stype
                 )
 
             # Set default_value to None if empty and not string
-            if stype_attr.attrib.type != 'string':
+            if stype_attr.attribute.type != 'string':
                 if not form.cleaned_data['default_value']:
                     stype_attr.default_value = None
 
@@ -130,7 +130,7 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
         'servertype': stype,
         'form': form,
         'edit': stype_attr is not None,
-        'attrib': attrib
+        'attribute': attribute,
     })
 
 
@@ -139,7 +139,7 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
 def delete_servertype_attr(request, servertype_name, attrib_name):
     stype_attr = get_object_or_404(
         ServertypeAttribute,
-        attrib_id=attrib_name,
+        attribute_id=attrib_name,
         servertype_id=servertype_name,
     )
 

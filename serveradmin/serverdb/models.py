@@ -79,15 +79,15 @@ class Servertype(models.Model):
 
     def copy(self, new_id):
         target, created = Servertype.objects.get_or_create(pk=new_id)
-        skip = [a.attrib for a in target.used_attributes.select_related()]
+        skip = [a.attribute for a in target.used_attributes.select_related()]
 
         for servertype_attribute in self.used_attributes.select_related():
-            if servertype_attribute.attrib in skip:
+            if servertype_attribute.attribute in skip:
                 continue
 
             ServertypeAttribute.objects.create(
                 servertype=target,
-                attrib=servertype_attribute.attrib,
+                attribute=servertype_attribute.attribute,
                 required=servertype_attribute.required,
                 default_value=servertype_attribute.default_value,
                 regexp=servertype_attribute.regexp,
@@ -106,7 +106,11 @@ class Attribute(models.Model):
             del kwargs[u'special']
         super(Attribute, self).__init__(*args, **kwargs)
 
-    attrib_id = models.CharField(max_length=32, primary_key=True)
+    attribute_id = models.CharField(
+        max_length=32,
+        primary_key=True,
+        db_column='attrib_id',
+    )
     type = models.CharField(
         max_length=32,
 
@@ -125,14 +129,14 @@ class Attribute(models.Model):
     class Meta:
         app_label = 'serverdb'
         db_table = 'attrib'
-        ordering = ('attrib_id', )
+        ordering = ('attribute_id', )
 
     def __unicode__(self):
-        return self.attrib_id
+        return self.attribute_id
 
     def used_in(self):
         queryset = ServertypeAttribute.objects.select_related('servertype')
-        queryset = queryset.filter(attrib=self).order_by('servertype')
+        queryset = queryset.filter(attribute_id=self.pk)
         return [x.servertype for x in queryset]
 
     def external_link(self):
@@ -172,8 +176,9 @@ class ServertypeAttribute(models.Model):
         db_index=False,
         on_delete=models.CASCADE,
     )
-    attrib = models.ForeignKey(
+    attribute = models.ForeignKey(
         Attribute,
+        db_column='attrib_id',
         db_index=False,
         on_delete=models.CASCADE,
     )
@@ -196,7 +201,7 @@ class ServertypeAttribute(models.Model):
     class Meta:
         app_label = 'serverdb'
         db_table = 'servertype_attributes'
-        unique_together = (('servertype', 'attrib'), )
+        unique_together = (('servertype', 'attribute'), )
 
     def get_compiled_regexp(self):
         if self.regexp and not self._compiled_regexp:
@@ -240,20 +245,20 @@ class Server(models.Model):
         else:
             queryset = self.serverstringattribute_set
 
-        return queryset.filter(attrib=attribute)
+        return queryset.filter(attribute=attribute)
 
     def add_attribute(self, attribute, value):
 
         if attribute.type == 'hostname':
             server_attribute = ServerHostnameAttribute(
-                attrib=attribute,
+                attribute=attribute,
                 value=Server.objects.get(hostname=value),
             )
             self.serverhostnameattribute_set.add(server_attribute)
 
         else:
             server_attribute = ServerStringAttribute(
-                attrib=attribute,
+                attribute=attribute,
                 value=attribute.serialize_value(value),
             )
             self.serverstringattribute_set.add(server_attribute)
@@ -272,7 +277,7 @@ class ServerAttribute(models.Model):
         abstract = True
 
     def __unicode__(self):
-        return '{0}->{1}={2}'.format(self.server, self.attrib, self.value)
+        return '{0}->{1}={2}'.format(self.server, self.attribute, self.value)
 
     def reset(self, value):
         self.value = value
@@ -290,8 +295,9 @@ class ServerHostnameAttributeManager(models.Manager):
 class ServerHostnameAttribute(ServerAttribute):
     objects = ServerHostnameAttributeManager()
 
-    attrib = models.ForeignKey(
+    attribute = models.ForeignKey(
         Attribute,
+        db_column='attrib_id',
         db_index=False,
         on_delete=models.CASCADE,
         limit_choices_to={'type': 'hostname'},
@@ -308,8 +314,8 @@ class ServerHostnameAttribute(ServerAttribute):
     class Meta:
         app_label = 'serverdb'
         db_table = 'server_hostname_attrib'
-        unique_together = (('server', 'attrib', 'value'), )
-        index_together = (('attrib', 'value'), )
+        unique_together = (('server', 'attribute', 'value'), )
+        index_together = (('attribute', 'value'), )
 
     def reset(self, value):
         self.value = Server.objects.get(hostname=value)
@@ -321,8 +327,9 @@ class ServerHostnameAttribute(ServerAttribute):
 
 
 class ServerStringAttribute(ServerAttribute):
-    attrib = models.ForeignKey(
+    attribute = models.ForeignKey(
         Attribute,
+        db_column='attrib_id',
         db_index=False,
         on_delete=models.CASCADE,
     )
@@ -333,10 +340,10 @@ class ServerStringAttribute(ServerAttribute):
         db_table = 'attrib_values'
 
     def reset(self, value):
-        self.value = self.attrib.serialize_value(value)
+        self.value = self.attribute.serialize_value(value)
 
     def matches(self, values):
-        return self.value in (self.attrib.serialize_value(v) for v in values)
+        return self.value in (self.attribute.serialize_value(v) for v in values)
 
 
 class Change(models.Model):

@@ -22,7 +22,7 @@ class AddServertypeForm(forms.ModelForm):
 class AddAttributeForm(forms.ModelForm):
     class Meta:
         model = Attribute
-        fields = ('attrib_id', 'type', 'multi')
+        fields = ('attribute_id', 'type', 'multi')
 
 
 class EditServertypeAttributeForm(forms.ModelForm):
@@ -51,19 +51,19 @@ class EditServertypeAttributeForm(forms.ModelForm):
 
 class AddServertypeAttributeForm(EditServertypeAttributeForm):
     class Meta(EditServertypeAttributeForm.Meta):
-        fields = ('attrib', ) + EditServertypeAttributeForm.Meta.fields
+        fields = ('attribute', ) + EditServertypeAttributeForm.Meta.fields
 
-    def clean_attrib(self):
-        attrib = self.cleaned_data['attrib']
+    def clean_attribute(self):
+        attribute = self.cleaned_data['attribute']
         if ServertypeAttribute.objects.filter(
-            attrib=attrib,
+            attribute=attribute,
             servertype=self.servertype,
         ).exists():
             raise forms.ValidationError(
                 'Attribute is already on this servertype'
             )
 
-        return attrib
+        return attribute
 
 
 class BaseServerForm(forms.Form):

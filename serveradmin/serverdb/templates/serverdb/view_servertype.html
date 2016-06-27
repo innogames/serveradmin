@@ -19,16 +19,16 @@
     </tr>
 {% for sa in servertype.used_attributes.all %}
     <tr class="{% cycle 'row_a' 'row_b' %}">
-        <td>{{ sa.attrib }}</td>
-        <td>{{ sa.attrib.type }}</td>
-        <td>{{ sa.attrib.multi }}</td>
+        <td>{{ sa.attribute }}</td>
+        <td>{{ sa.attribute.type }}</td>
+        <td>{{ sa.attribute.multi }}</td>
         <td>{{ sa.required }}</td>
         <td>{{ sa.regexp }}</td>
         <td>{{ sa.default_value }}</td>
 {% if perms.serverdb.change_servertype %}
         <td>
-            <a href="{% url 'serverdb_edit_servertype_attr' servertype.pk sa.attrib_id %}">edit</a>
-            <a href="{% url 'serverdb_delete_servertype_attr' servertype.pk sa.attrib_id %}">delete</a>
+            <a href="{% url 'serverdb_edit_servertype_attr' servertype.pk sa.attribute_id %}">edit</a>
+            <a href="{% url 'serverdb_delete_servertype_attr' servertype.pk sa.attribute_id %}">delete</a>
         </td>
 {% endif %}
     </tr>

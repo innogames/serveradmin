@@ -1,4 +1,5 @@
-import urllib2, json
+import urllib2
+import json
 from string import Formatter
 
 from django.db import models
@@ -9,13 +10,19 @@ import django_urlauth.utils
 from adminapi.dataset.base import MultiAttr
 from serveradmin.serverdb.models import Attribute
 
+
 class Collection(models.Model):
     """Collection of graphs and values to be shown for the servers
     """
 
-    attrib = models.ForeignKey(Attribute, verbose_name='attribute')
-    attrib_value = models.CharField(max_length=512,
-                                    verbose_name='attribute value')
+    attribute = models.ForeignKey(
+        Attribute,
+        db_column='attrib_id',
+    )
+    attribute_value = models.CharField(
+        max_length=512,
+        db_column='attrib_value',
+    )
     params = models.TextField(blank=True, help_text="""
         Part of the URL after "?" to GET the graph or the value from
         the Graphite.  It will be concatenated with the params for
@@ -23,7 +30,8 @@ class Collection(models.Model):
         any character that doesn't allowed on URL's.  Also do not include "?"
         and do not put "&" at the end.
 
-        The params can include variables inside curly brackets like "{hostname}".
+        The params can include variables inside curly brackets like
+        "{hostname}".
         Variables can be any string attribute except multiple ones related to
         the servers.  See Python String Formatting documentation [1] for other
         formatting options.  The dots inside the values are replaced with
@@ -60,7 +68,7 @@ class Collection(models.Model):
         self._variations = None    # To cache graph variations
 
     def __unicode__(self):
-        name = unicode(self.attrib) + ': ' + self.attrib_value
+        name = unicode(self.attribute) + ': ' + self.attribute_value
 
         if self.overview:
             name += ' (overview)'
@@ -73,7 +81,7 @@ class Collection(models.Model):
 
         import serveradmin.dataset
 
-        kwargs[self.attrib_id] = self.attrib_value
+        kwargs[self.attribute_id] = self.attribute_value
 
         return serveradmin.dataset.query(**kwargs)
 
@@ -162,6 +170,7 @@ class Collection(models.Model):
 
         return params
 
+
 class Template(models.Model):
     """Templates in the collections
     """
@@ -204,7 +213,9 @@ class Template(models.Model):
             token = django_urlauth.utils.new_token('serveradmin',
                                                    settings.GRAPHITE_SECRET)
             formatter = AttributeFormatter()
-            params = formatter.vformat('query=' + self.foreach_path, (), server)
+            params = formatter.vformat(
+                'query=' + self.foreach_path, (), server
+            )
             url = (settings.GRAPHITE_URL + '/metrics/find?' +
                    '__auth_token=' + token + '&' + params)
             opener = urllib2.build_opener()
@@ -247,6 +258,7 @@ class Variation(models.Model):
     def __unicode__(self):
         return self.name
 
+
 class NumericCache(models.Model):
     """Cached value for the servers
     """
@@ -259,6 +271,7 @@ class NumericCache(models.Model):
     class Meta:
         db_table = 'graphite_numeric_cache'
         unique_together = (('template', 'hostname'), )
+
 
 class AttributeFormatter(Formatter):
     """Custom Formatter to replace variables on URL parameters
@@ -306,14 +319,18 @@ class AttributeFormatter(Formatter):
         # Cycle the last used id for the key.
         self._last_item_ids[key] %= len(server[key])
 
-        return self.replace_bad_characters(server, server[key][self._last_item_ids[key]])
+        return self.replace_bad_characters(
+            server, server[key][self._last_item_ids[key]]
+        )
 
     def replace_bad_characters(self, server, value):
         """ This method addresses the following problems:
         - dot is a separator in graphite
         - dot is part of some hostnames we have
         - minus sign, as well as dot, are not allowed in pf.conf
-        So depending on type of server, those characters can be replaced with underscore.
+
+        So depending on type of server, those characters can be replaced
+        with underscore.
         """
 
         if server['servertype'] == "loadbalancer":

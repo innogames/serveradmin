@@ -121,7 +121,7 @@ def get_results(request):
     # It will be encoded as map avail[servertype][attr] = stypeattr
     servertype_ids = {s['servertype'] for s in results.values()}
     specials = tuple(
-        (a.attrib_id, {
+        (a.attribute_id, {
             'regexp': None,
             'default': None,
         })
@@ -130,7 +130,7 @@ def get_results(request):
     avail_attributes = {s: dict(specials) for s in servertype_ids}
     for sa in ServertypeAttribute.objects.all():
         if sa.servertype_id in servertype_ids:
-            avail_attributes[sa.servertype_id][sa.attrib_id] = {
+            avail_attributes[sa.servertype_id][sa.attribute_id] = {
                 'regexp': sa.regexp,
                 'default': sa.default_value,
             }
@@ -213,7 +213,7 @@ def list_and_edit(request, mode='list'):
             messages.error(request, 'Attributes contain invalid values')
 
     servertype_attributes = {
-        sa.attrib_id: sa
+        sa.attribute_id: sa
         for sa in ServertypeAttribute.objects.all()
         if sa.servertype == stype
     }
@@ -227,34 +227,34 @@ def list_and_edit(request, mode='list'):
         servertype_attribute = servertype_attributes[key]
         fields.append({
             'key': key,
-            'value': displaycast(servertype_attribute.attrib, value),
+            'value': displaycast(servertype_attribute.attribute, value),
             'has_value': True,
             'editable': True,
-            'type': servertype_attribute.attrib.type,
-            'multi': servertype_attribute.attrib.multi,
+            'type': servertype_attribute.attribute.type,
+            'multi': servertype_attribute.attribute.multi,
             'required': servertype_attribute.required,
             'regexp': _prepare_regexp_html(servertype_attribute.regexp),
             'default': servertype_attribute.default_value,
-            'readonly': servertype_attribute.attrib.readonly,
+            'readonly': servertype_attribute.attribute.readonly,
             'error': key in invalid_attrs,
         })
 
     if mode == 'edit':
         for servertype_attribute in servertype_attributes.values():
-            if servertype_attribute.attrib_id in fields_set:
+            if servertype_attribute.attribute_id in fields_set:
                 continue
             fields.append({
-                'key': servertype_attribute.attrib_id,
-                'value': [] if servertype_attribute.attrib.multi else '',
+                'key': servertype_attribute.attribute_id,
+                'value': [] if servertype_attribute.attribute.multi else '',
                 'has_value': False,
                 'editable': True,
-                'type': servertype_attribute.attrib.type,
-                'multi': servertype_attribute.attrib.multi,
+                'type': servertype_attribute.attribute.type,
+                'multi': servertype_attribute.attribute.multi,
                 'required': False,
                 'regexp': _prepare_regexp_html(servertype_attribute.regexp),
                 'default': servertype_attribute.default_value,
-                'readonly': servertype_attribute.attrib.readonly,
-                'error': servertype_attribute.attrib_id in invalid_attrs,
+                'readonly': servertype_attribute.attribute.readonly,
+                'error': servertype_attribute.attribute_id in invalid_attrs,
             })
 
     return TemplateResponse(request, 'servershell/{0}.html'.format(mode), {
@@ -314,7 +314,7 @@ def get_values(request):
     except KeyError:
         raise Http404
 
-    queryset = ServerStringAttribute.objects.filter(attrib=attribute)
+    queryset = ServerStringAttribute.objects.filter(attribute=attribute)
     value_queryset = queryset.values('value').distinct().order_by('value')
 
     return TemplateResponse(request, 'servershell/values.html', {

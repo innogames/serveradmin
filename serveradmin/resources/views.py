@@ -34,7 +34,7 @@ def index(request):
         'search_term': term,
         'segments': Segment.objects.all(),
         'servertypes': Servertype.objects.all(),
-        'collections': Collection.objects.filter(overview=True).order_by('attrib'),
+        'collections': Collection.objects.filter(overview=True).order_by('attribute'),
         'current_collection': current_collection,
         'current_segment': current_segment,
         'current_stype': current_stype,
