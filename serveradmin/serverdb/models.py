@@ -44,6 +44,20 @@ class Project(models.Model):
         return self.project_id
 
 
+class Segment(models.Model):
+    segment_id = models.CharField(max_length=20, primary_key=True)
+    ip_range = models.CharField(max_length=255, null=True, blank=True)
+    description = models.CharField(max_length=1024)
+
+    class Meta:
+        app_label = 'serverdb'
+        db_table = 'segment'
+        ordering = ('segment_id', )
+
+    def __unicode__(self):
+        return self.segment_id
+
+
 class Servertype(models.Model):
     servertype_id = models.CharField(max_length=32, primary_key=True)
     description = models.CharField(max_length=1024)
@@ -173,20 +187,6 @@ class ServertypeAttribute(models.Model):
         unique_together = (('servertype', 'attrib'), )
 
 
-class Segment(models.Model):
-    segment_id = models.CharField(max_length=20, primary_key=True)
-    ip_range = models.CharField(max_length=255, null=True, blank=True)
-    description = models.CharField(max_length=1024)
-
-    class Meta:
-        app_label = 'serverdb'
-        db_table = 'segment'
-        ordering = ('segment_id', )
-
-    def __unicode__(self):
-        return self.segment_id
-
-
 class ServerObject(models.Model):
     server_id = models.AutoField(primary_key=True)
     hostname = models.CharField(max_length=64, unique=True)
@@ -196,12 +196,12 @@ class ServerObject(models.Model):
         Project,
         on_delete=models.PROTECT,
     )
-    servertype = models.ForeignKey(
-        Servertype,
-        on_delete=models.PROTECT,
-    )
     segment = models.ForeignKey(
         Segment,
+        on_delete=models.PROTECT,
+    )
+    servertype = models.ForeignKey(
+        Servertype,
         on_delete=models.PROTECT,
     )
 
