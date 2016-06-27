@@ -44,7 +44,7 @@ class Project(models.Model):
         return self.project_id
 
 
-class ServerType(models.Model):
+class Servertype(models.Model):
     servertype_id = models.CharField(max_length=32, primary_key=True)
     description = models.CharField(max_length=1024)
     fixed_project = models.ForeignKey(
@@ -55,14 +55,14 @@ class ServerType(models.Model):
     )
 
     def copy(self, new_id):
-        target, created = ServerType.objects.get_or_create(pk=new_id)
+        target, created = Servertype.objects.get_or_create(pk=new_id)
         skip = [a.attrib for a in target.used_attributes.select_related()]
 
         for servertype_attribute in self.used_attributes.select_related():
             if servertype_attribute.attrib in skip:
                 continue
 
-            ServerTypeAttribute.objects.create(
+            ServertypeAttribute.objects.create(
                 servertype=target,
                 attrib=servertype_attribute.attrib,
                 required=servertype_attribute.required,
@@ -116,7 +116,7 @@ class Attribute(models.Model):
         return self.attrib_id
 
     def used_in(self):
-        queryset = ServerTypeAttribute.objects.select_related('servertype')
+        queryset = ServertypeAttribute.objects.select_related('servertype')
         queryset = queryset.filter(attrib=self).order_by('servertype')
         return [x.servertype for x in queryset]
 
@@ -150,9 +150,9 @@ class Attribute(models.Model):
         return str(value)
 
 
-class ServerTypeAttribute(models.Model):
+class ServertypeAttribute(models.Model):
     servertype = models.ForeignKey(
-        ServerType,
+        Servertype,
         related_name='used_attributes',
         db_index=False,
         on_delete=models.CASCADE,
@@ -197,7 +197,7 @@ class ServerObject(models.Model):
         on_delete=models.PROTECT,
     )
     servertype = models.ForeignKey(
-        ServerType,
+        Servertype,
         on_delete=models.PROTECT,
     )
     segment = models.ForeignKey(

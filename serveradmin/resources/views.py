@@ -12,7 +12,7 @@ from adminapi.utils.parse import parse_query
 from serveradmin.graphite.models import Collection, NumericCache
 from serveradmin.dataset import query, filters
 from serveradmin.dataset.base import DatasetError
-from serveradmin.serverdb.models import ServerType, Segment
+from serveradmin.serverdb.models import Servertype, Segment
 
 @login_required
 @ensure_csrf_cookie
@@ -33,7 +33,7 @@ def index(request):
     template_info = {
         'search_term': term,
         'segments': Segment.objects.all(),
-        'servertypes': ServerType.objects.all(),
+        'servertypes': Servertype.objects.all(),
         'collections': Collection.objects.filter(overview=True).order_by('attrib'),
         'current_collection': current_collection,
         'current_segment': current_segment,

@@ -6,16 +6,16 @@ from django import forms
 
 from serveradmin.serverdb.models import (
     Project,
-    ServerType,
+    Servertype,
     Attribute,
-    ServerTypeAttribute,
+    ServertypeAttribute,
     ServerObject,
 )
 
 
 class AddServertypeForm(forms.ModelForm):
     class Meta:
-        model = ServerType
+        model = Servertype
         fields = ('servertype_id', 'description', )
 
 
@@ -29,7 +29,7 @@ class EditServertypeAttributeForm(forms.ModelForm):
     attrib_default = forms.CharField(label='Default', required=False)
 
     class Meta:
-        model = ServerTypeAttribute
+        model = ServertypeAttribute
         fields = ('required', 'attrib_default', 'regex')
         widgets = {
             'regex': forms.TextInput(attrs={'size': 50})
@@ -55,7 +55,7 @@ class AddServertypeAttributeForm(EditServertypeAttributeForm):
 
     def clean_attrib(self):
         attrib = self.cleaned_data['attrib']
-        if ServerTypeAttribute.objects.filter(
+        if ServertypeAttribute.objects.filter(
             attrib=attrib,
             servertype=self.servertype,
         ).exists():
@@ -114,7 +114,7 @@ class CloneServerForm(BaseServerForm):
 
 
 class NewServerForm(BaseServerForm):
-    servertype = forms.ModelChoiceField(queryset=ServerType.objects.all())
+    servertype = forms.ModelChoiceField(queryset=Servertype.objects.all())
 
     def get_servertype(self):
         return self.cleaned_data['servertype']

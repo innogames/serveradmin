@@ -28,7 +28,7 @@ from serveradmin.dataset.typecast import typecast, displaycast
 from serveradmin.dataset.create import create_server
 from serveradmin.serverdb.forms import CloneServerForm, NewServerForm
 from serveradmin.serverdb.models import (
-    ServerType,
+    Servertype,
     ServerObject,
     ServerStringAttribute,
 )
@@ -341,7 +341,7 @@ def new_server(request):
         except DatasetError:
             raise Http404
 
-        servertype = ServerType.objects.get(pk=clone_from['servertype'])
+        servertype = Servertype.objects.get(pk=clone_from['servertype'])
     else:
         clone_from = None
 

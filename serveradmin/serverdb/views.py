@@ -12,10 +12,10 @@ from serveradmin.dataset.base import lookups
 from serveradmin.dataset.create import create_server
 from serveradmin.dataset.commit import CommitError
 from serveradmin.serverdb.models import (
-    ServerType,
+    Servertype,
     Attribute,
     ServerStringAttribute,
-    ServerTypeAttribute,
+    ServertypeAttribute,
     ChangeCommit,
     ChangeAdd,
     ChangeUpdate,
@@ -33,7 +33,7 @@ from serveradmin.serverdb.forms import (
 @login_required
 def servertypes(request):
     return TemplateResponse(request, 'serverdb/servertypes.html', {
-        'servertypes': ServerType.objects.all()
+        'servertypes': Servertype.objects.all()
     })
 
 
@@ -84,7 +84,7 @@ def add_servertype(request):
 @login_required
 @permission_required('serverdb.delete_servertype')
 def delete_servertype(request, servertype_name):
-    stype = get_object_or_404(ServerType, pk=servertype_name)
+    stype = get_object_or_404(Servertype, pk=servertype_name)
     if request.method == 'POST':
         if 'confirm' in request.POST:
             stype.delete()
@@ -100,12 +100,12 @@ def delete_servertype(request, servertype_name):
 @login_required
 @permission_required('serverdb.change_servertype')
 def manage_servertype_attr(request, servertype_name, attrib_name=None):
-    stype = get_object_or_404(ServerType, pk=servertype_name)
+    stype = get_object_or_404(Servertype, pk=servertype_name)
     if attrib_name:
         form_class = EditServertypeAttributeForm
         attrib = get_object_or_404(Attribute, pk=attrib_name)
         stype_attr = get_object_or_404(
-            ServerTypeAttribute,
+            ServertypeAttribute,
             attrib=attrib,
             servertype=stype,
         )
@@ -156,7 +156,7 @@ def manage_servertype_attr(request, servertype_name, attrib_name=None):
 @permission_required('serverdb.change_servertype')
 def delete_servertype_attr(request, servertype_name, attrib_name):
     stype_attr = get_object_or_404(
-        ServerTypeAttribute,
+        ServertypeAttribute,
         attrib_id=attrib_name,
         servertype_id=servertype_name,
     )
@@ -178,7 +178,7 @@ def delete_servertype_attr(request, servertype_name, attrib_name):
 @login_required
 @permission_required('serverdb.add_servertype')
 def copy_servertype(request, servertype_name):
-    stype = get_object_or_404(ServerType, pk=servertype_name)
+    stype = get_object_or_404(Servertype, pk=servertype_name)
     if request.method == 'POST' and 'name' in request.POST:
         stype.copy(request.POST['name'])
         messages.success(request, u'Copied servertype')

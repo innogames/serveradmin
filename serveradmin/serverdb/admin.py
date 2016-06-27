@@ -2,9 +2,9 @@ from django.contrib import admin
 
 from serveradmin.serverdb.models import (
     Project,
-    ServerType,
+    Servertype,
     Attribute,
-    ServerTypeAttribute,
+    ServertypeAttribute,
     Segment,
     ServerObject,
     ServerHostnameAttribute,
@@ -12,12 +12,12 @@ from serveradmin.serverdb.models import (
     ChangeDelete,
 )
 
-class ServerTypeAttributeInline(admin.TabularInline):
-    model = ServerTypeAttribute
+class ServertypeAttributeInline(admin.TabularInline):
+    model = ServertypeAttribute
 
-class ServerTypeAdmin(admin.ModelAdmin):
+class ServertypeAdmin(admin.ModelAdmin):
     inlines = (
-        ServerTypeAttributeInline,
+        ServertypeAttributeInline,
     )
 
 class ServerHostnameAttributeInline(admin.TabularInline):
@@ -34,7 +34,7 @@ class ServerObjectAdmin(admin.ModelAdmin):
     )
 
 admin.site.register(Project)
-admin.site.register(ServerType, ServerTypeAdmin)
+admin.site.register(Servertype, ServertypeAdmin)
 admin.site.register(Attribute)
 admin.site.register(Segment)
 admin.site.register(ServerObject, ServerObjectAdmin)

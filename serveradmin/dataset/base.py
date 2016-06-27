@@ -8,10 +8,10 @@ from django.db import connection
 from django.core.cache import cache
 from django.core.signals import request_started
 
-from serveradmin.serverdb.models import Attribute, ServerType, Segment, Project
+from serveradmin.serverdb.models import Attribute, Servertype, Segment, Project
 
 lookups = local()
-ServerTypeAttr = namedtuple('ServerTypeAttr', (
+ServertypeAttr = namedtuple('ServertypeAttr', (
         'servertype_id',
         'attribute_id',
         'required',
@@ -104,7 +104,7 @@ def _read_lookups(sender=None, **kwargs):
 
     # Read all servertypes
     lookups.servertypes = {}
-    for servertype in ServerType.objects.all():
+    for servertype in Servertype.objects.all():
         servertype.attributes = []
         lookups.servertypes[servertype.pk] = servertype
 
@@ -134,7 +134,7 @@ def _read_lookups(sender=None, **kwargs):
             else:
                 row[4] = None
             row[2] = bool(row[2])
-            stype_attr = ServerTypeAttr._make(row)
+            stype_attr = ServertypeAttr._make(row)
             stype = lookups.servertypes[stype_attr.servertype_id]
             stype.attributes.append(attribute)
             index = (stype_attr.servertype_id, stype_attr.attribute_id)
@@ -142,7 +142,7 @@ def _read_lookups(sender=None, **kwargs):
 
     # Add attributes from admin_server to servertype attributes
     for servertype in lookups.servertypes.itervalues():
-        special_stype_attr = ServerTypeAttr(
+        special_stype_attr = ServertypeAttr(
                 servertype.pk,
                 -1,
                 True,
