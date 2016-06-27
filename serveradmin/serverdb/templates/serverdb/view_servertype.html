@@ -27,8 +27,8 @@
         <td>{{ sa.default_value }}</td>
 {% if perms.serverdb.change_servertype %}
         <td>
-            <a href="{% url 'serverdb_edit_servertype_attr' servertype.pk sa.attribute_id %}">edit</a>
-            <a href="{% url 'serverdb_delete_servertype_attr' servertype.pk sa.attribute_id %}">delete</a>
+            <a href="{% url 'serverdb_edit_servertype_attr' servertype.pk sa.attribute.pk %}">edit</a>
+            <a href="{% url 'serverdb_delete_servertype_attr' servertype.pk sa.attribute.pk %}">delete</a>
         </td>
 {% endif %}
     </tr>

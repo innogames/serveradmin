@@ -301,8 +301,8 @@ def _get_servertype_attributes(servers):
     servertype_ids = {s['servertype'] for s in servers.values()}
     servertype_attributes = defaultdict(dict)
     for item in ServertypeAttribute.objects.all():
-        if item.servertype_id in servertype_ids:
-            servertype_attributes[item.servertype_id][item.attribute_id] = item
+        if item.servertype.pk in servertype_ids:
+            servertype_attributes[item.servertype.pk][item.attribute.pk] = item
 
     return servertype_attributes
 

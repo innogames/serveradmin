@@ -15,6 +15,34 @@ from django.conf import settings
 from serveradmin.common import dbfields
 from serveradmin.apps.models import Application
 
+
+#
+# Lookup Models
+#
+# We need a few models for extensibility of the system.  Those tables
+# are going to store just a few rows, but we need those rows over and
+# over again.  Django is not terribly good at optimising this.  It
+# makes database queries every time a foreign key field is accessed.
+# Using select_related() or prefetch_related() would mitigate this
+# problem, but they would also cause the same rows to be downloaded
+# over and over again.  What we really need it to read all of them
+# just once.
+#
+# The existing caching solutions for Django are quite complicated for
+# our need.  Here we are implementing a really basic Django Model
+# Manager to read all rows for a model on first time one of them is
+# accessed.
+#
+# We are, on purpose, not trying to override all functions of
+# the manager.  Overriding the all() and get() methods are good enough
+# for the callers on our application.  We don't want Django internals
+# to use the cached objects anyway.
+#
+# We also need to encapsulate all the foreign keys to the lookup models
+# for them to be cached.  Otherwise Django does some hard-to-interfere
+# complicated magic on them.
+#
+
 attribute_types = (
     'integer',
     'string',
@@ -28,7 +56,83 @@ attribute_types = (
 )
 
 
-class Project(models.Model):
+class LookupManager(models.Manager):
+    """Custom Django model manager to cache lookup tables
+
+    The purpose of this manager is to avoid accessing the lookup tables
+    multiple times.
+    """
+    def __init__(self):
+        super(LookupManager, self).__init__()
+        self.reset_cache()
+
+    def reset_cache(self):
+        self._lookup_dict = None
+
+    def all(self):
+        """Override all method to cache all objects"""
+        if not self._lookup_dict:
+            self._lookup_dict = {
+                o.pk: o for o in super(LookupManager, self).all()
+            }
+        return self._lookup_dict.values()
+
+    def get(self, *args, **kwargs):
+        """Override the get method to cache PK lookups
+
+        We are only caching lookups with the special "pk" property.
+        """
+        if len(kwargs) == 1 and kwargs.keys()[0] == 'pk':
+            value = kwargs.values()[0]
+
+            # Initialise the cache
+            self.all()
+
+            # We are not relying the cache for misses.
+            if value in self._lookup_dict:
+                return self._lookup_dict[value]
+            else:
+                self.reset_cache()
+
+        return super(LookupManager, self).get(*args, **kwargs)
+
+    def create(self, *args, **kwargs):
+        self.reset_cache()
+        return super(LookupManager, self).create(*args, **kwargs)
+
+
+class LookupModel(models.Model):
+    _default_manager = models.Manager()
+    objects = LookupManager()
+
+    class Meta:
+        abstract = True
+
+    def __unicode__(self):
+        return self.pk
+
+    def save(self, *args, **kwargs):
+        type(self).objects.reset_cache()
+        return super(LookupModel, self).save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        type(self).objects.reset_cache()
+        return super(LookupModel, self).delete(*args, **kwargs)
+
+    @classmethod
+    def foreign_key_lookup(cls, field):
+
+        @property
+        def wrapped(self):
+            """Encapsulate the foreign key field"""
+            if getattr(self, field):
+                model = type(self) if cls == LookupModel else cls
+                return model.objects.get(pk=getattr(self, field))
+
+        return wrapped
+
+
+class Project(LookupModel):
     project_id = models.CharField(max_length=32, primary_key=True)
     subdomain = models.CharField(max_length=16, unique=True)
     responsible_admin = models.ForeignKey(
@@ -39,13 +143,10 @@ class Project(models.Model):
     class Meta:
         app_label = 'serverdb'
         db_table = 'project'
-        ordering = ('project_id', )
-
-    def __unicode__(self):
-        return self.project_id
+        ordering = ('pk', )
 
 
-class Segment(models.Model):
+class Segment(LookupModel):
     segment_id = models.CharField(max_length=20, primary_key=True)
     ip_range = models.CharField(max_length=255, null=True, blank=True)
     description = models.CharField(max_length=1024)
@@ -53,29 +154,25 @@ class Segment(models.Model):
     class Meta:
         app_label = 'serverdb'
         db_table = 'segment'
-        ordering = ('segment_id', )
-
-    def __unicode__(self):
-        return self.segment_id
+        ordering = ('pk', )
 
 
-class Servertype(models.Model):
+class Servertype(LookupModel):
     servertype_id = models.CharField(max_length=32, primary_key=True)
     description = models.CharField(max_length=1024)
-    fixed_project = models.ForeignKey(
+    _fixed_project = models.ForeignKey(
         Project,
         blank=True,
         null=True,
+        db_column='fixed_project_id',
         on_delete=models.PROTECT,
     )
+    fixed_project = Project.foreign_key_lookup('_fixed_project_id')
 
     class Meta:
         app_label = 'serverdb'
         db_table = 'servertype'
-        ordering = ('servertype_id', )
-
-    def __unicode__(self):
-        return self.servertype_id
+        ordering = ('pk', )
 
     def copy(self, new_id):
         target, created = Servertype.objects.get_or_create(pk=new_id)
@@ -86,8 +183,8 @@ class Servertype(models.Model):
                 continue
 
             ServertypeAttribute.objects.create(
-                servertype=target,
-                attribute=servertype_attribute.attribute,
+                _servertype=target,
+                _attribute=servertype_attribute.attribute,
                 required=servertype_attribute.required,
                 default_value=servertype_attribute.default_value,
                 regexp=servertype_attribute.regexp,
@@ -97,7 +194,7 @@ class Servertype(models.Model):
             clear_lookups()
 
 
-class Attribute(models.Model):
+class Attribute(LookupModel):
     special = None
 
     def __init__(self, *args, **kwargs):
@@ -129,15 +226,14 @@ class Attribute(models.Model):
     class Meta:
         app_label = 'serverdb'
         db_table = 'attrib'
-        ordering = ('attribute_id', )
-
-    def __unicode__(self):
-        return self.attribute_id
+        ordering = ('pk', )
 
     def used_in(self):
-        queryset = ServertypeAttribute.objects.select_related('servertype')
-        queryset = queryset.filter(attribute_id=self.pk)
-        return [x.servertype for x in queryset]
+        return [
+            sa.servertype
+            for sa in ServertypeAttribute.objects.all()
+            if sa.attribute == self
+        ]
 
     def external_link(self):
         if self.help_link:
@@ -169,19 +265,22 @@ class Attribute(models.Model):
         return str(value)
 
 
-class ServertypeAttribute(models.Model):
-    servertype = models.ForeignKey(
+class ServertypeAttribute(LookupModel):
+    _servertype = models.ForeignKey(
         Servertype,
         related_name='used_attributes',
+        db_column='servertype_id',
         db_index=False,
         on_delete=models.CASCADE,
     )
-    attribute = models.ForeignKey(
+    servertype = Servertype.foreign_key_lookup('_servertype_id')
+    _attribute = models.ForeignKey(
         Attribute,
         db_column='attrib_id',
         db_index=False,
         on_delete=models.CASCADE,
     )
+    attribute = Attribute.foreign_key_lookup('_attribute_id')
     required = models.BooleanField(default=False)
     default_value = models.CharField(
         max_length=255,
@@ -201,7 +300,10 @@ class ServertypeAttribute(models.Model):
     class Meta:
         app_label = 'serverdb'
         db_table = 'servertype_attributes'
-        unique_together = (('servertype', 'attribute'), )
+        unique_together = (('_servertype', '_attribute'), )
+
+    def __unicode__(self):
+        return '{0} - {1}'.format(self.servertype, self.attribute)
 
     def get_compiled_regexp(self):
         if self.regexp and not self._compiled_regexp:
@@ -213,23 +315,36 @@ class ServertypeAttribute(models.Model):
             return self.get_compiled_regexp().match(str(value))
 
 
+#
+# Server Models
+#
+# Servers are the main objects of the system.  They are stored in
+# entity-attribute-value schema.
+#
+
 class Server(models.Model):
     server_id = models.AutoField(primary_key=True)
     hostname = models.CharField(max_length=64, unique=True)
     intern_ip = dbfields.IPv4Field(db_index=True)
     comment = models.CharField(max_length=255, null=True, blank=True)
-    project = models.ForeignKey(
+    _project = models.ForeignKey(
         Project,
+        db_column='project_id',
         on_delete=models.PROTECT,
     )
-    segment = models.ForeignKey(
+    project = Project.foreign_key_lookup('_project_id')
+    _segment = models.ForeignKey(
         Segment,
+        db_column='segment_id',
         on_delete=models.PROTECT,
     )
-    servertype = models.ForeignKey(
+    segment = Segment.foreign_key_lookup('_segment_id')
+    _servertype = models.ForeignKey(
         Servertype,
+        db_column='servertype_id',
         on_delete=models.PROTECT,
     )
+    servertype = Servertype.foreign_key_lookup('_servertype_id')
 
     def __str__(self):
         return self.hostname
@@ -245,20 +360,18 @@ class Server(models.Model):
         else:
             queryset = self.serverstringattribute_set
 
-        return queryset.filter(attribute=attribute)
+        return queryset.filter(_attribute=attribute)
 
     def add_attribute(self, attribute, value):
-
         if attribute.type == 'hostname':
             server_attribute = ServerHostnameAttribute(
-                attribute=attribute,
+                _attribute=attribute,
                 value=Server.objects.get(hostname=value),
             )
             self.serverhostnameattribute_set.add(server_attribute)
-
         else:
             server_attribute = ServerStringAttribute(
-                attribute=attribute,
+                _attribute=attribute,
                 value=attribute.serialize_value(value),
             )
             self.serverstringattribute_set.add(server_attribute)
@@ -295,13 +408,14 @@ class ServerHostnameAttributeManager(models.Manager):
 class ServerHostnameAttribute(ServerAttribute):
     objects = ServerHostnameAttributeManager()
 
-    attribute = models.ForeignKey(
+    _attribute = models.ForeignKey(
         Attribute,
         db_column='attrib_id',
         db_index=False,
         on_delete=models.CASCADE,
         limit_choices_to={'type': 'hostname'},
     )
+    attribute = Attribute.foreign_key_lookup('_attribute_id')
     value = models.ForeignKey(
         Server,
         db_column='value',
@@ -314,8 +428,8 @@ class ServerHostnameAttribute(ServerAttribute):
     class Meta:
         app_label = 'serverdb'
         db_table = 'server_hostname_attrib'
-        unique_together = (('server', 'attribute', 'value'), )
-        index_together = (('attribute', 'value'), )
+        unique_together = (('server', '_attribute', 'value'), )
+        index_together = (('_attribute', 'value'), )
 
     def reset(self, value):
         self.value = Server.objects.get(hostname=value)
@@ -327,12 +441,13 @@ class ServerHostnameAttribute(ServerAttribute):
 
 
 class ServerStringAttribute(ServerAttribute):
-    attribute = models.ForeignKey(
+    _attribute = models.ForeignKey(
         Attribute,
         db_column='attrib_id',
         db_index=False,
         on_delete=models.CASCADE,
     )
+    attribute = Attribute.foreign_key_lookup('_attribute_id')
     value = models.CharField(max_length=1024)
 
     class Meta:
@@ -343,8 +458,14 @@ class ServerStringAttribute(ServerAttribute):
         self.value = self.attribute.serialize_value(value)
 
     def matches(self, values):
-        return self.value in (self.attribute.serialize_value(v) for v in values)
+        return self.value in (
+            self.attribute.serialize_value(v) for v in values
+        )
 
+
+#
+# Change Log Models
+#
 
 class Change(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)

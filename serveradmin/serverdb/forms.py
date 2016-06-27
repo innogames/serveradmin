@@ -51,19 +51,7 @@ class EditServertypeAttributeForm(forms.ModelForm):
 
 class AddServertypeAttributeForm(EditServertypeAttributeForm):
     class Meta(EditServertypeAttributeForm.Meta):
-        fields = ('attribute', ) + EditServertypeAttributeForm.Meta.fields
-
-    def clean_attribute(self):
-        attribute = self.cleaned_data['attribute']
-        if ServertypeAttribute.objects.filter(
-            attribute=attribute,
-            servertype=self.servertype,
-        ).exists():
-            raise forms.ValidationError(
-                'Attribute is already on this servertype'
-            )
-
-        return attribute
+        fields = ('_attribute', ) + EditServertypeAttributeForm.Meta.fields
 
 
 class BaseServerForm(forms.Form):

@@ -88,8 +88,8 @@ def manage_servertype_attr(request, servertype_name, attribute_name=None):
         attribute = get_object_or_404(Attribute, pk=attribute_name)
         stype_attr = get_object_or_404(
             ServertypeAttribute,
-            attribute=attribute,
-            servertype=stype,
+            _attribute=attribute,
+            _servertype=stype,
         )
     else:
         form_class = AddServertypeAttributeForm
@@ -139,8 +139,8 @@ def manage_servertype_attr(request, servertype_name, attribute_name=None):
 def delete_servertype_attr(request, servertype_name, attrib_name):
     stype_attr = get_object_or_404(
         ServertypeAttribute,
-        attribute_id=attrib_name,
-        servertype_id=servertype_name,
+        _attribute_id=attrib_name,
+        _servertype_id=servertype_name,
     )
 
     if request.method == 'POST' and 'confirm' in request.POST:

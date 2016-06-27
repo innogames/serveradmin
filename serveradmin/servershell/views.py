@@ -121,7 +121,7 @@ def get_results(request):
     # It will be encoded as map avail[servertype][attr] = stypeattr
     servertype_ids = {s['servertype'] for s in results.values()}
     specials = tuple(
-        (a.attribute_id, {
+        (a.pk, {
             'regexp': None,
             'default': None,
         })
@@ -129,8 +129,8 @@ def get_results(request):
     )
     avail_attributes = {s: dict(specials) for s in servertype_ids}
     for sa in ServertypeAttribute.objects.all():
-        if sa.servertype_id in servertype_ids:
-            avail_attributes[sa.servertype_id][sa.attribute_id] = {
+        if sa.servertype.pk in servertype_ids:
+            avail_attributes[sa.servertype.pk][sa.attribute.pk] = {
                 'regexp': sa.regexp,
                 'default': sa.default_value,
             }
@@ -213,7 +213,7 @@ def list_and_edit(request, mode='list'):
             messages.error(request, 'Attributes contain invalid values')
 
     servertype_attributes = {
-        sa.attribute_id: sa
+        sa.attribute.pk: sa
         for sa in ServertypeAttribute.objects.all()
         if sa.servertype == stype
     }
@@ -241,10 +241,10 @@ def list_and_edit(request, mode='list'):
 
     if mode == 'edit':
         for servertype_attribute in servertype_attributes.values():
-            if servertype_attribute.attribute_id in fields_set:
+            if servertype_attribute.attribute.pk in fields_set:
                 continue
             fields.append({
-                'key': servertype_attribute.attribute_id,
+                'key': servertype_attribute.attribute.pk,
                 'value': [] if servertype_attribute.attribute.multi else '',
                 'has_value': False,
                 'editable': True,
@@ -254,7 +254,7 @@ def list_and_edit(request, mode='list'):
                 'regexp': _prepare_regexp_html(servertype_attribute.regexp),
                 'default': servertype_attribute.default_value,
                 'readonly': servertype_attribute.attribute.readonly,
-                'error': servertype_attribute.attribute_id in invalid_attrs,
+                'error': servertype_attribute.attribute.pk in invalid_attrs,
             })
 
     return TemplateResponse(request, 'servershell/{0}.html'.format(mode), {

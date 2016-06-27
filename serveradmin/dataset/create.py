@@ -95,50 +95,50 @@ def create_server(
     for lookup in servertype.used_attributes.all():
 
         # Handle not existing attributes (fill defaults, validate require)
-        if lookup.attribute_id not in real_attributes:
+        if lookup.attribute.pk not in real_attributes:
             if lookup.attribute.multi:
                 if lookup.default_value in ('', None):
-                    real_attributes[lookup.attribute_id] = []
+                    real_attributes[lookup.attribute.pk] = []
                 else:
-                    real_attributes[lookup.attribute_id] = _type_cast_default(
-                        lookup.attrib,
+                    real_attributes[lookup.attribute.pk] = _type_cast_default(
+                        lookup.attribute,
                         lookup.default_value,
                     )
             elif lookup.required:
                 if fill_defaults and lookup.default_value not in ('', None):
-                    real_attributes[lookup.attribute_id] = _type_cast_default(
-                        lookup.attrib,
+                    real_attributes[lookup.attribute.pk] = _type_cast_default(
+                        lookup.attribute,
                         lookup.default_value,
                     )
                 else:
-                    violations_required.append(lookup.attribute_id)
+                    violations_required.append(lookup.attribute.pk)
                     continue
             else:
                 if fill_defaults_all and lookup.default_value not in ('', None):
-                    real_attributes[lookup.attribute_id] = _type_cast_default(
-                        lookup.attrib,
+                    real_attributes[lookup.attribute.pk] = _type_cast_default(
+                        lookup.attribute,
                         lookup.default_value,
                     )
                 else:
                     continue
 
-        value = real_attributes[lookup.attribute_id]
-        check_attribute_type(lookup.attribute_id, value)
+        value = real_attributes[lookup.attribute.pk]
+        check_attribute_type(lookup.attribute.pk, value)
 
         # Validate regular expression
         if lookup.regexp:
             if lookup.attribute.multi:
                 for val in value:
                     if not lookup.regexp_match(unicode(val)):
-                        violations_regexp.append(lookup.attribute_id)
+                        violations_regexp.append(lookup.attribute.pk)
             else:
                 if lookup.regexp_match(value):
-                    violations_regexp.append(lookup.attribute_id)
+                    violations_regexp.append(lookup.attribute.pk)
 
     # Check for attributes that are not defined on this servertype
     violations_attribs = []
     servertype_attribute_ids = {
-        sa.attribute_id
+        sa.attribute.pk
         for sa in ServertypeAttribute.objects.all()
         if sa.servertype == servertype
     }
@@ -192,9 +192,9 @@ def _insert_server(
     server = Server.objects.create(
         hostname=hostname,
         intern_ip=intern_ip,
-        project_id=project_id,
-        servertype_id=servertype_id,
-        segment_id=segment_id,
+        _project_id=project_id,
+        _servertype_id=servertype_id,
+        _segment_id=segment_id,
     )
 
     for attr_name, value in attributes.iteritems():
