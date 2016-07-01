@@ -14,15 +14,16 @@ from django.conf import settings
 from serveradmin.common import dbfields
 from serveradmin.apps.models import Application
 
-TYPE_CHOICES = (
-    ('integer', 'Integer'),
-    ('string', 'String'),
-    ('ip', 'IPv4 address'),
-    ('ipv6', 'IPv6 address'),
-    ('boolean', 'Boolean'),
-    ('datetime', 'Datetime'),
-    ('mac', 'MAC address'),
-    ('hostname', 'Hostname'),
+attribute_types = (
+    'integer',
+    'string',
+    'ip',
+    'ipv6',
+    'boolean',
+    'datetime',
+    'mac',
+    'hostname',
+    'number',
 )
 
 
@@ -91,7 +92,14 @@ class Attribute(models.Model):
         super(Attribute, self).__init__(*args, **kwargs)
 
     attrib_id = models.CharField(max_length=32, primary_key=True)
-    type = models.CharField(max_length=32, choices=TYPE_CHOICES)
+    type = models.CharField(
+        max_length=32,
+
+        # Django allows the choices to be stored and named differently,
+        # but we don't need it.  We are zipping the tuple to itself
+        # to use the same names.
+        choices=zip(*((attribute_types, ) * 2)),
+    )
     base = models.BooleanField(default=False)
     multi = models.BooleanField(default=False)
     hovertext = models.TextField(blank=True, default='')
