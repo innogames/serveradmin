@@ -38,29 +38,11 @@ def servertypes(request):
 
 
 @login_required
-def view_servertype(request, servertype_name):
-    try:
-        servertype = lookups.servertypes[servertype_name]
-    except KeyError:
-        raise Http404
-
-    stype_attributes = []
-    for attr in servertype.attributes:
-        stype_attr = lookups.stype_attrs[(servertype.pk, attr.pk)]
-        attribute = lookups.attributes[stype_attr.attribute_id]
-        stype_attributes.append({
-            'name': attribute.pk,
-            'type': attribute.type,
-            'multi': attribute.multi,
-            'required': stype_attr.required,
-            'regexp': stype_attr.regexp.pattern if stype_attr.regexp else None,
-            'default': stype_attr.default
-        })
-    stype_attributes.sort(key=itemgetter('name'))
+def view_servertype(request, id):
+    servertype = get_object_or_404(Servertype, pk=id)
 
     return TemplateResponse(request, 'serverdb/view_servertype.html', {
         'servertype': servertype,
-        'attributes': stype_attributes
     })
 
 
