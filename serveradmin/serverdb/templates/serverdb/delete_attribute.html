@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Delete {{ attribute.name }}{% endblock %}
+{% block title %}Delete {{ attribute }}{% endblock %}
 
 {% block content %}
-<h2>Delete {{ attribute.name }}</h2>
-<p>Do you really want to delete the attribute "{{ attribute.name }}"?</p>
-<form method="post" action="{% url 'serverdb_delete_attribute' attribute.name %}">
+<h2>Delete {{ attribute }}</h2>
+<p>Do you really want to delete the attribute "{{ attribute }}"?</p>
+<form method="post" action="{% url 'serverdb_delete_attribute' attribute %}">
 {% csrf_token %}
 <p>
 <label><input type="checkbox" name="confirm" value="1" />

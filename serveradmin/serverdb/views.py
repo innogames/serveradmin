@@ -1,4 +1,4 @@
-from operator import attrgetter, itemgetter
+from operator import attrgetter
 
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import Http404
@@ -177,12 +177,12 @@ def attributes(request):
 
 @login_required
 @permission_required('serverdb.delete_attribute')
-def delete_attribute(request, attribute_name):
-    attribute = get_object_or_404(Attribute, name=attribute_name)
+def delete_attribute(request, attribute_id):
+    attribute = get_object_or_404(Attribute, pk=attribute_id)
     if request.method == 'POST' and 'confirm' in request.POST:
+        messages.success(request, 'Attribute "{0}" deleted.'.format(attribute))
         attribute.delete()
         clear_lookups()
-        messages.success(request, u'Attribute "{0}" deleted'.format(attribute))
         return redirect('serverdb_attributes')
     else:
         return TemplateResponse(request, 'serverdb/delete_attribute.html', {
