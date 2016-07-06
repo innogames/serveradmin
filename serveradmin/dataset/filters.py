@@ -6,7 +6,7 @@ from ipaddress import IPv4Address, IPv6Address, ip_network
 
 from serveradmin.dataset.base import lookups, DatasetError
 from serveradmin.dataset.typecast import typecast
-from serveradmin.serverdb.models import ServerObject
+from serveradmin.serverdb.models import Server
 
 
 class FilterValueError(DatasetError):
@@ -675,8 +675,8 @@ def value_to_sql(attribute, value):
             value = int(time.mktime(value.timetuple()))
     elif attribute.type == 'hostname':
         try:
-            value = ServerObject.objects.get(hostname=value).server_id
-        except ServerObject.DoesNotExist as error:
+            value = Server.objects.get(hostname=value).server_id
+        except Server.DoesNotExist as error:
             raise FilterValueError(str(error))
 
     # Validations of special attributes

@@ -8,7 +8,7 @@ from ipaddress import (
 )
 
 from serveradmin.serverdb.models import (
-    ServerObject,
+    Server,
     ChangeCommit,
     ChangeAdd,
 )
@@ -169,10 +169,10 @@ def create_server(
 
 def _insert_server(hostname, intern_ip, segment_id, servertype_id, project_id, attributes):
 
-    if ServerObject.objects.filter(hostname=hostname).exists():
+    if Server.objects.filter(hostname=hostname).exists():
         raise CommitError(u'Server with that hostname already exists')
 
-    server = ServerObject.objects.create(
+    server = Server.objects.create(
         hostname=hostname,
         intern_ip=intern_ip,
         project_id=project_id,

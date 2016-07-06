@@ -29,7 +29,7 @@ from serveradmin.dataset.create import create_server
 from serveradmin.serverdb.forms import CloneServerForm, NewServerForm
 from serveradmin.serverdb.models import (
     Servertype,
-    ServerObject,
+    Server,
     ServerStringAttribute,
 )
 
@@ -295,7 +295,7 @@ def commit(request):
         except (
             ValueError,
             DatasetError,
-            ServerObject.DoesNotExist,
+            Server.DoesNotExist,
         ) as error:
             result = {
                 'status': 'error',

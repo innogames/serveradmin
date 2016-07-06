@@ -9,7 +9,7 @@ from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
     ServertypeAttribute,
-    ServerObject,
+    Server,
 )
 
 
@@ -81,7 +81,7 @@ class BaseServerForm(forms.Form):
             self.cleaned_data['intern_ip']
         )
 
-        if ServerObject.objects.filter(
+        if Server.objects.filter(
             hostname=self.cleaned_data['hostname']
         ).exists():
 
@@ -89,7 +89,7 @@ class BaseServerForm(forms.Form):
             self._errors['hostname'] = self.error_class([msg])
 
         if self.cleaned_data.get('check_ip'):
-            if ServerObject.objects.filter(
+            if Server.objects.filter(
                 intern_ip=self.cleaned_data['intern_ip']
             ).exists():
 

@@ -2,8 +2,6 @@ import re
 from datetime import datetime
 from ipaddress import IPv4Address, IPv6Address
 
-from serveradmin.serverdb.models import ServerObject
-
 _to_datetime_re = re.compile(
     r'(\d{4})-(\d{1,2})-(\d{1,2})(T(\d{1,2}):(\d{1,2})(:(\d{1,2}))?)?'
 )

@@ -3,7 +3,7 @@ from ipaddress import ip_address, summarize_address_range
 from django.db import models
 
 from serveradmin.common import dbfields
-from serveradmin.serverdb.models import Segment, ServerObject
+from serveradmin.serverdb.models import Segment, Server
 
 IP_CHOICES = (
     ('ip', 'Private'),
@@ -55,7 +55,7 @@ class IPRange(models.Model):
             return set()
 
         return set(ip_address(i) for i in (
-            ServerObject.objects
+            Server.objects
             .filter(intern_ip__range=(self.min, self.max))
             .order_by()     # Clear ordering for database performance
             .values_list('intern_ip', flat=True)

@@ -6,36 +6,42 @@ from serveradmin.serverdb.models import (
     Attribute,
     ServertypeAttribute,
     Segment,
-    ServerObject,
+    Server,
     ServerHostnameAttribute,
     ServerStringAttribute,
     ChangeDelete,
 )
 
+
 class ServertypeAttributeInline(admin.TabularInline):
     model = ServertypeAttribute
+
 
 class ServertypeAdmin(admin.ModelAdmin):
     inlines = (
         ServertypeAttributeInline,
     )
 
+
 class ServerHostnameAttributeInline(admin.TabularInline):
     model = ServerHostnameAttribute
     fk_name = 'server'
 
+
 class ServerStringAttributeInline(admin.TabularInline):
     model = ServerStringAttribute
 
-class ServerObjectAdmin(admin.ModelAdmin):
+
+class ServerAdmin(admin.ModelAdmin):
     inlines = (
         ServerHostnameAttributeInline,
         ServerStringAttributeInline,
     )
 
+
 admin.site.register(Project)
 admin.site.register(Servertype, ServertypeAdmin)
 admin.site.register(Attribute)
 admin.site.register(Segment)
-admin.site.register(ServerObject, ServerObjectAdmin)
+admin.site.register(Server, ServerAdmin)
 admin.site.register(ChangeDelete)

@@ -187,7 +187,7 @@ class ServertypeAttribute(models.Model):
         unique_together = (('servertype', 'attrib'), )
 
 
-class ServerObject(models.Model):
+class Server(models.Model):
     server_id = models.AutoField(primary_key=True)
     hostname = models.CharField(max_length=64, unique=True)
     intern_ip = dbfields.IPv4Field(db_index=True)
@@ -226,7 +226,7 @@ class ServerObject(models.Model):
         if attribute.type == 'hostname':
             server_attribute = ServerHostnameAttribute(
                 attrib=attribute,
-                value=ServerObject.objects.get(hostname=value),
+                value=Server.objects.get(hostname=value),
             )
             self.serverhostnameattribute_set.add(server_attribute)
 
@@ -242,7 +242,7 @@ class ServerObject(models.Model):
 
 class ServerAttribute(models.Model):
     server = models.ForeignKey(
-        ServerObject,
+        Server,
         db_index=False,
         on_delete=models.CASCADE,
     )
@@ -268,7 +268,7 @@ class ServerHostnameAttribute(ServerAttribute):
         limit_choices_to={'type': 'hostname'},
     )
     value = models.ForeignKey(
-        ServerObject,
+        Server,
         db_column='value',
         db_index=False,
         on_delete=models.PROTECT,
@@ -283,11 +283,11 @@ class ServerHostnameAttribute(ServerAttribute):
         index_together = (('attrib', 'value'), )
 
     def reset(self, value):
-        self.value = ServerObject.objects.get(hostname=value)
+        self.value = Server.objects.get(hostname=value)
 
     def matches(self, values):
         return self.value in (
-            ServerObject.objects.get(hostname=v) for v in values
+            Server.objects.get(hostname=v) for v in values
         )
 
 

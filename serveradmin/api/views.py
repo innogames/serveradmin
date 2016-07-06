@@ -19,7 +19,7 @@ from serveradmin.dataset import QuerySet
 from serveradmin.dataset.filters import ExactMatch, filter_from_obj
 from serveradmin.dataset.commit import CommitError, commit_changes
 from serveradmin.dataset.create import create_server
-from serveradmin.serverdb.models import ServerObject
+from serveradmin.serverdb.models import Server
 
 
 @login_required
@@ -129,7 +129,7 @@ def dataset_commit(request, app, data):
     except (
         ValueError,
         CommitError,
-        ServerObject.DoesNotExist,
+        Server.DoesNotExist,
     ) as error:
         return {
                 'status': 'error',
@@ -170,7 +170,7 @@ def dataset_create(request, app, data):
     except (
         ValueError,
         CommitError,
-        ServerObject.DoesNotExist,
+        Server.DoesNotExist,
     ) as error:
         return {
             'status': 'error',

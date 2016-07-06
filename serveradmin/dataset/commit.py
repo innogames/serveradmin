@@ -7,7 +7,7 @@ from serveradmin.dataset.base import lookups, DatasetError, ServerTableSpecial
 from serveradmin.dataset.typecast import typecast
 from serveradmin.hooks.slots import HookSlot
 from serveradmin.serverdb.models import (
-    ServerObject,
+    Server,
     ServerHostnameAttribute,
     ChangeCommit,
     ChangeUpdate,
@@ -179,7 +179,7 @@ def commit_changes(
             .delete())
 
         try:
-            ServerObject.objects.filter(server_id__in=deleted_servers).delete()
+            Server.objects.filter(server_id__in=deleted_servers).delete()
         except IntegrityError as error:
             raise CommitError(
                 'Cannot delete servers because they are referenced by {0}'
@@ -413,7 +413,7 @@ def _clean_changed(changed_servers):
 
 def _apply_changes(changed_servers):
 
-    queryset = ServerObject.objects.select_for_update()
+    queryset = Server.objects.select_for_update()
     queryset = queryset.filter(server_id__in=changed_servers.keys())
     servers = {s.server_id: s for s in queryset}
 
