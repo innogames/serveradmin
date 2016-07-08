@@ -260,7 +260,15 @@ class ServerAttribute(models.Model):
         return self.value in value
 
 
+class ServerHostnameAttributeManager(models.Manager):
+    def get_queryset(self):
+        manager = super(ServerHostnameAttributeManager, self)
+        return manager.get_queryset().select_related('value')
+
+
 class ServerHostnameAttribute(ServerAttribute):
+    objects = ServerHostnameAttributeManager()
+
     attrib = models.ForeignKey(
         Attribute,
         db_index=False,
