@@ -24,7 +24,6 @@ class BaseQuerySet(object):
         self.get_results()
         if self._order is not None:
             order_keys = self._order
-
             def key_fn(server):
                 return tuple(server.get(key) for key in order_keys)
             return iter(sorted(self._results.itervalues(), key=key_fn))
@@ -41,9 +40,8 @@ class BaseQuerySet(object):
 
     def __repr__(self):
         # QuerySet is not used directly but through query function
-        kwargs = ', '.join(
-            '{0}={1!r}'.format(k, v) for k, v in self._filters.iteritems()
-        )
+        kwargs = ', '.join('{0}={1!r}'.format(k, v) for k, v in
+                self._filters.iteritems())
         query_repr = 'query({0})'.format(kwargs)
 
         if self._restrict:
@@ -136,10 +134,8 @@ class BaseQuerySet(object):
                 obj.print_changes(title, file=file)
                 file.write('\n')
 
-        file.write(
-            '\n{0} changed and {1} unchanged.\n'
-            .format(num_dirty, len(self) - num_dirty)
-        )
+        file.write('\n{0} changed and {1} unchanged.\n'.format(num_dirty,
+                len(self) - num_dirty))
 
     def order_by(self, *attrs):
         self._order = attrs
@@ -407,37 +403,68 @@ class BaseServerObject(dict):
 
     update.__doc__ = dict.update.__doc__
 
+class MultiAttr(object):
+    dirty_methods = frozenset((
+            'add',
+            'clear',
+            'difference_update',
+            'discard',
+            'intersection_update',
+            'pop',
+            'remove',
+            'update',
+            'symmetric_difference_update',
+        ))
 
-class MultiAttr(set):
     def __init__(self, proxied_set, server_obj, attr_name):
-        set.__init__(self, proxied_set)
+        self._proxied_set = proxied_set
         self._server_object = server_obj
         self._attr_name = attr_name
 
+    def __repr__(self):
+        return 'MultiAttr({0!r})'.format(self._proxied_set)
+
     def __unicode__(self):
-        return u' '.join(unicode(x) for x in self)
+        return u' '.join(unicode(x) for x in self._proxied_set)
 
     def __str__(self):
         return unicode(self).encode('utf-8')
 
-# Patch all the methods of set that can change the values to save
-# the old values
-for method in (
-    'add',
-    'clear',
-    'difference_update',
-    'discard',
-    'intersection_update',
-    'pop',
-    'remove',
-    'update',
-    'symmetric_difference_update',
-):
-    def wrapped(self, *args, **kwargs):
-        self._server_object._save_old_value(self._attr_name)
-        getattr(set, method)(self, *kwargs, **kwargs)
-    setattr(MultiAttr, method, wrapped)
+    def __iter__(self):
+        return iter(self._proxied_set)
 
+    def __len__(self):
+        return len(self._proxied_set)
+
+    def __contains__(self, value):
+        return value in self._proxied_set
+
+    def __bool__(self):
+        return bool(self._proxied_set)
+
+    def __eq__(self, other):
+        return self._proxied_set == other
+
+    def __neq__(self, other):
+        return self._proxied_set == other
+
+    def __getattr__(self, attr):
+        if not hasattr(self._proxied_set, attr):
+            raise AttributeError('Cannot proxy attribute {0}'.format(attr))
+
+        proxied_set_attr = getattr(self._proxied_set, attr)
+
+        if attr in self.dirty_methods:
+            def _method(*args, **kwargs):
+                self._server_object._save_old_value(self._attr_name)
+                return proxied_set_attr(*args, **kwargs)
+
+            return _method
+
+        return proxied_set_attr
+
+    def __reduce__(self):
+        return dict.__reduce__(self)
 
 def _format_value(value):
 

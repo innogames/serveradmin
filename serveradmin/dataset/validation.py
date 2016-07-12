@@ -13,7 +13,8 @@ def check_attributes(attributes):
 def check_attribute_type(attr, value):
     attribute = lookups.attributes[attr]
     if attribute.multi:
-        if not isinstance(value, (tuple, list, set)):
+        if not (isinstance(value, (list, set)) or
+                hasattr(value, '_proxied_set')):
             raise ValueError((
                     u'{0} is a multi attribute. Require list/set, '
                     u'but {1} of type {2} was given'
