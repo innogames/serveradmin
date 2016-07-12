@@ -9,7 +9,7 @@ from serveradmin.iprange.models import IPRange, IP_CHOICES
 
 class IPRangeForm(forms.Form):
     range_id = forms.CharField()
-    segment = forms.ModelChoiceField(queryset=Segment.objects.all())
+    segment = forms.ModelChoiceField(queryset=Segment.objects.filter())
     ip_type = forms.ChoiceField(choices=IP_CHOICES, label='Type')
     vlan = forms.IntegerField(required=False, label='VLAN', min_value=1, max_value=4095)
     belongs_to = forms.ModelChoiceField(queryset=IPRange.objects.all(),
