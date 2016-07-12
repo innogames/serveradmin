@@ -95,7 +95,7 @@ def dataset_query(request, app, data):
             'servers': queryset.get_results(),
             'attributes': _build_attributes(),
         }, default=json_encode_extra)
-    except ValueError as error:
+    except ValidationError as error:
         return json.dumps({
             'status': 'error',
             'type': 'ValueError',

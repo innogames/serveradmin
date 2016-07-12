@@ -64,7 +64,9 @@ class NetworkFilter(BaseFilter):
         # initialised anything other than Network objects.  In here,
         # we took our chance to validate the attribute.
         if attribute.type != 'ip':
-            raise ValueError('Only IP addresses can be used by this filter.')
+            raise FilterValueError(
+                'Only IP addresses can be used by this filter.'
+            )
 
 
 # We need this class to group optional filters.
@@ -109,7 +111,7 @@ class ExactMatch(BaseFilter):
         if 'value' in obj:
             return cls(obj['value'])
 
-        raise ValueError('Invalid object for ExactMatch')
+        raise FilterValueError('Invalid object for ExactMatch')
 
 
 class Regexp(BaseFilter):
@@ -117,7 +119,7 @@ class Regexp(BaseFilter):
         try:
             self._regexp_obj = re.compile(regexp)
         except re.error as e:
-            raise ValueError('Invalid regexp: ' + unicode(e))
+            raise FilterValueError('Invalid regexp: ' + unicode(e))
 
         self.regexp = regexp
 
@@ -164,13 +166,13 @@ class Regexp(BaseFilter):
     def from_obj(cls, obj):
         if 'regexp' in obj and isinstance(obj['regexp'], basestring):
             return cls(obj['regexp'])
-        raise ValueError('Invalid object for Regexp')
+        raise FilterValueError('Invalid object for Regexp')
 
 
 class Comparison(BaseFilter):
     def __init__(self, comparator, value):
         if comparator not in ('<', '>', '<=', '>='):
-            raise ValueError('Invalid comparison operator: ' + comparator)
+            raise FilterValueError('Invalid comparison operator: ' + comparator)
         self.comparator = comparator
         self.value = value
 
@@ -189,7 +191,7 @@ class Comparison(BaseFilter):
     def typecast(self, attribute):
 
         if attribute.type == 'hostname':
-            raise ValueError('Hostnames cannot be compared.')
+            raise FilterValueError('Hostnames cannot be compared.')
 
         self.value = typecast(attribute, self.value, force_single=True)
 
@@ -208,7 +210,7 @@ class Comparison(BaseFilter):
         elif self.comparator == '>=':
             op = operator.gt
         else:
-            raise ValueError("Operator doesn't exists")
+            raise FilterValueError("Operator doesn't exists")
 
         return op(server_obj[attr_name], self.value)
 
@@ -219,7 +221,7 @@ class Comparison(BaseFilter):
     def from_obj(cls, obj):
         if 'comparator' in obj and 'value' in obj:
             return cls(obj['comparator'], obj['value'])
-        raise ValueError('Invalid object for Comparison')
+        raise FilterValueError('Invalid object for Comparison')
 
 
 class Any(BaseFilter):
@@ -264,7 +266,7 @@ class Any(BaseFilter):
     def from_obj(cls, obj):
         if 'values' in obj and isinstance(obj['values'], list):
             return cls(*obj['values'])
-        raise ValueError('Invalid object for Any')
+        raise FilterValueError('Invalid object for Any')
 
 
 class _AndOr(BaseFilter):
@@ -309,11 +311,11 @@ class _AndOr(BaseFilter):
     def from_obj(cls, obj):
         if 'filters' in obj and isinstance(obj['filters'], list):
             if not obj['filters']:
-                raise ValueError('Empty filters for And/Or')
+                raise FilterValueError('Empty filters for And/Or')
 
             return cls(*[filter_from_obj(filter) for filter in obj['filters']])
 
-        raise ValueError('Invalid object for {0}'.format(cls.__name__))
+        raise FilterValueError('Invalid object for {0}'.format(cls.__name__))
 
 
 class And(_AndOr):
@@ -351,7 +353,7 @@ class Between(BaseFilter):
     def typecast(self, attribute):
 
         if attribute.type == 'hostname':
-            raise ValueError('Hostnames cannot be compared.')
+            raise FilterValueError('Hostnames cannot be compared.')
 
         self.a = typecast(attribute, self.a, force_single=True)
         self.b = typecast(attribute, self.b, force_single=True)
@@ -372,7 +374,7 @@ class Between(BaseFilter):
         if 'a' in obj and 'b' in obj:
             return cls(obj['a'], obj['b'])
 
-        raise ValueError('Invalid object for Between')
+        raise FilterValueError('Invalid object for Between')
 
 
 class Not(BaseFilter):
@@ -410,7 +412,7 @@ class Not(BaseFilter):
         if 'filter' in obj:
             return cls(filter_from_obj(obj['filter']))
 
-        raise ValueError('Invalid object for Not')
+        raise FilterValueError('Invalid object for Not')
 
 
 class Startswith(BaseFilter):
@@ -458,7 +460,7 @@ class Startswith(BaseFilter):
     def from_obj(cls, obj):
         if 'value' in obj and isinstance(obj['value'], basestring):
             return cls(obj['value'])
-        raise ValueError('Invalid object for Startswith')
+        raise FilterValueError('Invalid object for Startswith')
 
 
 class InsideNetwork(NetworkFilter):
@@ -504,7 +506,7 @@ class InsideNetwork(NetworkFilter):
         if 'networks' in obj and isinstance(obj['networks'], (tuple, list)):
             return cls(*obj['networks'])
 
-        raise ValueError('Invalid object for InsideNetwork')
+        raise FilterValueError('Invalid object for InsideNetwork')
 
 
 class PrivateIP(NetworkFilter, NoArgFilter):
@@ -567,7 +569,7 @@ class Optional(OptionalFilter):
         if 'filter' in obj:
             return cls(filter_from_obj(obj['filter']))
 
-        raise ValueError('Invalid object for Optional')
+        raise FilterValueError('Invalid object for Optional')
 
 
 class Empty(OptionalFilter):
@@ -605,12 +607,12 @@ def filter_from_obj(obj):
     if not (isinstance(obj, dict) and
             'name' in obj and
             isinstance(obj['name'], basestring)):
-        raise ValueError('Invalid filter object')
+        raise FilterValueError('Invalid filter object')
 
     try:
         return filter_classes[obj['name']].from_obj(obj)
     except KeyError:
-        raise ValueError('No such filter: {0}'.format(obj['name']))
+        raise FilterValueError('No such filter: {0}'.format(obj['name']))
 
 
 filter_classes = {
