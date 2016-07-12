@@ -10,12 +10,6 @@ from serveradmin.serverdb.models import Attribute, Servertype, Segment, Project
 lookups = local()
 
 
-# The base exception.  Ideally, the callers should not except it, but
-# finer-grained exceptions inherited from it.
-class DatasetError(Exception):
-    pass
-
-
 class ServerTableSpecial(object):
     def __init__(self, field, unique=False):
         self.field = field

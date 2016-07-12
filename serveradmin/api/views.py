@@ -129,7 +129,6 @@ def dataset_commit(request, app, data):
             }
     except (
         ValueError,
-        CommitError,
         Server.DoesNotExist,
         ValidationError,
     ) as error:
@@ -171,7 +170,6 @@ def dataset_create(request, app, data):
         }
     except (
         ValueError,
-        CommitError,
         Server.DoesNotExist,
         ValidationError,
     ) as error:

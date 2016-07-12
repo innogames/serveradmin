@@ -2,9 +2,10 @@ from collections import defaultdict
 import json
 
 from django.db import IntegrityError
+from django.core.exceptions import ValidationError
 
 from adminapi.utils.json import json_encode_extra
-from serveradmin.dataset.base import lookups, DatasetError, ServerTableSpecial
+from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.typecast import typecast
 from serveradmin.hooks.slots import HookSlot
 from serveradmin.serverdb.models import (
@@ -49,7 +50,7 @@ class Commit(object):
             ))
 
 
-class CommitError(DatasetError):
+class CommitError(ValidationError):
     pass
 
 

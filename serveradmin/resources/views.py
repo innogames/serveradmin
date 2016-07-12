@@ -1,5 +1,6 @@
 import collections
 
+from django.core.exceptions import ValidationError
 from django.http import HttpResponseBadRequest
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
@@ -11,7 +12,6 @@ import django_urlauth.utils
 from adminapi.utils.parse import parse_query
 from serveradmin.graphite.models import Collection, NumericCache
 from serveradmin.dataset import query, filters
-from serveradmin.dataset.base import DatasetError
 from serveradmin.serverdb.models import Servertype, Segment
 
 @login_required
@@ -62,7 +62,7 @@ def index(request):
                 })
                 return TemplateResponse(request, 'resources/index.html',
                         template_info)
-        except (ValueError, DatasetError), e:
+        except (ValueError, ValidationError), e:
             template_info.update({
                 'error': e.message
             })

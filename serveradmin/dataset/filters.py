@@ -5,7 +5,9 @@ from datetime import datetime
 from decimal import Decimal
 from ipaddress import IPv4Address, IPv6Address, ip_network
 
-from serveradmin.dataset.base import lookups, DatasetError
+from django.core.exceptions import ValidationError
+
+from serveradmin.dataset.base import lookups
 from serveradmin.dataset.typecast import typecast
 from serveradmin.serverdb.models import (
     ServertypeAttribute,
@@ -14,7 +16,7 @@ from serveradmin.serverdb.models import (
 )
 
 
-class FilterValueError(DatasetError):
+class FilterValueError(ValidationError):
     pass
 
 
