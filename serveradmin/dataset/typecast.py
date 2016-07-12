@@ -3,9 +3,12 @@ from datetime import datetime
 from decimal import Decimal
 from ipaddress import IPv4Address, IPv6Address
 
+from django.core.exceptions import ValidationError
+
 _to_datetime_re = re.compile(
     r'(\d{4})-(\d{1,2})-(\d{1,2})(T(\d{1,2}):(\d{1,2})(:(\d{1,2}))?)?'
 )
+
 
 def _to_datetime(x):
 
@@ -21,7 +24,7 @@ def _to_datetime(x):
 
         match = _to_datetime_re.match(x)
         if not match:
-            raise ValueError('Could not cast {0!r} to datetime'.format(x))
+            raise ValidationError('Could not cast {0!r} to datetime'.format(x))
 
         hour, minute, second = 0, 0, 0
         if match.group(5):
@@ -39,11 +42,12 @@ def _to_datetime(x):
             second,
         )
 
-    raise ValueError('Could not cast {0!r} to datetime', x)
+    raise ValidationError('Could not cast {0!r} to datetime', x)
 
 _hex_sep = '([a-fA-F0-9]{,2})[^a-fA-Z0-9]'
 _mac_re = re.compile('^' + _hex_sep * 5 + '([a-fA-F0-9]{,2})$')
 _mac_re_nosep = re.compile('^[a-fA-F0-9]{12}$')
+
 
 def _to_mac(mac):
 
@@ -56,7 +60,7 @@ def _to_mac(mac):
         mac_lower = mac.lower()
         return u':'.join(mac_lower[i:i+2] for i in xrange(6))
 
-    raise ValueError(u'Invalid MAC "{0}"'.format(mac))
+    raise ValidationError(u'Invalid MAC "{0}"'.format(mac))
 
 _typecast_fns = {
     'integer': int,
@@ -70,6 +74,7 @@ _typecast_fns = {
     'number': Decimal,
 }
 
+
 def typecast(attribute, value, force_single=False):
     if value is None:
         return value
@@ -78,16 +83,20 @@ def typecast(attribute, value, force_single=False):
 
     if attribute.multi and not force_single:
         if not isinstance(value, (list, set)):
-            raise ValueError('Attr is multi, but value is not a list/set')
+            raise ValidationError('Attr is multi, but value is not a list/set')
 
         return set(typecast_fn(x) for x in value)
 
-    return typecast_fn(value)
+    try:
+        return typecast_fn(value)
+    except ValueError as error:
+        raise ValidationError(str(error))
 
 _displaycast_fns = {
     'datetime': lambda x: x.strftime('%Y-%m-%dT%H:%M'),
     'boolean': lambda x: u'true' if x else u'false',
 }
+
 
 def displaycast(attribute, value):
 
@@ -95,7 +104,7 @@ def displaycast(attribute, value):
 
     if attribute.multi:
         if not isinstance(value, (list, set)):
-            raise ValueError('Attr is multi, but value is not a list/set')
+            raise ValidationError('Attr is multi, but value is not a list/set')
 
         result = [displaycast_fn(x) for x in value]
         result.sort()
