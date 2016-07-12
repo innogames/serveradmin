@@ -173,9 +173,6 @@ def list_and_edit(request, mode='list'):
     if mode == 'edit' and request.POST:
         attrs = set(request.POST.getlist('attr'))
         for attr in attrs:
-            if attr in (a.pk for a in lookups.special_attributes):
-                continue
-
             attribute = lookups.attributes[attr]
 
             if attribute.multi:
@@ -193,9 +190,6 @@ def list_and_edit(request, mode='list'):
                 except ValueError:
                     invalid_attrs.add(attr)
             server[attr] = value
-        for attr in server.keys():
-            if attr not in attrs:
-                del server[attr]
 
         if not invalid_attrs:
             try:
@@ -373,8 +367,8 @@ def new_server(request):
     else:
         if clone_from:
             form = ServerForm(initial={
-                'servertype': clone_from['servertype'],
-                'project': clone_from['project'],
+                '_servertype': clone_from['servertype'],
+                '_project': clone_from['project'],
                 'hostname': clone_from['hostname'],
                 'intern_ip': clone_from['intern_ip'],
             })
