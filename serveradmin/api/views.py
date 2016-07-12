@@ -131,6 +131,7 @@ def dataset_commit(request, app, data):
         ValueError,
         CommitError,
         Server.DoesNotExist,
+        ValidationError,
     ) as error:
         return {
                 'status': 'error',
