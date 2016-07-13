@@ -309,7 +309,7 @@ def get_values(request):
     except KeyError:
         raise Http404
 
-    queryset = ServerStringAttribute.objects.filter(attribute=attribute)
+    queryset = ServerStringAttribute.objects.filter(_attribute=attribute)
     value_queryset = queryset.values('value').distinct().order_by('value')
 
     return TemplateResponse(request, 'servershell/values.html', {
