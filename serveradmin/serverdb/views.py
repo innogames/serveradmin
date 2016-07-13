@@ -14,7 +14,6 @@ from serveradmin.dataset.commit import CommitError
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
-    ServerStringAttribute,
     ServertypeAttribute,
     ChangeCommit,
     ChangeAdd,
@@ -144,10 +143,6 @@ def delete_servertype_attr(request, servertype_name, attrib_name):
     )
 
     if request.method == 'POST' and 'confirm' in request.POST:
-        ServerStringAttribute.objects.filter(
-            server__servertype=stype_attr.servertype,
-            attrib=stype_attr.attrib
-        ).delete()
         stype_attr.delete()
         messages.success(request, 'Deleted attribute {0}'.format(attrib_name))
         return redirect('serverdb_view_servertype', servertype_name)
