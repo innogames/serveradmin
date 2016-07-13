@@ -1,3 +1,7 @@
+class HookError(Exception):
+    pass
+
+
 class HookSlot(object):
     def __init__(self, name, **params):
         for param, param_type in params.iteritems():

@@ -44,7 +44,7 @@ class Commit(object):
                 servers=self.servers.values(),
                 changes=self.changed_servers,
             )
-        except ValueError as error:
+        except CommitIncomplete as error:
             self.warnings.append('Commit hook failed: {}'.format(
                 unicode(error)
             ))
