@@ -25,11 +25,9 @@ class AddAttributeForm(forms.ModelForm):
 
 
 class EditServertypeAttributeForm(forms.ModelForm):
-    attrib_default = forms.CharField(label='Default', required=False)
-
     class Meta:
         model = ServertypeAttribute
-        fields = ('required', 'attrib_default', 'regexp')
+        fields = ('required', 'default_value', 'regexp')
         widgets = {
             'regexp': forms.TextInput(attrs={'size': 50})
         }
