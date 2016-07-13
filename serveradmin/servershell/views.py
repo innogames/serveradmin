@@ -83,8 +83,12 @@ def autocomplete(request):
 @login_required
 def get_results(request):
     term = request.GET.get('term', '')
-    shown_attributes = request.GET.get('shown_attributes')
-    shown_attributes = shown_attributes.split(',') if shown_attributes else []
+    shown_attributes = request.GET.get('shown_attributes').split(',')
+
+    # We need servertypes to return the attribute properties.
+    if 'servertype' not in shown_attributes:
+        shown_attributes.append('servertype')
+
     try:
         offset = int(request.GET.get('offset', '0'))
         limit = int(request.GET.get('limit', '0'))
