@@ -132,7 +132,7 @@ def create_server(
                     if not lookup.regexp_match(unicode(val)):
                         violations_regexp.append(lookup.attribute.pk)
             else:
-                if lookup.regexp_match(value):
+                if not lookup.regexp_match(value):
                     violations_regexp.append(lookup.attribute.pk)
 
     # Check for attributes that are not defined on this servertype
