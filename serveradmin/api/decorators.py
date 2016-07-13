@@ -7,20 +7,26 @@ try:
 except ImportError:
     import json
 
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
+from django.http import (
+    HttpResponse,
+    HttpResponseBadRequest,
+    HttpResponseForbidden,
+)
 from django.core.urlresolvers import reverse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.sites.models import RequestSite
+from django.contrib.sites.shortcuts import get_current_site
 from django.utils.crypto import constant_time_compare
 
 from adminapi.utils.json import json_encode_extra
 from serveradmin.apps.models import Application, ApplicationException
 from serveradmin.api import AVAILABLE_API_FUNCTIONS
 
+
 def _calc_security_token(auth_token, timestamp, content):
     message = ':'.join((str(timestamp), content))
     return hmac.new(auth_token, message, hashlib.sha1).hexdigest()
+
 
 def api_view(view):
     @csrf_exempt
@@ -49,7 +55,10 @@ def api_view(view):
             )
 
         expired = timestamp + 300 < time.time()
-        if not constant_time_compare(real_security_token, security_token) or expired:
+        if (
+            not constant_time_compare(real_security_token, security_token) or
+            expired
+        ):
             return HttpResponseForbidden(
                     'Invalid or expired security token',
                     content_type='text/plain',
@@ -65,7 +74,7 @@ def api_view(view):
                 ).count()
 
             if not has_exception:
-                domain = RequestSite(request).domain
+                domain = get_current_site(request).domain
                 full_url = reverse('apps_request_exception', args=[app.app_id])
                 exception_url = 'https://{0}{1}'.format(domain, full_url)
                 forbidden_text = (
@@ -89,6 +98,7 @@ def api_view(view):
         return HttpResponse(return_value, content_type='application/x-json')
 
     return update_wrapper(_wrapper, view)
+
 
 def api_function(group, name=None):
     def inner_decorator(fn):
