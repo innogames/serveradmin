@@ -11,7 +11,6 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.utils.timezone import now
 from django.contrib.auth.models import User
-from django.conf import settings
 
 from serveradmin.common import dbfields
 from serveradmin.apps.models import Application
@@ -274,14 +273,6 @@ class Attribute(LookupModel):
             for sa in ServertypeAttribute.objects.all()
             if sa.attribute == self
         ]
-
-    def external_link(self):
-        if self.help_link:
-            return self.help_link
-        return self.search_link()
-
-    def search_link(self):
-        return settings.ATTRIBUTE_WIKI_LINK.format(attr=self.pk)
 
 
 class ServertypeAttribute(LookupModel):

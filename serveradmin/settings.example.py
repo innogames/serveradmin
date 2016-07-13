@@ -208,6 +208,4 @@ GRAPHITE_SPRITE_PARAMS = ('width=' + str(GRAPHITE_SPRITE_WIDTH) + '&' +
                           'height=' + str(GRAPHITE_SPRITE_HEIGHT) + '&' +
                           'graphOnly=true')
 
-ATTRIBUTE_WIKI_LINK = 'https://wiki.innogames.de/dosearchsite.action?queryString={attr}&startIndex=0&where=SystemAdministration'
-
 raise Exception('Set SECRET_KEY and DATABASE PASSWORD and remove this!')
