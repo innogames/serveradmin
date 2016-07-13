@@ -94,6 +94,14 @@ def get_ranges_by_type(segment, type):
     range_objects = IPRange.objects.filter(segment=segment, ip_type=type)
     return [_build_range_object(r) for r in range_objects]
 
+
+@api_function(group='ip')
+def get_private_ranges():
+    return [
+        _build_range_object(r) for r in IPRange.objects.filter(ip_type='ip')
+    ]
+
+
 @api_function(group='ip')
 def get_matching_ranges(ip_string):
     """Return the IP range(s) that belong to the given IP.
