@@ -9,6 +9,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
+from django.core.signals import request_started
 from django.utils.timezone import now
 from django.contrib.auth.models import User
 
@@ -78,7 +79,10 @@ class LookupManager(models.Manager):
         super(LookupManager, self).__init__()
         self.reset_cache()
 
-    def reset_cache(self):
+        # Make sure the cache is clean on every new request.
+        request_started.connect(self.reset_cache)
+
+    def reset_cache(self, **kwargs):
         self._lookup_dict = None
 
     def all(self):
