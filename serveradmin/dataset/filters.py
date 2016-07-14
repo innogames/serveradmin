@@ -672,7 +672,11 @@ def value_to_sql(attribute, value):
 
 def _condition_sql(attribute, template):
     if attribute.special:
-        return template.format(attribute.special.field)
+        field = attribute.special.field
+        if field.startswith('_'):
+            field = field[1:]
+
+        return template.format(field)
 
     if attribute.reversed_attribute:
         attribute = attribute.reversed_attribute

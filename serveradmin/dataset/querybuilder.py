@@ -14,10 +14,11 @@ class QueryBuilder(object):
         # attributes.
         assert attribute.special
 
-        self.sql_order_by.append(u'{0} {1}'.format(
-            attribute.special.field,
-            'DESC' if direction.upper() == 'DESC' else 'ASC',
-        ))
+        field = attribute.special.field
+        if field.startswith('_'):
+            field = field[1:]
+
+        self.sql_order_by.append(field + ' ' + direction.upper())
 
     def add_limit(self, limit):
         self.sql_limit = limit

@@ -35,7 +35,7 @@ def _read_lookups(sender=None, **kwargs):
                     base=False,
                     multi=False,
                     group='base',
-                    special=ServerTableSpecial(u'server_id'),
+                    special=ServerTableSpecial('server_id'),
                 ),
             Attribute(
                     attribute_id=u'hostname',
@@ -43,7 +43,7 @@ def _read_lookups(sender=None, **kwargs):
                     base=True,
                     multi=False,
                     group='base',
-                    special=ServerTableSpecial(u'hostname', unique=True),
+                    special=ServerTableSpecial('hostname', unique=True),
                 ),
             Attribute(
                     attribute_id=u'servertype',
@@ -51,7 +51,7 @@ def _read_lookups(sender=None, **kwargs):
                     base=True,
                     multi=False,
                     group='base',
-                    special=ServerTableSpecial(u'servertype_id'),
+                    special=ServerTableSpecial('_servertype_id'),
                 ),
             Attribute(
                     attribute_id=u'project',
@@ -59,7 +59,7 @@ def _read_lookups(sender=None, **kwargs):
                     base=True,
                     multi=False,
                     group='base',
-                    special=ServerTableSpecial(u'project_id'),
+                    special=ServerTableSpecial('_project_id'),
                 ),
             Attribute(
                     attribute_id=u'intern_ip',
@@ -67,7 +67,7 @@ def _read_lookups(sender=None, **kwargs):
                     base=True,
                     multi=False,
                     group='base',
-                    special=ServerTableSpecial(u'intern_ip'),
+                    special=ServerTableSpecial('intern_ip'),
                 ),
             Attribute(
                     attribute_id=u'segment',
@@ -75,7 +75,7 @@ def _read_lookups(sender=None, **kwargs):
                     base=True,
                     multi=False,
                     group='base',
-                    special=ServerTableSpecial(u'segment_id'),
+                    special=ServerTableSpecial('_segment_id'),
                 ),
         ]
 
