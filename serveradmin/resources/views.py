@@ -9,16 +9,16 @@ from django.conf import settings
 
 import django_urlauth.utils
 
-from adminapi.utils.parse import parse_query
+from adminapi.utils.parse import ParseQueryError, parse_query
 from serveradmin.graphite.models import Collection, NumericCache
 from serveradmin.dataset import query, filters
 from serveradmin.serverdb.models import Servertype, Segment
 
+
 @login_required
 @ensure_csrf_cookie
 def index(request):
-    """The hardware resources page
-    """
+    """The hardware resources page"""
 
     term = request.GET.get('term', request.session.get('term', ''))
     current_collection = request.GET.get('current_collection', request.session.get('current_collection', 0))
@@ -62,7 +62,7 @@ def index(request):
                 })
                 return TemplateResponse(request, 'resources/index.html',
                         template_info)
-        except (ValueError, ValidationError), e:
+        except (ParseQueryError, ValidationError), e:
             template_info.update({
                 'error': e.message
             })

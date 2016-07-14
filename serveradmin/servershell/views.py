@@ -14,7 +14,7 @@ from django.contrib import messages
 from django.utils.html import mark_safe, escape as escape_html
 
 from adminapi.utils.json import json_encode_extra
-from adminapi.utils.parse import parse_query
+from adminapi.utils.parse import ParseQueryError, parse_query
 from serveradmin.dataset import query, filters
 from serveradmin.dataset.filters import filter_classes
 from serveradmin.dataset.base import lookups
@@ -99,7 +99,6 @@ def get_results(request):
 
     try:
         query_kwargs = parse_query(term, filter_classes)
-
         queryset = query(**query_kwargs)
         queryset.restrict(*shown_attributes)
         if order_by:
@@ -110,7 +109,7 @@ def get_results(request):
 
         results = queryset.get_results()
         num_servers = queryset.get_num_rows()
-    except ValidationError as error:
+    except (ParseQueryError, ValidationError) as error:
         return HttpResponse(json.dumps({
             'status': 'error',
             'message': error.message
@@ -152,8 +151,8 @@ def export(request):
     try:
         query_args = parse_query(term, filter_classes)
         q = query(**query_args).restrict('hostname')
-    except (ValueError, ValidationError), e:
-        return HttpResponse(e.message, status=400)
+    except (ParseQueryError, ValidationError) as error:
+        return HttpResponse(error.message, status=400)
 
     hostnames = u' '.join(server['hostname'] for server in q)
     return HttpResponse(hostnames, content_type='text/plain')

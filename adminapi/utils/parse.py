@@ -1,3 +1,7 @@
+class ParseQueryError(Exception):
+    pass
+
+
 def parse_function_string(args, strict=True):
     state = 'start'
     args_len = len(args)
@@ -22,7 +26,9 @@ def parse_function_string(args, strict=True):
             if args[i] == '\\':
                 if i == args_len - 1:
                     if strict:
-                        raise ValueError('Escape is not allowed at the end')
+                        raise ParseQueryError(
+                            'Escape is not allowed at the end'
+                        )
                 if args[i+1] == '\\':
                     string_buf.append('\\')
                     i += 2
@@ -31,7 +37,7 @@ def parse_function_string(args, strict=True):
                     i += 2
                 else:
                     if strict:
-                        raise ValueError('Invalid escape')
+                        raise ParseQueryError('Invalid escape')
                     i += 1
             elif args[i] == string_type:
                 parsed_args.append(('str', args[string_start:i]))
@@ -56,8 +62,9 @@ def parse_function_string(args, strict=True):
                 state = 'start'
             # Do not parse key inside functions or of preceding token
             # was also a key
-            elif args[i] == '=' and call_depth == 0 and (not parsed_args or
-                    parsed_args[-1][0] != 'key'):
+            elif args[i] == '=' and call_depth == 0 and (
+                not parsed_args or parsed_args[-1][0] != 'key'
+            ):
                 parsed_args.append(('key', args[string_start:i]))
                 state = 'start'
             i += 1
@@ -65,16 +72,19 @@ def parse_function_string(args, strict=True):
         parsed_args.append(('str', args[string_start:]))
     elif state == 'string':
         if strict:
-            raise ValueError('Unterminated string')
+            raise ParseQueryError('Unterminated string')
         else:
             parsed_args.append(('str', args[string_start:]))
 
     return parsed_args
 
+
 def parse_query(term, filter_classes):
     return _parse_query(term, filter_classes)
 
+
 _trigger_re_chars = ('.*', '.+', '[', ']', '|', '\\', '$', '^', '<')
+
 
 def _parse_query(term, filter_classes, hostname=None):
     parsed_args = parse_function_string(term, strict=True)
@@ -86,7 +96,7 @@ def _parse_query(term, filter_classes, hostname=None):
     if token != 'key':
         if hostname:
             # We already parsed a hostname, so we don't expect another one
-            raise ValueError(u"Garbled hostname: {0}".format(hostname))
+            raise ParseQueryError("Garbled hostname: {0}".format(hostname))
 
         term_parts = term.split(None, 1)
         if len(term_parts) == 2:
@@ -130,8 +140,10 @@ def _parse_query(term, filter_classes, hostname=None):
             # Do not allow functions without preceeding key
             # if they are on top level (e.g. call_depth = 0)
             if not stack or (call_depth == 0 and stack[-1][0] != 'key'):
-                raise ValueError('Invalid term: top level function requires '
-                                 'preceding attribute')
+                raise ParseQueryError(
+                    'Invalid term: top level function requires '
+                    'preceding attribute'
+                )
             call_depth += 1
             stack.append(arg)
 
@@ -150,21 +162,25 @@ def _parse_query(term, filter_classes, hostname=None):
             try:
                 instance = filter_classes[fn_name](*fn_args)
             except KeyError:
-                raise ValueError('Invalid function ' + fn_name)
+                raise ParseQueryError('Invalid function ' + fn_name)
             except TypeError:
-                raise ValueError('Invalid function args ' + fn_name)
+                raise ParseQueryError('Invalid function args ' + fn_name)
             stack.append(('instance', instance))
 
         elif token == 'str':
             # Do not allow strings without key or function context
             if not stack or (call_depth == 0 and stack[-1][0] != 'key'):
-                raise ValueError('Invalid term: Top level strings are not '
-                                 'allowed when attributes are used')
+                raise ParseQueryError(
+                    'Invalid term: Top level strings are not '
+                    'allowed when attributes are used'
+                )
             stack.append(arg)
 
     if stack and stack[0][0] == 'key':
         if len(stack) != 2:
-            raise ValueError('Invalid term: Attribute requires one argument')
+            raise ParseQueryError(
+                'Invalid term: Attribute requires one argument'
+            )
         query_args[stack[0][1]] = stack[1][1]
 
     return query_args
