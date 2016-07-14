@@ -2,9 +2,10 @@ from collections import defaultdict
 import json
 
 from django.db import IntegrityError
+from django.core.exceptions import ValidationError
 
 from adminapi.utils.json import json_encode_extra
-from serveradmin.dataset.base import lookups, DatasetError, ServerTableSpecial
+from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.typecast import typecast
 from serveradmin.hooks.slots import HookSlot
 from serveradmin.serverdb.models import (
@@ -43,13 +44,13 @@ class Commit(object):
                 servers=self.servers.values(),
                 changes=self.changed_servers,
             )
-        except ValueError as error:
+        except CommitIncomplete as error:
             self.warnings.append('Commit hook failed: {}'.format(
                 unicode(error)
             ))
 
 
-class CommitError(DatasetError):
+class CommitError(ValidationError):
     pass
 
 

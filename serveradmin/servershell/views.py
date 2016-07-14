@@ -16,7 +16,6 @@ from django.utils.html import mark_safe, escape as escape_html
 from adminapi.utils.json import json_encode_extra
 from adminapi.utils.parse import parse_query
 from serveradmin.dataset import query, filters
-from serveradmin.dataset.base import DatasetError
 from serveradmin.dataset.filters import filter_classes
 from serveradmin.dataset.base import lookups
 from serveradmin.dataset.commit import (
@@ -29,7 +28,6 @@ from serveradmin.dataset.create import create_server
 from serveradmin.serverdb.forms import ServerForm
 from serveradmin.serverdb.models import (
     ServertypeAttribute,
-    Server,
     ServerStringAttribute,
 )
 
@@ -71,7 +69,7 @@ def autocomplete(request):
             queryset.restrict('hostname')
             queryset.limit(10)
             autocomplete_list += (h['hostname'] for h in queryset)
-        except DatasetError:
+        except ValidationError:
             pass    # If there is no valid query, just don't auto-complete
 
     return HttpResponse(
@@ -112,7 +110,7 @@ def get_results(request):
 
         results = queryset.get_results()
         num_servers = queryset.get_num_rows()
-    except DatasetError as error:
+    except ValidationError as error:
         return HttpResponse(json.dumps({
             'status': 'error',
             'message': error.message
@@ -154,7 +152,7 @@ def export(request):
     try:
         query_args = parse_query(term, filter_classes)
         q = query(**query_args).restrict('hostname')
-    except (ValueError, DatasetError), e:
+    except (ValueError, ValidationError), e:
         return HttpResponse(e.message, status=400)
 
     hostnames = u' '.join(server['hostname'] for server in q)
@@ -165,7 +163,7 @@ def list_and_edit(request, mode='list'):
     try:
         object_id = request.GET['object_id']
         server = query(object_id=object_id).get()
-    except (KeyError, DatasetError):
+    except (KeyError, ValidationError):
         raise Http404
 
     if not request.user.has_perm('dataset.change_serverobject'):
@@ -287,8 +285,6 @@ def commit(request):
             commit_changes(commit, user=request.user)
         except (
             ValueError,
-            DatasetError,
-            Server.DoesNotExist,
             ValidationError,
         ) as error:
             result = {
@@ -332,7 +328,7 @@ def new_server(request):
     if 'clone_from' in request.REQUEST:
         try:
             clone_from = query(hostname=request.REQUEST['clone_from']).get()
-        except DatasetError:
+        except ValidationError:
             raise Http404
     else:
         clone_from = None
