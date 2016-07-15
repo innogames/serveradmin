@@ -317,7 +317,6 @@ def _validate_attributes(changed_servers, servers, servertype_attributes):
         attributes = servertype_attributes[server['servertype']]
 
         for attribute_id, change in changes.iteritems():
-
             # If servertype is attempted to be changed, we immediately
             # error out.
             if attribute_id == 'servertype':
@@ -327,12 +326,13 @@ def _validate_attributes(changed_servers, servers, servertype_attributes):
             if attribute_id in special_attribute_ids:
                 continue
 
-            # No such attribute.
-            if attribute_id not in attributes:
+            if (
+                # No such attribute.
+                attribute_id not in attributes or
+                # Attributes related via another one, cannot be changed.
+                attributes[attribute_id].related_via_attribute
+            ):
                 violations.append((server_id, attribute_id))
-
-            # Attributes related via another one, cannot be changed.
-            if attributes[attribute_id].related_via_attribute:
                 violations.append((server_id, attribute_id))
 
     return violations
