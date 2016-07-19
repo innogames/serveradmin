@@ -2,6 +2,7 @@ import re
 import json
 import time
 
+from collections import OrderedDict
 from datetime import datetime
 from ipaddress import IPv4Address, IPv6Address
 
@@ -88,9 +89,9 @@ class LookupManager(models.Manager):
     def all(self):
         """Override all method to cache all objects"""
         if not self._lookup_dict:
-            self._lookup_dict = {
-                o.pk: o for o in super(LookupManager, self).all()
-            }
+            self._lookup_dict = OrderedDict(
+                (o.pk, o) for o in super(LookupManager, self).all()
+            )
         return self._lookup_dict.values()
 
     def get(self, *args, **kwargs):
