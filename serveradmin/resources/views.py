@@ -21,9 +21,15 @@ def index(request):
     """The hardware resources page"""
 
     term = request.GET.get('term', request.session.get('term', ''))
-    current_collection = request.GET.get('current_collection', request.session.get('current_collection', 0))
-    current_segment    = request.GET.get('current_segment',    request.session.get('current_segment',   ''))
-    current_stype      = request.GET.get('current_stype',      request.session.get('current_stype',     ''))
+    current_collection = request.GET.get(
+        'current_collection', request.session.get('current_collection', 0)
+    )
+    current_segment = request.GET.get(
+        'current_segment', request.session.get('current_segment', '')
+    )
+    current_stype = request.GET.get(
+        'current_stype', request.session.get('current_stype', '')
+    )
 
     try:
         current_collection = int(current_collection)
@@ -34,7 +40,11 @@ def index(request):
         'search_term': term,
         'segments': Segment.objects.all(),
         'servertypes': Servertype.objects.all(),
-        'collections': Collection.objects.filter(overview=True).order_by('attribute'),
+        'collections': (
+            Collection.objects
+            .filter(overview=True)
+            .order_by('attribute')
+        ),
         'current_collection': current_collection,
         'current_segment': current_segment,
         'current_stype': current_stype,
@@ -60,24 +70,27 @@ def index(request):
                 template_info.update({
                     'understood': understood,
                 })
-                return TemplateResponse(request, 'resources/index.html',
-                        template_info)
-        except (ParseQueryError, ValidationError), e:
+                return TemplateResponse(
+                    request, 'resources/index.html', template_info
+                )
+        except (ParseQueryError, ValidationError) as error:
             template_info.update({
-                'error': e.message
+                'error': error.message
             })
-            return TemplateResponse(request, 'resources/index.html',
-                    template_info)
+            return TemplateResponse(
+                request, 'resources/index.html', template_info
+            )
     else:
-        understood = query().get_representation().as_code() # It's lazy :-)
+        understood = query().get_representation().as_code()
 
     # If a graph collection was specified, use it.
     if current_collection > 0:
         collection = Collection.objects.filter(id=current_collection)[0]
     else:
-    # Otherwise use the 1st one found. Now that is ugly! But it is the one for Dom0s.
+        # Otherwise use the 1st one found.  Now that is ugly!  But it is
+        # the one for Dom0s.
         collection = Collection.objects.filter(overview=True)[0]
-    print "collection:", collection
+
     templates = list(collection.template_set.all())
     variations = list(collection.variation_set.all())
 
@@ -110,7 +123,12 @@ def index(request):
 
     if len(hostnames) > 0:
         query_kwargs['hostname'] = filters.Any(*hostnames)
-    for server in query(**query_kwargs).restrict('hostname', 'servertype').order_by('hostname'):
+
+    for server in (
+        query(**query_kwargs)
+        .restrict('hostname', 'servertype')
+        .order_by('hostname')
+    ):
         hosts[server['hostname']] = {
             'hostname': server['hostname'],
             'servertype': server['servertype'],
@@ -121,13 +139,20 @@ def index(request):
     # Add guests for the table cells.
     guests = False
     query_kwargs = {'xen_host': filters.Any(*hosts.keys()), 'cancelled': False}
-    for server in query(**query_kwargs).restrict('hostname', 'xen_host').order_by('hostname'):
+
+    for server in (
+        query(**query_kwargs)
+        .restrict('hostname', 'xen_host')
+        .order_by('hostname')
+    ):
         guests = True
         hosts[server['xen_host']]['guests'].append(server['hostname'])
 
     # Add cached numerical values to the table cells.
     for numericCache in NumericCache.objects.filter(hostname__in=hosts.keys()):
-        index = [c['name'] for c in columns].index(unicode(numericCache.template))
+        index = [c['name'] for c in columns].index(
+            unicode(numericCache.template)
+        )
         column = dict(columns[index])
         column['value'] = numericCache.value
         hosts[numericCache.hostname]['columns'][index] = column
@@ -141,6 +166,7 @@ def index(request):
         'GRAPHITE_SPRITE_URL': settings.GRAPHITE_SPRITE_URL,
     })
     return TemplateResponse(request, 'resources/index.html', template_info)
+
 
 @login_required
 def graph_popup(request):
@@ -168,27 +194,27 @@ def graph_popup(request):
                 'image': url
             })
 
+
 @login_required
 def segments(request):
 
     counters = {}
     for server in query().restrict(
-            'segment',
-            'servertype',
-            'project',
-            'disk_size_gib',
-            'memory',
-            'num_cpu',
-        ):
-
+        'segment',
+        'servertype',
+        'project',
+        'disk_size_gib',
+        'memory',
+        'num_cpu',
+    ):
         if server['segment'] not in counters:
             counters[server['segment']] = [
-                    dict(), # For servertypes
-                    dict(), # For project
-                    0,      # For disk_size_gib
-                    0,      # For memory
-                    0,      # For num_cpu
-                ]
+                dict(),     # For servertypes
+                dict(),     # For project
+                0,          # For disk_size_gib
+                0,          # For memory
+                0,          # For num_cpu
+            ]
 
         if server['servertype'] not in counters[server['segment']][0]:
             counters[server['segment']][0][server['servertype']] = 0
@@ -212,14 +238,14 @@ def segments(request):
     for segment in Segment.objects.all():
 
         item = {
-                'name': segment.segment_id,
-                'description': segment.description,
-                'servertypes': [],
-                'projects': [],
-                'disk_size_gib': 0,
-                'memory': 0,
-                'num_cpu': 0,
-            }
+            'name': segment.segment_id,
+            'description': segment.description,
+            'servertypes': [],
+            'projects': [],
+            'disk_size_gib': 0,
+            'memory': 0,
+            'num_cpu': 0,
+        }
 
         if segment.segment_id in counters:
             item['servertypes'] = counters[segment.segment_id][0].items()
@@ -233,5 +259,5 @@ def segments(request):
         items.append(item)
 
     return TemplateResponse(request, 'resources/segments.html', {
-            'segments': items,
-        })
+        'segments': items,
+    })
