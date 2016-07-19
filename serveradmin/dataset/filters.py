@@ -465,7 +465,10 @@ class Startswith(BaseFilter):
 
 class InsideNetwork(NetworkFilter):
     def __init__(self, *networks):
-        self.networks = [ip_network(n) for n in networks]
+        try:
+            self.networks = [ip_network(n) for n in networks]
+        except ValueError as error:
+            raise FilterValueError(str(error))
 
     def __repr__(self):
         return 'InsideNetwork({0})'.format(
