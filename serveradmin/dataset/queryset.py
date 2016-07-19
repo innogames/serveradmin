@@ -252,21 +252,6 @@ class QuerySet(BaseQuerySet):
                 self._results[server_id] = server_object
                 servers_by_type[stype].append(server_object)
 
-        # Initialise multi attributes
-        for sa in ServertypeAttribute.objects.all():
-            if (
-                sa.servertype.pk in servers_by_type and
-                sa.attribute.multi and (
-                    not self._restrict or sa.attribute.pk in self._restrict
-                )
-            ):
-                for server in servers_by_type[sa.servertype.pk]:
-                    dict.__setitem__(server, sa.attribute.pk, set())
-
-        # Return early if there are no servers (= empty dict)
-        if not self._results:
-            return
-
         self._select_attributes(servers_by_type)
         self._add_attributes(servers_by_type)
         if self._order_by and not self._order_by.special:
@@ -274,6 +259,7 @@ class QuerySet(BaseQuerySet):
 
     def _select_attributes(self, servers_by_type):
         self._attributes_by_type = defaultdict(set)
+        self._multi_attributes = defaultdict(list)
         self._reverse_attributes = list()
         self._related_servertype_attributes = []
 
@@ -285,6 +271,10 @@ class QuerySet(BaseQuerySet):
                 )
             ):
                 self._attributes_by_type[sa.attribute.type].add(sa.attribute)
+                if sa.attribute.multi:
+                    self._multi_attributes[
+                        sa.servertype.pk
+                    ].append(sa.attribute)
                 if sa.related_via_attribute:
                     self._select_related_attribute(sa)
 
@@ -300,6 +290,10 @@ class QuerySet(BaseQuerySet):
                     reversed_attribute.target_servertype.pk in servers_by_type
                 ):
                     self._reverse_attributes.append(attribute)
+                    if attribute.multi:
+                        self._multi_attributes[
+                            reversed_attribute.target_servertype.pk
+                        ].append(attribute)
 
     def _select_related_attribute(self, servertype_attribute):
 
@@ -321,10 +315,21 @@ class QuerySet(BaseQuerySet):
                 _attribute_id=related_via_attribute.pk,
             ).all()
             if objects and objects[0].related_via_attribute:
-                self._select_related_attribute(objects[0])
+                servertype_attribute = objects[0]
+                self._select_related_attribute(servertype_attribute)
+                if servertype_attribute.attribute.multi:
+                    self._multi_attributes[
+                        servertype_attribute.servertype.pk
+                    ].append(servertype_attribute.attribute)
 
     def _add_attributes(self, servers_by_type):
         """Add the attributes to the results"""
+
+        # Step 0: Initialize the multi attributes
+        for servertype_id, attributes in self._multi_attributes.items():
+            for server in servers_by_type[servertype_id]:
+                for attribute in attributes:
+                    dict.__setitem__(server, attribute.pk, set())
 
         # Step 1: Query the materialized attributes by their types
         for key, attributes in self._attributes_by_type.items():
