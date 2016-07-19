@@ -391,7 +391,9 @@ class QuerySet(BaseQuerySet):
     def _sort_and_limit(self):
         items = self._results.items()
         items.sort(
-            key=lambda x: x[1].get(self._order_by.pk),
+            key=lambda x: (
+                self._order_by.pk in x[1], x[1].get(self._order_by.pk)
+            ),
             reverse=(self._order_dir == 'desc'),
         )
 
