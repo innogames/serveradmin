@@ -1,4 +1,4 @@
-import collections
+from collections import OrderedDict, defaultdict
 
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseBadRequest
@@ -12,7 +12,7 @@ import django_urlauth.utils
 from adminapi.utils.parse import ParseQueryError, parse_query
 from serveradmin.graphite.models import Collection, NumericCache
 from serveradmin.dataset import query, filters
-from serveradmin.serverdb.models import Servertype, Segment
+from serveradmin.serverdb.models import Project, Servertype, Segment
 
 
 @login_required
@@ -113,7 +113,7 @@ def index(request):
                 })
                 graph_index += 1
 
-    hosts = collections.OrderedDict()
+    hosts = OrderedDict()
 
     # If a graph collection was given, do not limit to physical servers.
     if current_collection > 0:
@@ -260,4 +260,62 @@ def segments(request):
 
     return TemplateResponse(request, 'resources/segments.html', {
         'segments': items,
+    })
+
+
+@login_required
+def projects(request):
+
+    counters = {}
+    for server in query().restrict(
+        'project',
+        'servertype',
+        'segment',
+        'disk_size_gib',
+        'memory',
+        'num_cpu',
+    ):
+        if server['project'] not in counters:
+            counters[server['project']] = [
+                defaultdict(int),   # For servertypes
+                defaultdict(int),   # For segments
+                0,                  # For disk_size_gib
+                0,                  # For memory
+                0,                  # For num_cpu
+            ]
+        counters[server['project']][0][server['servertype']] += 1
+        counters[server['project']][1][server['segment']] += 1
+        if 'disk_size_gib' in server:
+            counters[server['project']][2] += server['disk_size_gib']
+        if 'memory' in server:
+            counters[server['project']][3] += server['memory']
+        if 'num_cpu' in server:
+            counters[server['project']][4] += server['num_cpu']
+
+    items = []
+    for project in Project.objects.all():
+        item = {
+            'project_id': project.project_id,
+            'subdomain': project.subdomain,
+            'responsible_admin': project.responsible_admin.get_full_name(),
+            'servertypes': [],
+            'segments': [],
+            'disk_size_gib': 0,
+            'memory': 0,
+            'num_cpu': 0,
+        }
+
+        if project.project_id in counters:
+            item['servertypes'] = counters[project.project_id][0].items()
+            item['servertypes'].sort()
+            item['segments'] = counters[project.project_id][1].items()
+            item['segments'].sort()
+            item['disk_size_gib'] = counters[project.project_id][2]
+            item['memory'] = counters[project.project_id][3]
+            item['num_cpu'] = counters[project.project_id][4]
+
+        items.append(item)
+
+    return TemplateResponse(request, 'resources/projects.html', {
+        'projects': items,
     })
