@@ -130,7 +130,7 @@ def get_results(request):
     )
     avail_attributes = {s: dict(specials) for s in servertype_ids}
     for sa in ServertypeAttribute.objects.all():
-        if sa.servertype.pk in servertype_ids:
+        if sa.servertype.pk in servertype_ids and not sa.related_via_attribute:
             avail_attributes[sa.servertype.pk][sa.attribute.pk] = {
                 'regexp': sa.regexp,
                 'default': sa.default_value,
