@@ -216,10 +216,13 @@ def list_and_edit(request, mode='list'):
     fields = []
     fields_set = set()
     for key, value in server.iteritems():
-        if key in (a.pk for a in lookups.special_attributes):
+        if key not in servertype_attributes:
             continue
-        fields_set.add(key)
         servertype_attribute = servertype_attributes[key]
+        if servertype_attribute.related_via_attribute:
+            continue
+
+        fields_set.add(key)
         fields.append({
             'key': key,
             'value': displaycast(servertype_attribute.attribute, value),

@@ -8,6 +8,7 @@ from ipaddress import (
 )
 
 from serveradmin.serverdb.models import (
+    Attribute,
     ServertypeAttribute,
     Server,
     ChangeCommit,
@@ -90,50 +91,63 @@ def create_server(
         if key in real_attributes:
             del real_attributes[key]
 
+    # Ignore the reverse attributes
+    for attribute in Attribute.objects.all():
+        if attribute.reversed_attribute and attribute.pk in real_attributes:
+            del real_attributes[attribute.pk]
+
     violations_regexp = []
     violations_required = []
-    for lookup in servertype.used_attributes.all():
+    for sa in ServertypeAttribute.objects.all():
+        if sa.servertype != servertype:
+            continue
+
+        # Ignore the related via attributes
+        if sa.related_via_attribute:
+            if sa.attribute.pk in real_attributes:
+                del real_attributes[sa.attribute.pk]
+            continue
 
         # Handle not existing attributes (fill defaults, validate require)
-        if lookup.attribute.pk not in real_attributes:
-            if lookup.attribute.multi:
-                if lookup.default_value in ('', None):
-                    real_attributes[lookup.attribute.pk] = []
+        if sa.attribute.pk not in real_attributes:
+            if sa.attribute.multi:
+                if sa.default_value in ('', None):
+                    real_attributes[sa.attribute.pk] = []
                 else:
-                    real_attributes[lookup.attribute.pk] = _type_cast_default(
-                        lookup.attribute,
-                        lookup.default_value,
+                    real_attributes[sa.attribute.pk] = _type_cast_default(
+                        sa.attribute,
+                        sa.default_value,
                     )
-            elif lookup.required:
-                if fill_defaults and lookup.default_value not in ('', None):
-                    real_attributes[lookup.attribute.pk] = _type_cast_default(
-                        lookup.attribute,
-                        lookup.default_value,
+            elif sa.required:
+                if fill_defaults and sa.default_value not in ('', None):
+                    real_attributes[sa.attribute.pk] = _type_cast_default(
+                        sa.attribute,
+                        sa.default_value,
                     )
                 else:
-                    violations_required.append(lookup.attribute.pk)
+                    violations_required.append(sa.attribute.pk)
                     continue
             else:
-                if fill_defaults_all and lookup.default_value not in ('', None):
-                    real_attributes[lookup.attribute.pk] = _type_cast_default(
-                        lookup.attribute,
-                        lookup.default_value,
+                if fill_defaults_all and sa.default_value not in ('', None):
+                    real_attributes[sa.attribute.pk] = _type_cast_default(
+                        sa.attribute,
+                        sa.default_value,
                     )
                 else:
                     continue
 
-        value = real_attributes[lookup.attribute.pk]
-        check_attribute_type(lookup.attribute.pk, value)
+        value = real_attributes[sa.attribute.pk]
+        check_attribute_type(sa.attribute.pk, value)
 
         # Validate regular expression
-        if lookup.regexp:
-            if lookup.attribute.multi:
+        if sa.regexp:
+            if sa.attribute.multi:
                 for val in value:
-                    if not lookup.regexp_match(unicode(val)):
-                        violations_regexp.append(lookup.attribute.pk)
+                    if not sa.regexp_match(unicode(val)):
+                        violations_regexp.append(sa.attribute.pk)
             else:
-                if not lookup.regexp_match(value):
-                    violations_regexp.append(lookup.attribute.pk)
+                if not sa.regexp_match(value):
+                    violations_regexp.append(sa.attribute.pk)
 
     # Check for attributes that are not defined on this servertype
     violations_attribs = []
