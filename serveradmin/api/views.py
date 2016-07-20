@@ -99,7 +99,7 @@ def dataset_query(request, app, data):
         return json.dumps({
             'status': 'error',
             'type': 'ValueError',
-            'message': error.message,
+            'message': str(error),
         })
 
 dataset_query.encode_json = False
@@ -131,10 +131,10 @@ def dataset_commit(request, app, data):
         ValidationError,
     ) as error:
         return {
-                'status': 'error',
-                'type': error.__class__.__name__,
-                'message': error.message,
-            }
+            'status': 'error',
+            'type': error.__class__.__name__,
+            'message': str(error),
+        }
 
 
 @api_view
@@ -173,7 +173,7 @@ def dataset_create(request, app, data):
         return {
             'status': 'error',
             'type': error.__class__.__name__,
-            'message': error.message,
+            'message': str(error),
         }
 
 
@@ -215,5 +215,5 @@ def api_call(request, app, data):
         return {
             'status': 'error',
             'type': error.__class__.__name__,
-            'message': unicode(error),
+            'message': str(error),
         }

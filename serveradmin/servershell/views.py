@@ -112,7 +112,7 @@ def get_results(request):
     except (ParseQueryError, ValidationError) as error:
         return HttpResponse(json.dumps({
             'status': 'error',
-            'message': error.message
+            'message': str(error)
         }))
 
     request.session['term'] = term
@@ -152,7 +152,7 @@ def export(request):
         query_args = parse_query(term, filter_classes)
         q = query(**query_args).restrict('hostname')
     except (ParseQueryError, ValidationError) as error:
-        return HttpResponse(error.message, status=400)
+        return HttpResponse(str(error), status=400)
 
     hostnames = u' '.join(server['hostname'] for server in q)
     return HttpResponse(hostnames, content_type='text/plain')

@@ -75,7 +75,7 @@ def index(request):
                 )
         except (ParseQueryError, ValidationError) as error:
             template_info.update({
-                'error': error.message
+                'error': str(error)
             })
             return TemplateResponse(
                 request, 'resources/index.html', template_info
