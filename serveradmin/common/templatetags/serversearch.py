@@ -3,19 +3,20 @@ import json
 from django import template
 from django.conf import settings
 
-from serveradmin.dataset.base import lookups
 from serveradmin.dataset import filters
+from serveradmin.serverdb.models import Attribute
 
 register = template.Library()
+
 
 @register.inclusion_tag('serversearch.html')
 def serversearch_js(search_id):
     attributes = {
-        k: {
-            'multi': v.multi,
-            'type': v.type,
+        a.pk: {
+            'multi': a.multi,
+            'type': a.type,
         }
-        for k, v in lookups.attributes.items()
+        for a in Attribute.objects.all()
     }
 
     filter_dict = {}

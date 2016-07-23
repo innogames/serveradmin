@@ -7,9 +7,11 @@ from ipaddress import IPv4Address, IPv6Address, ip_network
 
 from django.core.exceptions import ValidationError
 
-from serveradmin.dataset.base import lookups
 from serveradmin.dataset.typecast import typecast
 from serveradmin.serverdb.models import (
+    Project,
+    Segment,
+    Servertype,
     ServertypeAttribute,
     Server,
     ServerAttribute,
@@ -172,7 +174,9 @@ class Regexp(BaseFilter):
 class Comparison(BaseFilter):
     def __init__(self, comparator, value):
         if comparator not in ('<', '>', '<=', '>='):
-            raise FilterValueError('Invalid comparison operator: ' + comparator)
+            raise FilterValueError(
+                'Invalid comparison operator: ' + comparator
+            )
         self.comparator = comparator
         self.value = value
 
@@ -661,13 +665,19 @@ def value_to_sql(attribute, value):
 
     # Validations of special attributes
     if attribute.pk == 'servertype':
-        if value not in lookups.servertypes:
+        try:
+            Servertype.objects.get(pk=value)
+        except Servertype.DoesNotExist:
             raise FilterValueError('Invalid servertype: ' + value)
     if attribute.pk == 'segment':
-        if value not in lookups.segments:
+        try:
+            Segment.objects.get(pk=value)
+        except Segment.DoesNotExist:
             raise FilterValueError('Invalid segment: ' + value)
     if attribute.pk == 'project':
-        if value not in lookups.projects:
+        try:
+            Project.objects.get(pk=value)
+        except Project.DoesNotExist:
             raise FilterValueError('Invalid project: ' + value)
 
     return _sql_escape(value)

@@ -2,18 +2,20 @@ from ipaddress import IPv4Address
 
 from django.core.exceptions import ValidationError
 
-from serveradmin.dataset.base import lookups
 from serveradmin.dataset.commit import CommitValidationFailed
+from serveradmin.serverdb.models import Attribute
 
 
 def check_attributes(attributes):
     for attr in attributes:
-        if attr not in lookups.attributes:
+        try:
+            Attribute.objects.get(pk=attr)
+        except Attribute.DoesNotExist:
             raise ValidationError('Invalid attribute: {0}'.format(attr))
 
 
 def check_attribute_type(attr, value):
-    attribute = lookups.attributes[attr]
+    attribute = Attribute.objects.get(pk=attr)
     if attribute.multi:
         if not (isinstance(value, (list, set)) or
                 hasattr(value, '_proxied_set')):

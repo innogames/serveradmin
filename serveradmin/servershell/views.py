@@ -17,7 +17,6 @@ from adminapi.utils.json import json_encode_extra
 from adminapi.utils.parse import ParseQueryError, parse_query
 from serveradmin.dataset import query, filters
 from serveradmin.dataset.filters import filter_classes
-from serveradmin.dataset.base import lookups
 from serveradmin.dataset.commit import (
     commit_changes,
     CommitValidationFailed,
@@ -27,6 +26,8 @@ from serveradmin.dataset.typecast import typecast, displaycast
 from serveradmin.dataset.create import create_server
 from serveradmin.serverdb.forms import ServerForm
 from serveradmin.serverdb.models import (
+    Servertype,
+    Attribute,
     ServertypeAttribute,
     ServerStringAttribute,
 )
@@ -38,7 +39,7 @@ NUM_SERVERS_DEFAULT = 100
 @login_required
 @ensure_csrf_cookie
 def index(request):
-    attributes = lookups.attributes.values()
+    attributes = Attribute.objects.all()
     attribute_groups = {}
     for attribute in attributes:
         attribute_groups.setdefault(attribute.group, []).append(attribute)
@@ -126,7 +127,7 @@ def get_results(request):
             'regexp': None,
             'default': None,
         })
-        for a in lookups.special_attributes
+        for a in Attribute.specials
     )
     avail_attributes = {s: dict(specials) for s in servertype_ids}
     for sa in ServertypeAttribute.objects.all():
@@ -168,13 +169,13 @@ def list_and_edit(request, mode='list'):
     if not request.user.has_perm('dataset.change_serverobject'):
         mode = 'list'
 
-    stype = lookups.servertypes[server['servertype']]
+    stype = Servertype.objects.get(pk=server['servertype'])
 
     invalid_attrs = set()
     if mode == 'edit' and request.POST:
         attrs = set(request.POST.getlist('attr'))
         for attr in attrs:
-            attribute = lookups.attributes[attr]
+            attribute = Attribute.objects.get(pk=attr)
 
             if attribute.multi:
                 values = [raw_value.strip() for raw_value in
@@ -309,8 +310,8 @@ def commit(request):
 @login_required
 def get_values(request):
     try:
-        attribute = lookups.attributes[request.GET['attribute']]
-    except KeyError:
+        attribute = Attribute.object.get(pk=request.GET['attribute'])
+    except Attribute.DoesNotExist:
         raise Http404
 
     queryset = ServerStringAttribute.objects.filter(_attribute=attribute)

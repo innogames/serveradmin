@@ -1,12 +1,13 @@
 from ipaddress import ip_address
 
 from django.test import TestCase
-from django.core.cache import cache
 
 from serveradmin.dataset import query, filters, create
 
+
 class TestQuery(TestCase):
     fixtures = ['test_dataset.json']
+
     def test_query_hostname(self):
         s = query(hostname=u'test0').get()
         self.assertEqual(s[u'hostname'], u'test0')
@@ -62,8 +63,10 @@ class TestQuery(TestCase):
         pass
 
     def test_or(self):
-        q = query(game_world=filters.Or(filters.Comparison(u'<', 2),
-                filters.Comparison(u'>', 7)))
+        q = query(game_world=filters.Or(
+            filters.Comparison(u'<', 2),
+            filters.Comparison(u'>', 7),
+        ))
         hostnames = set()
         for s in q:
             hostnames.add(s[u'hostname'])
@@ -109,11 +112,9 @@ class TestQuery(TestCase):
         self.assertNotIn(u'test2', hostnames)
         self.assertNotIn(u'test3', hostnames)
 
+
 class TestCommit(TestCase):
     fixtures = ['test_dataset.json']
-
-    def setUp(self):
-        cache.clear()
 
     def test_commit_queryset(self):
         q = query(hostname=u'test1')
@@ -145,6 +146,7 @@ class TestCommit(TestCase):
 
     def test_commit_newer_data(self):
         pass
+
 
 class TestCreate(TestCase):
     def test_create(self):

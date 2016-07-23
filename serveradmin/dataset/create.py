@@ -8,13 +8,13 @@ from ipaddress import (
 )
 
 from serveradmin.serverdb.models import (
+    Servertype,
     Attribute,
     ServertypeAttribute,
     Server,
     ChangeCommit,
     ChangeAdd,
 )
-from serveradmin.dataset.base import lookups
 from serveradmin.dataset.validation import (
     handle_violations,
     check_attribute_type,
@@ -48,9 +48,9 @@ def create_server(
     for attr in ('hostname', 'servertype', 'project', 'intern_ip'):
         check_attribute_type(attr, attributes[attr])
 
-    if attributes['servertype'] in lookups.servertypes:
-        servertype = lookups.servertypes[attributes['servertype']]
-    else:
+    try:
+        servertype = Servertype.objects.get(pk=attributes['servertype'])
+    except Servertype.DoesNotExists:
         raise CommitError('Unknown servertype: ' + attributes['servertype'])
 
     hostname = attributes['hostname']
@@ -214,7 +214,7 @@ def _insert_server(
     server.save()
 
     for attr_name, value in attributes.iteritems():
-        attribute = lookups.attributes[attr_name]
+        attribute = Attribute.objects.get(pk=attr_name)
 
         if attribute.multi:
             for single_value in value:

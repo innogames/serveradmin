@@ -14,11 +14,11 @@ from adminapi.utils.json import json_encode_extra
 from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
 from serveradmin.api.decorators import api_view
 from serveradmin.api.utils import build_function_description
-from serveradmin.dataset.base import lookups
 from serveradmin.dataset import QuerySet
 from serveradmin.dataset.filters import ExactMatch, filter_from_obj
 from serveradmin.dataset.commit import commit_changes
 from serveradmin.dataset.create import create_server
+from serveradmin.serverdb.models import Attribute
 
 
 @login_required
@@ -179,11 +179,11 @@ def dataset_create(request, app, data):
 
 def _build_attributes():
     return {
-        k: {
-            'multi': v.multi,
-            'type': v.type,
+        a.pk: {
+            'multi': a.multi,
+            'type': a.type,
         }
-        for k, v in lookups.attributes.items()
+        for a in Attribute.objects.all()
     }
 
 

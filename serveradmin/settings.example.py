@@ -176,17 +176,6 @@ LOGGING = {
     }
 }
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
-        'LOCATION': '127.0.0.1:11211',
-        'TIMEOUT': 7 * 24 * 60 * 60,
-    }
-}
-
-
-DATASET_CACHE_DIR = '/tmp'
-
 OBJECTS_PER_PAGE = 25
 
 # Graphite URL is required to generate graphic URL's.  Normal graphs

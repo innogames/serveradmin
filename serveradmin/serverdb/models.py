@@ -5,10 +5,9 @@ import time
 from collections import OrderedDict
 from datetime import datetime
 from ipaddress import IPv4Address, IPv6Address
+from itertools import chain
 
 from django.db import models
-from django.db.models.signals import post_save
-from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.signals import request_started
 from django.utils.timezone import now
@@ -99,19 +98,19 @@ class LookupManager(models.Manager):
 
         We are only caching lookups with the special "pk" property.
         """
-        if len(kwargs) == 1 and kwargs.keys()[0] == 'pk':
-            value = kwargs.values()[0]
+        if len(kwargs) != 1 or kwargs.keys()[0] != 'pk':
+            raise Exception(
+                'get() except "pk" are not supported on lookup models.'
+            )
 
-            # Initialise the cache
-            self.all()
+        # Initialise the cache
+        self.all()
 
-            # We are not relying the cache for misses.
-            if value in self._lookup_dict:
-                return self._lookup_dict[value]
-            else:
-                self.reset_cache()
+        query_key = kwargs.values()[0]
+        if query_key not in self._lookup_dict:
+            raise self.model.DoesNotExist()
 
-        return super(LookupManager, self).get(*args, **kwargs)
+        return self._lookup_dict[query_key]
 
     def create(self, *args, **kwargs):
         self.reset_cache()
@@ -212,16 +211,25 @@ class Servertype(LookupModel):
                 default_visible=servertype_attribute.default_visible,
             )
 
-            clear_lookups()
+
+class AttributeManager(LookupManager):
+    def all(self):
+        if not self._lookup_dict:
+            self._lookup_dict = OrderedDict(chain(
+                ((o.pk, o) for o in Attribute.specials),
+                ((o.pk, o) for o in super(LookupManager, self).all()),
+            ))
+        return self._lookup_dict.values()
 
 
 class Attribute(LookupModel):
     special = None
+    objects = AttributeManager()
 
     def __init__(self, *args, **kwargs):
         if 'special' in kwargs:
-            self.special = kwargs[u'special']
-            del kwargs[u'special']
+            self.special = kwargs['special']
+            del kwargs['special']
         super(Attribute, self).__init__(*args, **kwargs)
 
     attribute_id = models.CharField(
@@ -278,6 +286,64 @@ class Attribute(LookupModel):
             for sa in ServertypeAttribute.objects.all()
             if sa.attribute == self
         ]
+
+
+class ServerTableSpecial(object):
+    def __init__(self, field, unique=False):
+        self.field = field
+        self.unique = unique
+
+
+Attribute.specials = (
+    Attribute(
+        attribute_id='object_id',
+        type='integer',
+        base=False,
+        multi=False,
+        group='base',
+        special=ServerTableSpecial('server_id'),
+    ),
+    Attribute(
+        attribute_id='hostname',
+        type='string',
+        base=True,
+        multi=False,
+        group='base',
+        special=ServerTableSpecial('hostname', unique=True),
+    ),
+    Attribute(
+        attribute_id='servertype',
+        type='string',
+        base=True,
+        multi=False,
+        group='base',
+        special=ServerTableSpecial('_servertype_id'),
+    ),
+    Attribute(
+        attribute_id='project',
+        type='string',
+        base=True,
+        multi=False,
+        group='base',
+        special=ServerTableSpecial('_project_id'),
+    ),
+    Attribute(
+        attribute_id='intern_ip',
+        type='ip',
+        base=True,
+        multi=False,
+        group='base',
+        special=ServerTableSpecial('intern_ip'),
+    ),
+    Attribute(
+        attribute_id='segment',
+        type='string',
+        base=True,
+        multi=False,
+        group='base',
+        special=ServerTableSpecial('_segment_id'),
+    ),
+)
 
 
 class ServertypeAttribute(LookupModel):
@@ -666,7 +732,7 @@ class ChangeDelete(models.Model):
         return json.loads(self.attributes_json)
 
     def __unicode__(self):
-        return u'{0}: {1}'.format(unicode(self.commit), self.hostname)
+        return '{0}: {1}'.format(unicode(self.commit), self.hostname)
 
 
 class ChangeUpdate(models.Model):
@@ -685,7 +751,7 @@ class ChangeUpdate(models.Model):
         return json.loads(self.updates_json)
 
     def __unicode__(self):
-        return u'{0}: {1}'.format(unicode(self.commit), self.hostname)
+        return '{0}: {1}'.format(unicode(self.commit), self.hostname)
 
 
 class ChangeAdd(models.Model):
@@ -704,10 +770,4 @@ class ChangeAdd(models.Model):
         return json.loads(self.attributes_json)
 
     def __unicode__(self):
-        return u'{0}: {1}'.format(unicode(self.commit), self.hostname)
-
-
-def clear_lookups(*args, **kwargs):
-    cache.delete('dataset_lookups_version')
-
-post_save.connect(clear_lookups, sender=Attribute)
+        return '{0}: {1}'.format(unicode(self.commit), self.hostname)

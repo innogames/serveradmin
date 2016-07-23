@@ -5,10 +5,11 @@ from django.db import IntegrityError
 from django.core.exceptions import ValidationError
 
 from adminapi.utils.json import json_encode_extra
-from serveradmin.dataset.base import lookups, ServerTableSpecial
 from serveradmin.dataset.typecast import typecast
 from serveradmin.hooks.slots import HookSlot
 from serveradmin.serverdb.models import (
+    Attribute,
+    ServerTableSpecial,
     ServertypeAttribute,
     Server,
     ServerHostnameAttribute,
@@ -279,8 +280,11 @@ def _validate_structure(deleted_servers, changed_servers):
     # FIXME: Validation of the inner structure
     for server_id, changes in changed_servers.iteritems():
         for attr, change in changes.iteritems():
-            if attr not in lookups.attributes:
+            try:
+                attribute = Attribute.objects.get(pk=attr)
+            except Attribute.DoesNotExist:
                 raise ValueError('No such attribute')
+
             action = change['action']
             if action == 'update':
                 if not all(x in change for x in ('old', 'new')):
@@ -294,7 +298,7 @@ def _validate_structure(deleted_servers, changed_servers):
             elif action == 'multi':
                 if not all(x in change for x in ('add', 'remove')):
                     raise ValueError('Invalid multi change')
-                if not lookups.attributes[attr].multi:
+                if not attribute.multi:
                     raise ValueError('Not a multi attribute')
 
 
@@ -309,7 +313,7 @@ def _get_servertype_attributes(servers):
 
 
 def _validate_attributes(changed_servers, servers, servertype_attributes):
-    special_attribute_ids = [a.pk for a in lookups.special_attributes]
+    special_attribute_ids = [a.pk for a in Attribute.specials]
 
     violations = []
     for server_id, changes in changed_servers.iteritems():
@@ -343,7 +347,7 @@ def _validate_readonly(changed_servers, servers):
     for server_id, changes in changed_servers.iteritems():
         server = servers[server_id]
         for attr, change in changes.iteritems():
-            if lookups.attributes[attr].readonly:
+            if Attribute.objects.get(pk=attr).readonly:
                 if attr in server and server[attr] != '':
                     violations.append((server_id, attr))
     return violations
@@ -355,21 +359,21 @@ def _validate_regexp(changed_servers, servers, servertype_attributes):
         server = servers[server_id]
         for attr, change in changes.iteritems():
             try:
-                lookup = servertype_attributes[server['servertype']][attr]
+                sa = servertype_attributes[server['servertype']][attr]
             except KeyError:
                 continue
 
-            if not lookup.regexp:
+            if not sa.regexp:
                 continue
 
             action = change['action']
 
             if action == 'update' or action == 'new':
-                if not lookup.regexp_match(change['new']):
+                if not sa.regexp_match(change['new']):
                     violations.append((server_id, attr))
             elif action == 'multi':
                 for value in change['add']:
-                    if not lookup.regexp_match(value):
+                    if not sa.regexp_match(value):
                         violations.append((server_id, attr))
                         break
     return violations
@@ -381,11 +385,11 @@ def _validate_required(changed_servers, servers, servertype_attributes):
         server = servers[server_id]
         for attr, change in changes.iteritems():
             try:
-                lookup = servertype_attributes[server['servertype']][attr]
+                sa = servertype_attributes[server['servertype']][attr]
             except KeyError:
                 continue
 
-            if change['action'] == 'delete' and lookup.required:
+            if change['action'] == 'delete' and sa.required:
                 violations.append((server_id, attr))
     return violations
 
@@ -411,7 +415,7 @@ def _validate_commit(changed_servers, servers):
 def _typecast_values(changed_servers):
     for server_id, changes in changed_servers.iteritems():
         for key, change in changes.iteritems():
-            attribute = lookups.attributes[key]
+            attribute = Attribute.objects.get(pk=key)
             action = change['action']
 
             if action == 'new':
@@ -467,7 +471,7 @@ def _apply_changes(changed_servers):
         server = servers[server_id]
 
         for key, change in changes.iteritems():
-            attribute = lookups.attributes[key]
+            attribute = Attribute.objects.get(pk=key)
             action = change['action']
 
             if isinstance(attribute.special, ServerTableSpecial):

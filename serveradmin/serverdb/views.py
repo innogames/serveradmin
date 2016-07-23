@@ -1,5 +1,3 @@
-from operator import attrgetter
-
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import Http404
 from django.template.response import TemplateResponse
@@ -8,7 +6,6 @@ from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 
-from serveradmin.dataset.base import lookups
 from serveradmin.dataset.create import create_server
 from serveradmin.dataset.commit import CommitError
 from serveradmin.serverdb.models import (
@@ -19,7 +16,6 @@ from serveradmin.serverdb.models import (
     ChangeAdd,
     ChangeUpdate,
     ChangeDelete,
-    clear_lookups,
 )
 from serveradmin.serverdb.forms import (
     AddServertypeForm,
@@ -52,7 +48,6 @@ def add_servertype(request):
         form = AddServertypeForm(request.POST)
         if form.is_valid():
             stype = form.save()
-            clear_lookups()
             return redirect('serverdb_view_servertype', stype.pk)
     else:
         form = AddServertypeForm()
@@ -69,7 +64,6 @@ def delete_servertype(request, servertype_name):
     if request.method == 'POST':
         if 'confirm' in request.POST:
             stype.delete()
-            clear_lookups()
             messages.success(request, u'Servertype deleted.')
         else:
             msg = u'Please confirm the usage of weapons of mass destruction.'
@@ -116,7 +110,6 @@ def manage_servertype_attr(request, servertype_name, attribute_name=None):
                     stype_attr.default_value = None
 
             stype_attr.save()
-            clear_lookups()
             messages.success(request, msg)
             return redirect('serverdb_view_servertype', stype.pk)
     else:
@@ -165,8 +158,7 @@ def copy_servertype(request, servertype_name):
 @login_required
 def attributes(request):
     return TemplateResponse(request, 'serverdb/attributes.html', {
-        'attributes': sorted(lookups.attributes.values(),
-                             key=attrgetter('pk'))
+        'attributes': Attribute.objects.all()
     })
 
 
@@ -177,7 +169,6 @@ def delete_attribute(request, attribute_id):
     if request.method == 'POST' and 'confirm' in request.POST:
         messages.success(request, 'Attribute "{0}" deleted.'.format(attribute))
         attribute.delete()
-        clear_lookups()
         return redirect('serverdb_attributes')
     else:
         return TemplateResponse(request, 'serverdb/delete_attribute.html', {
@@ -192,7 +183,6 @@ def add_attribute(request):
         add_form = AddAttributeForm(request.POST)
         if add_form.is_valid():
             attribute = add_form.save()
-            clear_lookups()
             messages.success(
                 request, 'Attribute "{0}" added'.format(attribute)
             )

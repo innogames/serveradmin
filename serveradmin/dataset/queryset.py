@@ -11,7 +11,6 @@ from serveradmin.serverdb.models import (
     ServerAttribute,
     ServerHostnameAttribute,
 )
-from serveradmin.dataset.base import lookups
 from serveradmin.dataset.commit import commit_changes
 from serveradmin.dataset.querybuilder import QueryBuilder
 from serveradmin.dataset.validation import check_attributes
@@ -120,10 +119,10 @@ class QuerySetRepresentation(object):
 class QuerySet(BaseQuerySet):
     def __init__(self, filters):
         check_attributes(filters.keys())
+        self.attributes = {a.pk: a for a in Attribute.objects.all()}
         for attribute_name, filter_obj in filters.items():
-            filter_obj.typecast(lookups.attributes[attribute_name])
+            filter_obj.typecast(self.attributes[attribute_name])
         super(QuerySet, self).__init__(filters)
-        self.attributes = lookups.attributes
         self._order_by = None
         self._order_dir = 'asc'
         self._limit = None
@@ -175,7 +174,7 @@ class QuerySet(BaseQuerySet):
         if order_dir not in ('asc', 'desc'):
             raise ValueError('Invalid order direction')
 
-        self._order_by = lookups.attributes[order_by]
+        self._order_by = self.attributes[order_by]
         self._order_dir = order_dir
 
         # We need the attribute to order by.
@@ -187,7 +186,7 @@ class QuerySet(BaseQuerySet):
     def _get_query_builder_with_filters(self):
         builder = QueryBuilder()
         for attr, filt in self._filters.iteritems():
-            builder.add_filter(lookups.attributes[attr], filt)
+            builder.add_filter(self.attributes[attr], filt)
 
         return builder
 
