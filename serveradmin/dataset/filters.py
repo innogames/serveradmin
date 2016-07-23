@@ -763,6 +763,8 @@ def raw_sql_escape(value):
     if value.endswith('\\'):
         raise FilterValueError('Escape character cannot be used in the end')
 
+    value = value.replace('{', '{{').replace('}', '}}')
+
     return "'" + value.decode('utf-8') + "'"
 
 
