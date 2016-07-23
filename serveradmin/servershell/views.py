@@ -203,6 +203,8 @@ def list_and_edit(request, mode='list'):
                 return HttpResponseRedirect(url)
             except CommitValidationFailed as e:
                 invalid_attrs.update([attr for obj_id, attr in e.violations])
+            except ValidationError as error:
+                messages.error(request, str(error))
 
         if invalid_attrs:
             messages.error(request, 'Attributes contain invalid values')
