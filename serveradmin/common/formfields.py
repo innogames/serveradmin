@@ -1,5 +1,5 @@
 import re
-from ipaddress import IPv4Address, IPv6Address
+from ipaddress import ip_interface, IPv4Address, IPv6Address
 
 from django import forms
 from django.core.validators import RegexValidator
@@ -25,7 +25,7 @@ class IPv4Field(forms.GenericIPAddressField):
     def clean(self, value):
         ip_string = super(IPv4Field, self).clean(value)
         if ip_string:
-            return IPv4Address(ip_string)
+            return ip_interface(ip_string)
         return None
 
 
@@ -41,7 +41,7 @@ class IPv6Field(forms.Field):
         ip_string = super(IPv6Field, self).clean(value)
         if ip_string:
             try:
-                return IPv6Address(ip_string)
+                return ip_interface(ip_string)
             except ValueError:
                 raise ValidationError('Not a valid IPv6 Address')
         return None

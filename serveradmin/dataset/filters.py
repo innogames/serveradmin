@@ -3,7 +3,7 @@ import operator
 import time
 import dateutil.parser
 from decimal import Decimal
-from ipaddress import IPv6Address, ip_network
+from ipaddress import ip_interface, ip_network
 
 from django.core.exceptions import ValidationError
 
@@ -672,7 +672,7 @@ def value_to_sql(attribute, value):
         return raw_sql_escape(int(value))
     if attribute.type == 'ipv6':
         return raw_sql_escape(
-            ''.join('{:02x}'.format(x) for x in IPv6Address(value).packed)
+            ''.join('{:02x}'.format(x) for x in ip_interface(value).packed)
         )
     if attribute.type == 'datetime':
         return raw_sql_escape(

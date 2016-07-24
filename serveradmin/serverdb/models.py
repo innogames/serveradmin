@@ -4,7 +4,7 @@ import time
 
 from collections import OrderedDict
 from datetime import datetime
-from ipaddress import IPv4Address, IPv6Address
+from ipaddress import ip_interface, ip_network
 from itertools import chain
 
 from django.db import models
@@ -61,6 +61,7 @@ attribute_types = (
 ip_addr_types = (
     'host',
     'loadbalancer',
+    'network',
 )
 
 
@@ -228,8 +229,8 @@ class AttributeManager(LookupManager):
 
 
 class Attribute(LookupModel):
-    special = None
     objects = AttributeManager()
+    special = None
 
     def __init__(self, *args, **kwargs):
         if 'special' in kwargs:
@@ -447,31 +448,75 @@ class Server(models.Model):
 
     def clean(self, *args, **kwargs):
         super(Server, self).clean(*args, **kwargs)
+        self._validate_project()
+        self._validate_intern_ip()
 
-        servers_with_same_ip_addr = Server.objects.filter(
-            intern_ip=self.intern_ip,
-        ).exclude(pk=self.pk).all()
-
-        if self.servertype.ip_addr_type == 'host':
-            if servers_with_same_ip_addr:
-                raise ValidationError('IP already taken.')
-
-        elif self.servertype.ip_addr_type == 'loadbalancer':
-            for server in servers_with_same_ip_addr:
-                if server.servertype.ip_addr_type != 'loadbalancer':
-                    raise ValidationError(
-                        'IP already taken by a different servertype.'
-                    )
-                if server.project != self.project:
-                    raise ValidationError(
-                        'IP already taken by a different project.'
-                    )
-
+    def _validate_project(self):
         fixed_project = self.servertype.fixed_project
         if fixed_project and self.project != fixed_project:
             raise ValidationError(
                 'Project has to be "{0}".'.format(fixed_project)
             )
+
+    def _validate_intern_ip(self):
+        if self.servertype.ip_addr_type == 'network':
+            try:
+                ip_network(str(self.intern_ip))
+            except ValueError as error:
+                raise ValidationError(str(error))
+
+            if self.intern_ip.max_prefixlen == self.netmask_len():
+                raise ValidationError(
+                    'Netmask length must be less than {0}.'
+                    .format(self.intern_ip.max_prefixlen)
+                )
+        else:
+            if self.intern_ip.max_prefixlen != self.netmask_len():
+                raise ValidationError(
+                    'Netmask length must be {0}.'
+                    .format(self.intern_ip.max_prefixlen)
+                )
+
+        # Check for other server with overlapping addresses
+        for server in Server.objects.filter(
+            # TODO Replace it with __net_overlaps, when
+            # django-postgresql-netfields supports it (See
+            # https://github.com/jimfunk/django-postgresql-netfields/pull/58)
+            models.Q(intern_ip__net_contained_or_equal=self.intern_ip) |
+            models.Q(intern_ip__net_contains=self.intern_ip)
+        ).exclude(pk=self.pk):
+
+            # Match the host addresses
+            if self.host_addr() == server.host_addr() and not (
+                self.servertype.ip_addr_type == 'loadbalancer' and
+                server.servertype.ip_addr_type == 'loadbalancer' and
+                server.project == self.project
+            ):
+                raise ValidationError(
+                    'IP address already taken by "{0}".'
+                    .format(server.hostname)
+                )
+
+            # Match the network addresses
+            if self.servertype == server.servertype or not (
+                server.project == self.project or (
+                    server.servertype.fixed_project and
+                    self.netmask_len() > server.netmask_len()
+                ) or (
+                    self.servertype.fixed_project and
+                    self.netmask_len() < server.netmask_len()
+                )
+            ):
+                raise ValidationError(
+                    'IP address overlaps with "{0}".'
+                    .format(server.hostname)
+                )
+
+    def host_addr(self):
+        return self.intern_ip.ip
+
+    def netmask_len(self):
+        return self.intern_ip.network.prefixlen
 
     def get_attributes(self, attribute):
         model = ServerAttribute.get_model(attribute.type)
@@ -539,10 +584,8 @@ class ServerStringAttribute(ServerAttribute):
             return int(self.value)
         if self.attribute.type == 'boolean':
             return self.value == '1'
-        if self.attribute.type == 'ip':
-            return IPv4Address(int(self.value))
         if self.attribute.type == 'ipv6':
-            return IPv6Address(bytearray.fromhex(self.value))
+            return ip_interface(bytearray.fromhex(self.value))
         if self.attribute.type == 'datetime':
             return datetime.fromtimestamp(int(self.value))
         return self.value
@@ -550,14 +593,10 @@ class ServerStringAttribute(ServerAttribute):
     def save_value(self, value):
         if self.attribute.type == 'boolean':
             value = 1 if value else 0
-        elif self.attribute.type == 'ip':
-            if not isinstance(value, IPv4Address):
-                value = IPv4Address(value)
-            value = int(value)
         elif self.attribute.type == 'ipv6':
-            if not isinstance(value, IPv6Address):
-                value = IPv6Address(value)
-            value = ''.join('{:02x}'.format(x) for x in value.packed)
+            value = ''.join(
+                '{:02x}'.format(x) for x in ip_interface(value).packed
+            )
         elif self.attribute.type == 'datetime':
             if isinstance(value, datetime):
                 value = int(time.mktime(value.timetuple()))

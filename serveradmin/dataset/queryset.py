@@ -1,11 +1,12 @@
 from collections import defaultdict, OrderedDict
-from ipaddress import ip_address
+from ipaddress import ip_address, ip_network
 
 from django.db import connection
 
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 
 from serveradmin.serverdb.models import (
+    Servertype,
     Attribute,
     ServertypeAttribute,
     ServerAttribute,
@@ -221,35 +222,30 @@ class QuerySet(BaseQuerySet):
                 server_id,
                 hostname,
                 intern_ip,
-                segment,
-                stype,
-                project,
+                segment_id,
+                servertype_id,
+                project_id,
             ) in cursor.fetchall():
+                servertype = Servertype.objects.get(pk=servertype_id)
 
-                if not restrict:
-                    attrs = {
-                        u'hostname': hostname,
-                        u'intern_ip': ip_address(intern_ip),
-                        u'segment': segment,
-                        u'servertype': stype,
-                        u'project': project,
-                    }
-                else:
-                    attrs = {}
-                    if u'hostname' in restrict:
-                        attrs[u'hostname'] = hostname
-                    if u'intern_ip' in restrict:
-                        attrs[u'intern_ip'] = ip_address(intern_ip)
-                    if u'segment' in restrict:
-                        attrs[u'segment'] = segment
-                    if u'servertype' in restrict:
-                        attrs[u'servertype'] = stype
-                    if u'project' in restrict:
-                        attrs[u'project'] = project
+                attrs = {}
+                if not restrict or 'hostname' in restrict:
+                    attrs['hostname'] = hostname
+                if not restrict or 'intern_ip' in restrict:
+                    if servertype.ip_addr_type == 'network':
+                        attrs['intern_ip'] = ip_network(intern_ip)
+                    else:
+                        attrs['intern_ip'] = ip_address(intern_ip)
+                if not restrict or 'segment' in restrict:
+                    attrs['segment'] = segment_id
+                if not restrict or 'servertype' in restrict:
+                    attrs['servertype'] = servertype_id
+                if not restrict or 'project' in restrict:
+                    attrs['project'] = project_id
 
                 server_object = ServerObject(attrs, server_id, self)
                 self._results[server_id] = server_object
-                servers_by_type[stype].append(server_object)
+                servers_by_type[servertype].append(server_object)
 
         self._select_attributes(servers_by_type)
         self._add_attributes(servers_by_type)
@@ -264,7 +260,7 @@ class QuerySet(BaseQuerySet):
         # First, prepare the dictionary for lookups by attribute
         servertype_attributes = defaultdict(list)
         for sa in ServertypeAttribute.objects.all():
-            if sa.servertype.pk in servers_by_type:
+            if sa.servertype in servers_by_type:
                 servertype_attributes[sa.attribute].append(sa)
         # Then, process the attributes
         for attribute in servertype_attributes.keys():
@@ -297,7 +293,7 @@ class QuerySet(BaseQuerySet):
 
         # Step 0: Initialize the multi attributes
         for servertype, attributes in self._multi_attributes.items():
-            for server in servers_by_type[servertype.pk]:
+            for server in servers_by_type[servertype]:
                 for attribute in attributes:
                     dict.__setitem__(server, attribute.pk, set())
 
@@ -337,7 +333,7 @@ class QuerySet(BaseQuerySet):
 
         # First, index the related servers for fast access later
         servers_by_related_hostnames = defaultdict(list)
-        for server in servers_by_type[servertype_attribute.servertype.pk]:
+        for server in servers_by_type[servertype_attribute.servertype]:
             if related_via_attribute.pk in server:
                 if related_via_attribute.multi:
                     for hostname in server[related_via_attribute.pk]:

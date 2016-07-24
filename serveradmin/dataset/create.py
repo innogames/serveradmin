@@ -1,11 +1,5 @@
 import json
-from ipaddress import (
-    ip_address,
-    IPv4Address,
-    IPv6Address,
-    IPv4Network,
-    IPv6Network,
-)
+from ipaddress import ip_interface
 
 from serveradmin.serverdb.models import (
     Servertype,
@@ -54,15 +48,7 @@ def create_server(
         raise CommitError('Unknown servertype: ' + attributes['servertype'])
 
     hostname = attributes['hostname']
-    if isinstance(attributes['intern_ip'], (
-        IPv4Address,
-        IPv6Address,
-        IPv4Network,
-        IPv6Network,
-    )):
-        intern_ip = attributes['intern_ip']
-    else:
-        intern_ip = ip_address(attributes['intern_ip'])
+    intern_ip = ip_interface(str(attributes['intern_ip']))
     servertype_id = servertype.pk
     segment_id = attributes.get('segment')
 

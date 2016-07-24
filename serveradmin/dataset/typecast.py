@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 from decimal import Decimal
-from ipaddress import IPv4Address, IPv6Address
+from ipaddress import ip_interface
 
 from django.core.exceptions import ValidationError
 
@@ -66,8 +66,8 @@ _typecast_fns = {
     'integer': int,
     'boolean': lambda x: x in ('1', 'True', 'true', 1, True),
     'string': lambda x: x if isinstance(x, basestring) else unicode(x),
-    'ip': lambda x: x if isinstance(x, IPv4Address) else IPv4Address(x),
-    'ipv6': lambda x: x if isinstance(x, IPv6Address) else IPv6Address(x),
+    'ip': lambda x: ip_interface(str(x)),
+    'ipv6': lambda x: ip_interface(str(x)),
     'datetime': _to_datetime,
     'mac': _to_mac,
     'hostname': str,

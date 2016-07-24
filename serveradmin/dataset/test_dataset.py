@@ -1,4 +1,4 @@
-from ipaddress import ip_address
+from ipaddress import ip_interface
 
 from django.test import TestCase
 
@@ -127,7 +127,7 @@ class TestCommit(TestCase):
         s = query(hostname=u'test1').get()
         self.assertEquals(s[u'os'], u'wheezy')
         self.assertEquals(s[u'segment'], u'seg1')
-        self.assertEquals(s[u'intern_ip'], ip_address('10.16.2.1'))
+        self.assertEquals(s[u'intern_ip'], ip_interface('10.16.2.1'))
 
     def test_commit_regexp_violation(self):
         pass

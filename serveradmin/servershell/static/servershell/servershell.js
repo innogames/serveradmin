@@ -414,18 +414,12 @@ function format_value(value, attr_name, single_value)
         value = '';
     } else if (attr_obj['multi'] && !single_value) {
         value.sort();
-        if (attr_obj['type'] == 'ip') {
-            value = value.map(function(x) {
-                return new IP(x).as_ip();
-            });
-        } else if (attr_obj['type'] == 'datetime') {
+        if (attr_obj['type'] == 'datetime') {
             value = value.map(function(x) {
                 return _format_datetime(value);
             });
         }
         value = value.join(', ');
-    } else if (attr_obj['type'] == 'ip') {
-        value = new IP(value).as_ip();
     } else if (attr_obj['type'] == 'datetime') {
         return _format_datetime(value);
     }
@@ -441,8 +435,6 @@ function parse_value(value, attr_name)
 
     if (attr_obj['type'] == 'integer') {
         return parseInt(value, 10);
-    } else if (attr_obj['type'] == 'ip') {
-        return new IP(value).as_int();
     } else if (attr_obj['type'] == 'datetime') {
         var r = /^(\d{4})-(\d{1,2})-(\d{1,2})(T(\d{1,2}):(\d{1,2})(:(\d{1,2}))?)?$/
         var match = value.match(r);

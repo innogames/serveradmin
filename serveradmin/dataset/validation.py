@@ -1,4 +1,4 @@
-from ipaddress import IPv4Address
+from ipaddress import ip_interface
 
 from django.core.exceptions import ValidationError
 
@@ -73,39 +73,10 @@ def _require_boolean(attr, value):
 
 
 def _require_ip(attr, value):
-    # We will accept IPv4Address objects or everything that can be converted
-    if isinstance(value, IPv4Address):
-        return
-
-    if isinstance(value, basestring):
-        if value.isdigit():
-            return
-
-        segs = value.split('.')
-        try:
-            if len(segs) != 4:
-                raise ValidationError('IP address must have 4 parts.')
-            for seg in segs:
-                x = int(seg, 10)
-                if not (0 <= x <= 255):
-                    raise ValidationError(
-                        'IP address parts must be between 0 and 255.'
-                    )
-        except ValidationError:
-            raise ValidationError(
-                u'Attribute {0} is of type "ip", but got {1}'
-                .format(attr, repr(value))
-            )
-
-        return
-
-    if isinstance(value, (int, long)):
-        return
-
-    raise ValidationError(
-        'Attribute {0} is of type "ip", but got {1} of type {2}'
-        .format(attr, repr(value), type(value).__name__)
-    )
+    try:
+        ip_interface(value)
+    except ValueError as error:
+        raise ValidationError(str(error))
 
 
 def handle_violations(

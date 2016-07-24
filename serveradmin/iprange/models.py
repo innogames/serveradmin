@@ -1,4 +1,4 @@
-from ipaddress import ip_address, summarize_address_range
+from ipaddress import summarize_address_range
 
 from django.db import models
 
