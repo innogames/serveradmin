@@ -1201,6 +1201,8 @@ $(function() {
             var symbol = 'H';
         else if (attr_type == 'reverse_hostname')
             var symbol = 'R';
+        else if (attr_type == 'supernet')
+            var symbol = 'N';
         else
             var symbol = "''";
         var link = $('<span class="link">' + symbol + '</span>');

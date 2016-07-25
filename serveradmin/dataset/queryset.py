@@ -254,7 +254,7 @@ class QuerySet(BaseQuerySet):
 
     def _select_attributes(self, servers_by_type):
         self._attributes_by_type = defaultdict(list)
-        self._multi_attributes = defaultdict(list)
+        self._servertypes_by_attribute = defaultdict(list)
         self._related_servertype_attributes = []
 
         # First, prepare the dictionary for lookups by attribute
@@ -271,8 +271,7 @@ class QuerySet(BaseQuerySet):
         self._attributes_by_type[attribute.type].append(attribute)
 
         for sa in servertype_attributes[attribute]:
-            if attribute.multi:
-                self._multi_attributes[sa.servertype].append(attribute)
+            self._servertypes_by_attribute[attribute].append(sa.servertype)
 
             if sa.related_via_attribute:
                 # TODO Order the list in a way to support recursive related
@@ -292,10 +291,11 @@ class QuerySet(BaseQuerySet):
         """Add the attributes to the results"""
 
         # Step 0: Initialize the multi attributes
-        for servertype, attributes in self._multi_attributes.items():
-            for server in servers_by_type[servertype]:
-                for attribute in attributes:
-                    dict.__setitem__(server, attribute.pk, set())
+        for attribute, servertypes in self._servertypes_by_attribute.items():
+            if attribute.multi:
+                for servertype in servertypes:
+                    for server in servers_by_type[servertype]:
+                        dict.__setitem__(server, attribute.pk, set())
 
         # Step 1: Query the materialized attributes by their types
         for key, attributes in self._attributes_by_type.items():
@@ -311,7 +311,34 @@ class QuerySet(BaseQuerySet):
                         sa.get_value(),
                     )
 
-        # Step 2: Add the reverse attributes
+        # Step 2: Add the containing networks
+        for attribute in self._attributes_by_type['supernet']:
+            # TODO Refactor this using Django ORM
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    'SELECT server.server_id,'
+                    '       supernet.hostname'
+                    '   FROM server'
+                    '       JOIN server AS supernet'
+                    '           ON server.intern_ip <<= supernet.intern_ip'
+                    '   WHERE server.server_id IN ({0})'
+                    "       AND supernet.servertype_id = '{1}'"
+                ).format(
+                    ', '.join(
+                        str(o.object_id)
+                        for s in self._servertypes_by_attribute[attribute]
+                        for o in servers_by_type[s]
+                    ),
+                    attribute.target_servertype.pk,
+                )
+                for server_id, value in cursor.fetchall():
+                    self._add_attribute_value(
+                        self._results[server_id],
+                        attribute,
+                        value,
+                    )
+
+        # Step 3: Add the reverse attributes
         for attribute in self._attributes_by_type['reverse_hostname']:
             for sa in ServerHostnameAttribute.objects.filter(
                 value_id__in=self._results.keys(),
@@ -323,7 +350,7 @@ class QuerySet(BaseQuerySet):
                     sa.get_reverse_value(),
                 )
 
-        # Step 3: Add the related attributes
+        # Step 4: Add the related attributes
         for servertype_attribute in self._related_servertype_attributes:
             self._add_related_attribute(servertype_attribute, servers_by_type)
 

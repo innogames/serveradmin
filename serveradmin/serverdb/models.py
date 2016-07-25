@@ -56,6 +56,7 @@ attribute_types = (
     'hostname',
     'reverse_hostname',
     'number',
+    'supernet',
 )
 
 ip_addr_types = (

@@ -142,7 +142,7 @@ class Regexp(BaseFilter):
     def as_sql_expr(self, attribute):
         value = raw_sql_escape(self.regexp)
 
-        if attribute.type in ('hostname', 'reverse_hostname'):
+        if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
             template = (
                 '{{0}} IN ('
                 '   SELECT server_id'
@@ -192,8 +192,7 @@ class Comparison(BaseFilter):
         return hash('Comparison') ^ hash(self.comparator) ^ hash(self.value)
 
     def typecast(self, attribute):
-
-        if attribute.type in ('hostname', 'reverse_hostname'):
+        if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
             raise FilterValueError('Hostnames cannot be compared.')
 
         self.value = typecast(attribute, self.value, force_single=True)
@@ -354,8 +353,7 @@ class Between(BaseFilter):
         return hash('Between') ^ hash(self.a) ^ hash(self.b)
 
     def typecast(self, attribute):
-
-        if attribute.type in ('hostname', 'reverse_hostname'):
+        if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
             raise FilterValueError('Hostnames cannot be compared.')
 
         self.a = typecast(attribute, self.a, force_single=True)
@@ -439,7 +437,7 @@ class Startswith(BaseFilter):
         value = self.value.replace('_', '\\_').replace('%', '\\%%')
         value = raw_sql_escape(value + '%%')
 
-        if attribute.type in ('hostname', 'reverse_hostname'):
+        if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
             template = (
                 '{{0}} IN ('
                 '   SELECT server_id'
@@ -655,7 +653,7 @@ def value_to_sql(attribute, value):
         except Project.DoesNotExist:
             raise FilterValueError('Invalid project: ' + value)
 
-    if attribute.type in ('hostname', 'reverse_hostname'):
+    if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
         try:
             return str(Server.objects.get(hostname=value).server_id)
         except Server.DoesNotExist as error:
@@ -692,6 +690,8 @@ def _condition_sql(attribute, template):
     # We start with the condition for the attributes the server has on
     # its own.  Then, add the conditions for all possible relations.
     # They are going to be OR'ed together.
+    if attribute.type == 'supernet':
+        relation_conditions = ['server.intern_ip <<= sub.intern_ip']
     if attribute.type == 'reverse_hostname':
         relation_conditions = ['server.server_id = sub.value']
     else:
@@ -726,6 +726,14 @@ def _condition_sql(attribute, template):
             )
 
     condition = 'EXISTS (SELECT 1 FROM {0} AS sub WHERE ({1}) AND {2} AND {3})'
+
+    if attribute.type == 'supernet':
+        return condition.format(
+            'server',
+            ' OR '.join(relation_conditions),
+            "sub.servertype_id = '{0}'".format(attribute.target_servertype.pk),
+            template.format('sub.server_id'),
+        )
 
     if attribute.type == 'reverse_hostname':
         return condition.format(
