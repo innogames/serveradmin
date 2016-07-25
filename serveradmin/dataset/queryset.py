@@ -271,9 +271,9 @@ class QuerySet(BaseQuerySet):
             ):
                 self._attributes_by_type[sa.attribute.type].add(sa.attribute)
                 if sa.attribute.multi:
-                    self._multi_attributes[
-                        sa.servertype.pk
-                    ].append(sa.attribute)
+                    self._multi_attributes[sa.servertype.pk].append(
+                        sa.attribute
+                    )
                 if sa.related_via_attribute:
                     self._select_related_attribute(sa)
 
@@ -309,17 +309,17 @@ class QuerySet(BaseQuerySet):
                 related_via_attribute
             )
 
-            objects = ServertypeAttribute.objects.filter(
-                _servertype_id=servertype_attribute.servertype.pk,
-                _attribute_id=related_via_attribute.pk,
-            ).all()
-            if objects and objects[0].related_via_attribute:
-                servertype_attribute = objects[0]
-                self._select_related_attribute(servertype_attribute)
-                if servertype_attribute.attribute.multi:
-                    self._multi_attributes[
-                        servertype_attribute.servertype.pk
-                    ].append(servertype_attribute.attribute)
+            for sa in ServertypeAttribute.objects.all():
+                if (
+                    sa.servertype == servertype_attribute.servertype and
+                    sa.attribute == related_via_attribute
+                ):
+                    if sa.attribute.multi:
+                        self._multi_attributes[sa.servertype.pk].append(
+                            sa.attribute
+                        )
+                    if sa.related_via_attribute:
+                        self._select_related_attribute(sa)
 
     def _add_attributes(self, servers_by_type):
         """Add the attributes to the results"""
