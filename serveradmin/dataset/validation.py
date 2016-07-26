@@ -84,11 +84,13 @@ def _require_ip(attr, value):
         segs = value.split('.')
         try:
             if len(segs) != 4:
-                raise ValidationError()
+                raise ValidationError('IP address must have 4 parts.')
             for seg in segs:
                 x = int(seg, 10)
                 if not (0 <= x <= 255):
-                    raise ValidationError()
+                    raise ValidationError(
+                        'IP address parts must be between 0 and 255.'
+                    )
         except ValidationError:
             raise ValidationError(
                 u'Attribute {0} is of type "ip", but got {1}'
