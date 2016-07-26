@@ -30,7 +30,7 @@ def index(request):
         ordering = 'range_id'
 
     try:
-        segment = Segment.objects.get(segment_id=request.GET['segment'])
+        segment = Segment.objects.get(pk=request.GET['segment'])
     except (KeyError, Segment.DoesNotExist):
         segment = Segment.objects.all()[0]
     ip_ranges = IPRange.objects.filter(segment=segment.segment_id).order_by(
