@@ -310,7 +310,7 @@ def commit(request):
 @login_required
 def get_values(request):
     try:
-        attribute = Attribute.object.get(pk=request.GET['attribute'])
+        attribute = Attribute.objects.get(pk=request.GET['attribute'])
     except Attribute.DoesNotExist:
         raise Http404
 
