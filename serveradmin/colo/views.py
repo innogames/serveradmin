@@ -155,7 +155,7 @@ def index(request):
                             bladecenter = filters.Empty()
                         )
                     row['igcolumns'].append( {
-                        'style': 'extreme' if [ hw for hw in hardware if 'arch' in hw and hw['arch']=='EX670' ] else 'normal',
+                        'style': 'extreme' if [ hw for hw in hardware if 'hardware_model' in hw and hw['hardware_model']=='EX670' ] else 'normal',
                         'name': col,
                         'ighw': len(hardware) if hardware else 0,
                         'hw': [ hw['hostname'] for hw in hardware],
