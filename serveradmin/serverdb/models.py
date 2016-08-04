@@ -118,9 +118,6 @@ class LookupManager(models.Manager):
 
 
 class LookupModel(models.Model):
-    _default_manager = models.Manager()
-    objects = LookupManager()
-
     class Meta:
         abstract = True
 
@@ -149,6 +146,8 @@ class LookupModel(models.Model):
 
 
 class Project(LookupModel):
+    objects = LookupManager()
+
     project_id = models.CharField(max_length=32, primary_key=True)
     subdomain = models.CharField(max_length=16, unique=True)
     responsible_admin = models.ForeignKey(
@@ -163,6 +162,8 @@ class Project(LookupModel):
 
 
 class Segment(LookupModel):
+    objects = LookupManager()
+
     segment_id = models.CharField(max_length=20, primary_key=True)
     ip_range = models.CharField(max_length=255, null=True, blank=True)
     description = models.CharField(max_length=1024)
@@ -174,6 +175,8 @@ class Segment(LookupModel):
 
 
 class Servertype(LookupModel):
+    objects = LookupManager()
+
     servertype_id = models.CharField(max_length=32, primary_key=True)
     description = models.CharField(max_length=1024)
     _fixed_project = models.ForeignKey(
@@ -347,6 +350,8 @@ Attribute.specials = (
 
 
 class ServertypeAttribute(LookupModel):
+    objects = LookupManager()
+
     _servertype = models.ForeignKey(
         Servertype,
         related_name='used_attributes',
