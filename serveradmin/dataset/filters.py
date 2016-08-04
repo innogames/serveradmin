@@ -1,7 +1,7 @@
 import re
 import operator
 import time
-from datetime import datetime
+import dateutil.parser
 from decimal import Decimal
 from ipaddress import IPv4Address, IPv6Address, ip_network
 
@@ -642,45 +642,49 @@ filter_classes = {
 
 
 def value_to_sql(attribute, value):
-
-    # Casts by type
-    if attribute.type == 'boolean':
-        value = 1 if value else 0
-    elif attribute.type == 'ip':
-        if not isinstance(value, IPv4Address):
-            value = IPv4Address(value)
-        value = int(value)
-    elif attribute.type == 'ipv6':
-        if not isinstance(value, IPv6Address):
-            value = IPv6Address(value)
-        value = ''.join('{:02x}'.format(x) for x in value.packed)
-    elif attribute.type == 'datetime':
-        if isinstance(value, datetime):
-            value = int(time.mktime(value.timetuple()))
-    elif attribute.type == 'hostname':
-        try:
-            value = Server.objects.get(hostname=value).server_id
-        except Server.DoesNotExist as error:
-            raise FilterValueError(str(error))
-
-    # Validations of special attributes
+    # Validations of special relation attributes
     if attribute.pk == 'servertype':
         try:
             Servertype.objects.get(pk=value)
         except Servertype.DoesNotExist:
             raise FilterValueError('Invalid servertype: ' + value)
-    if attribute.pk == 'segment':
+    elif attribute.pk == 'segment':
         try:
             Segment.objects.get(pk=value)
         except Segment.DoesNotExist:
             raise FilterValueError('Invalid segment: ' + value)
-    if attribute.pk == 'project':
+    elif attribute.pk == 'project':
         try:
             Project.objects.get(pk=value)
         except Project.DoesNotExist:
             raise FilterValueError('Invalid project: ' + value)
 
-    return _sql_escape(value)
+    if attribute.type == 'hostname':
+        try:
+            return str(Server.objects.get(hostname=value).server_id)
+        except Server.DoesNotExist as error:
+            raise FilterValueError(str(error))
+
+    if attribute.type == 'number':
+        return str(Decimal(value))
+
+    # Those needs to be quoted, because they are stored as string on
+    # the database.
+    if attribute.type == 'boolean':
+        return raw_sql_escape('1' if value else '0')
+    if attribute.type == 'integer':
+        return raw_sql_escape(str(int(value)))
+    if attribute.type == 'ip':
+        return raw_sql_escape(str(int(IPv4Address(value))))
+    if attribute.type == 'ipv6':
+        return raw_sql_escape(
+            ''.join('{:02x}'.format(x) for x in IPv6Address(value).packed)
+        )
+    if attribute.type == 'datetime':
+        return raw_sql_escape(str(
+            int(time.mktime(dateutil.parser.parse(str(value)).timetuple()))
+        ))
+    return raw_sql_escape(value)
 
 
 def _condition_sql(attribute, template):
@@ -740,24 +744,6 @@ def _condition_sql(attribute, template):
             main_condition,
             ' OR '.join(relation_conditions),
         )
-    )
-
-
-def _sql_escape(value):
-    if isinstance(value, basestring):
-        return raw_sql_escape(value)
-
-    if isinstance(value, (int, long, float, Decimal)):
-        return unicode(value)
-
-    if isinstance(value, bool):
-        return '1' if value else '0'
-
-    if isinstance(value, datetime):
-        return unicode(time.mktime(value.timetuple()))
-
-    raise ValueError(
-        'Value of type {0} can not be used in SQL'.format(value)
     )
 
 
