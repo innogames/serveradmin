@@ -41,15 +41,9 @@
             <li><a href="{% url 'docs_document' 'extending' %}">Extending</a></li>
         </ul>
     </li>
-    <li>Administration
-        <ul class="childmenu">
-            <li><a href="{% url 'serverdb_servertypes' %}">Servertypes</a></li>
-            <li><a href="{% url 'serverdb_attributes' %}">Attributes</a></li>
 {% if user.is_staff %}
-            <li><a href="{% url 'admin:index' %}">Django Admin</a></li>
+    <li><a href="{% url 'admin:index' %}">Django Admin</a></li>
 {% endif %}
-        </ul>
-    </li>
     <li><a href="{% url 'logout' %}">Logout</a></li>
 {% else %}
     <li><a href="#">Login</a></li>

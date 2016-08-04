@@ -1,54 +1,8 @@
-import re
-
 from ipaddress import ip_address
 
 from django import forms
 
-from serveradmin.serverdb.models import (
-    Servertype,
-    Attribute,
-    ServertypeAttribute,
-    Server,
-)
-
-
-class AddServertypeForm(forms.ModelForm):
-    class Meta:
-        model = Servertype
-        fields = ('servertype_id', 'description', )
-
-
-class AddAttributeForm(forms.ModelForm):
-    class Meta:
-        model = Attribute
-        fields = ('attribute_id', 'type', 'multi')
-
-
-class EditServertypeAttributeForm(forms.ModelForm):
-    class Meta:
-        model = ServertypeAttribute
-        fields = ('required', 'default_value', 'regexp')
-        widgets = {
-            'regexp': forms.TextInput(attrs={'size': 50})
-        }
-
-    def __init__(self, servertype, *args, **kwargs):
-        self.servertype = servertype
-        super(EditServertypeAttributeForm, self).__init__(*args, **kwargs)
-
-    def clean_regexp(self):
-        regexp = self.cleaned_data['regexp']
-        if regexp is not None:
-            try:
-                re.compile(regexp)
-            except re.error:
-                raise forms.ValidationError('Invalid regular expression')
-        return regexp
-
-
-class AddServertypeAttributeForm(EditServertypeAttributeForm):
-    class Meta(EditServertypeAttributeForm.Meta):
-        fields = ('_attribute', ) + EditServertypeAttributeForm.Meta.fields
+from serveradmin.serverdb.models import Server
 
 
 class ServerForm(forms.ModelForm):
