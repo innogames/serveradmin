@@ -695,15 +695,20 @@ def _condition_sql(attribute, template):
 
         return template.format(field)
 
-    if attribute.reversed_attribute:
-        attribute = attribute.reversed_attribute
+    if not attribute.reversed_attribute:
+        relation_column = 'sub.server_id'
+        main_conditions = (
+            "sub.attrib_id = '{0}'".format(attribute.pk),
+            template.format('sub.value'),
+        )
+    else:
         assert attribute.type == 'hostname'
 
         relation_column = 'sub.value'
-        main_condition = template.format('sub.server_id')
-    else:
-        relation_column = 'sub.server_id'
-        main_condition = template.format('sub.value')
+        main_conditions = (
+            "sub.attrib_id = '{0}'".format(attribute.reversed_attribute.pk),
+            template.format('sub.server_id'),
+        )
 
     # We start with the condition for the attributes the server has on
     # its own.  Then, add the conditions for all possible relations.
@@ -714,34 +719,36 @@ def _condition_sql(attribute, template):
         if sa.attribute == attribute and sa.related_via_attribute:
             assert sa.related_via_attribute.type == 'hostname'
 
+            if not sa.related_via_attribute.reversed_attribute:
+                sub_conditions = (
+                    "sub_rel.attrib_id = '{0}'".format(
+                        sa.related_via_attribute.pk
+                    ),
+                    'sub_rel.server_id = adms.server_id',
+                    'sub_rel.value = ' + relation_column,
+                )
+            else:
+                sub_conditions = (
+                    "sub_rel.attrib_id = '{0}'".format(
+                        sa.related_via_attribute.reversed_attribute.pk
+                    ),
+                    'sub_rel.value = adms.server_id',
+                    'sub_rel.server_id = ' + relation_column,
+                )
+
             relation_conditions.append(
-                'EXISTS ('
-                '   SELECT 1'
-                '   FROM {0} AS sub_rel'
-                '   WHERE'
-                '           sub_rel.server_id = adms.server_id'
-                '       AND'
-                "           sub_rel.attrib_id = '{1}'"
-                '       AND'
-                '           sub_rel.value = {2}'
-                ')'
+                'EXISTS (SELECT 1 FROM {0} AS sub_rel WHERE {1})'
                 .format(
                     ServerAttribute.get_model('hostname')._meta.db_table,
-                    sa.related_via_attribute.pk,
-                    relation_column,
+                    ' AND '.join(sub_conditions),
                 )
             )
 
     return (
-        'EXISTS ('
-        '   SELECT 1'
-        '   FROM {0} AS sub'
-        "   WHERE sub.attrib_id = '{1}' AND {2} AND ({3})"
-        ')'
+        'EXISTS (SELECT 1 FROM {0} AS sub WHERE {1} AND ({2}))'
         .format(
             ServerAttribute.get_model(attribute.type)._meta.db_table,
-            attribute.pk,
-            main_condition,
+            ' AND '.join(main_conditions),
             ' OR '.join(relation_conditions),
         )
     )
