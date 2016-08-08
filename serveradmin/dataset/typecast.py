@@ -71,6 +71,7 @@ _typecast_fns = {
     'datetime': _to_datetime,
     'mac': _to_mac,
     'hostname': str,
+    'reverse_hostname': str,
     'number': Decimal,
 }
 

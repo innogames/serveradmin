@@ -194,7 +194,7 @@ class Comparison(BaseFilter):
 
     def typecast(self, attribute):
 
-        if attribute.type == 'hostname':
+        if attribute.type in ('hostname', 'reverse_hostname'):
             raise FilterValueError('Hostnames cannot be compared.')
 
         self.value = typecast(attribute, self.value, force_single=True)
@@ -356,7 +356,7 @@ class Between(BaseFilter):
 
     def typecast(self, attribute):
 
-        if attribute.type == 'hostname':
+        if attribute.type in ('hostname', 'reverse_hostname'):
             raise FilterValueError('Hostnames cannot be compared.')
 
         self.a = typecast(attribute, self.a, force_single=True)
@@ -440,7 +440,7 @@ class Startswith(BaseFilter):
         value = self.value.replace('_', '\\_').replace('%', '\\%%')
         value = raw_sql_escape(value + '%%')
 
-        if attribute.type == 'hostname':
+        if attribute.type in ('hostname', 'reverse_hostname'):
             template = (
                 '{{0}} IN ('
                 '   SELECT server_id'
@@ -659,7 +659,7 @@ def value_to_sql(attribute, value):
         except Project.DoesNotExist:
             raise FilterValueError('Invalid project: ' + value)
 
-    if attribute.type == 'hostname':
+    if attribute.type in ('hostname', 'reverse_hostname'):
         try:
             return str(Server.objects.get(hostname=value).server_id)
         except Server.DoesNotExist as error:
@@ -695,19 +695,17 @@ def _condition_sql(attribute, template):
 
         return template.format(field)
 
-    if not attribute.reversed_attribute:
-        relation_column = 'sub.server_id'
-        main_conditions = (
-            "sub.attrib_id = '{0}'".format(attribute.pk),
-            template.format('sub.value'),
-        )
-    else:
-        assert attribute.type == 'hostname'
-
+    if attribute.type == 'reverse_hostname':
         relation_column = 'sub.value'
         main_conditions = (
             "sub.attrib_id = '{0}'".format(attribute.reversed_attribute.pk),
             template.format('sub.server_id'),
+        )
+    else:
+        relation_column = 'sub.server_id'
+        main_conditions = (
+            "sub.attrib_id = '{0}'".format(attribute.pk),
+            template.format('sub.value'),
         )
 
     # We start with the condition for the attributes the server has on
@@ -717,23 +715,22 @@ def _condition_sql(attribute, template):
 
     for sa in ServertypeAttribute.objects.all():
         if sa.attribute == attribute and sa.related_via_attribute:
-            assert sa.related_via_attribute.type == 'hostname'
-
-            if not sa.related_via_attribute.reversed_attribute:
-                sub_conditions = (
-                    "sub_rel.attrib_id = '{0}'".format(
-                        sa.related_via_attribute.pk
-                    ),
-                    'sub_rel.server_id = adms.server_id',
-                    'sub_rel.value = ' + relation_column,
-                )
-            else:
+            if sa.related_via_attribute.type == 'reverse_hostname':
                 sub_conditions = (
                     "sub_rel.attrib_id = '{0}'".format(
                         sa.related_via_attribute.reversed_attribute.pk
                     ),
                     'sub_rel.value = adms.server_id',
                     'sub_rel.server_id = ' + relation_column,
+                )
+            else:
+                assert sa.related_via_attribute.type == 'hostname'
+                sub_conditions = (
+                    "sub_rel.attrib_id = '{0}'".format(
+                        sa.related_via_attribute.pk
+                    ),
+                    'sub_rel.server_id = adms.server_id',
+                    'sub_rel.value = ' + relation_column,
                 )
 
             relation_conditions.append(

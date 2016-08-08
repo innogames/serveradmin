@@ -259,7 +259,6 @@ class QuerySet(BaseQuerySet):
     def _select_attributes(self, servers_by_type):
         self._attributes_by_type = defaultdict(list)
         self._multi_attributes = defaultdict(list)
-        self._reverse_attributes = list()
         self._related_servertype_attributes = []
 
         # First, prepare the dictionary for lookups by attribute
@@ -267,8 +266,7 @@ class QuerySet(BaseQuerySet):
         for sa in ServertypeAttribute.objects.all():
             if sa.servertype.pk in servers_by_type:
                 servertype_attributes[sa.attribute].append(sa)
-
-        # Then process the attributes
+        # Then, process the attributes
         for attribute in servertype_attributes.keys():
             if not self._restrict or attribute.pk in self._restrict:
                 self._select_attribute(servertype_attributes, attribute)
@@ -294,19 +292,6 @@ class QuerySet(BaseQuerySet):
                     if new not in self._attributes_by_type[new.type]:
                         self._select_attribute(servertype_attributes, new)
 
-        # Reversed attributes are not related with the servertypes in normal
-        # way.
-        if attribute.reversed_attribute:
-            reversed_attribute = attribute.reversed_attribute
-
-            if servertype_attributes[reversed_attribute]:
-                self._reverse_attributes.append(attribute)
-
-                if attribute.multi:
-                    self._multi_attributes[
-                        attribute.reversed_attribute.target_servertype
-                    ].append(attribute)
-
     def _add_attributes(self, servers_by_type):
         """Add the attributes to the results"""
 
@@ -318,18 +303,20 @@ class QuerySet(BaseQuerySet):
 
         # Step 1: Query the materialized attributes by their types
         for key, attributes in self._attributes_by_type.items():
-            for sa in ServerAttribute.get_model(key).objects.filter(
-                server_id__in=self._results.keys(),
-                _attribute__in=attributes,
-            ):
-                self._add_attribute_value(
-                    self._results[sa.server_id],
-                    sa.attribute,
-                    sa.get_value(),
-                )
+            model = ServerAttribute.get_model(key)
+            if model:
+                for sa in model.objects.filter(
+                    server_id__in=self._results.keys(),
+                    _attribute__in=attributes,
+                ):
+                    self._add_attribute_value(
+                        self._results[sa.server_id],
+                        sa.attribute,
+                        sa.get_value(),
+                    )
 
-        # Step 2: Add the reversed attributes
-        for attribute in self._reverse_attributes:
+        # Step 2: Add the reverse attributes
+        for attribute in self._attributes_by_type['reverse_hostname']:
             for sa in ServerHostnameAttribute.objects.filter(
                 value_id__in=self._results.keys(),
                 _attribute_id=attribute.reversed_attribute.pk,

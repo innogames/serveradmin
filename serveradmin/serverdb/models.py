@@ -53,6 +53,7 @@ attribute_types = (
     'datetime',
     'mac',
     'hostname',
+    'reverse_hostname',
     'number',
 )
 
@@ -262,16 +263,7 @@ class Attribute(LookupModel):
         null=True,
         blank=True,
         db_column='reversed_attribute_id',
-        limit_choices_to=dict(
-
-            # We can only reverse a relation (AKA an hostname attribute).
-            # The type of the reverse attribute must also be the same,
-            # but it is not possible to put this constraint in here.
-            type='hostname',
-
-            # We cannot reverse a reversed attribute.
-            _reversed_attribute=None,
-        ),
+        limit_choices_to=dict(type='hostname'),
     )
     reversed_attribute = LookupModel.foreign_key_lookup(
         '_reversed_attribute_id'
@@ -363,13 +355,6 @@ class ServertypeAttribute(LookupModel):
     _attribute = models.ForeignKey(
         Attribute,
         db_column='attrib_id',
-        limit_choices_to=dict(
-
-            # Reversed attributes cannot be related with the servertypes
-            # directly, because they are included by the target servertype
-            # of the attribute only and automatically.
-            _reversed_attribute=None,
-        ),
         db_index=False,
         on_delete=models.CASCADE,
     )
@@ -380,12 +365,9 @@ class ServertypeAttribute(LookupModel):
         null=True,
         blank=True,
         db_column='related_via_attribute_id',
-        limit_choices_to=dict(
-
-            # It can only be related via a relation (AKA as an hostname
-            # attribute).
-            type='hostname',
-        ),
+        # It can only be related via a relation (AKA as an hostname
+        # attribute).
+        limit_choices_to=dict(type=('hostname', 'reverse_hostname')),
     )
     related_via_attribute = Attribute.foreign_key_lookup(
         '_related_via_attribute_id'
@@ -524,11 +506,60 @@ class ServerAttribute(models.Model):
 
     @staticmethod
     def get_model(attribute_type):
+        if attribute_type in ('integer', 'string', 'ipv6', 'boolean',
+                              'datetime', 'mac'):
+            return ServerStringAttribute
         if attribute_type == 'hostname':
             return ServerHostnameAttribute
         if attribute_type == 'number':
             return ServerNumberAttribute
-        return ServerStringAttribute
+
+
+class ServerStringAttribute(ServerAttribute):
+    _attribute = models.ForeignKey(
+        Attribute,
+        db_column='attrib_id',
+        db_index=False,
+        on_delete=models.CASCADE,
+        limit_choices_to=dict(type=('integer', 'string', 'ipv6', 'boolean',
+                                    'datetime', 'mac')),
+    )
+    attribute = Attribute.foreign_key_lookup('_attribute_id')
+    value = models.CharField(max_length=1024)
+
+    class Meta:
+        app_label = 'serverdb'
+        db_table = 'attrib_values'
+
+    def get_value(self):
+        if self.attribute.type == 'integer':
+            return int(self.value)
+        if self.attribute.type == 'boolean':
+            return self.value == '1'
+        if self.attribute.type == 'ip':
+            return IPv4Address(int(self.value))
+        if self.attribute.type == 'ipv6':
+            return IPv6Address(bytearray.fromhex(self.value))
+        if self.attribute.type == 'datetime':
+            return datetime.fromtimestamp(int(self.value))
+        return self.value
+
+    def save_value(self, value):
+        if self.attribute.type == 'boolean':
+            value = 1 if value else 0
+        elif self.attribute.type == 'ip':
+            if not isinstance(value, IPv4Address):
+                value = IPv4Address(value)
+            value = int(value)
+        elif self.attribute.type == 'ipv6':
+            if not isinstance(value, IPv6Address):
+                value = IPv6Address(value)
+            value = ''.join('{:02x}'.format(x) for x in value.packed)
+        elif self.attribute.type == 'datetime':
+            if isinstance(value, datetime):
+                value = int(time.mktime(value.timetuple()))
+
+        ServerAttribute.save_value(self, value)
 
 
 class ServerHostnameAttributeManager(models.Manager):
@@ -545,12 +576,7 @@ class ServerHostnameAttribute(ServerAttribute):
         db_column='attrib_id',
         db_index=False,
         on_delete=models.CASCADE,
-        limit_choices_to=dict(
-            type='hostname',
-
-            # Reversed attributes cannot be materialised.
-            reversed_attribute=None,
-        ),
+        limit_choices_to=dict(type='hostname'),
     )
     attribute = Attribute.foreign_key_lookup('_attribute_id')
     value = models.ForeignKey(
@@ -625,51 +651,6 @@ class ServerNumberAttribute(ServerAttribute):
         db_table = 'server_number_attrib'
         unique_together = (('server', '_attribute', 'value'), )
         index_together = (('_attribute', 'value'), )
-
-
-class ServerStringAttribute(ServerAttribute):
-    _attribute = models.ForeignKey(
-        Attribute,
-        db_column='attrib_id',
-        db_index=False,
-        on_delete=models.CASCADE,
-    )
-    attribute = Attribute.foreign_key_lookup('_attribute_id')
-    value = models.CharField(max_length=1024)
-
-    class Meta:
-        app_label = 'serverdb'
-        db_table = 'attrib_values'
-
-    def get_value(self):
-        if self.attribute.type == 'integer':
-            return int(self.value)
-        if self.attribute.type == 'boolean':
-            return self.value == '1'
-        if self.attribute.type == 'ip':
-            return IPv4Address(int(self.value))
-        if self.attribute.type == 'ipv6':
-            return IPv6Address(bytearray.fromhex(self.value))
-        if self.attribute.type == 'datetime':
-            return datetime.fromtimestamp(int(self.value))
-        return self.value
-
-    def save_value(self, value):
-        if self.attribute.type == 'boolean':
-            value = 1 if value else 0
-        elif self.attribute.type == 'ip':
-            if not isinstance(value, IPv4Address):
-                value = IPv4Address(value)
-            value = int(value)
-        elif self.attribute.type == 'ipv6':
-            if not isinstance(value, IPv6Address):
-                value = IPv6Address(value)
-            value = ''.join('{:02x}'.format(x) for x in value.packed)
-        elif self.attribute.type == 'datetime':
-            if isinstance(value, datetime):
-                value = int(time.mktime(value.timetuple()))
-
-        ServerAttribute.save_value(self, value)
 
 
 #
