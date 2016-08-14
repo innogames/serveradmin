@@ -284,6 +284,9 @@ class Attribute(LookupModel):
             if sa.attribute == self
         ]
 
+    def can_be_materialized(self):
+        return bool(ServerAttribute.get_model(self.type))
+
 
 class ServerTableSpecial(object):
     def __init__(self, field, unique=False):
@@ -369,7 +372,9 @@ class ServertypeAttribute(LookupModel):
         db_column='related_via_attribute_id',
         # It can only be related via a relation (AKA as an hostname
         # attribute).
-        limit_choices_to=models.Q(type__in=('hostname', 'reverse_hostname')),
+        limit_choices_to=models.Q(type__in=(
+            'hostname', 'reverse_hostname', 'supernet'
+        )),
     )
     related_via_attribute = Attribute.foreign_key_lookup(
         '_related_via_attribute_id'
