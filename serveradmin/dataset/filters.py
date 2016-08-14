@@ -143,7 +143,7 @@ class Regexp(BaseFilter):
     def as_sql_expr(self, attribute):
         value = raw_sql_escape(self.regexp)
 
-        if attribute.type == 'hostname':
+        if attribute.type in ('hostname', 'reverse_hostname'):
             template = (
                 '{{0}} IN ('
                 '   SELECT server_id'
