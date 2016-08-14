@@ -671,19 +671,19 @@ def value_to_sql(attribute, value):
     # Those needs to be quoted, because they are stored as string on
     # the database.
     if attribute.type == 'boolean':
-        return raw_sql_escape('1' if value else '0')
+        return raw_sql_escape(1 if value else 0)
     if attribute.type == 'integer':
-        return raw_sql_escape(str(int(value)))
+        return raw_sql_escape(int(value))
     if attribute.type == 'ip':
-        return raw_sql_escape(str(int(IPv4Address(value))))
+        return raw_sql_escape(int(IPv4Address(value)))
     if attribute.type == 'ipv6':
         return raw_sql_escape(
             ''.join('{:02x}'.format(x) for x in IPv6Address(value).packed)
         )
     if attribute.type == 'datetime':
-        return raw_sql_escape(str(
+        return raw_sql_escape(
             int(time.mktime(dateutil.parser.parse(str(value)).timetuple()))
-        ))
+        )
     return raw_sql_escape(value)
 
 
@@ -752,6 +752,7 @@ def _condition_sql(attribute, template):
 
 
 def raw_sql_escape(value):
+    value = str(value)
 
     # escape_string just takes bytestrings, so convert unicode back and forth
     if isinstance(value, unicode):
