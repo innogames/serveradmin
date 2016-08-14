@@ -367,7 +367,7 @@ class ServertypeAttribute(LookupModel):
         db_column='related_via_attribute_id',
         # It can only be related via a relation (AKA as an hostname
         # attribute).
-        limit_choices_to=dict(type=('hostname', 'reverse_hostname')),
+        limit_choices_to=models.Q(type__in=('hostname', 'reverse_hostname')),
     )
     related_via_attribute = Attribute.foreign_key_lookup(
         '_related_via_attribute_id'
@@ -521,8 +521,9 @@ class ServerStringAttribute(ServerAttribute):
         db_column='attrib_id',
         db_index=False,
         on_delete=models.CASCADE,
-        limit_choices_to=dict(type=('integer', 'string', 'ipv6', 'boolean',
-                                    'datetime', 'mac')),
+        limit_choices_to=models.Q(type__in=(
+            'integer', 'string', 'ipv6', 'boolean', 'datetime', 'mac'
+        )),
     )
     attribute = Attribute.foreign_key_lookup('_attribute_id')
     value = models.CharField(max_length=1024)
@@ -641,7 +642,7 @@ class ServerNumberAttribute(ServerAttribute):
         db_column='attrib_id',
         db_index=False,
         on_delete=models.CASCADE,
-        limit_choices_to={'type': 'number'},
+        limit_choices_to=dict(type='number'),
     )
     attribute = Attribute.foreign_key_lookup('_attribute_id')
     value = models.DecimalField(max_digits=65, decimal_places=0)
