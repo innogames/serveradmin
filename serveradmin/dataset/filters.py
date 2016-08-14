@@ -695,23 +695,13 @@ def _condition_sql(attribute, template):
 
         return template.format(field)
 
-    if attribute.type == 'reverse_hostname':
-        relation_column = 'sub.value'
-        main_conditions = (
-            "sub.attrib_id = '{0}'".format(attribute.reversed_attribute.pk),
-            template.format('sub.server_id'),
-        )
-    else:
-        relation_column = 'sub.server_id'
-        main_conditions = (
-            "sub.attrib_id = '{0}'".format(attribute.pk),
-            template.format('sub.value'),
-        )
-
     # We start with the condition for the attributes the server has on
     # its own.  Then, add the conditions for all possible relations.
     # They are going to be OR'ed together.
-    relation_conditions = ['adms.server_id = ' + relation_column]
+    if attribute.type == 'reverse_hostname':
+        relation_conditions = ['adms.server_id = sub.value']
+    else:
+        relation_conditions = ['adms.server_id = sub.server_id']
 
     for sa in ServertypeAttribute.objects.all():
         if sa.attribute == attribute and sa.related_via_attribute:
@@ -721,7 +711,7 @@ def _condition_sql(attribute, template):
                         sa.related_via_attribute.reversed_attribute.pk
                     ),
                     'sub_rel.value = adms.server_id',
-                    'sub_rel.server_id = ' + relation_column,
+                    'sub_rel.server_id = sub.value',
                 )
             else:
                 assert sa.related_via_attribute.type == 'hostname'
@@ -730,7 +720,7 @@ def _condition_sql(attribute, template):
                         sa.related_via_attribute.pk
                     ),
                     'sub_rel.server_id = adms.server_id',
-                    'sub_rel.value = ' + relation_column,
+                    'sub_rel.value = sub.server_id',
                 )
 
             relation_conditions.append(
@@ -741,13 +731,21 @@ def _condition_sql(attribute, template):
                 )
             )
 
-    return (
-        'EXISTS (SELECT 1 FROM {0} AS sub WHERE {1} AND ({2}))'
-        .format(
-            ServerAttribute.get_model(attribute.type)._meta.db_table,
-            ' AND '.join(main_conditions),
+    condition = 'EXISTS (SELECT 1 FROM {0} AS sub WHERE ({1}) AND {2} AND {3})'
+
+    if attribute.type == 'reverse_hostname':
+        return condition.format(
+            ServerAttribute.get_model('hostname')._meta.db_table,
             ' OR '.join(relation_conditions),
+            "sub.attrib_id = '{0}'".format(attribute.reversed_attribute.pk),
+            template.format('sub.server_id'),
         )
+
+    return condition.format(
+        ServerAttribute.get_model(attribute.type)._meta.db_table,
+        ' OR '.join(relation_conditions),
+        "sub.attrib_id = '{0}'".format(attribute.pk),
+        template.format('sub.value'),
     )
 
 
