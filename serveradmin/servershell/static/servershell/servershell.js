@@ -1203,10 +1203,12 @@ $(function() {
         var attr_item = $(this);
         var attr_name = attr_item.attr('data-attr');
         var attr_type = attr_item.attr('data-attr-type');
-        if (attr_type == 'hostname')
-            var symbol = 'H';
-        else if (attr_type == 'number')
+        if (attr_type == 'number')
             var symbol = '#';
+        else if (attr_type == 'hostname')
+            var symbol = 'H';
+        else if (attr_type == 'reverse_hostname')
+            var symbol = 'R';
         else
             var symbol = "''";
         var link = $('<span class="link">' + symbol + '</span>');
