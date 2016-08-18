@@ -1,9 +1,14 @@
-from django.conf.urls import patterns, include, url
-from django.shortcuts import redirect
-from django.conf.urls.static import static
 from django.conf import settings
-
+from django.conf.urls import patterns, include, url
+from django.conf.urls.static import static
 from django.contrib import admin
+from django.contrib.auth.models import update_last_login
+from django.contrib.auth.signals import user_logged_in
+from django.shortcuts import redirect
+
+
+user_logged_in.disconnect(update_last_login)
+
 admin.autodiscover()
 
 urlpatterns = patterns(
@@ -27,5 +32,6 @@ urlpatterns = patterns(
 )
 
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL,
-                          document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(
+        settings.MEDIA_URL, document_root=settings.MEDIA_ROOT
+    )
