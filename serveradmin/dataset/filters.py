@@ -711,7 +711,7 @@ def _condition_sql(attribute, template):
                         sa.related_via_attribute.reversed_attribute.pk
                     ),
                     'sub_rel.value = adms.server_id',
-                    'sub_rel.server_id = sub.value',
+                    'sub_rel.server_id = sub.server_id',
                 )
             else:
                 assert sa.related_via_attribute.type == 'hostname'
