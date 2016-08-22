@@ -1,32 +1,30 @@
 Extending Serveradmin
 =====================
 
-Setting up development environment
-----------------------------------
-
-Most steps assume that you are using Debian wheezy, but rumors are that you
-could also use Ubuntu.
+Serveradmin is a Django application.  General knowledge about running
+Django applications would be useful.
 
 
 Creating the virtual environment
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------------------
 
-We will first create a virtual python environment which will isolate our python
-packages. This way you can - for example - use different Django versions for
+We will first create a virtual python environment which will isolate our Python
+packages.  This way you can - for example - use different Django versions for
 different projects.
 
 Install the debian package ``virtualenvwrapper``::
    
    aptitude install virtualenvwrapper
    
-Open a new shell, it will initialize some stuff for the first time. Now you can
-create your virtual environment by typing::
+Open a new shell, it will initialize some stuff for the first time.  Now you
+can create your virtual environment by typing::
    
    mkvirtualenv serveradmin
 
-It will create a folder ``~/.virtualenvs/serveradmin`` with some files for the
-environment. You will now see ``(serveradmin)`` in front of your shell prompt
--- this means that you are currently inside the virtual environment ``serveradmin``.
+It will create a folder ``~/.virtualenvs/serveradmin`` with some files for
+the environment. You will now see ``(serveradmin)`` in front of your shell
+prompt -- this means that you are currently inside the virtual environment
+``serveradmin``.
 
 Every time you want to activate the environment, just type::
    
@@ -36,53 +34,26 @@ For the rest of the instructions we assume that your are inside the serveradmin
 virtual environment.
 
 Bonus: You can set up hooks for your virtual environment by editing the files
-in ``~/.virtualenvs/serveradmin/bin``. Using the ``postactivate`` hook you can
-change directory to the project's source code after activating the virtual
-environment.
+in ``~/.virtualenvs/serveradmin/bin``.  Using the ``postactivate`` hook you can
+change directory to the source code after activating the virtual environment.
 
 
 Installing dependencies
-^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------
 
 Most dependencies can be installed by using the ``requirements.txt`` file for
 pip::
    
    pip install -r requirements.txt
 
-The only exception is ``MySQLdb``, which could of course also be installed
-using pip, but it requires some development headers and compilation. To
-avoid this, just install the debian package and symlink it to the virtual
-environment::
-   
-   aptitude install python-mysqldb
-   cd ~/.virtualenv/serveradmin/lib/python2.7/site-packages
-   ln -s /usr/lib/pyshared/python2.7/_mysql.so
-   ln -s /usr/share/pyshared/_mysql_exceptions.py
-   ln -s /usr/share/pyshared/MySQLdb
-   
-You can also install memcache if you want to use fast caching, but it is not
-required. See the comments in the ``settings.example.py`` (next section).
-
 
 Setting up Django
-^^^^^^^^^^^^^^^^^
+-----------------
 
 We will copy the example settings to create our local development settings::
    
    cp serveradmin/settings.example.py serveradmin/settings.py
    vim serveradmin/settings.py
-   
-For development you just need to change ``DATABASES['default']['PASSWORD']``.
-We will use an example database running on ``serveradmin.admin``. It contains
-(and older) dump of the real production database. You will get the password
-on ``serveradmin.admin``::
-   
-   ssh serveradmin.admin cat /opt/serveradmin/.mysql-access.txt
-
-The MySQL server is only reachable inside the datacenter, use VPN or build a
-cheap SSH tunnel::
-   
-   ssh -L 3306:serveradmin.admin:3306 control.innogames.net
 
 When editing the config, don't forget to remove the exception at the end.
 
@@ -105,7 +76,7 @@ If not, consult your local Django expert ;)
 
 
 Bonus: Setting up a cool debugger
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------
 
 Install ``django-extensions`` and ``werkzeug`` using pip::
    
@@ -119,12 +90,8 @@ to start the local test webserver with the Werkzeug debugger.
 
 See http://packages.python.org/django-extensions/ for details.
 
-
-Developing new applications
----------------------------
-
 Code style guideline
-^^^^^^^^^^^^^^^^^^^^
+--------------------
 
 First of all, read the Python style guide (`PEP 8 <http://python.org/dev/peps/pep-0008/>`_).
 The most important things:
@@ -134,13 +101,12 @@ The most important things:
    * Classes use CamelCase (e.g. ``NagiosCommit``)
    * Try to keep lines less than 80 chars 
 
-
 .. warning::
    Ignoring the style guide will make your local Python expert quite sad!
 
 
 Terminology
-^^^^^^^^^^^
+-----------
 
 Just to have same names:
 
@@ -150,33 +116,34 @@ project:
 
 application (or "app"):
    An application is basically a combination of several files for the same
-   topic. You may have an application for nagios, graphs, the servershell etc.
-   Applications consist of views, models and templates. If you are familiar
+   topic.  You may have an application for nagios, graphs, the servershell etc.
+   Applications consist of views, models and templates.  If you are familiar
    with MVC pattern, think of views being the controllers and the templates
    the views. 
 
 models:
-   The models will contain your application logic. This is mostly your database
+   The models will contain your application logic.  This is mostly your database
    structure and operations on on it, but also stuff that's not related to the
-   database. In your application you will find a ``models.py`` where you can
-   put your code in. Django calls a class inheriting ``django.db.models.Model``
+   database.  In your application you will find a ``models.py`` where you can
+   put your code in.  Django calls a class inheriting ``django.db.models.Model``
    a model, which should not be mistaken for the models itself (e.g. a class
    for your database table and operations vs. your application logic in general)
 
-viewe:
+views:
    The views will get the input from the user and ask the model for the
    execution of operations or fetch data from the model to pass it to the
-   template. As already said, it's known as the controller in the MVC pattern.
+   template.  As already said, it's known as the controller in the MVC pattern.
    You will add your view functions to the ``views.py`` in your application.
 
 templates:
    The template is - in most cases - just an ordinary HTML file with some
-   template markup to display the data it got from the view. They usually
-   reside in a directory named ``yourapp/templates/yourapp``. You have to
+   template markup to display the data it got from the view.  They usually
+   reside in a directory named ``yourapp/templates/yourapp``.  You have to
    create it yourself for a new application.
 
+
 Short git introduction
-^^^^^^^^^^^^^^^^^^^^^^
+----------------------
 
 Set your name and email::
    
@@ -203,7 +170,7 @@ just modified files*)::
 **Don't forget to put a meaningful commit message.**
 
 Once you have done all your changes and your version is ready for deployment
-you can merge it back to master. You may want to fetch changes from remote
+you can merge it back to master.  You may want to fetch changes from remote
 first::
    
    git checkout master
@@ -214,7 +181,7 @@ After merging was successful, you can delete your branch::
    
    git branch -d my_changes
    
-It is recommended to do a rebase. This will help to have a clear history::
+It is recommended to do a rebase.  This will help to have a clear history::
    
    git rebase
    
@@ -231,47 +198,41 @@ git stash::
 
 
 Short Django introduction
-^^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------
 
 If you have some time I recommend doing the `Django Tutorial 
 <https://docs.djangoproject.com/en/1.4/intro/tutorial01/>`_. It covers many
 topics and gives your a good overview.
 
-For people in a hurry: You will find the serveradmin in the ``serveradmin``
-directory while the Remote API (aka. adminapi) is inside ``adminapi``. We will
-only cover the serveradmin in this documentation.
+For people in a hurry: You will find the Serveradmin in the ``serveradmin``
+directory while the Remote API (aka. adminapi) is inside ``adminapi``.  We will
+only cover the Serveradmin in this document.
 
 Inside the serveradmin you will find the following files:
    
    * ``urls.py``
    * ``settings.py``
 
-The ``settings.py`` contains your settings. You have already edited this file.
-Inside the ``urls.py`` you can define URLs for the serveradmin. In most cases
+The ``settings.py`` contains your settings.  You have already edited this file.
+Inside the ``urls.py`` you can define URLs for the Serveradmin.  In most cases
 you will have an own ``urls.py`` in your application.
 
 We will create a small example application named "secinfo" (for "security
-information"). **Please don't commit this application, it is for learning
+information").  **Please don't commit this application, it is for learning
 purposes only!**
 
 We will use the ``manage.py`` to create our application::
    
    ./manage.py startapp secinfo
    
-Now we have a directory named ``secinfo`` with some files inside it. We will
-move it into the directory ``serveradmin``. The idea is to put general
-applications (those which can be used in other projects too like
-``igrestlogin``) in the same directory as ``manage.py`` and project
-specific applications (like secinfo, nagios etc.) into the project's
-subdirectory.
-
-
+Now we have a directory named ``secinfo`` with some files inside it.  We will
+move it into the directory ``serveradmin``.
 
 Adding functions to the remote API
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------
 
 To create new functions which are callable by the Python remote API you have
-to define them inside the ``api.py`` file in your application. If it doesn't
+to define them inside the ``api.py`` file in your application.  If it doesn't
 exist, you can just create it.
 
 To export the function you will use the ``api_function`` decorator, as shown
@@ -291,15 +252,15 @@ Now you can call this function remotely::
    print example.hello('world') # will print 'Hello world!'
    
 The API uses JSON for communication, therefore you can only return and receive
-a restricted set of types. The following types are supported: String, integer,
-float, bool, dict, list and None. You can also receive and return datetime/date
+a restricted set of types. The following types are supported: string, integer,
+float, bool, dict, list and None.  You can also receive and return datetime/date
 objects, but they will be converted to an unix timestamp prior sending. You have
 to convert them back manually by using ``datetime.fromtimestamp``.
 
 It has also limited support for exceptions. You can either raise a ``ValueError``
 if you get invalid parameters or use ``serveradmin.api.ApiError`` for other
-exceptions. You can subclass ``ApiError`` for more specific exceptions.
-Raising exception has also one other restriction: You can only pass a message,
+exceptions.  You can subclass ``ApiError`` for more specific exceptions.
+Raising exception has also one other restriction: you can only pass a message,
 but not additional attributes on the exception.
 
 Look at the following example::
@@ -320,15 +281,14 @@ Look at the following example::
            # it and reraise it as ApiError or subclass of ApiError
            raise ApiError(e.message)
    
-
 Handling Permissions
-^^^^^^^^^^^^^^^^^^^^
+--------------------
 
-We will use Django's integrated Permission system. In Django, you will define
+We will use Django's integrated Permission system.  In Django, you will define
 permissions on a model. You will automatically get a few magic permissions
-named ``app_label.(add|change|delete)_modelname``. For example: If you have a
-class ``IPRange`` in your application ``iprange`` you will get permissions
-named ``iprange.add_iprange`` etc. If you need own permissions, you have to
+named ``app_label.(add|change|delete)_modelname``.  For example: if you have
+a class ``IPRange`` in your application ``iprange`` you will get permissions
+named ``iprange.add_iprange`` etc.  If you need own permissions, you have to
 define them like this::
    
    class IPRange(models.Model):
@@ -341,22 +301,22 @@ define them like this::
    
 You will now get a permission named ``iprange.can_get_ip``.
 
-If you don't have a model class you have to create one. This will normally
+If you don't have a model class you have to create one.  This will normally
 also create a database table, but you can avoid it by setting ``managed``
-to ``False``. This will tell Django that it shouldn't manage the database
-for this model. See the following example::
+to ``False``.  This will tell Django that it shouldn't manage the database
+for this model.  See the following example::
    
     class ddosmanager (models.Model):
 
         class Meta:
             managed = False
             permissions = (
-              ('set_state',    'Can enable and disable DDoS Mitigation'),
-              ('set_prefixes', 'Can modify prefixes announced to DDoS Mitigation provider'),
-              ('view', 'Can view DDoS Mitigation state and prefixes'),
-           )
+                ('set_state',    'Can enable and disable DDoS Mitigation'),
+                ('set_prefixes', 'Can modify prefixes announced to DDoS Mitigation provider'),
+                ('view', 'Can view DDoS Mitigation state and prefixes'),
+            )
    
-There are several ways to check for permissions at different levels. To check
+There are several ways to check for permissions at different levels.  To check
 permissions on a view, use the ``permission_required`` decorator::
    
    from django.contrib.auth.decorators import permission_required
@@ -368,14 +328,13 @@ permissions on a view, use the ``permission_required`` decorator::
 It will disallow calling this view for all users that don't have the required
 permission.
 
-To check permissions in the template you can use the ``perms`` proxy. Look at
+To check permissions in the template you can use the ``perms`` proxy.  Look at
 the following example::
    
    {% if perms.iprange.add_iprange %}
    <a href="{% url iprange_add %}">Add an IP range</a>
    {% endif %}
    
-
 .. warning::
    Just hiding things it the template might not be enough. For example you
    should not hide a form, but leave the view with form processing unchecked.
@@ -394,7 +353,7 @@ the following example in a view::
           if action == 'edit' and can_edit:
               pass # edit ip range
     
-To grant permissions to users, use the Django admin interface. Superusers will
+To grant permissions to users, use the Django admin interface.  Superusers will
 have all permissions be default.
 
 See the `Django documentation on permissions 
