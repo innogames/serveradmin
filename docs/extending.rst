@@ -47,6 +47,30 @@ pip::
    pip install -r requirements.txt
 
 
+Setting up the Database
+-----------------------
+
+You would need a PostgreSQL database to run the application.  PostgreSQL
+usually comes by owned by the "postgres" user and the "ident" authentication
+enabled.  This means that users on the local system can connect to the server
+with their usernames.  You can switch to the "postgres" user and create
+a user matching your system username to avoid dealing with authentication
+again::
+
+   sudo su postgres
+   createuser myusername
+
+You would also need a database for the application:
+
+    createdb serveradmin
+
+If you want to work on the production data, you can dump it from the server,
+and restore on your database.
+
+    pg_dump --exclude-table-data=sshaccess_state serveradmin > serveradmin.sql
+    psql serveradmin < serveradmin.sql
+
+
 Setting up Django
 -----------------
 
