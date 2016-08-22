@@ -34,7 +34,7 @@ def graph_table(request):
     # is not an overview.
     collections = []
     doubles = set()
-    for collection in Collection.objects.order_by('overview'):
+    for collection in Collection.objects.order_by('overview', 'sort_order'):
         if (collection.attribute_id, collection.attribute_value) in doubles:
             continue
         for hostname in hostnames:
