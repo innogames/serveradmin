@@ -16,21 +16,21 @@ class IPRange(models.Model):
     range_id = models.CharField(max_length=20, primary_key=True)
     segment = models.ForeignKey(Segment)
     ip_type = models.CharField(max_length=10, choices=IP_CHOICES)
-    min = netfields.InetAddressField(null=True)
-    max = netfields.InetAddressField(null=True)
-    gateway = netfields.InetAddressField(null=True)
-    internal_gateway = netfields.InetAddressField(null=True)
-    min6 = netfields.InetAddressField(null=True)
-    max6 = netfields.InetAddressField(null=True)
-    gateway6 = netfields.InetAddressField(null=True)
-    internal_gateway6 = netfields.InetAddressField(null=True)
+    min = netfields.InetAddressField(null=True, store_prefix_length=False)
+    max = netfields.InetAddressField(null=True, store_prefix_length=False)
+    gateway = netfields.InetAddressField(null=True, store_prefix_length=False)
+    internal_gateway = netfields.InetAddressField(null=True, store_prefix_length=False)
+    min6 = netfields.InetAddressField(null=True, store_prefix_length=False)
+    max6 = netfields.InetAddressField(null=True, store_prefix_length=False)
+    gateway6 = netfields.InetAddressField(null=True, store_prefix_length=False)
+    internal_gateway6 = netfields.InetAddressField(null=True, store_prefix_length=False)
     vlan = models.IntegerField(null=True)
     belongs_to = models.ForeignKey('self', null=True, blank=True,
             related_name='subnet_of')
 
     def get_network(self):
         if self.min and self.max:
-            for network in summarize_address_range(self.min.ip, self.max.ip):
+            for network in summarize_address_range(self.min, self.max):
                 return network
 
             raise ValueError(
@@ -40,7 +40,7 @@ class IPRange(models.Model):
 
     def get_network6(self):
         if self.min6 and self.max6:
-            for network in summarize_address_range(self.min6.ip, self.max6.ip):
+            for network in summarize_address_range(self.min6, self.max6):
                 return network
 
             raise ValueError(
