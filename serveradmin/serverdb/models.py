@@ -247,12 +247,14 @@ class Attribute(LookupModel):
         max_length=32,
         choices=get_choices(attribute_types),
     )
-    base = models.BooleanField(default=False)
-    multi = models.BooleanField(default=False)
-    hovertext = models.TextField(blank=True, default='')
-    group = models.CharField(max_length=32, default='other')
+    base = models.BooleanField(null=False, default=False)
+    multi = models.BooleanField(null=False, default=False)
+    hovertext = models.TextField(null=False, blank=True, default='')
+    group = models.CharField(
+        max_length=32, null=False, blank=False, default='other'
+    )
     help_link = models.CharField(max_length=255, blank=True, null=True)
-    readonly = models.BooleanField(default=False)
+    readonly = models.BooleanField(null=False, default=False)
     _target_servertype = models.ForeignKey(
         Servertype,
         db_column='target_servertype_id',
@@ -379,19 +381,11 @@ class ServertypeAttribute(LookupModel):
     related_via_attribute = Attribute.foreign_key_lookup(
         '_related_via_attribute_id'
     )
-    required = models.BooleanField(default=False)
-    default_value = models.CharField(
-        max_length=255,
-        null=True,
-        blank=True,
-    )
-    regexp = models.CharField(
-        max_length=255,
-        null=True,
-        blank=True,
-    )
+    required = models.BooleanField(null=False, default=False)
+    default_value = models.CharField(max_length=255, null=True, blank=True)
+    regexp = models.CharField(max_length=255, null=True, blank=True)
     _compiled_regexp = None
-    default_visible = models.BooleanField(default=False)
+    default_visible = models.BooleanField(null=False, default=False)
 
     class Meta:
         app_label = 'serverdb'
