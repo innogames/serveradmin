@@ -54,12 +54,12 @@ class IPRange(models.Model):
         if self.min is None or self.max is None:
             return set()
 
-        return set(
+        return {i.ip for i in (
             Server.objects
             .filter(intern_ip__range=(self.min, self.max))
             .order_by()     # Clear ordering for database performance
             .values_list('intern_ip', flat=True)
-        )
+        )}
 
     def get_free_set(self):
         if self.min is None or self.max is None:
