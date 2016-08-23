@@ -1,4 +1,4 @@
-from ipaddress import ip_address
+from ipaddress import ip_address, ip_network
 
 from adminapi import _api_settings
 from adminapi.request import send_request
@@ -82,13 +82,19 @@ class QuerySet(BaseQuerySet):
                     if attr not in server:
                         continue
                     if attr in convert_ip:
-                        server[attr] = set(ip_address(unicode(x)) for x in server[attr])
+                        server[attr] = set(
+                            ip_network(x) if '/' in x else ip_address(x)
+                            for x in server[attr]
+                        )
                     else:
                         server[attr] = set(server[attr])
                 for attr in convert_ip:
                     if attr not in server or attr in convert_set:
                         continue
-                    server[attr] = ip_address(unicode(server[attr]))
+                    if '/' in server[attr]:
+                        server[attr] = ip_network(server[attr])
+                    else:
+                        server[attr] = ip_address(server[attr])
                 dict.update(server_obj, server)
                 self._results[object_id] = server_obj
 
