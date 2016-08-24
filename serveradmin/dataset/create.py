@@ -26,10 +26,6 @@ def create_server(
     user=None,
     app=None,
 ):
-
-    # Import here to break cyclic imports.
-    from serveradmin.iprange.models import IPRange
-
     if 'hostname' not in attributes:
         raise CommitError('Hostname is required')
     if 'servertype' not in attributes:
@@ -38,8 +34,10 @@ def create_server(
         raise CommitError('Project is required')
     if 'intern_ip' not in attributes:
         raise CommitError('Internal IP (intern_ip) is required')
+    if 'segment' not in attributes:
+        raise CommitError('Segment is required')
 
-    for attr in ('hostname', 'servertype', 'project', 'intern_ip'):
+    for attr in ('hostname', 'servertype', 'project', 'intern_ip', 'segment'):
         check_attribute_type(attr, attributes[attr])
 
     try:
@@ -51,18 +49,6 @@ def create_server(
     intern_ip = ip_interface(str(attributes['intern_ip']))
     servertype_id = servertype.pk
     segment_id = attributes.get('segment')
-
-    if segment_id:
-        check_attribute_type('segment', segment_id)
-    else:
-        try:
-            segment_id = IPRange.objects.filter(
-                min__lte=intern_ip,
-                max__gte=intern_ip,
-            )[0].segment
-        except IndexError:
-            raise CommitError('Could not determine segment')
-
     project_id = attributes.get('project')
 
     real_attributes = attributes.copy()
