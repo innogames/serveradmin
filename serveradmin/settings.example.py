@@ -24,7 +24,7 @@ DATABASES = {
         'OPTIONS': {
             'connect_timeout': 1,
             'client_encoding': 'UTF8',
-            'options': '-c lock_timeout=10000',
+            'options': '-c lock_timeout=60000',
         },
         # Wrap the requests into a database transaction
         'ATOMIC_REQUESTS': True,
