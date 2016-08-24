@@ -33,8 +33,16 @@ class Commit(object):
         self.warnings = []
 
     def apply_changes(self):
-        # TODO: Move _apply_changes in here
-        _apply_changes(self.changed_servers)
+        self.server_objects = {s.server_id: s for s in (
+            Server.objects.select_for_update()
+            .filter(server_id__in=self.changed_servers.keys())
+        )}
+
+        # Changes should be applied in order to prevent integrity errors.
+        self._remove_attributes()
+        if self.deleted_servers:
+            self._delete_servers()
+        self._set_attributes()
 
         # Re-fetch servers before invoking hook, otherwise the hook will
         # receive incomplete data.
@@ -49,6 +57,73 @@ class Commit(object):
             self.warnings.append('Commit hook failed: {}'.format(
                 unicode(error)
             ))
+
+    def _remove_attributes(self):
+        for server_id, changes in self.changed_servers.iteritems():
+            server = self.server_objects[server_id]
+
+            for key, change in changes.iteritems():
+                attribute = Attribute.objects.get(pk=key)
+                action = change['action']
+                if action == 'delete':
+                    server.get_attributes(attribute).delete()
+                elif action == 'multi' and change['remove']:
+                    for server_attribute in server.get_attributes(attribute):
+                        if server_attribute.get_value() in change['remove']:
+                            server_attribute.delete()
+
+    def _delete_servers(self):
+        # We first have to delete all of the hostname attributes
+        # to avoid integrity errors.  Other attributes will just go away
+        # with the servers.
+        (
+            ServerHostnameAttribute.objects
+            .filter(server_id__in=self.deleted_servers)
+            .delete()
+        )
+
+        try:
+            Server.objects.filter(server_id__in=self.deleted_servers).delete()
+        except IntegrityError as error:
+            raise CommitError(
+                'Cannot delete servers because they are referenced by {0}'
+                .format(', '.join(str(o) for o in error.protected_objects))
+            )
+
+        # We should ignore the changes to the deleted servers.
+        for server_id in self.deleted_servers:
+            if server_id in self.changed_servers:
+                del self.changed_servers[server_id]
+
+    def _set_attributes(self):
+        for server_id, changes in self.changed_servers.iteritems():
+            server = self.server_objects[server_id]
+
+            for key, change in changes.iteritems():
+                attribute = Attribute.objects.get(pk=key)
+                action = change['action']
+
+                if isinstance(attribute.special, ServerTableSpecial):
+                    if action == 'new' or action == 'update':
+                        setattr(server, attribute.special.field, change['new'])
+                    elif action == 'delete':
+                        setattr(server, attribute.special.field, None)
+
+                elif action == 'new':
+                    server.add_attribute(attribute, change['new'])
+
+                elif action == 'update':
+                    server.get_attributes(attribute).get().save_value(
+                        change['new']
+                    )
+
+                elif action == 'multi':
+                    for value in change['add']:
+                        server.add_attribute(attribute, value)
+
+            # Save the special attributes.
+            server.full_clean()
+            server.save()
 
 
 class CommitError(ValidationError):
@@ -185,31 +260,7 @@ def commit_changes(
         if newer:
             raise CommitNewerData('Newer data available', newer)
 
-    if deleted_servers:
-
-        # We first have to delete all of the hostname attributes
-        # to avoid integrity errors.  Other attributes will just go away
-        # with the servers.
-        (ServerHostnameAttribute.objects
-            .filter(server_id__in=deleted_servers)
-            .delete())
-
-        try:
-            Server.objects.filter(server_id__in=deleted_servers).delete()
-        except IntegrityError as error:
-            raise CommitError(
-                'Cannot delete servers because they are referenced by {0}'
-                .format(', '.join(str(o) for o in error.protected_objects))
-            )
-
-        # We should ignore the changes to the deleted servers.
-        for server_id in deleted_servers:
-            if server_id in changed_servers:
-                del changed_servers[server_id]
-
-    if changed_servers:
-        commit.apply_changes()
-
+    commit.apply_changes()
     _log_changes(deleted_servers, changed_servers, app, user)
 
     if commit.warnings:
@@ -459,50 +510,6 @@ def _clean_changed(changed_servers):
                 server_changed = True
         if not server_changed:
             del changed_servers[server_id]
-
-
-def _apply_changes(changed_servers):
-
-    queryset = Server.objects.select_for_update()
-    queryset = queryset.filter(server_id__in=changed_servers.keys())
-    servers = {s.server_id: s for s in queryset}
-
-    for server_id, changes in changed_servers.iteritems():
-        server = servers[server_id]
-
-        for key, change in changes.iteritems():
-            attribute = Attribute.objects.get(pk=key)
-            action = change['action']
-
-            if isinstance(attribute.special, ServerTableSpecial):
-                if action == 'new' or action == 'update':
-                    setattr(server, attribute.special.field, change['new'])
-                elif action == 'delete':
-                    setattr(server, attribute.special.field, None)
-
-            elif action == 'new':
-                server.add_attribute(attribute, change['new'])
-
-            elif action == 'update':
-                server.get_attributes(attribute).get().save_value(
-                    change['new']
-                )
-
-            elif action == 'delete':
-                server.get_attributes(attribute).delete()
-
-            elif action == 'multi':
-                if change['remove']:
-                    for server_attribute in server.get_attributes(attribute):
-                        if server_attribute.get_value() in change['remove']:
-                            server_attribute.delete()
-
-                for value in change['add']:
-                    server.add_attribute(attribute, value)
-
-        # Save the special attributes.
-        server.full_clean()
-        server.save()
 
 
 def _build_error_message(violations_attribs, violations_readonly,
