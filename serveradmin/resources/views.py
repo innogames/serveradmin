@@ -154,7 +154,7 @@ def index(request):
             unicode(numericCache.template)
         )
         column = dict(columns[index])
-        column['value'] = numericCache.value
+        column['value'] = '{:.2f}'.format(numericCache.value)
         hosts[numericCache.hostname]['columns'][index] = column
 
     template_info.update({

@@ -14,9 +14,7 @@ from serveradmin.dataset import query
 @login_required
 @ensure_csrf_cookie
 def graph_table(request):
-    """Graph table page
-    """
-
+    """Graph table page"""
     hostnames = [h for h in request.GET.getlist('hostname') if h]
     if len(hostnames) == 0:
         return HttpResponseBadRequest('No hostname provided')
