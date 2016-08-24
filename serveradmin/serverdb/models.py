@@ -479,11 +479,7 @@ class Server(models.Model):
 
         # Check for other server with overlapping addresses
         for server in Server.objects.filter(
-            # TODO Replace it with __net_overlaps, when
-            # django-postgresql-netfields supports it (See
-            # https://github.com/jimfunk/django-postgresql-netfields/pull/58)
-            models.Q(intern_ip__net_contained_or_equal=self.intern_ip) |
-            models.Q(intern_ip__net_contains=self.intern_ip)
+            intern_ip__net_overlaps=self.intern_ip
         ).exclude(pk=self.pk):
 
             # Match the host addresses
