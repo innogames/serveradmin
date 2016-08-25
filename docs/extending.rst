@@ -60,12 +60,12 @@ again::
    sudo su postgres
    createuser myusername
 
-You would also need a database for the application:
+You would also need a database for the application::
 
     createdb serveradmin
 
 If you want to work on the production data, you can dump it from the server,
-and restore on your database.
+and restore on your database::
 
     pg_dump --no-owner --no-privileges --exclude-table-data=sshaccess_state serveradmin > serveradmin.sql
     psql -1 serveradmin < serveradmin.sql
