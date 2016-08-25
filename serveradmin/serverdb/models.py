@@ -91,7 +91,7 @@ class LookupManager(models.Manager):
 
     def all(self):
         """Override all method to cache all objects"""
-        if not self._lookup_dict:
+        if self._lookup_dict is None:
             self._lookup_dict = OrderedDict(
                 (o.pk, o) for o in super(LookupManager, self).all()
             )
