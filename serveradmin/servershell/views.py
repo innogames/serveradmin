@@ -352,6 +352,7 @@ def new_server(request):
             attributes['hostname'] = form.cleaned_data['hostname']
             attributes['intern_ip'] = form.cleaned_data['intern_ip']
             attributes['project'] = form.cleaned_data['_project'].pk
+            attributes['segment'] = form.cleaned_data['_segment'].pk
             attributes['responsible_admin'] = [
                 form.cleaned_data['_project'].responsible_admin.username
             ]
@@ -374,6 +375,7 @@ def new_server(request):
             form = ServerForm(initial={
                 '_servertype': clone_from['servertype'],
                 '_project': clone_from['project'],
+                '_segment': clone_from['segment'],
                 'hostname': clone_from['hostname'],
                 'intern_ip': clone_from['intern_ip'],
             })
