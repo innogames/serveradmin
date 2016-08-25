@@ -323,13 +323,14 @@ class QuerySet(BaseQuerySet):
                     '           ON server.intern_ip <<= supernet.intern_ip'
                     '   WHERE server.server_id IN ({0})'
                     "       AND supernet.servertype_id = '{1}'"
-                ).format(
-                    ', '.join(
-                        str(o.object_id)
-                        for s in self._servertypes_by_attribute[attribute]
-                        for o in servers_by_type[s]
-                    ),
-                    attribute.target_servertype.pk,
+                    .format(
+                        ', '.join(
+                            str(o.object_id)
+                            for s in self._servertypes_by_attribute[attribute]
+                            for o in servers_by_type[s]
+                        ),
+                        attribute.target_servertype.pk,
+                    )
                 )
                 for server_id, value in cursor.fetchall():
                     self._add_attribute_value(
