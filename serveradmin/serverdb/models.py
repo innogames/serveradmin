@@ -464,12 +464,6 @@ class Server(models.Model):
                 ip_network(str(self.intern_ip))
             except ValueError as error:
                 raise ValidationError(str(error))
-
-            if self.intern_ip.max_prefixlen == self.netmask_len():
-                raise ValidationError(
-                    'Netmask length must be less than {0}.'
-                    .format(self.intern_ip.max_prefixlen)
-                )
         else:
             if self.intern_ip.max_prefixlen != self.netmask_len():
                 raise ValidationError(
@@ -482,34 +476,57 @@ class Server(models.Model):
             intern_ip__net_overlaps=self.intern_ip
         ).exclude(pk=self.pk):
 
-            # Match the host addresses
-            if self.host_addr() == server.host_addr() and not (
+            if (
+                self.servertype.ip_addr_type == 'network' or
+                server.servertype.ip_addr_type == 'network'
+            ):
+                if server.project != self.project and not ((
+                        self.netmask_len() > server.netmask_len() and
+                        server.servertype.fixed_project
+                    ) or (
+                        self.netmask_len() < server.netmask_len() and
+                        self.servertype.fixed_project
+                    )
+                ):
+                    raise ValidationError(
+                        'IP address overlaps with "{0}" from a different '
+                        'project.'
+                        .format(server.hostname)
+                    )
+
+                if self.servertype == server.servertype:
+                    raise ValidationError(
+                        'IP address overlaps with "{0}" in the same '
+                        'servertype.'
+                        .format(server.hostname)
+                    )
+
+                continue
+
+            if (
                 self.servertype.ip_addr_type == 'loadbalancer' and
-                server.servertype.ip_addr_type == 'loadbalancer' and
-                server.project == self.project
+                server.servertype.ip_addr_type == 'loadbalancer'
             ):
-                raise ValidationError(
-                    'IP address already taken by "{0}".'
-                    .format(server.hostname)
-                )
+                if server.project != self.project:
+                    raise ValidationError(
+                        'IP address already taken by "{0}" from a different '
+                        'project.'
+                        .format(server.hostname)
+                    )
 
-            # Match the network addresses
-            if self.servertype == server.servertype or not (
-                server.project == self.project or (
-                    server.servertype.fixed_project and
-                    self.netmask_len() > server.netmask_len()
-                ) or (
-                    self.servertype.fixed_project and
-                    self.netmask_len() < server.netmask_len()
-                )
-            ):
-                raise ValidationError(
-                    'IP address overlaps with "{0}".'
-                    .format(server.hostname)
-                )
+                if server.servertype != self.servertype:
+                    raise ValidationError(
+                        'IP address already taken by "{0}" from a different '
+                        'servertype.'
+                        .format(server.hostname)
+                    )
 
-    def host_addr(self):
-        return self.intern_ip.ip
+                continue
+
+            raise ValidationError(
+                'IP address already taken by "{0}".'
+                .format(server.hostname)
+            )
 
     def netmask_len(self):
         return self.intern_ip.network.prefixlen
