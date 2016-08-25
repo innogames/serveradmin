@@ -981,9 +981,11 @@ function handle_command_delattr(parsed_args)
         if (typeof(changes[server_id]) == 'undefined') {
             changes[server_id] = {};
         }
-        changes[server_id][attr_name] = {
-            'action': 'delete',
-            'old': search['servers'][server_id][attr_name]
+        if (attr_name in search['servers'][server_id]) {
+            changes[server_id][attr_name] = {
+                'action': 'delete',
+                'old': search['servers'][server_id][attr_name]
+            }
         }
     }
     render_server_table();
