@@ -1,7 +1,7 @@
 from collections import defaultdict
 import json
 
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.core.exceptions import ValidationError
 
 from adminapi.utils.json import json_encode_extra
@@ -260,8 +260,9 @@ def commit_changes(
         if newer:
             raise CommitNewerData('Newer data available', newer)
 
-    commit.apply_changes()
-    _log_changes(deleted_servers, changed_servers, app, user)
+    with transaction.atomic():
+        commit.apply_changes()
+        _log_changes(deleted_servers, changed_servers, app, user)
 
     if commit.warnings:
         warnings = '\n'.join(commit.warnings)
