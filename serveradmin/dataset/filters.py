@@ -78,6 +78,7 @@ class OptionalFilter(BaseFilter):
 class ExactMatch(BaseFilter):
     def __init__(self, value):
         self.value = value
+        self.network = '/' in str(value)
 
     def __repr__(self):
         return 'ExactMatch({0!r})'.format(self.value)
@@ -97,9 +98,16 @@ class ExactMatch(BaseFilter):
         if attribute.type == 'boolean' and not self.value:
             return 'NOT ' + _condition_sql(attribute, "{0} = '1'")
 
-        return _condition_sql(
-            attribute, '{0} = ' + value_to_sql(attribute, self.value)
-        )
+        template = '{0} = ' + value_to_sql(attribute, self.value)
+
+        if attribute.pk == 'intern_ip':
+            template += ' AND servertype_id IN ({0})'.format(', '.join(
+                "'{0}'".format(s.pk)
+                for s in Servertype.objects.all()
+                if (s.ip_addr_type == 'network') == self.network
+            ))
+
+        return _condition_sql(attribute, template)
 
     def matches(self, server_obj, attr_name):
         return server_obj[attr_name] == self.value
