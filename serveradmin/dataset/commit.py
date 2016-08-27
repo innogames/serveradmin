@@ -24,13 +24,104 @@ class Commit(object):
 
     def __init__(self, commit, user):
         self.user = user
-        self.deleted_servers = commit.get('deleted', [])
-        self.changed_servers = commit.get('changes', {})
+
+        if 'deleted' in commit:
+            self.deleted_servers = commit['deleted']
+            self._validate_deletes()
+        else:
+            self.deleted_servers = []
+
+        if 'changes' in commit:
+            self.changed_servers = commit['changes']
+            self._validate_changes()
+            self._cast_changed_values()
+            self._clean_changes()
+        else:
+            self.changed_servers = {}
+
         self.servers = _fetch_servers(self.changed_servers)
 
         # If non-empty, the commit will go through the backend, but an error
         # will be shown on the client.
         self.warnings = []
+
+    def _validate_deletes(self):
+            if not (
+                isinstance(self.deleted_servers, (list, set)) and
+                all(isinstance(x, (int, long)) for x in self.deleted_servers)
+            ):
+                raise ValueError('Invalid deleted servers')
+
+    def _validate_changes(self):
+        for changes in self.changed_servers.values():
+            for attribute_id, change in changes.iteritems():
+                try:
+                    attribute = Attribute.objects.get(pk=attribute_id)
+                except Attribute.DoesNotExist:
+                    raise ValueError('No such attribute')
+
+                action = change['action']
+                if action == 'update':
+                    if not all(x in change for x in ('old', 'new')):
+                        raise ValueError('Invalid update change')
+                elif action == 'new':
+                    if 'new' not in change:
+                        raise ValueError('Invalid new change')
+                elif action == 'delete':
+                    if 'old' not in change:
+                        raise ValueError('Invalid delete change')
+                elif action == 'multi':
+                    if not all(x in change for x in ('add', 'remove')):
+                        raise ValueError('Invalid multi change')
+                    if not attribute.multi:
+                        raise ValueError('Not a multi attribute')
+
+    def _cast_changed_values(self):
+        for server_id, changes in self.changed_servers.iteritems():
+            for key, change in changes.iteritems():
+                attribute = Attribute.objects.get(pk=key)
+                action = change['action']
+
+                if action == 'new':
+                    change['new'] = typecast(attribute, change['new'])
+                elif action == 'update':
+                    change['new'] = typecast(attribute, change['new'])
+                    change['old'] = typecast(attribute, change['old'])
+                elif action == 'multi':
+                    change['add'] = typecast(attribute, change['add'])
+                    change['remove'] = typecast(attribute, change['remove'])
+                elif action == 'delete':
+                    change['old'] = typecast(attribute, change['old'])
+
+    def _clean_changes(self):
+        for server_id, changes in self.changed_servers.items():
+            server_changed = False
+            for attr, change in changes.items():
+                action = change['action']
+                if action == 'new':
+                    server_changed = True
+                elif action == 'update':
+                    if change['old'] != change['new']:
+                        server_changed = True
+                    else:
+                        del changes[attr]
+                elif action == 'multi':
+                    if change['add'] or change['remove']:
+                        for value in change['add'].intersection(
+                            change['remove']
+                        ):
+                            change['add'].remove(value)
+                            change['remove'].remove(value)
+                        if change['add'] or change['remove']:
+                            server_changed = True
+                        else:
+                            del changes[attr]
+                    else:
+                        del changes[attr]
+                elif action == 'delete':
+                    server_changed = True
+            if not server_changed:
+                del self.changed_servers[server_id]
 
     def apply_changes(self):
         self.server_objects = {s.server_id: s for s in (
@@ -205,33 +296,28 @@ def commit_changes(
                    changes.
     """
     commit = Commit(commit, user)
-    deleted_servers = commit.deleted_servers
-    changed_servers = commit.changed_servers
 
-    _validate_structure(deleted_servers, changed_servers)
-    _typecast_values(changed_servers)
-    _clean_changed(changed_servers)
-
-    if not changed_servers and not deleted_servers:
+    if not commit.changed_servers and not commit.deleted_servers:
         return
 
-    servers = commit.servers
-    servertype_attributes = _get_servertype_attributes(servers)
+    servertype_attributes = _get_servertype_attributes(commit.servers)
 
     # Attributes must be always validated
     violations_attribs = _validate_attributes(
-        changed_servers, servers, servertype_attributes
+        commit.changed_servers, commit.servers, servertype_attributes
     )
 
     if not skip_validation:
-        violations_readonly = _validate_readonly(changed_servers, servers)
+        violations_readonly = _validate_readonly(
+            commit.changed_servers, commit.servers
+        )
         violations_regexp = _validate_regexp(
-            changed_servers,
-            servers,
+            commit.changed_servers,
+            commit.servers,
             servertype_attributes,
         )
         violations_required = _validate_required(
-            changed_servers, servers, servertype_attributes
+            commit.changed_servers, commit.servers, servertype_attributes
         )
         if (
             violations_attribs or violations_readonly or
@@ -256,13 +342,13 @@ def commit_changes(
         raise CommitValidationFailed(error_message, violations_attribs)
 
     if not force_changes:
-        newer = _validate_commit(changed_servers, servers)
+        newer = _validate_commit(commit.changed_servers, commit.servers)
         if newer:
             raise CommitNewerData('Newer data available', newer)
 
     with transaction.atomic():
         commit.apply_changes()
-        _log_changes(deleted_servers, changed_servers, app, user)
+        _log_changes(commit.deleted_servers, commit.changed_servers, app, user)
 
     if commit.warnings:
         warnings = '\n'.join(commit.warnings)
@@ -321,37 +407,6 @@ def _fetch_servers(changed_servers):
     queryset.restrict(*changed_attrs)
 
     return queryset.get_results()
-
-
-def _validate_structure(deleted_servers, changed_servers):
-    if not isinstance(deleted_servers, (list, set)):
-        raise ValueError('Invalid deleted servers')
-    if not all(isinstance(x, (int, long)) for x in deleted_servers):
-        raise ValueError('Invalid deleted servers')
-
-    # FIXME: Validation of the inner structure
-    for server_id, changes in changed_servers.iteritems():
-        for attr, change in changes.iteritems():
-            try:
-                attribute = Attribute.objects.get(pk=attr)
-            except Attribute.DoesNotExist:
-                raise ValueError('No such attribute')
-
-            action = change['action']
-            if action == 'update':
-                if not all(x in change for x in ('old', 'new')):
-                    raise ValueError('Invalid update change')
-            elif action == 'new':
-                if 'new' not in change:
-                    raise ValueError('Invalid new change')
-            elif action == 'delete':
-                if 'old' not in change:
-                    raise ValueError('Invalid delete change')
-            elif action == 'multi':
-                if not all(x in change for x in ('add', 'remove')):
-                    raise ValueError('Invalid multi change')
-                if not attribute.multi:
-                    raise ValueError('Not a multi attribute')
 
 
 def _get_servertype_attributes(servers):
@@ -462,55 +517,6 @@ def _validate_commit(changed_servers, servers):
                 except KeyError:
                     newer.append((server_id, attr, None))
     return newer
-
-
-def _typecast_values(changed_servers):
-    for server_id, changes in changed_servers.iteritems():
-        for key, change in changes.iteritems():
-            attribute = Attribute.objects.get(pk=key)
-            action = change['action']
-
-            if action == 'new':
-                change['new'] = typecast(attribute, change['new'])
-            elif action == 'update':
-                change['new'] = typecast(attribute, change['new'])
-                change['old'] = typecast(attribute, change['old'])
-            elif action == 'multi':
-                change['add'] = typecast(attribute, change['add'])
-                change['remove'] = typecast(attribute, change['remove'])
-            elif action == 'delete':
-                change['old'] = typecast(attribute, change['old'])
-
-
-def _clean_changed(changed_servers):
-    for server_id, changes in changed_servers.items():
-        server_changed = False
-        for attr, change in changes.items():
-            action = change['action']
-            if action == 'new':
-                server_changed = True
-            elif action == 'update':
-                if change['old'] != change['new']:
-                    server_changed = True
-                else:
-                    del changes[attr]
-            elif action == 'multi':
-                if change['add'] or change['remove']:
-                    intersect = change['add'].intersection(change['remove'])
-                    if intersect:
-                        for value in intersect:
-                            change['add'].remove(value)
-                            change['remove'].remove(value)
-                    if change['add'] or change['remove']:
-                        server_changed = True
-                    else:
-                        del changes[attr]
-                else:
-                    del changes[attr]
-            elif action == 'delete':
-                server_changed = True
-        if not server_changed:
-            del changed_servers[server_id]
 
 
 def _build_error_message(violations_attribs, violations_readonly,
