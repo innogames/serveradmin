@@ -614,6 +614,12 @@ class ServerStringAttribute(ServerAttribute):
             if isinstance(value, datetime):
                 value = int(time.mktime(value.timetuple()))
 
+        if value == '':
+            raise ValidationError(
+                'Attribute "{0}" value cannot be empty string.'
+                .format(self.attribute)
+            )
+
         ServerAttribute.save_value(self, value)
 
 
