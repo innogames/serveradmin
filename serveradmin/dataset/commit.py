@@ -1,5 +1,6 @@
 from collections import defaultdict
 import json
+from ipaddress import ip_address, ip_network
 
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ValidationError
@@ -33,12 +34,14 @@ class Commit(object):
 
         if 'changes' in commit:
             self.changed_servers = commit['changes']
+            self._decorate_changes()
             self._validate_changes()
             self._cast_changed_values()
             self._clean_changes()
         else:
             self.changed_servers = {}
 
+        # TODO Only use Django objects
         self.servers = _fetch_servers(self.changed_servers)
 
         # If non-empty, the commit will go through the backend, but an error
@@ -52,15 +55,22 @@ class Commit(object):
             ):
                 raise ValueError('Invalid deleted servers')
 
+    def _decorate_changes(self):
+        servers = {s.server_id: s for s in (
+            Server.objects.select_for_update()
+            .filter(server_id__in=self.changed_servers.keys())
+        )}
+
+        for server_id, changes in self.changed_servers.items():
+            for attribute_id, change in changes.items():
+                change['server'] = servers[server_id]
+                change['attribute'] = Attribute.objects.get(pk=attribute_id)
+
     def _validate_changes(self):
         for changes in self.changed_servers.values():
-            for attribute_id, change in changes.iteritems():
-                try:
-                    attribute = Attribute.objects.get(pk=attribute_id)
-                except Attribute.DoesNotExist:
-                    raise ValueError('No such attribute')
-
+            for change in changes.values():
                 action = change['action']
+
                 if action == 'update':
                     if not all(x in change for x in ('old', 'new')):
                         raise ValueError('Invalid update change')
@@ -73,20 +83,29 @@ class Commit(object):
                 elif action == 'multi':
                     if not all(x in change for x in ('add', 'remove')):
                         raise ValueError('Invalid multi change')
-                    if not attribute.multi:
+                    if not change['attribute'].multi:
                         raise ValueError('Not a multi attribute')
 
     def _cast_changed_values(self):
-        for server_id, changes in self.changed_servers.iteritems():
-            for key, change in changes.iteritems():
-                attribute = Attribute.objects.get(pk=key)
+        for changes in self.changed_servers.values():
+            for change in changes.values():
+                server = change['server']
+                attribute = change['attribute']
                 action = change['action']
 
                 if action == 'new':
                     change['new'] = typecast(attribute, change['new'])
                 elif action == 'update':
-                    change['new'] = typecast(attribute, change['new'])
-                    change['old'] = typecast(attribute, change['old'])
+                    if attribute.pk == 'intern_ip':
+                        if server.servertype.ip_addr_type == 'network':
+                            change['new'] = ip_network(change['new'])
+                            change['old'] = ip_network(change['old'])
+                        else:
+                            change['new'] = ip_address(change['new'])
+                            change['old'] = ip_address(change['old'])
+                    else:
+                        change['new'] = typecast(attribute, change['new'])
+                        change['old'] = typecast(attribute, change['old'])
                 elif action == 'multi':
                     change['add'] = typecast(attribute, change['add'])
                     change['remove'] = typecast(attribute, change['remove'])
@@ -98,6 +117,7 @@ class Commit(object):
             server_changed = False
             for attr, change in changes.items():
                 action = change['action']
+
                 if action == 'new':
                     server_changed = True
                 elif action == 'update':
@@ -124,11 +144,6 @@ class Commit(object):
                 del self.changed_servers[server_id]
 
     def apply_changes(self):
-        self.server_objects = {s.server_id: s for s in (
-            Server.objects.select_for_update()
-            .filter(server_id__in=self.changed_servers.keys())
-        )}
-
         # Changes should be applied in order to prevent integrity errors.
         self._remove_attributes()
         if self.deleted_servers:
@@ -151,11 +166,11 @@ class Commit(object):
 
     def _remove_attributes(self):
         for server_id, changes in self.changed_servers.iteritems():
-            server = self.server_objects[server_id]
-
             for key, change in changes.iteritems():
-                attribute = Attribute.objects.get(pk=key)
+                server = change['server']
+                attribute = change['attribute']
                 action = change['action']
+
                 if action == 'delete':
                     server.get_attributes(attribute).delete()
                 elif action == 'multi' and change['remove']:
@@ -188,10 +203,9 @@ class Commit(object):
 
     def _set_attributes(self):
         for server_id, changes in self.changed_servers.iteritems():
-            server = self.server_objects[server_id]
-
             for key, change in changes.iteritems():
-                attribute = Attribute.objects.get(pk=key)
+                server = change['server']
+                attribute = change['attribute']
                 action = change['action']
 
                 if isinstance(attribute.special, ServerTableSpecial):
@@ -295,58 +309,58 @@ def commit_changes(
                    a list of deleted servers and a dictionary of the servers'
                    changes.
     """
-    commit = Commit(commit, user)
+    with transaction.atomic():
+        commit = Commit(commit, user)
 
-    if not commit.changed_servers and not commit.deleted_servers:
-        return
+        if not commit.changed_servers and not commit.deleted_servers:
+            return
 
-    servertype_attributes = _get_servertype_attributes(commit.servers)
+        servertype_attributes = _get_servertype_attributes(commit.servers)
 
-    # Attributes must be always validated
-    violations_attribs = _validate_attributes(
-        commit.changed_servers, commit.servers, servertype_attributes
-    )
-
-    if not skip_validation:
-        violations_readonly = _validate_readonly(
-            commit.changed_servers, commit.servers
-        )
-        violations_regexp = _validate_regexp(
-            commit.changed_servers,
-            commit.servers,
-            servertype_attributes,
-        )
-        violations_required = _validate_required(
+        # Attributes must be always validated
+        violations_attribs = _validate_attributes(
             commit.changed_servers, commit.servers, servertype_attributes
         )
-        if (
-            violations_attribs or violations_readonly or
-            violations_regexp or violations_required
-        ):
-            error_message = _build_error_message(
-                violations_attribs,
-                violations_readonly,
-                violations_regexp,
-                violations_required,
+
+        if not skip_validation:
+            violations_readonly = _validate_readonly(
+                commit.changed_servers, commit.servers
             )
-            raise CommitValidationFailed(
-                error_message,
-                violations_attribs +
-                violations_readonly +
-                violations_regexp +
-                violations_required,
+            violations_regexp = _validate_regexp(
+                commit.changed_servers,
+                commit.servers,
+                servertype_attributes,
             )
+            violations_required = _validate_required(
+                commit.changed_servers, commit.servers, servertype_attributes
+            )
+            if (
+                violations_attribs or violations_readonly or
+                violations_regexp or violations_required
+            ):
+                error_message = _build_error_message(
+                    violations_attribs,
+                    violations_readonly,
+                    violations_regexp,
+                    violations_required,
+                )
+                raise CommitValidationFailed(
+                    error_message,
+                    violations_attribs +
+                    violations_readonly +
+                    violations_regexp +
+                    violations_required,
+                )
 
-    if violations_attribs:
-        error_message = _build_error_message(violations_attribs, [], [])
-        raise CommitValidationFailed(error_message, violations_attribs)
+        if violations_attribs:
+            error_message = _build_error_message(violations_attribs, [], [])
+            raise CommitValidationFailed(error_message, violations_attribs)
 
-    if not force_changes:
-        newer = _validate_commit(commit.changed_servers, commit.servers)
-        if newer:
-            raise CommitNewerData('Newer data available', newer)
+        if not force_changes:
+            newer = _validate_commit(commit.changed_servers, commit.servers)
+            if newer:
+                raise CommitNewerData('Newer data available', newer)
 
-    with transaction.atomic():
         commit.apply_changes()
         _log_changes(commit.deleted_servers, commit.changed_servers, app, user)
 
