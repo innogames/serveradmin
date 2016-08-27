@@ -143,6 +143,7 @@ INSTALLED_APPS = (
     'markup_deprecated',
     'serveradmin.common',
     'serveradmin.servershell',
+    'serveradmin.colo',
     'serveradmin.apps',
     'serveradmin.dataset',
     'serveradmin.api',
