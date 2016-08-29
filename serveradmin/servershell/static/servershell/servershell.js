@@ -1195,27 +1195,37 @@ $(function() {
 
     $('#shell_attributes li').each(function() {
         var attr_item = $(this);
-        var attr_name = attr_item.attr('data-attr');
-        var attr_type = attr_item.attr('data-attr-type');
-        if (attr_type == 'number')
-            var symbol = '#';
-        else if (attr_type == 'hostname')
-            var symbol = 'H';
-        else if (attr_type == 'reverse_hostname')
-            var symbol = 'R';
-        else if (attr_type == 'supernet')
-            var symbol = 'N';
-        else
-            var symbol = "''";
-        var link = $('<span class="link">' + symbol + '</span>');
-
-        if (attr_type != 'hostname') {
-            link.click(function(ev) {
-                $.get(shell_values_url + '?attribute=' + attr_name, function(data) {
-                    $('<div title="' + attr_name + '"></div>').append(data).dialog();
-                });
-            });
+        var symbol;
+        switch (attr_item.attr('data-attr-type')) {
+            case 'number':
+                symbol = '#';
+                break;
+            case 'hostname':
+                symbol = 'H';
+                break;
+            case 'reverse_hostname':
+                symbol = 'R';
+                break;
+            case 'supernet':
+                symbol = 'N';
+                break;
+            default:
+                symbol = "''";
         }
+        console.log(attr_item.attr('data-attr-multi'))
+        if (attr_item.attr('data-attr-multi') == 'True')
+            symbol = '[' + symbol + ']';
+        else
+            symbol = '&nbsp;&nbsp;' + symbol + '&nbsp;';
+
+        var link = $('<span class="link">' + symbol + '</span>');
+        link.click(function(ev) {
+            var attr_name = attr_item.attr('data-attr');
+
+            $.get(shell_values_url + '?attribute=' + attr_name, function(data) {
+                $('<div title="' + attr_name + '"></div>').append(data).dialog();
+            });
+        });
 
         attr_item.prepend(link);
     });
