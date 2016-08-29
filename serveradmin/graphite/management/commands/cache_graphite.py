@@ -6,7 +6,7 @@ from io import BytesIO
 
 from django.core.management.base import NoArgsCommand
 from django.conf import settings
-from django.db import transaction
+from django.db import transaction, models
 
 import django_urlauth.utils
 from serveradmin.graphite.models import (
@@ -21,12 +21,18 @@ class Command(NoArgsCommand):
     help = __doc__
 
     def handle_noargs(self, **kwargs):
-        """The entry point of the command
-        """
+        """The entry point of the command"""
 
         # We will make sure to generate a single sprite for a single hostname.
         done_servers = set()
-        for collection in Collection.objects.filter(overview=True):
+        for collection in (
+            Collection.objects
+            .annotate(in_recovery=models.Func(
+                function='pg_is_in_recovery',
+                output_field=models.fields.BooleanField(),
+            ))
+            .filter(in_recovery=False, overview=True)
+        ):
             for server in collection.query():
                 if server not in done_servers:
                     self.generate_sprite(collection, server)
