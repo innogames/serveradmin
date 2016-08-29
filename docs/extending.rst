@@ -225,7 +225,7 @@ Short Django introduction
 -------------------------
 
 If you have some time I recommend doing the `Django Tutorial 
-<https://docs.djangoproject.com/en/1.4/intro/tutorial01/>`_. It covers many
+<https://docs.djangoproject.com/en/1.8/intro/tutorial01/>`_.  It covers many
 topics and gives your a good overview.
 
 For people in a hurry: You will find the Serveradmin in the ``serveradmin``
@@ -381,4 +381,5 @@ To grant permissions to users, use the Django admin interface.  Superusers will
 have all permissions be default.
 
 See the `Django documentation on permissions 
-<https://docs.djangoproject.com/en/1.4/topics/auth/#permissions>`_ for details.
+<https://docs.djangoproject.com/en/1.8/topics/auth/default/#topic-authorization>`_
+for details.
