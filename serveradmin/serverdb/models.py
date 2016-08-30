@@ -483,13 +483,9 @@ class Server(models.Model):
                 self.servertype.ip_addr_type == 'network' or
                 server.servertype.ip_addr_type == 'network'
             ):
-                if server.project != self.project and not ((
-                        self.netmask_len() > server.netmask_len() and
-                        server.servertype.fixed_project
-                    ) or (
-                        self.netmask_len() < server.netmask_len() and
-                        self.servertype.fixed_project
-                    )
+                if server.project != self.project and not (
+                    server.servertype.fixed_project or
+                    self.servertype.fixed_project
                 ):
                     raise ValidationError(
                         'IP address overlaps with "{0}" from a different '
