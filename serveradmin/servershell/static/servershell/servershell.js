@@ -1195,24 +1195,7 @@ $(function() {
 
     $('#shell_attributes li').each(function() {
         var attr_item = $(this);
-        var symbol;
-        switch (attr_item.attr('data-attr-type')) {
-            case 'number':
-                symbol = '#';
-                break;
-            case 'hostname':
-                symbol = 'H';
-                break;
-            case 'reverse_hostname':
-                symbol = 'R';
-                break;
-            case 'supernet':
-                symbol = 'N';
-                break;
-            default:
-                symbol = "''";
-        }
-        console.log(attr_item.attr('data-attr-multi'))
+        var symbol = attr_item.attr('data-attr-type').charAt(0).toUpperCase();
         if (attr_item.attr('data-attr-multi') == 'True')
             symbol = '[' + symbol + ']';
         else

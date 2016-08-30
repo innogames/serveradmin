@@ -72,8 +72,11 @@ _typecast_fns = {
     'mac': _to_mac,
     'hostname': str,
     'reverse_hostname': str,
-    'supernet': str,
     'number': Decimal,
+    'inet': str,
+    'macaddr': str,
+    'date': str,
+    'supernet': str,
 }
 
 

@@ -56,6 +56,9 @@ attribute_types = (
     'hostname',
     'reverse_hostname',
     'number',
+    'inet',
+    'macaddr',
+    'date',
     'supernet',
 )
 
@@ -571,6 +574,12 @@ class ServerAttribute(models.Model):
             return ServerHostnameAttribute
         if attribute_type == 'number':
             return ServerNumberAttribute
+        if attribute_type == 'inet':
+            return ServerInetAttribute
+        if attribute_type == 'macaddr':
+            return ServerMACAddressAttribute
+        if attribute_type == 'date':
+            return ServerDateAttribute
 
 
 class ServerStringAttribute(ServerAttribute):
@@ -710,6 +719,60 @@ class ServerNumberAttribute(ServerAttribute):
     class Meta:
         app_label = 'serverdb'
         db_table = 'server_number_attribute'
+        unique_together = (('server', '_attribute', 'value'), )
+        index_together = (('_attribute', 'value'), )
+
+
+class ServerInetAttribute(ServerAttribute):
+    _attribute = models.ForeignKey(
+        Attribute,
+        db_column='attribute_id',
+        db_index=False,
+        on_delete=models.CASCADE,
+        limit_choices_to=dict(type='inet'),
+    )
+    attribute = Attribute.foreign_key_lookup('_attribute_id')
+    value = netfields.InetAddressField()
+
+    class Meta:
+        app_label = 'serverdb'
+        db_table = 'server_inet_attribute'
+        unique_together = (('server', '_attribute', 'value'), )
+        index_together = (('_attribute', 'value'), )
+
+
+class ServerMACAddressAttribute(ServerAttribute):
+    _attribute = models.ForeignKey(
+        Attribute,
+        db_column='attribute_id',
+        db_index=False,
+        on_delete=models.CASCADE,
+        limit_choices_to=dict(type='macaddr'),
+    )
+    attribute = Attribute.foreign_key_lookup('_attribute_id')
+    value = netfields.MACAddressField()
+
+    class Meta:
+        app_label = 'serverdb'
+        db_table = 'server_macaddr_attribute'
+        unique_together = (('server', '_attribute', 'value'), )
+        index_together = (('_attribute', 'value'), )
+
+
+class ServerDateAttribute(ServerAttribute):
+    _attribute = models.ForeignKey(
+        Attribute,
+        db_column='attribute_id',
+        db_index=False,
+        on_delete=models.CASCADE,
+        limit_choices_to=dict(type='date'),
+    )
+    attribute = Attribute.foreign_key_lookup('_attribute_id')
+    value = models.DateField()
+
+    class Meta:
+        app_label = 'serverdb'
+        db_table = 'server_date_attribute'
         unique_together = (('server', '_attribute', 'value'), )
         index_together = (('_attribute', 'value'), )
 

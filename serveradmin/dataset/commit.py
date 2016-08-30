@@ -526,7 +526,7 @@ def _validate_commit(changed_servers, servers):
                     newer.append((server_id, attr, server[attr]))
             elif action == 'update' or action == 'delete':
                 try:
-                    if server[attr] != change['old']:
+                    if str(server[attr]) != str(change['old']):
                         newer.append((server_id, attr, server[attr]))
                 except KeyError:
                     newer.append((server_id, attr, None))
