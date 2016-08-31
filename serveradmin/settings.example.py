@@ -17,10 +17,6 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'serveradmin',
-        'USER': 'serveradmin',
-        'PASSWORD': '',
-        'HOST': '',
-        'PORT': '',
         'OPTIONS': {
             'connect_timeout': 1,
             'client_encoding': 'UTF8',
