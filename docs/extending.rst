@@ -54,11 +54,11 @@ You would need a PostgreSQL database to run the application.  PostgreSQL
 usually comes by owned by the "postgres" user and the "ident" authentication
 enabled.  This means that users on the local system can connect to the server
 with their usernames.  You can switch to the "postgres" user and create
-a user matching your system username to avoid dealing with authentication
+a superuser matching your system username to avoid dealing with authentication
 again::
 
    sudo su postgres
-   createuser myusername
+   createuser -s myusername
 
 You would also need a database for the application::
 
