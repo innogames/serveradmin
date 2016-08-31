@@ -421,7 +421,7 @@ class Server(models.Model):
 
     server_id = models.AutoField(primary_key=True)
     hostname = models.CharField(max_length=64, unique=True)
-    intern_ip = netfields.InetAddressField(db_index=True)
+    intern_ip = netfields.InetAddressField()
     comment = models.CharField(max_length=255, null=True, blank=True)
     _project = models.ForeignKey(
         Project,
