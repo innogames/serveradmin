@@ -43,7 +43,11 @@ def create_server(
         raise CreateError('Unknown servertype: ' + attributes['servertype'])
 
     hostname = attributes['hostname']
-    intern_ip = ip_interface(str(attributes['intern_ip']))
+    intern_ip = (
+        ip_interface(attributes['intern_ip'])
+        if attributes['intern_ip'] is not None
+        else None
+    )
     servertype_id = servertype.pk
     segment_id = attributes.get('segment')
     project_id = attributes.get('project')

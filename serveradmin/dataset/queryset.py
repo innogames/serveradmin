@@ -243,10 +243,13 @@ class QuerySet(BaseQuerySet):
                 if not restrict or 'hostname' in restrict:
                     attrs['hostname'] = hostname
                 if not restrict or 'intern_ip' in restrict:
-                    if servertype.ip_addr_type == 'network':
-                        attrs['intern_ip'] = ip_network(intern_ip)
-                    else:
+                    if servertype.ip_addr_type == 'null':
+                        attrs['intern_ip'] = None
+                    elif servertype.ip_addr_type in ('host', 'loadbalancer'):
                         attrs['intern_ip'] = ip_address(intern_ip)
+                    else:
+                        assert servertype.ip_addr_type == 'network'
+                        attrs['intern_ip'] = ip_network(intern_ip)
                 if not restrict or 'segment' in restrict:
                     attrs['segment'] = segment_id
                 if not restrict or 'servertype' in restrict:
