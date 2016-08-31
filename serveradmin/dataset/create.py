@@ -1,6 +1,8 @@
 import json
 from ipaddress import ip_interface
 
+from django.core.exceptions import ValidationError
+
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
@@ -9,13 +11,12 @@ from serveradmin.serverdb.models import (
     ChangeCommit,
     ChangeAdd,
 )
-from serveradmin.dataset.validation import (
-    handle_violations,
-    check_attribute_type,
-)
 from serveradmin.dataset.typecast import typecast
-from serveradmin.dataset.commit import CommitError
 from adminapi.utils.json import json_encode_extra
+
+
+class CreateError(ValidationError):
+    pass
 
 
 def create_server(
@@ -27,23 +28,19 @@ def create_server(
     app=None,
 ):
     if 'hostname' not in attributes:
-        raise CommitError('Hostname is required')
+        raise CreateError('Hostname is required')
     if 'servertype' not in attributes:
-        raise CommitError('Servertype is required')
+        raise CreateError('Servertype is required')
     if 'project' not in attributes:
-        raise CommitError('Project is required')
+        raise CreateError('Project is required')
     if 'intern_ip' not in attributes:
-        raise CommitError('Internal IP (intern_ip) is required')
+        raise CreateError('Internal IP (intern_ip) is required')
     if 'segment' not in attributes:
-        raise CommitError('Segment is required')
-
-    for attr in ('hostname', 'servertype', 'project', 'intern_ip', 'segment'):
-        check_attribute_type(attr, attributes[attr])
-
+        raise CreateError('Segment is required')
     try:
         servertype = Servertype.objects.get(pk=attributes['servertype'])
     except Servertype.DoesNotExists:
-        raise CommitError('Unknown servertype: ' + attributes['servertype'])
+        raise CreateError('Unknown servertype: ' + attributes['servertype'])
 
     hostname = attributes['hostname']
     intern_ip = ip_interface(str(attributes['intern_ip']))
@@ -109,17 +106,22 @@ def create_server(
                     continue
 
         value = real_attributes[sa.attribute.pk]
-        check_attribute_type(sa.attribute.pk, value)
 
-        # Validate regular expression
-        if sa.regexp:
-            if sa.attribute.multi:
+        if sa.attribute.multi:
+            if not (isinstance(value, (list, set)) or
+                    hasattr(value, '_proxied_set')):
+                raise CreateError(
+                    '{0} is a multi attribute. Require list/set, '
+                    'but {1} of type {2} was given'
+                    .format(sa.attribute, repr(value), type(value).__name__)
+                )
+            if sa.regexp:
                 for val in value:
                     if not sa.regexp_match(unicode(val)):
                         violations_regexp.append(sa.attribute.pk)
-            else:
-                if not sa.regexp_match(value):
-                    violations_regexp.append(sa.attribute.pk)
+        elif sa.regexp:
+            if not sa.regexp_match(value):
+                violations_regexp.append(sa.attribute.pk)
 
     # Check for attributes that are not defined on this servertype
     violations_attribs = []
@@ -173,7 +175,7 @@ def _insert_server(
 ):
 
     if Server.objects.filter(hostname=hostname).exists():
-        raise CommitError(u'Server with that hostname already exists')
+        raise CreateError(u'Server with that hostname already exists')
 
     server = Server.objects.create(
         hostname=hostname,
@@ -205,3 +207,37 @@ def _type_cast_default(attribute, value):
         ]
     else:
         return typecast(attribute, value, force_single=True)
+
+
+def handle_violations(
+    skip_validation,
+    violations_regexp,
+    violations_required,
+    violations_attribs,
+):
+    if not skip_validation:
+        if violations_regexp or violations_required:
+            if violations_regexp:
+                regexp_msg = 'Attributes violating regexp: {0}. '.format(
+                    ', '.join(violations_regexp)
+                )
+            else:
+                regexp_msg = ''
+            if violations_required:
+                required_msg = 'Attributes violating required: {0}.'.format(
+                    ', '.join(violations_required)
+                )
+            else:
+                required_msg = ''
+
+            raise CreateError(
+                'Validation failed. {0}{1}'.format(regexp_msg, required_msg),
+                violations_regexp + violations_required,
+            )
+    if violations_attribs:
+        raise CreateError(
+            'Attributes {0} are not defined on '
+            'this servertype. You can\'t skip this validation!'
+            .format(', '.join(violations_attribs)),
+            violations_regexp + violations_required + violations_attribs,
+        )

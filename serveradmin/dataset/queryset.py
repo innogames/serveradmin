@@ -2,6 +2,7 @@ from collections import defaultdict, OrderedDict
 from ipaddress import ip_address, ip_network
 
 from django.db import connection
+from django.core.exceptions import ValidationError
 
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 
@@ -14,7 +15,6 @@ from serveradmin.serverdb.models import (
 )
 from serveradmin.dataset.commit import commit_changes
 from serveradmin.dataset.querybuilder import QueryBuilder
-from serveradmin.dataset.validation import check_attributes
 
 CACHE_MIN_QS_COUNT = 3
 NUM_OBJECTS_FOR_FILECACHE = 50
@@ -119,8 +119,12 @@ class QuerySetRepresentation(object):
 
 class QuerySet(BaseQuerySet):
     def __init__(self, filters):
-        check_attributes(filters.keys())
         self.attributes = {a.pk: a for a in Attribute.objects.all()}
+        for attribute_id in filters.keys():
+            if attribute_id not in self.attributes:
+                raise ValidationError(
+                    'Invalid attribute: {0}'.format(attribute_id)
+                )
         for attribute_name, filter_obj in filters.items():
             filter_obj.typecast(self.attributes[attribute_name])
         super(QuerySet, self).__init__(filters)
@@ -153,7 +157,11 @@ class QuerySet(BaseQuerySet):
             )
 
     def restrict(self, *attrs):
-        check_attributes(attrs)
+        for attribute_id in attrs:
+            if attribute_id not in self.attributes:
+                raise ValidationError(
+                    'Invalid attribute: {0}'.format(attribute_id)
+                )
         return super(QuerySet, self).restrict(*attrs)
 
     def limit(self, value):
@@ -171,7 +179,10 @@ class QuerySet(BaseQuerySet):
         return self
 
     def order_by(self, order_by, order_dir='asc'):
-        check_attributes([order_by])
+        if order_by not in self.attributes:
+            raise ValidationError(
+                'Invalid attribute: {0}'.format(order_by)
+            )
         if order_dir not in ('asc', 'desc'):
             raise ValueError('Invalid order direction')
 
