@@ -142,6 +142,8 @@ INSTALLED_APPS = (
     'serveradmin.colo',
     'serveradmin.apps',
     'serveradmin.dataset',
+    'serveradmin.serverdb',
+    'serveradmin.serverdb_extra',
     'serveradmin.api',
     'serveradmin.docs',
     'serveradmin.iprange',
