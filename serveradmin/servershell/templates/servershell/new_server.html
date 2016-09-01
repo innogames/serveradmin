@@ -16,20 +16,20 @@
 	<tr>
 		<th>{{ field.label_tag }}</th>
 		<td>{{ field }}
-			{% if field.name == 'intern_ip' %}
-			<a href="javascript:choose_ip($('#id_intern_ip'));">Choose IP</a>
-			{% endif %}
-			{{ field.errors }}
+        {% if field.name == 'intern_ip' %}
+            <a href="javascript:choose_ip_addr($('#id_intern_ip'));">Choose IP Address</a>
+        {% endif %}
 		</td>
 	</tr>
+    {{ field.errors }}
 {% endfor %}
 </table>
 {{ form.non_field_errors }}
 <p><input type="submit" value="Create" /></p>
 <script type="text/javascript">
 //<![CDATA[
-var iprange_chooseip_url = "{% url 'iprange_chooseip' %}";
+var servershell_choose_ip_addr_url = "{% url 'servershell_choose_ip_addr' %}";
 //]]>
 </script>
-<script type="text/javascript" src="{{ STATIC_URL }}servershell/choose_ip.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}servershell/choose_ip_addr.js"></script>
 {% endblock %}

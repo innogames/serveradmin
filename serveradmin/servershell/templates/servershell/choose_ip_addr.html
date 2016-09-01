@@ -1,0 +1,15 @@
+{% if servers %}
+<ul>
+{% for server in servers %}
+<li><span class="network_select">{{ server.intern_ip }}</span> - {{ server.hostname }}</li>
+{% endfor %}
+</ul>
+{% elif ip_addrs %}
+<ul>
+{% for ip_addr in ip_addrs %}
+<li><span class="ip_addr_select">{{ ip_addr }}</span></li>
+{% endfor %}
+</ul>
+{% else %}
+<p>No free IP addresses are available.</p>
+{% endif %}

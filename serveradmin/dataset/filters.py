@@ -480,12 +480,12 @@ class InsideNetwork(NetworkFilter):
             raise FilterValueError(str(error))
 
     def __repr__(self):
-        return 'InsideNetwork({0})'.format(
-            ', '.join(repr(n) for n in self.networks)
+        return '{0}({1})'.format(
+            type(self), ', '.join(repr(n) for n in self.networks)
         )
 
     def __eq__(self, other):
-        if isinstance(other, InsideNetwork):
+        if isinstance(other, type(self)):
             return all(
                 n1 == n2 for n1, n2 in zip(self.networks, other.networks)
             )
@@ -493,7 +493,7 @@ class InsideNetwork(NetworkFilter):
         return False
 
     def __hash__(self):
-        result = hash('InsideNetwork')
+        result = hash(type(self))
         for network in self.networks:
             result ^= hash(network)
 
@@ -516,6 +516,22 @@ class InsideNetwork(NetworkFilter):
             return cls(*obj['networks'])
 
         raise FilterValueError('Invalid object for InsideNetwork')
+
+
+class InsideOnlyNetwork(InsideNetwork):
+    def as_sql_expr(self, attribute):
+        network_sql_array = "'{{{{{0}}}}}'".format(
+            ','.join(str(n) for n in self.networks)
+        )
+        return _condition_sql(attribute, (
+            '{{0}} << ANY({0}) AND NOT EXISTS ('
+            '   SELECT 1 '
+            '   FROM server AS supernet '
+            '   WHERE {{0}} << supernet.intern_ip AND '
+            '       supernet.intern_ip << ANY({0})'
+            ')'
+            .format(network_sql_array)
+        ))
 
 
 class PrivateIP(NetworkFilter, NoArgFilter):
@@ -693,7 +709,7 @@ def _condition_sql(attribute, template):
         if field.startswith('_'):
             field = field[1:]
 
-        return template.format(field)
+        return template.format('server.' + field)
 
     if attribute.type == 'supernet':
         return _exists_sql('server', 'sub', (

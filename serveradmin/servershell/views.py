@@ -3,6 +3,7 @@ try:
 except ImportError:
     import json
 from operator import attrgetter
+from ipaddress import ip_network
 
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template.response import TemplateResponse
@@ -28,6 +29,7 @@ from serveradmin.serverdb.forms import ServerForm
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
+    Server,
     ServertypeAttribute,
     ServerStringAttribute,
 )
@@ -390,6 +392,48 @@ def new_server(request):
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
         'clone_from': clone_from,
+    })
+
+
+@login_required
+def choose_ip_addr(request):
+    query_kwargs = {}
+    if 'network' in request.GET:
+        network = ip_network(request.GET['network'])
+        query_kwargs['intern_ip'] = filters.InsideOnlyNetwork(network)
+    else:
+        network = None
+        query_kwargs['intern_ip'] = filters.InsideOnlyNetwork(
+            ip_network('0.0.0.0/0'), ip_network('::/0')
+        )
+
+    query_kwargs['servertype'] = filters.Any(*(
+        s.pk for s in Servertype.objects.all()
+        if s.ip_addr_type == 'network'
+    ))
+    servers = tuple(
+        query(**query_kwargs)
+        .order_by('intern_ip')
+        .restrict('hostname', 'intern_ip')
+    )
+    ip_addrs = []
+
+    if not servers:
+        used = {i.ip for i in (
+            Server.objects
+            .filter(intern_ip__net_contained_or_equal=network)
+            .order_by()     # Clear ordering for database performance
+            .values_list('intern_ip', flat=True)
+        )}
+
+        for ip_addr in network.hosts():
+            if ip_addr not in used:
+                ip_addrs.append(ip_addr)
+                if len(ip_addrs) > 1000:
+                    break
+
+    return TemplateResponse(request, 'servershell/choose_ip_addr.html', {
+        'servers': servers, 'ip_addrs': ip_addrs
     })
 
 

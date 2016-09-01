@@ -11,5 +11,10 @@ urlpatterns = patterns(
     url(r'^commit$', 'commit', name='servershell_commit'),
     url(r'^values$', 'get_values', name='servershell_values'),
     url(r'^new$', 'new_server', name='servershell_new'),
+    url(
+        r'^choose_ip_addr$',
+        'choose_ip_addr',
+        name='servershell_choose_ip_addr',
+    ),
     url(r'^store_command$', 'store_command', name='servershell_store_command'),
 )
