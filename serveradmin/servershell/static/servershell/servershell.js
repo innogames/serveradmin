@@ -1,7 +1,7 @@
 var search = {
     'shown_attributes': ['hostname', 'intern_ip', 'servertype', 'project', 'state'],
     'avail_attributes': {},
-    'servers': {},
+    'servers': [],
     'num_servers': 0,
     'page': 1,
     'per_page': 100,
@@ -80,42 +80,6 @@ function build_server_table(servers, attributes, offset)
     }
     table.append(header_tr);
 
-    // Build server list for table
-    var server_list = []
-    for (server in servers) {
-        servers[server]['object_id'] = parseInt(server, 10);
-        server_list.push(servers[server]);
-    }
-    server_list.sort(function(a, b) {
-        var sort_attr;
-        if (typeof(search['order_by']) == 'string') {
-            sort_attr = search['order_by'];
-        } else {
-            sort_attr = 'hostname';
-        }
-        var x = a[sort_attr];
-        var y = b[sort_attr];
-
-        if (typeof(x) == 'undefined' && typeof(y) == 'undefined') {
-            return 0;
-        } else if (typeof(x) == 'undefined') {
-            return 1;
-        } else if (typeof(y) == 'undefined') {
-            return -1;
-        }
-
-        if (available_attributes[sort_attr]['multi']) {
-            x = array_min(x);
-            y = array_min(y);
-        }
-
-        if (search['order_dir'] == 'desc') {
-            return x > y ? -1 : 1;
-        } else {
-            return x > y ? 1 : -1;
-        }
-    });
-
     var delete_set = {};
     for (var i = 0; i < commit['deleted'].length; i++) {
         delete_set[commit['deleted'][i]] = true;
@@ -126,8 +90,8 @@ function build_server_table(servers, attributes, offset)
     // Fill table
     search['no_mapping'] = {};
     var marked_servers = get_marked_servers();
-    for (var i = 0; i < server_list.length; i++) {
-        var server = server_list[i];
+    for (var i = 0; i < servers.length; i++) {
+        var server = servers[i];
         var row_class = i & 1 ? 'row_a' : 'row_b';
         if (delete_set[server['object_id']]) {
             row_class = 'row_del';
@@ -235,10 +199,10 @@ function build_server_table(servers, attributes, offset)
         }
         table.append(row);
         search['no_mapping'][offset + i + 1] = server;
-        if (server_list.length == 0) {
+        if (servers.length == 0) {
             search['first_server'] = null;
         } else {
-            search['first_server'] = server_list[0];
+            search['first_server'] = servers[0];
         }
     }
     var heading = '<h3>Results (' + search['num_servers'] + ' servers, ';
@@ -585,10 +549,13 @@ function execute_on_servers(callback)
             callback(search['first_server']);
         }
     } else {
-        for (var i = 0; i < marked_servers.length; i++) {
-            var server = search['servers'][marked_servers[i]];
-            if(callback(server) === false) {
-                break;
+        for (var i = 0; i < search['servers'].length; i++) {
+            var server = search['servers'][i];
+
+            if (marked_servers.indexOf(server['object_id']) >= 0) {
+                if (callback(server) === false) {
+                    break;
+                }
             }
         }
     }
@@ -678,9 +645,11 @@ function handle_command_export()
 
 function handle_command_graph()
 {
-    var hostnames = get_marked_servers().map(function(server_id) {
-        // Find the hostname from the global object search.
-        return search['servers'][server_id]['hostname'];
+    var marked_servers = get_marked_servers();
+    var hostnames = search['servers'].filter(function(server) {
+        marked_servers.indexOf(server['object_id']) >= 0
+    }).map(function(server) {
+        return server['hostname'];
     });
 
     // The established behavior of the Servershell commands is to select
@@ -938,9 +907,13 @@ function handle_command_setattr(parsed_args)
     }
 
     var changes = commit['changes'];
-    for (var i = 0; i < marked_servers.length; i++) {
-        var server_id = marked_servers[i];
-        var server = search['servers'][server_id];
+    for (var i = 0; i < search['servers'].length; i++) {
+        var server = search['servers'][i];
+        var server_id = server['object_id'];
+
+        if (marked_servers.indexOf(server_id) < 0)
+            continue;
+
         if (!search['avail_attributes'][server['servertype']][attr_name]) {
             continue;
         }
@@ -976,8 +949,13 @@ function handle_command_delattr(parsed_args)
 
     var marked_servers = get_marked_servers();
     var changes = commit['changes'];
-    for (var i = 0; i < marked_servers.length; i++) {
-        var server_id = marked_servers[i];
+    for (var i = 0; i < search['servers'].length; i++) {
+        var server = search['servers'][i];
+        var server_id = server['object_id'];
+
+        if (marked_servers.indexOf(server_id) < 0)
+            continue;
+
         if (typeof(changes[server_id]) == 'undefined') {
             changes[server_id] = {};
         }
@@ -1013,15 +991,17 @@ function handle_command_multiattr(parsed_args, action)
         return;
     }
     var changes = commit['changes'];
-    for (var i = 0; i < marked_servers.length; i++) {
-        var server_id = marked_servers[i];
-        var server = search['servers'][server_id];
+    for (var i = 0; i < search['servers'].length; i++) {
+        var server = search['servers'][i];
+        var server_id = server['object_id'];
+
+        if (marked_servers.indexOf(server_id) < 0)
+            continue;
 
         // Don't modify multiattr if it doesn't exist
         if (!search['avail_attributes'][server['servertype']][attr_name]) {
             continue;
         }
-
 
         if (typeof(changes[server_id]) == 'undefined') {
             changes[server_id] = {};

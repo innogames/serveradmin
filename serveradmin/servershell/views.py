@@ -140,7 +140,10 @@ def get_results(request):
     return HttpResponse(json.dumps({
         'status': 'success',
         'understood': queryset.get_representation().as_code(hide_extra=True),
-        'servers': results,
+        'servers': [
+            dict(r.items() + [('object_id', r.object_id)])
+            for r in results.values()
+        ],
         'num_servers': num_servers,
         'avail_attributes': avail_attributes
     }, default=json_encode_extra), content_type='application/x-json')
