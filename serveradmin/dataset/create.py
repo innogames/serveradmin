@@ -64,10 +64,11 @@ def create_server(
         if key in real_attributes:
             del real_attributes[key]
 
-    # Ignore the reverse attributes
+    # Ignore the virtual attribute types
     for attribute in Attribute.objects.all():
-        if attribute.reversed_attribute and attribute.pk in real_attributes:
-            del real_attributes[attribute.pk]
+        if attribute.type in ('reverse_hostname', 'supernet'):
+            if attribute.pk in real_attributes:
+                del real_attributes[attribute.pk]
 
     violations_regexp = []
     violations_required = []
