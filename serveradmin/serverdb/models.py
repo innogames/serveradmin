@@ -447,18 +447,29 @@ class Server(models.Model):
         app_label = 'serverdb'
         db_table = 'server'
 
+    def __init__(self, *args, **kwargs):
+        super(Server, self).__init__(*args, **kwargs)
+        self.__old_intern_ip = self.intern_ip
+        self.__old_project = self.project
+        self.__old_servertype = self.servertype
+
     def __str__(self):
         return self.hostname
 
     def clean(self, *args, **kwargs):
         super(Server, self).clean(*args, **kwargs)
-        self._validate_project()
-        if self.servertype.ip_addr_type == 'null':
-            self._validate_null_intern_ip()
-        elif self.servertype.ip_addr_type in ('host', 'loadbalancer'):
-            self._validate_host_intern_ip()
-        elif self.servertype.ip_addr_type == 'network':
-            self._validate_network_intern_ip()
+        if (
+            self.intern_ip != self.__old_intern_ip or
+            self.project != self.__old_project or
+            self.servertype != self.__old_servertype
+        ):
+            self._validate_project()
+            if self.servertype.ip_addr_type == 'null':
+                self._validate_null_intern_ip()
+            elif self.servertype.ip_addr_type in ('host', 'loadbalancer'):
+                self._validate_host_intern_ip()
+            elif self.servertype.ip_addr_type == 'network':
+                self._validate_network_intern_ip()
 
     def _validate_project(self):
         fixed_project = self.servertype.fixed_project
