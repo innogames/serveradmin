@@ -5,7 +5,7 @@ var search = {
     'num_servers': 0,
     'page': 1,
     'per_page': 100,
-    'order_by': null,
+    'order_by': 'hostname',
     'order_dir': 'asc',
     'no_mapping': {},
     'first_server': null
@@ -26,12 +26,9 @@ function execute_search(term)
         'limit': search['per_page'],
         'no_mapping': {}
     };
-    if (search['order_by'] != null) {
-        search_request['order_by'] = search['order_by'];
-        search_request['order_dir'] = search['order_dir'];
-    }
+    search_request['order_by'] = search['order_by'];
+    search_request['order_dir'] = search['order_dir'];
     $.getJSON(shell_results_url, search_request, function(data) {
-
         if (data['status'] != 'success') {
             var error = $('<span class="error"></span>').text(data['message']);
             $('#shell_understood').empty().append(error);
