@@ -1025,8 +1025,8 @@ function handle_command_multiattr(parsed_args, action)
                 }
             } else if (action == 'add') {
                 var contains_value = false;
-                if (typeof(search['servers'][server_id][attr_name]) != 'undefined') {
-                    contains_value = search['servers'][server_id][attr_name].indexOf(parsed_value) != -1;
+                if (typeof(server[attr_name]) != 'undefined') {
+                    contains_value = server[attr_name].indexOf(parsed_value) != -1;
                 }
                 if (!contains_value) {
                     changes[server_id][attr_name]['add'].push(parsed_value);
