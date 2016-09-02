@@ -397,43 +397,51 @@ def new_server(request):
 
 @login_required
 def choose_ip_addr(request):
-    query_kwargs = {}
-    if 'network' in request.GET:
-        network = ip_network(request.GET['network'])
-        query_kwargs['intern_ip'] = filters.InsideOnlyNetwork(network)
-    else:
-        network = None
-        query_kwargs['intern_ip'] = filters.InsideOnlyNetwork(
-            ip_network('0.0.0.0/0'), ip_network('::/0')
+    if 'network' not in request.GET:
+        servers = tuple(
+            query(servertype='provider_network')
+            .order_by('intern_ip')
+            .restrict('hostname', 'intern_ip')
         )
 
-    query_kwargs['servertype'] = filters.Any(*(
-        s.pk for s in Servertype.objects.all()
-        if s.ip_addr_type == 'network'
-    ))
+        return TemplateResponse(request, 'servershell/choose_ip_addr.html', {
+            'servers': servers
+        })
+
+    network = ip_network(request.GET['network'])
     servers = tuple(
-        query(**query_kwargs)
+        query(
+            servertype=filters.Any(*(
+                s.pk for s in Servertype.objects.all()
+                if s.ip_addr_type == 'network'
+            )),
+            intern_ip=filters.InsideOnlyNetwork(network),
+        )
         .order_by('intern_ip')
         .restrict('hostname', 'intern_ip')
-    )
+        )
+
+    if servers:
+        return TemplateResponse(request, 'servershell/choose_ip_addr.html', {
+            'servers': servers
+        })
+
     ip_addrs = []
+    used = {i.ip for i in (
+        Server.objects
+        .filter(intern_ip__net_contained_or_equal=network)
+        .order_by()     # Clear ordering for database performance
+        .values_list('intern_ip', flat=True)
+    )}
 
-    if not servers:
-        used = {i.ip for i in (
-            Server.objects
-            .filter(intern_ip__net_contained_or_equal=network)
-            .order_by()     # Clear ordering for database performance
-            .values_list('intern_ip', flat=True)
-        )}
-
-        for ip_addr in network.hosts():
-            if ip_addr not in used:
-                ip_addrs.append(ip_addr)
-                if len(ip_addrs) > 1000:
-                    break
+    for ip_addr in network.hosts():
+        if ip_addr not in used:
+            ip_addrs.append(ip_addr)
+            if len(ip_addrs) > 1000:
+                break
 
     return TemplateResponse(request, 'servershell/choose_ip_addr.html', {
-        'servers': servers, 'ip_addrs': ip_addrs
+        'ip_addrs': ip_addrs
     })
 
 
