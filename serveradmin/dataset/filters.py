@@ -12,7 +12,6 @@ from serveradmin.serverdb.models import (
     Project,
     Segment,
     Servertype,
-    ServertypeAttribute,
     Server,
     ServerAttribute,
 )
@@ -716,9 +715,8 @@ def _condition_sql(attribute, template):
             "sub.servertype_id = '{0}'".format(attribute.target_servertype.pk),
             'sub.intern_ip >>= server.intern_ip',
             'server.servertype_id IN ({0})'.format(', '.join(
-                "'{0}'".format(s.servertype.pk)
-                for s in ServertypeAttribute.objects.all()
-                if s.attribute == attribute
+                "'{0}'".format(sa.servertype.pk)
+                for sa in attribute.servertype_attributes.all()
             )),
             template.format('sub.server_id'),
         ))
@@ -740,38 +738,37 @@ def _condition_sql(attribute, template):
     # its own.  Then, add the conditions for all possible relations.  They
     # are going to be OR'ed together.
     relation_conditions = ['server.server_id = sub.server_id']
-    for sa in ServertypeAttribute.objects.all():
-        if sa.attribute == attribute and sa.related_via_attribute:
-            if sa.related_via_attribute.type == 'supernet':
-                relation_conditions.append(_exists_sql('server', 'rel1', (
-                    "rel1.servertype_id = '{0}'".format(
-                        sa.related_via_attribute.target_servertype.pk
-                    ),
-                    'rel1.intern_ip >>= server.intern_ip',
-                    'server.servertype_id IN ({0})'.format(', '.join(
-                        "'{0}'".format(s.servertype.pk)
-                        for s in ServertypeAttribute.objects.all()
-                        if s.attribute == sa.related_via_attribute
-                    )),
-                    'rel1.server_id = sub.server_id',
-                )))
-            elif sa.related_via_attribute.type == 'reverse_hostname':
-                relation_conditions.append(_exists_sql(rel_table, 'rel1', (
-                    "rel1.attribute_id = '{0}'".format(
-                        sa.related_via_attribute.reversed_attribute.pk
-                    ),
-                    'rel1.value = server.server_id',
-                    'rel1.server_id = sub.server_id',
-                )))
-            else:
-                assert sa.related_via_attribute.type == 'hostname'
-                relation_conditions.append(_exists_sql(rel_table, 'rel1', (
-                    "rel1.attribute_id = '{0}'".format(
-                        sa.related_via_attribute.pk
-                    ),
-                    'rel1.server_id = server.server_id',
-                    'rel1.value = sub.server_id',
-                )))
+    for sa in attribute.related_servertype_attributes.all():
+        if sa.related_via_attribute.type == 'supernet':
+            relation_conditions.append(_exists_sql('server', 'rel1', (
+                "rel1.servertype_id = '{0}'".format(
+                    sa.related_via_attribute.target_servertype.pk
+                ),
+                'rel1.intern_ip >>= server.intern_ip',
+                'server.servertype_id IN ({0})'.format(', '.join(
+                    "'{0}'".format(s.servertype.pk)
+                    for s
+                    in sa.related_via_attribute.servertype_attributes.all()
+                )),
+                'rel1.server_id = sub.server_id',
+            )))
+        elif sa.related_via_attribute.type == 'reverse_hostname':
+            relation_conditions.append(_exists_sql(rel_table, 'rel1', (
+                "rel1.attribute_id = '{0}'".format(
+                    sa.related_via_attribute.reversed_attribute.pk
+                ),
+                'rel1.value = server.server_id',
+                'rel1.server_id = sub.server_id',
+            )))
+        else:
+            assert sa.related_via_attribute.type == 'hostname'
+            relation_conditions.append(_exists_sql(rel_table, 'rel1', (
+                "rel1.attribute_id = '{0}'".format(
+                    sa.related_via_attribute.pk
+                ),
+                'rel1.server_id = server.server_id',
+                'rel1.value = sub.server_id',
+            )))
 
     return _exists_sql(table, 'sub', (
         '({0})'.format(' OR '.join(relation_conditions)),

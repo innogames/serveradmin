@@ -205,23 +205,6 @@ class Servertype(LookupModel):
         db_table = 'servertype'
         ordering = ('pk', )
 
-    def copy(self, new_id):
-        target, created = Servertype.objects.get_or_create(pk=new_id)
-        skip = [a.attribute for a in target.used_attributes.select_related()]
-
-        for servertype_attribute in self.used_attributes.select_related():
-            if servertype_attribute.attribute in skip:
-                continue
-
-            ServertypeAttribute.objects.create(
-                _servertype=target,
-                _attribute=servertype_attribute.attribute,
-                required=servertype_attribute.required,
-                default_value=servertype_attribute.default_value,
-                regexp=servertype_attribute.regexp,
-                default_visible=servertype_attribute.default_visible,
-            )
-
 
 class AttributeManager(LookupManager):
     def all(self):
@@ -283,12 +266,11 @@ class Attribute(LookupModel):
         db_table = 'attribute'
         ordering = ('pk', )
 
-    def used_in(self):
-        return [
-            sa.servertype
-            for sa in ServertypeAttribute.objects.all()
-            if sa.attribute == self
-        ]
+    @property
+    def related_servertype_attributes(self):
+        return self.servertype_attributes.filter(
+            _related_via_attribute__isnull=False
+        )
 
     def can_be_materialized(self):
         return bool(ServerAttribute.get_model(self.type))
@@ -352,12 +334,14 @@ Attribute.specials = (
 )
 
 
-class ServertypeAttribute(LookupModel):
-    objects = LookupManager()
+#
+# Servertype Attribute Relation
+#
 
+class ServertypeAttribute(models.Model):
     _servertype = models.ForeignKey(
         Servertype,
-        related_name='used_attributes',
+        related_name='attributes',
         db_column='servertype_id',
         db_index=False,
         on_delete=models.CASCADE,
@@ -365,6 +349,7 @@ class ServertypeAttribute(LookupModel):
     servertype = Servertype.foreign_key_lookup('_servertype_id')
     _attribute = models.ForeignKey(
         Attribute,
+        related_name='servertype_attributes',
         db_column='attribute_id',
         db_index=False,
         on_delete=models.CASCADE,
@@ -372,7 +357,7 @@ class ServertypeAttribute(LookupModel):
     attribute = Attribute.foreign_key_lookup('_attribute_id')
     _related_via_attribute = models.ForeignKey(
         Attribute,
-        related_name='related_via_servertype_set',
+        related_name='related_via_servertype_attributes',
         null=True,
         blank=True,
         db_column='related_via_attribute_id',

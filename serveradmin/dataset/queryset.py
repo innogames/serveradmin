@@ -9,7 +9,6 @@ from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
-    ServertypeAttribute,
     ServerAttribute,
     ServerHostnameAttribute,
 )
@@ -273,8 +272,8 @@ class QuerySet(BaseQuerySet):
 
         # First, prepare the dictionary for lookups by attribute
         servertype_attributes = defaultdict(list)
-        for sa in ServertypeAttribute.objects.all():
-            if sa.servertype in servers_by_type:
+        for servertype in servers_by_type.keys():
+            for sa in servertype.attributes.all():
                 servertype_attributes[sa.attribute].append(sa)
         # Then, process the attributes
         for attribute in servertype_attributes.keys():

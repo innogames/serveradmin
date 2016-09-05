@@ -6,7 +6,6 @@ from django.core.exceptions import ValidationError
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
-    ServertypeAttribute,
     Server,
     ChangeCommit,
     ChangeAdd,
@@ -72,10 +71,7 @@ def create_server(
 
     violations_regexp = []
     violations_required = []
-    for sa in ServertypeAttribute.objects.all():
-        if sa.servertype != servertype:
-            continue
-
+    for sa in servertype.attributes.all():
         # Ignore the related via attributes
         if sa.related_via_attribute:
             if sa.attribute.pk in real_attributes:
@@ -131,9 +127,7 @@ def create_server(
     # Check for attributes that are not defined on this servertype
     violations_attribs = []
     servertype_attribute_ids = {
-        sa.attribute.pk
-        for sa in ServertypeAttribute.objects.all()
-        if sa.servertype == servertype
+        sa.attribute.pk for sa in servertype.attributes.all()
     }
     for attr in real_attributes:
         if attr not in servertype_attribute_ids:

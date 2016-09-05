@@ -1,4 +1,3 @@
-from collections import defaultdict
 import json
 from ipaddress import ip_address, ip_network
 
@@ -9,9 +8,9 @@ from adminapi.utils.json import json_encode_extra
 from serveradmin.dataset.typecast import typecast
 from serveradmin.hooks.slots import HookSlot
 from serveradmin.serverdb.models import (
+    Servertype,
     Attribute,
     ServerTableSpecial,
-    ServertypeAttribute,
     Server,
     ServerHostnameAttribute,
     ChangeCommit,
@@ -424,11 +423,11 @@ def _fetch_servers(changed_servers):
 
 
 def _get_servertype_attributes(servers):
-    servertype_ids = {s['servertype'] for s in servers.values()}
-    servertype_attributes = defaultdict(dict)
-    for item in ServertypeAttribute.objects.all():
-        if item.servertype.pk in servertype_ids:
-            servertype_attributes[item.servertype.pk][item.attribute.pk] = item
+    servertype_attributes = dict()
+    for servertype_id in {s['servertype'] for s in servers.values()}:
+        servertype_attributes[servertype_id] = dict()
+        for sa in Servertype.objects.get(pk=servertype_id).attributes.all():
+            servertype_attributes[servertype_id][sa.attribute.pk] = sa
 
     return servertype_attributes
 

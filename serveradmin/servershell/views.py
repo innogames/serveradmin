@@ -30,7 +30,6 @@ from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
     Server,
-    ServertypeAttribute,
     ServerStringAttribute,
 )
 
@@ -123,7 +122,6 @@ def get_results(request):
 
     # Add information about available attributes on servertypes
     # It will be encoded as map avail[servertype][attr] = stypeattr
-    servertype_ids = {s['servertype'] for s in results.values()}
     specials = tuple(
         (a.pk, {
             'regexp': None,
@@ -131,13 +129,15 @@ def get_results(request):
         })
         for a in Attribute.specials
     )
-    avail_attributes = {s: dict(specials) for s in servertype_ids}
-    for sa in ServertypeAttribute.objects.all():
-        if sa.servertype.pk in servertype_ids and not sa.related_via_attribute:
-            avail_attributes[sa.servertype.pk][sa.attribute.pk] = {
-                'regexp': sa.regexp,
-                'default': sa.default_value,
-            }
+    avail_attributes = dict()
+    for servertype_id in {s['servertype'] for s in results.values()}:
+        avail_attributes[servertype_id] = dict(specials)
+        for sa in Servertype.objects.get(pk=servertype_id).attributes.all():
+            if not sa.related_via_attribute:
+                avail_attributes[servertype_id][sa.attribute.pk] = {
+                    'regexp': sa.regexp,
+                    'default': sa.default_value,
+                }
 
     return HttpResponse(json.dumps({
         'status': 'success',
@@ -216,9 +216,7 @@ def list_and_edit(request, mode='list'):
             messages.error(request, 'Attributes contain invalid values')
 
     servertype_attributes = {
-        sa.attribute.pk: sa
-        for sa in ServertypeAttribute.objects.all()
-        if sa.servertype == stype
+        sa.attribute.pk: sa for sa in stype.attributes.all()
     }
 
     fields = []
