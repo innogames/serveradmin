@@ -8,8 +8,9 @@ from serveradmin.dataset import query, filters
 from pprint import pprint
 
 datacenters = {
-    's198.1': {
-        'name': 'Süderstraße S198.1',
+    'Süderstraße S198.1': {
+        'name': 'af',
+        'colocation': None,
         'rowgroups': [
                 [
                     {
@@ -56,8 +57,9 @@ datacenters = {
                 ],
         ],
     },
-    'w408.1': {
-        'name': 'Wendenstraße W408.1',
+    'Wendenstraße W408, Colocation 1': {
+        'name': 'aw',
+        'colocation': '1',
         'rowgroups': [
             [
                 {
@@ -98,8 +100,9 @@ datacenters = {
 
         ],
     },
-    'w408.2': {
-        'name': 'Wendenstraße W408.2',
+    'Wendenstraße W408, Colocation 2': {
+        'name': 'aw',
+        'colocation': '2',
         'rowgroups': [
             [
                 {
@@ -148,12 +151,21 @@ def index(request):
             for row in rgroup:
                 row['igcolumns'] = []
                 for col in row['columns']:
+                    hardware = {}
                     if row['row'] != '_' and col != '_':
-                        rack_attr = '{}-{}{}'.format(dc_k, row['row'], col)
-                        hardware = query(
-                            rack = rack_attr,
-                            bladecenter = filters.Empty()
-                        )
+                        rack = tuple(query(
+                            servertype='rack',
+                            datacenter=dc_v['name'],
+                            rack_colo=dc_v['colocation'],
+                            rack_row=row['row'],
+                            rack_number=col,
+                        ))
+                        if rack:
+                            rack = rack[0]
+                            hardware = query(
+                                rack=rack['hostname'],
+                                bladecenter=filters.Empty(),
+                            )
                     row['igcolumns'].append( {
                         'style': 'extreme' if [ hw for hw in hardware if 'hardware_model' in hw and hw['hardware_model']=='EX670' ] else 'normal',
                         'name': col,
@@ -161,7 +173,6 @@ def index(request):
                         'hw': [ hw['hostname'] for hw in hardware],
                         'static': row['static'][col] if 'static' in row and col in row['static'] else None,
                     })
-    pprint(dcs)
     return TemplateResponse(request, 'colo/index.html', {
         'dcs': dcs,
     })
