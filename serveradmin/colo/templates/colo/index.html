@@ -84,7 +84,7 @@
 </style>
 
 {% for dc_k, dc_v in dcs.items %}
-    <h2>{{ dc_v.name }}</h2>
+    <h2>{{ dc_k }}</h2>
     <table class="colocation">
         {% for rg in dc_v.rowgroups %}
             <tr class="rowgroup">
