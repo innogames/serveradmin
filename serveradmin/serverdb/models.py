@@ -240,7 +240,6 @@ class Attribute(LookupModel):
         max_length=32,
         choices=get_choices(attribute_types),
     )
-    base = models.BooleanField(null=False, default=False)
     multi = models.BooleanField(null=False, default=False)
     hovertext = models.TextField(null=False, blank=True, default='')
     group = models.CharField(
@@ -292,7 +291,6 @@ Attribute.specials = (
     Attribute(
         attribute_id='object_id',
         type='integer',
-        base=False,
         multi=False,
         group='base',
         special=ServerTableSpecial('server_id'),
@@ -300,7 +298,6 @@ Attribute.specials = (
     Attribute(
         attribute_id='hostname',
         type='string',
-        base=True,
         multi=False,
         group='base',
         special=ServerTableSpecial('hostname', unique=True),
@@ -308,7 +305,6 @@ Attribute.specials = (
     Attribute(
         attribute_id='servertype',
         type='string',
-        base=True,
         multi=False,
         group='base',
         special=ServerTableSpecial('_servertype_id'),
@@ -316,7 +312,6 @@ Attribute.specials = (
     Attribute(
         attribute_id='project',
         type='string',
-        base=True,
         multi=False,
         group='base',
         special=ServerTableSpecial('_project_id'),
@@ -324,7 +319,6 @@ Attribute.specials = (
     Attribute(
         attribute_id='intern_ip',
         type='ip',
-        base=True,
         multi=False,
         group='base',
         special=ServerTableSpecial('intern_ip'),
@@ -332,7 +326,6 @@ Attribute.specials = (
     Attribute(
         attribute_id='segment',
         type='string',
-        base=True,
         multi=False,
         group='base',
         special=ServerTableSpecial('_segment_id'),
