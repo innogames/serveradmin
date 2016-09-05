@@ -85,20 +85,24 @@ class LookupManager(models.Manager):
     """
     def __init__(self):
         super(LookupManager, self).__init__()
-        self.reset_cache()
-
+        self._reset_cache()
         # Make sure the cache is clean on every new request.
-        request_started.connect(self.reset_cache)
+        request_started.connect(self._reset_cache)
 
-    def reset_cache(self, **kwargs):
-        self._lookup_dict = None
+    def _reset_cache(self, **kwargs):
+        self._cache_built = False
+        self._lookup_dict = {}
+
+    def _build_cache(self):
+        self._cache_built = True
+        self._lookup_dict = OrderedDict(
+            (o.pk, o) for o in super(LookupManager, self).all()
+        )
 
     def all(self):
         """Override all method to cache all objects"""
-        if self._lookup_dict is None:
-            self._lookup_dict = OrderedDict(
-                (o.pk, o) for o in super(LookupManager, self).all()
-            )
+        if not self._cache_built:
+            self._build_cache()
         return self._lookup_dict.values()
 
     def get(self, *args, **kwargs):
@@ -106,23 +110,26 @@ class LookupManager(models.Manager):
 
         We are only caching lookups with the special "pk" property.
         """
-        if len(kwargs) != 1 or kwargs.keys()[0] != 'pk':
-            raise Exception(
-                'get() except "pk" are not supported on lookup models.'
-            )
-
-        # Initialise the cache
-        self.all()
-
-        query_key = kwargs.values()[0]
-        if query_key not in self._lookup_dict:
-            raise self.model.DoesNotExist()
-
-        return self._lookup_dict[query_key]
+        # Implement anti-cache pattern to make things faster in here.
+        # This is one of the hottest function of the application according
+        # to the profiles.
+        for key, value in kwargs.items():
+            if key != 'pk':
+                raise Exception(
+                    'get() except "pk" are not supported on lookup models.'
+                )
+            if value not in self._lookup_dict:
+                if not self._cache_built:
+                    self._build_cache()
+                    return self.get(*args, **kwargs)
+                raise self.model.DoesNotExist(
+                    'Attribute "{0}" does not exist.'.format(value)
+                )
+            return self._lookup_dict[value]
 
     def create(self, *args, **kwargs):
-        self.reset_cache()
-        return super(LookupManager, self).create(*args, **kwargs)
+        super(LookupManager, self).create(*args, **kwargs)
+        self._reset_cache()
 
 
 class LookupModel(models.Model):
@@ -133,12 +140,12 @@ class LookupModel(models.Model):
         return self.pk
 
     def save(self, *args, **kwargs):
-        type(self).objects.reset_cache()
-        return super(LookupModel, self).save(*args, **kwargs)
+        super(LookupModel, self).save(*args, **kwargs)
+        type(self).objects._reset_cache()
 
     def delete(self, *args, **kwargs):
-        type(self).objects.reset_cache()
-        return super(LookupModel, self).delete(*args, **kwargs)
+        super(LookupModel, self).delete(*args, **kwargs)
+        type(self).objects._reset_cache()
 
     @classmethod
     def foreign_key_lookup(cls, field):
@@ -207,13 +214,12 @@ class Servertype(LookupModel):
 
 
 class AttributeManager(LookupManager):
-    def all(self):
-        if not self._lookup_dict:
-            self._lookup_dict = OrderedDict(chain(
-                ((o.pk, o) for o in Attribute.specials),
-                ((o.pk, o) for o in super(LookupManager, self).all()),
-            ))
-        return self._lookup_dict.values()
+    def _build_cache(self):
+        super(AttributeManager, self)._build_cache()
+        self._lookup_dict = OrderedDict(chain(
+            ((o.pk, o) for o in Attribute.specials),
+            self._lookup_dict.items(),
+        ))
 
 
 class Attribute(LookupModel):
