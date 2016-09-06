@@ -156,7 +156,7 @@ def index(request):
                         rack = tuple(query(
                             servertype='rack',
                             datacenter=dc_v['name'],
-                            rack_colo=dc_v['colocation'],
+                            rack_colo=dc_v['colocation'] if dc_v['colocation'] else filters.Empty(),
                             rack_row=row['row'],
                             rack_number=col,
                         ))
