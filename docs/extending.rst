@@ -49,7 +49,7 @@ pip::
 
 Setting up the Database
 -----------------------
-
+Make sure you use at least the same release of postgresql like serveradmin
 You would need a PostgreSQL database to run the application.  PostgreSQL
 usually comes by owned by the "postgres" user and the "ident" authentication
 enabled.  This means that users on the local system can connect to the server
