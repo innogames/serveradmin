@@ -1,0 +1,4 @@
+alabaster
+babel
+pygments
+sphinx
