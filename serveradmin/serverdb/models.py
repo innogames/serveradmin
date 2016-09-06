@@ -724,6 +724,13 @@ class ServerNumberAttribute(ServerAttribute):
         unique_together = (('server', '_attribute', 'value'), )
         index_together = (('_attribute', 'value'), )
 
+    def get_value(self):
+        return (
+            int(self.value)
+            if self.value.as_tuple().exponent == 0
+            else float(self.value)
+        )
+
 
 class ServerInetAttribute(ServerAttribute):
     _attribute = models.ForeignKey(
