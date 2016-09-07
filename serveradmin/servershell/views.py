@@ -4,6 +4,8 @@ except ImportError:
     import json
 from operator import attrgetter
 from ipaddress import ip_network
+from itertools import islice
+
 
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template.response import TemplateResponse
@@ -29,8 +31,8 @@ from serveradmin.serverdb.forms import ServerForm
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
-    Server,
     ServerStringAttribute,
+    get_unused_ip_addrs,
 )
 
 MAX_DISTINGUISHED_VALUES = 50
@@ -424,22 +426,8 @@ def choose_ip_addr(request):
             'servers': servers
         })
 
-    ip_addrs = []
-    used = {i.ip for i in (
-        Server.objects
-        .filter(intern_ip__net_contained_or_equal=network)
-        .order_by()     # Clear ordering for database performance
-        .values_list('intern_ip', flat=True)
-    )}
-
-    for ip_addr in network.hosts():
-        if ip_addr not in used:
-            ip_addrs.append(ip_addr)
-            if len(ip_addrs) > 1000:
-                break
-
     return TemplateResponse(request, 'servershell/choose_ip_addr.html', {
-        'ip_addrs': ip_addrs
+        'ip_addrs': islice(get_unused_ip_addrs(network), 1000)
     })
 
 

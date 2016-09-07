@@ -240,7 +240,6 @@ class Attribute(LookupModel):
         max_length=32,
         choices=get_choices(attribute_types),
     )
-    base = models.BooleanField(null=False, default=False)
     multi = models.BooleanField(null=False, default=False)
     hovertext = models.TextField(null=False, blank=True, default='')
     group = models.CharField(
@@ -292,7 +291,6 @@ Attribute.specials = (
     Attribute(
         attribute_id='object_id',
         type='integer',
-        base=False,
         multi=False,
         group='base',
         special=ServerTableSpecial('server_id'),
@@ -300,7 +298,6 @@ Attribute.specials = (
     Attribute(
         attribute_id='hostname',
         type='string',
-        base=True,
         multi=False,
         group='base',
         special=ServerTableSpecial('hostname', unique=True),
@@ -308,7 +305,6 @@ Attribute.specials = (
     Attribute(
         attribute_id='servertype',
         type='string',
-        base=True,
         multi=False,
         group='base',
         special=ServerTableSpecial('_servertype_id'),
@@ -316,7 +312,6 @@ Attribute.specials = (
     Attribute(
         attribute_id='project',
         type='string',
-        base=True,
         multi=False,
         group='base',
         special=ServerTableSpecial('_project_id'),
@@ -324,7 +319,6 @@ Attribute.specials = (
     Attribute(
         attribute_id='intern_ip',
         type='ip',
-        base=True,
         multi=False,
         group='base',
         special=ServerTableSpecial('intern_ip'),
@@ -332,7 +326,6 @@ Attribute.specials = (
     Attribute(
         attribute_id='segment',
         type='string',
-        base=True,
         multi=False,
         group='base',
         special=ServerTableSpecial('_segment_id'),
@@ -731,6 +724,13 @@ class ServerNumberAttribute(ServerAttribute):
         unique_together = (('server', '_attribute', 'value'), )
         index_together = (('_attribute', 'value'), )
 
+    def get_value(self):
+        return (
+            int(self.value)
+            if self.value.as_tuple().exponent == 0
+            else float(self.value)
+        )
+
 
 class ServerInetAttribute(ServerAttribute):
     _attribute = models.ForeignKey(
@@ -890,3 +890,22 @@ class ChangeAdd(models.Model):
 
     def __unicode__(self):
         return '{0}: {1}'.format(unicode(self.commit), self.hostname)
+
+
+#
+# Helper Functions
+#
+# They are not accepting or returning Model instances, otherwise they would
+# better live inside the model.
+#
+
+def get_unused_ip_addrs(network_ip_addr):
+    used = {i.ip for i in (
+        Server.objects
+        .filter(intern_ip__net_contained_or_equal=network_ip_addr)
+        .order_by()     # Clear ordering for database performance
+        .values_list('intern_ip', flat=True)
+    )}
+    for ip_addr in network_ip_addr.hosts():
+        if ip_addr not in used:
+            yield ip_addr

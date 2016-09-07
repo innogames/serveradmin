@@ -1,5 +1,5 @@
 import json
-from ipaddress import ip_interface
+from ipaddress import ip_network, ip_interface
 
 from django.core.exceptions import ValidationError
 
@@ -9,6 +9,7 @@ from serveradmin.serverdb.models import (
     Server,
     ChangeCommit,
     ChangeAdd,
+    get_unused_ip_addrs,
 )
 from serveradmin.dataset.typecast import typecast
 from adminapi.utils.json import json_encode_extra
@@ -27,26 +28,20 @@ def create_server(
     app=None,
 ):
     if 'hostname' not in attributes:
-        raise CreateError('Hostname is required')
+        raise CreateError('"hostname" attribute is required.')
     if 'servertype' not in attributes:
-        raise CreateError('Servertype is required')
+        raise CreateError('"servertype" attribute is required.')
     if 'project' not in attributes:
-        raise CreateError('Project is required')
-    if 'intern_ip' not in attributes:
-        raise CreateError('Internal IP (intern_ip) is required')
+        raise CreateError('"project" attribute is required.')
     if 'segment' not in attributes:
-        raise CreateError('Segment is required')
+        raise CreateError('"segment" attribute is required.')
+
     try:
         servertype = Servertype.objects.get(pk=attributes['servertype'])
     except Servertype.DoesNotExists:
         raise CreateError('Unknown servertype: ' + attributes['servertype'])
-
+    intern_ip = _get_ip_addr(servertype, attributes)
     hostname = attributes['hostname']
-    intern_ip = (
-        ip_interface(attributes['intern_ip'])
-        if attributes['intern_ip'] is not None
-        else None
-    )
     servertype_id = servertype.pk
     segment_id = attributes.get('segment')
     project_id = attributes.get('project')
@@ -162,6 +157,82 @@ def create_server(
     )
 
     return server_id
+
+
+def _get_ip_addr(servertype, attributes):
+    networks = _get_networks(attributes)
+    if servertype.ip_addr_type == 'null':
+        if attributes.get('intern_ip') is not None:
+            raise CreateError('"intern_ip" has to be None.')
+        if networks:
+            raise CreateError('There must not be any networks.')
+        return None
+
+    if 'intern_ip' in attributes:
+        intern_ip = attributes['intern_ip']
+    elif servertype.ip_addr_type in ('host', 'loadbalancer'):
+        if not networks:
+            raise CreateError(
+                '"intern_ip" is not given, and no networks could be found.'
+            )
+        inter_ip = _choose_ip_addr(networks)
+        if inter_ip is None:
+            raise CreateError(
+                'No IP address could be selected from the given networks.'
+            )
+        return inter_ip
+    else:
+        raise CreateError('"intern_ip" attribute is required.')
+
+    try:
+        if servertype.ip_addr_type == 'network':
+            intern_ip = ip_network(intern_ip)
+        else:
+            intern_ip = ip_interface(intern_ip)
+    except ValueError as error:
+        raise CreateError(str(error))
+
+    if servertype.ip_addr_type == 'network':
+        _check_in_networks(networks, intern_ip)
+    else:
+        _check_in_networks(networks, intern_ip.network)
+
+    return intern_ip
+
+
+def _get_networks(attributes):
+    for attribute in Attribute.objects.all():
+        if attribute.type == 'supernet' and attribute.pk in attributes:
+            try:
+                server = Server.objects.get(hostname=attributes[attribute.pk])
+            except Server.DoesNotExist as error:
+                raise CreateError(str(error))
+            yield server.intern_ip.network
+
+
+def _choose_ip_addr(networks):
+    smallest_network = None
+    for network in networks:
+        if smallest_network is not None:
+            if not network.overlaps(smallest_network):
+                raise CreateError('Networks are not overlapping.')
+            if network.prefixlen > smallest_network.prefixlen:
+                continue
+        smallest_network = network
+    if smallest_network is not None:
+        for ip_addr in get_unused_ip_addrs(smallest_network):
+            return ip_addr
+
+
+def _check_in_networks(networks, intern_ip_network):
+    for network in networks:
+        if (
+            network.prefixlen > intern_ip_network.prefixlen or
+            not network.overlaps(intern_ip_network)
+        ):
+            raise CreateError(
+                '"intern_ip" does not belong to the given networks.'
+            )
 
 
 def _insert_server(
