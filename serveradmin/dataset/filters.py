@@ -471,7 +471,7 @@ class Startswith(BaseFilter):
         raise FilterValueError('Invalid object for Startswith')
 
 
-class InsideNetwork(NetworkFilter):
+class Overlap(NetworkFilter):
     def __init__(self, *networks):
         try:
             self.networks = [ip_network(n) for n in networks]
@@ -488,18 +488,16 @@ class InsideNetwork(NetworkFilter):
             return all(
                 n1 == n2 for n1, n2 in zip(self.networks, other.networks)
             )
-
         return False
 
     def __hash__(self):
         result = hash(type(self))
         for network in self.networks:
             result ^= hash(network)
-
         return result
 
     def as_sql_expr(self, attribute):
-        return _condition_sql(attribute, "{{0}} <<= ANY('{{{{{0}}}}}')".format(
+        return _condition_sql(attribute, "{{0}} && ANY('{{{{{0}}}}}')".format(
             ','.join(str(n) for n in self.networks)
         ))
 
@@ -513,8 +511,14 @@ class InsideNetwork(NetworkFilter):
     def from_obj(cls, obj):
         if 'networks' in obj and isinstance(obj['networks'], (tuple, list)):
             return cls(*obj['networks'])
+        raise FilterValueError('Invalid object for {0}'.format(cls))
 
-        raise FilterValueError('Invalid object for InsideNetwork')
+
+class InsideNetwork(Overlap):
+    def as_sql_expr(self, attribute):
+        return _condition_sql(attribute, "{{0}} <<= ANY('{{{{{0}}}}}')".format(
+            ','.join(str(n) for n in self.networks)
+        ))
 
 
 class InsideOnlyNetwork(InsideNetwork):
@@ -650,6 +654,7 @@ filter_classes = {
     'between': Between,
     'not': Not,
     'startswith': Startswith,
+    'overlap': Overlap,
     'insidenetwork': InsideNetwork,
     'privateip': PrivateIP,
     'publicip': PublicIP,
