@@ -1,10 +1,13 @@
 import json
 from ipaddress import ip_network, ip_interface
 
+from django.db import transaction
 from django.core.exceptions import ValidationError
 
 from serveradmin.serverdb.models import (
     Servertype,
+    Project,
+    Segment,
     Attribute,
     Server,
     ChangeCommit,
@@ -27,114 +30,74 @@ def create_server(
     user=None,
     app=None,
 ):
-    if 'hostname' not in attributes:
-        raise CreateError('"hostname" attribute is required.')
+    with transaction.atomic():
+        if 'hostname' not in attributes:
+            raise CreateError('"hostname" attribute is required.')
+        hostname = attributes['hostname']
+
+        servertype = _get_servertype(attributes)
+        project = _get_project(attributes)
+        segment = _get_segment(attributes)
+        intern_ip = _get_ip_addr(servertype, attributes)
+
+        real_attributes = dict(_get_real_attributes(attributes))
+        _validate_real_attributes(
+            servertype,
+            real_attributes,
+            skip_validation,
+            fill_defaults,
+            fill_defaults_all,
+        )
+
+        server_id = _insert_server(
+            hostname,
+            intern_ip,
+            servertype,
+            project,
+            segment,
+            real_attributes,
+        )
+
+        created_server = {k.pk: v for k, v in real_attributes.items()}
+        created_server['hostname'] = hostname
+        created_server['intern_ip'] = intern_ip
+
+        commit = ChangeCommit.objects.create(app=app, user=user)
+        attributes_json = json.dumps(created_server, default=json_encode_extra)
+        ChangeAdd.objects.create(
+            commit=commit,
+            hostname=created_server['hostname'],
+            attributes_json=attributes_json,
+        )
+
+        return server_id
+
+
+def _get_servertype(attributes):
     if 'servertype' not in attributes:
         raise CreateError('"servertype" attribute is required.')
-    if 'project' not in attributes:
-        raise CreateError('"project" attribute is required.')
-    if 'segment' not in attributes:
-        raise CreateError('"segment" attribute is required.')
-
     try:
-        servertype = Servertype.objects.get(pk=attributes['servertype'])
+        return Servertype.objects.get(pk=attributes['servertype'])
     except Servertype.DoesNotExists:
         raise CreateError('Unknown servertype: ' + attributes['servertype'])
-    intern_ip = _get_ip_addr(servertype, attributes)
-    hostname = attributes['hostname']
-    servertype_id = servertype.pk
-    segment_id = attributes.get('segment')
-    project_id = attributes.get('project')
 
-    real_attributes = dict(_get_real_attributes(attributes))
 
-    violations_regexp = []
-    violations_required = []
-    servertype_attributes = set()
-    for sa in servertype.attributes.all():
-        attribute = sa.attribute
-        servertype_attributes.add(attribute)
+def _get_project(attributes):
+    if 'project' not in attributes:
+        raise CreateError('"project" attribute is required.')
+    try:
+        return Project.objects.get(pk=attributes['project'])
+    except Project.DoesNotExists:
+        raise CreateError('Unknown project: ' + attributes['project'])
 
-        # Ignore the related via attributes
-        if sa.related_via_attribute:
-            if sa.attribute in real_attributes:
-                del real_attributes[attribute]
-            continue
 
-        # Handle not existing attributes (fill defaults, validate require)
-        if attribute not in real_attributes:
-            if attribute.multi:
-                if sa.default_value in ('', None):
-                    real_attributes[attribute] = []
-                else:
-                    real_attributes[attribute] = _type_cast_default(
-                        attribute,
-                        sa.default_value,
-                    )
-            elif sa.required:
-                if fill_defaults and sa.default_value not in ('', None):
-                    real_attributes[attribute] = _type_cast_default(
-                        attribute,
-                        sa.default_value,
-                    )
-                else:
-                    violations_required.append(attribute.pk)
-                    continue
-            else:
-                if fill_defaults_all and sa.default_value not in ('', None):
-                    real_attributes[attribute] = _type_cast_default(
-                        attribute,
-                        sa.default_value,
-                    )
-                else:
-                    continue
-
-        value = real_attributes[attribute]
-
-        if attribute.multi:
-            if sa.regexp:
-                for val in value:
-                    if not sa.regexp_match(unicode(val)):
-                        violations_regexp.append(attribute.pk)
-        elif sa.regexp:
-            if not sa.regexp_match(value):
-                violations_regexp.append(attribute.pk)
-
-    # Check for attributes that are not defined on this servertype
-    violations_attribs = []
-    for attr in real_attributes:
-        if attr not in servertype_attributes:
-            violations_attribs.append(attr)
-
-    handle_violations(
-        skip_validation,
-        violations_regexp,
-        violations_required,
-        violations_attribs,
-    )
-
-    server_id = _insert_server(
-        hostname,
-        intern_ip,
-        segment_id,
-        servertype_id,
-        project_id,
-        real_attributes,
-    )
-
-    created_server = {k.pk: v for k, v in real_attributes.items()}
-    created_server['hostname'] = hostname
-    created_server['intern_ip'] = intern_ip
-
-    commit = ChangeCommit.objects.create(app=app, user=user)
-    attributes_json = json.dumps(created_server, default=json_encode_extra)
-    ChangeAdd.objects.create(
-        commit=commit,
-        hostname=created_server['hostname'],
-        attributes_json=attributes_json,
-    )
-
-    return server_id
+def _get_segment(attributes):
+    if 'segment' not in attributes:
+        raise CreateError('"segment" attribute is required.')
+    try:
+        return Segment.objects.get(pk=attributes['segment'])
+    except Segment.DoesNotExists:
+        raise CreateError('Unknown segment: ' + attributes['segment'])
 
 
 def _get_ip_addr(servertype, attributes):
@@ -247,24 +210,97 @@ def _get_real_attributes(attributes):
         yield attribute, value
 
 
+def _validate_real_attributes(
+    servertype,
+    real_attributes,
+    skip_validation,
+    fill_defaults,
+    fill_defaults_all,
+):
+    violations_regexp = []
+    violations_required = []
+    servertype_attributes = set()
+    for sa in servertype.attributes.all():
+        attribute = sa.attribute
+        servertype_attributes.add(attribute)
+
+        # Ignore the related via attributes
+        if sa.related_via_attribute:
+            if sa.attribute in real_attributes:
+                del real_attributes[attribute]
+            continue
+
+        # Handle not existing attributes (fill defaults, validate require)
+        if attribute not in real_attributes:
+            if attribute.multi:
+                if sa.default_value in ('', None):
+                    real_attributes[attribute] = []
+                else:
+                    real_attributes[attribute] = _type_cast_default(
+                        attribute,
+                        sa.default_value,
+                    )
+            elif sa.required:
+                if fill_defaults and sa.default_value not in ('', None):
+                    real_attributes[attribute] = _type_cast_default(
+                        attribute,
+                        sa.default_value,
+                    )
+                else:
+                    violations_required.append(attribute.pk)
+                    continue
+            else:
+                if fill_defaults_all and sa.default_value not in ('', None):
+                    real_attributes[attribute] = _type_cast_default(
+                        attribute,
+                        sa.default_value,
+                    )
+                else:
+                    continue
+
+        value = real_attributes[attribute]
+
+        if attribute.multi:
+            if sa.regexp:
+                for val in value:
+                    if not sa.regexp_match(unicode(val)):
+                        violations_regexp.append(attribute.pk)
+        elif sa.regexp:
+            if not sa.regexp_match(value):
+                violations_regexp.append(attribute.pk)
+
+    # Check for attributes that are not defined on this servertype
+    violations_attribs = []
+    for attr in real_attributes:
+        if attr not in servertype_attributes:
+            violations_attribs.append(attr)
+
+    handle_violations(
+        skip_validation,
+        violations_regexp,
+        violations_required,
+        violations_attribs,
+    )
+
+
 def _insert_server(
     hostname,
     intern_ip,
-    segment_id,
-    servertype_id,
-    project_id,
+    servertype,
+    project,
+    segment,
     attributes,
 ):
 
     if Server.objects.filter(hostname=hostname).exists():
-        raise CreateError(u'Server with that hostname already exists')
+        raise CreateError('Server with that hostname already exists')
 
     server = Server.objects.create(
         hostname=hostname,
         intern_ip=intern_ip,
-        _project_id=project_id,
-        _servertype_id=servertype_id,
-        _segment_id=segment_id,
+        _servertype=servertype,
+        _project=project,
+        _segment=segment,
     )
     server.full_clean()
     server.save()
