@@ -46,86 +46,64 @@ def create_server(
     segment_id = attributes.get('segment')
     project_id = attributes.get('project')
 
-    real_attributes = attributes.copy()
-    for key in (
-        'hostname',
-        'intern_ip',
-        'comment',
-        'servertype',
-        'segment',
-        'project',
-    ):
-        if key in real_attributes:
-            del real_attributes[key]
-
-    # Ignore the virtual attribute types
-    for attribute in Attribute.objects.all():
-        if attribute.type in ('reverse_hostname', 'supernet'):
-            if attribute.pk in real_attributes:
-                del real_attributes[attribute.pk]
+    real_attributes = dict(_get_real_attributes(attributes))
 
     violations_regexp = []
     violations_required = []
+    servertype_attributes = set()
     for sa in servertype.attributes.all():
+        attribute = sa.attribute
+        servertype_attributes.add(attribute)
+
         # Ignore the related via attributes
         if sa.related_via_attribute:
-            if sa.attribute.pk in real_attributes:
-                del real_attributes[sa.attribute.pk]
+            if sa.attribute in real_attributes:
+                del real_attributes[attribute]
             continue
 
         # Handle not existing attributes (fill defaults, validate require)
-        if sa.attribute.pk not in real_attributes:
-            if sa.attribute.multi:
+        if attribute not in real_attributes:
+            if attribute.multi:
                 if sa.default_value in ('', None):
-                    real_attributes[sa.attribute.pk] = []
+                    real_attributes[attribute] = []
                 else:
-                    real_attributes[sa.attribute.pk] = _type_cast_default(
-                        sa.attribute,
+                    real_attributes[attribute] = _type_cast_default(
+                        attribute,
                         sa.default_value,
                     )
             elif sa.required:
                 if fill_defaults and sa.default_value not in ('', None):
-                    real_attributes[sa.attribute.pk] = _type_cast_default(
-                        sa.attribute,
+                    real_attributes[attribute] = _type_cast_default(
+                        attribute,
                         sa.default_value,
                     )
                 else:
-                    violations_required.append(sa.attribute.pk)
+                    violations_required.append(attribute.pk)
                     continue
             else:
                 if fill_defaults_all and sa.default_value not in ('', None):
-                    real_attributes[sa.attribute.pk] = _type_cast_default(
-                        sa.attribute,
+                    real_attributes[attribute] = _type_cast_default(
+                        attribute,
                         sa.default_value,
                     )
                 else:
                     continue
 
-        value = real_attributes[sa.attribute.pk]
+        value = real_attributes[attribute]
 
-        if sa.attribute.multi:
-            if not (isinstance(value, (list, set)) or
-                    hasattr(value, '_proxied_set')):
-                raise CreateError(
-                    '{0} is a multi attribute. Require list/set, '
-                    'but {1} of type {2} was given'
-                    .format(sa.attribute, repr(value), type(value).__name__)
-                )
+        if attribute.multi:
             if sa.regexp:
                 for val in value:
                     if not sa.regexp_match(unicode(val)):
-                        violations_regexp.append(sa.attribute.pk)
+                        violations_regexp.append(attribute.pk)
         elif sa.regexp:
             if not sa.regexp_match(value):
-                violations_regexp.append(sa.attribute.pk)
+                violations_regexp.append(attribute.pk)
 
     # Check for attributes that are not defined on this servertype
     violations_attribs = []
-    servertype_attribute_ids = {
-        sa.attribute.pk for sa in servertype.attributes.all()
-    }
     for attr in real_attributes:
-        if attr not in servertype_attribute_ids:
+        if attr not in servertype_attributes:
             violations_attribs.append(attr)
 
     handle_violations(
@@ -144,7 +122,7 @@ def create_server(
         real_attributes,
     )
 
-    created_server = real_attributes.copy()
+    created_server = {k.pk: v for k, v in real_attributes.items()}
     created_server['hostname'] = hostname
     created_server['intern_ip'] = intern_ip
 
@@ -235,6 +213,36 @@ def _check_in_networks(networks, intern_ip_network):
             )
 
 
+def _get_real_attributes(attributes):
+    for attribute_id, value in attributes.items():
+        attribute = Attribute.objects.get(pk=attribute_id)
+        value_multi = (
+            isinstance(value, (list, set)) or
+            hasattr(value, '_proxied_set')
+        )
+
+        if attribute.multi and not value_multi:
+            raise CreateError(
+                '{0} is a multi attribute, but {1} of type {2} given.'
+                .format(attribute, repr(value), type(value).__name__)
+            )
+        if not attribute.multi and value_multi:
+            raise CreateError(
+                '{0} is not a multi attribute, but {1} of type {2} given.'
+                .format(attribute, repr(value), type(value).__name__)
+            )
+
+        # Ignore special attributes
+        if attribute.special:
+            continue
+
+        # Ignore the virtual attribute types
+        if attribute.type in ('reverse_hostname', 'supernet'):
+            continue
+
+        yield attribute, value
+
+
 def _insert_server(
     hostname,
     intern_ip,
@@ -257,9 +265,7 @@ def _insert_server(
     server.full_clean()
     server.save()
 
-    for attr_name, value in attributes.iteritems():
-        attribute = Attribute.objects.get(pk=attr_name)
-
+    for attribute, value in attributes.items():
         if attribute.multi:
             for single_value in value:
                 server.add_attribute(attribute, single_value)
