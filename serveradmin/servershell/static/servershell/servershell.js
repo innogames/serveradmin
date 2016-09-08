@@ -492,21 +492,20 @@ function autocomplete_shell_command(term, autocomplete_cb)
     }
 
     var command = parsed_args[0]['value'];
-    if (command == 'attr') {
+    if (command == 'attr' || command == 'delattr') {
         if (parsed_args[plen -1]['token'] == 'str') {
             _autocomplete_attr(term, parsed_args, autocomplete, ' ');
         }
-    } else if (command == 'setattr' || command == 'delattr') {
+    } else if (command == 'setattr') {
         // Do not autocomplete values with names of attributes
         if (plen > 2) {
             return;
         }
         if (parsed_args[plen -1]['token'] == 'str') {
-            var suffix = {'setattr': '=', 'delattr': ' '}[command];
             function only_single(attr) {
                 return !available_attributes[attr]['multi'];
             }
-            _autocomplete_attr(term, parsed_args, autocomplete, suffix, only_single);
+            _autocomplete_attr(term, parsed_args, autocomplete, '=', only_single);
         }
     } else if (command == 'multiadd' || command == 'multidel') {
         if (parsed_args[plen -1]['token'] == 'str' && (plen < 3 || parsed_args[plen-2]['token'] != 'key')) {
@@ -943,12 +942,13 @@ function handle_command_delattr(parsed_args)
     }
 
     var attr_name = parsed_args[1]['value'];
-
     var marked_servers = get_marked_servers();
     var changes = commit['changes'];
+
     for (var i = 0; i < search['servers'].length; i++) {
         var server = search['servers'][i];
         var server_id = server['object_id'];
+        var attr_obj = available_attributes[attr_name];
 
         if (marked_servers.indexOf(server_id) < 0)
             continue;
@@ -956,10 +956,19 @@ function handle_command_delattr(parsed_args)
         if (typeof(changes[server_id]) == 'undefined') {
             changes[server_id] = {};
         }
-        if (attr_name in server) {
+
+        if (attr_obj.multi) {
             changes[server_id][attr_name] = {
-                'action': 'delete',
-                'old': server[attr_name]
+                'action': 'multi',
+                'add': [],
+                'remove': server[attr_name].slice(0)
+            };
+        } else {
+            if (attr_name in server) {
+                changes[server_id][attr_name] = {
+                    'action': 'delete',
+                    'old': server[attr_name]
+                };
             }
         }
     }
