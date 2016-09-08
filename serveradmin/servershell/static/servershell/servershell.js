@@ -1030,12 +1030,17 @@ function handle_command_multiattr(parsed_args, action)
                     changes[server_id][attr_name]['remove'].push(parsed_value);
                 }
             } else if (action == 'add') {
-                var contains_value = false;
-                if (typeof(server[attr_name]) != 'undefined') {
-                    contains_value = server[attr_name].indexOf(parsed_value) != -1;
-                }
-                if (!contains_value) {
-                    changes[server_id][attr_name]['add'].push(parsed_value);
+                var index = changes[server_id][attr_name]['remove'].indexOf(parsed_value);
+                if (index != -1) {
+                    changes[server_id][attr_name]['remove'].splice(index, 1);
+                } else {
+                    var contains_value = false;
+                    if (typeof(server[attr_name]) != 'undefined') {
+                        contains_value = server[attr_name].indexOf(parsed_value) != -1;
+                    }
+                    if (!contains_value) {
+                        changes[server_id][attr_name]['add'].push(parsed_value);
+                    }
                 }
             }
         }
