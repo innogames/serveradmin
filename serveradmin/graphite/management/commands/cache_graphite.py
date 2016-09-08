@@ -82,8 +82,9 @@ class Command(NoArgsCommand):
                         "Warning: Graphite response couldn't be parsed: {0}"
                         .format(response)
                     )
-                else:
+                    value = None
 
+                if value is not None:
                     # Django can be setted up to encapsulate thing
                     # into database transactions.  We don't want that
                     # behavior in here, even when it is setted up like
