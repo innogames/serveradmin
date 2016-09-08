@@ -293,20 +293,28 @@ function _make_attr_editable(cell, server, attr_name, value)
                     return;
                 }
                 if (typeof(server[attr_name]) == 'undefined') {
-                    commit_data = {
-                        'action': 'new',
-                        'new': new_value
-                    }
-                } else if (new_value === "") {
-                    commit_data = {
-                        'action': 'delete',
-                        'old': server[attr_name]
+                    if (new_value != '') {
+                        commit_data = {
+                            'action': 'new',
+                            'new': new_value
+                        };
+                    } else {
+                        commit_data = null;
                     }
                 } else {
-                    commit_data = {
-                        'action': 'update',
-                        'new': new_value,
-                        'old': server[attr_name]
+                    if (server[attr_name] == new_value) {
+                        commit_data = null;
+                    } else if (new_value != '') {
+                        commit_data = {
+                            'action': 'update',
+                            'new': new_value,
+                            'old': server[attr_name]
+                        };
+                    } else {
+                        commit_data = {
+                            'action': 'delete',
+                            'old': server[attr_name]
+                        };
                     }
                 }
             }
