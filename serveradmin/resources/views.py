@@ -194,6 +194,7 @@ def graph_popup(request):
                 'image': url
             })
 
+    return HttpResponseBadRequest("The graph couldn't be found.")
 
 @login_required
 def segments(request):
