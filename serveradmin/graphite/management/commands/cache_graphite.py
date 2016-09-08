@@ -106,7 +106,7 @@ class Command(NoArgsCommand):
             'serveradmin', settings.GRAPHITE_SECRET
         )
         url = '{0}/render?__auth_token={1}&{2}'.format(
-            settings.GRAPHITE_URL, token, params
+            settings.GRAPHITE_CACHE_URL, token, params
         )
 
         opener = urllib2.build_opener()

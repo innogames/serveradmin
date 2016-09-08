@@ -191,6 +191,8 @@ OBJECTS_PER_PAGE = 25
 # graphite/static/graph_sprite.  They are also merged into single images
 # for every server to reduce the requests to the Serveradmin from the browser.
 GRAPHITE_URL = 'https://graphite.innogames.de'
+# This one is used for background downloading
+GRAPHITE_CACHE_URL = 'https://graphite-secure.innogames.de'
 GRAPHITE_SECRET = 'f48bb9bcda4647f181c8255577c20313'
 GRAPHITE_SPRITE_PATH = MEDIA_ROOT + '/graph_sprite'
 GRAPHITE_SPRITE_URL = MEDIA_URL + 'graph_sprite'
