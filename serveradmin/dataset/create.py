@@ -236,6 +236,10 @@ def _get_real_attributes(attributes):
         if attribute.special:
             continue
 
+        # Ignore nulls
+        if not value_multi and value is None:
+            continue
+
         # Ignore the virtual attribute types
         if attribute.type in ('reverse_hostname', 'supernet'):
             continue
