@@ -10,11 +10,12 @@ except ImportError:
 from adminapi.utils.json import json_encode_extra
 
 BASE_URL = 'https://serveradmin.innogames.de/api'
-BASE_URL_BACKUP = 'https://serveradmin2.innogames.de/api'
+
 
 def _calc_security_token(auth_token, timestamp, content):
     message = ':'.join((str(timestamp), content))
     return hmac.new(auth_token, message, hashlib.sha1).hexdigest()
+
 
 def send_request(endpoint, data, auth_token, timeout=None):
     if not auth_token:
@@ -38,6 +39,7 @@ def send_request(endpoint, data, auth_token, timeout=None):
         req = _build_request(endpoint, auth_token, data_json, try_backup)
         return json.loads(urllib2.urlopen(req, timeout=timeout).read())
 
+
 def _build_request(endpoint, auth_token, data_json, backup=False):
     timestamp = int(time.time())
     application_id = hashlib.sha1(auth_token).hexdigest()
@@ -48,6 +50,6 @@ def _build_request(endpoint, auth_token, data_json, backup=False):
             'X-Application': application_id,
             'X-SecurityToken': security_token,
         }
-    url = (BASE_URL_BACKUP if backup else BASE_URL) + endpoint
+    url = BASE_URL + endpoint
 
     return urllib2.Request(url, data_json, headers)
