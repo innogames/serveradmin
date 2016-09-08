@@ -337,7 +337,14 @@ def new_server(request):
 
     if 'clone_from' in request.REQUEST:
         try:
-            clone_from = query(hostname=request.REQUEST['clone_from']).get()
+            clone_from = (
+                query(hostname=request.REQUEST['clone_from'])
+                .restrict(*(
+                    a.pk for a in Attribute.objects.all()
+                    if a.special or a.can_be_materialized()
+                ))
+                .get()
+            )
         except ValidationError:
             raise Http404
     else:
