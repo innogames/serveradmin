@@ -6,13 +6,12 @@ _api_settings = {
         'timeout_dataset': 20,
     }
 
+
 def auth(auth_token=None):
     if auth_token is None:
         auth_token = get_auth_token()
-        if not auth_token:
-            raise Exception('No auth token found')
-
     _api_settings['auth_token'] = auth_token
+
 
 def set_timeout(timeout, what='api'):
     if what == 'api':

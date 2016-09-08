@@ -7,6 +7,7 @@ try:
 except ImportError:
     import json
 
+from adminapi.cmdline.utils import get_auth_token
 from adminapi.utils.json import json_encode_extra
 
 BASE_URL = 'https://serveradmin.innogames.de/api'
@@ -19,7 +20,7 @@ def _calc_security_token(auth_token, timestamp, content):
 
 def send_request(endpoint, data, auth_token, timeout=None):
     if not auth_token:
-        raise ValueError("No auth token supplied. Try adminapi.auth('Token').")
+        auth_token = get_auth_token()
 
     data_json = json.dumps(data, default=json_encode_extra)
     try_backup = False
