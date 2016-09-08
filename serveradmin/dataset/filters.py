@@ -789,11 +789,10 @@ def _exists_sql(table, alias, conditions):
 
 
 def raw_sql_escape(value):
-    value = str(value)
-
-    # escape_string just takes bytestrings, so convert unicode back and forth
-    if isinstance(value, unicode):
-        value = value.encode('utf-8')
+    try:
+        value = str(value)
+    except UnicodeEncodeError as error:
+        raise FilterValueError(str(error))
 
     if "'" in value:
         raise FilterValueError('Single quote cannot be used')
@@ -803,7 +802,7 @@ def raw_sql_escape(value):
 
     value = value.replace('{', '{{').replace('}', '}}')
 
-    return "'" + value.decode('utf-8') + "'"
+    return "'" + value + "'"
 
 
 def flatten(values):
