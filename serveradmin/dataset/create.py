@@ -101,7 +101,7 @@ def _get_segment(attributes):
 
 
 def _get_ip_addr(servertype, attributes):
-    networks = _get_networks(attributes)
+    networks = tuple(_get_networks(attributes))
     if servertype.ip_addr_type == 'null':
         if attributes.get('intern_ip') is not None:
             raise CreateError('"intern_ip" has to be None.')
