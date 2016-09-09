@@ -401,8 +401,8 @@ def new_server(request):
 def choose_ip_addr(request):
     if 'network' not in request.GET:
         servers = tuple(
-            query(servertype='provider_network')
-            .order_by('intern_ip')
+            query(servertype='route_network')
+            .order_by('hostname')
             .restrict('hostname', 'intern_ip')
         )
 
@@ -419,7 +419,7 @@ def choose_ip_addr(request):
             )),
             intern_ip=filters.InsideOnlyNetwork(network),
         )
-        .order_by('intern_ip')
+        .order_by('hostname')
         .restrict('hostname', 'intern_ip')
         )
 

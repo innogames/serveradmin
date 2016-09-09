@@ -1,9 +1,17 @@
 {% if servers %}
-<ul>
+<table>
+	<tr>
+		<th>Name</th>
+		<th>Network</th>
+	</tr>
 {% for server in servers %}
-<li><span class="network_select">{{ server.intern_ip }}</span> - {{ server.hostname }}</li>
+	<tr>
+		<td>{{ server.hostname }}</td>
+		<td><span class="network_select">{{ server.intern_ip }}</span></td>
+	</td>
 {% endfor %}
-</ul>
+</table>
+
 {% elif ip_addrs %}
 <ul>
 {% for ip_addr in ip_addrs %}
