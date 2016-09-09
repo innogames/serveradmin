@@ -30,16 +30,12 @@ class QuerySetRepresentation(object):
         augmentations,
         order_by,
         order_dir,
-        limit,
-        offset,
     ):
         self.filters = filters
         self.restrict = restrict
         self.augmentations = augmentations
         self.order_by = order_by
         self.order_dir = order_dir
-        self.limit = limit
-        self.offset = offset
 
     def __hash__(self):
         h = 0
@@ -52,12 +48,6 @@ class QuerySetRepresentation(object):
         for attr_name, attr_filter in self.filters.iteritems():
             h ^= hash(attr_name)
             h ^= hash(attr_filter)
-
-        if self.limit:
-            h ^= hash(self.limit)
-
-        if self.offset:
-            h ^= hash(self.offset)
 
         if self.order_by:
             h ^= hash(self.order_by)
@@ -96,24 +86,13 @@ class QuerySetRepresentation(object):
         if self.order_dir != other.order_dir:
             return False
 
-        if self.limit != other.limit:
-            return False
-
-        if self.offset != other.offset:
-            return False
-
         return True
 
-    def as_code(self, hide_extra=True):
+    def as_code(self):
         args = []
         for attr_name, value in self.filters.iteritems():
             args.append('{0}={1}'.format(attr_name, value.as_code()))
-
-        if hide_extra:
-            # FIXME: Add restrict/limit/augment etc.
-            extra = ''
-
-        return 'query({0}){1}'.format(', '.join(args), extra)
+        return 'query({0})'.format(', '.join(args))
 
 
 class QuerySet(BaseQuerySet):
@@ -129,8 +108,6 @@ class QuerySet(BaseQuerySet):
         super(QuerySet, self).__init__(filters)
         self._order_by = None
         self._order_dir = 'asc'
-        self._limit = None
-        self._offset = None
 
     def commit(self, *args, **kwargs):
         commit = self._build_commit_object()
@@ -146,14 +123,12 @@ class QuerySet(BaseQuerySet):
 
     def get_representation(self):
         return QuerySetRepresentation(
-                self._filters,
-                self._restrict,
-                self._augmentations,
-                self._order_by,
-                self._order_dir,
-                self._limit,
-                self._offset,
-            )
+            self._filters,
+            self._restrict,
+            self._augmentations,
+            self._order_by,
+            self._order_dir,
+        )
 
     def restrict(self, *attrs):
         for attribute_id in attrs:
@@ -162,20 +137,6 @@ class QuerySet(BaseQuerySet):
                     'Invalid attribute: {0}'.format(attribute_id)
                 )
         return super(QuerySet, self).restrict(*attrs)
-
-    def limit(self, value):
-        if value < 1:
-            raise ValueError('Invalid limit')
-
-        self._limit = value
-        return self
-
-    def offset(self, value):
-        if value < 1:
-            raise ValueError('Invalid offset')
-
-        self._offset = value
-        return self
 
     def order_by(self, order_by, order_dir='asc'):
         if order_by not in self.attributes:
@@ -211,10 +172,6 @@ class QuerySet(BaseQuerySet):
         if not self._order_by or self._order_by.special:
             if self._order_by:
                 builder.add_order_by(self._order_by, self._order_dir)
-            if self._limit:
-                builder.add_limit(self._limit)
-            if self._offset:
-                builder.add_offset(self._offset)
 
             # In this case we need to preserve ordering, otherwise
             # we can use normal dict as it performs better.
@@ -263,7 +220,7 @@ class QuerySet(BaseQuerySet):
         self._select_attributes(servers_by_type)
         self._add_attributes(servers_by_type)
         if self._order_by and not self._order_by.special:
-            self._sort_and_limit()
+            self._sort()
 
     def _select_attributes(self, servers_by_type):
         self._attributes_by_type = defaultdict(list)
@@ -397,25 +354,14 @@ class QuerySet(BaseQuerySet):
         else:
             dict.__setitem__(server, attribute.pk, value)
 
-    def _sort_and_limit(self):
-        items = self._results.items()
-        items.sort(
+    def _sort(self):
+        self._results = OrderedDict(sorted(
+            self._results.items(),
             key=lambda x: (
                 self._order_by.pk in x[1], x[1].get(self._order_by.pk)
             ),
             reverse=(self._order_dir == 'desc'),
-        )
-
-        if self._offset:
-            offset = self._offset
-            items = items[offset:]
-        else:
-            offset = 0
-
-        if self._limit:
-            items = items[:(offset + self._limit)]
-
-        self._results = OrderedDict(items)
+        ))
 
 
 class ServerObject(BaseServerObject):

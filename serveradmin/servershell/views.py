@@ -5,7 +5,7 @@ except ImportError:
 from operator import attrgetter
 from ipaddress import ip_network
 from itertools import islice
-
+from collections import OrderedDict
 
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template.response import TemplateResponse
@@ -71,8 +71,7 @@ def autocomplete(request):
         try:
             queryset = query(hostname=filters.Startswith(hostname))
             queryset.restrict('hostname')
-            queryset.limit(10)
-            autocomplete_list += (h['hostname'] for h in queryset)
+            autocomplete_list += islice((h['hostname'] for h in queryset), 100)
         except ValidationError:
             pass    # If there is no valid query, just don't auto-complete
 
@@ -105,14 +104,10 @@ def get_results(request):
         query_kwargs = parse_query(term, filter_classes)
         queryset = query(**query_kwargs)
         queryset.restrict(*shown_attributes)
-        if order_by:
-            queryset.order_by(order_by, order_dir)
-        queryset.limit(limit)
-        if offset:
-            queryset.offset(offset)
-
+        queryset.order_by(order_by, order_dir)
         results = queryset.get_results()
-        num_servers = queryset.get_num_rows()
+        num_servers = len(results)
+        servers = OrderedDict(results.items()[offset:(offset + limit)])
     except (ParseQueryError, ValidationError) as error:
         return HttpResponse(json.dumps({
             'status': 'error',
@@ -132,7 +127,7 @@ def get_results(request):
         for a in Attribute.specials
     )
     avail_attributes = dict()
-    for servertype_id in {s['servertype'] for s in results.values()}:
+    for servertype_id in {s['servertype'] for s in servers.values()}:
         avail_attributes[servertype_id] = dict(specials)
         for sa in Servertype.objects.get(pk=servertype_id).attributes.all():
             if not sa.related_via_attribute:
@@ -143,10 +138,10 @@ def get_results(request):
 
     return HttpResponse(json.dumps({
         'status': 'success',
-        'understood': queryset.get_representation().as_code(hide_extra=True),
+        'understood': queryset.get_representation().as_code(),
         'servers': [
-            dict(r.items() + [('object_id', r.object_id)])
-            for r in results.values()
+            dict(s.items() + [('object_id', s.object_id)])
+            for s in servers.values()
         ],
         'num_servers': num_servers,
         'avail_attributes': avail_attributes
