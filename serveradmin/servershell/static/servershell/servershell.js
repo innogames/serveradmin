@@ -1197,8 +1197,6 @@ $(function() {
         var symbol = attr_item.attr('data-attr-type').charAt(0).toUpperCase();
         if (attr_item.attr('data-attr-multi') == 'True')
             symbol = '[' + symbol + ']';
-        else
-            symbol = '&nbsp;&nbsp;' + symbol + '&nbsp;';
 
         var link = $('<span class="link">' + symbol + '</span>');
         link.click(function(ev) {

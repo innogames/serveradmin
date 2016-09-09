@@ -124,6 +124,13 @@ table.tabular td, table.tabular th {
  display:none;
 }
 
+#shell_attributes_content .link {
+    min-width: 20px;
+    max-width: 20px;
+    display: inline-block;
+    text-align: center;
+}
+
 .noargs {
  font-style:italic;
 }
