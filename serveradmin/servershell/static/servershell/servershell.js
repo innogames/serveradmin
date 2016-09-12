@@ -246,7 +246,7 @@ function _make_attr_editable(cell, server, attr_name, value)
             ev.stopPropagation();
             if (attr_obj.multi) {
                 var unparsed_values = $('#edit_attr').val();
-                if ($.trim(unparsed_values) == '') {
+                if ($.trim(unparsed_values) === '') {
                     unparsed_values = [];
                 } else {
                     unparsed_values = unparsed_values.split(/[\n,]+/);
@@ -256,7 +256,7 @@ function _make_attr_editable(cell, server, attr_name, value)
                 var was_changed = false;
                 for (var i = 0; i < unparsed_values.length; i++) {
                     var unparsed_value = $.trim(unparsed_values[i]);
-                    if (unparsed_value == '') {
+                    if (unparsed_value === '') {
                         continue;
                     }
                     var edit_value = parse_value(unparsed_value, attr_name);
@@ -293,7 +293,7 @@ function _make_attr_editable(cell, server, attr_name, value)
                     return;
                 }
                 if (typeof(server[attr_name]) == 'undefined') {
-                    if (new_value != '') {
+                    if (new_value !== '') {
                         commit_data = {
                             'action': 'new',
                             'new': new_value
@@ -304,7 +304,7 @@ function _make_attr_editable(cell, server, attr_name, value)
                 } else {
                     if (server[attr_name] == new_value) {
                         commit_data = null;
-                    } else if (new_value != '') {
+                    } else if (new_value !== '') {
                         commit_data = {
                             'action': 'update',
                             'new': new_value,
@@ -567,7 +567,7 @@ function execute_on_servers(callback)
 
 function handle_command(command)
 {
-    if (command == '') {
+    if (command === '') {
         return '';
     } else if (command == 'n' || command == 'next') {
         return handle_command_next_page();
@@ -1230,7 +1230,7 @@ $(function() {
         }
     });
 
-    if ($('#shell_search').val() != '') {
+    if ($('#shell_search').val() !== '') {
         search['page'] = 1;
         execute_search($('#shell_search').val());
     }
