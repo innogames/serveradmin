@@ -273,7 +273,7 @@ def _validate_real_attributes(
     violations_attribs = []
     for attr in real_attributes:
         if attr not in servertype_attributes:
-            violations_attribs.append(attr)
+            violations_attribs.append(str(attr))
 
     handle_violations(
         skip_validation,
