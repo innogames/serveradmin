@@ -195,11 +195,11 @@ def projects(request):
             ]
         counters[server['project']][0][server['servertype']] += 1
         counters[server['project']][1][server['segment']] += 1
-        if 'disk_size_gib' in server:
+        if server.get('disk_size_gib'):
             counters[server['project']][2] += server['disk_size_gib']
-        if 'memory' in server:
+        if server.get('memory'):
             counters[server['project']][3] += server['memory']
-        if 'num_cpu' in server:
+        if server.get('num_cpu'):
             counters[server['project']][4] += server['num_cpu']
 
     items = []

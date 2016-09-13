@@ -271,12 +271,17 @@ class QuerySet(BaseQuerySet):
     def _add_attributes(self, servers_by_type):
         """Add the attributes to the results"""
 
-        # Step 0: Initialize the multi attributes
+        # Step 0: Initialize the attributes
         for attribute, servertypes in self._servertypes_by_attribute.items():
             if attribute.multi:
-                for servertype in servertypes:
-                    for server in servers_by_type[servertype]:
-                        self._server_attributes[server.pk][attribute] = set()
+                init = set
+            elif attribute.type == 'boolean':
+                init = bool
+            else:
+                init = (lambda: None)
+            for servertype in servertypes:
+                for server in servers_by_type[servertype]:
+                    self._server_attributes[server.pk][attribute] = init()
 
         # Step 1: Query the materialized attributes by their types
         for key, attributes in self._attributes_by_type.items():
