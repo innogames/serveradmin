@@ -9,10 +9,12 @@ from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
+    ServertypeAttribute,
     ServerAttribute,
     ServerHostnameAttribute,
 )
 from serveradmin.dataset.commit import commit_changes
+from serveradmin.dataset.filters import Any
 from serveradmin.dataset.querybuilder import QueryBuilder
 
 CACHE_MIN_QS_COUNT = 3
@@ -149,9 +151,21 @@ class QuerySet(BaseQuerySet):
         return self
 
     def _get_query_builder_with_filters(self):
+        real_attributes = []
         builder = QueryBuilder()
         for attr, filt in self._filters.iteritems():
-            builder.add_filter(self.attributes[attr], filt)
+            attribute = self.attributes[attr]
+            builder.add_filter(attribute, filt)
+            if not attribute.special:
+                real_attributes.append(attribute)
+
+        if real_attributes:
+            attribute_servertype_ids = defaultdict(set)
+            for sa in ServertypeAttribute.get_by_attributes(real_attributes):
+                attribute_servertype_ids[sa.attribute].add(sa.servertype.pk)
+            sets = attribute_servertype_ids.values()
+            intersect = reduce(set.intersection, sets[1:], sets[0])
+            builder.add_filter(self.attributes['servertype'], Any(*intersect))
 
         return builder
 

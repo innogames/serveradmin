@@ -392,6 +392,10 @@ class ServertypeAttribute(models.Model):
         if self.regexp:
             return self.get_compiled_regexp().match(str(value))
 
+    @classmethod
+    def get_by_attributes(self, attributes):
+        return self.objects.filter(_attribute__in=attributes)
+
 
 #
 # Server Models
