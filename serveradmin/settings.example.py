@@ -202,5 +202,3 @@ GRAPHITE_SPRITE_SPACING = 8
 GRAPHITE_SPRITE_PARAMS = ('width=' + str(GRAPHITE_SPRITE_WIDTH) + '&' +
                           'height=' + str(GRAPHITE_SPRITE_HEIGHT) + '&' +
                           'graphOnly=true')
-
-raise Exception('Set SECRET_KEY and DATABASE PASSWORD and remove this!')
