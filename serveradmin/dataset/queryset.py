@@ -114,13 +114,6 @@ class QuerySet(BaseQuerySet):
         commit_changes(commit, *args, **kwargs)
         self._confirm_changes()
 
-    def get_num_rows(self):
-        builder = self._get_query_builder_with_filters()
-
-        with connection.cursor() as cursor:
-            cursor.execute(builder.build_sql(count=True))
-            return cursor.fetchone()[0]
-
     def get_representation(self):
         return QuerySetRepresentation(
             self._filters,
