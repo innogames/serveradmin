@@ -1,7 +1,7 @@
 import json
 from ipaddress import ip_address, ip_network
 
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, models, transaction
 from django.core.exceptions import ValidationError
 
 from adminapi.utils.json import json_encode_extra
@@ -48,17 +48,29 @@ class Commit(object):
         self.warnings = []
 
     def _validate_deletes(self):
-            if not (
-                isinstance(self.deleted_servers, (list, set)) and
-                all(isinstance(x, (int, long)) for x in self.deleted_servers)
-            ):
-                raise ValueError('Invalid deleted servers')
+        if not (
+            isinstance(self.deleted_servers, (list, set)) and
+            all(isinstance(x, (int, long)) for x in self.deleted_servers)
+        ):
+            raise CommitError('Invalid deleted servers')
 
     def _decorate_changes(self):
         servers = {s.server_id: s for s in (
             Server.objects.select_for_update()
-            .filter(server_id__in=self.changed_servers.keys())
+            .annotate(in_recovery=models.Func(
+                function='pg_is_in_recovery',
+                output_field=models.fields.BooleanField(),
+            ))
+            .filter(
+                in_recovery=False,
+                server_id__in=self.changed_servers.keys(),
+            )
         )}
+
+        if not servers:
+            raise CommitError(
+                'Cannot lock any servers.  Database can be in recovery.'
+            )
 
         for server_id, changes in self.changed_servers.items():
             for attribute_id, change in changes.items():

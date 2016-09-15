@@ -1,7 +1,7 @@
 import json
 from ipaddress import ip_network, ip_interface
 
-from django.db import transaction
+from django.db import models, transaction
 from django.core.exceptions import ValidationError
 
 from serveradmin.serverdb.models import (
@@ -86,9 +86,18 @@ def _get_project(attributes):
     if 'project' not in attributes:
         raise CreateError('"project" attribute is required.')
     try:
-        return Project.objects.get(pk=attributes['project'])
+        return (
+            Project.objects.select_for_update()
+            .annotate(in_recovery=models.Func(
+                function='pg_is_in_recovery',
+                output_field=models.fields.BooleanField(),
+            ))
+            .get(in_recovery=False, pk=attributes['project'])
+        )
     except Project.DoesNotExists:
-        raise CreateError('Unknown project: ' + attributes['project'])
+        raise CreateError(
+            'Cannot lock the project.  Database can be in recovery.'
+        )
 
 
 def _get_segment(attributes):
