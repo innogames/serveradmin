@@ -14,6 +14,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.contrib import messages
+from django.db import IntegrityError
 from django.utils.html import mark_safe, escape as escape_html
 
 from adminapi.utils.json import json_encode_extra
@@ -206,7 +207,7 @@ def list_and_edit(request, mode='list'):
                 return HttpResponseRedirect(url)
             except CommitValidationFailed as e:
                 invalid_attrs.update([attr for obj_id, attr in e.violations])
-            except ValidationError as error:
+            except (ValidationError, IntegrityError) as error:
                 messages.error(request, str(error))
 
         if invalid_attrs:
@@ -291,6 +292,7 @@ def commit(request):
         except (
             ValueError,
             ValidationError,
+            IntegrityError,
         ) as error:
             result = {
                 'status': 'error',
