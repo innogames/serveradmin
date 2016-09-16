@@ -31,6 +31,7 @@ from serveradmin.serverdb.forms import ServerForm
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
+    ServertypeAttribute,
     ServerStringAttribute,
     get_unused_ip_addrs,
 )
@@ -120,21 +121,23 @@ def get_results(request):
     # Add information about available attributes on servertypes
     # It will be encoded as map avail[servertype][attr] = stypeattr
     specials = tuple(
-        (a.pk, {
+        (a, {
             'regexp': None,
             'default': None,
         })
-        for a in Attribute.specials
+        for a in Attribute.specials.keys()
     )
+    servertypes = [
+        Servertype.objects.get(pk=s['servertype']) for s in servers.values()
+    ]
     avail_attributes = dict()
-    for servertype_id in {s['servertype'] for s in servers.values()}:
-        avail_attributes[servertype_id] = dict(specials)
-        for sa in Servertype.objects.get(pk=servertype_id).attributes.all():
-            if not sa.related_via_attribute:
-                avail_attributes[servertype_id][sa.attribute.pk] = {
-                    'regexp': sa.regexp,
-                    'default': sa.default_value,
-                }
+    for servertype in servertypes:
+        avail_attributes[servertype.pk] = dict(specials)
+    for sa in ServertypeAttribute.query(servertypes).all():
+        avail_attributes[sa.servertype.pk][sa.attribute.pk] = {
+            'regexp': sa.regexp,
+            'default': sa.default_value,
+        }
 
     return HttpResponse(json.dumps({
         'status': 'success',
@@ -144,7 +147,7 @@ def get_results(request):
             for s in servers.values()
         ],
         'num_servers': num_servers,
-        'avail_attributes': avail_attributes
+        'avail_attributes': avail_attributes,
     }, default=json_encode_extra), content_type='application/x-json')
 
 

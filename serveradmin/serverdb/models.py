@@ -217,8 +217,7 @@ class AttributeManager(LookupManager):
     def _build_cache(self):
         super(AttributeManager, self)._build_cache()
         self._lookup_dict = OrderedDict(chain(
-            ((o.pk, o) for o in Attribute.specials),
-            self._lookup_dict.items(),
+            Attribute.specials.items(), self._lookup_dict.items()
         ))
 
 
@@ -287,50 +286,50 @@ class ServerTableSpecial(object):
         self.unique = unique
 
 
-Attribute.specials = (
-    Attribute(
+Attribute.specials = {
+    'object_id': Attribute(
         attribute_id='object_id',
         type='integer',
         multi=False,
         group='base',
         special=ServerTableSpecial('server_id'),
     ),
-    Attribute(
+    'hostname': Attribute(
         attribute_id='hostname',
         type='string',
         multi=False,
         group='base',
         special=ServerTableSpecial('hostname', unique=True),
     ),
-    Attribute(
+    'servertype': Attribute(
         attribute_id='servertype',
         type='string',
         multi=False,
         group='base',
         special=ServerTableSpecial('_servertype_id'),
     ),
-    Attribute(
+    'project': Attribute(
         attribute_id='project',
         type='string',
         multi=False,
         group='base',
         special=ServerTableSpecial('_project_id'),
     ),
-    Attribute(
+    'intern_ip': Attribute(
         attribute_id='intern_ip',
         type='ip',
         multi=False,
         group='base',
         special=ServerTableSpecial('intern_ip'),
     ),
-    Attribute(
+    'segment': Attribute(
         attribute_id='segment',
         type='string',
         multi=False,
         group='base',
         special=ServerTableSpecial('_segment_id'),
     ),
-)
+}
 
 
 #
@@ -393,8 +392,13 @@ class ServertypeAttribute(models.Model):
             return self.get_compiled_regexp().match(str(value))
 
     @classmethod
-    def get_by_attributes(self, attributes):
-        return self.objects.filter(_attribute__in=attributes)
+    def query(self, servertypes=None, attributes=None):
+        queryset = self.objects
+        if servertypes is not None:
+            queryset = queryset.filter(_servertype__in=servertypes)
+        if attributes is not None:
+            queryset = queryset.filter(_attribute__in=attributes)
+        return queryset
 
 
 #

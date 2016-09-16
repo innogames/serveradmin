@@ -1,6 +1,5 @@
 from __future__ import print_function
 import sys
-from ipaddress import IPv4Address, IPv6Address
 
 from adminapi.utils import print_table, print_heading
 
@@ -24,6 +23,7 @@ class BaseQuerySet(object):
         self.get_results()
         if self._order is not None:
             order_keys = self._order
+
             def key_fn(server):
                 return tuple(server.get(key) for key in order_keys)
             return iter(sorted(self._results.values(), key=key_fn))
@@ -40,8 +40,9 @@ class BaseQuerySet(object):
 
     def __repr__(self):
         # QuerySet is not used directly but through query function
-        kwargs = ', '.join('{0}={1!r}'.format(k, v) for k, v in
-                self._filters.items())
+        kwargs = ', '.join(
+            '{0}={1!r}'.format(k, v) for k, v in self._filters.items()
+        )
         query_repr = 'query({0})'.format(kwargs)
 
         if self._restrict:
@@ -130,8 +131,10 @@ class BaseQuerySet(object):
                 obj.print_changes(title, file=file)
                 file.write('\n')
 
-        file.write('\n{0} changed and {1} unchanged.\n'.format(num_dirty,
-                len(self) - num_dirty))
+        file.write(
+            '\n{0} changed and {1} unchanged.\n'
+            .format(num_dirty, len(self) - num_dirty)
+        )
 
     def order_by(self, *attrs):
         self._order = attrs
@@ -254,7 +257,7 @@ class BaseServerObject(dict):
                 action = 'delete'
             elif old_value == NonExistingAttribute:
                 action = 'new'
-            elif self._queryset.attributes[key].multi:
+            elif isinstance(old_value, set):
                 action = 'multi'
             else:
                 action = 'update'
@@ -305,39 +308,14 @@ class BaseServerObject(dict):
             self._queryset._num_dirty += 1
 
     def __getitem__(self, k):
-        if self._queryset.attributes[k].multi:
-            return MultiAttr(dict.__getitem__(self, k), self, k)
-
-        return dict.__getitem__(self, k)
+        item = dict.__getitem__(self, k)
+        if isinstance(item, (tuple, list, set)):
+            item = MultiAttr(item, self, k)
+        return item
 
     def __setitem__(self, k, v):
         if self._deleted:
             raise DatasetError('Can not set attributes on deleted servers')
-
-        if k not in self._queryset.attributes:
-            raise DatasetError('No such attribute')
-
-        if self._queryset.attributes[k].type == 'ip':
-            if self._queryset.attributes[k].multi:
-                v = set(
-                    x if isinstance(x, IPv4Address) else IPv4Address(x)
-                    for x in v
-                )
-            elif v is not None:
-                v = v if isinstance(v, IPv4Address) else IPv4Address(v)
-
-        if self._queryset.attributes[k].type == 'ipv6':
-            if self._queryset.attributes[k].multi:
-                v = set(
-                    x if isinstance(x, IPv6Address)
-                    else IPv6Address(x) for x in v
-                )
-            elif v is not None:
-                v = v if isinstance(v, IPv6Address) else IPv6Address(v)
-
-        if self._queryset.attributes[k].multi:
-            if not isinstance(v, set):
-                raise DatasetError('Multi attributes must be sets')
 
         if k not in self.old_values or self.old_values[k] != v:
             self._save_old_value(k)
@@ -398,6 +376,7 @@ class BaseServerObject(dict):
             self[k] = F[k]
 
     update.__doc__ = dict.update.__doc__
+
 
 class MultiAttr(object):
     dirty_methods = frozenset((
@@ -462,8 +441,8 @@ class MultiAttr(object):
     def __reduce__(self):
         return dict.__reduce__(self)
 
-def _format_value(value):
 
+def _format_value(value):
     if not value:
         return ''
 

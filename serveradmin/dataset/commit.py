@@ -443,8 +443,6 @@ def _get_servertype_attributes(servers):
 
 
 def _validate_attributes(changed_servers, servers, servertype_attributes):
-    special_attribute_ids = [a.pk for a in Attribute.specials]
-
     violations = []
     for server_id, changes in changed_servers.items():
         server = servers[server_id]
@@ -457,7 +455,7 @@ def _validate_attributes(changed_servers, servers, servertype_attributes):
                 raise CommitValidationFailed('Cannot change servertype', [])
 
             # We have no more checks for the special attributes.
-            if attribute_id in special_attribute_ids:
+            if attribute_id in Attribute.specials:
                 continue
 
             if (

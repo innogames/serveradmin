@@ -99,15 +99,22 @@ class QuerySetRepresentation(object):
 
 class QuerySet(BaseQuerySet):
     def __init__(self, filters):
-        self.attributes = {a.pk: a for a in Attribute.objects.all()}
-        for attribute_id in filters.keys():
-            if attribute_id not in self.attributes:
+        self._filters = {}
+        for attribute_id, filter_obj in filters.items():
+            try:
+                attribute = Attribute.objects.get(pk=attribute_id)
+            except Attribute.DoesNotExist:
                 raise ValidationError(
                     'Invalid attribute: {0}'.format(attribute_id)
                 )
-        for attribute_name, filter_obj in filters.items():
-            filter_obj.typecast(self.attributes[attribute_name])
-        super(QuerySet, self).__init__(filters)
+            filter_obj.typecast(attribute)
+            self._filters[attribute] = filter_obj
+        self._servertype_attribute = Attribute.specials['servertype']
+        self._restrict = set()
+        self._results = None
+        self._augmentations = None
+        self._num_dirty = 0
+        self._order = None
         self._order_by = None
         self._order_dir = 'asc'
 
@@ -127,21 +134,24 @@ class QuerySet(BaseQuerySet):
 
     def restrict(self, *attrs):
         for attribute_id in attrs:
-            if attribute_id not in self.attributes:
+            try:
+                self._restrict.add(Attribute.objects.get(pk=attribute_id))
+            except Attribute.DoesNotExist:
                 raise ValidationError(
                     'Invalid attribute: {0}'.format(attribute_id)
                 )
-        return super(QuerySet, self).restrict(*attrs)
+        return self
 
     def order_by(self, order_by, order_dir='asc'):
-        if order_by not in self.attributes:
+        try:
+            self._order_by = Attribute.objects.get(pk=order_by)
+        except Attribute.DoesNotExist:
             raise ValidationError(
                 'Invalid attribute: {0}'.format(order_by)
             )
+
         if order_dir not in ('asc', 'desc'):
             raise ValueError('Invalid order direction')
-
-        self._order_by = self.attributes[order_by]
         self._order_dir = order_dir
 
         # We need the attribute to order by.
@@ -151,12 +161,11 @@ class QuerySet(BaseQuerySet):
         return self
 
     def _get_query_builder_with_filters(self):
-        real_attributes = []
+        attributes = []
         builder = QueryBuilder()
         servertypes = set(Servertype.objects.all())
         projects = Project.objects.all()
-        for attr, filt in self._filters.items():
-            attribute = self.attributes[attr]
+        for attribute, filt in self._filters.items():
             if attribute.pk == 'intern_ip' and isinstance(filt, ExactMatch):
                 # Filter out servertypes depending on ip_addr_type
                 is_network = '/' in str(filt.value)
@@ -174,11 +183,11 @@ class QuerySet(BaseQuerySet):
                     if s.fixed_project is None or s.fixed_project in projects
                 }
             elif not attribute.special:
-                real_attributes.append(attribute)
+                attributes.append(attribute)
 
-        if real_attributes:
+        if attributes:
             attribute_servertypes = defaultdict(set)
-            for sa in ServertypeAttribute.get_by_attributes(real_attributes):
+            for sa in ServertypeAttribute.query(attributes=attributes).all():
                 attribute_servertypes[sa.attribute].add(sa.servertype)
             for new in attribute_servertypes.values():
                 servertypes = servertypes.intersection(new)
@@ -187,7 +196,7 @@ class QuerySet(BaseQuerySet):
             if not servertypes:
                 return None
             builder.add_filter(
-                self.attributes['servertype'],
+                Attribute.objects.get(pk='servertype'),
                 servertypes,
                 Any(*(s.pk for s in servertypes)),
             )
@@ -195,13 +204,12 @@ class QuerySet(BaseQuerySet):
             if not projects:
                 return None
             builder.add_filter(
-                self.attributes['project'],
+                Attribute.objects.get(pk='project'),
                 projects,
                 Any(*(p.pk for p in projects)),
             )
 
-        for attr, filt in self._filters.items():
-            attribute = self.attributes[attr]
+        for attribute, filt in self._filters.items():
             if attribute.pk not in ('project', 'servertype'):
                 builder.add_filter(attribute, servertypes, filt)
 
@@ -218,15 +226,15 @@ class QuerySet(BaseQuerySet):
         servers = tuple(Server.objects.raw(builder.build_sql()))
         for server in servers:
             self._server_attributes[server.pk] = {
-                'hostname': server.hostname,
-                'intern_ip': server.intern_ip,
-                'segment': server.segment,
-                'servertype': server.servertype,
-                'project': server.project,
+                Attribute.specials['hostname']: server.hostname,
+                Attribute.specials['intern_ip']: server.intern_ip,
+                Attribute.specials['segment']: server.segment,
+                Attribute.specials['servertype']: server.servertype,
+                Attribute.specials['project']: server.project,
             }
             servers_by_type[server.servertype].append(server)
 
-        self._select_attributes(servers_by_type)
+        self._select_attributes(servers_by_type.keys())
         self._add_attributes(servers_by_type)
 
         result_class = dict
@@ -236,7 +244,7 @@ class QuerySet(BaseQuerySet):
             # We need to sort by attribute being there first, because some
             # datatypes are not sortable with None.
             server_ids = sorted(server_ids, key=lambda i: (
-                self._order_by.pk in self._server_attributes[i],
+                self._order_by in self._server_attributes[i],
                 self._server_attributes[i].get(self._order_by.pk),
             ))
 
@@ -245,40 +253,31 @@ class QuerySet(BaseQuerySet):
             for i in server_ids
         )
 
-    def _select_attributes(self, servers_by_type):
-        self._attributes_by_type = defaultdict(list)
+    def _select_attributes(self, servertypes):
+        self._attributes_by_type = defaultdict(set)
         self._servertypes_by_attribute = defaultdict(list)
         self._related_servertype_attributes = []
+        attributes = self._restrict if self._restrict else None
+        for sa in ServertypeAttribute.query(servertypes, attributes).all():
+            self._select_servertype_attribute(sa)
 
-        # First, prepare the dictionary for lookups by attribute
-        servertype_attributes = defaultdict(list)
-        for servertype in servers_by_type.keys():
-            for sa in servertype.attributes.all():
-                servertype_attributes[sa.attribute].append(sa)
-        # Then, process the attributes
-        for attribute in servertype_attributes.keys():
-            if not self._restrict or attribute.pk in self._restrict:
-                self._select_attribute(servertype_attributes, attribute)
+    def _select_servertype_attribute(self, sa):
+        self._attributes_by_type[sa.attribute.type].add(sa.attribute)
+        self._servertypes_by_attribute[sa.attribute].append(sa.servertype)
 
-    def _select_attribute(self, servertype_attributes, attribute):
-        self._attributes_by_type[attribute.type].append(attribute)
+        related_via_attribute = sa.related_via_attribute
+        if related_via_attribute:
+            # TODO Order the list in a way to support recursive related
+            # attributes.
+            self._related_servertype_attributes.append(sa)
 
-        for sa in servertype_attributes[attribute]:
-            self._servertypes_by_attribute[attribute].append(sa.servertype)
-
-            if sa.related_via_attribute:
-                # TODO Order the list in a way to support recursive related
-                # attributes.
-                self._related_servertype_attributes.append(sa)
-
-                # If we have related attributes in the restrict list, we have
-                # to add the relations in there, too.  We are going to use
-                # those to query the related attributes.
-                if self._restrict:
-                    new = sa.related_via_attribute
-
-                    if new not in self._attributes_by_type[new.type]:
-                        self._select_attribute(servertype_attributes, new)
+            # If we have related attributes in the restrict list, we have
+            # to add the relations in there, too.  We are going to use
+            # those to query the related attributes.
+            if self._restrict and related_via_attribute not in self._restrict:
+                self._select_servertype_attribute(ServertypeAttribute.query(
+                    (sa.servertype, ), (related_via_attribute, )
+                ).get())
 
     def _add_attributes(self, servers_by_type):
         """Add the attributes to the results"""
@@ -288,8 +287,7 @@ class QuerySet(BaseQuerySet):
             if attribute.multi:
                 for servertype in servertypes:
                     for server in servers_by_type[servertype]:
-                        self._server_attributes[server.pk][attribute.pk] = set(
-                        )
+                        self._server_attributes[server.pk][attribute] = set()
 
         # Step 1: Query the materialized attributes by their types
         for key, attributes in self._attributes_by_type.items():
@@ -351,7 +349,7 @@ class QuerySet(BaseQuerySet):
                     )
                 except Server.DoesNotExist:
                     continue
-            self._server_attributes[source.pk][attribute.pk] = target[1]
+            self._server_attributes[source.pk][attribute] = target[1]
 
     def _add_related_attribute(self, servertype_attribute, servers_by_type):
         attribute = servertype_attribute.attribute
@@ -361,12 +359,12 @@ class QuerySet(BaseQuerySet):
         servers_by_related_hostnames = defaultdict(list)
         for server in servers_by_type[servertype_attribute.servertype]:
             attributes = self._server_attributes[server.pk]
-            if related_via_attribute.pk in attributes:
+            if related_via_attribute in attributes:
                 if related_via_attribute.multi:
-                    for hostname in attributes[related_via_attribute.pk]:
+                    for hostname in attributes[related_via_attribute]:
                         servers_by_related_hostnames[hostname].append(server)
                 else:
-                    hostname = attributes[related_via_attribute.pk]
+                    hostname = attributes[related_via_attribute]
                     servers_by_related_hostnames[hostname].append(server)
 
         # Then, query and set the related attributes
@@ -381,27 +379,27 @@ class QuerySet(BaseQuerySet):
 
     def _add_attribute_value(self, server_id, attribute, value):
         if attribute.multi:
-            self._server_attributes[server_id][attribute.pk].add(value)
+            self._server_attributes[server_id][attribute].add(value)
         else:
-            self._server_attributes[server_id][attribute.pk] = value
+            self._server_attributes[server_id][attribute] = value
 
     def _get_attributes(self, server_id):
         server_attributes = self._server_attributes[server_id]
-        for attribute_id, value in server_attributes.items():
-            if not self._restrict or attribute_id in self._restrict:
-                if attribute_id in ('project', 'servertype', 'segment'):
-                    yield attribute_id, value.pk
-                elif attribute_id == 'intern_ip':
-                    servertype = server_attributes['servertype']
+        for attribute, value in server_attributes.items():
+            if not self._restrict or attribute in self._restrict:
+                if attribute.pk in ('project', 'servertype', 'segment'):
+                    yield attribute.pk, value.pk
+                elif attribute.pk == 'intern_ip':
+                    servertype = server_attributes[self._servertype_attribute]
                     if servertype.ip_addr_type == 'null':
-                        yield attribute_id, None
+                        yield attribute.pk, None
                     elif servertype.ip_addr_type in ('host', 'loadbalancer'):
-                        yield attribute_id, value.ip
+                        yield attribute.pk, value.ip
                     else:
                         assert servertype.ip_addr_type == 'network'
-                        yield attribute_id, value.network
+                        yield attribute.pk, value.network
                 else:
-                    yield attribute_id, value
+                    yield attribute.pk, value
 
 
 class ServerObject(BaseServerObject):
