@@ -78,7 +78,7 @@ def _get_servertype(attributes):
         raise CreateError('"servertype" attribute is required.')
     try:
         return Servertype.objects.get(pk=attributes['servertype'])
-    except Servertype.DoesNotExists:
+    except Servertype.DoesNotExist:
         raise CreateError('Unknown servertype: ' + attributes['servertype'])
 
 
@@ -94,7 +94,7 @@ def _get_project(attributes):
             ))
             .get(in_recovery=False, pk=attributes['project'])
         )
-    except Project.DoesNotExists:
+    except Project.DoesNotExist:
         raise CreateError(
             'Cannot lock the project.  Database can be in recovery.'
         )
@@ -105,7 +105,7 @@ def _get_segment(attributes):
         raise CreateError('"segment" attribute is required.')
     try:
         return Segment.objects.get(pk=attributes['segment'])
-    except Segment.DoesNotExists:
+    except Segment.DoesNotExist:
         raise CreateError('Unknown segment: ' + attributes['segment'])
 
 
