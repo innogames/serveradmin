@@ -1,10 +1,10 @@
 from adminapi.cmdline.utils import get_auth_token
 
 _api_settings = {
-        'auth_token': '',
-        'timeout_api': None,
-        'timeout_dataset': 20,
-    }
+    'auth_token': '',
+    'timeout_api': None,
+    'timeout_dataset': 60,
+}
 
 
 def auth(auth_token=None):
