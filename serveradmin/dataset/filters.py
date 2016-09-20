@@ -83,8 +83,9 @@ class ExactMatch(BaseFilter):
             self.value = typecast(attribute, self.value, force_single=True)
 
     def as_sql_expr(self, attribute, servertypes):
-        if attribute.type == 'boolean' and not self.value:
-            return 'NOT ' + _condition_sql(attribute, "{0} = '1'", servertypes)
+        if attribute.type == 'boolean':
+            prefix = '' if self.value else 'NOT '
+            return prefix + _condition_sql(attribute, '', servertypes)
 
         template = '{0} = ' + value_to_sql(attribute, self.value)
 

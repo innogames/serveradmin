@@ -594,10 +594,12 @@ class ServerAttribute(models.Model):
 
     @staticmethod
     def get_model(attribute_type):
-        if attribute_type in ('string', 'boolean'):
+        if attribute_type in 'string':
             return ServerStringAttribute
         if attribute_type == 'hostname':
             return ServerHostnameAttribute
+        if attribute_type == 'boolean':
+            return ServerBooleanAttribute
         if attribute_type == 'number':
             return ServerNumberAttribute
         if attribute_type == 'inet':
@@ -614,7 +616,7 @@ class ServerStringAttribute(ServerAttribute):
         db_column='attribute_id',
         db_index=False,
         on_delete=models.CASCADE,
-        limit_choices_to=models.Q(type__in=('string', 'boolean')),
+        limit_choices_to=dict(type='string'),
     )
     attribute = Attribute.foreign_key_lookup('_attribute_id')
     value = models.CharField(max_length=1024)
@@ -624,16 +626,6 @@ class ServerStringAttribute(ServerAttribute):
         db_table = 'server_string_attribute'
         unique_together = (('server', '_attribute', 'value'), )
         index_together = (('_attribute', 'value'), )
-
-    def get_value(self):
-        if self.attribute.type == 'boolean':
-            return self.value == '1'
-        return self.value
-
-    def save_value(self, value):
-        if self.attribute.type == 'boolean':
-            value = 1 if value else 0
-        ServerAttribute.save_value(self, value)
 
 
 class ServerHostnameAttributeManager(models.Manager):
@@ -700,6 +692,32 @@ class ServerHostnameAttribute(ServerAttribute):
             )
 
         ServerAttribute.save_value(self, target_server)
+
+
+class ServerBooleanAttribute(ServerAttribute):
+    _attribute = models.ForeignKey(
+        Attribute,
+        db_column='attribute_id',
+        db_index=False,
+        on_delete=models.CASCADE,
+        limit_choices_to=dict(type='boolean'),
+    )
+    attribute = Attribute.foreign_key_lookup('_attribute_id')
+
+    class Meta:
+        app_label = 'serverdb'
+        db_table = 'server_boolean_attribute'
+        unique_together = (('server', '_attribute'), )
+        index_together = (('_attribute', ), )
+
+    def get_value(self):
+        return True
+
+    def save_value(self, value):
+        if value:
+            self.save()
+        else:
+            self.delete()
 
 
 class ServerNumberAttribute(ServerAttribute):
