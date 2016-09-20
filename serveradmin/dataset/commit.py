@@ -55,16 +55,14 @@ class Commit(object):
             raise CommitError('Invalid deleted servers')
 
     def _decorate_changes(self):
+        server_ids = self.changed_servers.keys() + self.deleted_servers
         servers = {s.server_id: s for s in (
             Server.objects.select_for_update()
             .annotate(in_recovery=models.Func(
                 function='pg_is_in_recovery',
                 output_field=models.fields.BooleanField(),
             ))
-            .filter(
-                in_recovery=False,
-                server_id__in=self.changed_servers.keys(),
-            )
+            .filter(in_recovery=False, server_id__in=server_ids)
         )}
 
         if not servers:
