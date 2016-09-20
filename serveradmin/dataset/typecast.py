@@ -2,6 +2,7 @@ import re
 from datetime import datetime
 from decimal import Decimal
 from ipaddress import ip_interface
+from netaddr import EUI
 
 from django.core.exceptions import ValidationError
 
@@ -74,7 +75,7 @@ _typecast_fns = {
     'reverse_hostname': str,
     'number': Decimal,
     'inet': str,
-    'macaddr': str,
+    'macaddr': EUI,
     'date': str,
     'supernet': str,
 }
