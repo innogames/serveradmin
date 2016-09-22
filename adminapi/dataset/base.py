@@ -327,7 +327,7 @@ class BaseServerObject(dict):
                     x if isinstance(x, IPv4Address) else IPv4Address(x)
                     for x in v
                 )
-            else:
+            elif v is not None:
                 v = v if isinstance(v, IPv4Address) else IPv4Address(v)
 
         if self._queryset.attributes[k].type == 'ipv6':
@@ -336,7 +336,7 @@ class BaseServerObject(dict):
                     x if isinstance(x, IPv6Address)
                     else IPv6Address(x) for x in v
                 )
-            else:
+            elif v is not None:
                 v = v if isinstance(v, IPv6Address) else IPv6Address(v)
 
         if self._queryset.attributes[k].multi:

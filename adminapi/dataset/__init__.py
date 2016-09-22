@@ -89,7 +89,7 @@ class QuerySet(BaseQuerySet):
                     else:
                         server[attr] = set(server[attr])
                 for attr in convert_ip:
-                    if attr not in server or attr in convert_set:
+                    if server.get(attr) is None or attr in convert_set:
                         continue
                     if '/' in server[attr]:
                         server[attr] = ip_network(server[attr])
