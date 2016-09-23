@@ -1,15 +1,13 @@
 from collections import defaultdict, OrderedDict
-from ipaddress import ip_address, ip_network
 
-from django.db import connection
 from django.core.exceptions import ValidationError
 
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 
 from serveradmin.serverdb.models import (
-    Servertype,
     Attribute,
     ServertypeAttribute,
+    Server,
     ServerAttribute,
     ServerHostnameAttribute,
 )
@@ -171,61 +169,39 @@ class QuerySet(BaseQuerySet):
 
     def _fetch_results(self):
         builder = self._get_query_builder_with_filters()
-
-        # We can only push-down the order-by to the database, if
-        # it is one of the special attributes.  The query-builder
-        # is not capable of doing order by for real attributes.
-        # Otherwise we have to do ordering ourself, later.
-        if not self._order_by or self._order_by.special:
-            if self._order_by:
-                builder.add_order_by(self._order_by, self._order_dir)
-
-            # In this case we need to preserve ordering, otherwise
-            # we can use normal dict as it performs better.
-            self._results = OrderedDict()
-        else:
-            self._results = dict()
-
+        self._server_attributes = dict()
         restrict = self._restrict
         servers_by_type = defaultdict(list)
+        servers = tuple(Server.objects.raw(builder.build_sql()))
 
-        with connection.cursor() as cursor:
-            cursor.execute(builder.build_sql())
-
-            for (
-                server_id,
-                hostname,
-                intern_ip,
-                segment_id,
-                servertype_id,
-                project_id,
-            ) in cursor.fetchall():
-                servertype = Servertype.objects.get(pk=servertype_id)
-
-                attrs = {}
-                if not restrict or 'hostname' in restrict:
-                    attrs['hostname'] = hostname
-                if not restrict or 'intern_ip' in restrict:
-                    if servertype.ip_addr_type == 'null':
-                        attrs['intern_ip'] = None
-                    elif servertype.ip_addr_type in ('host', 'loadbalancer'):
-                        attrs['intern_ip'] = ip_address(intern_ip)
-                    else:
-                        assert servertype.ip_addr_type == 'network'
-                        attrs['intern_ip'] = ip_network(intern_ip)
-                if not restrict or 'segment' in restrict:
-                    attrs['segment'] = segment_id
-                if not restrict or 'servertype' in restrict:
-                    attrs['servertype'] = servertype_id
-                if not restrict or 'project' in restrict:
-                    attrs['project'] = project_id
-
-                server_object = ServerObject(attrs, server_id, self)
-                self._results[server_id] = server_object
-                servers_by_type[servertype].append(server_object)
+        for server in servers:
+            servertype = server.servertype
+            attributes = dict()
+            if not restrict or 'hostname' in restrict:
+                attributes['hostname'] = server.hostname
+            if not restrict or 'intern_ip' in restrict:
+                if servertype.ip_addr_type == 'null':
+                    attributes['intern_ip'] = None
+                elif servertype.ip_addr_type in ('host', 'loadbalancer'):
+                    attributes['intern_ip'] = server.intern_ip.ip
+                else:
+                    assert servertype.ip_addr_type == 'network'
+                    attributes['intern_ip'] = server.intern_ip.network
+            if not restrict or 'segment' in restrict:
+                attributes['segment'] = server.segment.pk
+            if not restrict or 'servertype' in restrict:
+                attributes['servertype'] = servertype.pk
+            if not restrict or 'project' in restrict:
+                attributes['project'] = server.project.pk
+            self._server_attributes[server.pk] = attributes
+            servers_by_type[server.servertype].append(server)
 
         self._select_attributes(servers_by_type)
         self._add_attributes(servers_by_type)
+        self._results = {
+            k: ServerObject(v, k, self)
+            for k, v in self._server_attributes.items()
+        }
         if self._order_by and not self._order_by.special:
             self._sort()
 
@@ -272,65 +248,65 @@ class QuerySet(BaseQuerySet):
             if attribute.multi:
                 for servertype in servertypes:
                     for server in servers_by_type[servertype]:
-                        dict.__setitem__(server, attribute.pk, set())
+                        self._server_attributes[server.pk][attribute.pk] = set(
+                        )
 
         # Step 1: Query the materialized attributes by their types
         for key, attributes in self._attributes_by_type.items():
-            model = ServerAttribute.get_model(key)
-            if model:
-                for sa in model.objects.filter(
-                    server_id__in=self._results.keys(),
+            if key == 'supernet':
+                for attribute in attributes:
+                    self._add_supernet_attribute(attribute, (
+                        s for st in self._servertypes_by_attribute[attribute]
+                        for s in servers_by_type[st]
+                    ))
+            elif key == 'reverse_hostname':
+                reversed_attributes = {
+                    a.reversed_attribute: a for a in attributes
+                }
+                for sa in ServerHostnameAttribute.objects.filter(
+                    value_id__in=self._server_attributes.keys(),
+                    _attribute__in=reversed_attributes.keys(),
+                ).select_related('server'):
+                    self._add_attribute_value(
+                        sa.value_id,
+                        reversed_attributes[sa.attribute],
+                        sa.server.hostname
+                    )
+            else:
+                for sa in ServerAttribute.get_model(key).objects.filter(
+                    server_id__in=self._server_attributes.keys(),
                     _attribute__in=attributes,
                 ):
                     self._add_attribute_value(
-                        self._results[sa.server_id],
-                        sa.attribute,
-                        sa.get_value(),
+                        sa.server_id, sa.attribute, sa.get_value()
                     )
 
-        # Step 2: Add the containing networks
-        for attribute in self._attributes_by_type['supernet']:
-            # TODO Refactor this using Django ORM
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    'SELECT server.server_id,'
-                    '       supernet.hostname'
-                    '   FROM server'
-                    '       JOIN server AS supernet'
-                    '           ON server.intern_ip <<= supernet.intern_ip'
-                    '   WHERE server.server_id IN ({0})'
-                    "       AND supernet.servertype_id = '{1}'"
-                    .format(
-                        ', '.join(
-                            str(o.object_id)
-                            for s in self._servertypes_by_attribute[attribute]
-                            for o in servers_by_type[s]
-                        ),
-                        attribute.target_servertype.pk,
-                    )
-                )
-                for server_id, value in cursor.fetchall():
-                    self._add_attribute_value(
-                        self._results[server_id],
-                        attribute,
-                        value,
-                    )
-
-        # Step 3: Add the reverse attributes
-        for attribute in self._attributes_by_type['reverse_hostname']:
-            for sa in ServerHostnameAttribute.objects.filter(
-                value_id__in=self._results.keys(),
-                _attribute_id=attribute.reversed_attribute.pk,
-            ):
-                self._add_attribute_value(
-                    self._results[sa.value_id],
-                    attribute,
-                    sa.get_reverse_value(),
-                )
-
-        # Step 4: Add the related attributes
+        # Step 2: Add the related attributes
         for servertype_attribute in self._related_servertype_attributes:
             self._add_related_attribute(servertype_attribute, servers_by_type)
+
+    def _add_supernet_attribute(self, attribute, servers):
+        target = None
+        for source in sorted(servers, key=lambda s: s.intern_ip):
+            # Check the previous target
+            if target is not None:
+                network = target.intern_ip.network
+                if source.intern_ip in network:
+                    self._server_attributes[source.pk][attribute.pk] = (
+                        target.hostname
+                    )
+                elif network.broadcast_address < source.intern_ip.ip:
+                    target = None
+            # Check for a new target
+            if target is None:
+                for server in Server.objects.filter(
+                    _servertype=attribute.target_servertype,
+                    intern_ip__net_contains_or_equals=source.intern_ip,
+                ):
+                    target = server
+                    self._server_attributes[source.pk][attribute.pk] = (
+                        target.hostname
+                    )
 
     def _add_related_attribute(self, servertype_attribute, servers_by_type):
         attribute = servertype_attribute.attribute
@@ -339,12 +315,13 @@ class QuerySet(BaseQuerySet):
         # First, index the related servers for fast access later
         servers_by_related_hostnames = defaultdict(list)
         for server in servers_by_type[servertype_attribute.servertype]:
-            if related_via_attribute.pk in server:
+            attributes = self._server_attributes[server.pk]
+            if related_via_attribute.pk in attributes:
                 if related_via_attribute.multi:
-                    for hostname in server[related_via_attribute.pk]:
+                    for hostname in attributes[related_via_attribute.pk]:
                         servers_by_related_hostnames[hostname].append(server)
                 else:
-                    hostname = server[related_via_attribute.pk]
+                    hostname = attributes[related_via_attribute.pk]
                     servers_by_related_hostnames[hostname].append(server)
 
         # Then, query and set the related attributes
@@ -353,13 +330,15 @@ class QuerySet(BaseQuerySet):
             _attribute=attribute,
         ).select_related('server'):
             for server in servers_by_related_hostnames[sa.server.hostname]:
-                self._add_attribute_value(server, sa.attribute, sa.get_value())
+                self._add_attribute_value(
+                    server.pk, sa.attribute, sa.get_value()
+                )
 
-    def _add_attribute_value(self, server, attribute, value):
+    def _add_attribute_value(self, server_id, attribute, value):
         if attribute.multi:
-            dict.__getitem__(server, attribute.pk).add(value)
+            self._server_attributes[server_id][attribute.pk].add(value)
         else:
-            dict.__setitem__(server, attribute.pk, value)
+            self._server_attributes[server_id][attribute.pk] = value
 
     def _sort(self):
         self._results = OrderedDict(sorted(
