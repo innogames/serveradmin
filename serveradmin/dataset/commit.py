@@ -370,8 +370,8 @@ def commit_changes(
             if newer:
                 raise CommitNewerData('Newer data available', newer)
 
-        commit.apply_changes()
         _log_changes(commit.deleted_servers, commit.changed_servers, app, user)
+        commit.apply_changes()
 
     if commit.warnings:
         warnings = '\n'.join(commit.warnings)
