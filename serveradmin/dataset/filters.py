@@ -93,9 +93,9 @@ class ExactMatch(BaseFilter):
     def typecast(self, attribute):
         self.value = typecast(attribute, self.value, force_single=True)
 
-    def as_sql_expr(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         if attribute.type == 'boolean' and not self.value:
-            return 'NOT ' + _condition_sql(attribute, "{0} = '1'")
+            return 'NOT ' + _condition_sql(attribute, "{0} = '1'", servertypes)
 
         template = '{0} = ' + value_to_sql(attribute, self.value)
 
@@ -106,7 +106,7 @@ class ExactMatch(BaseFilter):
                 if (s.ip_addr_type == 'network') == self.network
             ))
 
-        return _condition_sql(attribute, template)
+        return _condition_sql(attribute, template, servertypes)
 
     def matches(self, server_obj, attr_name):
         return server_obj[attr_name] == self.value
@@ -146,7 +146,7 @@ class Regexp(BaseFilter):
         # Regexp value is always string, no need to typecast
         pass
 
-    def as_sql_expr(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         value = raw_sql_escape(self.regexp)
 
         if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
@@ -161,7 +161,7 @@ class Regexp(BaseFilter):
         else:
             template = '{{0}} ~ E{0}'.format(value)
 
-        return _condition_sql(attribute, template)
+        return _condition_sql(attribute, template, servertypes)
 
     def matches(self, server_obj, attr_name):
         value = str(server_obj[attr_name])
@@ -204,9 +204,9 @@ class Comparison(BaseFilter):
 
         self.value = typecast(attribute, self.value, force_single=True)
 
-    def as_sql_expr(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         return _condition_sql(attribute, '{{0}} {0} {1}'.format(
-            self.comparator, value_to_sql(attribute, self.value)
+            self.comparator, value_to_sql(attribute, self.value), servertypes
         ))
 
     def matches(self, server_obj, attr_name):
@@ -257,13 +257,13 @@ class Any(BaseFilter):
             for x in self.values
         )
 
-    def as_sql_expr(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         if not self.values:
             return '0 = 1'
 
         return _condition_sql(attribute, '{{0}} IN ({0})'.format(
             ', '.join(value_to_sql(attribute, v) for v in self.values)
-        ))
+        ), servertypes)
 
     def matches(self, server_obj, attr_name):
         return server_obj[attr_name] in self.values
@@ -304,7 +304,7 @@ class _AndOr(BaseFilter):
         for filt in self.filters:
             filt.typecast(attribute)
 
-    def as_sql_expr(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         joiner = ' {0} '.format(type(self).__name__.upper())
 
         return '({0})'.format(joiner.join(
@@ -366,10 +366,10 @@ class Between(BaseFilter):
         self.a = typecast(attribute, self.a, force_single=True)
         self.b = typecast(attribute, self.b, force_single=True)
 
-    def as_sql_expr(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         return _condition_sql(attribute, '{{0}} BETWEEN {0} AND {1}'.format(
             value_to_sql(attribute, self.a), value_to_sql(attribute, self.b)
-        ))
+        ), servertypes)
 
     def matches(self, server_obj, attr_name):
         return self.a <= server_obj[attr_name] <= self.b
@@ -405,7 +405,7 @@ class Not(BaseFilter):
     def typecast(self, attribute):
         self.filter.typecast(attribute)
 
-    def as_sql_expr(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         return 'NOT ({0})'.format(self.filter.as_sql_expr(attribute))
 
     def matches(self, server_obj, attr_name):
@@ -440,7 +440,7 @@ class Startswith(BaseFilter):
     def typecast(self, attribute):
         self.value = unicode(self.value)
 
-    def as_sql_expr(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         value = self.value.replace('_', '\\_').replace('%', '\\%%')
         value = raw_sql_escape(value + '%%')
 
@@ -456,7 +456,7 @@ class Startswith(BaseFilter):
         else:
             template = '{0} LIKE ' + value
 
-        return _condition_sql(attribute, template)
+        return _condition_sql(attribute, template, servertypes)
 
     def matches(self, server_obj, attr_name):
         return unicode(server_obj[attr_name]).startswith(self.value)
@@ -496,10 +496,10 @@ class Overlap(NetworkFilter):
             result ^= hash(network)
         return result
 
-    def as_sql_expr(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         return _condition_sql(attribute, "{{0}} && ANY('{{{{{0}}}}}')".format(
             ','.join(str(n) for n in self.networks)
-        ))
+        ), servertypes)
 
     def matches(self, server_obj, attr_name):
         return any(server_obj[attr_name] in n for n in self.networks)
@@ -515,14 +515,14 @@ class Overlap(NetworkFilter):
 
 
 class InsideNetwork(Overlap):
-    def as_sql_expr(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         return _condition_sql(attribute, "{{0}} <<= ANY('{{{{{0}}}}}')".format(
             ','.join(str(n) for n in self.networks)
-        ))
+        ), servertypes)
 
 
 class InsideOnlyNetwork(InsideNetwork):
-    def as_sql_expr(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         network_sql_array = "'{{{{{0}}}}}'".format(
             ','.join(str(n) for n in self.networks)
         )
@@ -534,7 +534,7 @@ class InsideOnlyNetwork(InsideNetwork):
             '       supernet.intern_ip << ANY({0})'
             ')'
             .format(network_sql_array)
-        ))
+        ), servertypes)
 
 
 class PrivateIP(NetworkFilter, NoArgFilter):
@@ -547,7 +547,7 @@ class PrivateIP(NetworkFilter, NoArgFilter):
     def __init__(self):
         self.filt = InsideNetwork(*PrivateIP.blocks)
 
-    def as_sql_expr(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         return self.filt.as_sql_expr(attribute)
 
 
@@ -555,7 +555,7 @@ class PublicIP(NetworkFilter, NoArgFilter):
     def __init__(self):
         self.filt = Not(InsideNetwork(*PrivateIP.blocks))
 
-    def as_sql_expr(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         return self.filt.as_sql_expr(attribute)
 
 
@@ -577,7 +577,7 @@ class Optional(OptionalFilter):
     def typecast(self, attribute):
         self.filter.typecast(attribute)
 
-    def as_sql_expr(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         return self.filter.as_sql_expr(attribute)
 
     def matches(self, server_obj, attr_name):
@@ -613,8 +613,10 @@ class Empty(OptionalFilter):
     def typecast(self, attribute):
         pass
 
-    def as_sql_expr(self, attribute):
-        return 'NOT ' + _condition_sql(attribute, '{0} IS NOT NULL')
+    def as_sql_expr(self, attribute, servertypes):
+        return 'NOT ' + _condition_sql(
+            attribute, '{0} IS NOT NULL', servertypes
+        )
 
     def matches(self, server_obj, attr_name):
         return attr_name not in server_obj or len(server_obj[attr_name]) == 0
@@ -707,7 +709,7 @@ def value_to_sql(attribute, value):
     return raw_sql_escape(value)
 
 
-def _condition_sql(attribute, template):
+def _condition_sql(attribute, template, servertypes):
     if attribute.special:
         field = attribute.special.field
         if field.startswith('_'):
@@ -719,14 +721,9 @@ def _condition_sql(attribute, template):
         return _exists_sql('server', 'sub', (
             "sub.servertype_id = '{0}'".format(attribute.target_servertype.pk),
             'sub.intern_ip >>= server.intern_ip',
-            'server.servertype_id IN ({0})'.format(', '.join(
-                "'{0}'".format(sa.servertype.pk)
-                for sa in attribute.servertype_attributes.all()
-            )),
             template.format('sub.server_id'),
         ))
 
-    table = ServerAttribute.get_model(attribute.type)._meta.db_table
     rel_table = ServerAttribute.get_model('hostname')._meta.db_table
 
     if attribute.type == 'reverse_hostname':
@@ -742,41 +739,70 @@ def _condition_sql(attribute, template):
     # We start with the condition for the attributes the server has on
     # its own.  Then, add the conditions for all possible relations.  They
     # are going to be OR'ed together.
-    relation_conditions = ['server.server_id = sub.server_id']
-    for sa in attribute.related_servertype_attributes.all():
-        if sa.related_via_attribute.type == 'supernet':
-            relation_conditions.append(_exists_sql('server', 'rel1', (
+    relation_conditions = []
+    related_via_attributes = set()
+    other_servertypes = list()
+    for sa in attribute.servertype_attributes.filter(
+        _servertype__in=servertypes
+    ):
+        if sa.related_via_attribute:
+            related_via_attributes.add(sa.related_via_attribute)
+        else:
+            other_servertypes.append(sa.servertype)
+    for related_via_attribute in related_via_attributes:
+        related_via_servertypes = tuple(
+            sa.servertype
+            for sa in related_via_attribute.servertype_attributes.filter(
+                _servertype__in=servertypes
+            )
+        )
+        assert related_via_servertypes
+        if related_via_attribute.type == 'supernet':
+            relation_condition = _exists_sql('server', 'rel1', (
                 "rel1.servertype_id = '{0}'".format(
-                    sa.related_via_attribute.target_servertype.pk
+                    related_via_attribute.target_servertype.pk
                 ),
                 'rel1.intern_ip >>= server.intern_ip',
-                'server.servertype_id IN ({0})'.format(', '.join(
-                    "'{0}'".format(s.servertype.pk)
-                    for s
-                    in sa.related_via_attribute.servertype_attributes.all()
-                )),
                 'rel1.server_id = sub.server_id',
-            )))
-        elif sa.related_via_attribute.type == 'reverse_hostname':
-            relation_conditions.append(_exists_sql(rel_table, 'rel1', (
+            ))
+        elif related_via_attribute.type == 'reverse_hostname':
+            relation_condition = _exists_sql(rel_table, 'rel1', (
                 "rel1.attribute_id = '{0}'".format(
-                    sa.related_via_attribute.reversed_attribute.pk
+                    related_via_attribute.reversed_attribute.pk
                 ),
                 'rel1.value = server.server_id',
                 'rel1.server_id = sub.server_id',
-            )))
+            ))
         else:
-            assert sa.related_via_attribute.type == 'hostname'
-            relation_conditions.append(_exists_sql(rel_table, 'rel1', (
-                "rel1.attribute_id = '{0}'".format(
-                    sa.related_via_attribute.pk
-                ),
+            assert related_via_attribute.type == 'hostname'
+            relation_condition = _exists_sql(rel_table, 'rel1', (
+                "rel1.attribute_id = '{0}'".format(related_via_attribute.pk),
                 'rel1.server_id = server.server_id',
                 'rel1.value = sub.server_id',
-            )))
+            ))
+        relation_conditions.append(
+            (relation_condition, related_via_servertypes)
+        )
+    if other_servertypes:
+        relation_conditions.append(
+            ('server.server_id = sub.server_id', other_servertypes)
+        )
+    assert relation_conditions
+
+    table = ServerAttribute.get_model(attribute.type)._meta.db_table
+    if len(relation_conditions) == 1:
+        mixed_relation_condition = relation_conditions[0][0]
+    else:
+        mixed_relation_condition = '({0})'.format(' OR '.join(
+            '({0} AND server.servertype_id IN ({1}))'
+            .format(relation_condition, ', '.join(
+                "'{0}'".format(s.pk) for s in other_servertypes)
+            )
+            for relation_condition, servertypes in relation_conditions
+        ))
 
     return _exists_sql(table, 'sub', (
-        '({0})'.format(' OR '.join(relation_conditions)),
+        mixed_relation_condition,
         "sub.attribute_id = '{0}'".format(attribute.pk),
         template.format('sub.value'),
     ))

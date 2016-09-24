@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 
 from serveradmin.serverdb.models import (
+    Servertype,
     Attribute,
     ServertypeAttribute,
     Server,
@@ -153,17 +154,25 @@ class QuerySet(BaseQuerySet):
         builder = QueryBuilder()
         for attr, filt in self._filters.iteritems():
             attribute = self.attributes[attr]
-            builder.add_filter(attribute, filt)
             if not attribute.special:
                 real_attributes.append(attribute)
 
+        servertypes = set(Servertype.objects.all())
         if real_attributes:
-            attribute_servertype_ids = defaultdict(set)
+            attribute_servertypes = defaultdict(set)
             for sa in ServertypeAttribute.get_by_attributes(real_attributes):
-                attribute_servertype_ids[sa.attribute].add(sa.servertype.pk)
-            sets = attribute_servertype_ids.values()
-            intersect = reduce(set.intersection, sets[1:], sets[0])
-            builder.add_filter(self.attributes['servertype'], Any(*intersect))
+                attribute_servertypes[sa.attribute].add(sa.servertype)
+            for new in attribute_servertypes.values():
+                servertypes = servertypes.intersection(new)
+            builder.add_filter(
+                self.attributes['servertype'],
+                servertypes,
+                Any(*(s.pk for s in servertypes)),
+            )
+
+        for attr, filt in self._filters.iteritems():
+            attribute = self.attributes[attr]
+            builder.add_filter(attribute, servertypes, filt)
 
         return builder
 
