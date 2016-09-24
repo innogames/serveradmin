@@ -46,8 +46,8 @@ class NoArgFilter(BaseFilter):
         # We don't have values to typecast
         pass
 
-    def matches(self, server_obj, attr_name):
-        return self.filt.matches(server_obj, attr_name)
+    def matches(self, value):
+        return self.filt.matches(value)
 
     def as_code(self):
         return 'filters.{0}()'.format(type(self).__name__)
@@ -108,8 +108,8 @@ class ExactMatch(BaseFilter):
 
         return _condition_sql(attribute, template, servertypes)
 
-    def matches(self, server_obj, attr_name):
-        return server_obj[attr_name] == self.value
+    def matches(self, value):
+        return value == self.value
 
     def as_code(self):
         return repr(self.value)
@@ -163,9 +163,8 @@ class Regexp(BaseFilter):
 
         return _condition_sql(attribute, template, servertypes)
 
-    def matches(self, server_obj, attr_name):
-        value = str(server_obj[attr_name])
-        return bool(self._regexp_obj.search(value))
+    def matches(self, value):
+        return bool(self._regexp_obj.search(str(value)))
 
     def as_code(self):
         return 'filters.' + repr(self)
@@ -209,7 +208,7 @@ class Comparison(BaseFilter):
             self.comparator, value_to_sql(attribute, self.value), servertypes
         ))
 
-    def matches(self, server_obj, attr_name):
+    def matches(self, value):
         if self.comparator == '<':
             op = operator.lt
         elif self.comparator == '>':
@@ -221,7 +220,7 @@ class Comparison(BaseFilter):
         else:
             raise FilterValueError("Operator doesn't exists")
 
-        return op(server_obj[attr_name], self.value)
+        return op(value, self.value)
 
     def as_code(self):
         return 'filters.' + repr(self)
@@ -265,8 +264,8 @@ class Any(BaseFilter):
             ', '.join(value_to_sql(attribute, v) for v in self.values)
         ), servertypes)
 
-    def matches(self, server_obj, attr_name):
-        return server_obj[attr_name] in self.values
+    def matches(self, value):
+        return value in self.values
 
     def as_code(self):
         return 'filters.' + repr(self)
@@ -328,17 +327,17 @@ class _AndOr(BaseFilter):
 
 
 class And(_AndOr):
-    def matches(self, server_obj, attr_name):
+    def matches(self, value):
         for filter in self.filters:
-            if not filter.matches(server_obj, attr_name):
+            if not filter.matches(value):
                 return False
         return True
 
 
 class Or(_AndOr):
-    def matches(self, server_obj, attr_name):
+    def matches(self, value):
         for filter in self.filters:
-            if filter.matches(server_obj, attr_name):
+            if filter.matches(value):
                 return True
         return False
 
@@ -371,8 +370,8 @@ class Between(BaseFilter):
             value_to_sql(attribute, self.a), value_to_sql(attribute, self.b)
         ), servertypes)
 
-    def matches(self, server_obj, attr_name):
-        return self.a <= server_obj[attr_name] <= self.b
+    def matches(self, value):
+        return self.a <= value <= self.b
 
     def as_code(self):
         return 'filters.' + repr(self)
@@ -408,8 +407,8 @@ class Not(BaseFilter):
     def as_sql_expr(self, attribute, servertypes):
         return 'NOT ({0})'.format(self.filter.as_sql_expr(attribute))
 
-    def matches(self, server_obj, attr_name):
-        return not self.filter.matches(server_obj, attr_name)
+    def matches(self, value):
+        return not self.filter.matches(value)
 
     def as_code(self):
         return 'filters.Not({0})'.format(self.filter.as_code())
@@ -458,8 +457,8 @@ class Startswith(BaseFilter):
 
         return _condition_sql(attribute, template, servertypes)
 
-    def matches(self, server_obj, attr_name):
-        return unicode(server_obj[attr_name]).startswith(self.value)
+    def matches(self, value):
+        return unicode(value).startswith(self.value)
 
     def as_code(self):
         return 'filters.Startswith({0!r})'.format(self.value)
@@ -501,8 +500,8 @@ class Overlap(NetworkFilter):
             ','.join(str(n) for n in self.networks)
         ), servertypes)
 
-    def matches(self, server_obj, attr_name):
-        return any(server_obj[attr_name] in n for n in self.networks)
+    def matches(self, value):
+        return any(value in n for n in self.networks)
 
     def as_code(self):
         return 'filters.' + repr(self)
@@ -580,13 +579,10 @@ class Optional(OptionalFilter):
     def as_sql_expr(self, attribute, servertypes):
         return self.filter.as_sql_expr(attribute)
 
-    def matches(self, server_obj, attr_name):
-
-        value = server_obj.get(attr_name)
+    def matches(self, value):
         if value is None:
             return True
-
-        return self.filter.matches(server_obj, attr_name)
+        return self.filter.matches(value)
 
     def as_code(self):
         return 'filters.Optional({0})'.format(self.filter.as_code())
@@ -618,8 +614,8 @@ class Empty(OptionalFilter):
             attribute, '{0} IS NOT NULL', servertypes
         )
 
-    def matches(self, server_obj, attr_name):
-        return attr_name not in server_obj or len(server_obj[attr_name]) == 0
+    def matches(self, value):
+        return value is None
 
     def as_code(self):
         return 'filters.Empty()'

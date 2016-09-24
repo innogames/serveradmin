@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from adminapi.dataset.base import BaseQuerySet, BaseServerObject
 
 from serveradmin.serverdb.models import (
+    Project,
     Servertype,
     Attribute,
     ServertypeAttribute,
@@ -150,20 +151,47 @@ class QuerySet(BaseQuerySet):
         return self
 
     def _get_query_builder_with_filters(self):
+        project_filt = False
+        servertype_filt = False
         real_attributes = []
         builder = QueryBuilder()
+        servertypes = set(Servertype.objects.all())
         for attr, filt in self._filters.iteritems():
             attribute = self.attributes[attr]
-            if not attribute.special:
+            if attribute.pk == 'servertype':
+                servertype_filt = True
+                servertypes = set(s for s in servertypes if filt.matches(s.pk))
+            elif attribute.pk == 'project':
+                project_filt = True
+                servertype_filt = True
+                projects = Project.objects.all()
+                projects = set(
+                    p for p in Project.objects.all()
+                    if filt.matches(p.pk)
+                )
+                # Filter out servertype with inconsistent fixed_project
+                servertypes = set(
+                    s for s in servertypes
+                    if s.fixed_project is None or s.fixed_project in projects
+                )
+            elif not attribute.special:
                 real_attributes.append(attribute)
 
-        servertypes = set(Servertype.objects.all())
         if real_attributes:
+            servertype_filt = True
             attribute_servertypes = defaultdict(set)
             for sa in ServertypeAttribute.get_by_attributes(real_attributes):
                 attribute_servertypes[sa.attribute].add(sa.servertype)
             for new in attribute_servertypes.values():
                 servertypes = servertypes.intersection(new)
+
+        if project_filt:
+            builder.add_filter(
+                self.attributes['project'],
+                projects,
+                Any(*(p.pk for p in projects)),
+            )
+        if servertype_filt:
             builder.add_filter(
                 self.attributes['servertype'],
                 servertypes,
@@ -172,7 +200,8 @@ class QuerySet(BaseQuerySet):
 
         for attr, filt in self._filters.iteritems():
             attribute = self.attributes[attr]
-            builder.add_filter(attribute, servertypes, filt)
+            if attribute.pk not in ('project', 'servertype'):
+                builder.add_filter(attribute, servertypes, filt)
 
         return builder
 
