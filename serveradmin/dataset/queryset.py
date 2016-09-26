@@ -241,12 +241,23 @@ class QuerySet(BaseQuerySet):
 
         self._select_attributes(servers_by_type)
         self._add_attributes(servers_by_type)
-        self._results = {
-            k: ServerObject(v, k, self)
-            for k, v in self._server_attributes.items()
-        }
-        if self._order_by and not self._order_by.special:
-            self._sort()
+
+        if self._order_by:
+            self._results = OrderedDict(
+                (k, ServerObject(v, k, self))
+                for k, v in sorted(
+                    self._server_attributes.items(),
+                    key=lambda x: (
+                        self._order_by.pk in x[1], x[1].get(self._order_by.pk)
+                    ),
+                    reverse=(self._order_dir == 'desc'),
+                )
+            )
+        else:
+            self._results = {
+                k: ServerObject(v, k, self)
+                for k, v in self._server_attributes.items()
+            }
 
     def _select_attributes(self, servers_by_type):
         self._attributes_by_type = defaultdict(list)
@@ -382,15 +393,6 @@ class QuerySet(BaseQuerySet):
             self._server_attributes[server_id][attribute.pk].add(value)
         else:
             self._server_attributes[server_id][attribute.pk] = value
-
-    def _sort(self):
-        self._results = OrderedDict(sorted(
-            self._results.items(),
-            key=lambda x: (
-                self._order_by.pk in x[1], x[1].get(self._order_by.pk)
-            ),
-            reverse=(self._order_dir == 'desc'),
-        ))
 
 
 class ServerObject(BaseServerObject):
