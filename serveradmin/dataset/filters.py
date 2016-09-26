@@ -708,6 +708,8 @@ def value_to_sql(attribute, value):
 
 
 def _condition_sql(attribute, template, servertypes):
+    assert servertypes
+
     if attribute.special:
         field = attribute.special.field
         if field.startswith('_'):

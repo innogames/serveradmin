@@ -185,17 +185,19 @@ class QuerySet(BaseQuerySet):
             for new in attribute_servertypes.values():
                 servertypes = servertypes.intersection(new)
 
+        if servertype_filt:
+            if not servertypes:
+                return None
+            builder.add_filter(
+                self.attributes['servertype'],
+                servertypes,
+                Any(*(s.pk for s in servertypes)),
+            )
         if project_filt:
             builder.add_filter(
                 self.attributes['project'],
                 projects,
                 Any(*(p.pk for p in projects)),
-            )
-        if servertype_filt:
-            builder.add_filter(
-                self.attributes['servertype'],
-                servertypes,
-                Any(*(s.pk for s in servertypes)),
             )
 
         for attr, filt in self._filters.iteritems():
@@ -207,11 +209,14 @@ class QuerySet(BaseQuerySet):
 
     def _fetch_results(self):
         builder = self._get_query_builder_with_filters()
+        if builder is None:
+            self._results = {}
+            return
+
         self._server_attributes = dict()
         restrict = self._restrict
         servers_by_type = defaultdict(list)
         servers = tuple(Server.objects.raw(builder.build_sql()))
-
         for server in servers:
             servertype = server.servertype
             attributes = dict()
