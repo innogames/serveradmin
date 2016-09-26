@@ -340,27 +340,32 @@ class QuerySet(BaseQuerySet):
             self._add_related_attribute(servertype_attribute, servers_by_type)
 
     def _add_supernet_attribute(self, attribute, servers):
+        """Merge-join networks to the servers
+
+        This function takes advantage of networks in the same servertype not
+        overlapping with each other.
+        """
+        query = Server.objects.values_list('intern_ip', 'hostname').filter(
+            _servertype=attribute.target_servertype
+        )
         target = None
         for source in sorted(servers, key=lambda s: s.intern_ip):
             # Check the previous target
             if target is not None:
-                network = target.intern_ip.network
-                if source.intern_ip in network:
-                    self._server_attributes[source.pk][attribute.pk] = (
-                        target.hostname
-                    )
-                elif network.broadcast_address < source.intern_ip.ip:
+                network = target[0].network
+                if network.broadcast_address < source.intern_ip.ip:
                     target = None
+                elif source.intern_ip not in network:
+                    continue
             # Check for a new target
             if target is None:
-                for server in Server.objects.filter(
-                    _servertype=attribute.target_servertype,
-                    intern_ip__net_contains_or_equals=source.intern_ip,
-                ):
-                    target = server
-                    self._server_attributes[source.pk][attribute.pk] = (
-                        target.hostname
+                try:
+                    target = query.get(
+                        intern_ip__net_contains_or_equals=source.intern_ip
                     )
+                except Server.DoesNotExist:
+                    continue
+            self._server_attributes[source.pk][attribute.pk] = target[1]
 
     def _add_related_attribute(self, servertype_attribute, servers_by_type):
         attribute = servertype_attribute.attribute
