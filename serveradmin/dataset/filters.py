@@ -307,7 +307,7 @@ class _AndOr(BaseFilter):
         joiner = ' {0} '.format(type(self).__name__.upper())
 
         return '({0})'.format(joiner.join(
-            v.as_sql_expr(attribute) for v in self.filters
+            v.as_sql_expr(attribute, servertypes) for v in self.filters
         ))
 
     def as_code(self):
@@ -405,7 +405,9 @@ class Not(BaseFilter):
         self.filter.typecast(attribute)
 
     def as_sql_expr(self, attribute, servertypes):
-        return 'NOT ({0})'.format(self.filter.as_sql_expr(attribute))
+        return 'NOT ({0})'.format(self.filter.as_sql_expr(
+            attribute, servertypes
+        ))
 
     def matches(self, value):
         return not self.filter.matches(value)
@@ -547,7 +549,7 @@ class PrivateIP(NetworkFilter, NoArgFilter):
         self.filt = InsideNetwork(*PrivateIP.blocks)
 
     def as_sql_expr(self, attribute, servertypes):
-        return self.filt.as_sql_expr(attribute)
+        return self.filt.as_sql_expr(attribute, servertypes)
 
 
 class PublicIP(NetworkFilter, NoArgFilter):
@@ -555,7 +557,7 @@ class PublicIP(NetworkFilter, NoArgFilter):
         self.filt = Not(InsideNetwork(*PrivateIP.blocks))
 
     def as_sql_expr(self, attribute, servertypes):
-        return self.filt.as_sql_expr(attribute)
+        return self.filt.as_sql_expr(attribute, servertypes)
 
 
 class Optional(OptionalFilter):
@@ -577,7 +579,7 @@ class Optional(OptionalFilter):
         self.filter.typecast(attribute)
 
     def as_sql_expr(self, attribute, servertypes):
-        return self.filter.as_sql_expr(attribute)
+        return self.filter.as_sql_expr(attribute, servertypes)
 
     def matches(self, value):
         if value is None:
