@@ -796,7 +796,7 @@ def _condition_sql(attribute, template, servertypes):
         mixed_relation_condition = '({0})'.format(' OR '.join(
             '({0} AND server.servertype_id IN ({1}))'
             .format(relation_condition, ', '.join(
-                "'{0}'".format(s.pk) for s in other_servertypes)
+                "'{0}'".format(s.pk) for s in servertypes)
             )
             for relation_condition, servertypes in relation_conditions
         ))
