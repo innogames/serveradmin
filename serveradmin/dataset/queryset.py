@@ -214,50 +214,36 @@ class QuerySet(BaseQuerySet):
             return
 
         self._server_attributes = dict()
-        restrict = self._restrict
         servers_by_type = defaultdict(list)
         servers = tuple(Server.objects.raw(builder.build_sql()))
         for server in servers:
-            servertype = server.servertype
-            attributes = dict()
-            if not restrict or 'hostname' in restrict:
-                attributes['hostname'] = server.hostname
-            if not restrict or 'intern_ip' in restrict:
-                if servertype.ip_addr_type == 'null':
-                    attributes['intern_ip'] = None
-                elif servertype.ip_addr_type in ('host', 'loadbalancer'):
-                    attributes['intern_ip'] = server.intern_ip.ip
-                else:
-                    assert servertype.ip_addr_type == 'network'
-                    attributes['intern_ip'] = server.intern_ip.network
-            if not restrict or 'segment' in restrict:
-                attributes['segment'] = server.segment.pk
-            if not restrict or 'servertype' in restrict:
-                attributes['servertype'] = servertype.pk
-            if not restrict or 'project' in restrict:
-                attributes['project'] = server.project.pk
-            self._server_attributes[server.pk] = attributes
+            self._server_attributes[server.pk] = {
+                'hostname': server.hostname,
+                'intern_ip': server.intern_ip,
+                'segment': server.segment,
+                'servertype': server.servertype,
+                'project': server.project,
+            }
             servers_by_type[server.servertype].append(server)
 
         self._select_attributes(servers_by_type)
         self._add_attributes(servers_by_type)
 
+        result_class = dict
+        server_ids = self._server_attributes.keys()
         if self._order_by:
-            self._results = OrderedDict(
-                (k, ServerObject(v, k, self))
-                for k, v in sorted(
-                    self._server_attributes.items(),
-                    key=lambda x: (
-                        self._order_by.pk in x[1], x[1].get(self._order_by.pk)
-                    ),
-                    reverse=(self._order_dir == 'desc'),
-                )
-            )
-        else:
-            self._results = {
-                k: ServerObject(v, k, self)
-                for k, v in self._server_attributes.items()
-            }
+            result_class = OrderedDict
+            # We need to sort by attribute being there first, because some
+            # datatypes are not sortable with None.
+            server_ids = sorted(server_ids, key=lambda i: (
+                self._order_by.pk in self._server_attributes[i],
+                self._server_attributes[i].get(self._order_by.pk),
+            ))
+
+        self._results = result_class(
+            (i, ServerObject(self._get_attributes(i), i, self))
+            for i in server_ids
+        )
 
     def _select_attributes(self, servers_by_type):
         self._attributes_by_type = defaultdict(list)
@@ -398,6 +384,24 @@ class QuerySet(BaseQuerySet):
             self._server_attributes[server_id][attribute.pk].add(value)
         else:
             self._server_attributes[server_id][attribute.pk] = value
+
+    def _get_attributes(self, server_id):
+        server_attributes = self._server_attributes[server_id]
+        for attribute_id, value in server_attributes.items():
+            if not self._restrict or attribute_id in self._restrict:
+                if attribute_id in ('project', 'servertype', 'segment'):
+                    yield attribute_id, value.pk
+                elif attribute_id == 'intern_ip':
+                    servertype = server_attributes['servertype']
+                    if servertype.ip_addr_type == 'null':
+                        yield attribute_id, None
+                    elif servertype.ip_addr_type in ('host', 'loadbalancer'):
+                        yield attribute_id, value.ip
+                    else:
+                        assert servertype.ip_addr_type == 'network'
+                        yield attribute_id, value.network
+                else:
+                    yield attribute_id, value
 
 
 class ServerObject(BaseServerObject):
