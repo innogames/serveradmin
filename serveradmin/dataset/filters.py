@@ -1,7 +1,6 @@
 import re
 import operator
 import time
-import dateutil.parser
 from decimal import Decimal
 from ipaddress import ip_interface, ip_network
 
@@ -699,10 +698,6 @@ def value_to_sql(attribute, value):
     if attribute.type == 'ipv6':
         return raw_sql_escape(
             ''.join('{:02x}'.format(x) for x in ip_interface(value).packed)
-        )
-    if attribute.type == 'datetime':
-        return raw_sql_escape(
-            int(time.mktime(dateutil.parser.parse(str(value)).timetuple()))
         )
     return raw_sql_escape(value)
 
