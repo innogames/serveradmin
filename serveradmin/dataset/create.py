@@ -272,7 +272,7 @@ def _validate_real_attributes(
         if attribute.multi:
             if sa.regexp:
                 for val in value:
-                    if not sa.regexp_match(unicode(val)):
+                    if not sa.regexp_match(str(val)):
                         violations_regexp.append(attribute.pk)
         elif sa.regexp:
             if not sa.regexp_match(value):

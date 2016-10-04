@@ -136,7 +136,7 @@ class LookupModel(models.Model):
     class Meta:
         abstract = True
 
-    def __unicode__(self):
+    def __str__(self):
         return self.pk
 
     def save(self, *args, **kwargs):
@@ -380,7 +380,7 @@ class ServertypeAttribute(models.Model):
         db_table = 'servertype_attribute'
         unique_together = (('_servertype', '_attribute'), )
 
-    def __unicode__(self):
+    def __str__(self):
         return '{0} - {1}'.format(self.servertype, self.attribute)
 
     def get_compiled_regexp(self):
@@ -549,7 +549,7 @@ class ServerAttribute(models.Model):
     class Meta:
         abstract = True
 
-    def __unicode__(self):
+    def __str__(self):
         return '{0}->{1}={2}'.format(self.server, self.attribute, self.value)
 
     def get_value(self):
@@ -801,8 +801,8 @@ class Change(models.Model):
     def changes(self):
         return json.loads(self.changes_json)
 
-    def __unicode__(self):
-        return unicode(self.change_on)
+    def __str__(self):
+        return str(self.change_on)
 
 
 class ChangeCommit(models.Model):
@@ -821,8 +821,8 @@ class ChangeCommit(models.Model):
     class Meta:
         app_label = 'serverdb'
 
-    def __unicode__(self):
-        return unicode(self.change_on)
+    def __str__(self):
+        return str(self.change_on)
 
 
 class ChangeDelete(models.Model):
@@ -840,8 +840,8 @@ class ChangeDelete(models.Model):
     def attributes(self):
         return json.loads(self.attributes_json)
 
-    def __unicode__(self):
-        return '{0}: {1}'.format(unicode(self.commit), self.hostname)
+    def __str__(self):
+        return '{0}: {1}'.format(str(self.commit), self.hostname)
 
 
 class ChangeUpdate(models.Model):
@@ -859,8 +859,8 @@ class ChangeUpdate(models.Model):
     def updates(self):
         return json.loads(self.updates_json)
 
-    def __unicode__(self):
-        return '{0}: {1}'.format(unicode(self.commit), self.hostname)
+    def __str__(self):
+        return '{0}: {1}'.format(str(self.commit), self.hostname)
 
 
 class ChangeAdd(models.Model):
@@ -878,8 +878,8 @@ class ChangeAdd(models.Model):
     def attributes(self):
         return json.loads(self.attributes_json)
 
-    def __unicode__(self):
-        return '{0}: {1}'.format(unicode(self.commit), self.hostname)
+    def __str__(self):
+        return '{0}: {1}'.format(str(self.commit), self.hostname)
 
 
 #

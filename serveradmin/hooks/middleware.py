@@ -9,7 +9,5 @@ class HooksMiddleware(object):
         for app in settings.INSTALLED_APPS:
             try:
                 import_module(app + '.hooks')
-            except ImportError as error:
-                if 'No module named' not in error.message:
-                    raise
+            except ImportError:
                 pass

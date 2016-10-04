@@ -1,49 +1,58 @@
-import urllib2
 import hashlib
 import hmac
 import time
+
+from adminapi.cmdline.utils import get_auth_token
+from adminapi.utils.json import json_encode_extra
+
+try:
+    from urllib.request import urlopen, Request
+    from urllib.error import HTTPError, URLError
+except ImportError:
+    from urllib2 import urlopen, Request, HTTPError, URLError
+
 try:
     import simplejson as json
 except ImportError:
     import json
 
-from adminapi.cmdline.utils import get_auth_token
-from adminapi.utils.json import json_encode_extra
-
 BASE_URL = 'https://serveradmin.innogames.de/api'
 
 
 def _calc_security_token(auth_token, timestamp, content):
-    message = ':'.join((str(timestamp), content))
-    return hmac.new(auth_token, message, hashlib.sha1).hexdigest()
+    message = str(timestamp) + ':' + str(content)
+    return hmac.new(
+        auth_token.encode('utf8'), message.encode('utf8'), hashlib.sha1
+    ).hexdigest()
 
 
 def send_request(endpoint, data, auth_token, timeout=None):
     if not auth_token:
         auth_token = get_auth_token()
 
-    data_json = json.dumps(data, default=json_encode_extra)
+    data_json = json.dumps(data, default=json_encode_extra).encode('utf8')
     try_backup = False
 
     try:
         req = _build_request(endpoint, auth_token, data_json, try_backup)
-        return json.loads(urllib2.urlopen(req, timeout=timeout).read())
-    except urllib2.HTTPError as error:
+        print('\n'.join('{}: {}'.format(k, v) for k, v in req.headers.items()))
+        return json.loads(urlopen(req, timeout=timeout).read())
+    except HTTPError as error:
         if error.code in (500, 502):
             try_backup = True
         else:
             raise
-    except urllib2.URLError:
+    except URLError:
         try_backup = True
 
     if try_backup:
         req = _build_request(endpoint, auth_token, data_json, try_backup)
-        return json.loads(urllib2.urlopen(req, timeout=timeout).read())
+        return json.loads(urlopen(req, timeout=timeout).read())
 
 
 def _build_request(endpoint, auth_token, data_json, backup=False):
     timestamp = int(time.time())
-    application_id = hashlib.sha1(auth_token).hexdigest()
+    application_id = hashlib.sha1(auth_token.encode('utf8')).hexdigest()
     security_token = _calc_security_token(auth_token, timestamp, data_json)
     headers = {
             'Content-Encoding': 'application/x-json',
@@ -53,4 +62,4 @@ def _build_request(endpoint, auth_token, data_json, backup=False):
         }
     url = BASE_URL + endpoint
 
-    return urllib2.Request(url, data_json, headers)
+    return Request(url, data_json, headers)

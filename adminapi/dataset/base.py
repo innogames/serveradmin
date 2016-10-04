@@ -26,9 +26,9 @@ class BaseQuerySet(object):
             order_keys = self._order
             def key_fn(server):
                 return tuple(server.get(key) for key in order_keys)
-            return iter(sorted(self._results.itervalues(), key=key_fn))
+            return iter(sorted(self._results.values(), key=key_fn))
 
-        return self._results.itervalues()
+        return iter(self._results.values())
 
     def __len__(self):
         self.get_results()
@@ -41,7 +41,7 @@ class BaseQuerySet(object):
     def __repr__(self):
         # QuerySet is not used directly but through query function
         kwargs = ', '.join('{0}={1!r}'.format(k, v) for k, v in
-                self._filters.iteritems())
+                self._filters.items())
         query_repr = 'query({0})'.format(kwargs)
 
         if self._restrict:
@@ -71,11 +71,7 @@ class BaseQuerySet(object):
         if isinstance(attrs[0], (list, set, tuple)):
             attrs = attrs[0]
 
-        for attr in attrs:
-            if not isinstance(attr, basestring):
-                raise ValueError('Invalid restriction')
-
-        self._restrict = set(attrs)
+        self._restrict = {str(a) for a in attrs}
 
         return self
 
@@ -86,8 +82,8 @@ class BaseQuerySet(object):
         self.get_results()
         if len(self._results) != 1:
             raise DatasetError('get() requires exactly 1 matched object')
-
-        return self._results.itervalues().next()
+        for value in self._results.values():
+            return value
 
     def is_dirty(self):
         return bool(self._num_dirty)
@@ -209,7 +205,7 @@ class BaseServerObject(dict):
         if self._queryset and self.is_dirty():
             self._queryset._num_dirty -= 1
         self._deleted = False
-        for attr, old_value in self.old_values.iteritems():
+        for attr, old_value in self.old_values.items():
             dict.__setitem__(self, attr, old_value)
         self.old_values.clear()
 
@@ -223,7 +219,7 @@ class BaseServerObject(dict):
         table = [['Attribute', 'Value']]
 
         if not attrs:
-            for attr, value in self.iteritems():
+            for attr, value in self.items():
                 table.append((attr, value))
         else:
             for attr in attrs:
@@ -244,7 +240,7 @@ class BaseServerObject(dict):
             return
 
         table = [('Attribute', 'Old value', 'New value')]
-        for attr, old_value in self.old_values.iteritems():
+        for attr, old_value in self.old_values.items():
             old_value_fmt = _format_value(old_value)
             table.append((attr, old_value_fmt, self[attr]))
 
@@ -252,7 +248,7 @@ class BaseServerObject(dict):
 
     def _serialize_changes(self):
         changes = {}
-        for key, old_value in self.old_values.iteritems():
+        for key, old_value in self.old_values.items():
             new_value = self.get(key, NonExistingAttribute)
             if new_value == NonExistingAttribute:
                 action = 'delete'
@@ -424,10 +420,10 @@ class MultiAttr(object):
     def __repr__(self):
         return 'MultiAttr({0!r})'.format(self._proxied_set)
 
-    def __unicode__(self):
-        return u' '.join(unicode(x) for x in self._proxied_set)
-
     def __str__(self):
+        return ' '.join(str(x) for x in self._proxied_set)
+
+    def __unicode__(self):
         return unicode(self).encode('utf-8')
 
     def __iter__(self):

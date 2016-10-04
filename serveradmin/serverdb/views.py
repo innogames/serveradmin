@@ -84,8 +84,8 @@ def restore_deleted(request, change_commit):
     try:
         create_server(server_obj, skip_validation=True, fill_defaults=False,
                       fill_defaults_all=False)
-    except CommitError as e:
-        messages.error(request, unicode(e))
+    except CommitError as error:
+        messages.error(request, str(error))
     else:
         messages.success(request, 'Server restored.')
     return redirect(

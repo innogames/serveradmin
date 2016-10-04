@@ -1,4 +1,3 @@
-import urllib2
 import json
 from string import Formatter
 
@@ -9,6 +8,11 @@ import django_urlauth.utils
 
 from adminapi.dataset.base import MultiAttr
 from serveradmin.serverdb.models import Attribute
+
+try:
+    from urllib.request import build_opener
+except ImportError:
+    from urllib2 import build_opener
 
 
 class Collection(models.Model):
@@ -61,8 +65,8 @@ class Collection(models.Model):
         self._templates = None     # To cache graph templates
         self._variations = None    # To cache graph variations
 
-    def __unicode__(self):
-        name = unicode(self.attribute) + ': ' + self.attribute_value
+    def __str__(self):
+        name = str(self.attribute) + ': ' + self.attribute_value
 
         if self.overview:
             name += ' (overview)'
@@ -193,7 +197,7 @@ class Template(models.Model):
         ordering = ('sort_order', )
         unique_together = (('collection', 'name'), )
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     def foreach(self, server):
@@ -212,7 +216,7 @@ class Template(models.Model):
             )
             url = (settings.GRAPHITE_URL + '/metrics/find?' +
                    '__auth_token=' + token + '&' + params)
-            opener = urllib2.build_opener()
+            opener = build_opener()
             response = opener.open(url).read()
 
             if response:
@@ -249,7 +253,7 @@ class Variation(models.Model):
         ordering = ('sort_order', )
         unique_together = (('collection', 'name'), )
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 

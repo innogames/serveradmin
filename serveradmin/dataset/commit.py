@@ -169,13 +169,11 @@ class Commit(object):
                 changes=self.changed_servers,
             )
         except CommitIncomplete as error:
-            self.warnings.append('Commit hook failed: {}'.format(
-                unicode(error)
-            ))
+            self.warnings.append('Commit hook failed: {}'.format(str(error)))
 
     def _remove_attributes(self):
-        for server_id, changes in self.changed_servers.iteritems():
-            for key, change in changes.iteritems():
+        for server_id, changes in self.changed_servers.items():
+            for key, change in changes.items():
                 server = change['server']
                 attribute = change['attribute']
                 action = change['action']
@@ -211,9 +209,9 @@ class Commit(object):
                 del self.changed_servers[server_id]
 
     def _set_attributes(self):
-        for server_id, changes in self.changed_servers.iteritems():
+        for server_id, changes in self.changed_servers.items():
             special_attribute_changed = False
-            for key, change in changes.iteritems():
+            for key, change in changes.items():
                 server = change['server']
                 attribute = change['attribute']
                 action = change['action']
@@ -423,8 +421,8 @@ def _fetch_servers(changed_servers):
     from serveradmin.dataset.queryset import QuerySet
     from serveradmin.dataset.filters import Any
     # Only load attributes that will be changed (for performance reasons)
-    changed_attrs = set(['servertype', 'hostname', 'intern_ip'])
-    for changes in changed_servers.itervalues():
+    changed_attrs = {'servertype', 'hostname', 'intern_ip'}
+    for changes in changed_servers.values():
         for attr in changes:
             changed_attrs.add(attr)
 
@@ -448,11 +446,11 @@ def _validate_attributes(changed_servers, servers, servertype_attributes):
     special_attribute_ids = [a.pk for a in Attribute.specials]
 
     violations = []
-    for server_id, changes in changed_servers.iteritems():
+    for server_id, changes in changed_servers.items():
         server = servers[server_id]
         attributes = servertype_attributes[server['servertype']]
 
-        for attribute_id, change in changes.iteritems():
+        for attribute_id, change in changes.items():
             # If servertype is attempted to be changed, we immediately
             # error out.
             if attribute_id == 'servertype':
@@ -476,9 +474,9 @@ def _validate_attributes(changed_servers, servers, servertype_attributes):
 
 def _validate_readonly(changed_servers, servers):
     violations = []
-    for server_id, changes in changed_servers.iteritems():
+    for server_id, changes in changed_servers.items():
         server = servers[server_id]
-        for attr, change in changes.iteritems():
+        for attr, change in changes.items():
             if Attribute.objects.get(pk=attr).readonly:
                 if attr in server and server[attr] != '':
                     violations.append((server_id, attr))
@@ -487,9 +485,9 @@ def _validate_readonly(changed_servers, servers):
 
 def _validate_regexp(changed_servers, servers, servertype_attributes):
     violations = []
-    for server_id, changes in changed_servers.iteritems():
+    for server_id, changes in changed_servers.items():
         server = servers[server_id]
-        for attr, change in changes.iteritems():
+        for attr, change in changes.items():
             try:
                 sa = servertype_attributes[server['servertype']][attr]
             except KeyError:
@@ -513,9 +511,9 @@ def _validate_regexp(changed_servers, servers, servertype_attributes):
 
 def _validate_required(changed_servers, servers, servertype_attributes):
     violations = []
-    for server_id, changes in changed_servers.iteritems():
+    for server_id, changes in changed_servers.items():
         server = servers[server_id]
-        for attr, change in changes.iteritems():
+        for attr, change in changes.items():
             try:
                 sa = servertype_attributes[server['servertype']][attr]
             except KeyError:
@@ -528,9 +526,9 @@ def _validate_required(changed_servers, servers, servertype_attributes):
 
 def _validate_commit(changed_servers, servers):
     newer = []
-    for server_id, changes in changed_servers.iteritems():
+    for server_id, changes in changed_servers.items():
         server = servers[server_id]
-        for attr, change in changes.iteritems():
+        for attr, change in changes.items():
             action = change['action']
             if action == 'new':
                 if attr in server:
@@ -564,7 +562,7 @@ def _build_error_message(violations_attribs, violations_readonly,
                 seen[vattr] = 1
 
         if seen:
-            for vattr, num_affected in seen.iteritems():
+            for vattr, num_affected in seen.items():
                 message.append('{0}: {1} (#affected: {2})'.format(
                         message_type, vattr, num_affected
                     ))

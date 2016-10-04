@@ -100,13 +100,13 @@ def index(request):
     for template in templates:
         if template.numeric_value:
             columns.append({
-                'name': unicode(template),
+                'name': str(template),
                 'numeric_value': True,
             })
         else:
             for variation in variations:
                 columns.append({
-                    'name': unicode(template) + ' ' + unicode(variation),
+                    'name': str(template) + ' ' + str(variation),
                     'numeric_value': False,
                     'graph_index': graph_index,
                     'sprite_offset': graph_index * offset,
@@ -151,7 +151,7 @@ def index(request):
     # Add cached numerical values to the table cells.
     for numericCache in NumericCache.objects.filter(hostname__in=hosts.keys()):
         index = [c['name'] for c in columns].index(
-            unicode(numericCache.template)
+            str(numericCache.template)
         )
         column = dict(columns[index])
         column['value'] = '{:.2f}'.format(numericCache.value)
@@ -196,9 +196,9 @@ def graph_popup(request):
 
     return HttpResponseBadRequest("The graph couldn't be found.")
 
+
 @login_required
 def segments(request):
-
     counters = {}
     for server in query().restrict(
         'segment',
@@ -249,9 +249,9 @@ def segments(request):
         }
 
         if segment.segment_id in counters:
-            item['servertypes'] = counters[segment.segment_id][0].items()
+            item['servertypes'] = list(counters[segment.segment_id][0].items())
             item['servertypes'].sort()
-            item['projects'] = counters[segment.segment_id][1].items()
+            item['projects'] = list(counters[segment.segment_id][1].items())
             item['projects'].sort()
             item['disk_size_gib'] = counters[segment.segment_id][2]
             item['memory'] = counters[segment.segment_id][3]
@@ -307,9 +307,9 @@ def projects(request):
         }
 
         if project.project_id in counters:
-            item['servertypes'] = counters[project.project_id][0].items()
+            item['servertypes'] = list(counters[project.project_id][0].items())
             item['servertypes'].sort()
-            item['segments'] = counters[project.project_id][1].items()
+            item['segments'] = list(counters[project.project_id][1].items())
             item['segments'].sort()
             item['disk_size_gib'] = counters[project.project_id][2]
             item['memory'] = counters[project.project_id][3]

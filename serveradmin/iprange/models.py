@@ -90,7 +90,7 @@ class IPRange(models.Model):
     class Meta:
         db_table = 'ip_range'
 
-    def __unicode__(self):
+    def __str__(self):
         return self.range_id
 
 def get_gateways(ip):

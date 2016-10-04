@@ -20,7 +20,7 @@ def serversearch_js(search_id):
     }
 
     filter_dict = {}
-    for filt in filters.filter_classes.iterkeys():
+    for filt in filters.filter_classes.keys():
         if filt == 'exactmatch':
             continue
         # TODO: Fill with real description

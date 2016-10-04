@@ -146,7 +146,7 @@ def index(request):
     # Do not work on configuration.
     dcs = deepcopy(datacenters)
 
-    for dc_k, dc_v in dcs.iteritems():
+    for dc_k, dc_v in dcs.items():
         for rgroup in dc_v['rowgroups']:
             for row in rgroup:
                 row['igcolumns'] = []

@@ -3,7 +3,7 @@ from serveradmin.dataset.filters import _prepare_filter
 from serveradmin.dataset.create import create_server
 
 def query(**kwargs):
-    filters = dict((k, _prepare_filter(v)) for k, v in kwargs.iteritems())
+    filters = dict((k, _prepare_filter(v)) for k, v in kwargs.items())
     return QuerySet(filters)
 
 def create(

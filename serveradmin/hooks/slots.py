@@ -4,7 +4,7 @@ class HookError(Exception):
 
 class HookSlot(object):
     def __init__(self, name, **params):
-        for param, param_type in params.iteritems():
+        for param, param_type in params.items():
             if not isinstance(param_type, type):
                 raise ValueError(
                     'Parameter {} of hook {} is not a valid type: {}'
@@ -16,7 +16,7 @@ class HookSlot(object):
         self._hooks = []
 
     def validate(self, **kwargs):
-        for param, param_type in self._params.iteritems():
+        for param, param_type in self._params.items():
             if param not in kwargs:
                 raise ValueError(
                     '{} hook: parameter {} is missing.'

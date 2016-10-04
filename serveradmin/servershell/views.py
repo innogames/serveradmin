@@ -46,9 +46,9 @@ def index(request):
     attribute_groups = {}
     for attribute in attributes:
         attribute_groups.setdefault(attribute.group, []).append(attribute)
-    for attributes in attribute_groups.itervalues():
+    for attributes in attribute_groups.values():
         attributes.sort(key=attrgetter('pk'))
-    attribute_groups = sorted(attribute_groups.iteritems(), key=lambda x: x[0])
+    attribute_groups = sorted(attribute_groups.items(), key=lambda x: x[0])
 
     return TemplateResponse(request, 'servershell/index.html', {
         'checked_attributes': set(request.GET.get('attrs', '').split(',')),
@@ -107,7 +107,7 @@ def get_results(request):
         queryset.order_by(order_by, order_dir)
         results = queryset.get_results()
         num_servers = len(results)
-        servers = OrderedDict(results.items()[offset:(offset + limit)])
+        servers = OrderedDict(tuple(results.items())[offset:(offset + limit)])
     except (ParseQueryError, ValidationError) as error:
         return HttpResponse(json.dumps({
             'status': 'error',
@@ -140,7 +140,7 @@ def get_results(request):
         'status': 'success',
         'understood': queryset.get_representation().as_code(),
         'servers': [
-            dict(s.items() + [('object_id', s.object_id)])
+            dict(tuple(s.items()) + (('object_id', s.object_id), ))
             for s in servers.values()
         ],
         'num_servers': num_servers,
@@ -218,7 +218,7 @@ def list_and_edit(request, mode='list'):
 
     fields = []
     fields_set = set()
-    for key, value in server.iteritems():
+    for key, value in server.items():
         if key not in servertype_attributes:
             continue
         servertype_attribute = servertype_attributes[key]
@@ -275,12 +275,12 @@ def commit(request):
     except (KeyError, ValueError) as error:
         result = {
             'status': 'error',
-            'message': unicode(error),
+            'message': str(error),
         }
     else:
         if 'changes' in commit:
             changes = {}
-            for key, value in commit['changes'].iteritems():
+            for key, value in commit['changes'].items():
                 if not key.isdigit():
                     continue
                 changes[int(key)] = value
@@ -295,12 +295,12 @@ def commit(request):
         ) as error:
             result = {
                 'status': 'error',
-                'message': unicode(error),
+                'message': str(error),
             }
         except CommitIncomplete as error:
             result = {
                 'status': 'success',
-                'message': unicode(error)
+                'message': str(error)
             }
         else:
             result = {'status': 'success'}

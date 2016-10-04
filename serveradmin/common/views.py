@@ -1,4 +1,3 @@
-import urllib2
 import socket
 
 from django.template.response import TemplateResponse
@@ -14,14 +13,20 @@ from django.contrib.auth.forms import AuthenticationForm
 
 from serveradmin.serverdb.models import Attribute
 
+try:
+    from urllib.request import urlopen
+    from urllib.error import URLError
+except ImportError:
+    from urllib2 import urlopen, URLError
+
 
 def failoverlogin(request):
     if not getattr(settings, 'IS_SECONDARY', False):
         return HttpResponseForbidden()
 
     try:
-        urllib2.urlopen(settings.PRIMARY_CHECK_URL, timeout=1)
-    except (socket.timeout, socket.error, urllib2.URLError):
+        urlopen(settings.PRIMARY_CHECK_URL, timeout=1)
+    except (socket.timeout, socket.error, URLError):
         pass
     else:
         error_msg = "Primary server is up, therefore login isn't allowed here."

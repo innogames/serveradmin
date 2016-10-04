@@ -1,7 +1,6 @@
 django==1.8
 psycopg2
 django-extensions
-py2-ipaddress
 docutils
 Sphinx
 django-netfields>=0.7   # Extension to use network address fields on PostgreSQL

@@ -1,6 +1,5 @@
 from __future__ import print_function
 import sys
-from itertools import izip
 
 def log2(x):
     i = -1
@@ -37,17 +36,16 @@ def print_table(input_table_rows, max_col_len=40, file=sys.stdout):
         if row_no == 1:
             print(sep, file=file)
         table_line = '| {0} |'.format(' | '.join(col.ljust(col_len)
-            for col, col_len in izip(row, column_lens)))
+            for col, col_len in zip(row, column_lens)))
         print(table_line, file=file)
     print(sep, file=file)
 
 def format_obj(obj):
     if isinstance(obj, basestring):
         return obj
-    elif hasattr(obj, '__iter__'):
-        return ', '.join(sorted(unicode(x) for x in obj))
-    else:
-        return unicode(obj)
+    if hasattr(obj, '__iter__'):
+        return ', '.join(sorted(str(x) for x in obj))
+    return str(obj)
 
 def print_heading(heading, char='-', file=sys.stdout):
     print('{0}\n{1}\n'.format(heading, char * len(heading)), file=file)

@@ -24,9 +24,9 @@ from serveradmin.serverdb.models import Attribute
 @login_required
 def doc_functions(request):
     group_list = []
-    for group_name, functions in AVAILABLE_API_FUNCTIONS.iteritems():
+    for group_name, functions in AVAILABLE_API_FUNCTIONS.items():
         function_list = []
-        for name, function in functions.iteritems():
+        for name, function in functions.items():
             heading, body, metadata = parse_docstring(function.__doc__)
             body = trim_docstring(body)
             function_list.append({
@@ -81,7 +81,7 @@ def dataset_query(request, app, data):
         if not isinstance(data['filters'], dict):
             raise ValueError('Filters must be a dictionary')
         filters = {}
-        for attr, filter_obj in data['filters'].iteritems():
+        for attr, filter_obj in data['filters'].items():
             filters[attr] = filter_from_obj(filter_obj)
 
         queryset = QuerySet(filters=filters)
@@ -117,7 +117,7 @@ def dataset_commit(request, app, data):
 
         # Convert keys back to integers (json doesn't handle integer keys)
         changes = {}
-        for server_id, change in data['changes'].iteritems():
+        for server_id, change in data['changes'].items():
             changes[int(server_id)] = change
 
         commit = {'deleted': data['deleted'], 'changes': changes}

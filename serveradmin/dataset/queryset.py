@@ -47,7 +47,7 @@ class QuerySetRepresentation(object):
         if self.augmentations:
             for val in self.augmentations:
                 h ^= hash(val)
-        for attr_name, attr_filter in self.filters.iteritems():
+        for attr_name, attr_filter in self.filters.items():
             h ^= hash(attr_name)
             h ^= hash(attr_filter)
 
@@ -92,7 +92,7 @@ class QuerySetRepresentation(object):
 
     def as_code(self):
         args = []
-        for attr_name, value in self.filters.iteritems():
+        for attr_name, value in self.filters.items():
             args.append('{0}={1}'.format(attr_name, value.as_code()))
         return 'query({0})'.format(', '.join(args))
 
@@ -156,7 +156,7 @@ class QuerySet(BaseQuerySet):
         real_attributes = []
         builder = QueryBuilder()
         servertypes = set(Servertype.objects.all())
-        for attr, filt in self._filters.iteritems():
+        for attr, filt in self._filters.items():
             attribute = self.attributes[attr]
             if attribute.pk == 'servertype':
                 servertype_filt = True
@@ -200,7 +200,7 @@ class QuerySet(BaseQuerySet):
                 Any(*(p.pk for p in projects)),
             )
 
-        for attr, filt in self._filters.iteritems():
+        for attr, filt in self._filters.items():
             attribute = self.attributes[attr]
             if attribute.pk not in ('project', 'servertype'):
                 builder.add_filter(attribute, servertypes, filt)

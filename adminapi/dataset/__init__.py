@@ -45,7 +45,7 @@ class QuerySet(BaseQuerySet):
 
     def _fetch_results(self):
         serialized_filters = dict(
-                (k, v._serialize()) for k, v in self._filters.iteritems()
+                (k, v._serialize()) for k, v in self._filters.items()
             )
         request_data = {
                 'filters': serialized_filters,
@@ -59,22 +59,22 @@ class QuerySet(BaseQuerySet):
     def _handle_result(self, result):
         if result['status'] == 'success':
             attributes = {}
-            for attr_name, attr in result['attributes'].iteritems():
+            for attr_name, attr in result['attributes'].items():
                 attributes[attr_name] = Attribute(attr_name, attr['type'],
                         attr['multi'])
             self.attributes = attributes
             # The attributes in convert_set must be converted to sets
             # and attributes in convert_ip must be converted to ips
             convert_set = frozenset(
-                    attr_name for attr_name, attr in self.attributes.iteritems()
+                    attr_name for attr_name, attr in self.attributes.items()
                     if attr.multi
                 )
             convert_ip = frozenset(
-                attr_name for attr_name, attr in self.attributes.iteritems()
+                attr_name for attr_name, attr in self.attributes.items()
                 if attr.type == 'ip'
             )
             self._results = {}
-            for object_id, server in result['servers'].iteritems():
+            for object_id, server in result['servers'].items():
                 object_id = int(object_id)
                 server_obj = ServerObject(object_id, self, self.auth_token,
                                           self.timeout)
@@ -138,7 +138,7 @@ def _handle_exception(result):
     raise exception_class(result['message'])
 
 def query(**kwargs):
-    filters = dict((k, _prepare_filter(v)) for k, v in kwargs.iteritems())
+    filters = dict((k, _prepare_filter(v)) for k, v in kwargs.items())
     return QuerySet(filters=filters, auth_token=_api_settings['auth_token'],
                     timeout=_api_settings['timeout_dataset'])
 

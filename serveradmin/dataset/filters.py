@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 import re
 import operator
-import time
 from decimal import Decimal
 from ipaddress import ip_interface, ip_network
 
@@ -128,7 +127,7 @@ class Regexp(BaseFilter):
         try:
             self._regexp_obj = re.compile(regexp)
         except re.error as e:
-            raise FilterValueError('Invalid regexp: ' + unicode(e))
+            raise FilterValueError('Invalid regexp: ' + str(e))
 
         self.regexp = regexp
 
@@ -440,7 +439,7 @@ class Startswith(BaseFilter):
         return hash('Startswith') ^ hash(self.value)
 
     def typecast(self, attribute):
-        self.value = unicode(self.value)
+        self.value = str(self.value)
 
     def as_sql_expr(self, attribute, servertypes):
         value = self.value.replace('_', '\\_').replace('%', '\\%%')
@@ -461,7 +460,7 @@ class Startswith(BaseFilter):
         return _condition_sql(attribute, template, servertypes)
 
     def matches(self, value):
-        return unicode(value).startswith(self.value)
+        return str(value).startswith(self.value)
 
     def as_code(self):
         return 'filters.Startswith({0!r})'.format(self.value)

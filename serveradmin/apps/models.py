@@ -19,7 +19,7 @@ class Application(models.Model):
     readonly = models.BooleanField(default=False)
     allowed_methods = models.TextField(blank=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     def restriction_active(self):
@@ -46,7 +46,7 @@ class ApplicationException(models.Model):
     tested = models.BooleanField(default=False)
     granted = models.BooleanField(default=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return u'Exception on {0}'.format(self.application)
 
 def set_auth_token(sender, instance, **kwargs):
