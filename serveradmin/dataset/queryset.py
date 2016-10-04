@@ -14,7 +14,7 @@ from serveradmin.serverdb.models import (
     ServerHostnameAttribute,
 )
 from serveradmin.dataset.commit import commit_changes
-from serveradmin.dataset.filters import Any
+from serveradmin.dataset.filters import ExactMatch, Any
 from serveradmin.dataset.querybuilder import QueryBuilder
 
 CACHE_MIN_QS_COUNT = 3
@@ -151,41 +151,39 @@ class QuerySet(BaseQuerySet):
         return self
 
     def _get_query_builder_with_filters(self):
-        project_filt = False
-        servertype_filt = False
         real_attributes = []
         builder = QueryBuilder()
         servertypes = set(Servertype.objects.all())
+        projects = Project.objects.all()
         for attr, filt in self._filters.items():
             attribute = self.attributes[attr]
-            if attribute.pk == 'servertype':
-                servertype_filt = True
-                servertypes = set(s for s in servertypes if filt.matches(s.pk))
+            if attribute.pk == 'intern_ip' and isinstance(filt, ExactMatch):
+                # Filter out servertypes depending on ip_addr_type
+                is_network = '/' in str(filt.value)
+                servertypes = {
+                    s for s in servertypes
+                    if (s.ip_addr_type == 'network') == is_network
+                }
+            elif attribute.pk == 'servertype':
+                servertypes = {s for s in servertypes if filt.matches(s.pk)}
             elif attribute.pk == 'project':
-                project_filt = True
-                servertype_filt = True
-                projects = Project.objects.all()
-                projects = set(
-                    p for p in Project.objects.all()
-                    if filt.matches(p.pk)
-                )
+                projects = [p for p in projects if filt.matches(p.pk)]
                 # Filter out servertype with inconsistent fixed_project
-                servertypes = set(
+                servertypes = {
                     s for s in servertypes
                     if s.fixed_project is None or s.fixed_project in projects
-                )
+                }
             elif not attribute.special:
                 real_attributes.append(attribute)
 
         if real_attributes:
-            servertype_filt = True
             attribute_servertypes = defaultdict(set)
             for sa in ServertypeAttribute.get_by_attributes(real_attributes):
                 attribute_servertypes[sa.attribute].add(sa.servertype)
             for new in attribute_servertypes.values():
                 servertypes = servertypes.intersection(new)
 
-        if servertype_filt:
+        if len(servertypes) < len(Servertype.objects.all()):
             if not servertypes:
                 return None
             builder.add_filter(
@@ -193,7 +191,9 @@ class QuerySet(BaseQuerySet):
                 servertypes,
                 Any(*(s.pk for s in servertypes)),
             )
-        if project_filt:
+        if len(projects) < len(Project.objects.all()):
+            if not projects:
+                return None
             builder.add_filter(
                 self.attributes['project'],
                 projects,
