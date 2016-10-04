@@ -212,12 +212,14 @@ class Commit(object):
 
     def _set_attributes(self):
         for server_id, changes in self.changed_servers.iteritems():
+            special_attribute_changed = False
             for key, change in changes.iteritems():
                 server = change['server']
                 attribute = change['attribute']
                 action = change['action']
 
                 if isinstance(attribute.special, ServerTableSpecial):
+                    special_attribute_changed = True
                     if action == 'new' or action == 'update':
                         setattr(server, attribute.special.field, change['new'])
                     elif action == 'delete':
@@ -235,9 +237,9 @@ class Commit(object):
                     for value in change['add']:
                         server.add_attribute(attribute, value)
 
-            # Save the special attributes.
-            server.full_clean()
-            server.save()
+            if special_attribute_changed:
+                server.full_clean()
+                server.save()
 
 
 class CommitError(ValidationError):
