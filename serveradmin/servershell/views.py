@@ -3,7 +3,6 @@ try:
 except ImportError:
     import json
 from operator import attrgetter
-from ipaddress import ip_network
 from itertools import islice
 from collections import OrderedDict
 
@@ -412,7 +411,7 @@ def choose_ip_addr(request):
             'servers': servers
         })
 
-    network = ip_network(request.GET['network'])
+    network = request.GET['network']
     servers = tuple(
         query(
             servertype=filters.Any(*(
@@ -423,7 +422,7 @@ def choose_ip_addr(request):
         )
         .order_by('hostname')
         .restrict('hostname', 'intern_ip')
-        )
+    )
 
     if servers:
         return TemplateResponse(request, 'servershell/choose_ip_addr.html', {

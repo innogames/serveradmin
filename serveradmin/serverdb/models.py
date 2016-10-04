@@ -896,6 +896,6 @@ def get_unused_ip_addrs(network_ip_addr):
         .order_by()     # Clear ordering for database performance
         .values_list('intern_ip', flat=True)
     )}
-    for ip_addr in network_ip_addr.hosts():
+    for ip_addr in ip_network(network_ip_addr).hosts():
         if ip_addr not in used:
             yield ip_addr
