@@ -4,9 +4,7 @@ from __future__ import print_function
 import sys
 from optparse import OptionParser
 
-import adminapi
 from adminapi.dataset import query, filters
-from adminapi.dataset.base import DatasetError
 from adminapi.utils import format_obj
 from adminapi.utils.parse import parse_query
 from adminapi.cmdline.utils import get_auth_token
@@ -39,21 +37,9 @@ def main():
 
     attrs = options.attrs if options.attrs else ('hostname', )
     orderby = options.orderby if options.orderby else ('hostname', )
-
-    adminapi.auth(auth_token)
-
-    try:
-        query_args = parse_query(' '.join(args),
-                filter_classes=filters.filter_classes)
-    except ValueError as error:
-        print(unicode(error), file=sys.stderr)
-        sys.exit(1)
-
-    try:
-        host_list = query(**query_args).restrict(*attrs).order_by(*orderby).fetch_now()
-    except (ValueError, DatasetError) as error:
-        print(unicode(error), file=sys.stderr)
-        sys.exit(1)
+    host_list = query(
+        **parse_query(' '.join(args), filter_classes=filters.filter_classes)
+    ).restrict(*attrs).order_by(*orderby).fetch_now()
 
     if options.export:
         print(options.separator.join(host[attrs[0]] for host in host_list))
@@ -67,7 +53,7 @@ def main():
             else:
                 row_values.append(options.null_value)
         print(u'\t'.join(row_values))
-    sys.exit(0)
+
 
 if __name__ == '__main__':
     main()
