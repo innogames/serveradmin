@@ -63,9 +63,9 @@ class NetworkFilter(BaseFilter):
         # can do that on their __init__() methods as they cannot be
         # initialised anything other than Network objects.  In here,
         # we took our chance to validate the attribute.
-        if attribute.type != 'ip':
+        if attribute.type != 'inet':
             raise FilterValueError(
-                'Only IP addresses can be used by this filter.'
+                'Only inet typed attributes can be used by this filter.'
             )
 
 

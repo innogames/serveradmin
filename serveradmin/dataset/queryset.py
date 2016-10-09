@@ -109,7 +109,6 @@ class QuerySet(BaseQuerySet):
                 )
             filter_obj.typecast(attribute)
             self._filters[attribute] = filter_obj
-        self._servertype_attribute = Attribute.specials['servertype']
         self._restrict = set()
         self._results = None
         self._augmentations = None
@@ -385,15 +384,17 @@ class QuerySet(BaseQuerySet):
             if not self._restrict or attribute in self._restrict:
                 if attribute.pk in ('project', 'servertype', 'segment'):
                     yield attribute.pk, value.pk
-                elif attribute.pk == 'intern_ip':
-                    servertype = server_attributes[self._servertype_attribute]
-                    if servertype.ip_addr_type == 'null':
+                elif attribute.type == 'inet':
+                    if value is None:
                         yield attribute.pk, None
-                    elif servertype.ip_addr_type in ('host', 'loadbalancer'):
-                        yield attribute.pk, value.ip
                     else:
-                        assert servertype.ip_addr_type == 'network'
-                        yield attribute.pk, value.network
+                        servertype_attribute = Attribute.specials['servertype']
+                        servertype = server_attributes[servertype_attribute]
+                        if servertype.ip_addr_type in ('host', 'loadbalancer'):
+                            yield attribute.pk, value.ip
+                        else:
+                            assert servertype.ip_addr_type == 'network'
+                            yield attribute.pk, value.network
                 else:
                     yield attribute.pk, value
 

@@ -23,7 +23,7 @@ from serveradmin.apps.models import Application
 #
 # We need a few models for extensibility of the system.  Those tables
 # are going to store just a few rows, but we need those rows over and
-# over again.  Django is not terribly good at optimising this.  It
+# over again.  Django is not terribly good at optimizing this.  It
 # makes database queries every time a foreign key field is accessed.
 # Using select_related() or prefetch_related() would mitigate this
 # problem, but they would also cause the same rows to be downloaded
@@ -338,7 +338,7 @@ Attribute.specials = {
     ),
     'intern_ip': Attribute(
         attribute_id='intern_ip',
-        type='ip',
+        type='inet',
         multi=False,
         group='base',
         special=ServerTableSpecial('intern_ip'),
