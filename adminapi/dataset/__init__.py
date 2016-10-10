@@ -71,7 +71,7 @@ class QuerySet(BaseQuerySet):
                 )
             convert_ip = frozenset(
                 attr_name for attr_name, attr in self.attributes.items()
-                if attr.type == 'ip'
+                if attr.type in ('ip', 'inet')
             )
             self._results = {}
             for object_id, server in result['servers'].items():
