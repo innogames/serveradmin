@@ -16,43 +16,39 @@ var commit = {
     'changes': {}
 }
 
-function execute_search(term)
-{
-    var offset = (search['page'] - 1) * search['per_page'];
+function refresh_servers(callback) {
     var search_request = {
-        'term': term,
+        'term': search['term'],
         'shown_attributes': search['shown_attributes'].join(','),
-        'offset': offset,
+        'offset': (search['page'] - 1) * search['per_page'],
         'limit': search['per_page'],
-        'no_mapping': {}
+        'no_mapping': {},
+        'order_by': search['order_by'],
+        'order_dir': search['order_dir']
     };
-    search_request['order_by'] = search['order_by'];
-    search_request['order_dir'] = search['order_dir'];
     $.getJSON(shell_results_url, search_request, function(data) {
         if (data['status'] != 'success') {
             var error = $('<span class="error"></span>').text(data['message']);
             $('#shell_understood').empty().append(error);
             return;
         }
-        search['term'] = term;
         search['servers'] = data['servers'];
         search['num_servers'] = data['num_servers'];
         search['avail_attributes'] = data['avail_attributes'];
         search['num_pages'] = Math.max(1, Math.ceil(search['num_servers'] / search['per_page']));
+
         if (search['page'] > search['num_pages']) {
             search['page'] = search['num_pages'];
-            execute_search(term);
-        } else {
-            $('#shell_understood').text(data['understood']);
-            render_server_table();
-            $('#shell_command').focus();
+            return refresh_servers(callback);
         }
+
+        $('#shell_understood').text(data['understood']);
         regenerate_link();
+        return callback();
     });
 }
 
-function regenerate_link()
-{
+function regenerate_link() {
     var attrs = $("input[name=attr]:checked").map(function () {
         return this.value;
     }).get().join(',');
@@ -606,7 +602,9 @@ function handle_command_next_page()
 {
     if (search['page'] < search['num_pages']) {
         search['page']++;
-        execute_search($('#shell_search').val());
+        refresh_servers(function() {
+            render_server_table();
+        });
     }
 }
 
@@ -616,7 +614,9 @@ function handle_command_prev_page()
     if (search['page'] < 1) {
         search['page'] = 1;
     }
-    execute_search($('#shell_search').val());
+    refresh_servers(function() {
+        render_server_table();
+    });
 }
 
 function handle_command_select(value)
@@ -833,7 +833,9 @@ function handle_command_attr(parsed_args)
     }
 
     if (value_added)
-        execute_search($('#shell_search').val());
+        refresh_servers(function() {
+            render_server_table();
+        });
     else
         render_server_table();
 
@@ -848,7 +850,9 @@ function handle_command_goto(parsed_args)
     var goto_page = parseInt(parsed_args[1]['value'], 10);
     if (goto_page >= 1 && goto_page <= search['num_pages']) {
         search['page'] = goto_page;
-        execute_search($('#shell_search').val());
+        refresh_servers(function() {
+            render_server_table();
+        });
         return '';
     }
 }
@@ -867,7 +871,9 @@ function handle_command_order(parsed_args)
     }
 
     search['order_by'] = parsed_args[1]['value'];
-    execute_search($('#shell_search').val());
+    refresh_servers(function() {
+        render_server_table();
+    });
     return '';
 }
 
@@ -877,7 +883,9 @@ function handle_command_perpage(parsed_args)
         return;
     }
     search['per_page'] = parseInt(parsed_args[1]['value'], 10);
-    execute_search($('#shell_search').val());
+    refresh_servers(function() {
+        render_server_table();
+    });
     return '';
 }
 
@@ -887,59 +895,65 @@ function handle_command_setattr(parsed_args)
             parsed_args[2]['token'] != 'str') {
         return;
     }
+
     var attr_name = parsed_args[1]['value'];
-    var new_value = parsed_args[2]['value'];
-    var marked_servers = get_marked_servers();
+    if (search['shown_attributes'].indexOf(attr_name) == -1)
+        search['shown_attributes'].push(attr_name);
 
-    var error = null;
-    if (typeof(available_attributes[attr_name]) == 'undefined') {
-        error = 'No such attribute';
-    } else if (available_attributes[attr_name].multi) {
-        error = 'This is a multi attribute. Use multiadd/multidel instead!';
-    } else if (marked_servers.length == 0) {
-        error = 'Please select some servers.';
-    }
-    if (error) {
-        $('<div title="Error"></div>').text(error).dialog({
-            'buttons': {
-                'OK': function() {
-                    $(this).dialog('close');
+    refresh_servers(function() {
+        var new_value = parsed_args[2]['value'];
+        var marked_servers = get_marked_servers();
+
+        var error = null;
+        if (typeof(available_attributes[attr_name]) == 'undefined') {
+            error = 'No such attribute';
+        } else if (available_attributes[attr_name].multi) {
+            error = 'This is a multi attribute. Use multiadd/multidel instead!';
+        } else if (marked_servers.length == 0) {
+            error = 'Please select some servers.';
+        }
+        if (error) {
+            $('<div title="Error"></div>').text(error).dialog({
+                'buttons': {
+                    'OK': function() {
+                        $(this).dialog('close');
+                    }
                 }
+            });
+            return ;
+        }
+
+        var changes = commit['changes'];
+        for (var i = 0; i < search['servers'].length; i++) {
+            var server = search['servers'][i];
+            var server_id = server['object_id'];
+
+            if (marked_servers.indexOf(server_id) < 0)
+                continue;
+
+            if (!search['avail_attributes'][server['servertype']][attr_name]) {
+                continue;
             }
-        });
-        return ;
-    }
 
-    var changes = commit['changes'];
-    for (var i = 0; i < search['servers'].length; i++) {
-        var server = search['servers'][i];
-        var server_id = server['object_id'];
-
-        if (marked_servers.indexOf(server_id) < 0)
-            continue;
-
-        if (!search['avail_attributes'][server['servertype']][attr_name]) {
-            continue;
+            if (typeof(changes[server_id]) == 'undefined') {
+                changes[server_id] = {};
+            }
+            var old_value = server[attr_name];
+            if (typeof(old_value) == 'undefined') {
+                changes[server_id][attr_name] = {
+                    'action': 'new',
+                    'new': parse_value(new_value, attr_name),
+                };
+            } else {
+                changes[server_id][attr_name] = {
+                    'action': 'update',
+                    'new': parse_value(new_value, attr_name),
+                    'old': old_value
+                };
+            }
         }
-
-        if (typeof(changes[server_id]) == 'undefined') {
-            changes[server_id] = {};
-        }
-        var old_value = server[attr_name];
-        if (typeof(old_value) == 'undefined') {
-            changes[server_id][attr_name] = {
-                'action': 'new',
-                'new': parse_value(new_value, attr_name),
-            };
-        } else {
-            changes[server_id][attr_name] = {
-                'action': 'update',
-                'new': parse_value(new_value, attr_name),
-                'old': old_value
-            };
-        }
-    }
-    render_server_table();
+        render_server_table();
+    });
     return '';
 }
 
@@ -950,37 +964,42 @@ function handle_command_delattr(parsed_args)
     }
 
     var attr_name = parsed_args[1]['value'];
-    var marked_servers = get_marked_servers();
-    var changes = commit['changes'];
+    if (search['shown_attributes'].indexOf(attr_name) == -1)
+        search['shown_attributes'].push(attr_name);
 
-    for (var i = 0; i < search['servers'].length; i++) {
-        var server = search['servers'][i];
-        var server_id = server['object_id'];
-        var attr_obj = available_attributes[attr_name];
+    refresh_servers(function() {
+        var marked_servers = get_marked_servers();
+        var changes = commit['changes'];
 
-        if (marked_servers.indexOf(server_id) < 0)
-            continue;
+        for (var i = 0; i < search['servers'].length; i++) {
+            var server = search['servers'][i];
+            var server_id = server['object_id'];
+            var attr_obj = available_attributes[attr_name];
 
-        if (typeof(changes[server_id]) == 'undefined') {
-            changes[server_id] = {};
-        }
+            if (marked_servers.indexOf(server_id) < 0)
+                continue;
 
-        if (attr_obj.multi) {
-            changes[server_id][attr_name] = {
-                'action': 'multi',
-                'add': [],
-                'remove': server[attr_name].slice(0)
-            };
-        } else {
-            if (attr_name in server) {
+            if (typeof(changes[server_id]) == 'undefined') {
+                changes[server_id] = {};
+            }
+
+            if (attr_obj.multi) {
                 changes[server_id][attr_name] = {
-                    'action': 'delete',
-                    'old': server[attr_name]
+                    'action': 'multi',
+                    'add': [],
+                    'remove': server[attr_name].slice(0)
                 };
+            } else {
+                if (attr_name in server) {
+                    changes[server_id][attr_name] = {
+                        'action': 'delete',
+                        'old': server[attr_name]
+                    };
+                }
             }
         }
-    }
-    render_server_table();
+        render_server_table();
+    });
     return '';
 }
 
@@ -991,69 +1010,74 @@ function handle_command_multiattr(parsed_args, action)
         return;
     }
     var attr_name = parsed_args[1]['value'];
-    var values = parsed_args[2]['value'].split(',');
+    if (search['shown_attributes'].indexOf(attr_name) == -1)
+        search['shown_attributes'].push(attr_name);
 
-    var marked_servers = get_marked_servers();
-    if (marked_servers.length == 0) {
-        $('<div title="Select servers">You have to select servers first</div>').dialog({
-            buttons: {
-                'OK': function() {
-                    $(this).dialog('close');
-                }
-            }
-        });
-        return;
-    }
-    var changes = commit['changes'];
-    for (var i = 0; i < search['servers'].length; i++) {
-        var server = search['servers'][i];
-        var server_id = server['object_id'];
+    refresh_servers(function() {
+        var values = parsed_args[2]['value'].split(',');
 
-        if (marked_servers.indexOf(server_id) < 0)
-            continue;
-
-        // Don't modify multiattr if it doesn't exist
-        if (!search['avail_attributes'][server['servertype']][attr_name]) {
-            continue;
-        }
-
-        if (typeof(changes[server_id]) == 'undefined') {
-            changes[server_id] = {};
-        }
-        if (typeof(changes[server_id][attr_name]) == 'undefined') {
-            changes[server_id][attr_name] = {
-                'action': 'multi',
-                'add': [],
-                'remove': []
-            };
-        }
-        for (var j = 0; j < values.length; j++) {
-            var value = values[j];
-            var parsed_value = parse_value(value, attr_name);
-            if (action == 'remove') {
-                var index = changes[server_id][attr_name]['add'].indexOf(parsed_value);
-                if (index != -1) {
-                    changes[server_id][attr_name]['add'].splice(index, 1);
-                } else {
-                    changes[server_id][attr_name]['remove'].push(parsed_value);
-                }
-            } else if (action == 'add') {
-                var index = changes[server_id][attr_name]['remove'].indexOf(parsed_value);
-                if (index != -1) {
-                    changes[server_id][attr_name]['remove'].splice(index, 1);
-                } else {
-                    var contains_value = false;
-                    if (typeof(server[attr_name]) != 'undefined') {
-                        contains_value = server[attr_name].indexOf(parsed_value) != -1;
-                    }
-                    if (!contains_value) {
-                        changes[server_id][attr_name]['add'].push(parsed_value);
+        var marked_servers = get_marked_servers();
+        if (marked_servers.length == 0) {
+            $('<div title="Select servers">You have to select servers first</div>').dialog({
+                buttons: {
+                    'OK': function() {
+                        $(this).dialog('close');
                     }
                 }
+            });
+            return;
+        }
+        var changes = commit['changes'];
+        for (var i = 0; i < search['servers'].length; i++) {
+            var server = search['servers'][i];
+            var server_id = server['object_id'];
+
+            if (marked_servers.indexOf(server_id) < 0)
+                continue;
+
+            // Don't modify multiattr if it doesn't exist
+            if (!search['avail_attributes'][server['servertype']][attr_name]) {
+                continue;
+            }
+
+            if (typeof(changes[server_id]) == 'undefined') {
+                changes[server_id] = {};
+            }
+            if (typeof(changes[server_id][attr_name]) == 'undefined') {
+                changes[server_id][attr_name] = {
+                    'action': 'multi',
+                    'add': [],
+                    'remove': []
+                };
+            }
+            for (var j = 0; j < values.length; j++) {
+                var value = values[j];
+                var parsed_value = parse_value(value, attr_name);
+                if (action == 'remove') {
+                    var index = changes[server_id][attr_name]['add'].indexOf(parsed_value);
+                    if (index != -1) {
+                        changes[server_id][attr_name]['add'].splice(index, 1);
+                    } else {
+                        changes[server_id][attr_name]['remove'].push(parsed_value);
+                    }
+                } else if (action == 'add') {
+                    var index = changes[server_id][attr_name]['remove'].indexOf(parsed_value);
+                    if (index != -1) {
+                        changes[server_id][attr_name]['remove'].splice(index, 1);
+                    } else {
+                        var contains_value = false;
+                        if (typeof(server[attr_name]) != 'undefined') {
+                            contains_value = server[attr_name].indexOf(parsed_value) != -1;
+                        }
+                        if (!contains_value) {
+                            changes[server_id][attr_name]['add'].push(parsed_value);
+                        }
+                    }
+                }
             }
         }
-    }
-    render_server_table();
+        render_server_table();
+    });
     return '';
 }
 
@@ -1067,7 +1091,9 @@ function handle_command_commit(parsed_args)
             $('<div class="commit-message" title="Commit message"></div>').text(result['message']).dialog();
         }
         commit = {'deleted': [], 'changes': {}};
-        execute_search($('#shell_search').val());
+        refresh_servers(function() {
+            render_server_table();
+        });
     });
     return '';
 }
@@ -1087,7 +1113,11 @@ $(function() {
         $('#shell_servers').empty()
         search['page'] = 1;
         ev.stopPropagation();
-        execute_search($('#shell_search').val());
+        console.log(search);
+        search['term'] = $('#shell_search').val();
+        refresh_servers(function() {
+            render_server_table();
+        });
         return false;
     });
 
@@ -1185,7 +1215,9 @@ $(function() {
         }
 
         if (this.checked)
-            execute_search($('#shell_search').val());
+            refresh_servers(function() {
+                render_server_table();
+            });
         else
             render_server_table();
 
@@ -1232,7 +1264,10 @@ $(function() {
 
     if ($('#shell_search').val() !== '') {
         search['page'] = 1;
-        execute_search($('#shell_search').val());
+        search['term'] = $('#shell_search').val();
+        refresh_servers(function() {
+            render_server_table();
+            $('#shell_command').focus();
+        });
     }
-
 });
