@@ -10,7 +10,6 @@ from serveradmin.hooks.slots import HookSlot
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
-    ServerTableSpecial,
     Server,
     ServerHostnameAttribute,
     ChangeCommit,
@@ -154,10 +153,11 @@ class Commit(object):
 
     def apply_changes(self):
         # Changes should be applied in order to prevent integrity errors.
-        self._remove_attributes()
-        if self.deleted_servers:
-            self._delete_servers()
-        self._set_attributes()
+        self._delete_attributes()
+        self._delete_servers()
+        self._update_servers()
+        self._update_attributes()
+        self._insert_attributes()
 
         # Re-fetch servers before invoking hook, otherwise the hook will
         # receive incomplete data.
@@ -171,14 +171,26 @@ class Commit(object):
         except CommitIncomplete as error:
             self.warnings.append('Commit hook failed: {}'.format(str(error)))
 
-    def _remove_attributes(self):
+    def _delete_attributes(self):
+        # We first have to delete all of the hostname attributes
+        # to avoid integrity errors.  Other attributes will just go away
+        # with the servers.
+        if self.deleted_servers:
+            (
+                ServerHostnameAttribute.objects
+                .filter(server_id__in=self.deleted_servers)
+                .delete()
+            )
+
         for server_id, changes in self.changed_servers.items():
             for key, change in changes.items():
                 server = change['server']
                 attribute = change['attribute']
                 action = change['action']
 
-                if action == 'delete':
+                if action == 'delete' or (
+                    action == 'update' and change['old'] is None
+                ):
                     server.get_attributes(attribute).delete()
                 elif action == 'multi' and change['remove']:
                     for server_attribute in server.get_attributes(attribute):
@@ -186,14 +198,8 @@ class Commit(object):
                             server_attribute.delete()
 
     def _delete_servers(self):
-        # We first have to delete all of the hostname attributes
-        # to avoid integrity errors.  Other attributes will just go away
-        # with the servers.
-        (
-            ServerHostnameAttribute.objects
-            .filter(server_id__in=self.deleted_servers)
-            .delete()
-        )
+        if not self.deleted_servers:
+            return
 
         try:
             Server.objects.filter(server_id__in=self.deleted_servers).delete()
@@ -208,36 +214,50 @@ class Commit(object):
             if server_id in self.changed_servers:
                 del self.changed_servers[server_id]
 
-    def _set_attributes(self):
+    def _update_servers(self):
+        changed_servers = set()
         for server_id, changes in self.changed_servers.items():
-            special_attribute_changed = False
-            for key, change in changes.items():
+            for change in changes.values():
+                attribute = change['attribute']
+                if not attribute.special:
+                    continue
+                assert change['action'] in ('new', 'update', 'multi')
+                server = change['server']
+                setattr(server, attribute.special.field, change.get('new'))
+                changed_servers.add(server)
+        for server in changed_servers:
+            server.full_clean()
+            server.save()
+
+    def _update_attributes(self):
+        for server_id, changes in self.changed_servers.items():
+            for change in changes.values():
+                if change['action'] != 'update':
+                    continue
+                if change['old'] is None:
+                    continue
+                if change['new'] is None:
+                    continue
+                (
+                    change['server']
+                    .get_attributes(change['attribute'])
+                    .get()
+                    .save_value(change['new'])
+                )
+
+    def _insert_attributes(self):
+        for server_id, changes in self.changed_servers.items():
+            for change in changes.values():
                 server = change['server']
                 attribute = change['attribute']
                 action = change['action']
-
-                if isinstance(attribute.special, ServerTableSpecial):
-                    special_attribute_changed = True
-                    if action == 'new' or action == 'update':
-                        setattr(server, attribute.special.field, change['new'])
-                    elif action == 'delete':
-                        setattr(server, attribute.special.field, None)
-
-                elif action == 'new':
+                if action == 'new' or (
+                    action == 'update' and change['old'] is None
+                ):
                     server.add_attribute(attribute, change['new'])
-
-                elif action == 'update':
-                    server.get_attributes(attribute).get().save_value(
-                        change['new']
-                    )
-
                 elif action == 'multi':
                     for value in change['add']:
                         server.add_attribute(attribute, value)
-
-            if special_attribute_changed:
-                server.full_clean()
-                server.save()
 
 
 class CommitError(ValidationError):
