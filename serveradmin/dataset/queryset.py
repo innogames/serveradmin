@@ -149,15 +149,9 @@ class QuerySet(BaseQuerySet):
             raise ValidationError(
                 'Invalid attribute: {0}'.format(order_by)
             )
-
         if order_dir not in ('asc', 'desc'):
             raise ValueError('Invalid order direction')
         self._order_dir = order_dir
-
-        # We need the attribute to order by.
-        if self._restrict:
-            self._restrict.add(order_by)
-
         return self
 
     def _get_query_builder_with_filters(self):
@@ -258,6 +252,8 @@ class QuerySet(BaseQuerySet):
         self._servertypes_by_attribute = defaultdict(list)
         self._related_servertype_attributes = []
         attributes = self._restrict if self._restrict else None
+        if attributes and self._order_by:
+            attributes = list(attributes) + [self._order_by]
         for sa in ServertypeAttribute.query(servertypes, attributes).all():
             self._select_servertype_attribute(sa)
 
@@ -274,7 +270,7 @@ class QuerySet(BaseQuerySet):
             # If we have related attributes in the restrict list, we have
             # to add the relations in there, too.  We are going to use
             # those to query the related attributes.
-            if self._restrict and related_via_attribute not in self._restrict:
+            if self._restrict:
                 self._select_servertype_attribute(ServertypeAttribute.query(
                     (sa.servertype, ), (related_via_attribute, )
                 ).get())
