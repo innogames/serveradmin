@@ -163,11 +163,20 @@ class LookupModel(models.Model):
 class Project(LookupModel):
     objects = LookupManager()
 
-    project_id = models.CharField(max_length=32, primary_key=True)
-    subdomain = models.CharField(max_length=16, unique=True)
+    project_id = models.CharField(
+        max_length=32,
+        primary_key=True,
+        db_index=False,
+    )
+    subdomain = models.CharField(
+        max_length=16,
+        unique=True,
+        db_index=False,
+    )
     responsible_admin = models.ForeignKey(
         User,
         on_delete=models.PROTECT,
+        db_index=False,
     )
 
     class Meta:
@@ -179,7 +188,11 @@ class Project(LookupModel):
 class Segment(LookupModel):
     objects = LookupManager()
 
-    segment_id = models.CharField(max_length=20, primary_key=True)
+    segment_id = models.CharField(
+        max_length=20,
+        primary_key=True,
+        db_index=False,
+    )
     ip_range = models.CharField(max_length=255, null=True, blank=True)
     description = models.CharField(max_length=1024)
 
@@ -192,13 +205,18 @@ class Segment(LookupModel):
 class Servertype(LookupModel):
     objects = LookupManager()
 
-    servertype_id = models.CharField(max_length=32, primary_key=True)
+    servertype_id = models.CharField(
+        max_length=32,
+        primary_key=True,
+        db_index=False,
+    )
     description = models.CharField(max_length=1024)
     _fixed_project = models.ForeignKey(
         Project,
         blank=True,
         null=True,
         db_column='fixed_project_id',
+        db_index=False,
         on_delete=models.PROTECT,
     )
     fixed_project = Project.foreign_key_lookup('_fixed_project_id')
@@ -234,6 +252,7 @@ class Attribute(LookupModel):
     attribute_id = models.CharField(
         max_length=32,
         primary_key=True,
+        db_index=False,
     )
     type = models.CharField(
         max_length=32,
@@ -249,6 +268,7 @@ class Attribute(LookupModel):
     _target_servertype = models.ForeignKey(
         Servertype,
         db_column='target_servertype_id',
+        db_index=False,
         null=True,
         blank=True,
     )
@@ -258,6 +278,7 @@ class Attribute(LookupModel):
         null=True,
         blank=True,
         db_column='reversed_attribute_id',
+        db_index=False,
         limit_choices_to=dict(type='hostname'),
     )
     reversed_attribute = LookupModel.foreign_key_lookup(
@@ -359,6 +380,7 @@ class ServertypeAttribute(models.Model):
         null=True,
         blank=True,
         db_column='related_via_attribute_id',
+        db_index=False,
         # It can only be related via a relation (AKA as an hostname
         # attribute).
         limit_choices_to=models.Q(type__in=(
