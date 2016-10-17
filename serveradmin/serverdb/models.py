@@ -676,10 +676,6 @@ class ServerHostnameAttribute(ServerAttribute):
                 'No server with hostname "{0}" exist.'.format(value)
             )
 
-        # Temporary check until all relations have a servertype
-        if not target_servertype:
-            return ServerAttribute.save_value(self, target_server)
-
         if target_server.servertype != target_servertype:
             raise ValidationError(
                 'Attribute "{0}" has to be from servertype "{1}".'
