@@ -90,7 +90,8 @@ class ExactMatch(BaseFilter):
         return hash('ExactMatch') ^ hash(self.value)
 
     def typecast(self, attribute):
-        self.value = typecast(attribute, self.value, force_single=True)
+        if attribute.type not in ('ip', 'inet'):
+            self.value = typecast(attribute, self.value, force_single=True)
 
     def as_sql_expr(self, attribute, servertypes):
         if attribute.type == 'boolean' and not self.value:
