@@ -245,7 +245,7 @@ class QuerySet(BaseQuerySet):
             # datatypes are not sortable with None.
             server_ids = sorted(server_ids, key=lambda i: (
                 self._order_by in self._server_attributes[i],
-                self._server_attributes[i].get(self._order_by.pk),
+                self._server_attributes[i].get(self._order_by),
             ))
 
         self._results = result_class(
