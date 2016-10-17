@@ -311,19 +311,19 @@ Handling Permissions
 We will use Django's integrated Permission system.  In Django, you will define
 permissions on a model. You will automatically get a few magic permissions
 named ``app_label.(add|change|delete)_modelname``.  For example: if you have
-a class ``IPRange`` in your application ``iprange`` you will get permissions
-named ``iprange.add_iprange`` etc.  If you need own permissions, you have to
+a class ``Bird`` in your application ``bird`` you will get permissions
+named ``bird.add_bird`` etc.  If you need own permissions, you have to
 define them like this::
    
-   class IPRange(models.Model):
+   class Bird(models.Model):
        # Fields left out
 
        class Meta:
           permissions = (
-             ('can_get_ip', 'Can get a free IP'),
+             ('can_fly', 'Can fly'),
           )
    
-You will now get a permission named ``iprange.can_get_ip``.
+You will now get a permission named ``bird.can_fly``.
 
 If you don't have a model class you have to create one.  This will normally
 also create a database table, but you can avoid it by setting ``managed``
@@ -355,8 +355,8 @@ permission.
 To check permissions in the template you can use the ``perms`` proxy.  Look at
 the following example::
    
-   {% if perms.iprange.add_iprange %}
-   <a href="{% url iprange_add %}">Add an IP range</a>
+   {% if perms.bird.add_bird %}
+   <a href="{% url bird_add %}">Add a bird</a>
    {% endif %}
    
 .. warning::
@@ -366,14 +366,14 @@ the following example::
 In the code permissions can be checked using the ``user.has_perm`` method. See
 the following example in a view::
    
-   def change_iprange(request, range_id):
-       ip_range = get_object_or_404(IPRange, pk=range_id)
+   def change_bird(request, name):
+       bird = get_object_or_404(Bird, pk=range_id)
 
        if request.method == 'POST':
-          can_delete = request.user.has_perm('iprange.delete_iprange')
-          can_edit = request.user.has_perm('iprange.change_iprange')
+          can_delete = request.user.has_perm('bird.delete_bird')
+          can_edit = request.user.has_perm('bird.change_bird')
           if action == 'delete' and can_delete:
-              ip_range.delete()
+              bird.delete()
           if action == 'edit' and can_edit:
               pass # edit ip range
     
