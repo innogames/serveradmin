@@ -232,18 +232,18 @@ class Commit(object):
     def _update_attributes(self):
         for server_id, changes in self.changed_servers.items():
             for change in changes.values():
+                attribute = change['attribute']
+                if attribute.special:
+                    continue
                 if change['action'] != 'update':
                     continue
                 if change['old'] is None:
                     continue
                 if change['new'] is None:
                     continue
-                (
-                    change['server']
-                    .get_attributes(change['attribute'])
-                    .get()
-                    .save_value(change['new'])
-                )
+                server = change['server']
+                server_attribute = server.get_attributes(attribute).get()
+                server_attribute.save_value(change['new'])
 
     def _insert_attributes(self):
         for server_id, changes in self.changed_servers.items():
