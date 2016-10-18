@@ -1117,6 +1117,7 @@ $(function() {
         search['term'] = $('#shell_search').val();
         refresh_servers(function() {
             render_server_table();
+            $('#shell_command').focus();
         });
         return false;
     });
