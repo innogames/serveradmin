@@ -35,7 +35,6 @@ def send_request(endpoint, data, auth_token, timeout=None):
 
     try:
         req = _build_request(endpoint, auth_token, data_json, try_backup)
-        print('\n'.join('{}: {}'.format(k, v) for k, v in req.headers.items()))
         return json.loads(urlopen(req, timeout=timeout).read())
     except HTTPError as error:
         if error.code in (500, 502):
