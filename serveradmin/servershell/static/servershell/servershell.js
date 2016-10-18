@@ -1122,15 +1122,10 @@ $(function() {
         return false;
     });
 
-    /*
-     * Currently disabled until Opera fixes it's bug with the
-     * change event
-     *
     $('#shell_search').bind('change', function(ev) {
         $('#shell_understood').text('Nothing yet');
         $('#shell_servers').empty()
     });
-    */
 
     $('#shell_command_form').submit(function(ev) {
         ev.stopPropagation();
