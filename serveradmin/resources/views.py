@@ -12,42 +12,31 @@ import django_urlauth.utils
 from adminapi.utils.parse import ParseQueryError, parse_query
 from serveradmin.graphite.models import Collection, NumericCache
 from serveradmin.dataset import query, filters
-from serveradmin.serverdb.models import Project, Servertype, Segment
+from serveradmin.serverdb.models import Project
 
 
 @login_required
 @ensure_csrf_cookie
 def index(request):
     """The hardware resources page"""
-
     term = request.GET.get('term', request.session.get('term', ''))
-    current_collection = request.GET.get(
-        'current_collection', request.session.get('current_collection', 0)
-    )
-    current_segment = request.GET.get(
-        'current_segment', request.session.get('current_segment', '')
-    )
-    current_stype = request.GET.get(
-        'current_stype', request.session.get('current_stype', '')
-    )
+    collections = tuple(Collection.objects.filter(overview=True))
 
-    try:
-        current_collection = int(current_collection)
-    except ValueError:
-        current_collection = 0
+    # If a graph collection was specified, use it.  Otherwise use the first
+    # one.
+    for collection in collections:
+        if 'current_collection' in request.GET:
+            if str(collection.id) != request.GET['current_collection']:
+                continue
+        current_collection = collection
+        break
+    else:
+        raise HttpResponseBadRequest
 
     template_info = {
         'search_term': term,
-        'segments': Segment.objects.all(),
-        'servertypes': Servertype.objects.all(),
-        'collections': (
-            Collection.objects
-            .filter(overview=True)
-            .order_by('attribute')
-        ),
-        'current_collection': current_collection,
-        'current_segment': current_segment,
-        'current_stype': current_stype,
+        'collections': collections,
+        'current_collection': current_collection.id,
     }
 
     hostnames = []
@@ -83,17 +72,8 @@ def index(request):
     else:
         understood = query().get_representation().as_code()
 
-    # If a graph collection was specified, use it.
-    if current_collection > 0:
-        collection = Collection.objects.filter(id=current_collection)[0]
-    else:
-        # Otherwise use the 1st one found.  Now that is ugly!  But it is
-        # the one for Dom0s.
-        collection = Collection.objects.filter(overview=True)[0]
-
-    templates = list(collection.template_set.all())
-    variations = list(collection.variation_set.all())
-
+    templates = list(current_collection.template_set.all())
+    variations = list(current_collection.variation_set.all())
     columns = []
     graph_index = 0
     offset = settings.GRAPHITE_SPRITE_WIDTH + settings.GRAPHITE_SPRITE_SPACING
@@ -114,16 +94,11 @@ def index(request):
                 graph_index += 1
 
     hosts = OrderedDict()
-
-    # If a graph collection was given, do not limit to physical servers.
-    if current_collection > 0:
-        query_kwargs = {'cancelled': False}
-    else:
-        query_kwargs = {'physical_server': True, 'cancelled': False}
-
+    query_kwargs = {
+        collection.attribute.attribute_id: collection.attribute_value
+    }
     if len(hostnames) > 0:
         query_kwargs['hostname'] = filters.Any(*hostnames)
-
     for server in (
         query(**query_kwargs)
         .restrict('hostname', 'servertype')
@@ -133,13 +108,12 @@ def index(request):
             'hostname': server['hostname'],
             'servertype': server['servertype'],
             'guests': [],
-            'columns': list(columns),
+            'cells': [{'column': c} for c in columns],
         }
 
     # Add guests for the table cells.
     guests = False
-    query_kwargs = {'xen_host': filters.Any(*hosts.keys()), 'cancelled': False}
-
+    query_kwargs = {'xen_host': filters.Any(*hosts.keys())}
     for server in (
         query(**query_kwargs)
         .restrict('hostname', 'xen_host')
@@ -149,15 +123,15 @@ def index(request):
         hosts[server['xen_host']]['guests'].append(server['hostname'])
 
     # Add cached numerical values to the table cells.
+    column_names = [c['name'] for c in columns]
     for numericCache in NumericCache.objects.filter(hostname__in=hosts.keys()):
-        index = [c['name'] for c in columns].index(
-            str(numericCache.template)
-        )
-        column = dict(columns[index])
-        column['value'] = '{:.2f}'.format(numericCache.value)
-        hosts[numericCache.hostname]['columns'][index] = column
+        if numericCache.template.name in column_names:
+            index = column_names.index(numericCache.template.name)
+            value = '{:.2f}'.format(numericCache.value)
+            hosts[numericCache.hostname]['cells'][index]['value'] = value
 
     template_info.update({
+        'columns': columns,
         'hosts': hosts.values(),
         'matched_hostnames': matched_hostnames,
         'understood': understood,

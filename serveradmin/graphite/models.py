@@ -16,9 +16,7 @@ except ImportError:
 
 
 class Collection(models.Model):
-    """Collection of graphs and values to be shown for the servers
-    """
-
+    """Collection of graphs and values to be shown for the servers"""
     attribute = models.ForeignKey(Attribute)
     attribute_value = models.CharField(max_length=512)
     params = models.TextField(blank=True, help_text="""
@@ -156,9 +154,7 @@ class Collection(models.Model):
 
     def merged_params(self, other_params):
         """Get merged and cleaned URL parameters"""
-
         params = self.params
-
         for p in other_params:
             if p:
                 params += '&' + p
@@ -170,9 +166,7 @@ class Collection(models.Model):
 
 
 class Template(models.Model):
-    """Templates in the collections
-    """
-
+    """Templates in the collections"""
     collection = models.ForeignKey(Collection)
     name = models.CharField(max_length=64)
     params = models.TextField(blank=True, help_text="""
