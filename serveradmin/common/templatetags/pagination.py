@@ -1,6 +1,12 @@
 from django import template
-from urlparse import parse_qsl
-from urllib import urlencode
+
+try:
+    from urllib.parse import parse_qsl
+    from urllib.parse import urlencode
+except ImportError:
+    from urlparse import parse_qsl
+    from urllib import urlencode
+
 
 register = template.Library()
 
