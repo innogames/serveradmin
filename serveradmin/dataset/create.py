@@ -153,10 +153,21 @@ def _get_ip_addr(servertype, attributes):
 def _get_networks(attributes):
     for attribute in Attribute.objects.all():
         if attribute.type == 'supernet' and attribute.pk in attributes:
+            attribute_value = attributes[attribute.pk]
             try:
-                server = Server.objects.get(hostname=attributes[attribute.pk])
-            except Server.DoesNotExist as error:
-                raise CreateError(str(error))
+                server = Server.objects.get(hostname=attribute_value)
+            except Server.DoesNotExist:
+                raise CreateError(
+                    'No server named "{0}" for attribute "{1}"'
+                    .format(attribute_value, attribute)
+                )
+            target_servertype = attribute.target_servertype
+            if server.servertype != target_servertype:
+                raise CreateError(
+                    'Matching server "{0}" for attribute "{1}" is not from '
+                    'servertype "{2}"'
+                    .format(attribute_value, attribute, target_servertype)
+                )
             yield server.intern_ip.network
 
 
