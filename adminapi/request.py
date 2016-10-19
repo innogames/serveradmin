@@ -19,7 +19,7 @@ except ImportError:
 BASE_URL = 'https://serveradmin.innogames.de/api'
 
 
-def _calc_security_token(auth_token, timestamp, content):
+def calc_security_token(auth_token, timestamp, content):
     message = str(timestamp) + ':' + str(content)
     return hmac.new(
         auth_token.encode('utf8'), message.encode('utf8'), hashlib.sha1
@@ -30,7 +30,7 @@ def send_request(endpoint, data, auth_token, timeout=None):
     if not auth_token:
         auth_token = get_auth_token()
 
-    data_json = json.dumps(data, default=json_encode_extra).encode('utf8')
+    data_json = json.dumps(data, default=json_encode_extra)
     try_backup = False
 
     try:
@@ -52,13 +52,13 @@ def send_request(endpoint, data, auth_token, timeout=None):
 def _build_request(endpoint, auth_token, data_json, backup=False):
     timestamp = int(time.time())
     application_id = hashlib.sha1(auth_token.encode('utf8')).hexdigest()
-    security_token = _calc_security_token(auth_token, timestamp, data_json)
+    security_token = calc_security_token(auth_token, timestamp, data_json)
     headers = {
-            'Content-Encoding': 'application/x-json',
-            'X-Timestamp': str(timestamp),
-            'X-Application': application_id,
-            'X-SecurityToken': security_token,
-        }
+        'Content-Encoding': 'application/x-json',
+        'X-Timestamp': str(timestamp),
+        'X-Application': application_id,
+        'X-SecurityToken': security_token,
+    }
     url = BASE_URL + endpoint
 
-    return Request(url, data_json, headers)
+    return Request(url, data_json.encode('utf8'), headers)

@@ -19,7 +19,7 @@ def _to_datetime(x):
     if isinstance(x, (int, long)):
         return datetime.fromtimestamp(x)
 
-    if isinstance(x, basestring):
+    if isinstance(x, str):
         if x.isdigit():
             return datetime.fromtimestamp(int(x))
 

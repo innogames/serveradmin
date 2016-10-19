@@ -41,7 +41,7 @@ def print_table(input_table_rows, max_col_len=40, file=sys.stdout):
     print(sep, file=file)
 
 def format_obj(obj):
-    if isinstance(obj, basestring):
+    if isinstance(obj, str):
         return obj
     if hasattr(obj, '__iter__'):
         return ', '.join(sorted(str(x) for x in obj))

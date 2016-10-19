@@ -164,7 +164,7 @@ class Regexp(BaseFilter):
 
     @classmethod
     def from_obj(cls, obj):
-        if 'regexp' in obj and isinstance(obj['regexp'], basestring):
+        if 'regexp' in obj:
             return cls(obj['regexp'])
         raise FilterValueError('Invalid object for Regexp')
 
@@ -460,7 +460,7 @@ class Startswith(BaseFilter):
 
     @classmethod
     def from_obj(cls, obj):
-        if 'value' in obj and isinstance(obj['value'], basestring):
+        if 'value' in obj:
             return cls(obj['value'])
         raise FilterValueError('Invalid object for Startswith')
 
@@ -625,9 +625,7 @@ def _prepare_filter(filter):
 
 
 def filter_from_obj(obj):
-    if not (isinstance(obj, dict) and
-            'name' in obj and
-            isinstance(obj['name'], basestring)):
+    if not (isinstance(obj, dict) and 'name' in obj):
         raise FilterValueError('Invalid filter object')
 
     try:

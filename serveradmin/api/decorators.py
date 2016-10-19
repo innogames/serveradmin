@@ -1,5 +1,3 @@
-import hashlib
-import hmac
 import time
 from functools import update_wrapper
 try:
@@ -19,13 +17,9 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.utils.crypto import constant_time_compare
 
 from adminapi.utils.json import json_encode_extra
+from adminapi.request import calc_security_token
 from serveradmin.apps.models import Application, ApplicationException
 from serveradmin.api import AVAILABLE_API_FUNCTIONS
-
-
-def _calc_security_token(auth_token, timestamp, content):
-    message = ':'.join((str(timestamp), content))
-    return hmac.new(auth_token, message, hashlib.sha1).hexdigest()
 
 
 def api_view(view):
@@ -37,41 +31,36 @@ def api_view(view):
             security_token = request.META['HTTP_X_SECURITYTOKEN']
         except (KeyError, ValueError):
             return HttpResponseBadRequest(
-                    'Invalid API request',
-                    content_type='text/plain',
-                )
+                'Invalid API request', content_type='text/plain'
+            )
 
         try:
             app = Application.objects.get(app_id=app_id)
         except Application.DoesNotExist:
             return HttpResponseForbidden(
-                    'Invalid application',
-                    content_type='text/plain',
-                )
-
-        app = get_object_or_404(Application, app_id=app_id)
-        real_security_token = _calc_security_token(
-                app.auth_token.encode('utf-8'), str(timestamp), request.body
+                'Invalid application', content_type='text/plain'
             )
 
-        expired = timestamp + 300 < time.time()
-        if (
-            not constant_time_compare(real_security_token, security_token) or
-            expired
-        ):
+        body = request.body.decode('utf8')
+        app = get_object_or_404(Application, app_id=app_id)
+        real_token = calc_security_token(app.auth_token, timestamp, body)
+        if not constant_time_compare(real_token, security_token):
             return HttpResponseForbidden(
-                    'Invalid or expired security token',
-                    content_type='text/plain',
-                )
+                'Invalid security token', content_type='text/plain'
+            )
 
-        if not (app.author is None or app.author.is_active):
+        if timestamp + 300 < time.time():
+            return HttpResponseForbidden(
+                'Expired security token', content_type='text/plain'
+            )
+
+        if app.author is not None and not app.author.is_active:
             return HttpResponseForbidden('Sorry, your user is inactive.')
 
         if app.restriction_active():
             has_exception = ApplicationException.objects.filter(
-                    application=app,
-                    granted=True,
-                ).count()
+                application=app, granted=True
+            ).count()
 
             if not has_exception:
                 domain = get_current_site(request).domain
@@ -90,8 +79,7 @@ def api_view(view):
         readonly_views = ('dataset_query', 'api_call')
         if app.readonly and view.__name__ not in readonly_views:
             return HttpResponseForbidden('This token is readonly')
-
-        return_value = view(request, app, json.loads(request.body))
+        return_value = view(request, app, json.loads(body))
         if getattr(view, 'encode_json', True):
             return_value = json.dumps(return_value, default=json_encode_extra)
 
