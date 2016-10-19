@@ -166,10 +166,7 @@ def dataset_create(request, app, data):
                 'hostname': ExactMatch(data['attributes']['hostname'])
             }).get_results(),
         }
-    except (
-        ValueError,
-        ValidationError,
-    ) as error:
+    except ValidationError as error:
         return {
             'status': 'error',
             'type': error.__class__.__name__,
