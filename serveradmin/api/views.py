@@ -77,9 +77,9 @@ def dataset_query(request, app, data):
 
     try:
         if 'filters' not in data:
-            raise ValueError('You need a filters keys.')
+            raise ValidationError('You need a filters keys.')
         if not isinstance(data['filters'], dict):
-            raise ValueError('Filters must be a dictionary')
+            raise ValidationError('Filters must be a dictionary')
         filters = {}
         for attr, filter_obj in data['filters'].items():
             filters[attr] = filter_from_obj(filter_obj)
