@@ -14,7 +14,7 @@ setup(
         'adminapi.api',
         'adminapi.cmdline',
     ),
-    version='0.71',
+    version='0.72',
     long_description=(
         'Admin remote API for querying servers and making API requests'
     ),
