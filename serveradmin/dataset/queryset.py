@@ -234,13 +234,7 @@ class QuerySet(BaseQuerySet):
         server_ids = self._server_attributes.keys()
         if self._order_by:
             result_class = OrderedDict
-            # We need to sort by attribute being there first, because some
-            # datatypes are not sortable with None.
-            server_ids = sorted(server_ids, key=lambda i: (
-                self._order_by in self._server_attributes[i],
-                self._server_attributes[i].get(self._order_by),
-            ))
-
+            server_ids = sorted(server_ids, key=self._order_by_key)
         self._results = result_class(
             (i, ServerObject(self._get_attributes(i), i, self))
             for i in server_ids
@@ -377,6 +371,29 @@ class QuerySet(BaseQuerySet):
             self._server_attributes[server_id][attribute].add(value)
         else:
             self._server_attributes[server_id][attribute] = value
+
+    def _order_by_key(self, key):
+        """Return a tuple to sort items by the key
+
+        We want the servers which doesn't have this attribute at all
+        to appear at last, the server which this attribute is not set
+        to appear in the beginning, and the rest in between.  Keep in
+        mind that some datatypes are not sortable with each other, some
+        not even with None, so we have to so something in here.
+        """
+        if self._order_by not in self._server_attributes[key]:
+            return 1, None
+        value = self._server_attributes[key][self._order_by]
+        if value is None:
+            return -1, None
+        if self._order_by.multi:
+            return 0, tuple(self._order_by_value(v) for v in value)
+        return 0, self._order_by_value(value)
+
+    def _order_by_value(self, value):
+        if self._order_by.type == 'inet':
+            return value.version, value
+        return value
 
     def _get_attributes(self, server_id):
         server_attributes = self._server_attributes[server_id]
