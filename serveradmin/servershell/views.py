@@ -130,14 +130,19 @@ def get_results(request):
     servertypes = [
         Servertype.objects.get(pk=s['servertype']) for s in servers.values()
     ]
+    attributes = [
+        a for a in (Attribute.objects.get(pk=a) for a in shown_attributes)
+        if not a.readonly
+    ]
     avail_attributes = dict()
     for servertype in servertypes:
         avail_attributes[servertype.pk] = dict(specials)
-    for sa in ServertypeAttribute.query(servertypes).all():
-        avail_attributes[sa.servertype.pk][sa.attribute.pk] = {
-            'regexp': sa.regexp,
-            'default': sa.default_value,
-        }
+    for sa in ServertypeAttribute.query(servertypes, attributes).all():
+        if not sa.related_via_attribute:
+            avail_attributes[sa.servertype.pk][sa.attribute.pk] = {
+                'regexp': sa.regexp,
+                'default': sa.default_value,
+            }
 
     return HttpResponse(json.dumps({
         'status': 'success',
