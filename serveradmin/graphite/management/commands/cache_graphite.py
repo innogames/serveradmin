@@ -1,4 +1,3 @@
-import urllib2
 import json
 import time
 from PIL import Image
@@ -14,6 +13,12 @@ from serveradmin.graphite.models import (
     NumericCache,
     AttributeFormatter,
 )
+
+try:
+    from urllib.request import build_opener
+    from urllib.error import HTTPError
+except ImportError:
+    from urllib2 import build_opener, HTTPError
 
 
 class Command(NoArgsCommand):
@@ -40,8 +45,7 @@ class Command(NoArgsCommand):
                     done_servers.add(server)
 
     def generate_sprite(self, collection, server):
-        """Generates sprites for the given server using the given collection"""
-
+        """Generate sprites for the given server using the given collection"""
         table = collection.graph_table(
             server, custom_params=settings.GRAPHITE_SPRITE_PARAMS
         )
@@ -67,53 +71,52 @@ class Command(NoArgsCommand):
                        server['hostname'] + '.png')
 
     def cache_numeric_values(self, collection, server):
-        """Generates sprites for the given server using the given collection
-        """
-
+        """Generate sprites for the given server using the given collection"""
         for template in collection.template_set.filter(numeric_value=True):
             formatter = AttributeFormatter()
             params = formatter.vformat(template.params, (), server)
             response = self.get_from_graphite(params)
-            if response:
-                try:
-                    value = json.loads(response)[0]['datapoints'][0][0]
-                except IndexError:
-                    print(
-                        "Warning: Graphite response couldn't be parsed: {0}"
-                        .format(response)
-                    )
-                    value = None
+            if not response:
+                continue
 
-                if value is not None:
-                    # Django can be setted up to encapsulate thing
-                    # into database transactions.  We don't want that
-                    # behavior in here, even when it is setted up like
-                    # this.  This process takes a long time.  We want
-                    # the values to be immediately available to
-                    # the users.
-                    with transaction.atomic():
-                        NumericCache.objects.update_or_create(
-                            template=template,
-                            hostname=server['hostname'],
-                            defaults={'value': value},
-                        )
+            response_json = json.loads(response.decode('utf8'))
+            try:
+                value = response_json[0]['datapoints'][0][0]
+            except IndexError:
+                print(
+                    "Warning: Graphite response couldn't be parsed: {0}"
+                    .format(response)
+                )
+                continue
+
+            if value is None:
+                continue
+
+            # Django can be setted up to encapsulate thing into database
+            # transactions.  We don't want that behavior in here, even when
+            # it is setted up like this.  This process takes a long time.
+            # We want the values to be immediately available to the users.
+            with transaction.atomic():
+                NumericCache.objects.update_or_create(
+                    template=template,
+                    hostname=server['hostname'],
+                    defaults={'value': value},
+                )
 
     def get_from_graphite(self, params):
-        """Make a GET request to Graphite with the given params
-        """
-
+        """Make a GET request to Graphite with the given params"""
         token = django_urlauth.utils.new_token(
-            'serveradmin', settings.GRAPHITE_SECRET
+            b'serveradmin', settings.GRAPHITE_SECRET
         )
         url = '{0}/render?__auth_token={1}&{2}'.format(
             settings.GRAPHITE_CACHE_URL, token, params
         )
 
-        opener = urllib2.build_opener()
+        opener = build_opener()
         start = time.time()
         try:
             return opener.open(url).read()
-        except urllib2.HTTPError as error:
+        except HTTPError as error:
             print('Warning: Graphite returned ' + str(error) + ' to ' + url)
         finally:
             end = time.time()
