@@ -13,7 +13,6 @@ def main():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('hostname', help='Host on which changes need to be performed in serveradmin')
     parser.add_argument('attrs', nargs='+', help='')
-    parser.add_argument('-a', '--action', dest='action', help='One of possible actions: throw_me_from_lb, add_back_to_lb')
     parser.add_argument('-o', '--overwrite', dest='overwrite', action='store_true', help='Overwrite multi attributes')
     args=parser.parse_args()
 
