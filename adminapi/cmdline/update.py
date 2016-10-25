@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
-import sys, ipaddress, argparse
+import sys
+import ipaddress
+import argparse
 from distutils.util import strtobool
 from adminapi.dataset import query, filters, base
 from adminapi.utils import format_obj
