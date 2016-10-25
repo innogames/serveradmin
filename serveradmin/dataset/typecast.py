@@ -1,7 +1,6 @@
 import re
 from datetime import datetime
 from decimal import Decimal
-from ipaddress import ip_interface
 from netaddr import EUI
 
 from django.core.exceptions import ValidationError
@@ -67,14 +66,14 @@ _typecast_fns = {
     'integer': int,
     'boolean': lambda x: x in ('1', 'True', 'true', 1, True),
     'string': str,
-    'ip': ip_interface,
-    'ipv6': ip_interface,
+    'ip': str,
+    'ipv6': str,
     'datetime': _to_datetime,
     'mac': _to_mac,
     'hostname': str,
     'reverse_hostname': str,
     'number': Decimal,
-    'inet': ip_interface,
+    'inet': str,
     'macaddr': EUI,
     'date': str,
     'supernet': str,
