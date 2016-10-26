@@ -198,8 +198,8 @@ class Comparison(BaseFilter):
 
     def as_sql_expr(self, attribute, servertypes):
         return _condition_sql(attribute, '{{0}} {0} {1}'.format(
-            self.comparator, value_to_sql(attribute, self.value), servertypes
-        ))
+            self.comparator, value_to_sql(attribute, self.value)
+        ), servertypes)
 
     def matches(self, value):
         if self.comparator == '<':
