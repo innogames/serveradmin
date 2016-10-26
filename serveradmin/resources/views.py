@@ -25,13 +25,13 @@ def index(request):
     # If a graph collection was specified, use it.  Otherwise use the first
     # one.
     for collection in collections:
-        if 'current_collection' in request.GET:
+        if request.GET.get('current_collection'):
             if str(collection.id) != request.GET['current_collection']:
                 continue
         current_collection = collection
         break
     else:
-        raise HttpResponseBadRequest
+        raise HttpResponseBadRequest('No matching current collection')
 
     template_info = {
         'search_term': term,
@@ -148,7 +148,7 @@ def graph_popup(request):
         hostname = request.GET['hostname']
         graph = request.GET['graph']
     except KeyError:
-        return HttpResponseBadRequest('You have to supply hostname and graph')
+        return HttpResponseBadRequest('Hostname and graph not supplied')
 
     # It would be more efficient to filter the collections on the database,
     # but we don't bother because they are unlikely to be more than a few
@@ -168,7 +168,7 @@ def graph_popup(request):
                 'image': url
             })
 
-    return HttpResponseBadRequest("The graph couldn't be found.")
+    return HttpResponseBadRequest('No graph found')
 
 
 @login_required
