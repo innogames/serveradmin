@@ -125,12 +125,12 @@ def _get_ip_addr(servertype, attributes):
             raise CreateError(
                 '"intern_ip" is not given, and no networks could be found.'
             )
-        inter_ip = _choose_ip_addr(networks)
-        if inter_ip is None:
+        intern_ip = _choose_ip_addr(networks)
+        if intern_ip is None:
             raise CreateError(
                 'No IP address could be selected from the given networks.'
             )
-        return inter_ip
+        return intern_ip
     else:
         raise CreateError('"intern_ip" attribute is required.')
 
@@ -177,7 +177,7 @@ def _choose_ip_addr(networks):
         if smallest_network is not None:
             if not network.overlaps(smallest_network):
                 raise CreateError('Networks are not overlapping.')
-            if network.prefixlen > smallest_network.prefixlen:
+            if network.prefixlen < smallest_network.prefixlen:
                 continue
         smallest_network = network
     if smallest_network is not None:
