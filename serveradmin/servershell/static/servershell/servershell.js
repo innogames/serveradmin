@@ -651,7 +651,7 @@ function handle_command_graph()
 {
     var marked_servers = get_marked_servers();
     var hostnames = search['servers'].filter(function(server) {
-        marked_servers.indexOf(server['object_id']) >= 0
+        return marked_servers.indexOf(server['object_id']) >= 0
     }).map(function(server) {
         return server['hostname'];
     });
