@@ -13,7 +13,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.contrib import messages
-from django.db import IntegrityError
+from django.db import DataError, IntegrityError
 from django.utils.html import mark_safe, escape as escape_html
 
 from adminapi.utils.json import json_encode_extra
@@ -109,7 +109,7 @@ def get_results(request):
         results = queryset.get_results()
         num_servers = len(results)
         servers = OrderedDict(tuple(results.items())[offset:(offset + limit)])
-    except (ParseQueryError, ValidationError) as error:
+    except (ParseQueryError, ValidationError, DataError) as error:
         return HttpResponse(json.dumps({
             'status': 'error',
             'message': str(error)
