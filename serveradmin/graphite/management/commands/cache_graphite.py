@@ -1,4 +1,6 @@
 import json
+from os import mkdir
+from os.path import isdir
 import time
 from PIL import Image
 from io import BytesIO
@@ -7,7 +9,7 @@ from django.core.management.base import NoArgsCommand
 from django.conf import settings
 from django.db import transaction, models
 
-import django_urlauth.utils
+from django_urlauth.utils import new_token
 from serveradmin.graphite.models import (
     Collection,
     NumericCache,
@@ -27,9 +29,12 @@ class Command(NoArgsCommand):
 
     def handle_noargs(self, **kwargs):
         """The entry point of the command"""
+        sprite_params = settings.GRAPHITE_SPRITE_PARAMS
+        sprite_dir = settings.MEDIA_ROOT + '/graph_sprite'
+        if not isdir(sprite_dir):
+            mkdir(sprite_dir)
 
         # We will make sure to generate a single sprite for a single hostname.
-        done_servers = set()
         for collection in (
             Collection.objects
             .annotate(in_recovery=models.Func(
@@ -38,37 +43,32 @@ class Command(NoArgsCommand):
             ))
             .filter(in_recovery=False, overview=True)
         ):
+            name = collection.attribute_id + '_' + collection.attribute_value
+            collection_dir = sprite_dir + '/' + name
+            if not isdir(collection_dir):
+                mkdir(collection_dir)
+
             for server in collection.query():
-                if server not in done_servers:
-                    self.generate_sprite(collection, server)
-                    self.cache_numeric_values(collection, server)
-                    done_servers.add(server)
+                graph_table = collection.graph_table(server, sprite_params)
+                if graph_table:
+                    self.generate_sprite(collection_dir, graph_table, server)
+                self.cache_numeric_values(collection, server)
 
-    def generate_sprite(self, collection, server):
+    def generate_sprite(self, collection_dir, graph_table, server):
         """Generate sprites for the given server using the given collection"""
-        table = collection.graph_table(
-            server, custom_params=settings.GRAPHITE_SPRITE_PARAMS
-        )
-        graphs = [v2 for k1, v1 in table for k2, v2 in v1]
-        sprite_width = (len(graphs) * settings.GRAPHITE_SPRITE_WIDTH +
-                        (len(graphs) - 1) * settings.GRAPHITE_SPRITE_SPACING)
-        spriteimg = Image.new(
-            'RGB', (sprite_width, settings.GRAPHITE_SPRITE_HEIGHT), (255,) * 3
-        )
-        offset = 0
+        graphs = [v2 for k1, v1 in graph_table for k2, v2 in v1]
+        sprite_width = settings.GRAPHITE_SPRITE_WIDTH
+        sprite_height = settings.GRAPHITE_SPRITE_HEIGHT
+        total_width = len(graphs) * sprite_width
+        sprite_img = Image.new('RGB', (total_width, sprite_height), (255,) * 3)
 
-        for graph in graphs:
+        for graph, offset in zip(graphs, range(0, total_width, sprite_width)):
             response = self.get_from_graphite(graph)
             if response:
-                box = (offset, 0, offset + settings.GRAPHITE_SPRITE_WIDTH,
-                       settings.GRAPHITE_SPRITE_HEIGHT)
-                spriteimg.paste(Image.open(BytesIO(response)), box)
+                box = (offset, 0, offset + sprite_width, sprite_height)
+                sprite_img.paste(Image.open(BytesIO(response)), box)
 
-            offset += settings.GRAPHITE_SPRITE_WIDTH
-            offset += settings.GRAPHITE_SPRITE_SPACING
-
-        spriteimg.save(settings.GRAPHITE_SPRITE_PATH + '/' +
-                       server['hostname'] + '.png')
+        sprite_img.save(collection_dir + '/' + server['hostname'] + '.png')
 
     def cache_numeric_values(self, collection, server):
         """Generate sprites for the given server using the given collection"""
@@ -105,9 +105,7 @@ class Command(NoArgsCommand):
 
     def get_from_graphite(self, params):
         """Make a GET request to Graphite with the given params"""
-        token = django_urlauth.utils.new_token(
-            b'serveradmin', settings.GRAPHITE_SECRET
-        )
+        token = new_token(b'serveradmin', settings.GRAPHITE_SECRET)
         url = '{0}/render?__auth_token={1}&{2}'.format(
             settings.GRAPHITE_CACHE_URL, token, params
         )

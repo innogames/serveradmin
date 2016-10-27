@@ -76,7 +76,7 @@ def index(request):
     variations = list(current_collection.variation_set.all())
     columns = []
     graph_index = 0
-    offset = settings.GRAPHITE_SPRITE_WIDTH + settings.GRAPHITE_SPRITE_SPACING
+    sprite_width = settings.GRAPHITE_SPRITE_WIDTH
     for template in templates:
         if template.numeric_value:
             columns.append({
@@ -89,7 +89,7 @@ def index(request):
                     'name': str(template) + ' ' + str(variation),
                     'numeric_value': False,
                     'graph_index': graph_index,
-                    'sprite_offset': graph_index * offset,
+                    'sprite_offset': graph_index * sprite_width,
                 })
                 graph_index += 1
 
@@ -130,6 +130,8 @@ def index(request):
             value = '{:.2f}'.format(numericCache.value)
             hosts[numericCache.hostname]['cells'][index]['value'] = value
 
+    name = collection.attribute_id + '_' + collection.attribute_value
+    sprite_url = settings.MEDIA_URL + 'graph_sprite/' + name
     template_info.update({
         'columns': columns,
         'hosts': hosts.values(),
@@ -137,7 +139,7 @@ def index(request):
         'understood': understood,
         'error': None,
         'guests': guests,
-        'GRAPHITE_SPRITE_URL': settings.GRAPHITE_SPRITE_URL,
+        'sprite_url': sprite_url,
     })
     return TemplateResponse(request, 'resources/index.html', template_info)
 

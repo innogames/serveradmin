@@ -200,11 +200,10 @@ GRAPHITE_URL = 'https://graphite.innogames.de'
 # This one is used for background downloading
 GRAPHITE_CACHE_URL = 'https://graphite-secure.innogames.de'
 GRAPHITE_SECRET = 'f48bb9bcda4647f181c8255577c20313'
-GRAPHITE_SPRITE_PATH = MEDIA_ROOT + '/graph_sprite'
-GRAPHITE_SPRITE_URL = MEDIA_URL + 'graph_sprite'
 GRAPHITE_SPRITE_WIDTH = 112
 GRAPHITE_SPRITE_HEIGHT = 45
-GRAPHITE_SPRITE_SPACING = 8
-GRAPHITE_SPRITE_PARAMS = ('width=' + str(GRAPHITE_SPRITE_WIDTH) + '&' +
-                          'height=' + str(GRAPHITE_SPRITE_HEIGHT) + '&' +
-                          'graphOnly=true')
+GRAPHITE_SPRITE_PARAMS = (
+    'width=' + str(GRAPHITE_SPRITE_WIDTH) + '&' +
+    'height=' + str(GRAPHITE_SPRITE_HEIGHT) + '&' +
+    'graphOnly=true'
+)

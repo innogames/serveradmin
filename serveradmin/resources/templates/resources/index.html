@@ -81,7 +81,7 @@
                style="background:url({{ STATIC_URL }}empty.png) -{{ cell.column.sprite_offset }}px 0;"
                data-hostname="{{ hwhost.hostname }}"
                data-graph="{{ cell.column.graph_index }}"
-               data-image="{{ GRAPHITE_SPRITE_URL }}/{{ hwhost.hostname }}.png"></a>
+               data-image="{{ sprite_url }}/{{ hwhost.hostname }}.png"></a>
 {% endif %}
         </td>
 {% endfor %}

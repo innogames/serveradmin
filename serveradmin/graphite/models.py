@@ -42,13 +42,8 @@ class Collection(models.Model):
         """)
     sort_order = models.FloatField(default=0)
     overview = models.BooleanField(default=False, help_text="""
-        Marks the collection to be shown on the overview page.  Overview page
-        isn't fully dynamic.  Make sure make sure all of the collections
-        marked as overview have the same structure.  The information for them
-        with the lowest sort order will be shown for every server on
-        the overview page.
-
-        For the overview page, sprites will be generated and cached on
+        Marks the collection to be shown on the overview page.  For
+        the overview page, sprites will be generated and cached on
         the server in advance to improve the loading time.  {0} will be
         appended to generated URL's to get the images for overview.
         """.format(settings.GRAPHITE_SPRITE_PARAMS))
@@ -92,7 +87,6 @@ class Collection(models.Model):
                 ('Memory Usage', 'target=...'),
             ]
         """
-
         column = []
         for template in self.template_set.filter(numeric_value=False):
             for foreach_metric in template.foreach(server):
