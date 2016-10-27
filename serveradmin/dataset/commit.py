@@ -1,7 +1,7 @@
 import json
 from ipaddress import ip_address, ip_network
 
-from django.db import IntegrityError, models, transaction
+from django.db import IntegrityError, transaction
 from django.core.exceptions import ValidationError
 
 from adminapi.utils.json import json_encode_extra
@@ -57,17 +57,8 @@ class Commit(object):
         server_ids = self.changed_servers.keys() + self.deleted_servers
         servers = {s.server_id: s for s in (
             Server.objects.select_for_update()
-            .annotate(in_recovery=models.Func(
-                function='pg_is_in_recovery',
-                output_field=models.fields.BooleanField(),
-            ))
-            .filter(in_recovery=False, server_id__in=server_ids)
+            .filter(server_id__in=server_ids)
         )}
-
-        if not servers:
-            raise CommitError(
-                'Cannot lock any servers.  Database can be in recovery.'
-            )
 
         for server_id, changes in self.changed_servers.items():
             for attribute_id, change in changes.items():
