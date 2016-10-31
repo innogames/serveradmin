@@ -10,6 +10,7 @@ from itertools import chain
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.signals import request_started
+from django.core.validators import RegexValidator
 from django.utils.timezone import now
 from django.contrib.auth.models import User
 
@@ -68,6 +69,14 @@ ip_addr_types = (
     'loadbalancer',
     'network',
 )
+
+lookup_id_validators = [
+    RegexValidator('^[a-z][a-z0-9_]*$', 'Invalid id'),
+]
+
+hostname_validators = [
+    RegexValidator('^[a-z][a-z0-9\.\-]*$', 'Invalid hostname'),
+]
 
 
 def get_choices(types):
@@ -167,11 +176,13 @@ class Project(LookupModel):
         max_length=32,
         primary_key=True,
         db_index=False,
+        validators=lookup_id_validators,
     )
     subdomain = models.CharField(
         max_length=16,
         unique=True,
         db_index=False,
+        validators=hostname_validators,
     )
     responsible_admin = models.ForeignKey(
         User,
@@ -192,6 +203,7 @@ class Segment(LookupModel):
         max_length=20,
         primary_key=True,
         db_index=False,
+        validators=lookup_id_validators,
     )
     ip_range = models.CharField(max_length=255, null=True, blank=True)
     description = models.CharField(max_length=1024)
@@ -209,6 +221,7 @@ class Servertype(LookupModel):
         max_length=32,
         primary_key=True,
         db_index=False,
+        validators=lookup_id_validators,
     )
     description = models.CharField(max_length=1024)
     _fixed_project = models.ForeignKey(
@@ -253,6 +266,7 @@ class Attribute(LookupModel):
         max_length=32,
         primary_key=True,
         db_index=False,
+        validators=lookup_id_validators,
     )
     type = models.CharField(
         max_length=32,
@@ -435,7 +449,11 @@ class Server(models.Model):
     objects = netfields.NetManager()
 
     server_id = models.AutoField(primary_key=True)
-    hostname = models.CharField(max_length=64, unique=True)
+    hostname = models.CharField(
+        max_length=64,
+        unique=True,
+        validators=hostname_validators,
+    )
     intern_ip = netfields.InetAddressField(null=True, blank=True)
     comment = models.CharField(max_length=255, null=True, blank=True)
     _project = models.ForeignKey(
