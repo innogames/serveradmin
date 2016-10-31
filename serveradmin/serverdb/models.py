@@ -1,10 +1,8 @@
 import re
 import json
-import time
 
 from collections import OrderedDict
-from datetime import datetime
-from ipaddress import ip_interface, ip_network
+from ipaddress import ip_network
 from itertools import chain
 
 from django.db import models
@@ -47,13 +45,8 @@ from serveradmin.apps.models import Application
 #
 
 attribute_types = (
-    'integer',
     'string',
-    'ip',
-    'ipv6',
     'boolean',
-    'datetime',
-    'mac',
     'hostname',
     'reverse_hostname',
     'number',
@@ -324,7 +317,7 @@ class ServerTableSpecial(object):
 Attribute.specials = {
     'object_id': Attribute(
         attribute_id='object_id',
-        type='integer',
+        type='number',
         multi=False,
         group='base',
         special=ServerTableSpecial('server_id'),
@@ -606,8 +599,7 @@ class ServerAttribute(models.Model):
 
     @staticmethod
     def get_model(attribute_type):
-        if attribute_type in ('integer', 'string', 'ipv6', 'boolean',
-                              'datetime', 'mac'):
+        if attribute_type in ('string', 'boolean'):
             return ServerStringAttribute
         if attribute_type == 'hostname':
             return ServerHostnameAttribute
@@ -627,9 +619,7 @@ class ServerStringAttribute(ServerAttribute):
         db_column='attribute_id',
         db_index=False,
         on_delete=models.CASCADE,
-        limit_choices_to=models.Q(type__in=(
-            'integer', 'string', 'ipv6', 'boolean', 'datetime', 'mac'
-        )),
+        limit_choices_to=models.Q(type__in=('string', 'boolean')),
     )
     attribute = Attribute.foreign_key_lookup('_attribute_id')
     value = models.CharField(max_length=1024)
@@ -641,33 +631,18 @@ class ServerStringAttribute(ServerAttribute):
         index_together = (('_attribute', 'value'), )
 
     def get_value(self):
-        if self.attribute.type == 'integer':
-            return int(self.value)
         if self.attribute.type == 'boolean':
             return self.value == '1'
-        if self.attribute.type == 'ipv6':
-            return ip_interface(bytearray.fromhex(self.value))
-        if self.attribute.type == 'datetime':
-            return datetime.fromtimestamp(int(self.value))
         return self.value
 
     def save_value(self, value):
         if self.attribute.type == 'boolean':
             value = 1 if value else 0
-        elif self.attribute.type == 'ipv6':
-            value = ''.join(
-                '{:02x}'.format(x) for x in ip_interface(value).packed
-            )
-        elif self.attribute.type == 'datetime':
-            if isinstance(value, datetime):
-                value = int(time.mktime(value.timetuple()))
-
-        if value == '':
+        elif value == '':
             raise ValidationError(
                 'Attribute "{0}" value cannot be empty string.'
                 .format(self.attribute)
             )
-
         ServerAttribute.save_value(self, value)
 
 

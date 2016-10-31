@@ -2,13 +2,9 @@
 {% if values %}
 <ul>
 {% for value in values %}
-{% if attribute.type == 'datetime' %}
-    <li>{{ value|date:"Y-m-d\TH:i:s" }}</li>
-{% else %}
     <li>{{ value }}</li>
-{% endif %}
 {% endfor %}
 </ul>
 {% else %}
-<p>No values.</p>
+<p>No values</p>
 {% endif %}

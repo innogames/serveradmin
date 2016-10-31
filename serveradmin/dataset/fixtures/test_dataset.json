@@ -15,7 +15,7 @@
         "fields": {
             "multi": false,
             "base": false,
-            "type": "integer",
+            "type": "number",
             "modifier": null
         }
     },

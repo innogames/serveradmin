@@ -351,82 +351,26 @@ function _restore_attr(server_id, attr_name)
     }
 }
 
-function _format_datetime(timestamp)
-{
-    var d = new Date(timestamp * 1000);
-    var year = d.getFullYear();
-    var month = (d.getMonth() + 1);
-    var day = d.getDate();
-    if (month < 10) {
-        month = '0' + month;
-    }
-    if (day < 10) {
-        day = '0' + day;
-    }
-    var hour = d.getHours();
-    var minute = d.getMinutes();
-    var second = d.getSeconds();
-    if (second < 10) {
-        second = '0' + second;
-    }
-    return year + '-' + month + '-' + day + 'T' + hour + ':' + minute + ':' + second;
-}
-
-function format_value(value, attr_name, single_value)
-{
+function format_value(value, attr_name, single_value) {
     var attr_obj = available_attributes[attr_name];
     if (typeof(value) == 'undefined') {
         value = '';
-    } else if (attr_obj['multi'] && !single_value) {
-        value.sort();
-        if (attr_obj['type'] == 'datetime') {
-            value = value.map(function(x) {
-                return _format_datetime(value);
-            });
-        }
-        value = value.join(', ');
-    } else if (attr_obj['type'] == 'datetime') {
-        return _format_datetime(value);
+    }
+    if (attr_obj['multi'] && !single_value) {
+        return value.sort().join(', ');
     }
     return value;
 }
 
-function parse_value(value, attr_name)
-{
+function parse_value(value, attr_name) {
     var attr_obj = available_attributes[attr_name];
     if (value === '') {
-        return value;
+        return null;
     }
-
-    if (attr_obj['type'] == 'integer') {
-        return parseInt(value, 10);
-    } else if (attr_obj['type'] == 'datetime') {
-        var r = /^(\d{4})-(\d{1,2})-(\d{1,2})(T(\d{1,2}):(\d{1,2})(:(\d{1,2}))?)?$/
-        var match = value.match(r);
-        if (match == null) {
-            return null;
-        }
-        var year = parseInt(match[1], 10);
-        var month = parseInt(match[2], 10);
-        var day = parseInt(match[3], 10);
-        if (typeof(match[5]) != 'undefined') {
-            var hour = parseInt(match[5], 10);
-            var minute = parseInt(match[6], 10);
-        } else {
-            var hour = 0;
-            var minute = 0;
-        }
-        if (typeof(match[8]) != 'undefined') {
-            var second = parseInt(match[8], 10);
-        } else {
-            var second = 0;
-        }
-
-        var d = new Date(year, month - 1, day, hour, minute, second);
-        return parseInt(d.getTime() / 1000, 10);
-    } else {
-        return value;
+    if (attr_obj['type'] == 'boolean') {
+        return value == 'true' || value == '1' || value == 'True';
     }
+    return value;
 }
 
 function render_server_table()

@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import re
 import operator
 from decimal import Decimal
-from ipaddress import ip_interface, ip_network
+from ipaddress import ip_network
 
 from django.core.exceptions import ValidationError
 
@@ -90,7 +90,7 @@ class ExactMatch(BaseFilter):
         return hash('ExactMatch') ^ hash(self.value)
 
     def typecast(self, attribute):
-        if attribute.type not in ('ip', 'inet'):
+        if attribute.type != 'inet':
             self.value = typecast(attribute, self.value, force_single=True)
 
     def as_sql_expr(self, attribute, servertypes):
@@ -685,12 +685,6 @@ def value_to_sql(attribute, value):
     # the database.
     if attribute.type == 'boolean':
         return raw_sql_escape(1 if value else 0)
-    if attribute.type == 'integer':
-        return raw_sql_escape(int(value))
-    if attribute.type == 'ipv6':
-        return raw_sql_escape(
-            ''.join('{:02x}'.format(x) for x in ip_interface(value).packed)
-        )
     return raw_sql_escape(value)
 
 
