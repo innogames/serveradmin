@@ -54,12 +54,10 @@ class Commit(object):
             raise CommitError('Invalid deleted servers')
 
     def _decorate_changes(self):
-        server_ids = self.changed_servers.keys() + self.deleted_servers
         servers = {s.server_id: s for s in (
             Server.objects.select_for_update()
-            .filter(server_id__in=server_ids)
+            .filter(server_id__in=self.changed_servers.keys())
         )}
-
         for server_id, changes in self.changed_servers.items():
             for attribute_id, change in changes.items():
                 change['server'] = servers[server_id]
