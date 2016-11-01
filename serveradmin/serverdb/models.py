@@ -595,6 +595,7 @@ class ServerAttribute(models.Model):
     def save_value(self, value):
         # Normally, there shouldn't be any transformation necessary.
         self.value = value
+        self.full_clean()
         self.save()
 
     @staticmethod
@@ -638,11 +639,6 @@ class ServerStringAttribute(ServerAttribute):
     def save_value(self, value):
         if self.attribute.type == 'boolean':
             value = 1 if value else 0
-        elif value == '':
-            raise ValidationError(
-                'Attribute "{0}" value cannot be empty string.'
-                .format(self.attribute)
-            )
         ServerAttribute.save_value(self, value)
 
 
