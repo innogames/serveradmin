@@ -1,11 +1,9 @@
 import json
-from ipaddress import ip_address, ip_network
 
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ValidationError
 
 from adminapi.utils.json import json_encode_extra
-from serveradmin.dataset.typecast import typecast
 from serveradmin.hooks.slots import HookSlot
 from serveradmin.serverdb.models import (
     Servertype,
@@ -34,7 +32,6 @@ class Commit(object):
             self.changed_servers = commit['changes']
             self._decorate_changes()
             self._validate_changes()
-            self._cast_changed_values()
             self._clean_changes()
         else:
             self.changed_servers = {}
@@ -82,32 +79,6 @@ class Commit(object):
                         raise ValueError('Invalid multi change')
                     if not change['attribute'].multi:
                         raise ValueError('Not a multi attribute')
-
-    def _cast_changed_values(self):
-        for changes in self.changed_servers.values():
-            for change in changes.values():
-                server = change['server']
-                attribute = change['attribute']
-                action = change['action']
-
-                if action == 'new':
-                    change['new'] = typecast(attribute, change['new'])
-                elif action == 'update':
-                    if attribute.pk == 'intern_ip':
-                        if server.servertype.ip_addr_type == 'network':
-                            change['new'] = ip_network(change['new'])
-                            change['old'] = ip_network(change['old'])
-                        else:
-                            change['new'] = ip_address(change['new'])
-                            change['old'] = ip_address(change['old'])
-                    else:
-                        change['new'] = typecast(attribute, change['new'])
-                        change['old'] = typecast(attribute, change['old'])
-                elif action == 'multi':
-                    change['add'] = typecast(attribute, change['add'])
-                    change['remove'] = typecast(attribute, change['remove'])
-                elif action == 'delete':
-                    change['old'] = typecast(attribute, change['old'])
 
     def _clean_changes(self):
         for server_id, changes in self.changed_servers.items():
@@ -407,17 +378,17 @@ def _log_changes(deleted_servers, changed_servers, app, user):
     commit = ChangeCommit.objects.create(app=app, user=user)
     for hostname, updates in changes.items():
         ChangeUpdate.objects.create(
-                commit=commit,
-                hostname=hostname,
-                updates_json=json.dumps(updates, default=json_encode_extra),
-            )
+            commit=commit,
+            hostname=hostname,
+            updates_json=json.dumps(updates, default=json_encode_extra),
+        )
     for attributes in old_servers:
         attributes_json = json.dumps(attributes, default=json_encode_extra)
         ChangeDelete.objects.create(
-                commit=commit,
-                hostname=attributes['hostname'],
-                attributes_json=attributes_json,
-            )
+            commit=commit,
+            hostname=attributes['hostname'],
+            attributes_json=attributes_json,
+        )
 
 
 def _fetch_servers(changed_servers):
@@ -548,11 +519,11 @@ def _build_error_message(violations_attribs, violations_readonly,
                          violations_regexp, violations_required):
 
     violation_types = [
-            (violations_attribs, 'Attribute not on servertype'),
-            (violations_readonly, 'Attribute is read-only'),
-            (violations_regexp, 'Regexp does not match'),
-            (violations_required, 'Attribute is required'),
-        ]
+        (violations_attribs, 'Attribute not on servertype'),
+        (violations_readonly, 'Attribute is read-only'),
+        (violations_regexp, 'Regexp does not match'),
+        (violations_required, 'Attribute is required'),
+    ]
 
     message = []
     for violations, message_type in violation_types:
@@ -566,7 +537,7 @@ def _build_error_message(violations_attribs, violations_readonly,
         if seen:
             for vattr, num_affected in seen.items():
                 message.append('{0}: {1} (#affected: {2})'.format(
-                        message_type, vattr, num_affected
-                    ))
+                    message_type, vattr, num_affected
+                ))
 
     return '. '.join(message)
