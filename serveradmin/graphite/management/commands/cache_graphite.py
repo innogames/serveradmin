@@ -7,7 +7,7 @@ from io import BytesIO
 
 from django.core.management.base import NoArgsCommand
 from django.conf import settings
-from django.db import transaction, models
+from django.db import transaction
 
 from django_urlauth.utils import new_token
 from serveradmin.graphite.models import (
@@ -35,14 +35,7 @@ class Command(NoArgsCommand):
             mkdir(sprite_dir)
 
         # We will make sure to generate a single sprite for a single hostname.
-        for collection in (
-            Collection.objects
-            .annotate(in_recovery=models.Func(
-                function='pg_is_in_recovery',
-                output_field=models.fields.BooleanField(),
-            ))
-            .filter(in_recovery=False, overview=True)
-        ):
+        for collection in Collection.objects.filter(overview=True):
             name = collection.attribute_id + '_' + collection.attribute_value
             collection_dir = sprite_dir + '/' + name
             if not isdir(collection_dir):
