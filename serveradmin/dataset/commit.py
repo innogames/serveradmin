@@ -124,11 +124,6 @@ class Commit(object):
                         del changes[attr]
                 elif action == 'multi':
                     if change['add'] or change['remove']:
-                        for value in change['add'].intersection(
-                            change['remove']
-                        ):
-                            change['add'].remove(value)
-                            change['remove'].remove(value)
                         if change['add'] or change['remove']:
                             server_changed = True
                         else:
