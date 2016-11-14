@@ -297,7 +297,6 @@ def commit(request):
         try:
             commit_changes(commit, user=request.user)
         except (
-            ValueError,
             ValidationError,
             IntegrityError,
         ) as error:
