@@ -342,8 +342,7 @@ function _make_attr_editable(cell, server, attr_name, value)
     });
 }
 
-function _restore_attr(server_id, attr_name)
-{
+function _restore_attr(server_id, attr_name) {
     if (typeof(commit['changes'][server_id]) != 'undefined') {
         if (typeof(commit['changes'][server_id][attr_name]) != 'undefined') {
             delete commit['changes'][server_id][attr_name];
@@ -353,12 +352,10 @@ function _restore_attr(server_id, attr_name)
 
 function format_value(value, attr_name, single_value) {
     var attr_obj = available_attributes[attr_name];
-    if (typeof(value) == 'undefined') {
+    if (typeof(value) == 'undefined')
         value = '';
-    }
-    if (attr_obj['multi'] && !single_value) {
-        return value.sort().join(', ');
-    }
+    else if (attr_obj['multi'] && !single_value)
+        value = value.sort().join(', ');
     return value;
 }
 
@@ -373,8 +370,7 @@ function parse_value(value, attr_name) {
     return value;
 }
 
-function render_server_table()
-{
+function render_server_table() {
     var offset = (search['page'] - 1) * search['per_page'];
     var shown_attributes = [];
     for(var i = 0; i < search['shown_attributes'].length; i++) {
@@ -389,8 +385,7 @@ function render_server_table()
     build_server_table(search['servers'], shown_attributes, offset);
 }
 
-function autocomplete_shell_command(term, autocomplete_cb)
-{
+function autocomplete_shell_command(term, autocomplete_cb) {
     var autocomplete = [];
     var parsed_args = parse_function_string(term);
     var plen = parsed_args.length;
