@@ -19,6 +19,7 @@ def random_alnum_string(length):
     # to read to remove special chars without failing below the length.
     read_length = ((length // 4) + 1) * 3 + (int(length * 0.03) // 3) * 3
     while True:
-        random_str = b64encode(os.urandom(read_length), '??').replace('?', '')
+        random_bytes = os.urandom(read_length)
+        random_str = b64encode(random_bytes, b'??').replace(b'?', b'')
         if len(random_str) >= length:
             return random_str[:length]

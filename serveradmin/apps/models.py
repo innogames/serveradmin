@@ -9,6 +9,7 @@ from django.contrib.auth.models import User
 
 from serveradmin.common.utils import random_alnum_string
 
+
 class Application(models.Model):
     name = models.CharField(max_length=80)
     app_id = models.CharField(max_length=64, unique=True, editable=False)
@@ -38,6 +39,7 @@ class Application(models.Model):
 
         return False
 
+
 class ApplicationException(models.Model):
     application = models.ForeignKey(Application)
     user = models.ForeignKey(User)
@@ -49,9 +51,11 @@ class ApplicationException(models.Model):
     def __str__(self):
         return u'Exception on {0}'.format(self.application)
 
+
 def set_auth_token(sender, instance, **kwargs):
     if not instance.auth_token:
         instance.auth_token = random_alnum_string(24)
     instance.app_id = hashlib.sha1(instance.auth_token).hexdigest()
+
 
 pre_save.connect(set_auth_token, sender=Application)
