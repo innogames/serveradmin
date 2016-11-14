@@ -120,7 +120,7 @@ class Commit(object):
         try:
             on_server_attribute_changed.invoke(
                 commit=self,
-                servers=self.servers.values(),
+                servers=list(self.servers.values()),
                 changes=self.changed_servers,
             )
         except CommitIncomplete as error:
