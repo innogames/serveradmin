@@ -81,9 +81,9 @@ class Commit(object):
                         raise ValueError('Not a multi attribute')
 
     def _clean_changes(self):
-        for server_id, changes in self.changed_servers.items():
+        for server_id, changes in tuple(self.changed_servers.items()):
             server_changed = False
-            for attr, change in changes.items():
+            for attr, change in tuple(changes.items()):
                 action = change['action']
 
                 if action == 'new':
