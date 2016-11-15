@@ -10,8 +10,6 @@ class Migration(migrations.Migration):
         migrations.RunSQL('CREATE EXTENSION IF NOT EXISTS btree_gist'),
         migrations.RunSQL(
             'ALTER TABLE server '
-            'ADD CONSTRAINT server_hostname_check '
-            "   CHECK (hostname ~ '^[a-z][a-z0-9\\.\\-]*$'),"
             'ADD CONSTRAINT server_inter_ip_exclude '
             '   EXCLUDE USING gist ('
             '       intern_ip inet_ops WITH &&,'

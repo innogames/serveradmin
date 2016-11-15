@@ -242,7 +242,7 @@ def _validate_real_attributes(
         # Handle not existing attributes (fill defaults, validate require)
         if attribute not in real_attributes:
             if attribute.multi:
-                if sa.default_value in ('', None):
+                if sa.default_value is None:
                     real_attributes[attribute] = []
                 else:
                     real_attributes[attribute] = _type_cast_default(
@@ -250,7 +250,7 @@ def _validate_real_attributes(
                         sa.default_value,
                     )
             elif sa.required:
-                if fill_defaults and sa.default_value not in ('', None):
+                if fill_defaults and sa.default_value is not None:
                     real_attributes[attribute] = _type_cast_default(
                         attribute,
                         sa.default_value,
@@ -259,7 +259,7 @@ def _validate_real_attributes(
                     violations_required.append(attribute.pk)
                     continue
             else:
-                if fill_defaults_all and sa.default_value not in ('', None):
+                if fill_defaults_all and sa.default_value is not None:
                     real_attributes[attribute] = _type_cast_default(
                         attribute,
                         sa.default_value,
