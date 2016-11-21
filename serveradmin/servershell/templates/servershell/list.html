@@ -34,7 +34,7 @@
     {% else %}
     {% if field.value|length > 100 %}
     <div style="overflow:auto;">{{ field.value }}</div>
-    {% else %}
+    {% elif field.value != None %}
     {{ field.value }}
     {% endif %}
     {% endif %}

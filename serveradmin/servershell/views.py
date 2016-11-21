@@ -183,34 +183,37 @@ def list_and_edit(request, mode='list'):
 
     invalid_attrs = set()
     if mode == 'edit' and request.POST:
-        attrs = set(request.POST.getlist('attr'))
-        for attr in attrs:
-            attribute = Attribute.objects.get(pk=attr)
+        for key, value in request.POST.items():
+            if not key.startswith('attr_'):
+                continue
+            attribute_id = key[len('attr_'):]
+            attribute = Attribute.objects.get(pk=attribute_id)
+            value = value.strip()
 
             if attribute.multi:
-                values = [raw_value.strip() for raw_value in
-                          request.POST.get('attr_' + attr, '').splitlines()]
+                values = [v.strip() for v in value.splitlines()]
                 try:
                     value = typecast(attribute, values)
                 except ValueError:
-                    invalid_attrs.add(attr)
+                    invalid_attrs.add(attribute_id)
                     value = set(values)
+            if value == '':
+                value = None
             else:
-                value = request.POST.get('attr_' + attr, '')
                 try:
                     value = typecast(attribute, value)
                 except ValueError:
-                    invalid_attrs.add(attr)
-            server[attr] = value
+                    invalid_attrs.add(attribute_id)
+            server[attribute_id] = value
 
         if not invalid_attrs:
             try:
                 server.commit(user=request.user)
                 messages.success(request, 'Edited server successfully')
                 url = '{0}?object_id={1}'.format(
-                        reverse('servershell_list'),
-                        server.object_id,
-                    )
+                    reverse('servershell_list'),
+                    server.object_id,
+                )
                 return HttpResponseRedirect(url)
             except CommitValidationFailed as e:
                 invalid_attrs.update([attr for obj_id, attr in e.violations])
@@ -236,8 +239,6 @@ def list_and_edit(request, mode='list'):
         fields.append({
             'key': key,
             'value': displaycast(attribute, value),
-            'has_value': True,
-            'editable': True,
             'type': attribute.type,
             'multi': attribute.multi,
             'required': servertype_attribute and servertype_attribute.required,
@@ -250,24 +251,6 @@ def list_and_edit(request, mode='list'):
             'readonly': attribute.readonly,
             'error': key in invalid_attrs,
         })
-
-    if mode == 'edit':
-        for servertype_attribute in servertype_attributes.values():
-            if servertype_attribute.attribute.pk in fields_set:
-                continue
-            fields.append({
-                'key': servertype_attribute.attribute.pk,
-                'value': [] if servertype_attribute.attribute.multi else '',
-                'has_value': False,
-                'editable': True,
-                'type': servertype_attribute.attribute.type,
-                'multi': servertype_attribute.attribute.multi,
-                'required': False,
-                'regexp': _prepare_regexp_html(servertype_attribute.regexp),
-                'default': servertype_attribute.default_value,
-                'readonly': servertype_attribute.attribute.readonly,
-                'error': servertype_attribute.attribute.pk in invalid_attrs,
-            })
 
     return TemplateResponse(request, 'servershell/{0}.html'.format(mode), {
         'object_id': server.object_id,
