@@ -272,7 +272,7 @@ class Any(BaseFilter):
 
 class _AndOr(BaseFilter):
     def __init__(self, *filters):
-        self.filters = map(_prepare_filter, filters)
+        self.filters = tuple(map(_prepare_filter, filters))
 
     def __repr__(self):
         args = ', '.join(repr(filt) for filt in self.filters)
@@ -298,6 +298,9 @@ class _AndOr(BaseFilter):
 
     def as_sql_expr(self, attribute, servertypes):
         joiner = ' {0} '.format(type(self).__name__.upper())
+
+        if not self.filters:
+            return 'NOT ({0})'.format(joiner.join(('true', 'false')))
 
         return '({0})'.format(joiner.join(
             v.as_sql_expr(attribute, servertypes) for v in self.filters
