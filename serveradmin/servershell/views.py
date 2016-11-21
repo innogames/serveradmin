@@ -227,24 +227,27 @@ def list_and_edit(request, mode='list'):
     fields = []
     fields_set = set()
     for key, value in server.items():
-        if key not in servertype_attributes:
-            continue
-        servertype_attribute = servertype_attributes[key]
-        if servertype_attribute.related_via_attribute:
+        attribute = Attribute.objects.get(pk=key)
+        servertype_attribute = servertype_attributes.get(key)
+        if servertype_attribute and servertype_attribute.related_via_attribute:
             continue
 
         fields_set.add(key)
         fields.append({
             'key': key,
-            'value': displaycast(servertype_attribute.attribute, value),
+            'value': displaycast(attribute, value),
             'has_value': True,
             'editable': True,
-            'type': servertype_attribute.attribute.type,
-            'multi': servertype_attribute.attribute.multi,
-            'required': servertype_attribute.required,
-            'regexp': _prepare_regexp_html(servertype_attribute.regexp),
-            'default': servertype_attribute.default_value,
-            'readonly': servertype_attribute.attribute.readonly,
+            'type': attribute.type,
+            'multi': attribute.multi,
+            'required': servertype_attribute and servertype_attribute.required,
+            'regexp': _prepare_regexp_html(
+                servertype_attribute and servertype_attribute.regexp
+            ),
+            'default': (
+                servertype_attribute and servertype_attribute.default_value
+            ),
+            'readonly': attribute.readonly,
             'error': key in invalid_attrs,
         })
 
