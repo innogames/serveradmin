@@ -1,4 +1,5 @@
 from collections import defaultdict, OrderedDict
+from ipaddress import IPv4Address, IPv6Address
 
 from django.core.exceptions import ValidationError
 
@@ -323,27 +324,24 @@ class QuerySet(BaseQuerySet):
         This function takes advantage of networks in the same servertype not
         overlapping with each other.
         """
-        query = Server.objects.values_list('intern_ip', 'hostname').filter(
-            _servertype=attribute.target_servertype
-        )
         target = None
-        for source in sorted(servers, key=lambda s: s.intern_ip):
+        for source in sorted(servers, key=lambda s: sort_key(s.intern_ip)):
             # Check the previous target
             if target is not None:
-                network = target[0].network
-                if network.broadcast_address < source.intern_ip.ip:
+                network = target.intern_ip.network
+                if network.version != source.intern_ip.version:
+                    target = None
+                elif network.broadcast_address < source.intern_ip.ip:
                     target = None
                 elif source.intern_ip not in network:
                     continue
             # Check for a new target
             if target is None:
                 try:
-                    target = query.get(
-                        intern_ip__net_contains_or_equals=source.intern_ip
-                    )
+                    target = source.get_supernet(attribute.target_servertype)
                 except Server.DoesNotExist:
                     continue
-            self._server_attributes[source.pk][attribute] = target[1]
+            self._server_attributes[source.pk][attribute] = target.hostname
 
     def _add_related_attribute(self, servertype_attribute, servers_by_type):
         attribute = servertype_attribute.attribute
@@ -392,13 +390,8 @@ class QuerySet(BaseQuerySet):
         if value is None:
             return -1, None
         if self._order_by.multi:
-            return 0, tuple(self._order_by_value(v) for v in value)
-        return 0, self._order_by_value(value)
-
-    def _order_by_value(self, value):
-        if self._order_by.type == 'inet':
-            return value.version, value
-        return value
+            return 0, tuple(sort_key(v) for v in value)
+        return 0, sort_key(value)
 
     def _get_attributes(self, server_id):
         server_attributes = self._server_attributes[server_id]
@@ -433,3 +426,9 @@ class ServerObject(BaseServerObject):
         instance_dict = tpl[2].copy()
         del instance_dict['_queryset']
         return (tpl[0], tpl[1], instance_dict)
+
+
+def sort_key(value):
+    if isinstance(value, (IPv4Address, IPv6Address)):
+        return value.version, value
+    return value

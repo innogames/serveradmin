@@ -475,6 +475,12 @@ class Server(models.Model):
     def __str__(self):
         return self.hostname
 
+    def get_supernet(self, servertype):
+        return Server.objects.get(
+            _servertype=servertype,
+            intern_ip__net_contains_or_equals=self.intern_ip,
+        )
+
     def clean(self, *args, **kwargs):
         super(Server, self).clean(*args, **kwargs)
         self._validate_project()
