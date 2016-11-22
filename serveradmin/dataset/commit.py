@@ -9,6 +9,7 @@ from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
     Server,
+    ServerAttribute,
     ServerHostnameAttribute,
     ChangeCommit,
     ChangeUpdate,
@@ -111,8 +112,7 @@ class Commit(object):
         self._delete_attributes()
         self._delete_servers()
         self._update_servers()
-        self._update_attributes()
-        self._insert_attributes()
+        self._upsert_attributes()
 
         # Re-fetch servers before invoking hook, otherwise the hook will
         # receive incomplete data.
@@ -184,35 +184,31 @@ class Commit(object):
             server.full_clean()
             server.save()
 
-    def _update_attributes(self):
-        for server_id, changes in self.changed_servers.items():
-            for change in changes.values():
-                attribute = change['attribute']
-                if attribute.special:
-                    continue
-                if change['action'] != 'update':
-                    continue
-                if change['old'] is None:
-                    continue
-                if change['new'] is None:
-                    continue
-                server = change['server']
-                server_attribute = server.get_attributes(attribute).get()
-                server_attribute.save_value(change['new'])
-
-    def _insert_attributes(self):
+    def _upsert_attributes(self):
         for server_id, changes in self.changed_servers.items():
             for change in changes.values():
                 server = change['server']
                 attribute = change['attribute']
                 action = change['action']
-                if action == 'new' or (
-                    action == 'update' and change['old'] is None
-                ):
-                    server.add_attribute(attribute, change['new'])
-                elif action == 'multi':
+
+                if attribute.special:
+                    continue
+
+                if action == 'multi':
                     for value in change['add']:
                         server.add_attribute(attribute, value)
+                    continue
+
+                if action not in ('new', 'update'):
+                    continue
+                if change['new'] is None:
+                    continue
+                try:
+                    server_attribute = server.get_attributes(attribute).get()
+                except ServerAttribute.get_model(attribute.type).DoesNotExist:
+                    server.add_attribute(attribute, change['new'])
+                else:
+                    server_attribute.save_value(change['new'])
 
 
 class CommitError(ValidationError):
