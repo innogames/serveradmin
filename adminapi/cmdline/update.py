@@ -49,6 +49,7 @@ def update(hostname, attrs, overwrite):
         else:
                 host[attr] = value
     host.commit()
+    return True
 
 if __name__ == '__main__':
     main()
