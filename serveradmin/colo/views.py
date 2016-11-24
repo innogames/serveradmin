@@ -194,7 +194,13 @@ def index(request):
                                 'hostname',
                                 'hardware_model',
                             ))
-
+                            hardware += tuple(query(
+                                rack=rack['hostname'],
+                                servertype='blade_enclosure',
+                            ).restrict(
+                                'hostname',
+                                'hardware_model',
+                            ))
                     row['igcolumns'].append({
                         'style': 'extreme' if [
                             hw for hw in hardware if
