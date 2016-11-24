@@ -8,7 +8,6 @@ from serveradmin.dataset import query, filters
 datacenters = {
     'Süderstraße S198.1': {
         'name': 'af',
-        'colocation': None,
         'rowgroups': [
             [
                 {
@@ -177,34 +176,34 @@ def index(request):
             for row in rgroup:
                 row['igcolumns'] = []
                 for col in row['columns']:
-                    hardware = {}
+                    hardware = ()
                     if row['row'] != '_' and col != '_':
                         rack = tuple(query(
                             servertype='rack',
                             datacenter=dc_v['name'],
-                            rack_colo=dc_v['colocation']
-                            if dc_v['colocation'] else filters.Empty(),
+                            rack_colo=dc_v.get('colocation', filters.Empty()),
                             rack_row=row['row'],
                             rack_number=col,
                         ))
                         if rack:
                             rack = rack[0]
-                            hardware = query(
+                            hardware = tuple(query(
                                 rack=rack['hostname'],
                                 bladecenter=filters.Empty(),
-                            )
+                            ).restrict(
+                                'hostname',
+                                'hardware_model',
+                            ))
+
                     row['igcolumns'].append({
                         'style': 'extreme' if [
                             hw for hw in hardware if
-                            'hardware_model' in hw
-                            and
-                            hw['hardware_model'] == 'EX670'
+                            hw.get('hardware_model') == 'EX670'
                         ] else 'normal',
                         'name': col,
-                        'ighw': len(hardware) if hardware else 0,
+                        'ighw': len(hardware),
                         'hw': [hw['hostname'] for hw in hardware],
-                        'static': row['static'][col]
-                        if 'static' in row and col in row['static'] else None,
+                        'static': row.get('static', {}).get(col),
                     })
     return TemplateResponse(request, 'colo/index.html', {
         'dcs': dcs,
