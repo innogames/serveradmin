@@ -152,7 +152,7 @@ class Regexp(BaseFilter):
                 .format(value)
             )
         else:
-            template = '{{0}} ~ E{0}'.format(value)
+            template = '{{0}}::text ~ E{0}'.format(value)
 
         return _condition_sql(attribute, template, servertypes)
 
