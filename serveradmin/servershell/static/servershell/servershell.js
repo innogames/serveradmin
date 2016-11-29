@@ -14,7 +14,7 @@ var search = {
 var commit = {
     'deleted': [],
     'changes': {}
-}
+};
 
 function refresh_servers(callback) {
     var search_request = {
@@ -49,7 +49,7 @@ function refresh_servers(callback) {
 }
 
 function regenerate_link() {
-    var attrs = $("input[name=attr]:checked").map(function () {
+    var attrs = $('input[name=attr]:checked').map(function() {
         return this.value;
     }).get().join(',');
     var args = {
@@ -60,9 +60,8 @@ function regenerate_link() {
 
 }
 
-function build_server_table(servers, attributes, offset)
-{
-    if (typeof(offset) == 'undefined') {
+function build_server_table(servers, attributes, offset) {
+    if (typeof offset == 'undefined') {
         offset = 0;
     }
     // Build table header
@@ -92,7 +91,7 @@ function build_server_table(servers, attributes, offset)
             row_class = 'row_state_retired';
         } else if (server['state'] == 'maintenance') {
             row_class = 'row_state_maintenance';
-        } else if ([' ', 'deploy_offline', 'deploy_online'].indexOf(server['state']) > 0 ) {
+        } else if ([' ', 'deploy_offline', 'deploy_online'].indexOf(server['state']) > 0) {
             row_class = 'row_state_deploy';
         } else if (server['cancelled']) {
             row_class = 'row_cancelled';
@@ -110,9 +109,9 @@ function build_server_table(servers, attributes, offset)
             var attr_name = attributes[j];
             var value = server[attr_name];
             var changes = commit['changes'];
-            if (typeof(changes[server['object_id']]) != 'undefined' &&
-                    typeof(changes[server['object_id']][attr_name]) != 'undefined') {
-                var change = changes[server['object_id']][attr_name]
+            if (typeof changes[server['object_id']] != 'undefined' &&
+                    typeof changes[server['object_id']][attr_name] != 'undefined') {
+                var change = changes[server['object_id']][attr_name];
                 if (change['action'] == 'update') {
                     var value_str = format_value(value, attr_name);
                     var new_value_str = format_value(change['new'], attr_name);
@@ -137,13 +136,13 @@ function build_server_table(servers, attributes, offset)
                     row.append(table_cell);
                 } else if (change['action'] == 'multi') {
                     var table_cell = $('<td></td>');
-                    if (typeof(value) == 'undefined') {
+                    if (typeof value == 'undefined') {
                         value = [];
                     }
-                    if (typeof(change['remove']) == 'undefined') {
+                    if (typeof change['remove'] == 'undefined') {
                         change['remove'] = [];
                     }
-                    if (typeof(change['add']) == 'undefined') {
+                    if (typeof change['add'] == 'undefined') {
                         change['add'] = [];
                     }
                     var current_values = [];
@@ -203,8 +202,7 @@ function build_server_table(servers, attributes, offset)
     $('#shell_servers').empty().append(heading).append(table);
 }
 
-function _make_attr_editable(cell, server, attr_name, value)
-{
+function _make_attr_editable(cell, server, attr_name, value) {
     cell.dblclick(function(ev) {
         if ($('#edit_attr').length) {
             return;
@@ -215,7 +213,7 @@ function _make_attr_editable(cell, server, attr_name, value)
 
         if (attr_obj.multi) {
             multi_value_strs = [];
-            for(var i = 0; i < value.length; i++) {
+            for (var i = 0; i < value.length; i++) {
                 multi_value_strs.push(format_value(value[i], attr_name, true));
             }
             var input = $('<textarea id="edit_attr" rows="5" cols="30"/></textarea>').val(
@@ -227,9 +225,9 @@ function _make_attr_editable(cell, server, attr_name, value)
             form.append(input);
         }
         var ok_button = $('<input type="submit" value="edit" />');
-        form.append(ok_button)
+        form.append(ok_button);
 
-        var stype_attr = search['avail_attributes'][server['servertype']][attr_name]
+        var stype_attr = search['avail_attributes'][server['servertype']][attr_name];
         if (stype_attr.regexp !== null) {
             form.append($('<div/>').text('Regexp: ' + stype_attr.regexp));
         }
@@ -288,7 +286,7 @@ function _make_attr_editable(cell, server, attr_name, value)
                     render_server_table();
                     return;
                 }
-                if (typeof(server[attr_name]) == 'undefined') {
+                if (typeof server[attr_name] == 'undefined') {
                     if (new_value !== '') {
                         commit_data = {
                             'action': 'new',
@@ -317,13 +315,13 @@ function _make_attr_editable(cell, server, attr_name, value)
             if (commit_data === null) {
                 // Since we might remove uncomitted data, we have to delete
                 // them from the outstanding commit.
-                if (typeof(commit['changes'][server['object_id']]) != 'undefined') {
+                if (typeof commit['changes'][server['object_id']] != 'undefined') {
                     delete commit['changes'][server['object_id']][attr_name];
                 }
                 render_server_table();
                 return;
             }
-            if (typeof(commit['changes'][server['object_id']]) == 'undefined') {
+            if (typeof commit['changes'][server['object_id']] == 'undefined') {
                 commit['changes'][server['object_id']] = {};
             }
             commit['changes'][server['object_id']][attr_name] = commit_data;
@@ -343,8 +341,8 @@ function _make_attr_editable(cell, server, attr_name, value)
 }
 
 function _restore_attr(server_id, attr_name) {
-    if (typeof(commit['changes'][server_id]) != 'undefined') {
-        if (typeof(commit['changes'][server_id][attr_name]) != 'undefined') {
+    if (typeof commit['changes'][server_id] != 'undefined') {
+        if (typeof commit['changes'][server_id][attr_name] != 'undefined') {
             delete commit['changes'][server_id][attr_name];
         }
     }
@@ -352,10 +350,11 @@ function _restore_attr(server_id, attr_name) {
 
 function format_value(value, attr_name, single_value) {
     var attr_obj = available_attributes[attr_name];
-    if (typeof(value) == 'undefined')
+    if (typeof value == 'undefined') {
         value = '';
-    else if (attr_obj['multi'] && !single_value)
+    } else if (attr_obj['multi'] && !single_value) {
         value = value.sort().join(', ');
+    }
     return value;
 }
 
@@ -373,13 +372,13 @@ function parse_value(value, attr_name) {
 function render_server_table() {
     var offset = (search['page'] - 1) * search['per_page'];
     var shown_attributes = [];
-    for(var i = 0; i < search['shown_attributes'].length; i++) {
+    for (var i = 0; i < search['shown_attributes'].length; i++) {
         if (shown_attributes.indexOf(search['shown_attributes'][i]) == -1) {
             shown_attributes.push(search['shown_attributes'][i]);
         }
     }
     $('#shell_attributes input[name="attr"]').prop('checked', false);
-    for(var i = 0; i < shown_attributes.length; i++) {
+    for (var i = 0; i < shown_attributes.length; i++) {
         $('#shell_attributes input[value="' + shown_attributes[i] + '"]').prop('checked', true);
     }
     build_server_table(search['servers'], shown_attributes, offset);
@@ -436,7 +435,7 @@ function autocomplete_shell_command(term, autocomplete_cb) {
 
     var command = parsed_args[0]['value'];
     if (command == 'attr' || command == 'delattr') {
-        if (parsed_args[plen -1]['token'] == 'str') {
+        if (parsed_args[plen - 1]['token'] == 'str') {
             _autocomplete_attr(term, parsed_args, autocomplete, ' ');
         }
     } else if (command == 'setattr') {
@@ -444,14 +443,14 @@ function autocomplete_shell_command(term, autocomplete_cb) {
         if (plen > 2) {
             return;
         }
-        if (parsed_args[plen -1]['token'] == 'str') {
+        if (parsed_args[plen - 1]['token'] == 'str') {
             function only_single(attr) {
                 return !available_attributes[attr]['multi'];
             }
             _autocomplete_attr(term, parsed_args, autocomplete, '=', only_single);
         }
     } else if (command == 'multiadd' || command == 'multidel') {
-        if (parsed_args[plen -1]['token'] == 'str' && (plen < 3 || parsed_args[plen-2]['token'] != 'key')) {
+        if (parsed_args[plen - 1]['token'] == 'str' && (plen < 3 || parsed_args[plen - 2]['token'] != 'key')) {
             function only_multi(attr) {
                 return available_attributes[attr]['multi'];
             }
@@ -480,8 +479,7 @@ function autocomplete_shell_command(term, autocomplete_cb) {
     autocomplete_cb(autocomplete);
 }
 
-function execute_on_servers(callback)
-{
+function execute_on_servers(callback) {
     var marked_servers = get_marked_servers();
     if (marked_servers.length == 0) {
         if (search['first_server'] != null) {
@@ -500,8 +498,7 @@ function execute_on_servers(callback)
     }
 }
 
-function handle_command(command)
-{
+function handle_command(command) {
     if (command === '') {
         return '';
     } else if (command == 'n' || command == 'next') {
@@ -511,7 +508,7 @@ function handle_command(command)
     } else if (command == 'selectall') {
         return handle_command_select(true);
     } else if (command == 'unselectall') {
-        return handle_command_select(false)
+        return handle_command_select(false);
     } else if (command == 'search') {
         return handle_command_search();
     } else if (command == 'export') {
@@ -537,8 +534,7 @@ function handle_command(command)
     }
 }
 
-function handle_command_next_page()
-{
+function handle_command_next_page() {
     if (search['page'] < search['num_pages']) {
         search['page']++;
         refresh_servers(function() {
@@ -547,8 +543,7 @@ function handle_command_next_page()
     }
 }
 
-function handle_command_prev_page()
-{
+function handle_command_prev_page() {
     search['page']--;
     if (search['page'] < 1) {
         search['page'] = 1;
@@ -558,22 +553,19 @@ function handle_command_prev_page()
     });
 }
 
-function handle_command_select(value)
-{
+function handle_command_select(value) {
     $('input[name="server"]').each(function(index) {
         this.checked = value;
     });
     return '';
 }
 
-function handle_command_search()
-{
+function handle_command_search() {
     $('#shell_search').focus();
     return '';
 }
 
-function handle_command_export()
-{
+function handle_command_export() {
     $.get(shell_export_url, {'term': $('#shell_search').val()}, function(hostnames) {
         var box = $('<textarea rows="20" cols="70"></textarea>').text(hostnames);
         var dialog = $('<div title="Exported hostnames"></div>').css(
@@ -586,19 +578,19 @@ function handle_command_export()
     return '';
 }
 
-function handle_command_graph()
-{
+function handle_command_graph() {
     var marked_servers = get_marked_servers();
     var hostnames = search['servers'].filter(function(server) {
-        return marked_servers.indexOf(server['object_id']) >= 0
+        return marked_servers.indexOf(server['object_id']) >= 0;
     }).map(function(server) {
         return server['hostname'];
     });
 
     // The established behavior of the Servershell commands is to select
     // the first server, if none of them are explicitly selected.
-    if (hostnames.length == 0 && search['first_server'] != null)
+    if (hostnames.length == 0 && search['first_server'] != null) {
         hostnames = [search['first_server']['hostname']];
+    }
 
     if (hostnames.length > 0) {
         var query_str = '?' + hostnames.map(function(hostname) {
@@ -607,7 +599,7 @@ function handle_command_graph()
 
         $.get(shell_graph_url + query_str, function(data) {
             var dialog = $('<div title="Graphite Graph Table"></div>');
-            dialog.append(data)
+            dialog.append(data);
             dialog.dialog({
                 'width': 1550
             });
@@ -622,7 +614,7 @@ function handle_command_list() {
         var query_str = '?' + $.param({'object_id': server['object_id']});
         $.get(shell_list_url + query_str, function(data) {
             var dialog = $('<div title="' + server['hostname'] + '"></div>');
-            dialog.append(data)
+            dialog.append(data);
             dialog.dialog({
                 'width': 1000
             });
@@ -633,8 +625,7 @@ function handle_command_list() {
     return '';
 }
 
-function handle_command_new()
-{
+function handle_command_new() {
     $.get(shell_new_url, function(page) {
         $('<div title="New server"></div>').append(page).dialog({
             'width': 600
@@ -645,8 +636,7 @@ function handle_command_new()
     return '';
 }
 
-function handle_command_clone()
-{
+function handle_command_clone() {
     function clone_server(server) {
         $.get(shell_new_url, {'clone_from': server['hostname']}, function(page) {
             var title = 'Clone server from ' + server['hostname'];
@@ -660,8 +650,7 @@ function handle_command_clone()
     return '';
 }
 
-function handle_command_delete()
-{
+function handle_command_delete() {
     execute_on_servers(function(server) {
         commit['deleted'].push(server['object_id']);
         return true;
@@ -670,18 +659,16 @@ function handle_command_delete()
     return '';
 }
 
-function handle_command_changes()
-{
+function handle_command_changes() {
     window.location = shell_changes_url;
 }
 
-function handle_command_history()
-{
+function handle_command_history() {
     function show_history(server) {
         var query_str = '?' + $.param({'hostname': server['hostname']});
         $.get(serverdb_history_url + query_str, function(data) {
             var dialog = $('<div title="History of ' + server['hostname'] + '"></div>');
-            dialog.append(data)
+            dialog.append(data);
             dialog.dialog({
                 'width': 800
             });
@@ -692,11 +679,10 @@ function handle_command_history()
     return '';
 }
 
-function handle_command_range(command)
-{
+function handle_command_range(command) {
     var mark_nos = [];
     var ranges = command.split(',');
-    for(var i = 0; i < ranges.length; i++) {
+    for (var i = 0; i < ranges.length; i++) {
         var range = ranges[i].split('-');
         if (range.length == 1) {
             mark_nos.push(parseInt($.trim(range[0]), 10));
@@ -706,15 +692,15 @@ function handle_command_range(command)
             if (first < 0 || second < 0) {
                 continue;
             }
-            for(var j = first; j <= second; j++) {
+            for (var j = first; j <= second; j++) {
                 mark_nos.push(j);
             }
         }
 
     }
-    for(var i = 0; i < mark_nos.length; i++) {
+    for (var i = 0; i < mark_nos.length; i++) {
         var server = search['no_mapping'][mark_nos[i]];
-        if (typeof(server) != 'undefined') {
+        if (typeof server != 'undefined') {
             var check = $('#server_' + server['object_id'])[0];
             check.checked = !check.checked;
         }
@@ -722,8 +708,7 @@ function handle_command_range(command)
     return '';
 }
 
-function handle_command_other(command)
-{
+function handle_command_other(command) {
     var parsed_args = parse_function_string(command);
     if (parsed_args[0]['token'] != 'str') {
         return;
@@ -750,14 +735,13 @@ function handle_command_other(command)
     }
 }
 
-function handle_command_attr(parsed_args)
-{
+function handle_command_attr(parsed_args) {
     var value_added = false;
 
-    for(var i = 1; i < parsed_args.length; i++) {
+    for (var i = 1; i < parsed_args.length; i++) {
         if (parsed_args[i]['token'] == 'str') {
             var attr_name = parsed_args[i]['value'];
-            if (typeof(available_attributes[attr_name]) == 'undefined') {
+            if (typeof available_attributes[attr_name] == 'undefined') {
                 return;
             }
 
@@ -771,18 +755,18 @@ function handle_command_attr(parsed_args)
         }
     }
 
-    if (value_added)
+    if (value_added) {
         refresh_servers(function() {
             render_server_table();
         });
-    else
+    } else {
         render_server_table();
+    }
 
     return '';
 }
 
-function handle_command_goto(parsed_args)
-{
+function handle_command_goto(parsed_args) {
     if (parsed_args[1]['token'] != 'str') {
         return;
     }
@@ -796,8 +780,7 @@ function handle_command_goto(parsed_args)
     }
 }
 
-function handle_command_order(parsed_args)
-{
+function handle_command_order(parsed_args) {
     if (parsed_args[1]['token'] != 'str') {
         return;
     }
@@ -816,8 +799,7 @@ function handle_command_order(parsed_args)
     return '';
 }
 
-function handle_command_perpage(parsed_args)
-{
+function handle_command_perpage(parsed_args) {
     if (parsed_args[1]['token'] != 'str') {
         return;
     }
@@ -828,23 +810,23 @@ function handle_command_perpage(parsed_args)
     return '';
 }
 
-function handle_command_setattr(parsed_args)
-{
+function handle_command_setattr(parsed_args) {
     if (parsed_args.length != 3 || parsed_args[1]['token'] != 'key' ||
             parsed_args[2]['token'] != 'str') {
         return;
     }
 
     var attr_name = parsed_args[1]['value'];
-    if (search['shown_attributes'].indexOf(attr_name) == -1)
+    if (search['shown_attributes'].indexOf(attr_name) == -1) {
         search['shown_attributes'].push(attr_name);
+    }
 
     refresh_servers(function() {
         var new_value = parsed_args[2]['value'];
         var marked_servers = get_marked_servers();
 
         var error = null;
-        if (typeof(available_attributes[attr_name]) == 'undefined') {
+        if (typeof available_attributes[attr_name] == 'undefined') {
             error = 'No such attribute';
         } else if (available_attributes[attr_name].multi) {
             error = 'This is a multi attribute. Use multiadd/multidel instead!';
@@ -867,21 +849,22 @@ function handle_command_setattr(parsed_args)
             var server = search['servers'][i];
             var server_id = server['object_id'];
 
-            if (marked_servers.indexOf(server_id) < 0)
+            if (marked_servers.indexOf(server_id) < 0) {
                 continue;
+            }
 
             if (!search['avail_attributes'][server['servertype']][attr_name]) {
                 continue;
             }
 
-            if (typeof(changes[server_id]) == 'undefined') {
+            if (typeof changes[server_id] == 'undefined') {
                 changes[server_id] = {};
             }
             var old_value = server[attr_name];
-            if (typeof(old_value) == 'undefined') {
+            if (typeof old_value == 'undefined') {
                 changes[server_id][attr_name] = {
                     'action': 'new',
-                    'new': parse_value(new_value, attr_name),
+                    'new': parse_value(new_value, attr_name)
                 };
             } else {
                 changes[server_id][attr_name] = {
@@ -896,15 +879,15 @@ function handle_command_setattr(parsed_args)
     return '';
 }
 
-function handle_command_delattr(parsed_args)
-{
+function handle_command_delattr(parsed_args) {
     if (parsed_args.length != 2 || parsed_args[1]['token'] != 'str') {
         return;
     }
 
     var attr_name = parsed_args[1]['value'];
-    if (search['shown_attributes'].indexOf(attr_name) == -1)
+    if (search['shown_attributes'].indexOf(attr_name) == -1) {
         search['shown_attributes'].push(attr_name);
+    }
 
     refresh_servers(function() {
         var marked_servers = get_marked_servers();
@@ -915,10 +898,11 @@ function handle_command_delattr(parsed_args)
             var server_id = server['object_id'];
             var attr_obj = available_attributes[attr_name];
 
-            if (marked_servers.indexOf(server_id) < 0)
+            if (marked_servers.indexOf(server_id) < 0) {
                 continue;
+            }
 
-            if (typeof(changes[server_id]) == 'undefined') {
+            if (typeof changes[server_id] == 'undefined') {
                 changes[server_id] = {};
             }
 
@@ -942,15 +926,15 @@ function handle_command_delattr(parsed_args)
     return '';
 }
 
-function handle_command_multiattr(parsed_args, action)
-{
+function handle_command_multiattr(parsed_args, action) {
     if (parsed_args.length != 3 || parsed_args[1]['token'] != 'key' ||
             parsed_args[2]['token'] != 'str') {
         return;
     }
     var attr_name = parsed_args[1]['value'];
-    if (search['shown_attributes'].indexOf(attr_name) == -1)
+    if (search['shown_attributes'].indexOf(attr_name) == -1) {
         search['shown_attributes'].push(attr_name);
+    }
 
     refresh_servers(function() {
         var values = parsed_args[2]['value'].split(',');
@@ -971,18 +955,19 @@ function handle_command_multiattr(parsed_args, action)
             var server = search['servers'][i];
             var server_id = server['object_id'];
 
-            if (marked_servers.indexOf(server_id) < 0)
+            if (marked_servers.indexOf(server_id) < 0) {
                 continue;
+            }
 
             // Don't modify multiattr if it doesn't exist
             if (!search['avail_attributes'][server['servertype']][attr_name]) {
                 continue;
             }
 
-            if (typeof(changes[server_id]) == 'undefined') {
+            if (typeof changes[server_id] == 'undefined') {
                 changes[server_id] = {};
             }
-            if (typeof(changes[server_id][attr_name]) == 'undefined') {
+            if (typeof changes[server_id][attr_name] == 'undefined') {
                 changes[server_id][attr_name] = {
                     'action': 'multi',
                     'add': [],
@@ -1005,7 +990,7 @@ function handle_command_multiattr(parsed_args, action)
                         changes[server_id][attr_name]['remove'].splice(index, 1);
                     } else {
                         var contains_value = false;
-                        if (typeof(server[attr_name]) != 'undefined') {
+                        if (typeof server[attr_name] != 'undefined') {
                             contains_value = server[attr_name].indexOf(parsed_value) != -1;
                         }
                         if (!contains_value) {
@@ -1020,8 +1005,7 @@ function handle_command_multiattr(parsed_args, action)
     return '';
 }
 
-function handle_command_commit(parsed_args)
-{
+function handle_command_commit(parsed_args) {
     $.post(shell_commit_url, {'commit': JSON.stringify(commit)}, function(result) {
         if (result['status'] == 'error') {
             $('<div class="commit-message" title="Commit error"></div>').text(result['message']).dialog();
@@ -1037,8 +1021,7 @@ function handle_command_commit(parsed_args)
     return '';
 }
 
-function get_marked_servers()
-{
+function get_marked_servers() {
     var marked_servers = [];
     $('input[name="server"]:checked').each(function() {
         marked_servers.push(parseInt(this.value, 10));
@@ -1049,7 +1032,7 @@ function get_marked_servers()
 $(function() {
     $('#shell_search_form').submit(function(ev) {
         $('#shell_understood').text('Nothing yet');
-        $('#shell_servers').empty()
+        $('#shell_servers').empty();
         search['page'] = 1;
         ev.stopPropagation();
         console.log(search);
@@ -1063,14 +1046,14 @@ $(function() {
 
     $('#shell_search').bind('change', function(ev) {
         $('#shell_understood').text('Nothing yet');
-        $('#shell_servers').empty()
+        $('#shell_servers').empty();
     });
 
     $('#shell_command_form').submit(function(ev) {
         ev.stopPropagation();
         var command_value = $.trim($('#shell_command').val());
         var new_command = handle_command(command_value);
-        if (typeof(new_command) != 'undefined' && new_command != null) {
+        if (typeof new_command != 'undefined' && new_command != null) {
             $('#shell_command').val(new_command);
             $.post(shell_store_command_url, {'command': command_value});
             if (shell_history['commands'].indexOf(command_value) === -1) {
@@ -1082,7 +1065,7 @@ $(function() {
     });
 
     $('#shell_command').autocomplete({
-        'source': function (request, response) {
+        'source': function(request, response) {
             autocomplete_shell_command($.trim(request.term), response);
         },
         'delay': 0,
@@ -1092,16 +1075,16 @@ $(function() {
     $('#shell_command').keydown(function(ev) {
         var new_command = null;
         if (shell_history['index'] == -1) {
-            return true; // we have no history
+            return true; // We have no history.
         }
 
-        if (ev.shiftKey && ev.which == 38) { // arrow up
+        if (ev.shiftKey && ev.which == 38) { // Arrow up
             $(this).autocomplete('close');
             if (shell_history['index'] != 0) {
                 shell_history['index']--;
             }
             new_command = shell_history['commands'][shell_history['index']];
-        } else if (ev.shiftKey && ev.which == 40) { // arrow down
+        } else if (ev.shiftKey && ev.which == 40) { // Arrow down
             $(this).autocomplete('close');
             if (shell_history['index'] < shell_history['commands'].length - 1) {
                 shell_history['index']++;
@@ -1118,13 +1101,13 @@ $(function() {
 
     $('#shell_command_help_icon').click(function() {
         $('#shell_command_help').dialog({
-            'width': '70em',
+            'width': '70em'
         });
     });
 
     $('#shell_search_help_icon').click(function() {
         $('#shell_search_help').dialog({
-            'width': '70em',
+            'width': '70em'
         });
     });
 
@@ -1149,12 +1132,11 @@ $(function() {
             search['shown_attributes'].splice(index, 1);
         }
 
-        if (this.checked)
-            refresh_servers(function() {
-                render_server_table();
-            });
-        else
+        if (this.checked) {
+            refresh_servers(render_server_table);
+        } else {
             render_server_table();
+        }
 
         regenerate_link();
     });
@@ -1162,8 +1144,9 @@ $(function() {
     $('#shell_attributes li').each(function() {
         var attr_item = $(this);
         var symbol = attr_item.attr('data-attr-type').charAt(0).toUpperCase();
-        if (attr_item.attr('data-attr-multi') == 'True')
+        if (attr_item.attr('data-attr-multi') == 'True') {
             symbol = '[' + symbol + ']';
+        }
 
         var link = $('<span class="link">' + symbol + '</span>');
         link.click(function(ev) {
@@ -1180,12 +1163,12 @@ $(function() {
         $(this).tooltip();
     });
 
-    $('#shell_attributes_toggle').click(function () {
+    $('#shell_attributes_toggle').click(function() {
         var attribute_list = $('#shell_attributes_content').toggle();
         if (attribute_list.is(':visible')) {
-            $('#shell_attributes_toggle').text('(hide)')
+            $('#shell_attributes_toggle').text('(hide)');
         } else {
-            $('#shell_attributes_toggle').text('(show)')
+            $('#shell_attributes_toggle').text('(show)');
         }
 
     });
