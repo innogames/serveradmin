@@ -438,8 +438,8 @@ class Startswith(BaseFilter):
         self.value = str(self.value)
 
     def as_sql_expr(self, attribute, servertypes):
-        value = self.value.replace('_', '\\_').replace('%', '\\%%')
-        value = raw_sql_escape(value + '%%')
+        value = self.value.replace('_', '\\_').replace('%', '\\%')
+        value = raw_sql_escape(value + '%')
 
         if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
             template = (
@@ -810,7 +810,7 @@ def raw_sql_escape(value):
     if value.endswith('\\'):
         raise FilterValueError('Escape character cannot be used in the end')
 
-    value = value.replace('{', '{{').replace('}', '}}')
+    value = value.replace('{', '{{').replace('}', '}}').replace('%', '%%')
 
     return "'" + value + "'"
 
