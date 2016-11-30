@@ -354,9 +354,6 @@ def new_server(request):
             attributes['intern_ip'] = form.cleaned_data['intern_ip']
             attributes['project'] = form.cleaned_data['_project'].pk
             attributes['segment'] = form.cleaned_data['_segment'].pk
-            attributes['responsible_admin'] = [
-                form.cleaned_data['_project'].responsible_admin.username
-            ]
             if 'ssh_pubkey' in attributes:
                 del attributes['ssh_pubkey']
 
