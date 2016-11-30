@@ -5,7 +5,7 @@ from serveradmin.serverdb.models import Server, Servertype
 
 class ServerForm(forms.ModelForm):
     _servertype = forms.ModelChoiceField(
-        queryset=Servertype.objects, empty_label=None
+        queryset=Servertype.objects.filter(), empty_label=None
     )
 
     class Meta:
