@@ -420,6 +420,13 @@ class ServertypeAttribute(models.Model):
         if self.regexp:
             return self.get_compiled_regexp().match(str(value))
 
+    def clean(self):
+        if self.default_value == '':
+            self.default_value = None
+        if self.regexp == '':
+            self.regexp = None
+        super(ServertypeAttribute, self).clean()
+
     @classmethod
     def query(self, servertypes=None, attributes=None):
         queryset = self.objects
