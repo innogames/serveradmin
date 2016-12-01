@@ -407,11 +407,12 @@ function autocomplete_shell_command(term, autocomplete_cb) {
         'export': 'Export all hostnames for usage in shell',
         'perpage': 'Show a specific number of hosts per page (e.g. "perpage 50")',
         'graph': 'Show configured Graohite graph table for selected hosts',
-        'list': 'List all attributes of a server',
         'new': 'Create a new server',
+        'clone': 'Clone a server with it\'s attributes',
+        'list': 'List all attributes of a server',
+        'edit': 'Edit all attributes of a server',
         'changes': 'Show all changes',
-        'history': 'Show history for selected hosts',
-        'clone': 'Clone a server with it\'s attributes'
+        'history': 'Show history for selected hosts'
     };
 
     if (plen == 1 && parsed_args[0]['token'] == 'str') {
@@ -515,12 +516,14 @@ function handle_command(command) {
         return handle_command_export();
     } else if (command == 'graph') {
         return handle_command_graph();
-    } else if (command == 'list') {
-        return handle_command_list();
     } else if (command == 'new') {
         return handle_command_new();
     } else if (command == 'clone') {
         return handle_command_clone();
+    } else if (command == 'list') {
+        return handle_command_list();
+    } else if (command == 'edit') {
+        return handle_command_edit();
     } else if (command == 'delete') {
         return handle_command_delete();
     } else if (command == 'changes') {
@@ -609,33 +612,6 @@ function handle_command_graph() {
     return '';
 }
 
-function handle_command_list() {
-    function show_list(server) {
-        var query_str = '?' + $.param({'object_id': server['object_id']});
-        $.get(shell_list_url + query_str, function(data) {
-            var dialog = $('<div title="' + server['hostname'] + '"></div>');
-            dialog.append(data);
-            dialog.dialog({
-                'width': 1000
-            });
-        });
-        return true;
-    }
-    execute_on_servers(show_list);
-    return '';
-}
-
-function handle_command_new() {
-    $.get(shell_new_url, function(page) {
-        $('<div title="New server"></div>').append(page).dialog({
-            'width': 600
-        }).on('dialogclose', function(event, ui) {
-            $(event.currentTarget).empty().dialog('destroy');
-        });
-    });
-    return '';
-}
-
 function handle_command_clone() {
     function clone_server(server) {
         $.get(shell_new_url, {'clone_from': server['hostname']}, function(page) {
@@ -647,6 +623,47 @@ function handle_command_clone() {
         return false;
     }
     execute_on_servers(clone_server);
+    return '';
+}
+
+function handle_command_edit() {
+    execute_on_servers(function(server) {
+        var query_str = '?' + $.param({'object_id': server['object_id']});
+        $.get(shell_edit_url + query_str, function(data) {
+            var dialog = $('<div title="' + server['hostname'] + '"></div>');
+            dialog.append(data);
+            dialog.dialog({
+                'width': 1000
+            });
+        });
+        return true;
+    });
+    return '';
+}
+
+function handle_command_list() {
+    execute_on_servers(function(server) {
+        var query_str = '?' + $.param({'object_id': server['object_id']});
+        $.get(shell_list_url + query_str, function(data) {
+            var dialog = $('<div title="' + server['hostname'] + '"></div>');
+            dialog.append(data);
+            dialog.dialog({
+                'width': 1000
+            });
+        });
+        return true;
+    });
+    return '';
+}
+
+function handle_command_new() {
+    $.get(shell_new_url, function(page) {
+        $('<div title="New server"></div>').append(page).dialog({
+            'width': 600
+        }).on('dialogclose', function(event, ui) {
+            $(event.currentTarget).empty().dialog('destroy');
+        });
+    });
     return '';
 }
 
