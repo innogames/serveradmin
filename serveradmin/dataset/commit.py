@@ -144,7 +144,7 @@ class Commit(object):
                 action = change['action']
 
                 if action == 'delete' or (
-                    action == 'update' and change['old'] is None
+                    action == 'update' and change['new'] is None
                 ):
                     server.get_attributes(attribute).delete()
                 elif action == 'multi' and change['remove']:
@@ -457,17 +457,14 @@ def _validate_regexp(changed_servers, servers, servertype_attributes):
     for server_id, changes in changed_servers.items():
         server = servers[server_id]
         for attr, change in changes.items():
-            try:
-                sa = servertype_attributes[server['servertype']][attr]
-            except KeyError:
-                continue
-
+            sa = servertype_attributes[server['servertype']][attr]
             if not sa.regexp:
                 continue
 
             action = change['action']
-
             if action == 'update' or action == 'new':
+                if change['new'] is None:
+                    continue
                 if not sa.regexp_match(change['new']):
                     violations.append((server_id, attr))
             elif action == 'multi':
@@ -483,11 +480,7 @@ def _validate_required(changed_servers, servers, servertype_attributes):
     for server_id, changes in changed_servers.items():
         server = servers[server_id]
         for attr, change in changes.items():
-            try:
-                sa = servertype_attributes[server['servertype']][attr]
-            except KeyError:
-                continue
-
+            sa = servertype_attributes[server['servertype']][attr]
             if change['action'] == 'delete' and sa.required:
                 violations.append((server_id, attr))
     return violations
