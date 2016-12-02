@@ -371,7 +371,13 @@ class QuerySet(BaseQuerySet):
 
     def _add_attribute_value(self, server_id, attribute, value):
         if attribute.multi:
-            self._server_attributes[server_id][attribute].add(value)
+            try:
+                self._server_attributes[server_id][attribute].add(value)
+            except KeyError:
+                # If the attribute is removed from the servertype but
+                # left on the servers, this error would occur.  It is not
+                # really expected, but we don't want to crash either.
+                pass
         else:
             self._server_attributes[server_id][attribute] = value
 
