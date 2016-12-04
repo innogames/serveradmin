@@ -41,10 +41,10 @@ change directory to the source code after activating the virtual environment.
 Installing dependencies
 -----------------------
 
-Most dependencies can be installed by using the ``requirements.txt`` file for
-pip::
+Most dependencies can be installed by using the ``serveradmin/requirements.txt``
+file with pip::
    
-   pip install -r requirements.txt
+   pip install -r serveradmin/requirements.txt
 
 
 Setting up the Database
