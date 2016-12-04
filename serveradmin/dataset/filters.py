@@ -608,9 +608,7 @@ class Empty(OptionalFilter):
         pass
 
     def as_sql_expr(self, attribute, servertypes):
-        return 'NOT ' + _condition_sql(
-            attribute, '{0} IS NOT NULL', servertypes
-        )
+        return 'NOT ' + _condition_sql(attribute, '', servertypes)
 
     def matches(self, value):
         return value is None
@@ -794,7 +792,7 @@ def _condition_sql(attribute, template, servertypes):
 
 def _exists_sql(table, alias, conditions):
     return 'EXISTS (SELECT 1 FROM {0} AS {1} WHERE {2})'.format(
-        table, alias, ' AND '.join(conditions)
+        table, alias, ' AND '.join(c for c in conditions if c)
     )
 
 
