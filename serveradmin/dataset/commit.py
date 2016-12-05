@@ -456,9 +456,13 @@ def _validate_regexp(changed_servers, servers, servertype_attributes):
     violations = []
     for server_id, changes in changed_servers.items():
         server = servers[server_id]
-        for attr, change in changes.items():
-            sa = servertype_attributes[server['servertype']][attr]
-            if not sa.regexp:
+        for attribute_id, change in changes.items():
+            attribute = Attribute.objects.get(pk=attribute_id)
+            if attribute.special:
+                continue
+
+            sa = servertype_attributes[server['servertype']][attribute_id]
+            if sa.regexp is None:
                 continue
 
             action = change['action']
@@ -466,11 +470,11 @@ def _validate_regexp(changed_servers, servers, servertype_attributes):
                 if change['new'] is None:
                     continue
                 if not sa.regexp_match(change['new']):
-                    violations.append((server_id, attr))
+                    violations.append((server_id, attribute_id))
             elif action == 'multi':
                 for value in change['add']:
                     if not sa.regexp_match(value):
-                        violations.append((server_id, attr))
+                        violations.append((server_id, attribute_id))
                         break
     return violations
 
@@ -479,10 +483,14 @@ def _validate_required(changed_servers, servers, servertype_attributes):
     violations = []
     for server_id, changes in changed_servers.items():
         server = servers[server_id]
-        for attr, change in changes.items():
-            sa = servertype_attributes[server['servertype']][attr]
+        for attribute_id, change in changes.items():
+            attribute = Attribute.objects.get(pk=attribute_id)
+            if attribute.special:
+                continue
+
+            sa = servertype_attributes[server['servertype']][attribute_id]
             if change['action'] == 'delete' and sa.required:
-                violations.append((server_id, attr))
+                violations.append((server_id, attribute_id))
     return violations
 
 

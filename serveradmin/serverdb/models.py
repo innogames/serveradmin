@@ -412,13 +412,12 @@ class ServertypeAttribute(models.Model):
         return '{0} - {1}'.format(self.servertype, self.attribute)
 
     def get_compiled_regexp(self):
-        if self.regexp and not self._compiled_regexp:
+        if self.regexp is not None and not self._compiled_regexp:
             self._compiled_regexp = re.compile(self.regexp)
         return self._compiled_regexp
 
     def regexp_match(self, value):
-        if self.regexp:
-            return self.get_compiled_regexp().match(str(value))
+        return self.get_compiled_regexp().match(str(value))
 
     def clean(self):
         if self.default_value == '':
