@@ -103,7 +103,6 @@
         "pk": 1,
         "model": "dataset.serverobject",
         "fields": {
-            "comment": null,
             "intern_ip": 168820737,
             "hostname": "test0",
             "servertype": 1,
@@ -114,7 +113,6 @@
         "pk": 2,
         "model": "dataset.serverobject",
         "fields": {
-            "comment": null,
             "intern_ip": 168820738,
             "hostname": "test1",
             "servertype": 2,
@@ -125,7 +123,6 @@
         "pk": 3,
         "model": "dataset.serverobject",
         "fields": {
-            "comment": null,
             "intern_ip": 168820739,
             "hostname": "test2",
             "servertype": 2,
@@ -136,7 +133,6 @@
         "pk": 4,
         "model": "dataset.serverobject",
         "fields": {
-            "comment": null,
             "intern_ip": 168820740,
             "hostname": "test3",
             "servertype": 2,

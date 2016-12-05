@@ -455,7 +455,6 @@ class Server(models.Model):
         validators=hostname_validators,
     )
     intern_ip = netfields.InetAddressField(null=True, blank=True)
-    comment = models.CharField(max_length=255, null=True, blank=True)
     _project = models.ForeignKey(
         Project,
         db_column='project_id',
