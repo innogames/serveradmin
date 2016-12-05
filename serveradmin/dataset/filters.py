@@ -608,6 +608,8 @@ class Empty(OptionalFilter):
         pass
 
     def as_sql_expr(self, attribute, servertypes):
+        if attribute.special:
+            return _condition_sql(attribute, '{0} IS NULL', servertypes)
         return 'NOT ' + _condition_sql(attribute, '', servertypes)
 
     def matches(self, value):
