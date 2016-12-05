@@ -65,7 +65,7 @@ class NetworkFilter(BaseFilter):
         # we took our chance to validate the attribute.
         if attribute.type != 'inet':
             raise FilterValueError(
-                'Only inet typed attributes can be used by this filter.'
+                'Cannot network filter attribute "{}"'.format(attribute)
             )
 
 
@@ -136,8 +136,10 @@ class Regexp(BaseFilter):
         return hash('Regexp') ^ hash(self.regexp)
 
     def typecast(self, attribute):
-        # Regexp value is always string, no need to typecast
-        pass
+        if attribute.type == 'boolean':
+            raise FilterValueError(
+                'Cannot pattern match boolean attribute "{}"'.format(attribute)
+            )
 
     def as_sql_expr(self, attribute, servertypes):
         value = raw_sql_escape(self.regexp)
@@ -191,9 +193,14 @@ class Comparison(BaseFilter):
         return hash('Comparison') ^ hash(self.comparator) ^ hash(self.value)
 
     def typecast(self, attribute):
+        if attribute.type == 'boolean':
+            raise FilterValueError(
+                'Cannot compare boolean attribute "{}"'.format(attribute)
+            )
         if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
-            raise FilterValueError('Hostnames cannot be compared.')
-
+            raise FilterValueError(
+                'Cannot compare hostnames attribute "{}"'.format(attribute)
+            )
         self.value = typecast(attribute, self.value, force_single=True)
 
     def as_sql_expr(self, attribute, servertypes):
@@ -244,6 +251,11 @@ class Any(BaseFilter):
         return h
 
     def typecast(self, attribute):
+        if attribute.type == 'boolean':
+            raise FilterValueError(
+                'Cannot match boolean attribute "{}" with any'
+                .format(attribute)
+            )
         self.values = set(
             typecast(attribute, x, force_single=True)
             for x in self.values
@@ -355,9 +367,14 @@ class Between(BaseFilter):
         return hash('Between') ^ hash(self.a) ^ hash(self.b)
 
     def typecast(self, attribute):
+        if attribute.type == 'boolean':
+            raise FilterValueError(
+                'Cannot compare boolean attribute "{}"'.format(attribute)
+            )
         if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
-            raise FilterValueError('Hostnames cannot be compared.')
-
+            raise FilterValueError(
+                'Cannot compare hostnames attribute "{}"'.format(attribute)
+            )
         self.a = typecast(attribute, self.a, force_single=True)
         self.b = typecast(attribute, self.b, force_single=True)
 
@@ -413,10 +430,8 @@ class Not(BaseFilter):
 
     @classmethod
     def from_obj(cls, obj):
-
         if 'filter' in obj:
             return cls(filter_from_obj(obj['filter']))
-
         raise FilterValueError('Invalid object for Not')
 
 
@@ -435,7 +450,10 @@ class Startswith(BaseFilter):
         return hash('Startswith') ^ hash(self.value)
 
     def typecast(self, attribute):
-        self.value = str(self.value)
+        if attribute.type == 'boolean':
+            raise FilterValueError(
+                'Cannot pattern match boolean attribute "{}"'.format(attribute)
+            )
 
     def as_sql_expr(self, attribute, servertypes):
         value = self.value.replace('_', '\\_').replace('%', '\\%')
@@ -587,10 +605,8 @@ class Optional(OptionalFilter):
 
     @classmethod
     def from_obj(cls, obj):
-
         if 'filter' in obj:
             return cls(filter_from_obj(obj['filter']))
-
         raise FilterValueError('Invalid object for Optional')
 
 
@@ -605,7 +621,10 @@ class Empty(OptionalFilter):
         return hash('Empty')
 
     def typecast(self, attribute):
-        pass
+        if attribute.type == 'boolean':
+            raise FilterValueError(
+                'Boolean attribute "{}" cannot be empty'.format(attribute)
+            )
 
     def as_sql_expr(self, attribute, servertypes):
         if attribute.special:
