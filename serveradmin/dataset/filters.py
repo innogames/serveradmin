@@ -69,11 +69,6 @@ class NetworkFilter(BaseFilter):
             )
 
 
-# We need this class to group optional filters.
-class OptionalFilter(BaseFilter):
-    pass
-
-
 class ExactMatch(BaseFilter):
     def __init__(self, value):
         self.value = value
@@ -574,7 +569,7 @@ class PublicIP(NetworkFilter, NoArgFilter):
         return self.filt.as_sql_expr(attribute, servertypes)
 
 
-class Optional(OptionalFilter):
+class Optional(BaseFilter):
     def __init__(self, filter):
         self.filter = _prepare_filter(filter)
 
@@ -610,7 +605,7 @@ class Optional(OptionalFilter):
         raise FilterValueError('Invalid object for Optional')
 
 
-class Empty(OptionalFilter):
+class Empty(BaseFilter):
     def __repr__(self):
         return 'Empty()'
 
