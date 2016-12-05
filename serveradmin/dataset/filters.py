@@ -469,7 +469,7 @@ class Startswith(BaseFilter):
                 .format(value),
             )
         else:
-            template = '{0} LIKE ' + value
+            template = '{0}::text LIKE ' + value
 
         return _condition_sql(attribute, template, servertypes)
 
