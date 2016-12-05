@@ -3,8 +3,10 @@ from adminapi.request import send_request
 
 API_CALL_ENDPOINT = '/call'
 
+
 class ApiError(Exception):
     pass
+
 
 class ExceptionManager(object):
     def __init__(self):
@@ -19,6 +21,7 @@ class ExceptionManager(object):
             self._cache[attr] = exc
 
         return self._cache[attr]
+
 
 class FunctionGroup(object):
     def __init__(self, group, auth_token, timeout):
@@ -51,7 +54,9 @@ class FunctionGroup(object):
                 elif result['type'] == 'TypeError':
                     exception_class = TypeError
                 else:
-                    exception_class = getattr(ExceptionManager(), result['type'])
+                    exception_class = getattr(
+                        ExceptionManager(), result['type']
+                    )
 
                 #
                 # Dear traceback reader,
@@ -64,10 +69,11 @@ class FunctionGroup(object):
 
         return _api_function
 
+
 def get(group):
     # We allow delaying the authentication
     if _api_settings['auth_token'] is None:
-        token = lambda: _api_settings['auth_token']
+        token = (lambda: _api_settings['auth_token'])
     else:
         token = _api_settings['auth_token']
 
