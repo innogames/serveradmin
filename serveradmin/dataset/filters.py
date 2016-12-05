@@ -331,18 +331,12 @@ class _AndOr(BaseFilter):
 
 class And(_AndOr):
     def matches(self, value):
-        for filter in self.filters:
-            if not filter.matches(value):
-                return False
-        return True
+        return all(f.matches(value) for f in self.filters)
 
 
 class Or(_AndOr):
     def matches(self, value):
-        for filter in self.filters:
-            if filter.matches(value):
-                return True
-        return False
+        return any(f.matches(value) for f in self.filters)
 
 
 class Between(BaseFilter):
@@ -570,8 +564,8 @@ class PublicIP(NetworkFilter, NoArgFilter):
 
 
 class Optional(BaseFilter):
-    def __init__(self, filter):
-        self.filter = _prepare_filter(filter)
+    def __init__(self, *filters):
+        self.filter = Or(Empty(), *filters)
 
     def __repr__(self):
         return 'Optional({0!r})'.format(self.filter)
