@@ -44,7 +44,7 @@ def main():
 
 
 def format_obj(obj):
-    if isinstance(obj, (set, MultiAttr)):
+    if isinstance(obj, MultiAttr):
         return ', '.join(sorted(str(x) for x in obj))
     return str(obj)
 

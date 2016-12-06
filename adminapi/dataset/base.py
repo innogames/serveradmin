@@ -137,7 +137,18 @@ class BaseQuerySet(object):
 
 
 class BaseServerObject(dict):
+    """This class must redefine all mutable methods of the dict class
+    to cast multi attributes.
+    """
+
     def __init__(self, attributes=[], object_id=None, queryset=None):
+        # Loop through ourself afterwards would be more efficient, but
+        # this would give the caller already initialised object in case
+        # anything fails.
+        attributes = dict(attributes)
+        for attribute_id, value in attributes.items():
+            if isinstance(value, (tuple, list, set, frozenset)):
+                attributes[attribute_id] = MultiAttr(value, self, attribute_id)
         super(BaseServerObject, self).__init__(attributes)
         self.object_id = object_id
         self._deleted = False
@@ -184,7 +195,7 @@ class BaseServerObject(dict):
         changes = {}
         for key, old_value in self.old_values.items():
             new_value = self[key]
-            if isinstance(old_value, set):
+            if isinstance(old_value, MultiAttr):
                 action = 'multi'
             else:
                 action = 'update'
@@ -219,20 +230,16 @@ class BaseServerObject(dict):
     def _save_old_value(self, key):
         if key not in self.old_values:
             old_value = self[key]
-            if isinstance(old_value, set):
+            if isinstance(old_value, MultiAttr):
                 self.old_values[key] = old_value.copy()
             else:
                 self.old_values[key] = old_value
 
-    def __getitem__(self, key):
-        item = super(BaseServerObject, self).__getitem__(key)
-        if isinstance(item, (tuple, list, set)):
-            item = MultiAttr(item, self, key)
-        return item
-
     def __setitem__(self, key, value):
         if self._deleted:
-            raise DatasetError('Can not set attributes on deleted servers')
+            raise DatasetError('Cannot set attributes to deleted server')
+        if isinstance(value, (tuple, list, set, frozenset)):
+            value = MultiAttr(value, self, key)
         if key not in self.old_values or self.old_values[key] != value:
             self._save_old_value(key)
         return super(BaseServerObject, self).__setitem__(key, value)
