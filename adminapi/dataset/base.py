@@ -138,7 +138,7 @@ class BaseQuerySet(object):
 
 class BaseServerObject(dict):
     """This class must redefine all mutable methods of the dict class
-    to cast multi attributes.
+    to cast multi attributes and to validate the values.
     """
 
     def __init__(self, attributes=[], object_id=None, queryset=None):
@@ -238,11 +238,37 @@ class BaseServerObject(dict):
     def __setitem__(self, key, value):
         if self._deleted:
             raise DatasetError('Cannot set attributes to deleted server')
+        self.validate(key, value)
         if isinstance(value, (tuple, list, set, frozenset)):
-            value = MultiAttr(value, self, key)
+            # Multi attributes are guaranteed to exist as MultiAttr, so
+            # we can always get the previous datatype from the existing
+            # value.
+            value = MultiAttr(value, self, key, self[key].datatype)
         if key not in self.old_values or self.old_values[key] != value:
             self._save_old_value(key)
         return super(BaseServerObject, self).__setitem__(key, value)
+
+    def validate(self, key, value):
+        if key not in self:
+            raise KeyError(
+                'Cannot set nonexistent attribute "{}"'.format(key)
+            )
+
+        if isinstance(self[key], MultiAttr):
+            # We are not extensively validating multi attributes.  Their
+            # values will validated by the MultiAttr class.
+            if not isinstance(value, (tuple, list, set, frozenset)):
+                raise TypeError('Attribute "{}" must be multi'.format(key))
+        elif isinstance(self[key], bool):
+            # Boolean attributes are guaranteed to exist as booleans, so
+            # we can rely on the existing value.
+            if not isinstance(value, bool):
+                raise TypeError('Attribute "{}" must be a boolean'.format(key))
+        elif value is not None:
+            datatype = type(self[key]) if self[key] is not None else None
+            if not datatype and self.old_values.get(key) is not None:
+                datatype = type(self.old_values[key])
+            _validate_value(key, value, datatype)
 
     def __delitem__(self, key):
         self[key] = None
@@ -281,10 +307,18 @@ class MultiAttr(set):
     to maintain the old values on the BaseServerObject.
     """
 
-    def __init__(self, other, server_object, attribute_id):
+    def __init__(self, other, server_object, attribute_id, datatype=None):
         super(MultiAttr, self).__init__(other)
         self._server_object = server_object
         self._attribute_id = attribute_id
+        self.datatype = self._validate(attribute_id, datatype)
+
+    def _validate(self, attribute_id, datatype):
+        """This method accepts class properties as arguments to be called
+        with normal sets."""
+        for elem in self:
+            datatype = _validate_value(attribute_id, elem, datatype)
+        return datatype
 
     def __str__(self):
         return ' '.join(str(x) for x in self)
@@ -295,6 +329,9 @@ class MultiAttr(set):
     def add(self, elem):
         if elem in self:
             return
+        self.datatype = _validate_value(
+            self._attribute_id, elem, self.datatype
+        )
         self._server_object._save_old_value(self._attribute_id)
         super(MultiAttr, self).add(elem)
 
@@ -302,6 +339,8 @@ class MultiAttr(set):
         if elem in self:
             self._server_object._save_old_value(self._attribute_id)
         super(MultiAttr, self).remove(elem)
+        if not self:
+            self.datatype = None
 
     def discard(self, elem):
         if elem in self:
@@ -320,6 +359,7 @@ class MultiAttr(set):
             return
         self._server_object._save_old_value(self._attribute_id)
         super(MultiAttr, self).clear()
+        self.datatype = None
 
     def update(self, *others):
         if not others:
@@ -329,6 +369,7 @@ class MultiAttr(set):
             new |= other
         if not new - self:
             return
+        MultiAttr._validate(new, self._attribute_id, self.datatype)
         self._server_object._save_old_value(self._attribute_id)
         super(MultiAttr, self).difference_update(new)
 
@@ -357,5 +398,64 @@ class MultiAttr(set):
     def symmetric_difference_update(self, other):
         if not other:
             return
+        new = other - self
+        if new:
+            MultiAttr._validate(new, self._attribute_id, self.datatype)
         self._server_object._save_old_value(self._attribute_id)
         super(MultiAttr, self).symmetric_difference_update(other)
+
+
+def _validate_value(attribute_id, value, datatype=None):
+    """It accepts an optional datatype to validate the values.  The values
+    are not necessarily be an instance of this datatype.  They will be checked
+    a common super-class.  The function returns the found super-class,
+    so that callers can save and reuse it.  When the datatype is not
+    provided, then it will return the class of the value.
+
+    The reason behind this method is to preserve the datatype as much as
+    possible without being too strict.  Just getting the top level class
+    on the inheritance tree after "object" would increase the errors, because
+    with multi-inheritance there can be different top level classes.
+    Therefore, this method is not really deterministic.  It can cause
+    unexpected behavior, but it is the best we can do.
+    """
+
+    # Special types that are allowed only in some contexts.
+    special_datatypes = (
+        type,
+        bool,
+        tuple,
+        list,
+        set,
+        frozenset,
+        dict,
+        BaseException,
+        type(None),
+    )
+    assert datatype not in special_datatypes
+    if isinstance(value, special_datatypes):
+        raise TypeError(
+            'Attribute "{}" value cannot be from {}'
+            .format(attribute_id, type(value))
+        )
+
+    assert datatype != object
+    if type(value) == object:
+        raise TypeError(
+            'Attribute "{}" value cannot be a generic object'
+            .format(attribute_id)
+        )
+
+    newtype = type(value)
+    if datatype is None or issubclass(datatype, newtype):
+        return newtype
+
+    for supertype in datatype.mro():
+        if issubclass(newtype, supertype) and supertype != object:
+            return supertype
+
+    raise TypeError(
+        'Attribute "{}" value from {} is not compatible with '
+        'existing value from {}'
+        .format(attribute_id, type(value), datatype)
+    )
