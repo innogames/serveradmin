@@ -1,6 +1,3 @@
-NonExistingAttribute = object()
-
-
 class DatasetError(Exception):
     pass
 
@@ -190,12 +187,8 @@ class BaseServerObject(dict):
     def _serialize_changes(self):
         changes = {}
         for key, old_value in self.old_values.items():
-            new_value = self.get(key, NonExistingAttribute)
-            if new_value == NonExistingAttribute:
-                action = 'delete'
-            elif old_value == NonExistingAttribute:
-                action = 'new'
-            elif isinstance(old_value, set):
+            new_value = self[key]
+            if isinstance(old_value, set):
                 action = 'multi'
             else:
                 action = 'update'
@@ -204,10 +197,6 @@ class BaseServerObject(dict):
             if action == 'update':
                 change['old'] = old_value
                 change['new'] = new_value
-            elif action == 'new':
-                change['new'] = new_value
-            elif action == 'delete':
-                change['old'] = old_value
             elif action == 'multi':
                 change['remove'] = old_value.difference(new_value)
                 change['add'] = new_value.difference(old_value)
@@ -232,18 +221,15 @@ class BaseServerObject(dict):
             'changes': changes,
         }
 
-    def _save_old_value(self, attr):
-        was_dirty_before = self.is_dirty()
-
-        if attr not in self.old_values:
-            old_value = self.get(attr, NonExistingAttribute)
-            if isinstance(old_value, set):
-                self.old_values[attr] = old_value.copy()
-            else:
-                self.old_values[attr] = old_value
-
-        if self._queryset and not was_dirty_before:
+    def _save_old_value(self, key):
+        if self._queryset and not self.is_dirty():
             self._queryset._num_dirty += 1
+        if key not in self.old_values:
+            old_value = self[key]
+            if isinstance(old_value, set):
+                self.old_values[key] = old_value.copy()
+            else:
+                self.old_values[key] = old_value
 
     def __getitem__(self, k):
         item = dict.__getitem__(self, k)
@@ -262,9 +248,8 @@ class BaseServerObject(dict):
 
     __setitem__.__doc__ = dict.__setitem__.__doc__
 
-    def __delitem__(self, k):
-        self._save_old_value(k)
-        return dict.__delitem__(self, k)
+    def __delitem__(self, key):
+        self[key] = None
 
     __delitem__.__doc__ = dict.__delitem__.__doc__
 
@@ -378,16 +363,3 @@ class MultiAttr(object):
 
     def __reduce__(self):
         return dict.__reduce__(self)
-
-
-def _format_value(value):
-    if not value:
-        return ''
-
-    if value is NonExistingAttribute:
-        return u'(does not exist)'
-
-    if isinstance(value, set):
-        return u', '.join(unicode(val) for val in value)
-
-    return value
