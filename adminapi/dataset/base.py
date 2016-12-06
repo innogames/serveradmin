@@ -124,9 +124,9 @@ class BaseQuerySet(object):
 
     def _build_commit_object(self):
         commit = {
-                'deleted': [],
-                'changes': {},
-            }
+            'deleted': [],
+            'changes': {},
+        }
 
         for obj in self:
             if obj.is_deleted():
@@ -228,9 +228,9 @@ class BaseServerObject(dict):
             changes[self.object_id] = self._serialize_changes()
 
         return {
-                'deleted': [self.object_id] if self.is_deleted() else [],
-                'changes': changes,
-            }
+            'deleted': [self.object_id] if self.is_deleted() else [],
+            'changes': changes,
+        }
 
     def _save_old_value(self, attr):
         was_dirty_before = self.is_dirty()
@@ -318,16 +318,16 @@ class BaseServerObject(dict):
 
 class MultiAttr(object):
     dirty_methods = frozenset((
-            'add',
-            'clear',
-            'difference_update',
-            'discard',
-            'intersection_update',
-            'pop',
-            'remove',
-            'update',
-            'symmetric_difference_update',
-        ))
+        'add',
+        'clear',
+        'difference_update',
+        'discard',
+        'intersection_update',
+        'pop',
+        'remove',
+        'update',
+        'symmetric_difference_update',
+    ))
 
     def __init__(self, proxied_set, server_obj, attr_name):
         self._proxied_set = proxied_set

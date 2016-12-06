@@ -9,11 +9,13 @@ COMMIT_ENDPOINT = '/dataset/commit'
 QUERY_ENDPOINT = '/dataset/query'
 CREATE_ENDPOINT = '/dataset/create'
 
+
 class Attribute(object):
     def __init__(self, name, type, multi):
         self.name = name
         self.type = type
         self.multi = multi
+
 
 class QuerySet(BaseQuerySet):
     def __init__(self, filters, auth_token, timeout):
@@ -45,13 +47,13 @@ class QuerySet(BaseQuerySet):
 
     def _fetch_results(self):
         serialized_filters = dict(
-                (k, v._serialize()) for k, v in self._filters.items()
-            )
+            (k, v._serialize()) for k, v in self._filters.items()
+        )
         request_data = {
-                'filters': serialized_filters,
-                'restrict': self._restrict,
-                'augmentations': self._augmentations,
-            }
+            'filters': serialized_filters,
+            'restrict': self._restrict,
+            'augmentations': self._augmentations,
+        }
         result = send_request(QUERY_ENDPOINT, request_data, self.auth_token,
                               self.timeout)
         return self._handle_result(result)
@@ -60,15 +62,16 @@ class QuerySet(BaseQuerySet):
         if result['status'] == 'success':
             attributes = {}
             for attr_name, attr in result['attributes'].items():
-                attributes[attr_name] = Attribute(attr_name, attr['type'],
-                        attr['multi'])
+                attributes[attr_name] = Attribute(
+                    attr_name, attr['type'], attr['multi']
+                )
             self.attributes = attributes
             # The attributes in convert_set must be converted to sets
             # and attributes in convert_ip must be converted to ips
             convert_set = frozenset(
-                    attr_name for attr_name, attr in self.attributes.items()
-                    if attr.multi
-                )
+                attr_name for attr_name, attr in self.attributes.items()
+                if attr.multi
+            )
             convert_ip = frozenset(
                 attr_name for attr_name, attr in self.attributes.items()
                 if attr.type in ('ip', 'inet')
@@ -101,6 +104,7 @@ class QuerySet(BaseQuerySet):
         elif result['status'] == 'error':
             _handle_exception(result)
 
+
 class ServerObject(BaseServerObject):
     def __init__(self, object_id=None, queryset=None, auth_token=None,
                  timeout=None):
@@ -121,8 +125,8 @@ class ServerObject(BaseServerObject):
         elif result['status'] == 'error':
             _handle_exception(result)
 
-def _handle_exception(result):
 
+def _handle_exception(result):
     if result['type'] == 'ValueError':
         exception_class = ValueError
     else:
@@ -137,33 +141,40 @@ def _handle_exception(result):
     #
     raise exception_class(result['message'])
 
+
 def query(**kwargs):
     filters = dict((k, _prepare_filter(v)) for k, v in kwargs.items())
-    return QuerySet(filters=filters, auth_token=_api_settings['auth_token'],
-                    timeout=_api_settings['timeout_dataset'])
+    return QuerySet(
+        filters=filters,
+        auth_token=_api_settings['auth_token'],
+        timeout=_api_settings['timeout_dataset'],
+    )
+
 
 def create(
-        attributes,
-        skip_validation=False,
-        fill_defaults=True,
-        fill_defaults_all=False,
-        auth_token=None,
-    ):
-
+    attributes,
+    skip_validation=False,
+    fill_defaults=True,
+    fill_defaults_all=False,
+    auth_token=None,
+):
     request_data = {
-            'attributes': attributes,
-            'skip_validation': skip_validation,
-            'fill_defaults': fill_defaults,
-            'fill_defaults_all': fill_defaults_all,
-        }
+        'attributes': attributes,
+        'skip_validation': skip_validation,
+        'fill_defaults': fill_defaults,
+        'fill_defaults_all': fill_defaults_all,
+    }
 
     if auth_token is None:
         auth_token = _api_settings['auth_token']
 
     result = send_request(CREATE_ENDPOINT, request_data, auth_token,
                           _api_settings['timeout_dataset'])
-    qs = QuerySet(filters={'hostname': _prepare_filter(attributes['hostname'])},
-            auth_token=auth_token, timeout=_api_settings['timeout_dataset'])
+    qs = QuerySet(
+        filters={'hostname': _prepare_filter(attributes['hostname'])},
+        auth_token=auth_token,
+        timeout=_api_settings['timeout_dataset'],
+    )
     qs._handle_result(result)
 
     return qs.get()
