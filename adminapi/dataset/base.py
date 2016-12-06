@@ -1,3 +1,6 @@
+from itertools import chain
+
+
 class DatasetError(Exception):
     pass
 
@@ -140,7 +143,7 @@ class BaseServerObject(dict):
         self._queryset = queryset
         self.old_values = {}
         if attributes:
-            dict.update(self, attributes)
+            super(BaseServerObject, self).update(attributes)
 
     def __hash__(self):
         """Make the objects hashable
@@ -155,11 +158,10 @@ class BaseServerObject(dict):
         return self.object_id
 
     def __repr__(self):
-        if self.object_id:
-            return 'ServerObject({0}, {1})'.format(dict.__repr__(self),
-                                                   self.object_id)
-        else:
-            return 'ServerObject({0})'.format(dict.__repr__(self))
+        parent_repr = super(BaseServerObject, self).__repr__()
+        if not self.object_id:
+            return 'ServerObject({0})'.format(parent_repr)
+        return 'ServerObject({0}, {1})'.format(parent_repr, self.object_id)
 
     def is_dirty(self):
         return bool(self.old_values) or self._deleted or self.object_id is None
@@ -173,7 +175,7 @@ class BaseServerObject(dict):
     def rollback(self):
         self._deleted = False
         for attr, old_value in self.old_values.items():
-            dict.__setitem__(self, attr, old_value)
+            super(BaseServerObject, self).__setitem__(attr, old_value)
         self.old_values.clear()
 
     def delete(self):
@@ -223,74 +225,49 @@ class BaseServerObject(dict):
             else:
                 self.old_values[key] = old_value
 
-    def __getitem__(self, k):
-        item = dict.__getitem__(self, k)
+    def __getitem__(self, key):
+        item = super(BaseServerObject, self).__getitem__(key)
         if isinstance(item, (tuple, list, set)):
-            item = MultiAttr(item, self, k)
+            item = MultiAttr(item, self, key)
         return item
 
-    def __setitem__(self, k, v):
+    def __setitem__(self, key, value):
         if self._deleted:
             raise DatasetError('Can not set attributes on deleted servers')
-
-        if k not in self.old_values or self.old_values[k] != v:
-            self._save_old_value(k)
-
-        return dict.__setitem__(self, k, v)
-
-    __setitem__.__doc__ = dict.__setitem__.__doc__
+        if key not in self.old_values or self.old_values[key] != value:
+            self._save_old_value(key)
+        return super(BaseServerObject, self).__setitem__(key, value)
 
     def __delitem__(self, key):
         self[key] = None
 
-    __delitem__.__doc__ = dict.__delitem__.__doc__
-
     def clear(self):
-        for attr in self:
-            self._save_old_value(attr)
+        for key in self:
+            del self[key]
 
-        return dict.clear(self)
-
-    clear.__doc__ = dict.clear.__doc__
-
-    def pop(self, k, d=None):
-        if k in self:
-            self._save_old_value(k)
-
-        return dict.pop(self, k, d)
-
-    pop.__doc__ = dict.pop.__doc__
+    def pop(self, key, default=None):
+        value = self.get(key, default)
+        del self[key]
+        return value
 
     def popitem(self):
-        k, v = dict.popitem(self)
-        if k not in self.old_values:
-            if self._queryset and self.is_dirty():
-                self._queryset._num_dirty += 1
-            self.old_values[k] = v
-
-        return k, v
-
-    popitem.__doc__ = dict.popitem.__doc__
-
-    def setdefault(self, k, d=None):
-        if k not in self:
-            self._save_old_value(k)
-
-        return dict.setdefault(k, d)
-
-    setdefault.__doc__ = dict.setdefault.__doc__
-
-    def update(self, E, **F):
-        if hasattr(E, 'keys'):
-            for k in E:
-                self[k] = E[k]
+        for key in self.keys():
+            break
         else:
-            for (k, v) in E:
-                self[k] = v
-        for k in F:
-            self[k] = F[k]
+            raise KeyError()
+        return self.pop(key)
 
-    update.__doc__ = dict.update.__doc__
+    def setdefault(self, key, default=None):
+        if key in self:
+            return self[key]
+        self[key] = default
+        return default
+
+    def update(self, other, **kwargs):
+        if hasattr(other, 'items'):
+            other = other.items()
+        for key, value in chain(other, kwargs.items()):
+            self[key] = value
 
 
 class MultiAttr(object):
