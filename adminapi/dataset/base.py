@@ -293,37 +293,69 @@ class MultiAttr(set):
         return u' '.join(unicode(x) for x in self)
 
     def add(self, elem):
+        if elem in self:
+            return
         self._server_object._save_old_value(self._attribute_id)
         super(MultiAttr, self).add(elem)
 
     def remove(self, elem):
-        self._server_object._save_old_value(self._attribute_id)
+        if elem in self:
+            self._server_object._save_old_value(self._attribute_id)
         super(MultiAttr, self).remove(elem)
 
     def discard(self, elem):
-        self._server_object._save_old_value(self._attribute_id)
-        super(MultiAttr, self).discard(elem)
+        if elem in self:
+            self.remove(elem)
 
     def pop(self):
-        self._server_object._save_old_value(self._attribute_id)
-        return super(MultiAttr, self).pop()
+        for elem in self:
+            break
+        else:
+            raise KeyError()
+        self.remove(elem)
+        return elem
 
     def clear(self):
+        if not self:
+            return
         self._server_object._save_old_value(self._attribute_id)
         super(MultiAttr, self).clear()
 
     def update(self, *others):
+        if not others:
+            return
+        new = others[0]
+        for other in others[1:]:
+            new |= other
+        if not new - self:
+            return
         self._server_object._save_old_value(self._attribute_id)
-        super(MultiAttr, self).update(*others)
+        super(MultiAttr, self).difference_update(new)
 
     def intersection_update(self, *others):
+        if not others:
+            return
+        new = others[0]
+        for other in others[1:]:
+            new &= other
+        if not self - new:
+            return
         self._server_object._save_old_value(self._attribute_id)
-        super(MultiAttr, self).intersection_update(*others)
+        super(MultiAttr, self).intersection_update(new)
 
     def difference_update(self, *others):
+        if not others:
+            return
+        new = others[0]
+        for other in others[1:]:
+            new |= other
+        if not self & new:
+            return
         self._server_object._save_old_value(self._attribute_id)
-        super(MultiAttr, self).difference_update(*others)
+        super(MultiAttr, self).difference_update(new)
 
     def symmetric_difference_update(self, other):
+        if not other:
+            return
         self._server_object._save_old_value(self._attribute_id)
         super(MultiAttr, self).symmetric_difference_update(other)
