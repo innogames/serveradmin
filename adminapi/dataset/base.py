@@ -8,7 +8,6 @@ class BaseQuerySet(object):
         self._results = None
         self._restrict = None
         self._augmentations = None
-        self._num_dirty = 0
         self._order = None
 
     def __iter__(self):
@@ -79,7 +78,7 @@ class BaseQuerySet(object):
             return value
 
     def is_dirty(self):
-        return bool(self._num_dirty)
+        return any(s.is_dirty() for s in self)
 
     def commit(self, skip_validation, force_changes):
         raise NotImplementedError()
@@ -172,16 +171,12 @@ class BaseServerObject(dict):
         raise NotImplementedError()
 
     def rollback(self):
-        if self._queryset and self.is_dirty():
-            self._queryset._num_dirty -= 1
         self._deleted = False
         for attr, old_value in self.old_values.items():
             dict.__setitem__(self, attr, old_value)
         self.old_values.clear()
 
     def delete(self):
-        if self._queryset and not self.is_dirty():
-            self._queryset._num_dirty += 1
         self._deleted = True
 
     def _serialize_changes(self):
@@ -215,15 +210,12 @@ class BaseServerObject(dict):
         changes = {}
         if self.is_dirty():
             changes[self.object_id] = self._serialize_changes()
-
         return {
             'deleted': [self.object_id] if self.is_deleted() else [],
             'changes': changes,
         }
 
     def _save_old_value(self, key):
-        if self._queryset and not self.is_dirty():
-            self._queryset._num_dirty += 1
         if key not in self.old_values:
             old_value = self[key]
             if isinstance(old_value, set):
