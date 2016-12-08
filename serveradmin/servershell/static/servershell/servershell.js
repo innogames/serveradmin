@@ -363,6 +363,9 @@ function parse_value(value, attr_name) {
     if (value === '') {
         return null;
     }
+    if (attr_obj['type'] == 'number') {
+        return Number(value);
+    }
     if (attr_obj['type'] == 'boolean') {
         return value == 'true' || value == '1' || value == 'True';
     }
