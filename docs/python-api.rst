@@ -309,46 +309,6 @@ supports iteration and some additional methods.
 
         You still have to commit this change.
 
-    .. method:: print_list(attr='hostname', file=sys.stdout)
-
-        Print a list with all servers in the query set. This will look like::
-
-        * en1db.gp
-        * en2db.gp
-        * en3db.gp
-
-    .. method:: print_table(*attrs, file=sys.stdout)
-
-        Print a table with given attributes, for example::
-
-            query(servertype='vm').print_table('hostname', 'game_function')
-
-        will print the following table::
-
-            +-----------+---------------+
-            | hostname  | game_function |
-            +-----------+---------------+
-            | ae0db1.ds | db1           |
-            | ae0l1.ds  | web           |
-            | ae0l2.ds  | web           |
-            +-----------+---------------+
-
-    .. method:: print_changes(title=lambda x: x['hostname'], file=sys.stdout)
-
-        Prints all changes of all servers in this query set. For the behavior
-        of title, see :func:`ServerObject.print_changes`.
-
-        Example output after changing ``os`` to ``squeeze``::
-
-            techerror.support
-            -----------------
-
-            +-----------+-----------+-----------+
-            | Attribute | Old value | New value |
-            +-----------+-----------+-----------+
-            | os        | lenny     | squeeze   |
-            +-----------+-----------+-----------+
-
 .. *** this line fixes vim syntax highlighting
 
 Server object reference
@@ -386,43 +346,6 @@ For documentation of the dictionary-like access see :class:`dict`.
     .. method:: delete()
 
         Mark the server for deletion. You need to commit to delete it.
-
-    .. method:: print_table(*attrs, file=sys.stdout)
-
-        Print a table with with given attributes. If no arguments are given,
-        then all attributes are used. Example::
-
-            +-----------+-------------------+
-            | Attribute | Value             |
-            +-----------+-------------------+
-            | hostname  | techerror.support |
-            | os        | lenny             |
-            |         [...]                 |
-            | webserver | nginx             |
-            +-----------+-------------------+
-
-    .. method:: print_changes(title=None, file=sys.stdout)
-
-        Prints all changes of the server object, for example::
-
-            techerror = query(hostname='techerror.support').get()
-            techerror['os'] = 'squeeze'
-            techerror.print_changes()
-
-        will print::
-
-            +-----------+-----------+-----------+
-            | Attribute | Old value | New value |
-            +-----------+-----------+-----------+
-            | os        | lenny     | squeeze   |
-            +-----------+-----------+-----------+
-
-        Title can be either a string, a function or ``None``. If it is a string
-        it will simply print it. If it is a function it calls the function with
-        the server object as argument and expects a string as return value which
-        will be printed. If title is ``None``, no title will be printed.
-
-        Please note: There are no changes after committing!
 
 .. *** this line fixes vim syntax highlighting
 

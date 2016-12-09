@@ -1,8 +1,3 @@
-from __future__ import print_function
-import sys
-
-from adminapi.utils import print_table, print_heading
-
 NonExistingAttribute = object()
 
 
@@ -111,31 +106,6 @@ class BaseQuerySet(object):
     def iterattrs(self, attr='hostname'):
         return (obj[attr] for obj in self)
 
-    def print_list(self, attr='hostname', file=sys.stdout):
-        for obj in self:
-            print('* {0}'.format(obj[attr]), file=file)
-
-    def print_table(self, *attrs, **kwargs):
-        file = kwargs.get('file', sys.stdout)
-        table = [attrs]
-        for obj in self:
-            row = [obj.get(attr, NonExistingAttribute) for attr in attrs]
-            table.append(row)
-        print_table(table, file=file)
-
-    def print_changes(self, title=lambda x: x['hostname'], file=sys.stdout):
-        num_dirty = 0
-        for obj in self:
-            if obj.is_dirty():
-                num_dirty += 1
-                obj.print_changes(title, file=file)
-                file.write('\n')
-
-        file.write(
-            '\n{0} changed and {1} unchanged.\n'
-            .format(num_dirty, len(self) - num_dirty)
-        )
-
     def order_by(self, *attrs):
         self._order = attrs
         return self
@@ -216,38 +186,6 @@ class BaseServerObject(dict):
         if self._queryset and not self.is_dirty():
             self._queryset._num_dirty += 1
         self._deleted = True
-
-    def print_table(self, *attrs, **kwargs):
-        file = kwargs.get('file', sys.stdout)
-        table = [['Attribute', 'Value']]
-
-        if not attrs:
-            for attr, value in self.items():
-                table.append((attr, value))
-        else:
-            for attr in attrs:
-                table.append((attr, _format_value(self.get(attr))))
-
-        print_table(table, file=file)
-
-    def print_changes(self, title=None, file=sys.stdout):
-        if title:
-            if hasattr(title, '__call__'):
-                print_title = title(self)
-            else:
-                print_title = title
-            print_heading(print_title, file=file)
-
-        if not self.old_values:
-            print('No changes.', file=file)
-            return
-
-        table = [('Attribute', 'Old value', 'New value')]
-        for attr, old_value in self.old_values.items():
-            old_value_fmt = _format_value(old_value)
-            table.append((attr, old_value_fmt, self[attr]))
-
-        print_table(table, file=file)
 
     def _serialize_changes(self):
         changes = {}
