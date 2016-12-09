@@ -1,11 +1,3 @@
-def log2(x):
-    i = -1
-    while x:
-        x >>= 1
-        i += 1
-    return i
-
-
 def format_obj(obj):
     if isinstance(obj, str):
         return obj
