@@ -5,7 +5,7 @@ import sys
 from optparse import OptionParser
 
 from adminapi.dataset import query, filters
-from adminapi.utils import format_obj
+from adminapi.dataset.base import MultiAttr
 from adminapi.utils.parse import parse_query
 
 
@@ -41,6 +41,12 @@ def main():
             else:
                 row_values.append(options.null_value)
         print(u'\t'.join(row_values))
+
+
+def format_obj(obj):
+    if isinstance(obj, (set, MultiAttr)):
+        return ', '.join(sorted(str(x) for x in obj))
+    return str(obj)
 
 
 if __name__ == '__main__':
