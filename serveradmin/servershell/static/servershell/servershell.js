@@ -1163,7 +1163,15 @@ $(function() {
 
     $('#shell_attributes li').each(function() {
         var attr_item = $(this);
-        var symbol = attr_item.attr('data-attr-type').charAt(0).toUpperCase();
+        var attribute_type = attr_item.attr('data-attr-type');
+        var symbol;
+        switch(attribute_type) {
+            case 'supernet':
+                symbol = 'P';
+                break;
+            default:
+                symbol = attribute_type.charAt(0).toUpperCase();
+        }
         if (attr_item.attr('data-attr-multi') == 'True') {
             symbol = '[' + symbol + ']';
         }
@@ -1179,6 +1187,7 @@ $(function() {
 
         attr_item.prepend(link);
     });
+
     $('#shell_attributes li .attr-tooltip').each(function() {
         $(this).tooltip();
     });
