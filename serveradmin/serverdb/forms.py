@@ -10,6 +10,4 @@ class ServerForm(forms.ModelForm):
 
     class Meta:
         model = Server
-        fields = (
-            '_servertype', '_project', '_segment', 'hostname', 'intern_ip'
-        )
+        fields = ('_servertype', '_project', 'hostname', 'intern_ip')

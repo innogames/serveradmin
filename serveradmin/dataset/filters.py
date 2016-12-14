@@ -10,7 +10,6 @@ from django.core.exceptions import ValidationError
 from serveradmin.dataset.typecast import typecast
 from serveradmin.serverdb.models import (
     Project,
-    Segment,
     Servertype,
     Server,
     ServerAttribute,
@@ -672,11 +671,6 @@ def value_to_sql(attribute, value):
             Servertype.objects.get(pk=value)
         except Servertype.DoesNotExist:
             raise FilterValueError('Invalid servertype: ' + value)
-    elif attribute.pk == 'segment':
-        try:
-            Segment.objects.get(pk=value)
-        except Segment.DoesNotExist:
-            raise FilterValueError('Invalid segment: ' + value)
     elif attribute.pk == 'project':
         try:
             Project.objects.get(pk=value)

@@ -13,11 +13,6 @@ class Migration(migrations.Migration):
             "   CHECK (subdomain ~ '^[a-z][a-z0-9\\.\\-]*$')"
         ),
         migrations.RunSQL(
-            'ALTER TABLE segment '
-            'ADD CONSTRAINT segment_segment_id_check '
-            "   CHECK (segment_id ~ '^[a-z][a-z0-9_]*$')"
-        ),
-        migrations.RunSQL(
             'ALTER TABLE servertype '
             'ADD CONSTRAINT servertype_servertype_id_check '
             "   CHECK (servertype_id ~ '^[a-z][a-z0-9_]*$')"
@@ -28,7 +23,7 @@ class Migration(migrations.Migration):
             "   CHECK (attribute_id ~ '^[a-z][a-z0-9_]*$'), "
             'ADD CONSTRAINT attribute_multi_check '
             '   CHECK ('
-            "       type NOT IN ('boolean', 'supernet') OR not multi"
+            "       type NOT IN ('boolean', 'supernet') OR NOT multi"
             '   ), '
             'ADD CONSTRAINT attribute_readonly_check '
             '   CHECK ('

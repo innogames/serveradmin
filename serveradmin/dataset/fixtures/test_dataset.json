@@ -105,8 +105,7 @@
         "fields": {
             "intern_ip": 168820737,
             "hostname": "test0",
-            "servertype": 1,
-            "segment": "seg0"
+            "servertype": 1
         }
     },
     {
@@ -115,8 +114,7 @@
         "fields": {
             "intern_ip": 168820738,
             "hostname": "test1",
-            "servertype": 2,
-            "segment": "seg0"
+            "servertype": 2
         }
     },
     {
@@ -125,8 +123,7 @@
         "fields": {
             "intern_ip": 168820739,
             "hostname": "test2",
-            "servertype": 2,
-            "segment": "seg1"
+            "servertype": 2
         }
     },
     {
@@ -135,8 +132,7 @@
         "fields": {
             "intern_ip": 168820740,
             "hostname": "test3",
-            "servertype": 2,
-            "segment": "seg1"
+            "servertype": 2
         }
     },
     {

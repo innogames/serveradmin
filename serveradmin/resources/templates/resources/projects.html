@@ -10,8 +10,7 @@
         <th>Project</th>
         <th>Subdomain</th>
         <th>Responsible Admin</th>
-        <th>Servertypes</th>
-        <th>Segments</th>
+        <th>Servers</th>
         <th>Total disk_size_gib</th>
         <th>Total memory</th>
         <th>Total num_cpu</th>
@@ -31,13 +30,6 @@
 {% for servertype, count in project.servertypes %}
             {{ servertype }}: 
             <a href="{% url 'servershell_index' %}?term=project={{ project.project_id }}+servertype={{ servertype }}">{{ count }}</a> 
-{% endfor %}
-        </td>
-
-        <td>
-{% for segment, count in project.segments %}
-            {{ segment }}: 
-            <a href="{% url 'servershell_index' %}?term=project={{ project.project_id }}+segment={{ segment }}">{{ count }}</a> 
 {% endfor %}
         </td>
 

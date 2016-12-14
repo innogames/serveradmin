@@ -189,24 +189,6 @@ class Project(LookupModel):
         ordering = ('pk', )
 
 
-class Segment(LookupModel):
-    objects = LookupManager()
-
-    segment_id = models.CharField(
-        max_length=20,
-        primary_key=True,
-        db_index=False,
-        validators=lookup_id_validators,
-    )
-    ip_range = models.CharField(max_length=255, null=True, blank=True)
-    description = models.CharField(max_length=1024)
-
-    class Meta:
-        app_label = 'serverdb'
-        db_table = 'segment'
-        ordering = ('pk', )
-
-
 class Servertype(LookupModel):
     objects = LookupManager()
 
@@ -357,13 +339,6 @@ Attribute.specials = {
         group='base',
         special=ServerTableSpecial('intern_ip'),
     ),
-    'segment': Attribute(
-        attribute_id='segment',
-        type='string',
-        multi=False,
-        group='base',
-        special=ServerTableSpecial('_segment_id'),
-    ),
 }
 
 
@@ -474,12 +449,6 @@ class Server(models.Model):
         on_delete=models.PROTECT,
     )
     project = Project.foreign_key_lookup('_project_id')
-    _segment = models.ForeignKey(
-        Segment,
-        db_column='segment_id',
-        on_delete=models.PROTECT,
-    )
-    segment = Segment.foreign_key_lookup('_segment_id')
     _servertype = models.ForeignKey(
         Servertype,
         db_column='servertype_id',

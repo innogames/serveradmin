@@ -5,7 +5,6 @@ from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
     ServertypeAttribute,
-    Segment,
     Server,
     ServerHostnameAttribute,
     ServerStringAttribute,
@@ -42,6 +41,5 @@ class ServerAdmin(admin.ModelAdmin):
 admin.site.register(Project)
 admin.site.register(Servertype, ServertypeAdmin)
 admin.site.register(Attribute)
-admin.site.register(Segment)
 admin.site.register(Server, ServerAdmin)
 admin.site.register(ChangeDelete)

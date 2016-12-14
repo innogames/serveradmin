@@ -7,7 +7,6 @@ from django.core.exceptions import ValidationError
 from serveradmin.serverdb.models import (
     Servertype,
     Project,
-    Segment,
     Attribute,
     Server,
     ChangeCommit,
@@ -37,7 +36,6 @@ def create_server(
 
         servertype = _get_servertype(attributes)
         project = _get_project(attributes)
-        segment = _get_segment(attributes)
         intern_ip = _get_ip_addr(servertype, attributes)
 
         real_attributes = dict(_get_real_attributes(attributes))
@@ -54,7 +52,6 @@ def create_server(
             intern_ip,
             servertype,
             project,
-            segment,
             real_attributes,
         )
 
@@ -87,15 +84,6 @@ def _get_project(attributes):
         raise CreateError('"project" attribute is required.')
 
     return Project.objects.select_for_update().get(pk=attributes['project'])
-
-
-def _get_segment(attributes):
-    if 'segment' not in attributes:
-        raise CreateError('"segment" attribute is required.')
-    try:
-        return Segment.objects.get(pk=attributes['segment'])
-    except Segment.DoesNotExist:
-        raise CreateError('Unknown segment: ' + attributes['segment'])
 
 
 def _get_ip_addr(servertype, attributes):
@@ -297,7 +285,6 @@ def _insert_server(
     intern_ip,
     servertype,
     project,
-    segment,
     attributes,
 ):
 
@@ -309,7 +296,6 @@ def _insert_server(
         intern_ip=intern_ip,
         _servertype=servertype,
         _project=project,
-        _segment=segment,
     )
     server.full_clean()
     server.save()

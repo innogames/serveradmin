@@ -180,7 +180,6 @@ def projects(request):
     for server in query().restrict(
         'project',
         'servertype',
-        'segment',
         'disk_size_gib',
         'memory',
         'num_cpu',
@@ -188,19 +187,17 @@ def projects(request):
         if server['project'] not in counters:
             counters[server['project']] = [
                 defaultdict(int),   # For servertypes
-                defaultdict(int),   # For segments
                 0,                  # For disk_size_gib
                 0,                  # For memory
                 0,                  # For num_cpu
             ]
         counters[server['project']][0][server['servertype']] += 1
-        counters[server['project']][1][server['segment']] += 1
         if server.get('disk_size_gib'):
-            counters[server['project']][2] += server['disk_size_gib']
+            counters[server['project']][1] += server['disk_size_gib']
         if server.get('memory'):
-            counters[server['project']][3] += server['memory']
+            counters[server['project']][2] += server['memory']
         if server.get('num_cpu'):
-            counters[server['project']][4] += server['num_cpu']
+            counters[server['project']][3] += server['num_cpu']
 
     items = []
     for project in Project.objects.all():
@@ -209,7 +206,6 @@ def projects(request):
             'subdomain': project.subdomain,
             'responsible_admin': project.responsible_admin.get_full_name(),
             'servertypes': [],
-            'segments': [],
             'disk_size_gib': 0,
             'memory': 0,
             'num_cpu': 0,
@@ -218,11 +214,9 @@ def projects(request):
         if project.project_id in counters:
             item['servertypes'] = list(counters[project.project_id][0].items())
             item['servertypes'].sort()
-            item['segments'] = list(counters[project.project_id][1].items())
-            item['segments'].sort()
-            item['disk_size_gib'] = counters[project.project_id][2]
-            item['memory'] = counters[project.project_id][3]
-            item['num_cpu'] = counters[project.project_id][4]
+            item['disk_size_gib'] = counters[project.project_id][1]
+            item['memory'] = counters[project.project_id][2]
+            item['num_cpu'] = counters[project.project_id][3]
 
         items.append(item)
 
