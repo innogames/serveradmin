@@ -33,24 +33,3 @@ def typecast(attribute, value, force_single=False):
         return typecast_fn(value)
     except ValueError as error:
         raise ValidationError(str(error))
-
-
-_displaycast_fns = {
-    'boolean': lambda x: u'true' if x else u'false',
-}
-
-
-def displaycast(attribute, value):
-
-    displaycast_fn = _displaycast_fns.get(attribute.type, lambda x: x)
-
-    if attribute.multi:
-        if not isinstance(value, (list, set)):
-            raise ValidationError('Attr is multi, but value is not a list/set')
-
-        result = [displaycast_fn(x) for x in value]
-        result.sort()
-
-        return result
-
-    return displaycast_fn(value)

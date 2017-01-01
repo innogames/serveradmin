@@ -25,7 +25,7 @@ from serveradmin.dataset.commit import (
     CommitValidationFailed,
     CommitIncomplete,
 )
-from serveradmin.dataset.typecast import typecast, displaycast
+from serveradmin.dataset.typecast import typecast
 from serveradmin.dataset.create import create_server
 from serveradmin.serverdb.forms import ServerForm
 from serveradmin.serverdb.models import (
@@ -238,7 +238,7 @@ def list_and_edit(request, mode='list'):
         fields_set.add(key)
         fields.append({
             'key': key,
-            'value': displaycast(attribute, value),
+            'value': value,
             'type': attribute.type,
             'multi': attribute.multi,
             'required': servertype_attribute and servertype_attribute.required,
