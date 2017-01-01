@@ -141,7 +141,7 @@ def _get_ip_addr(servertype, attributes):
 
 def _get_networks(attributes):
     for attribute in Attribute.objects.all():
-        if attribute.type == 'supernet' and attribute.pk in attributes:
+        if attribute.type == 'supernet' and attributes.get(attribute.pk):
             attribute_value = attributes[attribute.pk]
             try:
                 server = Server.objects.get(hostname=attribute_value)

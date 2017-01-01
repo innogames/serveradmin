@@ -307,6 +307,13 @@ class Attribute(LookupModel):
     def can_be_materialized(self):
         return bool(ServerAttribute.get_model(self.type))
 
+    def initializer(self):
+        if self.multi:
+            return set
+        if self.type == 'boolean':
+            return bool
+        return lambda: None
+
 
 class ServerTableSpecial(object):
     def __init__(self, field, unique=False):
@@ -415,6 +422,13 @@ class ServertypeAttribute(models.Model):
         if self.regexp is not None and not self._compiled_regexp:
             self._compiled_regexp = re.compile(self.regexp)
         return self._compiled_regexp
+
+    def get_default_value(self):
+        if self.default_value and self.attribute.type == 'string':
+            if self.attribute.multi:
+                return {self.default_value}
+            return self.default_value
+        return self.attribute.initializer()()
 
     def regexp_match(self, value):
         return self.get_compiled_regexp().match(str(value))

@@ -19,17 +19,20 @@ from django.utils.html import mark_safe, escape as escape_html
 from adminapi.utils.json import json_encode_extra
 from adminapi.utils.parse import ParseQueryError, parse_query
 from serveradmin.dataset import query, filters
-from serveradmin.dataset.filters import filter_classes
 from serveradmin.dataset.commit import (
     commit_changes,
     CommitValidationFailed,
     CommitIncomplete,
 )
-from serveradmin.dataset.typecast import typecast
 from serveradmin.dataset.create import create_server
+from serveradmin.dataset.filters import filter_classes
+from serveradmin.dataset.typecast import typecast
+from serveradmin.dataset.queryset import ServerObject
 from serveradmin.serverdb.forms import ServerForm
 from serveradmin.serverdb.models import (
     Servertype,
+    Project,
+    Segment,
     Attribute,
     ServertypeAttribute,
     ServerStringAttribute,
@@ -169,20 +172,31 @@ def export(request):
     return HttpResponse(hostnames, content_type='text/plain')
 
 
-def list_and_edit(request, mode='list'):
-    try:
-        object_id = request.GET['object_id']
-        server = query(object_id=object_id).get()
-    except (KeyError, ValidationError):
-        raise Http404
+@login_required
+def list(request):
+    server = query(object_id=request.GET['object_id']).get()
+    return _edit(request, server, template='list')
 
-    if not request.user.has_perm('dataset.change_serverobject'):
-        mode = 'list'
 
-    stype = Servertype.objects.get(pk=server['servertype'])
+@login_required
+@permission_required('dataset.change_serverobject')
+def edit(request):
+    if 'object_id' in request.GET:
+        server = query(object_id=request.GET['object_id']).get()
+    else:
+        server = ServerObject.new(
+            Servertype.objects.get(pk=request.POST['attr_servertype']),
+            Project.objects.get(pk=request.POST['attr_project']),
+            Segment.objects.get(pk=request.POST['attr_segment']),
+            request.POST['attr_hostname'],
+            request.POST['attr_intern_ip'],
+        )
+    return _edit(request, server, True)
 
+
+def _edit(request, server, edit_mode=False, template='edit'):
     invalid_attrs = set()
-    if mode == 'edit' and request.POST:
+    if edit_mode and request.POST:
         for key, value in request.POST.items():
             if not key.startswith('attr_'):
                 continue
@@ -208,23 +222,35 @@ def list_and_edit(request, mode='list'):
 
         if not invalid_attrs:
             try:
-                server.commit(user=request.user)
+                if server.object_id:
+                    server.commit(user=request.user)
+                else:
+                    server.object_id = create_server(
+                        server,
+                        skip_validation=False,
+                        fill_defaults=False,
+                        fill_defaults_all=False,
+                        user=request.user,
+                    )
+            except CommitValidationFailed as e:
+                invalid_attrs.update([attr for obj_id, attr in e.violations])
+            except (ValidationError, IntegrityError) as error:
+                messages.error(request, str(error))
+            else:
                 messages.success(request, 'Edited server successfully')
                 url = '{0}?object_id={1}'.format(
                     reverse('servershell_list'),
                     server.object_id,
                 )
                 return HttpResponseRedirect(url)
-            except CommitValidationFailed as e:
-                invalid_attrs.update([attr for obj_id, attr in e.violations])
-            except (ValidationError, IntegrityError) as error:
-                messages.error(request, str(error))
 
         if invalid_attrs:
             messages.error(request, 'Attributes contain invalid values')
 
     servertype_attributes = {
-        sa.attribute.pk: sa for sa in stype.attributes.all()
+        sa.attribute.pk: sa
+        for sa
+        in Servertype.objects.get(pk=server['servertype']).attributes.all()
     }
 
     fields = []
@@ -252,7 +278,7 @@ def list_and_edit(request, mode='list'):
             'error': key in invalid_attrs,
         })
 
-    return TemplateResponse(request, 'servershell/{0}.html'.format(mode), {
+    return TemplateResponse(request, 'servershell/{}.html'.format(template), {
         'object_id': server.object_id,
         'fields': fields,
         'is_ajax': request.is_ajax(),
@@ -323,7 +349,6 @@ def get_values(request):
 @login_required
 @permission_required('dataset.create_serverobject')
 def new_server(request):
-
     if 'clone_from' in request.REQUEST:
         try:
             clone_from = (
@@ -343,31 +368,23 @@ def new_server(request):
         form = ServerForm(request.POST)
 
         if form.is_valid():
+            server = ServerObject.new(
+                form.cleaned_data['_servertype'],
+                form.cleaned_data['_project'],
+                form.cleaned_data['_segment'],
+                form.cleaned_data['hostname'],
+                form.cleaned_data['intern_ip'],
+            )
+
             if clone_from:
-                attributes = dict(clone_from)
-            else:
-                attributes = {
-                    'servertype': form.cleaned_data['_servertype'].pk,
-                }
+                for attribute_id, value in clone_from.items():
+                    if attribute_id not in server:
+                        continue
+                    if attribute_id in [a.pk for a in Attribute.specials]:
+                        continue
+                    server[attribute_id] = value
 
-            attributes['hostname'] = form.cleaned_data['hostname']
-            attributes['intern_ip'] = form.cleaned_data['intern_ip']
-            attributes['project'] = form.cleaned_data['_project'].pk
-            attributes['segment'] = form.cleaned_data['_segment'].pk
-            if 'ssh_pubkey' in attributes:
-                del attributes['ssh_pubkey']
-
-            server_id = create_server(
-                attributes,
-                skip_validation=True,
-                fill_defaults=True,
-                fill_defaults_all=True,
-                user=request.user,
-            )
-            url = '{0}?object_id={1}'.format(
-                reverse('servershell_edit'), server_id
-            )
-            return HttpResponseRedirect(url)
+            return _edit(request, server)
     else:
         if clone_from:
             form = ServerForm(initial={

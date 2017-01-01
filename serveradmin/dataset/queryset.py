@@ -274,12 +274,7 @@ class QuerySet(BaseQuerySet):
 
         # Step 0: Initialize the attributes
         for attribute, servertypes in self._servertypes_by_attribute.items():
-            if attribute.multi:
-                init = set
-            elif attribute.type == 'boolean':
-                init = bool
-            else:
-                init = (lambda: None)
+            init = attribute.initializer()
             for servertype in servertypes:
                 for server in servers_by_type[servertype]:
                     self._server_attributes[server.pk][attribute] = init()
@@ -432,6 +427,19 @@ class ServerObject(BaseServerObject):
         instance_dict = tpl[2].copy()
         del instance_dict['_queryset']
         return (tpl[0], tpl[1], instance_dict)
+
+    @classmethod
+    def new(cls, servertype, project, segment, hostname, intern_ip):
+        attribute_values = [
+            ('servertype', servertype.pk),
+            ('project', project.pk),
+            ('segment', segment.pk),
+            ('hostname', hostname),
+            ('intern_ip', intern_ip),
+        ]
+        for sa in servertype.attributes.all():
+            attribute_values.append((sa.attribute.pk, sa.get_default_value()))
+        return cls(attribute_values)
 
 
 def sort_key(value):
