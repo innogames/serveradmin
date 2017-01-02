@@ -11,7 +11,6 @@ setup(
         'adminapi',
         'adminapi.dataset',
         'adminapi.utils',
-        'adminapi.api',
         'adminapi.cmdline',
     ),
     version='1.0',
