@@ -108,7 +108,7 @@ class QuerySet(BaseQuerySet):
 class ServerObject(BaseServerObject):
     def __init__(self, object_id=None, queryset=None, auth_token=None,
                  timeout=None):
-        BaseServerObject.__init__(self, None, object_id, queryset)
+        BaseServerObject.__init__(self, [], object_id, queryset)
         self.auth_token = auth_token
         self.timeout = timeout
 
