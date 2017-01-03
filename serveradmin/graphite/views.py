@@ -11,7 +11,7 @@ from serveradmin.graphite.models import Collection
 from serveradmin.dataset import query
 
 
-@login_required
+@login_required     # NOQA: C901
 @ensure_csrf_cookie
 def graph_table(request):
     """Graph table page"""
