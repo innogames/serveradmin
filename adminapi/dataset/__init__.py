@@ -2,7 +2,9 @@ from ipaddress import ip_address, ip_network
 
 from adminapi import _api_settings
 from adminapi.request import send_request
-from adminapi.dataset.base import BaseQuerySet, BaseServerObject, DatasetError
+from adminapi.dataset.base import (
+    BaseQuerySet, BaseServerObject, DatasetError, MultiAttr
+)
 from adminapi.dataset.filters import _prepare_filter
 
 COMMIT_ENDPOINT = '/dataset/commit'
@@ -85,12 +87,14 @@ class QuerySet(BaseQuerySet):
                     if attr not in server:
                         continue
                     if attr in convert_ip:
-                        server[attr] = set(
+                        server[attr] = MultiAttr((
                             ip_network(x) if '/' in x else ip_address(x)
                             for x in server[attr]
-                        )
+                        ), server_obj, attr)
                     else:
-                        server[attr] = set(server[attr])
+                        server[attr] = MultiAttr(
+                            server[attr], server_obj, attr
+                        )
                 for attr in convert_ip:
                     if server.get(attr) is None or attr in convert_set:
                         continue

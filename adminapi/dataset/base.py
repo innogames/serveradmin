@@ -239,7 +239,7 @@ class BaseServerObject(dict):
         if self._deleted:
             raise DatasetError('Cannot set attributes to deleted server')
         self.validate(key, value)
-        if isinstance(value, (tuple, list, set, frozenset)):
+        if isinstance(self[key], MultiAttr):
             # Multi attributes are guaranteed to exist as MultiAttr, so
             # we can always get the previous datatype from the existing
             # value.
@@ -253,7 +253,6 @@ class BaseServerObject(dict):
             raise KeyError(
                 'Cannot set nonexistent attribute "{}"'.format(key)
             )
-
         if isinstance(self[key], MultiAttr):
             # We are not extensively validating multi attributes.  Their
             # values will validated by the MultiAttr class.
