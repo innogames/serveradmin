@@ -380,7 +380,7 @@ def new_server(request):
                 for attribute_id, value in clone_from.items():
                     if attribute_id not in server:
                         continue
-                    if attribute_id in [a.pk for a in Attribute.specials]:
+                    if attribute_id in Attribute.specials:
                         continue
                     server[attribute_id] = value
 
