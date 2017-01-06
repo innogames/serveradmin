@@ -19,7 +19,7 @@ from serveradmin.serverdb.models import (
 @login_required
 def changes(request):
     commits = ChangeCommit.objects.order_by('-change_on').prefetch_related()
-    paginator = Paginator(commits, 30)
+    paginator = Paginator(commits, 100)
     try:
         page = paginator.page(request.GET.get('page', 1))
     except (PageNotAnInteger, EmptyPage):
