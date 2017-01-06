@@ -55,7 +55,7 @@ class ApplicationException(models.Model):
 def set_auth_token(sender, instance, **kwargs):
     if not instance.auth_token:
         instance.auth_token = random_alnum_string(24)
-    instance.app_id = hashlib.sha1(instance.auth_token).hexdigest()
+    instance.app_id = hashlib.sha1(instance.auth_token.encode()).hexdigest()
 
 
 pre_save.connect(set_auth_token, sender=Application)
