@@ -443,4 +443,6 @@ class ServerObject(BaseServerObject):
 def sort_key(value):
     if isinstance(value, (IPv4Address, IPv6Address)):
         return value.version, value
+    if isinstance(value, (Servertype, Project)):
+        return value.pk
     return value
