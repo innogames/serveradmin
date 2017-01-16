@@ -32,7 +32,6 @@ from serveradmin.serverdb.forms import ServerForm
 from serveradmin.serverdb.models import (
     Servertype,
     Project,
-    Segment,
     Attribute,
     ServertypeAttribute,
     ServerStringAttribute,
@@ -187,7 +186,6 @@ def edit(request):
         server = ServerObject.new(
             Servertype.objects.get(pk=request.POST['attr_servertype']),
             Project.objects.get(pk=request.POST['attr_project']),
-            Segment.objects.get(pk=request.POST['attr_segment']),
             request.POST['attr_hostname'],
             request.POST['attr_intern_ip'],
         )
@@ -371,7 +369,6 @@ def new_server(request):
             server = ServerObject.new(
                 form.cleaned_data['_servertype'],
                 form.cleaned_data['_project'],
-                form.cleaned_data['_segment'],
                 form.cleaned_data['hostname'],
                 form.cleaned_data['intern_ip'],
             )
@@ -390,7 +387,6 @@ def new_server(request):
             form = ServerForm(initial={
                 '_servertype': clone_from['servertype'],
                 '_project': clone_from['project'],
-                '_segment': clone_from['segment'],
                 'hostname': clone_from['hostname'],
                 'intern_ip': clone_from['intern_ip'],
             })

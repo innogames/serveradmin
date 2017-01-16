@@ -222,7 +222,6 @@ class QuerySet(BaseQuerySet):
             self._server_attributes[server.pk] = {
                 Attribute.specials['hostname']: server.hostname,
                 Attribute.specials['intern_ip']: server.intern_ip,
-                Attribute.specials['segment']: server.segment,
                 Attribute.specials['servertype']: server.servertype,
                 Attribute.specials['project']: server.project,
             }
@@ -398,7 +397,7 @@ class QuerySet(BaseQuerySet):
         server_attributes = self._server_attributes[server_id]
         for attribute, value in server_attributes.items():
             if not self._restrict or attribute in self._restrict:
-                if attribute.pk in ('project', 'servertype', 'segment'):
+                if attribute.pk in ('project', 'servertype'):
                     yield attribute.pk, value.pk
                 elif attribute.type == 'inet':
                     if value is None:
@@ -429,11 +428,10 @@ class ServerObject(BaseServerObject):
         return (tpl[0], tpl[1], instance_dict)
 
     @classmethod
-    def new(cls, servertype, project, segment, hostname, intern_ip):
+    def new(cls, servertype, project, hostname, intern_ip):
         attribute_values = [
             ('servertype', servertype.pk),
             ('project', project.pk),
-            ('segment', segment.pk),
             ('hostname', hostname),
             ('intern_ip', intern_ip),
         ]

@@ -12,7 +12,6 @@ class QueryBuilder(object):
             '   server.server_id,'
             '   server.hostname,'
             '   server.intern_ip,'
-            '   server.segment_id AS _segment_id,'
             '   server.servertype_id AS _servertype_id,'
             '   server.project_id AS _project_id'
         )

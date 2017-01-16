@@ -215,21 +215,6 @@ del {
  padding-left:1.5em;
 }
 
-.iprange_block {
- border:2px solid #000;
- font-family:monospace;
- margin-bottom:1em;
- padding:0.5em;
- background:#bbb;
- line-height:1.5em;
-}
-
-.iprange_ip {
- background:#eee;
- margin-right:0.3em;
- padding:0 0.2em 0 0.2em;
-}
-
 .changes_container {
  background:#eee !important;
  border:1px solid #000;

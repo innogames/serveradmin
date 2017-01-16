@@ -120,13 +120,11 @@ class TestCommit(TestCase):
         q = query(hostname=u'test1')
         s = q.get()
         s[u'os'] = u'wheezy'
-        s[u'segment'] = u'seg1'
         s[u'intern_ip'] = u'10.16.2.1'
         q.commit()
 
         s = query(hostname=u'test1').get()
         self.assertEquals(s[u'os'], u'wheezy')
-        self.assertEquals(s[u'segment'], u'seg1')
         self.assertEquals(s[u'intern_ip'], ip_interface('10.16.2.1'))
 
     def test_commit_regexp_violation(self):
@@ -154,7 +152,6 @@ class TestCreate(TestCase):
             u'hostname': u'test4',
             u'intern_ip': u'127.0.0.1',
             u'servertype': u'test0',
-            u'segment': u'seg0.r0',
             u'os': u'squeeze',
             u'database': [u'pgsql']
         }
