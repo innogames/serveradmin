@@ -21,6 +21,20 @@ from serveradmin.dataset.create import create_server
 from serveradmin.serverdb.models import Attribute
 
 
+class StringEncoder(object):
+    def loads(self, x):
+        return x
+
+    def dumps(self, x):
+        return x
+
+    def load(self, file):
+        return file.read()
+
+    def dump(self, val, file):
+        return file.write(val)
+
+
 @login_required
 def doc_functions(request):
     group_list = []
@@ -55,19 +69,6 @@ def echo(request, app, data):
 
 # api_view decorator is used after setting an attribute on this function
 def dataset_query(request, app, data):
-    class StringEncoder(object):
-        def loads(self, x):
-            return x
-
-        def dumps(self, x):
-            return x
-
-        def load(self, file):
-            return file.read()
-
-        def dump(self, val, file):
-            return file.write(val)
-
     if not all(x in data for x in ('filters', 'restrict', 'augmentations')):
         return {
             'status': 'error',
@@ -102,6 +103,7 @@ def dataset_query(request, app, data):
             'message': str(error),
         })
 
+
 dataset_query.encode_json = False
 dataset_query = api_view(dataset_query)
 
@@ -124,8 +126,8 @@ def dataset_commit(request, app, data):
         commit_changes(commit, skip_validation, force_changes, app=app)
 
         return {
-                'status': 'success',
-            }
+            'status': 'success',
+        }
     except (
         ValueError,
         ValidationError,
