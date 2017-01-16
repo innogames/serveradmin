@@ -47,7 +47,7 @@ class Commit(object):
     def _validate_deletes(self):
         if not (
             isinstance(self.deleted_servers, (list, set)) and
-            all(isinstance(x, (int, long)) for x in self.deleted_servers)
+            all(isinstance(x, int) for x in self.deleted_servers)
         ):
             raise CommitError('Invalid deleted servers')
 
