@@ -1,5 +1,5 @@
 def build_function_description(fn):
-    code = fn.func_code
+    code = fn.__code__
     is_args = code.co_flags & 0x04
     is_kwargs = code.co_flags & 0x08
 
@@ -19,9 +19,9 @@ def build_function_description(fn):
     elif is_args:
         arguments[-1] = '*' + arguments[-1]
 
-    defaults = fn.func_defaults if fn.func_defaults else []
+    defaults = fn.__defaults__ if fn.__defaults__ else []
     for i, default_value in enumerate(reversed(defaults)):
         idx = code.co_argcount - i - 1
         arguments[idx] = '{0}={1!r}'.format(arguments[idx], default_value)
 
-    return '{0}({1})'.format(fn.func_name, ', '.join(arguments))
+    return '{0}({1})'.format(fn.__name__, ', '.join(arguments))
