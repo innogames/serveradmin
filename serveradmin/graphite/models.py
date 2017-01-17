@@ -208,7 +208,7 @@ class Template(models.Model):
             response = opener.open(url).read()
 
             if response:
-                return json.loads(response)
+                return json.loads(response.decode())
 
         return [{
             'id': '',
