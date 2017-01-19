@@ -8,12 +8,7 @@ from ipaddress import ip_network
 from django.core.exceptions import ValidationError
 
 from serveradmin.dataset.typecast import typecast
-from serveradmin.serverdb.models import (
-    Project,
-    Servertype,
-    Server,
-    ServerAttribute,
-)
+from serveradmin.serverdb.models import Server, ServerAttribute
 
 
 class FilterValueError(ValidationError):
@@ -666,17 +661,6 @@ filter_classes = {
 
 def value_to_sql(attribute, value):
     # Validations of special relation attributes
-    if attribute.pk == 'servertype':
-        try:
-            Servertype.objects.get(pk=value)
-        except Servertype.DoesNotExist:
-            raise FilterValueError('Invalid servertype: ' + value)
-    elif attribute.pk == 'project':
-        try:
-            Project.objects.get(pk=value)
-        except Project.DoesNotExist:
-            raise FilterValueError('Invalid project: ' + value)
-
     if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
         try:
             return str(Server.objects.get(hostname=value).server_id)
@@ -693,7 +677,7 @@ def value_to_sql(attribute, value):
     return raw_sql_escape(value)
 
 
-def _condition_sql(attribute, template, servertypes):
+def _condition_sql(attribute, template, servertypes):  # NOQA: C901
     assert servertypes
 
     if attribute.special:
