@@ -58,7 +58,7 @@ class QuerySetRepresentation(object):
 
         return h
 
-    def __eq__(self, other):
+    def __eq__(self, other):  # NOQA: C901
         if not isinstance(other, QuerySetRepresentation):
             return False
 
@@ -154,7 +154,7 @@ class QuerySet(BaseQuerySet):
         self._order_dir = order_dir
         return self
 
-    def _get_query_builder_with_filters(self):
+    def _get_query_builder_with_filters(self):  # NOQA: C901
         attributes = []
         builder = QueryBuilder()
         servertypes = set(Servertype.objects.all())
@@ -228,7 +228,9 @@ class QuerySet(BaseQuerySet):
             servers_by_type[server.servertype].append(server)
 
         self._select_attributes(servers_by_type.keys())
+        self._initialize_attributes(servers_by_type)
         self._add_attributes(servers_by_type)
+        self._add_related_attributes(servers_by_type)
 
         result_class = dict
         server_ids = self._server_attributes.keys()
@@ -268,17 +270,15 @@ class QuerySet(BaseQuerySet):
                     (sa.servertype, ), (related_via_attribute, )
                 ).get())
 
-    def _add_attributes(self, servers_by_type):
-        """Add the attributes to the results"""
-
-        # Step 0: Initialize the attributes
+    def _initialize_attributes(self, servers_by_type):
         for attribute, servertypes in self._servertypes_by_attribute.items():
             init = attribute.initializer()
             for servertype in servertypes:
                 for server in servers_by_type[servertype]:
                     self._server_attributes[server.pk][attribute] = init()
 
-        # Step 1: Query the materialized attributes by their types
+    def _add_attributes(self, servers_by_type):
+        """Add the attributes to the results"""
         for key, attributes in self._attributes_by_type.items():
             if key == 'supernet':
                 for attribute in attributes:
@@ -308,7 +308,7 @@ class QuerySet(BaseQuerySet):
                         sa.server_id, sa.attribute, sa.get_value()
                     )
 
-        # Step 2: Add the related attributes
+    def _add_related_attributes(self, servers_by_type):
         for servertype_attribute in self._related_servertype_attributes:
             self._add_related_attribute(servertype_attribute, servers_by_type)
 
