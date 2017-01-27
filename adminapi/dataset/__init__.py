@@ -23,7 +23,6 @@ class QuerySet(BaseQuerySet):
     def __init__(self, filters, auth_token, timeout):
         BaseQuerySet.__init__(self, filters)
         self.auth_token = auth_token
-        self.attributes = {}
         self.timeout = timeout
 
     def augment(self, *attrs):
@@ -62,46 +61,22 @@ class QuerySet(BaseQuerySet):
 
     def _handle_result(self, result):
         if result['status'] == 'success':
-            attributes = {}
-            for attr_name, attr in result['attributes'].items():
-                attributes[attr_name] = Attribute(
-                    attr_name, attr['type'], attr['multi']
-                )
-            self.attributes = attributes
-            # The attributes in convert_set must be converted to sets
-            # and attributes in convert_ip must be converted to ips
-            convert_set = frozenset(
-                attr_name for attr_name, attr in self.attributes.items()
-                if attr.multi
-            )
-            convert_ip = frozenset(
-                attr_name for attr_name, attr in self.attributes.items()
-                if attr.type in ('ip', 'inet')
-            )
             self._results = {}
             for object_id, server in result['servers'].items():
                 object_id = int(object_id)
                 server_obj = ServerObject(object_id, self, self.auth_token,
                                           self.timeout)
-                for attr in convert_set:
-                    if attr not in server:
-                        continue
-                    if attr in convert_ip:
-                        server[attr] = MultiAttr((
-                            ip_network(x) if '/' in x else ip_address(x)
-                            for x in server[attr]
-                        ), server_obj, attr)
-                    else:
-                        server[attr] = MultiAttr(
-                            server[attr], server_obj, attr
+                for attribute_id, value in list(server.items()):
+                    if isinstance(value, list):
+                        server[attribute_id] = MultiAttr(
+                            server[attribute_id], server_obj, attribute_id
                         )
-                for attr in convert_ip:
-                    if server.get(attr) is None or attr in convert_set:
-                        continue
-                    if '/' in server[attr]:
-                        server[attr] = ip_network(server[attr])
-                    else:
-                        server[attr] = ip_address(server[attr])
+                    elif attribute_id in ServerObject.inet_attribute_ids:
+                        server[attribute_id] = (
+                            ip_network(server[attribute_id])
+                            if '/' in server[attribute_id]
+                            else ip_address(server[attribute_id])
+                        )
                 dict.update(server_obj, server)
                 self._results[object_id] = server_obj
 
@@ -110,6 +85,10 @@ class QuerySet(BaseQuerySet):
 
 
 class ServerObject(BaseServerObject):
+
+    # TODO: Query the datatypes once from the server
+    inet_attribute_ids = {'intern_ip', 'primary_ip6'}
+
     def __init__(self, object_id=None, queryset=None, auth_token=None,
                  timeout=None):
         BaseServerObject.__init__(self, [], object_id, queryset)
