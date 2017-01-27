@@ -61,7 +61,7 @@ class Commit(object):
                 change['server'] = servers[server_id]
                 change['attribute'] = Attribute.objects.get(pk=attribute_id)
 
-    def _validate_changes(self):
+    def _validate_changes(self):    # NOQA: C901
         for changes in self.changed_servers.values():
             for change in changes.values():
                 action = change['action']
@@ -81,7 +81,7 @@ class Commit(object):
                     if not change['attribute'].multi:
                         raise ValueError('Not a multi attribute')
 
-    def _clean_changes(self):
+    def _clean_changes(self):   # NOQA: C901
         for server_id, changes in tuple(self.changed_servers.items()):
             server_changed = False
             for attr, change in tuple(changes.items()):
@@ -267,6 +267,7 @@ class _ServerAttributedChangedHook(HookSlot):
         filtered_fn.__name__ = hookfn.__name__
         return HookSlot.connect(self, filtered_fn)
 
+
 on_server_attribute_changed = _ServerAttributedChangedHook(
     'commit_server_changed',
     servers=list,
@@ -306,11 +307,11 @@ def commit_changes(
             violations_readonly = _validate_readonly(
                 commit.changed_servers, commit.servers
             )
-            violations_regexp = _validate_regexp(
+            violations_regexp = list(_validate_regexp(
                 commit.changed_servers,
                 commit.servers,
                 servertype_attributes,
-            )
+            ))
             violations_required = _validate_required(
                 commit.changed_servers, commit.servers, servertype_attributes
             )
@@ -453,16 +454,11 @@ def _validate_readonly(changed_servers, servers):
 
 
 def _validate_regexp(changed_servers, servers, servertype_attributes):
-    violations = []
     for server_id, changes in changed_servers.items():
         server = servers[server_id]
         for attribute_id, change in changes.items():
-            attribute = Attribute.objects.get(pk=attribute_id)
-            if attribute.special:
-                continue
-
-            sa = servertype_attributes[server['servertype']][attribute_id]
-            if sa.regexp is None:
+            sa = servertype_attributes[server['servertype']].get(attribute_id)
+            if not sa or not sa.regexp:
                 continue
 
             action = change['action']
@@ -470,13 +466,12 @@ def _validate_regexp(changed_servers, servers, servertype_attributes):
                 if change['new'] is None:
                     continue
                 if not sa.regexp_match(change['new']):
-                    violations.append((server_id, attribute_id))
+                    yield server_id, attribute_id
             elif action == 'multi':
                 for value in change['add']:
                     if not sa.regexp_match(value):
-                        violations.append((server_id, attribute_id))
+                        yield server_id, attribute_id
                         break
-    return violations
 
 
 def _validate_required(changed_servers, servers, servertype_attributes):
