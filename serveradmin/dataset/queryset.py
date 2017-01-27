@@ -394,6 +394,7 @@ class QuerySet(BaseQuerySet):
         return 0, sort_key(value)
 
     def _get_attributes(self, server_id):
+        yield 'object_id', server_id
         server_attributes = self._server_attributes[server_id]
         for attribute, value in server_attributes.items():
             if not self._restrict or attribute in self._restrict:

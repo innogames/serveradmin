@@ -4,7 +4,6 @@ except ImportError:
     import json
 from operator import attrgetter
 from itertools import islice
-from collections import OrderedDict
 
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template.response import TemplateResponse
@@ -109,8 +108,7 @@ def get_results(request):
         queryset.restrict(*shown_attributes)
         queryset.order_by(order_by, order_dir)
         results = queryset.get_results()
-        num_servers = len(results)
-        servers = OrderedDict(tuple(results.items())[offset:(offset + limit)])
+        servers = list(islice(results.values(), offset, offset + limit))
     except (ParseQueryError, ValidationError, DataError) as error:
         return HttpResponse(json.dumps({
             'status': 'error',
@@ -130,7 +128,7 @@ def get_results(request):
         for a in Attribute.specials.keys()
     )
     servertypes = [
-        Servertype.objects.get(pk=s['servertype']) for s in servers.values()
+        Servertype.objects.get(pk=s['servertype']) for s in servers
     ]
     attributes = [
         a for a in (Attribute.objects.get(pk=a) for a in shown_attributes)
@@ -149,11 +147,8 @@ def get_results(request):
     return HttpResponse(json.dumps({
         'status': 'success',
         'understood': queryset.get_representation().as_code(),
-        'servers': [
-            dict(tuple(s.items()) + (('object_id', s.object_id), ))
-            for s in servers.values()
-        ],
-        'num_servers': num_servers,
+        'servers': servers,
+        'num_servers': len(servers),
         'avail_attributes': avail_attributes,
     }, default=json_encode_extra), content_type='application/x-json')
 

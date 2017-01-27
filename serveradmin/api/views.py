@@ -77,8 +77,6 @@ def dataset_query(request, app, data):
         }
 
     try:
-        if 'filters' not in data:
-            raise ValidationError('You need a filters keys.')
         if not isinstance(data['filters'], dict):
             raise ValidationError('Filters must be a dictionary')
         filters = {}
@@ -90,10 +88,13 @@ def dataset_query(request, app, data):
             queryset.restrict(*data['restrict'])
         if data['augmentations']:
             queryset.augment(*data['augmentations'])
+        if data.get('order_by'):
+            queryset.order_by(*data['order_by'])
 
         return json.dumps({
             'status': 'success',
             'servers': queryset.get_results(),
+            'result': list(queryset.get_results().values()),
             'attributes': _build_attributes(),
         }, default=json_encode_extra)
     except ValidationError as error:

@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from ipaddress import ip_address, ip_network
 
 from adminapi import _api_settings
@@ -54,18 +55,21 @@ class QuerySet(BaseQuerySet):
             'filters': serialized_filters,
             'restrict': self._restrict,
             'augmentations': self._augmentations,
+            'order_by': self._order_by,
         }
-        result = send_request(QUERY_ENDPOINT, request_data, self.auth_token,
-                              self.timeout)
-        return self._handle_result(result)
+        response = send_request(
+            QUERY_ENDPOINT, request_data, self.auth_token, self.timeout
+        )
+        return self._handle_response(response)
 
-    def _handle_result(self, result):
-        if result['status'] == 'success':
-            self._results = {}
-            for object_id, server in result['servers'].items():
-                object_id = int(object_id)
-                server_obj = ServerObject(object_id, self, self.auth_token,
-                                          self.timeout)
+    def _handle_response(self, response):
+        if response['status'] == 'success':
+            self._results = OrderedDict()
+            for server in response['result']:
+                object_id = server['object_id']
+                server_obj = ServerObject(
+                    object_id, self, self.auth_token, self.timeout
+                )
                 for attribute_id, value in list(server.items()):
                     if isinstance(value, list):
                         server[attribute_id] = MultiAttr(
@@ -80,8 +84,8 @@ class QuerySet(BaseQuerySet):
                 dict.update(server_obj, server)
                 self._results[object_id] = server_obj
 
-        elif result['status'] == 'error':
-            _handle_exception(result)
+        elif response['status'] == 'error':
+            _handle_exception(response)
 
 
 class ServerObject(BaseServerObject):

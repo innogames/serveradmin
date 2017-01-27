@@ -11,17 +11,10 @@ class BaseQuerySet(object):
         self._results = None
         self._restrict = None
         self._augmentations = None
-        self._order = None
+        self._order_by = None
 
     def __iter__(self):
         self.get_results()
-        if self._order is not None:
-            order_keys = self._order
-
-            def key_fn(server):
-                return tuple(server.get(key) for key in order_keys)
-            return iter(sorted(self._results.values(), key=key_fn))
-
         return iter(self._results.values())
 
     def __len__(self):
@@ -105,8 +98,8 @@ class BaseQuerySet(object):
     def iterattrs(self, attr='hostname'):
         return (obj[attr] for obj in self)
 
-    def order_by(self, *attrs):
-        self._order = attrs
+    def order_by(self, *attribute_ids):
+        self._order_by = attribute_ids
         return self
 
     def get_results(self):
