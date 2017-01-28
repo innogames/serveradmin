@@ -172,9 +172,9 @@ def export(request):
 
 
 @login_required
-def list(request):
+def inspect(request):
     server = query(object_id=request.GET['object_id']).get()
-    return _edit(request, server, template='list')
+    return _edit(request, server, template='inspect')
 
 
 @login_required
@@ -192,7 +192,7 @@ def edit(request):
     return _edit(request, server, True)
 
 
-def _edit(request, server, edit_mode=False, template='edit'):
+def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
     invalid_attrs = set()
     if edit_mode and request.POST:
         for key, value in request.POST.items():
@@ -237,7 +237,7 @@ def _edit(request, server, edit_mode=False, template='edit'):
             else:
                 messages.success(request, 'Edited server successfully')
                 url = '{0}?object_id={1}'.format(
-                    reverse('servershell_list'),
+                    reverse('servershell_inspect'),
                     server.object_id,
                 )
                 return HttpResponseRedirect(url)
@@ -344,7 +344,7 @@ def get_values(request):
     })
 
 
-@login_required
+@login_required     # NOQA: C901
 @permission_required('dataset.create_serverobject')
 def new_server(request):
     if 'clone_from' in request.REQUEST:

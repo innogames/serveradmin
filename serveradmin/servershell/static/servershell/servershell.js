@@ -412,7 +412,7 @@ function autocomplete_shell_command(term, autocomplete_cb) {
         'graph': 'Show configured Graohite graph table for selected hosts',
         'new': 'Create a new server',
         'clone': 'Clone a server with it\'s attributes',
-        'list': 'List all attributes of a server',
+        'inspect': 'List all attributes of a server',
         'edit': 'Edit all attributes of a server',
         'changes': 'Show all changes',
         'history': 'Show history for selected hosts'
@@ -523,8 +523,8 @@ function handle_command(command) {
         return handle_command_new();
     } else if (command == 'clone') {
         return handle_command_clone();
-    } else if (command == 'list') {
-        return handle_command_list();
+    } else if (command == 'inspect') {
+        return handle_command_inspect();
     } else if (command == 'edit') {
         return handle_command_edit();
     } else if (command == 'delete') {
@@ -644,10 +644,10 @@ function handle_command_edit() {
     return '';
 }
 
-function handle_command_list() {
+function handle_command_inspect() {
     execute_on_servers(function(server) {
         var query_str = '?' + $.param({'object_id': server['object_id']});
-        $.get(shell_list_url + query_str, function(data) {
+        $.get(shell_inspect_url + query_str, function(data) {
             var dialog = $('<div title="' + server['hostname'] + '"></div>');
             dialog.append(data);
             dialog.dialog({
@@ -1165,7 +1165,7 @@ $(function() {
         var attr_item = $(this);
         var attribute_type = attr_item.attr('data-attr-type');
         var symbol;
-        switch(attribute_type) {
+        switch (attribute_type) {
             case 'supernet':
                 symbol = 'P';
                 break;
