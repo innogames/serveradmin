@@ -322,9 +322,6 @@ class MultiAttr(set):
     def __str__(self):
         return ' '.join(str(x) for x in self)
 
-    def __unicode__(self):
-        return u' '.join(unicode(x) for x in self)
-
     def add(self, elem):
         if elem in self:
             return
