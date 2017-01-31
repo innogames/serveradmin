@@ -450,7 +450,7 @@ class Startswith(BaseFilter):
                 '   FROM server'
                 '   WHERE hostname LIKE {0}'
                 ')'
-                .format(value),
+                .format(value)
             )
         else:
             template = '{0}::text LIKE ' + value
