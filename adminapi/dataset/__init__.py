@@ -75,7 +75,10 @@ class QuerySet(BaseQuerySet):
                         server[attribute_id] = MultiAttr(
                             server[attribute_id], server_obj, attribute_id
                         )
-                    elif attribute_id in ServerObject.inet_attribute_ids:
+                    elif (
+                        attribute_id in ServerObject.inet_attribute_ids and
+                        server[attribute_id]
+                    ):
                         server[attribute_id] = (
                             ip_network(server[attribute_id])
                             if '/' in server[attribute_id]
