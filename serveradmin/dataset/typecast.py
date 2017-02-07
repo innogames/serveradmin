@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from netaddr import EUI
 
 from django.core.exceptions import ValidationError
@@ -31,5 +31,5 @@ def typecast(attribute, value, force_single=False):
 
     try:
         return typecast_fn(value)
-    except ValueError as error:
+    except (ValueError, InvalidOperation) as error:
         raise ValidationError(str(error))
