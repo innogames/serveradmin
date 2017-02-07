@@ -108,6 +108,7 @@ def get_results(request):
         queryset.restrict(*shown_attributes)
         queryset.order_by(order_by, order_dir)
         results = queryset.get_results()
+        num_servers = len(results)
         servers = list(islice(results.values(), offset, offset + limit))
     except (ParseQueryError, ValidationError, DataError) as error:
         return HttpResponse(json.dumps({
@@ -148,7 +149,7 @@ def get_results(request):
         'status': 'success',
         'understood': queryset.get_representation().as_code(),
         'servers': servers,
-        'num_servers': len(servers),
+        'num_servers': num_servers,
         'avail_attributes': avail_attributes,
     }, default=json_encode_extra), content_type='application/x-json')
 
