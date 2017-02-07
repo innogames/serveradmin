@@ -18,7 +18,6 @@ from serveradmin.dataset import QuerySet
 from serveradmin.dataset.filters import ExactMatch, filter_from_obj
 from serveradmin.dataset.commit import commit_changes
 from serveradmin.dataset.create import create_server
-from serveradmin.serverdb.models import Attribute
 
 
 class StringEncoder(object):
@@ -95,7 +94,6 @@ def dataset_query(request, app, data):
             'status': 'success',
             'servers': queryset.get_results(),
             'result': list(queryset.get_results().values()),
-            'attributes': _build_attributes(),
         }, default=json_encode_extra)
     except ValidationError as error:
         return json.dumps({
@@ -164,7 +162,6 @@ def dataset_create(request, app, data):
 
         return {
             'status': 'success',
-            'attributes': _build_attributes(),
             'servers': QuerySet(filters={
                 'hostname': ExactMatch(data['attributes']['hostname'])
             }).get_results(),
@@ -175,16 +172,6 @@ def dataset_create(request, app, data):
             'type': error.__class__.__name__,
             'message': str(error),
         }
-
-
-def _build_attributes():
-    return {
-        a.pk: {
-            'multi': a.multi,
-            'type': a.type,
-        }
-        for a in Attribute.objects.all()
-    }
 
 
 @api_view
