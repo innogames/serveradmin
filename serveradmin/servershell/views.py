@@ -250,6 +250,8 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
     fields = []
     fields_set = set()
     for key, value in server.items():
+        if key == 'object_id':
+            continue
         attribute = Attribute.objects.get(pk=key)
         servertype_attribute = servertype_attributes.get(key)
         if servertype_attribute and servertype_attribute.related_via_attribute:
