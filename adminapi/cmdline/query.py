@@ -27,7 +27,7 @@ def main():
     orderby = options.orderby if options.orderby else ('hostname', )
     host_list = query(
         **parse_query(' '.join(args), filter_classes=filters.filter_classes)
-    ).restrict(*attrs).order_by(*orderby).fetch_now()
+    ).restrict(*attrs).order_by(*orderby)
 
     if options.export:
         print(options.separator.join(host[attrs[0]] for host in host_list))
