@@ -401,7 +401,7 @@ def _fetch_servers(changed_servers):
     queryset = QuerySet({'object_id': Any(*changed_servers.keys())})
     queryset.restrict(*changed_attrs)
 
-    return queryset.get_results()
+    return {s.object_id: s for s in queryset.get_results()}
 
 
 def _get_servertype_attributes(servers):

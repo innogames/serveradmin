@@ -1,4 +1,4 @@
-from collections import defaultdict, OrderedDict
+from collections import defaultdict
 from ipaddress import IPv4Address, IPv6Address
 
 from django.core.exceptions import ValidationError
@@ -212,7 +212,7 @@ class QuerySet(BaseQuerySet):
     def _fetch_results(self):
         builder = self._get_query_builder_with_filters()
         if builder is None:
-            self._results = {}
+            self._results = []
             return
 
         self._server_attributes = dict()
@@ -232,15 +232,12 @@ class QuerySet(BaseQuerySet):
         self._add_attributes(servers_by_type)
         self._add_related_attributes(servers_by_type)
 
-        result_class = dict
         server_ids = self._server_attributes.keys()
         if self._order_by:
-            result_class = OrderedDict
             server_ids = sorted(server_ids, key=self._order_by_key)
-        self._results = result_class(
-            (i, ServerObject(self._get_attributes(i), i, self))
-            for i in server_ids
-        )
+        self._results = [
+            ServerObject(self._get_attributes(i), i, self) for i in server_ids
+        ]
 
     def _select_attributes(self, servertypes):
         self._attributes_by_type = defaultdict(set)

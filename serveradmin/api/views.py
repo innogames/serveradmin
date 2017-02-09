@@ -92,8 +92,7 @@ def dataset_query(request, app, data):
 
         return json.dumps({
             'status': 'success',
-            'servers': queryset.get_results(),
-            'result': list(queryset.get_results().values()),
+            'result': queryset.get_results(),
         }, default=json_encode_extra)
     except ValidationError as error:
         return json.dumps({
@@ -162,7 +161,7 @@ def dataset_create(request, app, data):
 
         return {
             'status': 'success',
-            'servers': QuerySet(filters={
+            'result': QuerySet(filters={
                 'hostname': ExactMatch(data['attributes']['hostname'])
             }).get_results(),
         }

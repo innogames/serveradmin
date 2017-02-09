@@ -14,16 +14,13 @@ class BaseQuerySet(object):
         self._order_by = None
 
     def __iter__(self):
-        self.get_results()
-        return iter(self._results.values())
+        return iter(self.get_results())
 
     def __len__(self):
-        self.get_results()
-        return len(self._results)
+        return len(self.get_results())
 
     def __bool__(self):
-        self.get_results()
-        return bool(self._results)
+        return bool(self.get_results())
 
     def __repr__(self):
         # QuerySet is not used directly but through query function
@@ -63,11 +60,10 @@ class BaseQuerySet(object):
         raise NotImplementedError()
 
     def get(self):
-        self.get_results()
-        if len(self._results) != 1:
+        results = self.get_results()
+        if len(results) != 1:
             raise DatasetError('get() requires exactly 1 matched object')
-        for value in self._results.values():
-            return value
+        return results[0]
 
     def is_dirty(self):
         return any(s.is_dirty() for s in self)

@@ -108,13 +108,14 @@ def get_results(request):
         queryset.restrict(*shown_attributes)
         queryset.order_by(order_by, order_dir)
         results = queryset.get_results()
-        num_servers = len(results)
-        servers = list(islice(results.values(), offset, offset + limit))
     except (ParseQueryError, ValidationError, DataError) as error:
         return HttpResponse(json.dumps({
             'status': 'error',
             'message': str(error)
         }))
+
+    num_servers = len(results)
+    servers = list(islice(results, offset, offset + limit))
 
     request.session['term'] = term
     request.session['per_page'] = limit

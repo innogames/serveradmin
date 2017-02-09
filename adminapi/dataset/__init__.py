@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from ipaddress import ip_address, ip_network
 
 from adminapi import _api_settings
@@ -64,7 +63,7 @@ class QuerySet(BaseQuerySet):
 
     def _handle_response(self, response):
         if response['status'] == 'success':
-            self._results = OrderedDict()
+            self._results = []
             for server in response['result']:
                 object_id = server['object_id']
                 server_obj = ServerObject(
@@ -85,7 +84,7 @@ class QuerySet(BaseQuerySet):
                             else ip_address(server[attribute_id])
                         )
                 dict.update(server_obj, server)
-                self._results[object_id] = server_obj
+                self._results.append(server_obj)
 
         elif response['status'] == 'error':
             _handle_exception(response)
@@ -148,7 +147,7 @@ def create(
     fill_defaults_all=False,
     auth_token=None,
 ):
-    request_data = {
+    request = {
         'attributes': attributes,
         'skip_validation': skip_validation,
         'fill_defaults': fill_defaults,
@@ -158,13 +157,14 @@ def create(
     if auth_token is None:
         auth_token = _api_settings['auth_token']
 
-    result = send_request(CREATE_ENDPOINT, request_data, auth_token,
-                          _api_settings['timeout_dataset'])
+    response = send_request(
+        CREATE_ENDPOINT, request, auth_token, _api_settings['timeout_dataset']
+    )
     qs = QuerySet(
         filters={'hostname': _prepare_filter(attributes['hostname'])},
         auth_token=auth_token,
         timeout=_api_settings['timeout_dataset'],
     )
-    qs._handle_result(result)
+    qs._handle_response(response)
 
     return qs.get()
