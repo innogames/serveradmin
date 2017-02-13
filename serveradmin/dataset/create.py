@@ -89,42 +89,10 @@ def _get_project(attributes):
 def _get_ip_addr(servertype, attributes):
     networks = tuple(_get_networks(attributes))
     if servertype.ip_addr_type == 'null':
-        if attributes.get('intern_ip') is not None:
-            raise CreateError('"intern_ip" has to be None.')
-        if networks:
-            raise CreateError('There must not be any networks.')
-        return None
-
-    if 'intern_ip' in attributes:
-        intern_ip = attributes['intern_ip']
-    elif servertype.ip_addr_type in ('host', 'loadbalancer'):
-        if not networks:
-            raise CreateError(
-                '"intern_ip" is not given, and no networks could be found.'
-            )
-        intern_ip = _choose_ip_addr(networks)
-        if intern_ip is None:
-            raise CreateError(
-                'No IP address could be selected from the given networks.'
-            )
-        return intern_ip
-    else:
-        raise CreateError('"intern_ip" attribute is required.')
-
-    try:
-        if servertype.ip_addr_type == 'network':
-            intern_ip = ip_network(intern_ip)
-        else:
-            intern_ip = ip_interface(intern_ip)
-    except ValueError as error:
-        raise CreateError(str(error))
-
-    if servertype.ip_addr_type == 'network':
-        _check_in_networks(networks, intern_ip)
-    else:
-        _check_in_networks(networks, intern_ip.network)
-
-    return intern_ip
+        return _get_null_ip_addr(attributes, networks)
+    if servertype.ip_addr_type in ('host', 'loadbalancer'):
+        return _get_host_ip_addr(attributes, networks)
+    return _get_network_ip_addr(attributes, networks)
 
 
 def _get_networks(attributes):
@@ -146,6 +114,50 @@ def _get_networks(attributes):
                     .format(attribute_value, attribute, target_servertype)
                 )
             yield server.intern_ip.network
+
+
+def _get_null_ip_addr(attributes, networks):
+    if attributes.get('intern_ip') is not None:
+        raise CreateError('"intern_ip" has to be None.')
+    if networks:
+        raise CreateError('There must not be any networks.')
+
+    return None
+
+
+def _get_host_ip_addr(attributes, networks):
+    if 'intern_ip' not in attributes:
+        if not networks:
+            raise CreateError(
+                '"intern_ip" is not given, and no networks could be found.'
+            )
+        intern_ip = _choose_ip_addr(networks)
+        if intern_ip is None:
+            raise CreateError(
+                'No IP address could be selected from the given networks.'
+            )
+        return intern_ip
+
+    try:
+        intern_ip = ip_interface(attributes['intern_ip'])
+    except ValueError as error:
+        raise CreateError(str(error))
+
+    _check_in_networks(networks, intern_ip.network)
+    return intern_ip.ip
+
+
+def _get_network_ip_addr(attributes, networks):
+    if 'intern_ip' not in attributes:
+        raise CreateError('"intern_ip" attribute is required.')
+
+    try:
+        intern_ip = ip_network(attributes['intern_ip'])
+    except ValueError as error:
+        raise CreateError(str(error))
+
+    _check_in_networks(networks, intern_ip)
+    return intern_ip
 
 
 def _choose_ip_addr(networks):
@@ -207,7 +219,7 @@ def _get_real_attributes(attributes):
         yield attribute, value
 
 
-def _validate_real_attributes(
+def _validate_real_attributes(  # NOQA: C901
     servertype,
     real_attributes,
     skip_validation,
