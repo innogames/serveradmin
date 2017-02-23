@@ -10,3 +10,11 @@ installation instructions.
 Python 3.4+ is required to run the server.  Required Python modules are listed
 on [serveradmin/requirements.txt](serveradmin/requirements.txt).  The client
 still supports Python 2.7 in addition to Python 3.4+.
+
+License
+-------
+
+The project is released under the MIT License.  The MIT License is registered
+with and approved by the Open Source Initiative [1].
+
+[1] https://opensource.org/licenses/MIT
