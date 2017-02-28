@@ -1,6 +1,12 @@
 # The settings file
 /serveradmin/settings.py
 
+# The additional modules
+#
+# We prefix the additional modules with serveradmin_.  It is practical to
+# just copy or link them under this repository on development environments.
+/serveradmin_*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
