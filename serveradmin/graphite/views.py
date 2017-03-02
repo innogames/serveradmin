@@ -1,10 +1,14 @@
-from django.http import Http404, HttpResponseBadRequest
+from urllib.request import (
+    HTTPBasicAuthHandler,
+    HTTPPasswordMgrWithDefaultRealm,
+    build_opener
+)
+
+from django.http import Http404, HttpResponseBadRequest, HttpResponse
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
-
-import django_urlauth.utils
 
 from adminapi.dataset.base import DatasetError, MultiAttr
 from serveradmin.graphite.models import Collection
@@ -87,13 +91,31 @@ def graph_table(request):
     return TemplateResponse(request, 'graphite/graph_table.html', {
         'hostnames': hostnames,
         'descriptions': descriptions,
-        'GRAPHITE_URL': settings.GRAPHITE_URL,
         'graph_table': graph_table,
-        'token': django_urlauth.utils.new_token(request.user.username,
-                                                settings.GRAPHITE_SECRET),
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
         'link': request.get_full_path(),
         'from': request.GET.get('from', '-24h'),
         'until': request.GET.get('until', 'now'),
     })
+
+
+@login_required
+@ensure_csrf_cookie
+def graph(request):
+    """Graph page"""
+    password_mgr = HTTPPasswordMgrWithDefaultRealm()
+    password_mgr.add_password(
+        None,
+        settings.GRAPHITE_URL,
+        settings.GRAPHITE_USER,
+        settings.GRAPHITE_PASSWORD,
+    )
+    auth_handler = HTTPBasicAuthHandler(password_mgr)
+    url = '{0}/render?{1}'.format(
+        settings.GRAPHITE_URL, request.GET.urlencode()
+    )
+    with build_opener(auth_handler).open(url) as response:
+        r = HttpResponse(response.read())
+        r['Content-Type'] = 'image/png'
+        return r

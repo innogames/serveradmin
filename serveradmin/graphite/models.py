@@ -1,18 +1,16 @@
 import json
 from string import Formatter
+from urllib.request import (
+    HTTPBasicAuthHandler,
+    HTTPPasswordMgrWithDefaultRealm,
+    build_opener
+)
 
 from django.db import models
 from django.conf import settings
 
-import django_urlauth.utils
-
 from adminapi.dataset.base import MultiAttr
 from serveradmin.serverdb.models import Attribute
-
-try:
-    from urllib.request import build_opener
-except ImportError:
-    from urllib2 import build_opener
 
 
 class Collection(models.Model):
@@ -196,19 +194,24 @@ class Template(models.Model):
         """
 
         if self.foreach_path:
-            token = django_urlauth.utils.new_token('serveradmin',
-                                                   settings.GRAPHITE_SECRET)
             formatter = AttributeFormatter()
             params = formatter.vformat(
                 'query=' + self.foreach_path, (), server
             )
-            url = (settings.GRAPHITE_URL + '/metrics/find?' +
-                   '__auth_token=' + token + '&' + params)
-            opener = build_opener()
-            response = opener.open(url).read()
 
-            if response:
-                return json.loads(response.decode())
+            password_mgr = HTTPPasswordMgrWithDefaultRealm()
+            password_mgr.add_password(
+                None,
+                settings.GRAPHITE_URL,
+                settings.GRAPHITE_USER,
+                settings.GRAPHITE_PASSWORD,
+            )
+            auth_handler = HTTPBasicAuthHandler(password_mgr)
+            url = '{0}/metrics/find?{1}'.format(
+                settings.GRAPHITE_URL, params
+            )
+            with build_opener(auth_handler).open(url) as response:
+                return json.loads(response.read().decode())
 
         return [{
             'id': '',

@@ -4,23 +4,22 @@ from os.path import isdir
 import time
 from PIL import Image
 from io import BytesIO
+from urllib.request import (
+    HTTPBasicAuthHandler,
+    HTTPPasswordMgrWithDefaultRealm,
+    build_opener
+)
+from urllib.error import HTTPError
 
 from django.core.management.base import NoArgsCommand
 from django.conf import settings
 from django.db import transaction
 
-from django_urlauth.utils import new_token
 from serveradmin.graphite.models import (
     Collection,
     NumericCache,
     AttributeFormatter,
 )
-
-try:
-    from urllib.request import build_opener
-    from urllib.error import HTTPError
-except ImportError:
-    from urllib2 import build_opener, HTTPError
 
 
 class Command(NoArgsCommand):
@@ -98,21 +97,29 @@ class Command(NoArgsCommand):
 
     def get_from_graphite(self, params):
         """Make a GET request to Graphite with the given params"""
-        token = new_token(b'serveradmin', settings.GRAPHITE_SECRET)
-        url = '{0}/render?__auth_token={1}&{2}'.format(
-            settings.GRAPHITE_CACHE_URL, token, params
+        password_mgr = HTTPPasswordMgrWithDefaultRealm()
+        password_mgr.add_password(
+            None,
+            settings.GRAPHITE_URL,
+            settings.GRAPHITE_USER,
+            settings.GRAPHITE_PASSWORD,
         )
-
-        opener = build_opener()
+        auth_handler = HTTPBasicAuthHandler(password_mgr)
+        url = '{0}/render?{1}'.format(
+            settings.GRAPHITE_URL, params
+        )
         start = time.time()
+
         try:
-            return opener.open(url).read()
+            with build_opener(auth_handler).open(url) as response:
+                return response.read()
         except HTTPError as error:
             print('Warning: Graphite returned ' + str(error) + ' to ' + url)
         finally:
             end = time.time()
             if end - start > 10:
                 print(
-                    'Warning: Graphite request to {0} took {1} seconds'
-                    .format(url, end - start)
+                    'Warning: Graphite request to {0} took {1} seconds'.format(
+                        url, end - start
+                    )
                 )

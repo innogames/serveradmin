@@ -188,18 +188,15 @@ LOGGING = {
 
 OBJECTS_PER_PAGE = 25
 
-# Graphite URL is required to generate graphic URL's.  Normal graphs
-# are requested from Graphite on the browser.  admin_djangourlauth module
-# module is used to authenticate to Graphite.  Graphite secret is required
-# to generate the tokens with this module.  Small graphs on the overview page
-# are requested and stored by the Serveradmin from the Graphite. Graphs are
-# stored by the job called "gensprites" under directory
-# graphite/static/graph_sprite.  They are also merged into single images
-# for every server to reduce the requests to the Serveradmin from the browser.
+# Graphite URL is required to generate graphic URL's.  Normal graphs are
+# requested from Graphite on the browser. Small graphs on the overview page are
+# requested and stored by the Serveradmin from the Graphite. Graphs are stored
+# by the job called "gensprites" under directory graphite/static/graph_sprite.
+# They are also merged into single images for every server to reduce the
+# requests to the Serveradmin from the browser.
 GRAPHITE_URL = 'https://graphite.innogames.de'
-# This one is used for background downloading
-GRAPHITE_CACHE_URL = 'https://graphite-secure.innogames.de'
-GRAPHITE_SECRET = b'f48bb9bcda4647f181c8255577c20313'
+GRAPHITE_USER = 'graphite_user'
+GRAPHITE_PASSWORD = 'graphite_password'
 GRAPHITE_SPRITE_WIDTH = 112
 GRAPHITE_SPRITE_HEIGHT = 45
 GRAPHITE_SPRITE_PARAMS = (

@@ -107,7 +107,7 @@
 {% for column_name, graph in graph_column %}
         <th>
             {{ column_name }}
-            <a href="{{ GRAPHITE_URL }}/graphlot/?{{ graph }}">
+            <a href="{% url 'graphite_graph' %}/graphlot/?{{ graph }}">
                 <img src="{{ STATIC_URL }}graph_icon.gif"
                      alt="{{ name }} {{ column_name }} Graphlot" />
             </a>
@@ -119,7 +119,7 @@
 {% for column_name, graph in graph_column %}
         <td>
             <img class="graph"
-                 src="{{ GRAPHITE_URL }}/render?{{ graph }}&__auth_token={{ token }}"
+                 src="{% url 'graphite_graph' %}/render?{{ graph }}"
                  alt="{{ name }} {{ column_name }}" />
         </td>
 {% endfor %}
