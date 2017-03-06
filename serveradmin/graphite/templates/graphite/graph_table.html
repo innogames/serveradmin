@@ -9,6 +9,10 @@
         <img src="{{ STATIC_URL }}link.png" alt="Link to this page"
 		     title="Link to this page" />
     </a>
+    <a href="{{ grafana_link }}" target="_blank">
+        <img src="{{ STATIC_URL }}grafana.png" alt="Link the grafana detailed dashboard"
+             title="Link the grafana detailed dashboard" />
+    </a>
 </p>
 {% else %}
 <h2>Graphs for {{ hostnames|join:", " }}</h2>
@@ -107,10 +111,6 @@
 {% for column_name, graph in graph_column %}
         <th>
             {{ column_name }}
-            <a href="{% url 'graphite_graph' %}/graphlot/?{{ graph }}">
-                <img src="{{ STATIC_URL }}graph_icon.gif"
-                     alt="{{ name }} {{ column_name }} Graphlot" />
-            </a>
         </th>
 {% endfor %}
     </tr>

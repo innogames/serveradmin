@@ -204,3 +204,8 @@ GRAPHITE_SPRITE_PARAMS = (
     'height=' + str(GRAPHITE_SPRITE_HEIGHT) + '&' +
     'graphOnly=true'
 )
+# User will be redirected to detailed system overview dashboard
+GRAFANA_DASHBOARD = (
+    'https://graphite.innogames.de/grafana' +
+    '/dashboard/db/system-overview'
+)

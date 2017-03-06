@@ -77,11 +77,16 @@ def graph_table(request):
                 graph_table += collection.graph_table(servers[hostname])
         graph_tables.append(graph_table)
 
+    grafana_link_params = '?'
     if len(hostname) > 1:
         # Add hostname to the titles
         for order, hostname in enumerate(hostnames):
             graph_tables[order] = [(k + ' on ' + hostname, v)
                                    for k, v in graph_tables[order]]
+            grafana_link_params += (
+                'var-SERVER=' +
+                hostname.replace('.', '_') + "&"
+            )
 
         # Combine them
         graph_table = []
@@ -97,6 +102,7 @@ def graph_table(request):
         'link': request.get_full_path(),
         'from': request.GET.get('from', '-24h'),
         'until': request.GET.get('until', 'now'),
+        'grafana_link': settings.GRAFANA_DASHBOARD + grafana_link_params
     })
 
 
