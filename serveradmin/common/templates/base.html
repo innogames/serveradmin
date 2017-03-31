@@ -26,20 +26,9 @@
 <ul class="menu">
 {% if user.is_authenticated %}
     <li><a href="{% url 'servershell_index' %}">Servershell</a></li>
-    <li>Hardware
-        <ul class="childmenu">
-            <li><a href="{% url 'resources_index' %}">Resources</a></li>
-            <li><a href="{% url 'resources_projects' %}">Projects</a></li>
-            <li><a href="{% url 'colo_index' %}">Colocation</a></li>
-        </ul>
-    </li>
-    <li>Documentation
-        <ul class="childmenu">
-            <li><a href="{% url 'docs_document' 'python-api' %}">Python API</a></li>
-            <li><a href="{% url 'api_doc_functions' %}">API Functions</a></li>
-            <li><a href="{% url 'docs_document' 'extending' %}">Extending</a></li>
-        </ul>
-    </li>
+{% for template in MENU_TEMPLATES %}
+{% include template %}
+{% endfor %}
 {% if user.is_staff %}
     <li><a href="{% url 'admin:index' %}">Django Admin</a></li>
 {% endif %}

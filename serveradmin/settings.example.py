@@ -87,7 +87,7 @@ STATICFILES_DIRS = (
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-#    'django.contrib.staticfiles.finders.DefaultStorageFinder',
+    # 'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
 
 # Make this unique, and don't share it with anybody.
@@ -111,6 +111,11 @@ TEMPLATES = [
             'debug': DEBUG,
         },
     },
+]
+
+MENU_TEMPLATES = [
+    'resources/menu.html',
+    'docs/menu.html',
 ]
 
 MIDDLEWARE_CLASSES = (

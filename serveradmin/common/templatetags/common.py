@@ -3,6 +3,7 @@ from django.conf import settings
 
 register = template.Library()
 
+
 @register.simple_tag
 def logo():
     if getattr(settings, 'IS_SECONDARY', False):
