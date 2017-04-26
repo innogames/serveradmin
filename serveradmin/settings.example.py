@@ -111,6 +111,12 @@ TEMPLATES = [
             'debug': DEBUG,
         },
     },
+    {
+        'BACKEND': 'django.template.backends.jinja2.Jinja2',
+        'DIRS': [os.path.join(ROOT_DIR, 'common/jinja2')],
+        'APP_DIRS': True,
+        'OPTIONS': {'environment': 'serveradmin.jinja2.Environment', },
+    },
 ]
 
 MENU_TEMPLATES = [
