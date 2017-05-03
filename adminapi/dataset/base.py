@@ -307,6 +307,11 @@ class MultiAttr(set):
     def __str__(self):
         return ' '.join(str(x) for x in self)
 
+    def copy(self):
+        return MultiAttr(
+            self, self._server_object, self._attribute_id, self.datatype
+        )
+
     def add(self, elem):
         if elem in self:
             return
