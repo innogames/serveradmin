@@ -583,7 +583,9 @@ class ServerAttribute(models.Model):
         abstract = True
 
     def __str__(self):
-        return '{0}->{1}={2}'.format(self.server, self.attribute, self.value)
+        return '{0}->{1}={2}'.format(
+            self.server, self.attribute, self.get_value()
+        )
 
     def get_value(self):
         return self.value
