@@ -21,15 +21,14 @@ def typecast(attribute, value, force_single=False):
     if value is None:
         return value
 
+    multi = attribute.multi and not force_single
+    if multi and not isinstance(value, (list, set)):
+        raise ValidationError('Attr is multi, but value is not a list/set')
+
     typecast_fn = _typecast_fns[attribute.type]
-
-    if attribute.multi and not force_single:
-        if not isinstance(value, (list, set)):
-            raise ValidationError('Attr is multi, but value is not a list/set')
-
-        return set(typecast_fn(x) for x in value)
-
     try:
+        if multi:
+            return set(typecast_fn(x) for x in value)
         return typecast_fn(value)
     except (ValueError, InvalidOperation) as error:
         raise ValidationError(str(error))
