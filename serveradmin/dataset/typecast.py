@@ -1,3 +1,4 @@
+from ipaddress import ip_address, ip_network
 from netaddr import EUI
 
 from django.core.exceptions import ValidationError
@@ -9,7 +10,7 @@ _typecast_fns = {
     'hostname': str,
     'reverse_hostname': str,
     'number': lambda x: float(x) if '.' in str(x) else int(x),
-    'inet': str,
+    'inet': lambda x: ip_network(x) if '/' in str(x) else ip_address(x),
     'macaddr': EUI,
     'date': str,
     'supernet': str,
