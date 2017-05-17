@@ -124,7 +124,9 @@ class Commit(object):
                 changes=self.changed_servers,
             )
         except CommitIncomplete as error:
-            self.warnings.append('Commit hook failed: {}'.format(str(error)))
+            self.warnings.append(
+                'Commit hook failed:\n{}'.format(' '.join(error.messages))
+            )
 
     def _delete_attributes(self):
         # We first have to delete all of the hostname attributes

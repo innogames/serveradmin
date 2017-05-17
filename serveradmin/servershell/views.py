@@ -311,12 +311,12 @@ def commit(request):
         ) as error:
             result = {
                 'status': 'error',
-                'message': str(error),
+                'message': ' '.join(error.messages)
             }
         except CommitIncomplete as error:
             result = {
                 'status': 'success',
-                'message': str(error)
+                'message': ' '.join(error.messages)
             }
         else:
             result = {'status': 'success'}
