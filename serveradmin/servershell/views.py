@@ -203,7 +203,7 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
                 values = [v.strip() for v in value.splitlines()]
                 try:
                     value = typecast(attribute, values)
-                except ValueError:
+                except ValidationError:
                     invalid_attrs.add(attribute_id)
                     value = set(values)
             if value == '':
@@ -211,7 +211,7 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
             else:
                 try:
                     value = typecast(attribute, value)
-                except ValueError:
+                except ValidationError:
                     invalid_attrs.add(attribute_id)
             server[attribute_id] = value
 
