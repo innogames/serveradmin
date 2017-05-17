@@ -1029,7 +1029,6 @@ function handle_command_commit(parsed_args) {
     $.post(shell_commit_url, {'commit': JSON.stringify(commit)}, function(result) {
         if (result['status'] == 'error') {
             $('<div class="commit-message" title="Commit error"></div>').text(result['message']).dialog();
-            return;
         } else if (result['message']) {
             $('<div class="commit-message" title="Commit message"></div>').text(result['message']).dialog();
         }
