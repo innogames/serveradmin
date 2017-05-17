@@ -1,4 +1,3 @@
-from decimal import Decimal, InvalidOperation
 from netaddr import EUI
 
 from django.core.exceptions import ValidationError
@@ -9,7 +8,7 @@ _typecast_fns = {
     'string': str,
     'hostname': str,
     'reverse_hostname': str,
-    'number': Decimal,
+    'number': lambda x: float(x) if '.' in str(x) else int(x),
     'inet': str,
     'macaddr': EUI,
     'date': str,
@@ -30,5 +29,5 @@ def typecast(attribute, value, force_single=False):
         if multi:
             return set(typecast_fn(x) for x in value)
         return typecast_fn(value)
-    except (ValueError, InvalidOperation) as error:
+    except ValueError as error:
         raise ValidationError(str(error))
