@@ -1,6 +1,6 @@
 {% extends base_template %}
 
-{% block title %}Attributes of object {{ object_id }}{% endblock %}
+{% block title %}Attributes{% endblock %}
 
 {% block content %}
 {% if is_ajax %}
@@ -8,11 +8,13 @@
     <img src="{{ STATIC_URL }}link.png" alt="Link to this page"
         title="Link to this page" />
 </a></p>
-{% else %}
+{% elif object_id %}
 <h2>Object {{ object_id }}</h2>
+{% else %}
+<h2>New Object</h2>
 {% endif %}
 
-<form method="post" action="{% url 'servershell_edit' %}?object_id={{ object_id }}">
+<form method="post" action="{% if not object_id %}{% url 'servershell_edit' %}{% endif %}">
 {% csrf_token %}
 <table class="border_table" style="width:100%; table-layout:fixed;">
 <tr>
