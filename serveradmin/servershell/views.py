@@ -3,6 +3,7 @@ try:
 except ImportError:
     import json
 from operator import attrgetter
+from ipaddress import ip_interface, ip_network
 from itertools import islice
 
 from django.http import HttpResponse, HttpResponseRedirect, Http404
@@ -180,12 +181,17 @@ def edit(request):
     if 'object_id' in request.GET:
         server = query(object_id=request.GET['object_id']).get()
     else:
-        server = ServerObject.new(
-            Servertype.objects.get(pk=request.POST['attr_servertype']),
-            Project.objects.get(pk=request.POST['attr_project']),
-            request.POST['attr_hostname'],
-            request.POST['attr_intern_ip'],
-        )
+        servertype = Servertype.objects.get(pk=request.POST['attr_servertype'])
+        project = Project.objects.get(pk=request.POST['attr_project'])
+        hostname = request.POST['attr_hostname']
+        if servertype.ip_addr_type == 'null':
+            intern_ip = None
+        elif servertype.ip_addr_type == 'network':
+            intern_ip = ip_network(request.POST['attr_intern_ip'])
+        else:
+            intern_ip = ip_interface(request.POST['attr_intern_ip'])
+        server = ServerObject.new(servertype, project, hostname, intern_ip)
+
     return _edit(request, server, True)
 
 
