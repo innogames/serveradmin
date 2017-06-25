@@ -8,19 +8,19 @@ class Migration(migrations.Migration):
         migrations.RunSQL(
             'ALTER TABLE project '
             'ADD CONSTRAINT project_project_id_check '
-            "   CHECK (project_id ~ '^[a-z][a-z0-9_]*$'), "
+            r"   CHECK (project_id ~ '\A[a-z][a-z0-9_]*\Z'), "
             'ADD CONSTRAINT project_subdomain_check '
-            "   CHECK (subdomain ~ '^[a-z][a-z0-9\\.\\-]*$')"
+            r"   CHECK (subdomain ~ '\A[a-z][a-z0-9\.\-]*\Z')"
         ),
         migrations.RunSQL(
             'ALTER TABLE servertype '
             'ADD CONSTRAINT servertype_servertype_id_check '
-            "   CHECK (servertype_id ~ '^[a-z][a-z0-9_]*$')"
+            r"   CHECK (servertype_id ~ '\A[a-z][a-z0-9_]*\Z')"
         ),
         migrations.RunSQL(
             'ALTER TABLE attribute '
             'ADD CONSTRAINT attribute_attribute_id_check '
-            "   CHECK (attribute_id ~ '^[a-z][a-z0-9_]*$'), "
+            r"   CHECK (attribute_id ~ '\A[a-z][a-z0-9_]*\Z'), "
             'ADD CONSTRAINT attribute_multi_check '
             '   CHECK ('
             "       type NOT IN ('boolean', 'supernet') OR NOT multi"

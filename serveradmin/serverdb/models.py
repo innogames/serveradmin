@@ -64,11 +64,11 @@ ip_addr_types = (
 )
 
 lookup_id_validators = [
-    RegexValidator('^[a-z][a-z0-9_]*$', 'Invalid id'),
+    RegexValidator(r'\A[a-z][a-z0-9_]*\Z', 'Invalid id'),
 ]
 
 hostname_validators = [
-    RegexValidator('^[a-z][a-z0-9\.\-]*$', 'Invalid hostname'),
+    RegexValidator(r'\A([a-z0-9]+[\.\-])*[a-z0-9]+\Z', 'Invalid hostname'),
 ]
 
 
