@@ -28,9 +28,10 @@ for app in settings.INSTALLED_APPS:
     except ImportError:
         continue
 
-    urlpatterns.append(
-        url(r'^{}/'.format(app.rsplit('.', 1)[-1]), include(module))
-    )
+    if app.startswith('serveradmin.') or app.startswith('serveradmin_'):
+        urlpatterns.append(url(
+            r'^{}/'.format(app[(len('serveradmin') + 1):]), include(module)
+        ))
 
 if settings.DEBUG:
     urlpatterns += static(
