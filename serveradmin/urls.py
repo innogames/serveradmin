@@ -32,6 +32,8 @@ for app in settings.INSTALLED_APPS:
         urlpatterns.append(url(
             r'^{}/'.format(app[(len('serveradmin') + 1):]), include(module)
         ))
+    elif app == 'igrestlogin':
+        urlpatterns.append(url(r'^loginapi/', include(module)))
 
 if settings.DEBUG:
     urlpatterns += static(
