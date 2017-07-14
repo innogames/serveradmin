@@ -97,7 +97,6 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [],
-        'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.contrib.auth.context_processors.auth',
@@ -121,8 +120,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.jinja2.Jinja2',
         'DIRS': [os.path.join(ROOT_DIR, 'common/jinja2')],
-        'APP_DIRS': True,
-        'OPTIONS': {'environment': 'serveradmin.jinja2.Environment', },
+        'OPTIONS': {'environment': 'serveradmin.jinja2.Environment'},
     },
 ]
 
