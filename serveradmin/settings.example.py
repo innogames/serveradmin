@@ -164,7 +164,6 @@ INSTALLED_APPS = (
     'serveradmin.serverdb_extra',
     'serveradmin.api',
     'serveradmin.docs',
-    'serveradmin.iprange',
     'serveradmin.graphite',
     'serveradmin.resources',
 )
