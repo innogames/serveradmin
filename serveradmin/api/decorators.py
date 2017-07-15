@@ -55,6 +55,9 @@ def api_view(view):     # NOQA: C901
         if app.author is not None and not app.author.is_active:
             return HttpResponseForbidden('Sorry, your user is inactive.')
 
+        if app.disabled:
+            return HttpResponseForbidden('Token disabled')
+
         readonly_views = ('dataset_query', 'api_call')
         if not app.superuser and view.__name__ not in readonly_views:
             return HttpResponseForbidden('This token has no rights')
