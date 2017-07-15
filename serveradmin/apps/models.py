@@ -22,18 +22,6 @@ class Application(models.Model):
         return self.name
 
 
-class ApplicationException(models.Model):
-    application = models.ForeignKey(Application)
-    user = models.ForeignKey(User)
-    issue = models.TextField()
-    changes = models.TextField()
-    tested = models.BooleanField(default=False)
-    granted = models.BooleanField(default=False)
-
-    def __str__(self):
-        return u'Exception on {0}'.format(self.application)
-
-
 def set_auth_token(sender, instance, **kwargs):
     if not instance.auth_token:
         instance.auth_token = random_alnum_string(24)

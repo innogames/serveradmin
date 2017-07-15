@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from serveradmin.apps.models import Application, ApplicationException
+from serveradmin.apps.models import Application
 
 
 class ApplicationAdmin(admin.ModelAdmin):
@@ -14,4 +14,3 @@ class ApplicationAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Application, ApplicationAdmin)
-admin.site.register(ApplicationException)
