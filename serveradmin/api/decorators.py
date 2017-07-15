@@ -10,19 +10,17 @@ from django.http import (
     HttpResponseBadRequest,
     HttpResponseForbidden,
 )
-from django.core.urlresolvers import reverse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.sites.shortcuts import get_current_site
 from django.utils.crypto import constant_time_compare
 
 from adminapi.utils.json import json_encode_extra
 from adminapi.request import calc_security_token
-from serveradmin.apps.models import Application, ApplicationException
+from serveradmin.apps.models import Application
 from serveradmin.api import AVAILABLE_API_FUNCTIONS
 
 
-def api_view(view):
+def api_view(view):     # NOQA: C901
     @csrf_exempt
     def _wrapper(request):
         try:
@@ -56,25 +54,6 @@ def api_view(view):
 
         if app.author is not None and not app.author.is_active:
             return HttpResponseForbidden('Sorry, your user is inactive.')
-
-        if app.restriction_active():
-            has_exception = ApplicationException.objects.filter(
-                application=app, granted=True
-            ).count()
-
-            if not has_exception:
-                domain = get_current_site(request).domain
-                full_url = reverse('apps_request_exception', args=[app.app_id])
-                exception_url = 'https://{0}{1}'.format(domain, full_url)
-                forbidden_text = (
-                        'This token is restricted.  '
-                        'To get an exception go to {0}'
-                    ).format(exception_url)
-
-                return HttpResponseForbidden(
-                        forbidden_text,
-                        content_type='text/plain',
-                    )
 
         readonly_views = ('dataset_query', 'api_call')
         if app.readonly and view.__name__ not in readonly_views:

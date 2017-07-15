@@ -1,7 +1,6 @@
 from __future__ import division
 
 import hashlib
-from datetime import datetime
 
 from django.db import models
 from django.db.models.signals import pre_save
@@ -16,28 +15,11 @@ class Application(models.Model):
     auth_token = models.CharField(max_length=64, unique=True, editable=False)
     author = models.ForeignKey(User)
     location = models.CharField(max_length=150)
-    restricted = models.BooleanField(default=False)
     readonly = models.BooleanField(default=False)
     allowed_methods = models.TextField(blank=True)
 
     def __str__(self):
         return self.name
-
-    def restriction_active(self):
-        if not self.restricted:
-            return False
-
-        now = datetime.today()
-
-        # Full friday to sunday
-        if now.weekday() in (4, 5, 6):
-            return True
-
-        # Every day after 16:00
-        if now.hour >= 16:
-            return True
-
-        return False
 
 
 class ApplicationException(models.Model):
