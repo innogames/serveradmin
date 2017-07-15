@@ -32,8 +32,8 @@ def changes(request):
 
 @login_required
 def history(request):
-    hostname = request.GET.get('hostname')
-    if not hostname:
+    server_id = request.GET.get('server_id')
+    if not server_id:
         raise Http404
 
     try:
@@ -41,9 +41,9 @@ def history(request):
     except (KeyError, ValueError):
         commit_id = None
 
-    adds = ChangeAdd.objects.filter(hostname=hostname).select_related()
-    updates = ChangeUpdate.objects.filter(hostname=hostname).select_related()
-    deletes = ChangeDelete.objects.filter(hostname=hostname).select_related()
+    adds = ChangeAdd.objects.filter(server_id=server_id).select_related()
+    updates = ChangeUpdate.objects.filter(server_id=server_id).select_related()
+    deletes = ChangeDelete.objects.filter(server_id=server_id).select_related()
 
     if commit_id:
         adds = adds.filter(commit__pk=commit_id)
@@ -67,7 +67,7 @@ def history(request):
     return TemplateResponse(request, 'serverdb/history.html', {
         'change_list': change_list,
         'commit_id': commit_id,
-        'hostname': hostname,
+        'server_id': server_id,
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
         'link': request.get_full_path()
@@ -76,9 +76,11 @@ def history(request):
 
 @login_required
 def restore_deleted(request, change_commit):
-    deleted = get_object_or_404(ChangeDelete,
-                                hostname=request.POST.get('hostname'),
-                                commit__pk=change_commit)
+    deleted = get_object_or_404(
+        ChangeDelete,
+        server_id=request.POST.get('server_id'),
+        commit__pk=change_commit,
+    )
 
     server_obj = deleted.attributes
     try:
@@ -89,5 +91,5 @@ def restore_deleted(request, change_commit):
     else:
         messages.success(request, 'Server restored.')
     return redirect(
-        reverse('serverdb_history') + '?hostname=' + server_obj['hostname']
+        reverse('serverdb_history') + '?server_id=' + server_obj['object_id']
     )

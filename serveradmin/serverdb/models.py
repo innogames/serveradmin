@@ -76,7 +76,7 @@ def get_choices(types):
     # Django allows the choices to be stored and named differently,
     # but we don't need it.  We are zipping the tuple to itself
     # to use the same names.
-    return zip(*((types, ) * 2))
+    return zip(*([types] * 2))
 
 
 class LookupManager(models.Manager):
@@ -857,18 +857,19 @@ class ChangeDelete(models.Model):
         ChangeCommit,
         on_delete=models.CASCADE,
     )
-    hostname = models.CharField(max_length=64, db_index=True)
+    server_id = models.IntegerField(db_index=True)
     attributes_json = models.TextField()
 
     class Meta:
         app_label = 'serverdb'
+        unique_together = [['commit', 'server_id']]
 
     @property
     def attributes(self):
         return json.loads(self.attributes_json)
 
     def __str__(self):
-        return '{0}: {1}'.format(str(self.commit), self.hostname)
+        return '{0}: {1}'.format(str(self.commit), self.server_id)
 
 
 class ChangeUpdate(models.Model):
@@ -876,18 +877,19 @@ class ChangeUpdate(models.Model):
         ChangeCommit,
         on_delete=models.CASCADE,
     )
-    hostname = models.CharField(max_length=64, db_index=True)
+    server_id = models.IntegerField(db_index=True)
     updates_json = models.TextField()
 
     class Meta:
         app_label = 'serverdb'
+        unique_together = [['commit', 'server_id']]
 
     @property
     def updates(self):
         return json.loads(self.updates_json)
 
     def __str__(self):
-        return '{0}: {1}'.format(str(self.commit), self.hostname)
+        return '{0}: {1}'.format(str(self.commit), self.server_id)
 
 
 class ChangeAdd(models.Model):
@@ -895,18 +897,19 @@ class ChangeAdd(models.Model):
         ChangeCommit,
         on_delete=models.CASCADE,
     )
-    hostname = models.CharField(max_length=64, db_index=True)
+    server_id = models.IntegerField(db_index=True)
     attributes_json = models.TextField()
 
     class Meta:
         app_label = 'serverdb'
+        unique_together = [['commit', 'server_id']]
 
     @property
     def attributes(self):
         return json.loads(self.attributes_json)
 
     def __str__(self):
-        return '{0}: {1}'.format(str(self.commit), self.hostname)
+        return '{0}: {1}'.format(str(self.commit), self.server_id)
 
 
 #

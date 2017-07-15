@@ -1,10 +1,10 @@
 {% extends base_template %}
 
-{% block title %}History for {{ hostname }}{% endblock %}
+{% block title %}History for #{{ server_id }}{% endblock %}
 
 {% block content %}
 {% if not is_ajax %}
-<h2>History for {{ hostname }}</h2>
+<h2>History for #{{ server_id }}</h2>
 {% endif %}
 
 {% if is_ajax %}
@@ -89,7 +89,7 @@ by {{ change.commit.commit_by }}</h3>
 
 <form method="post" action="{% url 'serverdb_restore_deleted' change.commit.pk %}">
 {% csrf_token %}
-<input type="hidden" name="hostname" value="{{ change.hostname }}" />
+<input type="hidden" name="server_id" value="{{ change.server_id }}" />
 <p><input type="submit" value="Restore this server" /></p>
 </form>
 {% endif %}
@@ -97,7 +97,7 @@ by {{ change.commit.commit_by }}</h3>
 {% endfor %}
 
 {% if commit_id %}
-<p><a href="{% url 'serverdb_history' %}?hostname={{ hostname }}">Show complete history</a></p>
+<p><a href="{% url 'serverdb_history' %}?server_id={{ server_id }}">Show complete history</a></p>
 {% endif %}
 
 {% endblock %}

@@ -685,9 +685,9 @@ function handle_command_changes() {
 
 function handle_command_history() {
     function show_history(server) {
-        var query_str = '?' + $.param({'hostname': server['hostname']});
+        var query_str = '?' + $.param({'server_id': server['object_id']});
         $.get(serverdb_history_url + query_str, function(data) {
-            var dialog = $('<div title="History of ' + server['hostname'] + '"></div>');
+            var dialog = $('<div title="History of #' + server['object_id'] + '"></div>');
             dialog.append(data);
             dialog.dialog({
                 'width': 800
