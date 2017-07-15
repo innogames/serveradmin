@@ -9,7 +9,7 @@ class ApplicationAdmin(admin.ModelAdmin):
         'author',
         'location',
         'auth_token',
-        'readonly',
+        'superuser',
     ]
 
 

@@ -56,8 +56,8 @@ def api_view(view):     # NOQA: C901
             return HttpResponseForbidden('Sorry, your user is inactive.')
 
         readonly_views = ('dataset_query', 'api_call')
-        if app.readonly and view.__name__ not in readonly_views:
-            return HttpResponseForbidden('This token is readonly')
+        if not app.superuser and view.__name__ not in readonly_views:
+            return HttpResponseForbidden('This token has no rights')
         return_value = view(request, app, json.loads(body))
         if getattr(view, 'encode_json', True):
             return_value = json.dumps(return_value, default=json_encode_extra)

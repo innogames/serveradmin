@@ -15,7 +15,7 @@ class Application(models.Model):
     auth_token = models.CharField(max_length=64, unique=True, editable=False)
     author = models.ForeignKey(User)
     location = models.CharField(max_length=150)
-    readonly = models.BooleanField(default=False)
+    superuser = models.BooleanField(default=False)
     allowed_methods = models.TextField(blank=True)
 
     def __str__(self):
