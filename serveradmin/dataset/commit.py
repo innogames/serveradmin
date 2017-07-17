@@ -386,14 +386,8 @@ def _fetch_servers(changed_servers):
     # Import here to break cyclic import
     from serveradmin.dataset.queryset import QuerySet
     from serveradmin.dataset.filters import Any
-    # Only load attributes that will be changed (for performance reasons)
-    changed_attrs = {'servertype', 'hostname', 'intern_ip'}
-    for changes in changed_servers.values():
-        for attr in changes:
-            changed_attrs.add(attr)
 
     queryset = QuerySet({'object_id': Any(*changed_servers.keys())})
-    queryset.restrict(*changed_attrs)
 
     return {s.object_id: s for s in queryset.get_results()}
 
