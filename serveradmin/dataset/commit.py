@@ -363,29 +363,21 @@ def _log_changes(deleted_servers, changed_servers, app, user):
     else:
         old_servers = []
 
-    servers = query(
-        object_id=filters.Any(*changed_servers.keys())
-    ).restrict('hostname')
-
-    changes = {}
-    for server_obj in servers:
-        changes[server_obj['hostname']] = changed_servers[server_obj.object_id]
-
-    if not (changes or old_servers):
+    if not (changed_servers or old_servers):
         return
 
     commit = ChangeCommit.objects.create(app=app, user=user)
-    for hostname, updates in changes.items():
+    for server_id, updates in changed_servers.items():
         ChangeUpdate.objects.create(
             commit=commit,
-            hostname=hostname,
+            server_id=server_id,
             updates_json=json.dumps(updates, default=json_encode_extra),
         )
     for attributes in old_servers:
         attributes_json = json.dumps(attributes, default=json_encode_extra)
         ChangeDelete.objects.create(
             commit=commit,
-            hostname=attributes['hostname'],
+            server_id=attributes['object_id'],
             attributes_json=attributes_json,
         )
 

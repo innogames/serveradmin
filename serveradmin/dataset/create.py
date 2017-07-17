@@ -63,7 +63,7 @@ def create_server(
         attributes_json = json.dumps(created_server, default=json_encode_extra)
         ChangeAdd.objects.create(
             commit=commit,
-            hostname=created_server['hostname'],
+            server_id=server_id,
             attributes_json=attributes_json,
         )
 
