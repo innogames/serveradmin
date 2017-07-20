@@ -10,6 +10,7 @@ class ApplicationAdmin(admin.ModelAdmin):
         'location',
         'auth_token',
         'superuser',
+        'disabled',
     ]
 
 
