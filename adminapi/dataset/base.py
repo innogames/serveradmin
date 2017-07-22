@@ -51,9 +51,6 @@ class BaseQuerySet(object):
 
         return self
 
-    def count(self):
-        raise NotImplementedError()
-
     def get(self):
         results = self.get_results()
         if len(results) != 1:

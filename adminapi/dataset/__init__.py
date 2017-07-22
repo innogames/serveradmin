@@ -40,9 +40,6 @@ class QuerySet(BaseQuerySet):
         elif result['status'] == 'error':
             _handle_exception(result)
 
-    def count(self):
-        return len(self)
-
     def _fetch_results(self):
         serialized_filters = dict(
             (k, v._serialize()) for k, v in self._filters.items()

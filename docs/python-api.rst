@@ -221,7 +221,6 @@ supports iteration and some additional methods.
     .. method:: QuerySet.__len__()
 
         Return the number of servers that where returned. This will fetch all
-        results, use ``count()`` if you just want the number but not any
         results.
 
     .. method:: restrict(*attrs)
@@ -233,11 +232,6 @@ supports iteration and some additional methods.
         ip for all servers::
 
             hosts = query().restrict('hostname', 'internal_ip')
-
-    .. method:: count()
-
-        Return the number of servers that are matched by the query. Does not
-        fetch the results.
 
     .. method:: get()
 
