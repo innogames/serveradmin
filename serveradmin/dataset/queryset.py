@@ -26,17 +26,9 @@ class QuerySetRepresentation(object):
     """Object that can be easily pickled without storing to much data.
     """
 
-    def __init__(
-        self,
-        filters,
-        restrict,
-        augmentations,
-        order_by,
-        order_dir,
-    ):
+    def __init__(self, filters, restrict, order_by, order_dir):
         self.filters = filters
         self.restrict = restrict
-        self.augmentations = augmentations
         self.order_by = order_by
         self.order_dir = order_dir
 
@@ -44,9 +36,6 @@ class QuerySetRepresentation(object):
         h = 0
         if self.restrict:
             for val in self.restrict:
-                h ^= hash(val)
-        if self.augmentations:
-            for val in self.augmentations:
                 h ^= hash(val)
         for attr_name, attr_filter in self.filters.items():
             h ^= hash(attr_name)
@@ -66,12 +55,6 @@ class QuerySetRepresentation(object):
             if set(self.restrict) - set(other.restrict):
                 return False
         elif self.restrict or other.restrict:
-            return False
-
-        if self.augmentations and other.augmentations:
-            if set(self.augmentations) - set(other.augmentations):
-                return False
-        elif self.augmentations or other.augmentations:
             return False
 
         if len(self.filters) != len(other.filters):
@@ -112,7 +95,6 @@ class QuerySet(BaseQuerySet):
             self._filters[attribute] = filter_obj
         self._restrict = set()
         self._results = None
-        self._augmentations = None
         self._num_dirty = 0
         self._order = None
         self._order_by = None
@@ -125,11 +107,7 @@ class QuerySet(BaseQuerySet):
 
     def get_representation(self):
         return QuerySetRepresentation(
-            self._filters,
-            self._restrict,
-            self._augmentations,
-            self._order_by,
-            self._order_dir,
+            self._filters, self._restrict, self._order_by, self._order_dir
         )
 
     def restrict(self, *attrs):

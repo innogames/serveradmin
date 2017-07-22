@@ -131,23 +131,6 @@ The following filters are available:
     filter will evaluate to True, if the argument does not exist. This must
     always be the outer filter.
 
-.. _python-api-augmenting:
-
-Augmenting
-^^^^^^^^^^
-
-Sometimes you might want additional information about servers that are not
-stored in their attributes. In this case you need to augment the query. This
-simply means that the servers will get additional attributes that can be
-read but can not be changed. You will simply call ``augment`` on the query
-result before using it.
-
-The aren't any augmentations available at the moment, but might be in future.
-
-You can also use additional attributes in your query for filtering, but be
-aware: They are filtered in Python and not on the database level (which is not
-possible).
-
 
 Magic attributes
 ^^^^^^^^^^^^^^^^
@@ -240,11 +223,6 @@ supports iteration and some additional methods.
         Return the number of servers that where returned. This will fetch all
         results, use ``count()`` if you just want the number but not any
         results.
-
-    .. method:: augment(*augmentations)
-
-        This will augment the query set by additional attributes. See
-        :ref:`python-api-augmenting`
 
     .. method:: restrict(*attrs)
 

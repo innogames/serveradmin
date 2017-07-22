@@ -10,7 +10,6 @@ class BaseQuerySet(object):
         self._filters = filters
         self._results = None
         self._restrict = None
-        self._augmentations = None
         self._order_by = None
 
     def __iter__(self):
@@ -40,10 +39,6 @@ class BaseQuerySet(object):
             if attr in host:
                 lookup[host[attr]] = host
         return lookup
-
-    def augment(self, *augmentations):
-        self._augmentations = set(augmentations)
-        return self
 
     def restrict(self, *attrs):
         if not attrs:

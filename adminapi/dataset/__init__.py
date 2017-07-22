@@ -25,9 +25,6 @@ class QuerySet(BaseQuerySet):
         self.auth_token = auth_token
         self.timeout = timeout
 
-    def augment(self, *attrs):
-        raise NotImplementedError('Augmenting is not available yet!')
-
     def commit(self, skip_validation=False, force_changes=False):
         commit = self._build_commit_object()
         commit['skip_validation'] = skip_validation
@@ -53,7 +50,6 @@ class QuerySet(BaseQuerySet):
         request_data = {
             'filters': serialized_filters,
             'restrict': self._restrict,
-            'augmentations': self._augmentations,
             'order_by': self._order_by,
         }
         response = send_request(
