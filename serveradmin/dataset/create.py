@@ -2,7 +2,7 @@ import json
 from ipaddress import ip_network, ip_interface
 
 from django.db import transaction
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 
 from serveradmin.serverdb.models import (
     Servertype,
@@ -57,7 +57,11 @@ def create_server(
 
         created_server = {k.pk: v for k, v in real_attributes.items()}
         created_server['hostname'] = hostname
+        created_server['servertype'] = servertype.pk
+        created_server['project'] = project.pk
         created_server['intern_ip'] = intern_ip
+
+        access_control(user, created_server)
 
         commit = ChangeCommit.objects.create(app=app, user=user)
         attributes_json = json.dumps(created_server, default=json_encode_extra)
@@ -68,6 +72,21 @@ def create_server(
         )
 
         return server_id
+
+
+def access_control(user, server):
+    if not user or user.is_superuser:
+        return
+
+    access_control_groups = user.access_control_groups.all()
+    if not any(
+        a.match_server('create', server)
+        for a in access_control_groups
+    ):
+        raise PermissionDenied(
+            'Insufficient access rights on create for server "{}"'
+            .format(server['hostname'])
+        )
 
 
 def _get_servertype(attributes):

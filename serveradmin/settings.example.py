@@ -154,6 +154,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'netfields',
     'markup_deprecated',
+    'serveradmin.access_control',
     'serveradmin.common',
     'serveradmin.servershell',
     'serveradmin.colo',
