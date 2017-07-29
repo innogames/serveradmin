@@ -17,6 +17,7 @@ from django.db import DataError, IntegrityError
 from django.utils.html import mark_safe, escape as escape_html
 
 from adminapi.base import QueryError
+from adminapi.filters import Any, InsideOnlyNetwork, Startswith
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
 from serveradmin.dataset import Query
@@ -26,12 +27,6 @@ from serveradmin.dataset.commit import (
     CommitIncomplete,
 )
 from serveradmin.dataset.create import create_server
-from serveradmin.dataset.filters import (
-    Any,
-    InsideOnlyNetwork,
-    Startswith,
-    filter_classes,
-)
 from serveradmin.dataset.queryset import ServerObject
 from serveradmin.serverdb.forms import ServerForm
 from serveradmin.serverdb.models import (
@@ -77,9 +72,9 @@ def autocomplete(request):
     if 'hostname' in request.GET:
         hostname = request.GET['hostname']
         try:
-            queryset = Query({'hostname': Startswith(hostname)})
-            queryset.restrict('hostname')
-            autocomplete_list += islice((h['hostname'] for h in queryset), 100)
+            query = Query({'hostname': Startswith(hostname)})
+            query.restrict('hostname')
+            autocomplete_list += islice((h['hostname'] for h in query), 100)
         except ValidationError:
             pass    # If there is no valid query, just don't auto-complete
 
@@ -109,7 +104,7 @@ def get_results(request):
     order_dir = request.GET.get('order_dir', 'asc')
 
     try:
-        query_kwargs = parse_query(term, filter_classes)
+        query_kwargs = parse_query(term)
         query = Query(query_kwargs)
         query.restrict(*shown_attributes)
         query.order_by(order_by, order_dir)
@@ -165,12 +160,12 @@ def get_results(request):
 def export(request):
     term = request.GET.get('term', '')
     try:
-        query_args = parse_query(term, filter_classes)
-        q = Query(query_args).restrict('hostname')
+        query_args = parse_query(term)
+        query = Query(query_args).restrict('hostname')
     except (QueryError, ValidationError) as error:
         return HttpResponse(str(error), status=400)
 
-    hostnames = u' '.join(server['hostname'] for server in q)
+    hostnames = ' '.join(server['hostname'] for server in query)
     return HttpResponse(hostnames, content_type='text/plain')
 
 

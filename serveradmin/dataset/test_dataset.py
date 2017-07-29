@@ -2,7 +2,7 @@ from ipaddress import ip_interface
 
 from django.test import TestCase
 
-from serveradmin.dataset.filters import (
+from adminapi.filters import (
     Any,
     Between,
     Comparison,

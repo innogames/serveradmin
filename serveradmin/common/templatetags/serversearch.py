@@ -3,7 +3,7 @@ import json
 from django import template
 from django.conf import settings
 
-from serveradmin.dataset import filters
+from adminapi.filters import filter_classes
 from serveradmin.serverdb.models import Attribute
 
 register = template.Library()
@@ -20,7 +20,7 @@ def serversearch_js(search_id):
     }
 
     filter_dict = {}
-    for filt in filters.filter_classes.keys():
+    for filt in filter_classes.keys():
         if filt == 'exactmatch':
             continue
         # TODO: Fill with real description

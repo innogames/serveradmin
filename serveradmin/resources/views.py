@@ -8,13 +8,14 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 
 from adminapi.base import QueryError
+from adminapi.filters import Any
 from adminapi.parse import parse_query
 from serveradmin.graphite.models import (
     GRAPHITE_ATTRIBUTE_ID,
     Collection,
     NumericCache,
 )
-from serveradmin.dataset import Query, filters
+from serveradmin.dataset import Query
 from serveradmin.serverdb.models import Project
 
 
@@ -46,7 +47,7 @@ def index(request):
     matched_hostnames = []
     if term:
         try:
-            query_args = parse_query(term, filters.filter_classes)
+            query_args = parse_query(term)
             host_query = Query(query_args).restrict('hostname', 'xen_host')
             for host in host_query:
                 matched_hostnames.append(host['hostname'])
@@ -99,7 +100,7 @@ def index(request):
     hosts = OrderedDict()
     query_kwargs = {GRAPHITE_ATTRIBUTE_ID: collection.name}
     if len(hostnames) > 0:
-        query_kwargs['hostname'] = filters.Any(*hostnames)
+        query_kwargs['hostname'] = Any(*hostnames)
     for server in (
         Query(query_kwargs)
         .restrict('hostname', 'servertype')
@@ -114,7 +115,7 @@ def index(request):
 
     # Add guests for the table cells.
     guests = False
-    query_kwargs = {'xen_host': filters.Any(*hosts.keys())}
+    query_kwargs = {'xen_host': Any(*hosts.keys())}
     for server in (
         Query(query_kwargs)
         .restrict('hostname', 'xen_host')

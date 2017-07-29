@@ -417,8 +417,8 @@ def _log_changes(servers_to_delete, changes, user, app):
 
 def _fetch_servers(server_ids):
     # Import here to break cyclic import
+    from adminapi.filters import Any
     from serveradmin.dataset import Query
-    from serveradmin.dataset.filters import Any
 
     query = Query({'object_id': Any(*server_ids)})
 

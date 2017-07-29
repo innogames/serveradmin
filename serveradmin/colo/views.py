@@ -3,8 +3,8 @@ from copy import deepcopy
 from django.contrib.auth.decorators import login_required
 from django.template.response import TemplateResponse
 
+from adminapi.filters import Empty
 from serveradmin.dataset import Query
-from serveradmin.dataset.filters import Empty
 
 datacenters = {
     'Süderstraße S198.1': {

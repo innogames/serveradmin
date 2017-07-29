@@ -1,10 +1,10 @@
 from adminapi.base import QueryError
-from adminapi.filters import filter_classes as fc
+from adminapi.filters import Or, Regexp, filter_classes
 
 _trigger_re_chars = ('.*', '.+', '[', ']', '|', '\\', '$', '^', '<')
 
 
-def parse_query(term, filter_classes=fc, hostname=None):  # NOQA C901
+def parse_query(term, hostname=None):  # NOQA C901
     parsed_args = parse_function_string(term, strict=True)
     if not parsed_args:
         return {}
@@ -19,24 +19,18 @@ def parse_query(term, filter_classes=fc, hostname=None):  # NOQA C901
         term_parts = term.split(None, 1)
         if len(term_parts) == 2:
             hostname_part, remaining_part = term_parts
-            query_args = parse_query(
-                remaining_part, filter_classes, hostname_part
-            )
+            query_args = parse_query(remaining_part, None, hostname_part)
         else:
             hostname_part = term
             query_args = {}
 
         if any(x in hostname_part for x in _trigger_re_chars):
-            regexp_class = filter_classes['regexp']
-
-            hostname = regexp_class(hostname_part)
+            hostname = Regexp(hostname_part)
         else:
             hostname = hostname_part
 
         if 'hostname' in query_args:
-            query_args['hostname'] = filter_classes['or'](
-                query_args['hostname'], hostname
-            )
+            query_args['hostname'] = Or(query_args['hostname'], hostname)
         else:
             query_args['hostname'] = hostname
 
@@ -56,7 +50,7 @@ def parse_query(term, filter_classes=fc, hostname=None):  # NOQA C901
             stack.append(arg)
 
         elif token == 'func':
-            # Do not allow functions without preceeding key
+            # Do not allow functions without preceding key
             # if they are on top level (e.g. call_depth = 0)
             if not stack or (call_depth == 0 and stack[-1][0] != 'key'):
                 raise QueryError(
