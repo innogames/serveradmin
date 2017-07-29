@@ -2,7 +2,7 @@ class ParseQueryError(Exception):
     pass
 
 
-def parse_function_string(args, strict=True):
+def parse_function_string(args, strict=True):   # NOQA: C901
     state = 'start'
     args_len = len(args)
     parsed_args = []
@@ -29,10 +29,10 @@ def parse_function_string(args, strict=True):
                         raise ParseQueryError(
                             'Escape is not allowed at the end'
                         )
-                if args[i+1] == '\\':
+                if args[i + 1] == '\\':
                     string_buf.append('\\')
                     i += 2
-                elif args[i+1] == string_type:
+                elif args[i + 1] == string_type:
                     string_buf.append(string_type)
                     i += 2
                 else:
@@ -79,14 +79,10 @@ def parse_function_string(args, strict=True):
     return parsed_args
 
 
-def parse_query(term, filter_classes):
-    return _parse_query(term, filter_classes)
-
-
 _trigger_re_chars = ('.*', '.+', '[', ']', '|', '\\', '$', '^', '<')
 
 
-def _parse_query(term, filter_classes, hostname=None):
+def parse_query(term, filter_classes, hostname=None):  # NOQA: C901
     parsed_args = parse_function_string(term, strict=True)
     if not parsed_args:
         return {}
@@ -101,9 +97,9 @@ def _parse_query(term, filter_classes, hostname=None):
         term_parts = term.split(None, 1)
         if len(term_parts) == 2:
             hostname_part, remaining_part = term_parts
-            query_args = _parse_query(remaining_part,
-                                      filter_classes,
-                                      hostname_part)
+            query_args = parse_query(
+                remaining_part, filter_classes, hostname_part
+            )
         else:
             hostname_part = term
             query_args = {}
@@ -115,11 +111,12 @@ def _parse_query(term, filter_classes, hostname=None):
         else:
             hostname = hostname_part
 
-        if u'hostname' in query_args:
-            query_args[u'hostname'] = filter_classes['or'](
-                    query_args[u'hostname'], hostname)
+        if 'hostname' in query_args:
+            query_args['hostname'] = filter_classes['or'](
+                query_args['hostname'], hostname
+            )
         else:
-            query_args[u'hostname'] = hostname
+            query_args['hostname'] = hostname
 
         return query_args
 
