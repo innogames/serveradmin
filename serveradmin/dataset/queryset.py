@@ -1,5 +1,5 @@
 from collections import defaultdict
-from ipaddress import IPv4Address, IPv6Address
+from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 
 from django.core.exceptions import ValidationError
 
@@ -15,8 +15,9 @@ from serveradmin.serverdb.models import (
     ServerHostnameAttribute,
 )
 from serveradmin.dataset.commit import commit_changes
-from serveradmin.dataset.filters import ExactMatch, Any
+from serveradmin.dataset.filters import Any, BaseFilter, ExactMatch
 from serveradmin.dataset.querybuilder import QueryBuilder
+
 
 CACHE_MIN_QS_COUNT = 3
 NUM_OBJECTS_FOR_FILECACHE = 50
@@ -73,21 +74,27 @@ class QuerySet(BaseQuerySet):
         self._order_dir = order_dir
         return self
 
-    def _get_query_builder_with_filters(self):  # NOQA: C901
+    def _get_query_builder(self):
         attributes = []
-        builder = QueryBuilder()
+        filters = {}
         servertypes = set(Servertype.objects.all())
         for attribute, filt in self._filters.items():
-            if attribute.pk == 'intern_ip' and isinstance(filt, ExactMatch):
+            if not isinstance(filt, BaseFilter):
+                filt = ExactMatch(filt)
+
+            if attribute.pk == 'intern_ip':
                 # Filter out servertypes depending on ip_addr_type
-                is_network = '/' in str(filt.value)
                 servertypes = {
                     s for s in servertypes
-                    if (s.ip_addr_type == 'network') == is_network
+                    if s.ip_addr_type in desired_ip_addr_types(filt)
                 }
-            elif attribute.pk == 'servertype':
+
+            if attribute.pk == 'servertype':
                 servertypes = {s for s in servertypes if filt.matches(s.pk)}
-            elif not attribute.special:
+            else:
+                filters[attribute] = filt
+
+            if not attribute.special:
                 attributes.append(attribute)
 
         if attributes:
@@ -97,23 +104,17 @@ class QuerySet(BaseQuerySet):
             for new in attribute_servertypes.values():
                 servertypes = servertypes.intersection(new)
 
-        if len(servertypes) < len(Servertype.objects.all()):
-            if not servertypes:
-                return None
-            builder.add_filter(
-                Attribute.objects.get(pk='servertype'),
-                servertypes,
-                Any(*(s.pk for s in servertypes)),
-            )
+        if not servertypes:
+            return None
 
-        for attribute, filt in self._filters.items():
-            if attribute.pk != 'servertype':
-                builder.add_filter(attribute, servertypes, filt)
+        filters[Attribute.objects.get(pk='servertype')] = Any(
+            *(s.pk for s in servertypes)
+        )
 
-        return builder
+        return QueryBuilder(servertypes, filters)
 
     def _fetch_results(self):
-        builder = self._get_query_builder_with_filters()
+        builder = self._get_query_builder()
         if builder is None:
             self._results = []
             return
@@ -347,3 +348,18 @@ def sort_key(value):
     if isinstance(value, (Servertype, Project)):
         return value.pk
     return value
+
+
+def desired_ip_addr_types(value):
+    if value is None:
+        return ['null']
+    if isinstance(value, str):
+        if '/' in str(value):
+            return ['network']
+        else:
+            return ['host', 'loadbalancer']
+    if isinstance(value, (IPv4Address, IPv6Address)):
+        return ['host', 'loadbalancer']
+    if isinstance(value, (IPv4Network, IPv6Network)):
+        return ['network']
+    return ['null' 'host', 'loadbalancer', 'network']

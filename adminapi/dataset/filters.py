@@ -63,7 +63,7 @@ class Any(BaseFilter):
 
 class _AndOr(BaseFilter):
     def __init__(self, *filters):
-        self.filters = map(_prepare_filter, filters)
+        self.filters = filters
 
     def __repr__(self):
         args = ', '.join(repr(filter) for filter in self.filters)
@@ -98,7 +98,7 @@ class Between(BaseFilter):
 
 class Not(BaseFilter):
     def __init__(self, filter):
-        self.filter = _prepare_filter(filter)
+        self.filter = filter
 
     def __repr__(self):
         return 'Not({0!r})'.format(self.filter)
@@ -148,10 +148,6 @@ class Empty(BaseFilter):
 
     def _serialize(self):
         return {'name': 'empty'}
-
-
-def _prepare_filter(filter):
-    return filter if isinstance(filter, BaseFilter) else ExactMatch(filter)
 
 
 filter_classes = {
