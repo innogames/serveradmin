@@ -135,7 +135,6 @@ class QuerySet(BaseQuerySet):
         attributes = []
         builder = QueryBuilder()
         servertypes = set(Servertype.objects.all())
-        projects = Project.objects.all()
         for attribute, filt in self._filters.items():
             if attribute.pk == 'intern_ip' and isinstance(filt, ExactMatch):
                 # Filter out servertypes depending on ip_addr_type
@@ -146,13 +145,6 @@ class QuerySet(BaseQuerySet):
                 }
             elif attribute.pk == 'servertype':
                 servertypes = {s for s in servertypes if filt.matches(s.pk)}
-            elif attribute.pk == 'project':
-                projects = [p for p in projects if filt.matches(p.pk)]
-                # Filter out servertype with inconsistent fixed_project
-                servertypes = {
-                    s for s in servertypes
-                    if s.fixed_project is None or s.fixed_project in projects
-                }
             elif not attribute.special:
                 attributes.append(attribute)
 
@@ -171,17 +163,9 @@ class QuerySet(BaseQuerySet):
                 servertypes,
                 Any(*(s.pk for s in servertypes)),
             )
-        if len(projects) < len(Project.objects.all()):
-            if not projects:
-                return None
-            builder.add_filter(
-                Attribute.objects.get(pk='project'),
-                projects,
-                Any(*(p.pk for p in projects)),
-            )
 
         for attribute, filt in self._filters.items():
-            if attribute.pk not in ('project', 'servertype'):
+            if attribute.pk != 'servertype':
                 builder.add_filter(attribute, servertypes, filt)
 
         return builder
