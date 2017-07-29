@@ -1,3 +1,6 @@
+from adminapi.dataset.filters import filter_classes as fc
+
+
 class ParseQueryError(Exception):
     pass
 
@@ -82,7 +85,7 @@ def parse_function_string(args, strict=True):   # NOQA: C901
 _trigger_re_chars = ('.*', '.+', '[', ']', '|', '\\', '$', '^', '<')
 
 
-def parse_query(term, filter_classes, hostname=None):  # NOQA: C901
+def parse_query(term, filter_classes=fc, hostname=None):  # NOQA: C901
     parsed_args = parse_function_string(term, strict=True)
     if not parsed_args:
         return {}

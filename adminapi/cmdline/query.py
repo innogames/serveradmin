@@ -4,7 +4,7 @@ from __future__ import print_function
 import sys
 from optparse import OptionParser
 
-from adminapi.dataset import query, filters
+from adminapi.dataset import query
 from adminapi.dataset.base import MultiAttr
 from adminapi.utils.parse import parse_query
 
@@ -23,11 +23,13 @@ def main():
         print('You have to supply a search term.', file=sys.stderr)
         sys.exit(1)
 
-    attrs = options.attrs if options.attrs else ('hostname', )
-    orderby = options.orderby if options.orderby else ('hostname', )
-    host_list = query(
-        **parse_query(' '.join(args), filter_classes=filters.filter_classes)
-    ).restrict(*attrs).order_by(*orderby)
+    attrs = options.attrs if options.attrs else ['hostname']
+    orderby = options.orderby if options.orderby else ['hostname']
+    host_list = (
+        query(**parse_query(' '.join(args)))
+        .restrict(*attrs)
+        .order_by(*orderby)
+    )
 
     if options.export:
         print(options.separator.join(host[attrs[0]] for host in host_list))
