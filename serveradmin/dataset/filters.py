@@ -7,7 +7,6 @@ from ipaddress import ip_network
 
 from django.core.exceptions import ValidationError
 
-from serveradmin.dataset.typecast import typecast
 from serveradmin.serverdb.models import Server, ServerAttribute
 
 
@@ -36,10 +35,6 @@ class NoArgFilter(BaseFilter):
     def __hash__(self):
         return hash(type(self).__name__)
 
-    def typecast(self, attribute):
-        # We don't have values to typecast
-        pass
-
     def matches(self, value):
         return self.filt.matches(value)
 
@@ -49,18 +44,6 @@ class NoArgFilter(BaseFilter):
     @classmethod
     def from_obj(cls, obj):
         return cls()
-
-
-class NetworkFilter(BaseFilter):
-    def typecast(self, attribute):
-        # We don't really need to cast anything.  The child classes
-        # can do that on their __init__() methods as they cannot be
-        # initialised anything other than Network objects.  In here,
-        # we took our chance to validate the attribute.
-        if attribute.type != 'inet':
-            raise FilterValueError(
-                'Cannot network filter attribute "{}"'.format(attribute)
-            )
 
 
 class ExactMatch(BaseFilter):
@@ -77,10 +60,6 @@ class ExactMatch(BaseFilter):
 
     def __hash__(self):
         return hash('ExactMatch') ^ hash(self.value)
-
-    def typecast(self, attribute):
-        if attribute.type != 'inet':
-            self.value = typecast(attribute, self.value, force_single=True)
 
     def as_sql_expr(self, attribute, servertypes):
         if attribute.type == 'boolean':
@@ -125,13 +104,12 @@ class Regexp(BaseFilter):
     def __hash__(self):
         return hash('Regexp') ^ hash(self.regexp)
 
-    def typecast(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         if attribute.type == 'boolean':
             raise FilterValueError(
                 'Cannot pattern match boolean attribute "{}"'.format(attribute)
             )
 
-    def as_sql_expr(self, attribute, servertypes):
         value = raw_sql_escape(self.regexp)
 
         if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
@@ -182,7 +160,7 @@ class Comparison(BaseFilter):
     def __hash__(self):
         return hash('Comparison') ^ hash(self.comparator) ^ hash(self.value)
 
-    def typecast(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         if attribute.type == 'boolean':
             raise FilterValueError(
                 'Cannot compare boolean attribute "{}"'.format(attribute)
@@ -191,9 +169,7 @@ class Comparison(BaseFilter):
             raise FilterValueError(
                 'Cannot compare hostnames attribute "{}"'.format(attribute)
             )
-        self.value = typecast(attribute, self.value, force_single=True)
 
-    def as_sql_expr(self, attribute, servertypes):
         return _condition_sql(attribute, '{{0}} {0} {1}'.format(
             self.comparator, value_to_sql(attribute, self.value)
         ), servertypes)
@@ -240,18 +216,13 @@ class Any(BaseFilter):
             h ^= hash(val)
         return h
 
-    def typecast(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         if attribute.type == 'boolean':
             raise FilterValueError(
                 'Cannot match boolean attribute "{}" with any'
                 .format(attribute)
             )
-        self.values = set(
-            typecast(attribute, x, force_single=True)
-            for x in self.values
-        )
 
-    def as_sql_expr(self, attribute, servertypes):
         if not self.values:
             return '0 = 1'
 
@@ -293,10 +264,6 @@ class _AndOr(BaseFilter):
             result ^= hash(value)
 
         return result
-
-    def typecast(self, attribute):
-        for filt in self.filters:
-            filt.typecast(attribute)
 
     def as_sql_expr(self, attribute, servertypes):
         joiner = ' {0} '.format(type(self).__name__.upper())
@@ -350,7 +317,7 @@ class Between(BaseFilter):
     def __hash__(self):
         return hash('Between') ^ hash(self.a) ^ hash(self.b)
 
-    def typecast(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         if attribute.type == 'boolean':
             raise FilterValueError(
                 'Cannot compare boolean attribute "{}"'.format(attribute)
@@ -359,10 +326,7 @@ class Between(BaseFilter):
             raise FilterValueError(
                 'Cannot compare hostnames attribute "{}"'.format(attribute)
             )
-        self.a = typecast(attribute, self.a, force_single=True)
-        self.b = typecast(attribute, self.b, force_single=True)
 
-    def as_sql_expr(self, attribute, servertypes):
         return _condition_sql(attribute, '{{0}} BETWEEN {0} AND {1}'.format(
             value_to_sql(attribute, self.a), value_to_sql(attribute, self.b)
         ), servertypes)
@@ -398,9 +362,6 @@ class Not(BaseFilter):
     def __hash__(self):
         return hash('Not') ^ hash(self.filter)
 
-    def typecast(self, attribute):
-        self.filter.typecast(attribute)
-
     def as_sql_expr(self, attribute, servertypes):
         return 'NOT ({0})'.format(self.filter.as_sql_expr(
             attribute, servertypes
@@ -433,13 +394,12 @@ class Startswith(BaseFilter):
     def __hash__(self):
         return hash('Startswith') ^ hash(self.value)
 
-    def typecast(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         if attribute.type == 'boolean':
             raise FilterValueError(
                 'Cannot pattern match boolean attribute "{}"'.format(attribute)
             )
 
-    def as_sql_expr(self, attribute, servertypes):
         value = self.value.replace('_', '\\_').replace('%', '\\%')
         value = raw_sql_escape(value + '%')
 
@@ -470,7 +430,7 @@ class Startswith(BaseFilter):
         raise FilterValueError('Invalid object for Startswith')
 
 
-class Overlap(NetworkFilter):
+class Overlap(BaseFilter):
     def __init__(self, *networks):
         try:
             self.networks = [ip_network(n) for n in networks]
@@ -496,6 +456,11 @@ class Overlap(NetworkFilter):
         return result
 
     def as_sql_expr(self, attribute, servertypes):
+        if attribute.type != 'inet':
+            raise FilterValueError(
+                'Cannot network filter attribute "{}"'.format(attribute)
+            )
+
         return _condition_sql(attribute, "{{0}} && ANY('{{{{{0}}}}}')".format(
             ','.join(str(n) for n in self.networks)
         ), servertypes)
@@ -515,6 +480,11 @@ class Overlap(NetworkFilter):
 
 class InsideNetwork(Overlap):
     def as_sql_expr(self, attribute, servertypes):
+        if attribute.type != 'inet':
+            raise FilterValueError(
+                'Cannot network filter attribute "{}"'.format(attribute)
+            )
+
         return _condition_sql(attribute, "{{0}} <<= ANY('{{{{{0}}}}}')".format(
             ','.join(str(n) for n in self.networks)
         ), servertypes)
@@ -522,6 +492,11 @@ class InsideNetwork(Overlap):
 
 class InsideOnlyNetwork(InsideNetwork):
     def as_sql_expr(self, attribute, servertypes):
+        if attribute.type != 'inet':
+            raise FilterValueError(
+                'Cannot network filter attribute "{}"'.format(attribute)
+            )
+
         network_sql_array = "'{{{{{0}}}}}'".format(
             ','.join(str(n) for n in self.networks)
         )
@@ -546,13 +521,12 @@ class Empty(BaseFilter):
     def __hash__(self):
         return hash('Empty')
 
-    def typecast(self, attribute):
+    def as_sql_expr(self, attribute, servertypes):
         if attribute.type == 'boolean':
             raise FilterValueError(
                 'Boolean attribute "{}" cannot be empty'.format(attribute)
             )
 
-    def as_sql_expr(self, attribute, servertypes):
         if attribute.special:
             return _condition_sql(attribute, '{0} IS NULL', servertypes)
         return 'NOT ' + _condition_sql(attribute, '', servertypes)

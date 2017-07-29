@@ -91,7 +91,6 @@ class QuerySet(BaseQuerySet):
                 raise ValidationError(
                     'Invalid attribute: {0}'.format(attribute_id)
                 )
-            filter_obj.typecast(attribute)
             self._filters[attribute] = filter_obj
         self._restrict = set()
         self._results = None
