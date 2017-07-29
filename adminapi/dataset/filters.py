@@ -118,17 +118,6 @@ class Startswith(BaseFilter):
         return {'name': 'startswith', 'value': self.value}
 
 
-class Optional(BaseFilter):
-    def __init__(self, filter):
-        self.filter = _prepare_filter(filter)
-
-    def __repr__(self):
-        return 'Optional({0!r})'.format(self.filter)
-
-    def _serialize(self):
-        return {'name': 'optional', 'filter': self.filter._serialize()}
-
-
 class Overlap(BaseFilter):
     def __init__(self, *networks):
         self.networks = networks
@@ -151,22 +140,6 @@ class InsideNetwork(BaseFilter):
 
     def _serialize(self):
         return {'name': 'insidenetwork', 'networks': self.networks}
-
-
-class PublicIP(BaseFilter):
-    def __repr__(self):
-        return 'PublicIP()'
-
-    def _serialize(self):
-        return {'name': 'publicip'}
-
-
-class PrivateIP(BaseFilter):
-    def __repr__(self):
-        return 'PrivateIP()'
-
-    def _serialize(self):
-        return {'name': 'privateip'}
 
 
 class Empty(BaseFilter):

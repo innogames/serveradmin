@@ -536,64 +536,6 @@ class InsideOnlyNetwork(InsideNetwork):
         ), servertypes)
 
 
-class PrivateIP(NetworkFilter, NoArgFilter):
-    blocks = (
-        ip_network('10.0.0.0/8'),
-        ip_network('172.16.0.0/12'),
-        ip_network('192.168.0.0/16'),
-    )
-
-    def __init__(self):
-        self.filt = InsideNetwork(*PrivateIP.blocks)
-
-    def as_sql_expr(self, attribute, servertypes):
-        return self.filt.as_sql_expr(attribute, servertypes)
-
-
-class PublicIP(NetworkFilter, NoArgFilter):
-    def __init__(self):
-        self.filt = Not(InsideNetwork(*PrivateIP.blocks))
-
-    def as_sql_expr(self, attribute, servertypes):
-        return self.filt.as_sql_expr(attribute, servertypes)
-
-
-class Optional(BaseFilter):
-    def __init__(self, *filters):
-        self.filter = Or(Empty(), *filters)
-
-    def __repr__(self):
-        return 'Optional({0!r})'.format(self.filter)
-
-    def __eq__(self, other):
-        if isinstance(other, Optional):
-            return self.filter == other.filter
-        return False
-
-    def __hash__(self):
-        return hash('Optional') ^ hash(self.filter)
-
-    def typecast(self, attribute):
-        self.filter.typecast(attribute)
-
-    def as_sql_expr(self, attribute, servertypes):
-        return self.filter.as_sql_expr(attribute, servertypes)
-
-    def matches(self, value):
-        if value is None:
-            return True
-        return self.filter.matches(value)
-
-    def as_code(self):
-        return 'filters.Optional({0})'.format(self.filter.as_code())
-
-    @classmethod
-    def from_obj(cls, obj):
-        if 'filter' in obj:
-            return cls(filter_from_obj(obj['filter']))
-        raise FilterValueError('Invalid object for Optional')
-
-
 class Empty(BaseFilter):
     def __repr__(self):
         return 'Empty()'
@@ -653,9 +595,6 @@ filter_classes = {
     'startswith': Startswith,
     'overlap': Overlap,
     'insidenetwork': InsideNetwork,
-    'privateip': PrivateIP,
-    'publicip': PublicIP,
-    'optional': Optional,
     'empty': Empty,
 }
 

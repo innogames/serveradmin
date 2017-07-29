@@ -103,12 +103,6 @@ The following filters are available:
 
         query(all_ips=filters.InsideNetwork(Network('192.168.0.0/24')))
 
-:class:`adminapi.dataset.filters.PublicIP`
-    Checks for public IP
-
-:class:`adminapi.dataset.filters.PrivateIP`
-    Checks for private IP
-
 :class:`adminapi.dataset.filters.And`
     Combines two or more filters by using the conjunction of them. Every filter
     also implements ``__and__``, which allows you to just write ``and`` between
@@ -124,12 +118,6 @@ The following filters are available:
 
 :class:`adminapi.dataset.filters.Between`
     Shorthand for ``filters.And(filters.Comparison('>=', a), filters.Comparison('<=', b))``
-
-:class:`adminapi.dataset.filters.Optional`
-    Normally, if you filter for an attribute the filter will evaluate to False
-    of the attribute does not exist on the server. Using ``Optional`` the
-    filter will evaluate to True, if the argument does not exist. This must
-    always be the outer filter.
 
 
 Magic attributes
