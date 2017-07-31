@@ -38,9 +38,6 @@ class NoArgFilter(BaseFilter):
     def matches(self, value):
         return self.filt.matches(value)
 
-    def as_code(self):
-        return 'filters.{0}()'.format(type(self).__name__)
-
     @classmethod
     def from_obj(cls, obj):
         return cls()
@@ -72,9 +69,6 @@ class ExactMatch(BaseFilter):
 
     def matches(self, value):
         return value == self.value
-
-    def as_code(self):
-        return repr(self.value)
 
     @classmethod
     def from_obj(cls, obj):
@@ -128,9 +122,6 @@ class Regexp(BaseFilter):
 
     def matches(self, value):
         return bool(self._regexp_obj.search(str(value)))
-
-    def as_code(self):
-        return 'filters.' + repr(self)
 
     @classmethod
     def from_obj(cls, obj):
@@ -188,9 +179,6 @@ class Comparison(BaseFilter):
 
         return op(value, self.value)
 
-    def as_code(self):
-        return 'filters.' + repr(self)
-
     @classmethod
     def from_obj(cls, obj):
         if 'comparator' in obj and 'value' in obj:
@@ -233,9 +221,6 @@ class Any(BaseFilter):
     def matches(self, value):
         return value in self.values
 
-    def as_code(self):
-        return 'filters.' + repr(self)
-
     @classmethod
     def from_obj(cls, obj):
         if 'values' in obj and isinstance(obj['values'], list):
@@ -274,11 +259,6 @@ class _AndOr(BaseFilter):
         return '({0})'.format(joiner.join(
             v.as_sql_expr(attribute, servertypes) for v in self.filters
         ))
-
-    def as_code(self):
-        args = ', '.join(filt.as_code() for filt in self.filters)
-
-        return 'filters.{0}({1})'.format(type(self), args)
 
     @classmethod
     def from_obj(cls, obj):
@@ -334,9 +314,6 @@ class Between(BaseFilter):
     def matches(self, value):
         return self.a <= value <= self.b
 
-    def as_code(self):
-        return 'filters.' + repr(self)
-
     @classmethod
     def from_obj(cls, obj):
         if 'a' in obj and 'b' in obj:
@@ -350,7 +327,7 @@ class Not(BaseFilter):
         self.filter = _prepare_filter(filter)
 
     def __repr__(self):
-        return 'Not({0})'.format(self.filter)
+        return 'Not({0!r})'.format(self.filter)
 
     def __eq__(self, other):
 
@@ -370,9 +347,6 @@ class Not(BaseFilter):
     def matches(self, value):
         return not self.filter.matches(value)
 
-    def as_code(self):
-        return 'filters.Not({0})'.format(self.filter.as_code())
-
     @classmethod
     def from_obj(cls, obj):
         if 'filter' in obj:
@@ -385,7 +359,7 @@ class Startswith(BaseFilter):
         self.value = value
 
     def __repr__(self):
-        return 'Startswith({0!})'.format(self.value)
+        return 'Startswith({0!r})'.format(self.value)
 
     def __eq__(self, other):
         if isinstance(other, Startswith):
@@ -419,9 +393,6 @@ class Startswith(BaseFilter):
 
     def matches(self, value):
         return str(value).startswith(self.value)
-
-    def as_code(self):
-        return 'filters.Startswith({0!r})'.format(self.value)
 
     @classmethod
     def from_obj(cls, obj):
@@ -467,9 +438,6 @@ class Overlap(BaseFilter):
 
     def matches(self, value):
         return any(value in n for n in self.networks)
-
-    def as_code(self):
-        return 'filters.' + repr(self)
 
     @classmethod
     def from_obj(cls, obj):
@@ -533,9 +501,6 @@ class Empty(BaseFilter):
 
     def matches(self, value):
         return value is None
-
-    def as_code(self):
-        return 'filters.Empty()'
 
     @classmethod
     def from_obj(cls, obj):

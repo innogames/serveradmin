@@ -22,65 +22,6 @@ CACHE_MIN_QS_COUNT = 3
 NUM_OBJECTS_FOR_FILECACHE = 50
 
 
-class QuerySetRepresentation(object):
-    """Object that can be easily pickled without storing to much data.
-    """
-
-    def __init__(self, filters, restrict, order_by, order_dir):
-        self.filters = filters
-        self.restrict = restrict
-        self.order_by = order_by
-        self.order_dir = order_dir
-
-    def __hash__(self):
-        h = 0
-        if self.restrict:
-            for val in self.restrict:
-                h ^= hash(val)
-        for attr_name, attr_filter in self.filters.items():
-            h ^= hash(attr_name)
-            h ^= hash(attr_filter)
-
-        if self.order_by:
-            h ^= hash(self.order_by)
-            h ^= hash(self.order_dir)
-
-        return h
-
-    def __eq__(self, other):  # NOQA: C901
-        if not isinstance(other, QuerySetRepresentation):
-            return False
-
-        if self.restrict and other.restrict:
-            if set(self.restrict) - set(other.restrict):
-                return False
-        elif self.restrict or other.restrict:
-            return False
-
-        if len(self.filters) != len(other.filters):
-            return False
-
-        for key in self.filters:
-            if key not in other.filters:
-                return False
-            if self.filters[key] != other.filters[key]:
-                return False
-
-        if self.order_by != other.order_by:
-            return False
-
-        if self.order_dir != other.order_dir:
-            return False
-
-        return True
-
-    def as_code(self):
-        args = []
-        for attr_name, value in self.filters.items():
-            args.append('{0}={1}'.format(attr_name, value.as_code()))
-        return 'query({0})'.format(', '.join(args))
-
-
 class QuerySet(BaseQuerySet):
     def __init__(self, filters):
         self._filters = {}
@@ -99,15 +40,16 @@ class QuerySet(BaseQuerySet):
         self._order_by = None
         self._order_dir = 'asc'
 
+    def __repr__(self):
+        args = []
+        for attr_name, value in self._filters.items():
+            args.append('{0}={1!r}'.format(attr_name, value))
+        return 'query({0})'.format(', '.join(args))
+
     def commit(self, *args, **kwargs):
         commit = self._build_commit_object()
         commit_changes(commit, *args, **kwargs)
         self._confirm_changes()
-
-    def get_representation(self):
-        return QuerySetRepresentation(
-            self._filters, self._restrict, self._order_by, self._order_dir
-        )
 
     def restrict(self, *attrs):
         for attribute_id in attrs:

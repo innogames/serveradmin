@@ -15,7 +15,7 @@ from serveradmin.dataset import query, filters
 from serveradmin.serverdb.models import Project
 
 
-@login_required
+@login_required     # NOQA: C901
 @ensure_csrf_cookie
 def index(request):
     """The hardware resources page"""
@@ -52,7 +52,7 @@ def index(request):
                 else:
                     # If it's not guest, it might be a server, so we add it
                     hostnames.append(host['hostname'])
-            understood = host_query.get_representation().as_code()
+            understood = repr(host_query)
             request.session['term'] = term
 
             if len(hostnames) == 0:
@@ -70,7 +70,7 @@ def index(request):
                 request, 'resources/index.html', template_info
             )
     else:
-        understood = query().get_representation().as_code()
+        understood = repr(query())
 
     templates = list(current_collection.template_set.all())
     variations = list(current_collection.variation_set.all())
