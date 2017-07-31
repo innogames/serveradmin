@@ -91,5 +91,6 @@ def restore_deleted(request, change_commit):
     else:
         messages.success(request, 'Server restored.')
     return redirect(
-        reverse('serverdb_history') + '?server_id=' + server_obj['object_id']
+        reverse('serverdb_history') +
+        '?server_id=' + str(server_obj['object_id'])
     )
