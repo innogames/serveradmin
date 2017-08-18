@@ -126,7 +126,6 @@ TEMPLATES = [
 
 MENU_TEMPLATES = [
     'resources/menu.html',
-    'docs/menu.html',
 ]
 
 MIDDLEWARE_CLASSES = (
@@ -163,7 +162,6 @@ INSTALLED_APPS = (
     'serveradmin.serverdb',
     'serveradmin.serverdb_extra',
     'serveradmin.api',
-    'serveradmin.docs',
     'serveradmin.graphite',
     'serveradmin.resources',
 )

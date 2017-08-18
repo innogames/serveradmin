@@ -1,4 +1,0 @@
-alabaster
-babel
-pygments
-sphinx
