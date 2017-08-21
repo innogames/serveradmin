@@ -128,7 +128,7 @@ MENU_TEMPLATES = [
     'resources/menu.html',
 ]
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE_CLASSES = [
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -137,7 +137,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'serveradmin.api.middleware.ApiMiddleware',
     'serveradmin.hooks.middleware.HooksMiddleware',
-)
+]
 
 ROOT_URLCONF = 'serveradmin.urls'
 
@@ -177,22 +177,22 @@ LOGGING = {
     'filters': {
         'require_debug_false': {
             '()': 'django.utils.log.RequireDebugFalse'
-        }
+        },
     },
     'handlers': {
-        'mail_admins': {
-            'level': 'ERROR',
+        'console': {
+            'level': 'DEBUG',
             'filters': ['require_debug_false'],
-            'class': 'django.utils.log.AdminEmailHandler'
-        }
+            'class': 'logging.StreamHandler',
+        },
     },
-    'loggers': {
-        'django.request': {
-            'handlers': ['mail_admins'],
-            'level': 'ERROR',
+        },
+        'queryset': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
             'propagate': True,
         },
-    }
+    },
 }
 
 OBJECTS_PER_PAGE = 25
