@@ -206,8 +206,8 @@ OBJECTS_PER_PAGE = 25
 GRAPHITE_URL = 'https://graphite.innogames.de'
 GRAPHITE_USER = 'graphite_user'
 GRAPHITE_PASSWORD = 'graphite_password'
-GRAPHITE_SPRITE_WIDTH = 112
-GRAPHITE_SPRITE_HEIGHT = 45
+GRAPHITE_SPRITE_WIDTH = 150
+GRAPHITE_SPRITE_HEIGHT = 100
 GRAPHITE_SPRITE_PARAMS = (
     'width=' + str(GRAPHITE_SPRITE_WIDTH) + '&' +
     'height=' + str(GRAPHITE_SPRITE_HEIGHT) + '&' +
@@ -215,6 +215,6 @@ GRAPHITE_SPRITE_PARAMS = (
 )
 # User will be redirected to detailed system overview dashboard
 GRAFANA_DASHBOARD = (
-    'https://graphite.innogames.de/grafana' +
+    'https://graphite.innogames.de/grafana'
     '/dashboard/db/system-overview'
 )
