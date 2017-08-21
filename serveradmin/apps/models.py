@@ -10,7 +10,7 @@ from serveradmin.common.utils import random_alnum_string
 
 
 class Application(models.Model):
-    name = models.CharField(max_length=80)
+    name = models.CharField(max_length=80, unique=True)
     app_id = models.CharField(max_length=64, unique=True, editable=False)
     auth_token = models.CharField(max_length=64, unique=True, editable=False)
     author = models.ForeignKey(User)

@@ -8,9 +8,9 @@ from itertools import islice
 
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template.response import TemplateResponse
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django.db import DataError, IntegrityError
@@ -176,7 +176,6 @@ def inspect(request):
 
 
 @login_required
-@permission_required('dataset.change_serverobject')
 def edit(request):
     if 'object_id' in request.GET:
         server = query(object_id=request.GET['object_id']).get()
@@ -235,8 +234,8 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
                     )
             except CommitValidationFailed as e:
                 invalid_attrs.update([attr for obj_id, attr in e.violations])
-            except (ValidationError, IntegrityError) as error:
-                messages.error(request, str(error))
+            except (PermissionDenied, ValidationError, IntegrityError) as err:
+                messages.error(request, str(err))
             else:
                 messages.success(request, 'Edited server successfully')
                 url = '{0}?object_id={1}'.format(
@@ -291,7 +290,6 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
 
 
 @login_required
-@permission_required('dataset.change_serverobject')
 def commit(request):
     try:
         commit = json.loads(request.POST['commit'])
@@ -311,13 +309,10 @@ def commit(request):
 
         try:
             commit_changes(commit, user=request.user)
-        except (
-            ValidationError,
-            IntegrityError,
-        ) as error:
+        except (PermissionDenied, ValidationError, IntegrityError) as error:
             result = {
                 'status': 'error',
-                'message': ' '.join(error.messages)
+                'message': str(error),
             }
         except CommitIncomplete as error:
             result = {
@@ -350,7 +345,6 @@ def get_values(request):
 
 
 @login_required     # NOQA: C901
-@permission_required('dataset.create_serverobject')
 def new_server(request):
     if 'clone_from' in request.REQUEST:
         try:
