@@ -102,16 +102,6 @@ class TestQuery(TestCase):
         q = query(servertype=filters.Startswith('tes'))
         self.assertEquals(len(q), 4)
 
-    def test_optional(self):
-        hostnames = set()
-        for s in query(game_world=filters.Optional(1)):
-            hostnames.add(s[u'hostname'])
-
-        self.assertIn(u'test0', hostnames)
-        self.assertIn(u'test1', hostnames)
-        self.assertNotIn(u'test2', hostnames)
-        self.assertNotIn(u'test3', hostnames)
-
 
 class TestCommit(TestCase):
     fixtures = ['test_dataset.json']

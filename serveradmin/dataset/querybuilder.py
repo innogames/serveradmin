@@ -1,9 +1,10 @@
 class QueryBuilder(object):
-    def __init__(self):
-        self.sql_where = []
-
-    def add_filter(self, attribute, servertypes, filter_obj):
-        self.sql_where.append(filter_obj.as_sql_expr(attribute, servertypes))
+    def __init__(self, servertypes, filters):
+        self.servertypes = servertypes
+        self.sql_where = [
+            f.as_sql_expr(a, self.servertypes)
+            for a, f in filters.items()
+        ]
 
     def build_sql(self):
         sql = []

@@ -68,7 +68,7 @@ def echo(request, app, data):
 
 # api_view decorator is used after setting an attribute on this function
 def dataset_query(request, app, data):
-    if not all(x in data for x in ('filters', 'restrict', 'augmentations')):
+    if not all(x in data for x in ['filters', 'restrict']):
         return {
             'status': 'error',
             'type': 'ValueError',
@@ -85,8 +85,6 @@ def dataset_query(request, app, data):
         queryset = QuerySet(filters=filters)
         if data['restrict']:
             queryset.restrict(*data['restrict'])
-        if data['augmentations']:
-            queryset.augment(*data['augmentations'])
         if data.get('order_by'):
             queryset.order_by(*data['order_by'])
 

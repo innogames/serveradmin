@@ -149,7 +149,7 @@ def get_results(request):
 
     return HttpResponse(json.dumps({
         'status': 'success',
-        'understood': queryset.get_representation().as_code(),
+        'understood': repr(queryset),
         'servers': servers,
         'num_servers': num_servers,
         'avail_attributes': avail_attributes,

@@ -103,12 +103,6 @@ The following filters are available:
 
         query(all_ips=filters.InsideNetwork(Network('192.168.0.0/24')))
 
-:class:`adminapi.dataset.filters.PublicIP`
-    Checks for public IP
-
-:class:`adminapi.dataset.filters.PrivateIP`
-    Checks for private IP
-
 :class:`adminapi.dataset.filters.And`
     Combines two or more filters by using the conjunction of them. Every filter
     also implements ``__and__``, which allows you to just write ``and`` between
@@ -124,29 +118,6 @@ The following filters are available:
 
 :class:`adminapi.dataset.filters.Between`
     Shorthand for ``filters.And(filters.Comparison('>=', a), filters.Comparison('<=', b))``
-
-:class:`adminapi.dataset.filters.Optional`
-    Normally, if you filter for an attribute the filter will evaluate to False
-    of the attribute does not exist on the server. Using ``Optional`` the
-    filter will evaluate to True, if the argument does not exist. This must
-    always be the outer filter.
-
-.. _python-api-augmenting:
-
-Augmenting
-^^^^^^^^^^
-
-Sometimes you might want additional information about servers that are not
-stored in their attributes. In this case you need to augment the query. This
-simply means that the servers will get additional attributes that can be
-read but can not be changed. You will simply call ``augment`` on the query
-result before using it.
-
-The aren't any augmentations available at the moment, but might be in future.
-
-You can also use additional attributes in your query for filtering, but be
-aware: They are filtered in Python and not on the database level (which is not
-possible).
 
 
 Magic attributes
@@ -238,13 +209,7 @@ supports iteration and some additional methods.
     .. method:: QuerySet.__len__()
 
         Return the number of servers that where returned. This will fetch all
-        results, use ``count()`` if you just want the number but not any
         results.
-
-    .. method:: augment(*augmentations)
-
-        This will augment the query set by additional attributes. See
-        :ref:`python-api-augmenting`
 
     .. method:: restrict(*attrs)
 
@@ -255,11 +220,6 @@ supports iteration and some additional methods.
         ip for all servers::
 
             hosts = query().restrict('hostname', 'internal_ip')
-
-    .. method:: count()
-
-        Return the number of servers that are matched by the query. Does not
-        fetch the results.
 
     .. method:: get()
 

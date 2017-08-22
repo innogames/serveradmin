@@ -1,5 +1,5 @@
 from collections import defaultdict
-from ipaddress import IPv4Address, IPv6Address
+from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 
 from django.core.exceptions import ValidationError
 
@@ -15,87 +15,12 @@ from serveradmin.serverdb.models import (
     ServerHostnameAttribute,
 )
 from serveradmin.dataset.commit import commit_changes
-from serveradmin.dataset.filters import ExactMatch, Any
+from serveradmin.dataset.filters import Any, BaseFilter, ExactMatch
 from serveradmin.dataset.querybuilder import QueryBuilder
+
 
 CACHE_MIN_QS_COUNT = 3
 NUM_OBJECTS_FOR_FILECACHE = 50
-
-
-class QuerySetRepresentation(object):
-    """Object that can be easily pickled without storing to much data.
-    """
-
-    def __init__(
-        self,
-        filters,
-        restrict,
-        augmentations,
-        order_by,
-        order_dir,
-    ):
-        self.filters = filters
-        self.restrict = restrict
-        self.augmentations = augmentations
-        self.order_by = order_by
-        self.order_dir = order_dir
-
-    def __hash__(self):
-        h = 0
-        if self.restrict:
-            for val in self.restrict:
-                h ^= hash(val)
-        if self.augmentations:
-            for val in self.augmentations:
-                h ^= hash(val)
-        for attr_name, attr_filter in self.filters.items():
-            h ^= hash(attr_name)
-            h ^= hash(attr_filter)
-
-        if self.order_by:
-            h ^= hash(self.order_by)
-            h ^= hash(self.order_dir)
-
-        return h
-
-    def __eq__(self, other):  # NOQA: C901
-        if not isinstance(other, QuerySetRepresentation):
-            return False
-
-        if self.restrict and other.restrict:
-            if set(self.restrict) - set(other.restrict):
-                return False
-        elif self.restrict or other.restrict:
-            return False
-
-        if self.augmentations and other.augmentations:
-            if set(self.augmentations) - set(other.augmentations):
-                return False
-        elif self.augmentations or other.augmentations:
-            return False
-
-        if len(self.filters) != len(other.filters):
-            return False
-
-        for key in self.filters:
-            if key not in other.filters:
-                return False
-            if self.filters[key] != other.filters[key]:
-                return False
-
-        if self.order_by != other.order_by:
-            return False
-
-        if self.order_dir != other.order_dir:
-            return False
-
-        return True
-
-    def as_code(self):
-        args = []
-        for attr_name, value in self.filters.items():
-            args.append('{0}={1}'.format(attr_name, value.as_code()))
-        return 'query({0})'.format(', '.join(args))
 
 
 class QuerySet(BaseQuerySet):
@@ -108,29 +33,24 @@ class QuerySet(BaseQuerySet):
                 raise ValidationError(
                     'Invalid attribute: {0}'.format(attribute_id)
                 )
-            filter_obj.typecast(attribute)
             self._filters[attribute] = filter_obj
         self._restrict = set()
         self._results = None
-        self._augmentations = None
         self._num_dirty = 0
         self._order = None
         self._order_by = None
         self._order_dir = 'asc'
 
+    def __repr__(self):
+        args = []
+        for attr_name, value in self._filters.items():
+            args.append('{0}={1!r}'.format(attr_name, value))
+        return 'query({0})'.format(', '.join(args))
+
     def commit(self, *args, **kwargs):
         commit = self._build_commit_object()
         commit_changes(commit, *args, **kwargs)
         self._confirm_changes()
-
-    def get_representation(self):
-        return QuerySetRepresentation(
-            self._filters,
-            self._restrict,
-            self._augmentations,
-            self._order_by,
-            self._order_dir,
-        )
 
     def restrict(self, *attrs):
         for attribute_id in attrs:
@@ -154,29 +74,27 @@ class QuerySet(BaseQuerySet):
         self._order_dir = order_dir
         return self
 
-    def _get_query_builder_with_filters(self):  # NOQA: C901
+    def _get_query_builder(self):
         attributes = []
-        builder = QueryBuilder()
+        filters = {}
         servertypes = set(Servertype.objects.all())
-        projects = Project.objects.all()
         for attribute, filt in self._filters.items():
-            if attribute.pk == 'intern_ip' and isinstance(filt, ExactMatch):
+            if not isinstance(filt, BaseFilter):
+                filt = ExactMatch(filt)
+
+            if attribute.pk == 'intern_ip':
                 # Filter out servertypes depending on ip_addr_type
-                is_network = '/' in str(filt.value)
                 servertypes = {
                     s for s in servertypes
-                    if (s.ip_addr_type == 'network') == is_network
+                    if s.ip_addr_type in desired_ip_addr_types(filt)
                 }
-            elif attribute.pk == 'servertype':
+
+            if attribute.pk == 'servertype':
                 servertypes = {s for s in servertypes if filt.matches(s.pk)}
-            elif attribute.pk == 'project':
-                projects = [p for p in projects if filt.matches(p.pk)]
-                # Filter out servertype with inconsistent fixed_project
-                servertypes = {
-                    s for s in servertypes
-                    if s.fixed_project is None or s.fixed_project in projects
-                }
-            elif not attribute.special:
+            else:
+                filters[attribute] = filt
+
+            if not attribute.special:
                 attributes.append(attribute)
 
         if attributes:
@@ -186,31 +104,17 @@ class QuerySet(BaseQuerySet):
             for new in attribute_servertypes.values():
                 servertypes = servertypes.intersection(new)
 
-        if len(servertypes) < len(Servertype.objects.all()):
-            if not servertypes:
-                return None
-            builder.add_filter(
-                Attribute.objects.get(pk='servertype'),
-                servertypes,
-                Any(*(s.pk for s in servertypes)),
-            )
-        if len(projects) < len(Project.objects.all()):
-            if not projects:
-                return None
-            builder.add_filter(
-                Attribute.objects.get(pk='project'),
-                projects,
-                Any(*(p.pk for p in projects)),
-            )
+        if not servertypes:
+            return None
 
-        for attribute, filt in self._filters.items():
-            if attribute.pk not in ('project', 'servertype'):
-                builder.add_filter(attribute, servertypes, filt)
+        filters[Attribute.objects.get(pk='servertype')] = Any(
+            *(s.pk for s in servertypes)
+        )
 
-        return builder
+        return QueryBuilder(servertypes, filters)
 
     def _fetch_results(self):
-        builder = self._get_query_builder_with_filters()
+        builder = self._get_query_builder()
         if builder is None:
             self._results = []
             return
@@ -444,3 +348,18 @@ def sort_key(value):
     if isinstance(value, (Servertype, Project)):
         return value.pk
     return value
+
+
+def desired_ip_addr_types(value):
+    if value is None:
+        return ['null']
+    if isinstance(value, str):
+        if '/' in str(value):
+            return ['network']
+        else:
+            return ['host', 'loadbalancer']
+    if isinstance(value, (IPv4Address, IPv6Address)):
+        return ['host', 'loadbalancer']
+    if isinstance(value, (IPv4Network, IPv6Network)):
+        return ['network']
+    return ['null' 'host', 'loadbalancer', 'network']

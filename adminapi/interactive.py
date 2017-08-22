@@ -1,16 +1,15 @@
 from __future__ import print_function
 
-from adminapi.dataset import query, filters, create
-from adminapi.dataset.filters import *
-from adminapi.utils.parse import parse_query
-from adminapi import api
+import adminapi                                 # NOQA: F401
+from adminapi import api                        # NOQA: F401
+from adminapi.dataset import query, create      # NOQA: F401
+from adminapi.dataset.filters import *          # NOQA: F401, F403
+from adminapi.dataset.filters import filter_classes
+from adminapi.utils.parse import parse_query    # NOQA: F401
 
-import adminapi
-
-adminapi.auth()
 
 def help_adminapi():
-    help_text = """
+    help_text = '''
 Querying servers:
 -----------------
 
@@ -55,11 +54,10 @@ query function.
 
    query_args = parse_query('servertype=ds game_world=comparison(> 10)')
    servers = query(**query_args)
-
-
-    """.strip()
+'''
     print(help_text.format(filters=', '.join(filter_classes.keys())))
     print()
+
 
 print('+--------------------------------------------+')
 print('|                                            |')
@@ -71,4 +69,3 @@ print('+--+--------------------------------------+--+')
 print('   | Please note that this module is only |   ')
 print('   |   for use in an interactive shell!   |   ')
 print('   +--------------------------------------+   ')
-print('                                              ')

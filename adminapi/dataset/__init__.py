@@ -5,7 +5,6 @@ from adminapi.request import send_request
 from adminapi.dataset.base import (
     BaseQuerySet, BaseServerObject, DatasetError, MultiAttr
 )
-from adminapi.dataset.filters import _prepare_filter
 
 COMMIT_ENDPOINT = '/dataset/commit'
 QUERY_ENDPOINT = '/dataset/query'
@@ -25,9 +24,6 @@ class QuerySet(BaseQuerySet):
         self.auth_token = auth_token
         self.timeout = timeout
 
-    def augment(self, *attrs):
-        raise NotImplementedError('Augmenting is not available yet!')
-
     def commit(self, skip_validation=False, force_changes=False):
         commit = self._build_commit_object()
         commit['skip_validation'] = skip_validation
@@ -43,9 +39,6 @@ class QuerySet(BaseQuerySet):
         elif result['status'] == 'error':
             _handle_exception(result)
 
-    def count(self):
-        return len(self)
-
     def _fetch_results(self):
         serialized_filters = dict(
             (k, v._serialize()) for k, v in self._filters.items()
@@ -53,7 +46,6 @@ class QuerySet(BaseQuerySet):
         request_data = {
             'filters': serialized_filters,
             'restrict': self._restrict,
-            'augmentations': self._augmentations,
             'order_by': self._order_by,
         }
         response = send_request(
@@ -132,9 +124,8 @@ def _handle_exception(result):
 
 
 def query(**kwargs):
-    filters = dict((k, _prepare_filter(v)) for k, v in kwargs.items())
     return QuerySet(
-        filters=filters,
+        filters=kwargs,
         auth_token=_api_settings['auth_token'],
         timeout=_api_settings['timeout_dataset'],
     )
@@ -161,7 +152,7 @@ def create(
         CREATE_ENDPOINT, request, auth_token, _api_settings['timeout_dataset']
     )
     qs = QuerySet(
-        filters={'hostname': _prepare_filter(attributes['hostname'])},
+        filters={'hostname': attributes['hostname']},
         auth_token=auth_token,
         timeout=_api_settings['timeout_dataset'],
     )
