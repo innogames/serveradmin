@@ -17,7 +17,7 @@ class ExactMatch(BaseFilter):
     def __repr__(self):
         return 'ExactMatch({0!r})'.format(self.value)
 
-    def _serialize(self):
+    def serialize(self):
         return {'name': 'exactmatch', 'value': self.value}
 
 
@@ -28,7 +28,7 @@ class Regexp(BaseFilter):
     def __repr__(self):
         return 'Regexp({0!r})'.format(self.regexp)
 
-    def _serialize(self):
+    def serialize(self):
         return {'name': 'regexp', 'regexp': self.regexp}
 
 
@@ -42,7 +42,7 @@ class Comparison(BaseFilter):
     def __repr__(self):
         return 'Comparison({0!r}, {1!r})'.format(self.comparator, self.value)
 
-    def _serialize(self):
+    def serialize(self):
         return {
             'name': 'comparison',
             'comparator': self.comparator,
@@ -57,7 +57,7 @@ class Any(BaseFilter):
     def __repr__(self):
         return 'Any({0})'.format(', '.join(repr(val) for val in self.values))
 
-    def _serialize(self):
+    def serialize(self):
         return {'name': 'any', 'values': self.values}
 
 
@@ -69,10 +69,10 @@ class _AndOr(BaseFilter):
         args = ', '.join(repr(filter) for filter in self.filters)
         return '{0}({1})'.format(self.name.capitalize(), args)
 
-    def _serialize(self):
+    def serialize(self):
         return {
             'name': self.name,
-            'filters': [f._serialize() for f in self.filters],
+            'filters': [f.serialize() for f in self.filters],
         }
 
 
@@ -92,7 +92,7 @@ class Between(BaseFilter):
     def __repr__(self):
         return 'Between({0!r}, {1!r})'.format(self.a, self.b)
 
-    def _serialize(self):
+    def serialize(self):
         return {'name': 'between', 'a': self.a, 'b': self.b}
 
 
@@ -103,8 +103,8 @@ class Not(BaseFilter):
     def __repr__(self):
         return 'Not({0!r})'.format(self.filter)
 
-    def _serialize(self):
-        return {'name': 'not', 'filter': self.filter._serialize()}
+    def serialize(self):
+        return {'name': 'not', 'filter': self.filter.serialize()}
 
 
 class Startswith(BaseFilter):
@@ -114,7 +114,7 @@ class Startswith(BaseFilter):
     def __repr__(self):
         return 'Startswith({0!r})'.format(self.value)
 
-    def _serialize(self):
+    def serialize(self):
         return {'name': 'startswith', 'value': self.value}
 
 
@@ -126,7 +126,7 @@ class Overlap(BaseFilter):
         args = ', '.join(repr(net) for net in self.networks)
         return 'Overlap({0})'.format(args)
 
-    def _serialize(self):
+    def serialize(self):
         return {'name': 'overlap', 'networks': self.networks}
 
 
@@ -138,7 +138,7 @@ class InsideNetwork(BaseFilter):
         args = ', '.join(repr(net) for net in self.networks)
         return 'InsideNetwork({0})'.format(args)
 
-    def _serialize(self):
+    def serialize(self):
         return {'name': 'insidenetwork', 'networks': self.networks}
 
 
@@ -146,7 +146,7 @@ class Empty(BaseFilter):
     def __repr__(self):
         return 'Empty()'
 
-    def _serialize(self):
+    def serialize(self):
         return {'name': 'empty'}
 
 

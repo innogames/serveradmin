@@ -508,13 +508,12 @@ class Empty(BaseFilter):
 
 
 def filter_from_obj(obj):
-    if not (isinstance(obj, dict) and 'name' in obj):
-        raise FilterValueError('Invalid filter object')
-
-    try:
-        return filter_classes[obj['name']].from_obj(obj)
-    except KeyError:
-        raise FilterValueError('No such filter: {0}'.format(obj['name']))
+    if isinstance(obj, dict) and 'name' in obj:
+        try:
+            return filter_classes[obj['name']].from_obj(obj)
+        except KeyError:
+            raise FilterValueError('No such filter: {0}'.format(obj['name']))
+    return obj
 
 
 filter_classes = {

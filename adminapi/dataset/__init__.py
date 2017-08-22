@@ -5,6 +5,7 @@ from adminapi.request import send_request
 from adminapi.dataset.base import (
     BaseQuerySet, BaseServerObject, DatasetError, MultiAttr
 )
+from adminapi.dataset.filters import BaseFilter
 
 COMMIT_ENDPOINT = '/dataset/commit'
 QUERY_ENDPOINT = '/dataset/query'
@@ -40,9 +41,13 @@ class QuerySet(BaseQuerySet):
             _handle_exception(result)
 
     def _fetch_results(self):
-        serialized_filters = dict(
-            (k, v._serialize()) for k, v in self._filters.items()
-        )
+        serialized_filters = {}
+        for attribute_id, value in self._filters.items():
+            if isinstance(value, BaseFilter):
+                serialized_filters[attribute_id] = value.serialize()
+            else:
+                serialized_filters[attribute_id] = value
+
         request_data = {
             'filters': serialized_filters,
             'restrict': self._restrict,
