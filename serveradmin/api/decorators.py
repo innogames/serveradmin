@@ -58,8 +58,12 @@ def api_view(view):     # NOQA: C901
         if app.disabled:
             return HttpResponseForbidden('Token disabled')
 
-        readonly_views = ('dataset_query', 'api_call')
-        if not app.superuser and view.__name__ not in readonly_views:
+        if not app.superuser and view.__name__ not in [
+            'api_call',
+            'dataset_commit',
+            'dataset_create',
+            'dataset_query',
+        ]:
             return HttpResponseForbidden('This token has no rights')
         return_value = view(request, app, json.loads(body))
         if getattr(view, 'encode_json', True):

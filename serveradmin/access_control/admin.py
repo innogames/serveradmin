@@ -5,7 +5,7 @@ from serveradmin.access_control.models import AccessControlGroup
 
 class AccessControlGroupAdmin(ModelAdmin):
     model = AccessControlGroup
-    filter_horizontal = ['members']
+    filter_horizontal = ['members', 'applications']
 
 
 site.register(AccessControlGroup, AccessControlGroupAdmin)

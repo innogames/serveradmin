@@ -20,9 +20,7 @@ from serveradmin.serverdb.models import (
 class Commit(object):
     """Context class for all commit hooks."""
 
-    def __init__(self, commit, user):
-        self.user = user
-
+    def __init__(self, commit):
         if 'deleted' in commit:
             self.deletions = commit['deleted']
             self._validate_deletes()
@@ -43,20 +41,6 @@ class Commit(object):
         # If non-empty, the commit will go through the backend, but an error
         # will be shown on the client.
         self.warnings = []
-
-    def access_control(self, action, servers):
-        if not self.user or self.user.is_superuser:
-            return
-
-        access_control_groups = self.user.access_control_groups.all()
-        for server in servers.values():
-            if not any(
-                a.match_server(action, server) for a in access_control_groups
-            ):
-                raise PermissionDenied(
-                    'Insufficient access rights on {} for server "{}"'
-                    .format(action, server['hostname'])
-                )
 
     def _validate_deletes(self):
         if not (
@@ -309,11 +293,14 @@ def commit_changes(
     if not commit['changes'] and not commit['deleted']:
         return
 
-    with transaction.atomic():
-        commit = Commit(commit, user)
+    if not user:
+        user = app.owner
 
-        commit.access_control('edit', commit.servers_to_change)
-        commit.access_control('delete', commit.servers_to_delete)
+    with transaction.atomic():
+        commit = Commit(commit)
+
+        access_control('edit', commit.servers_to_change, user, app)
+        access_control('delete', commit.servers_to_delete, user, app)
 
         servertype_attributes = _get_servertype_attributes(
             commit.servers_to_change
@@ -363,9 +350,9 @@ def commit_changes(
             if newer:
                 raise CommitNewerData('Newer data available', newer)
 
-        _log_changes(commit.servers_to_delete, commit.changes, app, user)
+        _log_changes(commit.servers_to_delete, commit.changes, user, app)
         commit.apply_changes()
-        commit.access_control('commit', commit.servers_to_change)
+        access_control('commit', commit.servers_to_change, user, app)
 
     if commit.warnings:
         warnings = '\n'.join(commit.warnings)
@@ -374,7 +361,29 @@ def commit_changes(
         )
 
 
-def _log_changes(servers_to_delete, changes, app, user):
+def access_control(action, servers, user, app):
+    if not user.is_superuser:
+        groups = list(user.access_control_groups.all())
+        for server in servers.values():
+            if not any(a.match_server(action, server) for a in groups):
+                raise PermissionDenied(
+                    'Insufficient access rights on {} of server "{}" '
+                    'for user "{}"'
+                    .format(action, server['hostname'], user)
+                )
+
+    if app and not app.superuser:
+        groups = list(app.access_control_groups.all())
+        for server in servers.values():
+            if not any(a.match_server(action, server) for a in groups):
+                raise PermissionDenied(
+                    'Insufficient access rights on {} of server "{}" '
+                    'for application "{}"'
+                    .format(action, server['hostname'], app)
+                )
+
+
+def _log_changes(servers_to_delete, changes, user, app):
     if not (changes or servers_to_delete):
         return
 

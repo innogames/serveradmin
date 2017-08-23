@@ -2,6 +2,7 @@ from django.db.models import Model, CharField, ManyToManyField
 from django.contrib.auth.models import User
 
 from adminapi.utils.parse import parse_query
+from serveradmin.apps.models import Application
 from serveradmin.dataset.filters import filter_classes
 
 
@@ -14,7 +15,13 @@ class AccessControlGroup(Model):
     members = ManyToManyField(
         User,
         blank=True,
-        limit_choices_to={'is_superuser': False},
+        limit_choices_to={'is_superuser': False, 'is_active': True},
+        related_name='access_control_groups',
+    )
+    applications = ManyToManyField(
+        Application,
+        blank=True,
+        limit_choices_to={'disabled': False, 'superuser': False},
         related_name='access_control_groups',
     )
 
