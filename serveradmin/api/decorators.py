@@ -52,7 +52,7 @@ def api_view(view):     # NOQA: C901
                 'Expired security token', content_type='text/plain'
             )
 
-        if app.author is not None and not app.author.is_active:
+        if app.owner is not None and not app.owner.is_active:
             return HttpResponseForbidden('Sorry, your user is inactive.')
 
         if app.disabled:

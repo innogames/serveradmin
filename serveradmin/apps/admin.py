@@ -6,7 +6,7 @@ from serveradmin.apps.models import Application
 class ApplicationAdmin(admin.ModelAdmin):
     list_display = [
         'name',
-        'author',
+        'owner',
         'location',
         'auth_token',
         'superuser',
