@@ -1,3 +1,4 @@
+from distutils.util import strtobool
 from itertools import chain
 
 
@@ -264,6 +265,16 @@ class BaseServerObject(dict):
         else:
             raise KeyError()
         return self.pop(key)
+
+    def set(self, key, value):
+        if isinstance(self[key], MultiAttr):
+            self[key].add(value)
+        elif type(self[key]) is bool:
+            self[key] = strtobool(value)
+        elif type(self[key]) is int:
+            self[key] = int(value)
+        else:
+            self[key] = value
 
     def setdefault(self, key, default=None):
         if key in self:

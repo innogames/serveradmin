@@ -16,7 +16,8 @@ try:
 except ImportError:
     import json
 
-BASE_URL = 'https://serveradmin.innogames.de/api'
+# BASE_URL = 'https://serveradmin.innogames.de/api'
+BASE_URL = 'http://127.0.0.1:8000/api'
 
 
 def calc_security_token(auth_token, timestamp, content):
