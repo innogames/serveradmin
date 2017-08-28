@@ -340,9 +340,17 @@ class Not(BaseFilter):
         return hash('Not') ^ hash(self.filter)
 
     def as_sql_expr(self, attribute, servertypes):
-        return 'NOT ({0})'.format(self.filter.as_sql_expr(
-            attribute, servertypes
-        ))
+        if attribute.type == 'boolean':
+            raise FilterValueError(
+                'Cannot negate boolean attribute "{}"'.format(attribute)
+            )
+        if isinstance(self.filter, BaseFilter):
+            return 'NOT ({0})'.format(self.filter.as_sql_expr(
+                attribute, servertypes
+            ))
+        else:
+            template = '{0} <> ' + value_to_sql(attribute, self.filter)
+            return _condition_sql(attribute, template, servertypes)
 
     def matches(self, value):
         return not self.filter.matches(value)
