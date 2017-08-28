@@ -60,6 +60,8 @@ class ExactMatch(BaseFilter):
 
     def as_sql_expr(self, attribute, servertypes):
         if attribute.type == 'boolean':
+            if self.value == 'false':
+                self.value = False
             prefix = '' if self.value else 'NOT '
             return prefix + _condition_sql(attribute, '', servertypes)
 
@@ -353,7 +355,10 @@ class Not(BaseFilter):
             return _condition_sql(attribute, template, servertypes)
 
     def matches(self, value):
-        return not self.filter.matches(value)
+        if isinstance(self.filter, BaseFilter):
+            return not self.filter.matches(value)
+        else:
+            return value != self.filter
 
     @classmethod
     def from_obj(cls, obj):
