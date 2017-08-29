@@ -1,10 +1,18 @@
+from serveradmin.dataset.filters import Any, BaseFilter, ExactMatch
+from serveradmin.serverdb.models import Attribute
+
+
 class QueryBuilder(object):
     def __init__(self, servertypes, filters):
         self.servertypes = servertypes
         self.sql_where = [
-            f.as_sql_expr(a, self.servertypes)
-            for a, f in filters.items()
+            Any(*(s.pk for s in servertypes))
+            .as_sql_expr(Attribute.objects.get(pk='servertype'), servertypes)
         ]
+        for attribute, value in filters.items():
+            if not isinstance(value, BaseFilter):
+                value = ExactMatch(value)
+            self.sql_where.append(value.as_sql_expr(attribute, servertypes))
 
     def build_sql(self):
         sql = []

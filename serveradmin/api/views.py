@@ -15,7 +15,7 @@ from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
 from serveradmin.api.decorators import api_view
 from serveradmin.api.utils import build_function_description
 from serveradmin.dataset import QuerySet
-from serveradmin.dataset.filters import ExactMatch, filter_from_obj
+from serveradmin.dataset.filters import filter_from_obj
 from serveradmin.dataset.commit import commit_changes
 from serveradmin.dataset.create import create_server
 
@@ -160,7 +160,7 @@ def dataset_create(request, app, data):
         return {
             'status': 'success',
             'result': QuerySet(filters={
-                'hostname': ExactMatch(data['attributes']['hostname'])
+                'hostname': data['attributes']['hostname']
             }).get_results(),
         }
     except ValidationError as error:

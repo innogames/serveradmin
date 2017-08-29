@@ -15,7 +15,6 @@ from serveradmin.serverdb.models import (
     ServerHostnameAttribute,
 )
 from serveradmin.dataset.commit import commit_changes
-from serveradmin.dataset.filters import Any, BaseFilter, ExactMatch
 from serveradmin.dataset.querybuilder import QueryBuilder
 
 
@@ -79,9 +78,6 @@ class QuerySet(BaseQuerySet):
         filters = {}
         servertypes = set(Servertype.objects.all())
         for attribute, filt in self._filters.items():
-            if not isinstance(filt, BaseFilter):
-                filt = ExactMatch(filt)
-
             if attribute.pk == 'intern_ip':
                 # Filter out servertypes depending on ip_addr_type
                 servertypes = {
@@ -90,7 +86,12 @@ class QuerySet(BaseQuerySet):
                 }
 
             if attribute.pk == 'servertype':
-                servertypes = {s for s in servertypes if filt.matches(s.pk)}
+                if isinstance(filt, str):
+                    servertypes = {filt}
+                else:
+                    servertypes = {
+                        s for s in servertypes if filt.matches(s.pk)
+                    }
             else:
                 filters[attribute] = filt
 
@@ -106,10 +107,6 @@ class QuerySet(BaseQuerySet):
 
         if not servertypes:
             return None
-
-        filters[Attribute.objects.get(pk='servertype')] = Any(
-            *(s.pk for s in servertypes)
-        )
 
         return QueryBuilder(servertypes, filters)
 
