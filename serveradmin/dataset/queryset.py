@@ -362,4 +362,4 @@ def desired_ip_addr_types(value):
         return ['host', 'loadbalancer']
     if isinstance(value, (IPv4Network, IPv6Network)):
         return ['network']
-    return ['null' 'host', 'loadbalancer', 'network']
+    return ['null', 'host', 'loadbalancer', 'network']
