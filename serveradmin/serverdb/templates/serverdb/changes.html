@@ -16,10 +16,10 @@
     <tr class="{% cycle 'row_a' 'row_b' %}">
         <td>{{ commit.change_on|date }}</td>
         <td>
-        {% if commit.user %}
-        {{ commit.user.get_full_name }}
-		{% elif commit.app %}
+		{% if commit.app %}
         {{ commit.app }}
+        {% elif commit.user %}
+        {{ commit.user.get_full_name }}
         {% else %}
 		Internal code
         {% endif %}
