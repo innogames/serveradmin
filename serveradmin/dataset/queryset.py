@@ -87,7 +87,9 @@ class QuerySet(BaseQuerySet):
 
             if attribute.pk == 'servertype':
                 if isinstance(filt, str):
-                    servertypes = {filt}
+                    servertypes = {
+                        s for s in servertypes if s.pk == filt
+                    }
                 else:
                     servertypes = {
                         s for s in servertypes if filt.matches(s.pk)
