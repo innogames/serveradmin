@@ -124,6 +124,10 @@ TEMPLATES = [
     },
 ]
 
+# Additional menu entries in the left sidebar
+#
+# You can hardcode paths in here or put them into templates/<app>/menu.html
+# in your app they will then be found automatically.
 MENU_TEMPLATES = [
     'resources/menu.html',
 ]
