@@ -64,6 +64,11 @@ You would also need a database for the application::
 
     createdb serveradmin
 
+Now you can either create the schema with no data using migrate or import a
+dump from an existing data. To create a new empty schema you can use::
+
+    python manage.py migrate
+
 If you want to work on the production data, you can dump it from the server,
 and restore on your database::
 

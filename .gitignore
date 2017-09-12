@@ -70,3 +70,6 @@ __pycache__/
 
 # Ipython Notebook
 /.ipynb_checkpoints
+
+# Virtual Environment
+/venv/
