@@ -104,7 +104,11 @@ class Not(BaseFilter):
         return 'Not({0!r})'.format(self.filter)
 
     def serialize(self):
-        return {'name': 'not', 'filter': self.filter.serialize()}
+        if isinstance(self.filter, BaseFilter):
+            value = self.filter.serialize()
+        else:
+            value = self.filter
+        return {'name': 'not', 'filter': value}
 
 
 class Startswith(BaseFilter):
