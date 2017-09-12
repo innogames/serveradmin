@@ -7,8 +7,6 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 
-import django_urlauth.utils
-
 from adminapi.utils.parse import ParseQueryError, parse_query
 from serveradmin.graphite.models import Collection, NumericCache
 from serveradmin.dataset import query, filters
@@ -161,10 +159,7 @@ def graph_popup(request):
         if servers:
             table = collection.graph_table(servers.get())
             params = [v2 for k1, v1 in table for k2, v2 in v1][int(graph)]
-            token = django_urlauth.utils.new_token(request.user.username,
-                                                   settings.GRAPHITE_SECRET)
-            url = (settings.GRAPHITE_URL + '/render?' + params + '&' +
-                   '__auth_token=' + token)
+            url = settings.GRAPHITE_URL + '/render?' + params
 
             return TemplateResponse(request, 'resources/graph_popup.html', {
                 'image': url
