@@ -7,7 +7,8 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 
-from adminapi.parse import ParseQueryError, parse_query
+from adminapi.base import QueryError
+from adminapi.parse import parse_query
 from serveradmin.graphite.models import (
     GRAPHITE_ATTRIBUTE_ID,
     Collection,
@@ -64,7 +65,7 @@ def index(request):
                 return TemplateResponse(
                     request, 'resources/index.html', template_info
                 )
-        except (ParseQueryError, ValidationError) as error:
+        except (QueryError, ValidationError) as error:
             template_info.update({
                 'error': str(error)
             })

@@ -1,9 +1,5 @@
+from adminapi.base import QueryError
 from adminapi.filters import filter_classes as fc
-
-
-class ParseQueryError(Exception):
-    pass
-
 
 _trigger_re_chars = ('.*', '.+', '[', ']', '|', '\\', '$', '^', '<')
 
@@ -18,7 +14,7 @@ def parse_query(term, filter_classes=fc, hostname=None):  # NOQA C901
     if token != 'key':
         if hostname:
             # We already parsed a hostname, so we don't expect another one
-            raise ParseQueryError("Garbled hostname: {0}".format(hostname))
+            raise QueryError("Garbled hostname: {0}".format(hostname))
 
         term_parts = term.split(None, 1)
         if len(term_parts) == 2:
@@ -63,7 +59,7 @@ def parse_query(term, filter_classes=fc, hostname=None):  # NOQA C901
             # Do not allow functions without preceeding key
             # if they are on top level (e.g. call_depth = 0)
             if not stack or (call_depth == 0 and stack[-1][0] != 'key'):
-                raise ParseQueryError(
+                raise QueryError(
                     'Invalid term: top level function requires '
                     'preceding attribute'
                 )
@@ -85,15 +81,15 @@ def parse_query(term, filter_classes=fc, hostname=None):  # NOQA C901
             try:
                 instance = filter_classes[fn_name](*fn_args)
             except KeyError:
-                raise ParseQueryError('Invalid function ' + fn_name)
+                raise QueryError('Invalid function ' + fn_name)
             except TypeError:
-                raise ParseQueryError('Invalid function args ' + fn_name)
+                raise QueryError('Invalid function args ' + fn_name)
             stack.append(('instance', instance))
 
         elif token == 'str':
             # Do not allow strings without key or function context
             if not stack or (call_depth == 0 and stack[-1][0] != 'key'):
-                raise ParseQueryError(
+                raise QueryError(
                     'Invalid term: Top level strings are not '
                     'allowed when attributes are used'
                 )
@@ -101,7 +97,7 @@ def parse_query(term, filter_classes=fc, hostname=None):  # NOQA C901
 
     if stack and stack[0][0] == 'key':
         if len(stack) != 2:
-            raise ParseQueryError(
+            raise QueryError(
                 'Invalid term: Attribute requires one argument'
             )
         query_args[stack[0][1]] = stack[1][1]
@@ -133,7 +129,7 @@ def parse_function_string(args, strict=True):   # NOQA C901
             if args[i] == '\\':
                 if i == args_len - 1:
                     if strict:
-                        raise ParseQueryError(
+                        raise QueryError(
                             'Escape is not allowed at the end'
                         )
                 if args[i + 1] == '\\':
@@ -144,7 +140,7 @@ def parse_function_string(args, strict=True):   # NOQA C901
                     i += 2
                 else:
                     if strict:
-                        raise ParseQueryError('Invalid escape')
+                        raise QueryError('Invalid escape')
                     i += 1
             elif args[i] == string_type:
                 parsed_args.append(('str', args[string_start:i]))
@@ -179,7 +175,7 @@ def parse_function_string(args, strict=True):   # NOQA C901
         parsed_args.append(('str', args[string_start:]))
     elif state == 'string':
         if strict:
-            raise ParseQueryError('Unterminated string')
+            raise QueryError('Unterminated string')
         else:
             parsed_args.append(('str', args[string_start:]))
 

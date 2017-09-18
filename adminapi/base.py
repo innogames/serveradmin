@@ -6,6 +6,10 @@ class DatasetError(Exception):
     pass
 
 
+class QueryError(DatasetError):
+    pass
+
+
 class BaseQuerySet(object):
     def __init__(self, filters):
         self._filters = filters
