@@ -4,6 +4,7 @@ import hmac
 import time
 
 from adminapi.cmduser import get_auth_token
+from adminapi.filters import BaseFilter
 
 try:
     from urllib.request import urlopen, Request
@@ -68,6 +69,8 @@ def _build_request(endpoint, auth_token, data_json, backup=False):
 
 
 def json_encode_extra(obj):
+    if isinstance(obj, BaseFilter):
+        return obj.serialize()
     if isinstance(obj, set):
         return list(obj)
     return str(obj)
