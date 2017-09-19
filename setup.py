@@ -14,9 +14,9 @@ setup(
         'adminapi.cmdline',
     ],
     version='1.0',
-    long_description=[
+    long_description=(
         'Admin remote API for querying servers and making API requests'
-    ],
+    ),
     entry_points={
         'console_scripts': [
             'igserver=adminapi.cli:main',
