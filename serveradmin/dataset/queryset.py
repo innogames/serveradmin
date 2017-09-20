@@ -3,8 +3,7 @@ from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 
 from django.core.exceptions import ValidationError
 
-from adminapi.base import BaseQuerySet, BaseServerObject
-
+from adminapi.base import BaseQuery, BaseServerObject
 from serveradmin.serverdb.models import (
     Project,
     Servertype,
@@ -22,7 +21,7 @@ CACHE_MIN_QS_COUNT = 3
 NUM_OBJECTS_FOR_FILECACHE = 50
 
 
-class QuerySet(BaseQuerySet):
+class Query(BaseQuery):
     def __init__(self, filters):
         self._filters = {}
         for attribute_id, filter_obj in filters.items():
@@ -325,7 +324,7 @@ class ServerObject(BaseServerObject):
         # Just pickle it as normal dict
         tpl = dict.__reduce__(self)
         instance_dict = tpl[2].copy()
-        del instance_dict['_queryset']
+        del instance_dict['_query']
         return (tpl[0], tpl[1], instance_dict)
 
     @classmethod

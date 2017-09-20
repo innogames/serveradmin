@@ -1,5 +1,6 @@
-from serveradmin.dataset.queryset import QuerySet
+from serveradmin.dataset.queryset import Query
 
 
+# XXX Deprecated
 def query(**kwargs):
-    return QuerySet(kwargs)
+    return Query(kwargs)

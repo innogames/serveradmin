@@ -417,12 +417,12 @@ def _log_changes(servers_to_delete, changes, user, app):
 
 def _fetch_servers(server_ids):
     # Import here to break cyclic import
-    from serveradmin.dataset.queryset import QuerySet
+    from serveradmin.dataset import Query
     from serveradmin.dataset.filters import Any
 
-    queryset = QuerySet({'object_id': Any(*server_ids)})
+    query = Query({'object_id': Any(*server_ids)})
 
-    return {s.object_id: s for s in queryset.get_results()}
+    return {s.object_id: s for s in query.get_results()}
 
 
 def _get_servertype_attributes(servers):

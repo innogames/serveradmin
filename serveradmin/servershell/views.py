@@ -19,14 +19,19 @@ from django.utils.html import mark_safe, escape as escape_html
 from adminapi.base import QueryError
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
-from serveradmin.dataset import query, filters
+from serveradmin.dataset import Query
 from serveradmin.dataset.commit import (
     commit_changes,
     CommitValidationFailed,
     CommitIncomplete,
 )
 from serveradmin.dataset.create import create_server
-from serveradmin.dataset.filters import filter_classes
+from serveradmin.dataset.filters import (
+    Any,
+    InsideOnlyNetwork,
+    Startswith,
+    filter_classes,
+)
 from serveradmin.dataset.typecast import typecast
 from serveradmin.dataset.queryset import ServerObject
 from serveradmin.serverdb.forms import ServerForm
@@ -73,7 +78,7 @@ def autocomplete(request):
     if 'hostname' in request.GET:
         hostname = request.GET['hostname']
         try:
-            queryset = query(hostname=filters.Startswith(hostname))
+            queryset = Query({'hostname': Startswith(hostname)})
             queryset.restrict('hostname')
             autocomplete_list += islice((h['hostname'] for h in queryset), 100)
         except ValidationError:
@@ -106,10 +111,10 @@ def get_results(request):
 
     try:
         query_kwargs = parse_query(term, filter_classes)
-        queryset = query(**query_kwargs)
-        queryset.restrict(*shown_attributes)
-        queryset.order_by(order_by, order_dir)
-        results = queryset.get_results()
+        query = Query(query_kwargs)
+        query.restrict(*shown_attributes)
+        query.order_by(order_by, order_dir)
+        results = query.get_results()
     except (QueryError, ValidationError, DataError) as error:
         return HttpResponse(json.dumps({
             'status': 'error',
@@ -150,7 +155,7 @@ def get_results(request):
 
     return HttpResponse(json.dumps({
         'status': 'success',
-        'understood': repr(queryset),
+        'understood': repr(query),
         'servers': servers,
         'num_servers': num_servers,
         'avail_attributes': avail_attributes,
@@ -162,7 +167,7 @@ def export(request):
     term = request.GET.get('term', '')
     try:
         query_args = parse_query(term, filter_classes)
-        q = query(**query_args).restrict('hostname')
+        q = Query(query_args).restrict('hostname')
     except (QueryError, ValidationError) as error:
         return HttpResponse(str(error), status=400)
 
@@ -172,14 +177,14 @@ def export(request):
 
 @login_required
 def inspect(request):
-    server = query(object_id=request.GET['object_id']).get()
+    server = Query({'object_id': request.GET['object_id']}).get()
     return _edit(request, server, template='inspect')
 
 
 @login_required
 def edit(request):
     if 'object_id' in request.GET:
-        server = query(object_id=request.GET['object_id']).get()
+        server = Query({'object_id': request.GET['object_id']}).get()
     else:
         servertype = Servertype.objects.get(pk=request.POST['attr_servertype'])
         project = Project.objects.get(pk=request.POST['attr_project'])
@@ -352,7 +357,7 @@ def new_server(request):
     if 'clone_from' in request.REQUEST:
         try:
             clone_from = (
-                query(hostname=request.REQUEST['clone_from'])
+                Query({'hostname': request.REQUEST['clone_from']})
                 .restrict(*(
                     a.pk for a in Attribute.objects.all()
                     if a.special or a.can_be_materialized()
@@ -406,8 +411,8 @@ def new_server(request):
 @login_required
 def choose_ip_addr(request):
     if 'network' not in request.GET:
-        servers = tuple(
-            query(servertype='route_network')
+        servers = list(
+            Query({'servertype': 'route_network'})
             .order_by('hostname')
             .restrict('hostname', 'intern_ip')
         )
@@ -417,14 +422,14 @@ def choose_ip_addr(request):
         })
 
     network = request.GET['network']
-    servers = tuple(
-        query(
-            servertype=filters.Any(*(
+    servers = list(
+        Query({
+            'servertype': Any(*(
                 s.pk for s in Servertype.objects.all()
                 if s.ip_addr_type == 'network'
             )),
-            intern_ip=filters.InsideOnlyNetwork(network),
-        )
+            'intern_ip': InsideOnlyNetwork(network),
+        })
         .order_by('hostname')
         .restrict('hostname', 'intern_ip')
     )

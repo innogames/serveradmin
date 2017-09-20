@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import adminapi                                 # NOQA F401
 from adminapi import api                        # NOQA F401
-from adminapi.dataset import query, create      # NOQA F401
+from adminapi.dataset import Query, create      # NOQA F401
 from adminapi.filters import *                  # NOQA F401 F403
 from adminapi.filters import filter_classes
 from adminapi.parse import parse_query          # NOQA F401
@@ -13,11 +13,9 @@ def help_adminapi():
 Querying servers:
 -----------------
 
-We want to find all servers of tribal wars with game_world greater 10:
+We want to find all servers with game_world greater 10:
 
-   servers = query(servertype='ds', game_world=Comparison('>', 10))
-      or
-   servers = query(servertype='ds', game_world=filters.Comparison('>', 10)
+   servers = Query({'game_world': Comparison('>', 10)})
 
 Available filters: {filters}
 
@@ -53,7 +51,7 @@ Parse an query from the servershell and return the arguments for the
 query function.
 
    query_args = parse_query('servertype=ds game_world=comparison(> 10)')
-   servers = query(**query_args)
+   servers = Query(query_args)
 '''
     print(help_text.format(filters=', '.join(filter_classes.keys())))
     print()

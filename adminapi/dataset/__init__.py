@@ -2,7 +2,7 @@ from ipaddress import ip_address, ip_network
 
 from adminapi import _api_settings
 from adminapi.base import (
-    BaseQuerySet, BaseServerObject, DatasetError, MultiAttr
+    BaseQuery, BaseServerObject, DatasetError, MultiAttr
 )
 from adminapi.request import send_request
 
@@ -18,9 +18,14 @@ class Attribute(object):
         self.multi = multi
 
 
-class QuerySet(BaseQuerySet):
-    def __init__(self, filters, auth_token, timeout):
-        BaseQuerySet.__init__(self, filters)
+class Query(BaseQuery):
+    def __init__(
+        self,
+        filters,
+        auth_token=_api_settings['auth_token'],
+        timeout=_api_settings['timeout_dataset'],
+    ):
+        BaseQuery.__init__(self, filters)
         self.auth_token = auth_token
         self.timeout = timeout
 
@@ -81,12 +86,12 @@ class QuerySet(BaseQuerySet):
 
 class ServerObject(BaseServerObject):
 
-    # TODO: Query the datatypes once from the server
+    # TODO Query the datatypes once from the server
     inet_attribute_ids = {'intern_ip', 'primary_ip6'}
 
-    def __init__(self, object_id=None, queryset=None, auth_token=None,
+    def __init__(self, object_id=None, query=None, auth_token=None,
                  timeout=None):
-        BaseServerObject.__init__(self, [], object_id, queryset)
+        BaseServerObject.__init__(self, [], object_id, query)
         self.auth_token = auth_token
         self.timeout = timeout
 
@@ -120,12 +125,9 @@ def _handle_exception(result):
     raise exception_class(result['message'])
 
 
+# XXX Deprecated, use Query() instead
 def query(**kwargs):
-    return QuerySet(
-        filters=kwargs,
-        auth_token=_api_settings['auth_token'],
-        timeout=_api_settings['timeout_dataset'],
-    )
+    return Query(kwargs)
 
 
 def create(
@@ -148,7 +150,7 @@ def create(
     response = send_request(
         CREATE_ENDPOINT, request, auth_token, _api_settings['timeout_dataset']
     )
-    qs = QuerySet(
+    qs = Query(
         filters={'hostname': attributes['hostname']},
         auth_token=auth_token,
         timeout=_api_settings['timeout_dataset'],

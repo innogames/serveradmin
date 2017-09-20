@@ -14,7 +14,7 @@ from serveradmin.graphite.models import (
     Collection,
     NumericCache,
 )
-from serveradmin.dataset import query, filters
+from serveradmin.dataset import Query, filters
 from serveradmin.serverdb.models import Project
 
 
@@ -47,7 +47,7 @@ def index(request):
     if term:
         try:
             query_args = parse_query(term, filters.filter_classes)
-            host_query = query(**query_args).restrict('hostname', 'xen_host')
+            host_query = Query(query_args).restrict('hostname', 'xen_host')
             for host in host_query:
                 matched_hostnames.append(host['hostname'])
                 if 'xen_host' in host:
@@ -73,7 +73,7 @@ def index(request):
                 request, 'resources/index.html', template_info
             )
     else:
-        understood = repr(query())
+        understood = repr(Query({}))
 
     templates = list(current_collection.template_set.all())
     variations = list(current_collection.variation_set.all())
@@ -101,7 +101,7 @@ def index(request):
     if len(hostnames) > 0:
         query_kwargs['hostname'] = filters.Any(*hostnames)
     for server in (
-        query(**query_kwargs)
+        Query(query_kwargs)
         .restrict('hostname', 'servertype')
         .order_by('hostname')
     ):
@@ -116,7 +116,7 @@ def index(request):
     guests = False
     query_kwargs = {'xen_host': filters.Any(*hosts.keys())}
     for server in (
-        query(**query_kwargs)
+        Query(query_kwargs)
         .restrict('hostname', 'xen_host')
         .order_by('hostname')
     ):
@@ -174,7 +174,7 @@ def graph_popup(request):
 def projects(request):
 
     counters = {}
-    for server in query().restrict(
+    for server in Query({}).restrict(
         'project',
         'servertype',
         'disk_size_gib',

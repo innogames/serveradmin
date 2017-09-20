@@ -3,7 +3,8 @@ from copy import deepcopy
 from django.contrib.auth.decorators import login_required
 from django.template.response import TemplateResponse
 
-from serveradmin.dataset import query, filters
+from serveradmin.dataset import Query
+from serveradmin.dataset.filters import Empty
 
 datacenters = {
     'Süderstraße S198.1': {
@@ -180,26 +181,26 @@ def index(request):
                 for col in row['columns']:
                     hardware = ()
                     if row['row'] != '_' and col != '_':
-                        rack = tuple(query(
-                            servertype='rack',
-                            datacenter=dc_v['name'],
-                            rack_colo=dc_v.get('colocation', filters.Empty()),
-                            rack_row=row['row'],
-                            rack_number=col,
-                        ))
+                        rack = list(Query({
+                            'servertype': 'rack',
+                            'datacenter': dc_v['name'],
+                            'rack_colo': dc_v.get('colocation', Empty()),
+                            'rack_row': row['row'],
+                            'rack_number': col,
+                        }))
                         if rack:
                             rack = rack[0]
-                            hardware = tuple(query(
-                                rack=rack['hostname'],
-                                bladecenter=filters.Empty(),
-                            ).restrict(
+                            hardware = list(Query({
+                                'rack': rack['hostname'],
+                                'bladecenter': Empty(),
+                            }).restrict(
                                 'hostname',
                                 'hardware_model',
                             ))
-                            hardware += tuple(query(
-                                rack=rack['hostname'],
-                                servertype='blade_enclosure',
-                            ).restrict(
+                            hardware += list(Query({
+                                'rack': rack['hostname'],
+                                'servertype': 'blade_enclosure',
+                            }).restrict(
                                 'hostname',
                                 'hardware_model',
                             ))

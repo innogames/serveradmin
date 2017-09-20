@@ -10,7 +10,7 @@ class QueryError(DatasetError):
     pass
 
 
-class BaseQuerySet(object):
+class BaseQuery(object):
     def __init__(self, filters):
         self._filters = filters
         self._results = None
@@ -27,16 +27,7 @@ class BaseQuerySet(object):
         return bool(self.get_results())
 
     def __repr__(self):
-        # QuerySet is not used directly but through query function
-        kwargs = ', '.join(
-            '{0}={1!r}'.format(k, v) for k, v in self._filters.items()
-        )
-        query_repr = 'query({0})'.format(kwargs)
-
-        if self._restrict:
-            query_repr += '.restrict({0})'.format(', '.join(self._restrict))
-
-        return query_repr
+        return 'Query({!r})'.format(self._filters)
 
     def get_lookup(self, attr):
         lookup = {}
@@ -123,7 +114,7 @@ class BaseServerObject(dict):
     to cast multi attributes and to validate the values.
     """
 
-    def __init__(self, attributes=[], object_id=None, queryset=None):
+    def __init__(self, attributes=[], object_id=None, query=None):
         # Loop through ourself afterwards would be more efficient, but
         # this would give the caller already initialised object in case
         # anything fails.
@@ -134,7 +125,7 @@ class BaseServerObject(dict):
         super(BaseServerObject, self).__init__(attributes)
         self.object_id = object_id
         self._deleted = False
-        self._queryset = queryset
+        self._query = query
         self.old_values = {}
 
     def __hash__(self):

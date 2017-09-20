@@ -18,7 +18,7 @@ from serveradmin.graphite.models import (
     Collection,
     format_attribute_value,
 )
-from serveradmin.dataset import query
+from serveradmin.dataset import Query
 
 
 @login_required     # NOQA: C901
@@ -33,7 +33,7 @@ def graph_table(request):
     servers = {}
     for hostname in hostnames:
         try:
-            servers[hostname] = query(hostname=hostname).get()
+            servers[hostname] = Query({'hostname': hostname}).get()
         except DatasetError:
             raise Http404
 
