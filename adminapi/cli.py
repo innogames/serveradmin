@@ -105,7 +105,7 @@ def print_server(server, attribute_ids):
 
         value = server[attribute_id]
 
-        # Temporary hack
+        # XXX Temporary hack
         if attribute_id == 'hostname':
             if not any(value.endswith(d) for d in [
                 '.acl',

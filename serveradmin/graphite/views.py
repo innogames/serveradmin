@@ -11,7 +11,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 
 from adminapi.dataset.base import DatasetError, MultiAttr
-from serveradmin.graphite.models import Collection
+from serveradmin.graphite.models import Collection, format_attribute_value
 from serveradmin.dataset import query
 
 
@@ -81,11 +81,11 @@ def graph_table(request):
     if len(hostname) > 1:
         # Add hostname to the titles
         for order, hostname in enumerate(hostnames):
-            graph_tables[order] = [(k + ' on ' + hostname, v)
-                                   for k, v in graph_tables[order]]
-            grafana_link_params += (
-                'var-SERVER=' +
-                hostname.replace('.', '_') + "&"
+            graph_tables[order] = [
+                (k + ' on ' + hostname, v) for k, v in graph_tables[order]
+            ]
+            grafana_link_params += 'var-SERVER={}&'.format(
+                format_attribute_value(hostname)
             )
 
         # Combine them
