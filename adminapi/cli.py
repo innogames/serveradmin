@@ -13,6 +13,7 @@ from adminapi.utils.parse import parse_query
 
 
 def parse_args():
+    multi_note = ' (can be specified multiple times)'
     parser = ArgumentParser('igserver')
     parser.add_argument('query', nargs='+')
     parser.add_argument(
@@ -23,32 +24,28 @@ def parse_args():
     )
     parser.add_argument(
         '-a',
-        '--attrs',
-        nargs='+',
-        default=['hostname'],
-        help='The attributes to fetch',
+        '--attr',
+        action='append',
+        help='Attributes to fetch (default: "hostname")' + multi_note,
     )
     parser.add_argument(
         '-o',
         '--order',
-        nargs='+',
-        default=['hostname'],
-        help='Attributes to order by the result',
+        action='append',
+        help='Attributes to order by the result' + multi_note,
     )
     parser.add_argument(
         '-r',
         '--reset',
-        nargs='+',
-        default=[],
-        help='Reset multi attributes',
+        action='append',
+        help='Multi attributes to reset' + multi_note,
     )
     parser.add_argument(
         '-u',
         '--update',
-        nargs='+',
         type=attr_value,
-        default=[],
-        help='The attributes to update',
+        action='append',
+        help='Attributes with values to update' + multi_note,
     )
 
     return parser.parse_args()
@@ -56,30 +53,38 @@ def parse_args():
 
 def main():
     args = parse_args()
-    servers = (
-        QuerySet(
-            # TODO: Avoid .join()
-            filters=parse_query(' '.join(args.query)),
-            auth_token=_api_settings['auth_token'],
-            timeout=_api_settings['timeout_dataset'],
-        )
-        .restrict(*(args.attrs + args.reset + [k for k, v in args.update]))
-        .order_by(*args.order)
-    )
 
-    if args.one and len(servers) > 1:
+    attribute_ids_to_print = args.attr if args.attr else ['hostname']
+    attribute_ids_to_fetch = list(attribute_ids_to_print)
+    if args.reset:
+        attribute_ids_to_fetch.append(args.reset)
+    if args.update:
+        attribute_ids_to_fetch.append(args.update)
+
+    query = QuerySet(
+        # TODO: Avoid .join()
+        filters=parse_query(' '.join(args.query)),
+        auth_token=_api_settings['auth_token'],
+        timeout=_api_settings['timeout_dataset'],
+    )
+    query.restrict(*attribute_ids_to_fetch)
+    if args.order:
+        query.order_by(*args.order)
+
+    if args.one and len(query) > 1:
         raise Exception(
             'Expecting exactly one server, found {} servers'
-            .format(len(servers))
+            .format(len(query))
         )
 
-    changes = bool(args.reset or args.update)
-    for server in servers:
-        if changes:
-            apply_changes(server, args.reset, args.update)
-        print_server(server, args.attrs)
-    if changes:
-        servers.commit()
+    for server in query:
+        if args.reset:
+            apply_resets(server, args.reset)
+        if args.update:
+            apply_updates(server, args.update)
+        print_server(server, attribute_ids_to_print)
+    if args.reset or args.update:
+        query.commit()
 
 
 def attr_value(arg):
@@ -89,10 +94,13 @@ def attr_value(arg):
     return arg_split
 
 
-def apply_changes(server, reset, update):
-    for attribute_id in reset:
+def apply_resets(server, attribute_ids):
+    for attribute_id in attribute_ids:
         server[attribute_id].clear()
-    for attribute_id, value in update:
+
+
+def apply_updates(server, attribute_values):
+    for attribute_id, value in attribute_values:
         server.set(attribute_id, value)
 
 
