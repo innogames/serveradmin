@@ -64,7 +64,7 @@ ip_addr_types = (
 )
 
 lookup_id_validators = [
-    RegexValidator(r'\A[a-z][a-z0-9_]*\Z', 'Invalid id'),
+    RegexValidator(r'\A[a-z][a-z0-9_]+\Z', 'Invalid id'),
 ]
 
 hostname_validators = [
