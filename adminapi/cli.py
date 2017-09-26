@@ -118,6 +118,7 @@ def print_server(server, attribute_ids):
             if not any(value.endswith(d) for d in [
                 '.acl',
                 '.arpa',
+                '.hc',
                 '.ig.local',
                 '.innogames.net',
             ]):
