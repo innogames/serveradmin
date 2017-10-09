@@ -11,6 +11,14 @@ from adminapi import _api_settings
 from adminapi.dataset import QuerySet
 from adminapi.utils.parse import parse_query
 
+DOMAINS = [
+    'acl',
+    'arpa',
+    'hc',
+    'ig.local',
+    'innogames.net',
+]
+
 
 def parse_args():
     multi_note = ' (can be specified multiple times)'
@@ -115,13 +123,7 @@ def print_server(server, attribute_ids):
 
         # XXX Temporary hack
         if attribute_id == 'hostname':
-            if not any(value.endswith(d) for d in [
-                '.acl',
-                '.arpa',
-                '.hc',
-                '.ig.local',
-                '.innogames.net',
-            ]):
+            if not any(value == d or value.endswith('.' + d) for d in DOMAINS):
                 value += '.ig.local'
 
         if value in [None, True, False]:
