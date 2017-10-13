@@ -223,8 +223,10 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
         if not invalid_attrs:
             try:
                 if server.object_id:
+                    action = 'edited'
                     server.commit(user=request.user)
                 else:
+                    action = 'created'
                     server.object_id = create_server(
                         server,
                         skip_validation=False,
@@ -237,7 +239,7 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
             except (PermissionDenied, ValidationError, IntegrityError) as err:
                 messages.error(request, str(err))
             else:
-                messages.success(request, 'Edited server successfully')
+                messages.success(request, 'Server successfully ' + action)
                 url = '{0}?object_id={1}'.format(
                     reverse('servershell_inspect'),
                     server.object_id,
