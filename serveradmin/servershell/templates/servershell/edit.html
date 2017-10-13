@@ -14,7 +14,7 @@
 <h2>New Object</h2>
 {% endif %}
 
-<form method="post" action="{% if not object_id %}{% url 'servershell_edit' %}{% endif %}">
+<form method="post" action="{% url 'servershell_edit' %}{% if object_id %}?object_id={{ object_id }}{% endif %}">
 {% csrf_token %}
 <table class="border_table" style="width:100%; table-layout:fixed;">
 <tr>
