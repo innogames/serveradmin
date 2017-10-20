@@ -65,7 +65,7 @@ def create_server(
         created_server['project'] = project.pk
         created_server['intern_ip'] = intern_ip
 
-        access_control('create', created_server, user, app)
+        access_control('create', {server_id: created_server}, user, app)
 
         commit = ChangeCommit.objects.create(app=app, user=user)
         attributes_json = json.dumps(created_server, default=json_encode_extra)
