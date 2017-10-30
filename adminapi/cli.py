@@ -65,9 +65,9 @@ def main():
     attribute_ids_to_print = args.attr if args.attr else ['hostname']
     attribute_ids_to_fetch = list(attribute_ids_to_print)
     if args.reset:
-        attribute_ids_to_fetch.append(args.reset)
+        attribute_ids_to_fetch.extend(args.reset)
     if args.update:
-        attribute_ids_to_fetch.append(args.update)
+        attribute_ids_to_fetch.extend(u[0] for u in args.update)
 
     query = QuerySet(
         # TODO: Avoid .join()
