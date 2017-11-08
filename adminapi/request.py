@@ -1,3 +1,4 @@
+import os
 import hashlib
 import hmac
 import time
@@ -16,7 +17,10 @@ try:
 except ImportError:
     import json
 
-BASE_URL = 'https://serveradmin.innogames.de/api'
+BASE_URL = os.environ.get(
+    'SERVERADMIN_BASE_URL',
+    'https://serveradmin.innogames.de/api'
+)
 
 
 def calc_security_token(auth_token, timestamp, content):
