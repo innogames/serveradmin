@@ -85,7 +85,7 @@ def restore_deleted(request, change_commit):
     server_obj = deleted.attributes
     try:
         create_server(server_obj, skip_validation=True, fill_defaults=False,
-                      fill_defaults_all=False)
+                      fill_defaults_all=False, user=request.user)
     except CommitError as error:
         messages.error(request, str(error))
     else:
