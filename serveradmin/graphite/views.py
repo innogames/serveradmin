@@ -4,7 +4,9 @@ from urllib.request import (
     build_opener
 )
 
-from django.http import Http404, HttpResponseBadRequest, HttpResponse
+from django.http import (
+    Http404, HttpResponse, HttpResponseBadRequest, HttpResponseServerError
+)
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -109,7 +111,12 @@ def graph_table(request):
 @login_required
 @ensure_csrf_cookie
 def graph(request):
-    """Graph page"""
+    """Proxy Graphite graphs
+
+    We don't want to bother the user with authenticating to Graphite.
+    Instead here we download the graph using our credentials and pass
+    it to the user.
+    """
     password_mgr = HTTPPasswordMgrWithDefaultRealm()
     password_mgr.add_password(
         None,
@@ -121,7 +128,15 @@ def graph(request):
     url = '{0}/render?{1}'.format(
         settings.GRAPHITE_URL, request.GET.urlencode()
     )
-    with build_opener(auth_handler).open(url) as response:
-        r = HttpResponse(response.read())
-        r['Content-Type'] = 'image/png'
-        return r
+
+    # If the Graphite server fails, we would return proper server error
+    # to the user instead of failing.  This is not really a matter for
+    # the user as they would get a 500 in any case, but it is matter for
+    # the server.  We expect any kind of error in here, but the socket
+    # errors are more likely to happen.  Graphite has tendency to return
+    # empty result with 200 instead of proper error codes.
+    try:
+        with build_opener(auth_handler).open(url) as response:
+            return HttpResponse(response.read(), content_type='image/png')
+    except IOError as error:
+        return HttpResponseServerError(str(error))
