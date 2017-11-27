@@ -14,7 +14,7 @@
     <select id="collection_short" name="current_collection">
     <option value="">- all -</option>
     {% for collection in collections %}
-        <option value="{{ collection.id }}" {% if collection.id == current_collection %}selected{% endif %}>{{ collection.attribute }}: {{ collection.attribute_value }}</option>
+        <option value="{{ collection.id }}" {% if collection.id == current_collection %}selected{% endif %}>{{ collection.name }}</option>
     {% endfor %}
     </select>
     </td>
