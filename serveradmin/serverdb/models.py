@@ -14,6 +14,8 @@ from django.contrib.auth.models import User
 
 import netfields
 
+from serveradmin.dataset.typecast import typecast
+
 from serveradmin.apps.models import Application
 
 
@@ -399,10 +401,10 @@ class ServertypeAttribute(models.Model):
         return self._compiled_regexp
 
     def get_default_value(self):
-        if self.default_value and self.attribute.type == 'string':
+        if self.default_value:
             if self.attribute.multi:
-                return {self.default_value}
-            return self.default_value
+                return typecast(self.attribute, {self.default_value})
+            return typecast(self.attribute, self.default_value)
         return self.attribute.initializer()()
 
     def regexp_match(self, value):
