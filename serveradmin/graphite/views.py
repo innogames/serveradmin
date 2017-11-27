@@ -13,7 +13,11 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 
 from adminapi.dataset.base import DatasetError, MultiAttr
-from serveradmin.graphite.models import Collection, format_attribute_value
+from serveradmin.graphite.models import (
+    GRAPHITE_ATTRIBUTE_ID,
+    Collection,
+    format_attribute_value,
+)
 from serveradmin.dataset import query
 
 
@@ -37,22 +41,17 @@ def graph_table(request):
     # If there are two collections with same match, use only the one which
     # is not an overview.
     collections = []
-    doubles = set()
     for collection in Collection.objects.order_by('overview', 'sort_order'):
-        if (collection.attribute_id, collection.attribute_value) in doubles:
+        if any(collection.name == c.name for c in collections):
             continue
         for hostname in hostnames:
-            if collection.attribute_id not in servers[hostname]:
+            if GRAPHITE_ATTRIBUTE_ID not in servers[hostname]:
                 break   # The server hasn't got this attribute at all.
-            value = servers[hostname][collection.attribute_id]
-            if isinstance(value, MultiAttr):
-                if collection.attribute_value not in [str(v) for v in value]:
-                    break   # The server hasn't got this attribute value.
-            else:
-                if collection.attribute_value != str(value):
-                    break   # The server attribute is not equal.
+            value = servers[hostname][GRAPHITE_ATTRIBUTE_ID]
+            assert isinstance(value, MultiAttr)
+            if not any(collection.name == v for v in value):
+                break   # The server hasn't got this attribute value.
         else:
-            doubles.add((collection.attribute_id, collection.attribute_value))
             collections.append(collection)
 
     # Prepare the graph descriptions

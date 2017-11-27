@@ -8,7 +8,11 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 
 from adminapi.utils.parse import ParseQueryError, parse_query
-from serveradmin.graphite.models import Collection, NumericCache
+from serveradmin.graphite.models import (
+    GRAPHITE_ATTRIBUTE_ID,
+    Collection,
+    NumericCache,
+)
 from serveradmin.dataset import query, filters
 from serveradmin.serverdb.models import Project
 
@@ -18,7 +22,7 @@ from serveradmin.serverdb.models import Project
 def index(request):
     """The hardware resources page"""
     term = request.GET.get('term', request.session.get('term', ''))
-    collections = tuple(Collection.objects.filter(overview=True))
+    collections = list(Collection.objects.filter(overview=True))
 
     # If a graph collection was specified, use it.  Otherwise use the first
     # one.
@@ -92,9 +96,7 @@ def index(request):
                 graph_index += 1
 
     hosts = OrderedDict()
-    query_kwargs = {
-        collection.attribute.attribute_id: collection.attribute_value
-    }
+    query_kwargs = {GRAPHITE_ATTRIBUTE_ID: collection.name}
     if len(hostnames) > 0:
         query_kwargs['hostname'] = filters.Any(*hostnames)
     for server in (
@@ -128,8 +130,7 @@ def index(request):
             value = '{:.2f}'.format(numericCache.value)
             hosts[numericCache.hostname]['cells'][index]['value'] = value
 
-    name = collection.attribute_id + '_' + collection.attribute_value
-    sprite_url = settings.MEDIA_URL + 'graph_sprite/' + name
+    sprite_url = settings.MEDIA_URL + 'graph_sprite/' + collection.name
     template_info.update({
         'columns': columns,
         'hosts': hosts.values(),

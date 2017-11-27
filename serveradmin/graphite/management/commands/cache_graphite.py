@@ -15,7 +15,9 @@ from django.core.management.base import NoArgsCommand
 from django.conf import settings
 from django.db import transaction
 
+from serveradmin.dataset import query
 from serveradmin.graphite.models import (
+    GRAPHITE_ATTRIBUTE_ID,
     Collection,
     NumericCache,
     AttributeFormatter,
@@ -35,12 +37,11 @@ class Command(NoArgsCommand):
 
         # We will make sure to generate a single sprite for a single hostname.
         for collection in Collection.objects.filter(overview=True):
-            name = collection.attribute_id + '_' + collection.attribute_value
-            collection_dir = sprite_dir + '/' + name
+            collection_dir = sprite_dir + '/' + collection.name
             if not isdir(collection_dir):
                 mkdir(collection_dir)
 
-            for server in collection.query():
+            for server in query(**{GRAPHITE_ATTRIBUTE_ID: collection.name}):
                 graph_table = collection.graph_table(server, sprite_params)
                 if graph_table:
                     self.generate_sprite(collection_dir, graph_table, server)

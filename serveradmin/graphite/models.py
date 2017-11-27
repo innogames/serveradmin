@@ -10,13 +10,15 @@ from django.db import models
 from django.conf import settings
 
 from adminapi.dataset.base import MultiAttr
-from serveradmin.serverdb.models import Attribute
+
+from serveradmin.serverdb.models import lookup_id_validators
+
+GRAPHITE_ATTRIBUTE_ID = 'graphite_graphs'
 
 
 class Collection(models.Model):
     """Collection of graphs and values to be shown for the servers"""
-    attribute = models.ForeignKey(Attribute)
-    attribute_value = models.CharField(max_length=512)
+    name = models.CharField(max_length=255, validators=lookup_id_validators)
     params = models.TextField(blank=True, help_text="""
         Part of the URL after "?" to GET the graph or the value from
         the Graphite.  It will be concatenated with the params for
@@ -49,7 +51,8 @@ class Collection(models.Model):
 
     class Meta:
         db_table = 'graphite_collection'
-        ordering = ('sort_order', )
+        ordering = ['sort_order']
+        unique_together = [['name', 'overview']]
 
     def __init__(self, *args, **kwargs):
         models.Model.__init__(self, *args, **kwargs)
@@ -57,22 +60,11 @@ class Collection(models.Model):
         self._variations = None    # To cache graph variations
 
     def __str__(self):
-        name = str(self.attribute) + ': ' + self.attribute_value
-
+        name = self.name
         if self.overview:
             name += ' (overview)'
 
         return name
-
-    def query(self, **kwargs):
-        """Decorates serveradmin.dataset.query()
-        """
-
-        import serveradmin.dataset
-
-        kwargs[self.attribute_id] = self.attribute_value
-
-        return serveradmin.dataset.query(**kwargs)
 
     def graph_column(self, server, custom_params=''):
         """Generate graph URL table for a server
@@ -160,7 +152,7 @@ class Collection(models.Model):
 class Template(models.Model):
     """Templates in the collections"""
     collection = models.ForeignKey(Collection)
-    name = models.CharField(max_length=64)
+    name = models.CharField(max_length=255, validators=lookup_id_validators)
     params = models.TextField(blank=True, help_text="""
         Same as the params of the collections.
         """)
@@ -180,8 +172,8 @@ class Template(models.Model):
 
     class Meta:
         db_table = 'graphite_template'
-        ordering = ('sort_order', )
-        unique_together = (('collection', 'name'), )
+        ordering = ['sort_order']
+        unique_together = [['collection', 'name']]
 
     def __str__(self):
         return self.name
@@ -228,12 +220,12 @@ class Variation(models.Model):
     """
 
     collection = models.ForeignKey(Collection)
-    name = models.CharField(max_length=64)
+    name = models.CharField(max_length=255, validators=lookup_id_validators)
     params = models.TextField(blank=True, help_text="""
         Same as the params of the collections.
         """)
     sort_order = models.FloatField(default=0)
-    summarize_interval = models.CharField(max_length=64, help_text="""
+    summarize_interval = models.CharField(max_length=255, help_text="""
         Interval string that makes sense to use on the summarize() function on
         the Graphite for this variation.  It can be used in the params as
         {summarize_interval}.
@@ -241,8 +233,8 @@ class Variation(models.Model):
 
     class Meta:
         db_table = 'graphite_variation'
-        ordering = ('sort_order', )
-        unique_together = (('collection', 'name'), )
+        ordering = ['sort_order']
+        unique_together = [['collection', 'name']]
 
     def __str__(self):
         return self.name
@@ -253,13 +245,13 @@ class NumericCache(models.Model):
     """
 
     template = models.ForeignKey(Template)
-    hostname = models.CharField(max_length=64)
+    hostname = models.CharField(max_length=255)
     value = models.FloatField(default=0)
     last_modified = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'graphite_numeric_cache'
-        unique_together = (('template', 'hostname'), )
+        unique_together = [['template', 'hostname']]
 
 
 class AttributeFormatter(Formatter):
