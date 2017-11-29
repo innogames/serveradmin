@@ -362,24 +362,36 @@ def commit_changes(
 
 
 def access_control(action, servers, user, app):
+    entities = list()
     if not user.is_superuser:
-        groups = list(user.access_control_groups.all())
-        for server in servers.values():
-            if not any(a.match_server(action, server) for a in groups):
-                raise PermissionDenied(
-                    'Insufficient access rights on {} of server "{}" '
-                    'for user "{}"'
-                    .format(action, server['hostname'], user)
-                )
-
+        entities.append((
+            'user',
+            user,
+            list(user.access_control_groups.all()),
+        ))
     if app and not app.superuser:
-        groups = list(app.access_control_groups.all())
-        for server in servers.values():
-            if not any(a.match_server(action, server) for a in groups):
+        entities.append((
+            'application',
+            app,
+            list(app.access_control_groups.all()),
+        ))
+
+    for server in servers.values():
+        matched_groups = set()
+        for entity_class, entity_name, entity_groups in entities:
+            for group in entity_groups:
+                if group in matched_groups:
+                    break
+                if group.match_server(action, server):
+                    matched_groups.add(group)
+                    break
+            else:
                 raise PermissionDenied(
                     'Insufficient access rights on {} of server "{}" '
-                    'for application "{}"'
-                    .format(action, server['hostname'], app)
+                    'for {} "{}"'
+                    .format(
+                        action, server['hostname'], entity_class, entity_name
+                    )
                 )
 
 
