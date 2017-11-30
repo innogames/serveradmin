@@ -3,7 +3,7 @@ from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 
 from django.core.exceptions import ValidationError
 
-from adminapi.dataset.base import BaseQuerySet, BaseServerObject
+from adminapi.base import BaseQuerySet, BaseServerObject
 
 from serveradmin.serverdb.models import (
     Project,

@@ -37,7 +37,7 @@ Basic queries
 ^^^^^^^^^^^^^
 
 You can use the :func:`adminapi.dataset.query` function to find servers which
-match certain criterias. See the following example which will find all
+match certain criteria. See the following example which will find all
 webservers of Tribal Wars::
 
     import adminapi
@@ -56,39 +56,39 @@ match. You can either use strings, integers or booleans for exact value matching
 All filter conditions will be ANDed.
 
 More often you need filtering with more complex conditions, for example regular
-expression matching, comparison (less than, greating than) etc. For this kind
+expression matching, comparison (less than, greater than) etc.  For this kind
 of queries there is a filters modules which defines some filters you can use.
 The following example will give you all Tribal Wars webservers, which world
 number is between 20 and 30::
 
     # see above for usual imports and authentication
-    from adminapi.dataset import filters
+    from adminapi.filters import All, Comparison
 
     hosts = query(
         servertype='vm',
         game_function='web',
-        game_world=filters.And(filters.GreaterEqual(20), filters.GreaterEqual(30)),
+        game_world=All(Comparison(>= 20), Comparison(< 30)),
     )
 
 The following filters are available:
 
-:class:`adminapi.dataset.filters.Regexp`
+:class:`adminapi.filters.Regexp`
     Filters the attribute by matching a regular expression. Use this sparingly
     because it requires a sequence scan over the dataset.
 
-:class:`adminapi.dataset.filters.Comparison`
+:class:`adminapi.filters.Comparison`
     Implement simple comparison functions. The first argument is the comparison
     operator (one of ``<``, ``>``, ``>=`` and ``<=``) and the second is the
     value that should be compared. ``game_world=Comparison('<' 20)`` will be
     evaluated as ``game_world < 20``.
 
-:class:`adminapi.dataset.filters.Any`
+:class:`adminapi.filters.Any`
     If you want to check whether an attribute is *any* of the mentioned
     values. For example if you want to check whether the servers is running
     lenny or squeeze (or theoretically both, it the attribute has multiple
     values) you will write::
 
-        hosts = query(os=filters.Any('lenny', 'squeeze'))
+        hosts = query(os=Any('lenny', 'squeeze'))
 
     If you have a list with accepted values, just use Python's builtin arg
     expansion::
@@ -96,28 +96,28 @@ The following filters are available:
         possible_os = ['lenny', 'squeeze']
         hosts = query(os=filters.Any(*possible_os))
 
-:class:`adminapi.dataset.filters.InsideNetwork`
+:class:`adminapi.filters.InsideNetwork`
     Checks if an IP is inside a network. It takes one or more ``Network``
     objects. If several networks are given, it checks if it's inside any
     network. See the following example::
 
-        query(all_ips=filters.InsideNetwork(Network('192.168.0.0/24')))
+        query(all_ips=InsideNetwork(Network('192.168.0.0/24')))
 
-:class:`adminapi.dataset.filters.And`
+:class:`adminapi.filters.And`
     Combines two or more filters by using the conjunction of them. Every filter
     also implements ``__and__``, which allows you to just write ``and`` between
     two filters.
 
-:class:`adminapi.dataset.filters.Or`
+:class:`adminapi.filters.Or`
     Combines two or more filters by using the disjunction of them. Every filter
     also implements ``__or__``, which allows you to just write ``or`` between
     two filters.
 
-:class:`adminapi.dataset.filters.Not`
+:class:`adminapi.filters.Not`
     Negates the given filter or value.
 
-:class:`adminapi.dataset.filters.Between`
-    Shorthand for ``filters.And(filters.Comparison('>=', a), filters.Comparison('<=', b))``
+:class:`adminapi.filters.Between`
+    Shorthand for ``And(Comparison('>=', a), Comparison('<=', b))``
 
 
 Magic attributes

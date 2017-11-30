@@ -1,11 +1,11 @@
 from ipaddress import ip_address, ip_network
 
 from adminapi import _api_settings
-from adminapi.request import send_request
-from adminapi.dataset.base import (
+from adminapi.base import (
     BaseQuerySet, BaseServerObject, DatasetError, MultiAttr
 )
-from adminapi.dataset.filters import BaseFilter
+from adminapi.filters import BaseFilter
+from adminapi.request import send_request
 
 COMMIT_ENDPOINT = '/dataset/commit'
 QUERY_ENDPOINT = '/dataset/query'
@@ -13,7 +13,7 @@ CREATE_ENDPOINT = '/dataset/create'
 
 
 class Attribute(object):
-    def __init__(self, name, type, multi):
+    def __init__(self, name, type, multi):  # NOQA A002
         self.name = name
         self.type = type
         self.multi = multi

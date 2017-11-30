@@ -1,4 +1,4 @@
-from adminapi.dataset.filters import filter_classes as fc
+from adminapi.filters import filter_classes as fc
 
 
 class ParseQueryError(Exception):

@@ -1,11 +1,11 @@
 from __future__ import print_function
 
-import adminapi                                 # NOQA: F401
-from adminapi import api                        # NOQA: F401
-from adminapi.dataset import query, create      # NOQA: F401
-from adminapi.dataset.filters import *          # NOQA: F401, F403
-from adminapi.dataset.filters import filter_classes
-from adminapi.utils.parse import parse_query    # NOQA: F401
+import adminapi                                 # NOQA F401
+from adminapi import api                        # NOQA F401
+from adminapi.dataset import query, create      # NOQA F401
+from adminapi.filters import *                  # NOQA F401 F403
+from adminapi.filters import filter_classes
+from adminapi.utils.parse import parse_query    # NOQA F401
 
 
 def help_adminapi():
