@@ -10,7 +10,6 @@ setup(
     packages=[
         'adminapi',
         'adminapi.dataset',
-        'adminapi.cmdline',
     ],
     version='1.0',
     long_description=(

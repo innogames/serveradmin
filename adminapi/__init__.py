@@ -1,4 +1,4 @@
-from adminapi.cmdline.utils import get_auth_token
+from adminapi.cmduser import get_auth_token
 
 _api_settings = {
     'auth_token': '',

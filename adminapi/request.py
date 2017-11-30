@@ -3,7 +3,7 @@ import hashlib
 import hmac
 import time
 
-from adminapi.cmdline.utils import get_auth_token
+from adminapi.cmduser import get_auth_token
 
 try:
     from urllib.request import urlopen, Request
