@@ -1,4 +1,4 @@
-"""igserver - The command line interface
+"""adminapi - The command line interface
 
 Copyright (c) 2017, InnoGames GmbH
 """
@@ -22,7 +22,7 @@ DOMAINS = [
 
 def parse_args():
     multi_note = ' (can be specified multiple times)'
-    parser = ArgumentParser('igserver')
+    parser = ArgumentParser('adminapi')
     parser.add_argument('query', nargs='+')
     parser.add_argument(
         '-1',

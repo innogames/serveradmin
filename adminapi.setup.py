@@ -19,7 +19,7 @@ setup(
     ),
     entry_points={
         'console_scripts': [
-            'igserver=adminapi.cli:main',
+            'adminapi=adminapi.cli:main',
         ],
     },
 )
