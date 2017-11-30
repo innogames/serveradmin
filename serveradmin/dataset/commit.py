@@ -3,7 +3,7 @@ import json
 from django.db import IntegrityError, transaction
 from django.core.exceptions import PermissionDenied, ValidationError
 
-from adminapi.utils.json import json_encode_extra
+from adminapi.request import json_encode_extra
 from serveradmin.hooks.slots import HookSlot
 from serveradmin.serverdb.models import (
     Servertype,

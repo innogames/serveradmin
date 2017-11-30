@@ -1,7 +1,7 @@
 from django.db.models import Model, CharField, ManyToManyField
 from django.contrib.auth.models import User
 
-from adminapi.utils.parse import parse_query
+from adminapi.parse import parse_query
 from serveradmin.apps.models import Application
 from serveradmin.dataset.filters import filter_classes
 

@@ -4,6 +4,7 @@ from ipaddress import ip_network, ip_interface
 from django.db import transaction
 from django.core.exceptions import ValidationError
 
+from adminapi.request import json_encode_extra
 from serveradmin.serverdb.models import (
     Servertype,
     Project,
@@ -15,7 +16,6 @@ from serveradmin.serverdb.models import (
 )
 from serveradmin.dataset.typecast import typecast
 from serveradmin.dataset.commit import access_control
-from adminapi.utils.json import json_encode_extra
 
 
 class CreateError(ValidationError):

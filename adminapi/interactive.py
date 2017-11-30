@@ -5,7 +5,7 @@ from adminapi import api                        # NOQA F401
 from adminapi.dataset import query, create      # NOQA F401
 from adminapi.filters import *                  # NOQA F401 F403
 from adminapi.filters import filter_classes
-from adminapi.utils.parse import parse_query    # NOQA F401
+from adminapi.parse import parse_query          # NOQA F401
 
 
 def help_adminapi():

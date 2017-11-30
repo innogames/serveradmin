@@ -9,7 +9,7 @@ from argparse import ArgumentParser, ArgumentTypeError
 
 from adminapi import _api_settings
 from adminapi.dataset import QuerySet
-from adminapi.utils.parse import parse_query
+from adminapi.parse import parse_query
 
 
 def parse_args():

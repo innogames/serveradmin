@@ -5,87 +5,10 @@ class ParseQueryError(Exception):
     pass
 
 
-def parse_function_string(args, strict=True):   # NOQA: C901
-    state = 'start'
-    args_len = len(args)
-    parsed_args = []
-
-    i = 0
-    call_depth = 0
-    while i < args_len:
-        if state == 'start':
-            if args[i] in ('"', "'"):
-                state = 'string'
-                string_start = i + 1
-                string_type = args[i]
-                string_buf = []
-                i += 1
-            elif args[i] == ' ':
-                i += 1
-            else:
-                string_start = i
-                state = 'unquotedstring'
-        elif state == 'string':
-            if args[i] == '\\':
-                if i == args_len - 1:
-                    if strict:
-                        raise ParseQueryError(
-                            'Escape is not allowed at the end'
-                        )
-                if args[i + 1] == '\\':
-                    string_buf.append('\\')
-                    i += 2
-                elif args[i + 1] == string_type:
-                    string_buf.append(string_type)
-                    i += 2
-                else:
-                    if strict:
-                        raise ParseQueryError('Invalid escape')
-                    i += 1
-            elif args[i] == string_type:
-                parsed_args.append(('str', args[string_start:i]))
-                i += 1
-                state = 'start'
-            else:
-                i += 1
-        elif state == 'unquotedstring':
-            if args[i] == ' ':
-                parsed_args.append(('str', args[string_start:i]))
-                state = 'start'
-            elif args[i] == '(':
-                if string_start != i:
-                    parsed_args.append(('func', args[string_start:i]))
-                    call_depth += 1
-                    state = 'start'
-            elif args[i] == ')' and call_depth != 0:
-                if string_start != i:
-                    parsed_args.append(('str', args[string_start:i]))
-                parsed_args.append(('endfunc', ''))
-                call_depth -= 1
-                state = 'start'
-            # Do not parse key inside functions or of preceding token
-            # was also a key
-            elif args[i] == '=' and call_depth == 0 and (
-                not parsed_args or parsed_args[-1][0] != 'key'
-            ):
-                parsed_args.append(('key', args[string_start:i]))
-                state = 'start'
-            i += 1
-    if state == 'unquotedstring':
-        parsed_args.append(('str', args[string_start:]))
-    elif state == 'string':
-        if strict:
-            raise ParseQueryError('Unterminated string')
-        else:
-            parsed_args.append(('str', args[string_start:]))
-
-    return parsed_args
-
-
 _trigger_re_chars = ('.*', '.+', '[', ']', '|', '\\', '$', '^', '<')
 
 
-def parse_query(term, filter_classes=fc, hostname=None):  # NOQA: C901
+def parse_query(term, filter_classes=fc, hostname=None):  # NOQA C901
     parsed_args = parse_function_string(term, strict=True)
     if not parsed_args:
         return {}
@@ -184,3 +107,80 @@ def parse_query(term, filter_classes=fc, hostname=None):  # NOQA: C901
         query_args[stack[0][1]] = stack[1][1]
 
     return query_args
+
+
+def parse_function_string(args, strict=True):   # NOQA C901
+    state = 'start'
+    args_len = len(args)
+    parsed_args = []
+
+    i = 0
+    call_depth = 0
+    while i < args_len:
+        if state == 'start':
+            if args[i] in ('"', "'"):
+                state = 'string'
+                string_start = i + 1
+                string_type = args[i]
+                string_buf = []
+                i += 1
+            elif args[i] == ' ':
+                i += 1
+            else:
+                string_start = i
+                state = 'unquotedstring'
+        elif state == 'string':
+            if args[i] == '\\':
+                if i == args_len - 1:
+                    if strict:
+                        raise ParseQueryError(
+                            'Escape is not allowed at the end'
+                        )
+                if args[i + 1] == '\\':
+                    string_buf.append('\\')
+                    i += 2
+                elif args[i + 1] == string_type:
+                    string_buf.append(string_type)
+                    i += 2
+                else:
+                    if strict:
+                        raise ParseQueryError('Invalid escape')
+                    i += 1
+            elif args[i] == string_type:
+                parsed_args.append(('str', args[string_start:i]))
+                i += 1
+                state = 'start'
+            else:
+                i += 1
+        elif state == 'unquotedstring':
+            if args[i] == ' ':
+                parsed_args.append(('str', args[string_start:i]))
+                state = 'start'
+            elif args[i] == '(':
+                if string_start != i:
+                    parsed_args.append(('func', args[string_start:i]))
+                    call_depth += 1
+                    state = 'start'
+            elif args[i] == ')' and call_depth != 0:
+                if string_start != i:
+                    parsed_args.append(('str', args[string_start:i]))
+                parsed_args.append(('endfunc', ''))
+                call_depth -= 1
+                state = 'start'
+            # Do not parse key inside functions or of preceding token
+            # was also a key
+            elif args[i] == '=' and call_depth == 0 and (
+                not parsed_args or parsed_args[-1][0] != 'key'
+            ):
+                parsed_args.append(('key', args[string_start:i]))
+                state = 'start'
+            i += 1
+    if state == 'unquotedstring':
+        parsed_args.append(('str', args[string_start:]))
+    elif state == 'string':
+        if strict:
+            raise ParseQueryError('Unterminated string')
+        else:
+            parsed_args.append(('str', args[string_start:]))
+
+    return parsed_args

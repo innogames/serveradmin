@@ -1,7 +1,7 @@
 import os
 from os.path import isfile
 
-from adminapi.utils.cmduser import get_user
+from adminapi.cmduser import get_user
 
 
 def get_auth_token():

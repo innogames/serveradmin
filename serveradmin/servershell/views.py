@@ -16,8 +16,8 @@ from django.contrib import messages
 from django.db import DataError, IntegrityError
 from django.utils.html import mark_safe, escape as escape_html
 
-from adminapi.utils.json import json_encode_extra
-from adminapi.utils.parse import ParseQueryError, parse_query
+from adminapi.parse import ParseQueryError, parse_query
+from adminapi.request import json_encode_extra
 from serveradmin.dataset import query, filters
 from serveradmin.dataset.commit import (
     commit_changes,
