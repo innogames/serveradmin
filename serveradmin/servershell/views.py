@@ -32,7 +32,6 @@ from serveradmin.dataset.filters import (
     Startswith,
     filter_classes,
 )
-from serveradmin.dataset.typecast import typecast
 from serveradmin.dataset.queryset import ServerObject
 from serveradmin.serverdb.forms import ServerForm
 from serveradmin.serverdb.models import (
@@ -213,7 +212,7 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
             if attribute.multi:
                 values = [v.strip() for v in value.splitlines()]
                 try:
-                    value = typecast(attribute, values)
+                    value = attribute.from_str(values)
                 except ValidationError:
                     invalid_attrs.add(attribute_id)
                     value = set(values)
@@ -221,7 +220,7 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
                 value = None
             else:
                 try:
-                    value = typecast(attribute, value)
+                    value = attribute.from_str(value)
                 except ValidationError:
                     invalid_attrs.add(attribute_id)
             server[attribute_id] = value

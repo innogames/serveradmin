@@ -2,8 +2,10 @@ import re
 import json
 
 from collections import OrderedDict
-from ipaddress import ip_network
+from ipaddress import ip_address, ip_network
 from itertools import chain
+
+from netaddr import EUI
 
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -13,8 +15,6 @@ from django.utils.timezone import now
 from django.contrib.auth.models import User
 
 import netfields
-
-from serveradmin.dataset.typecast import typecast
 
 from serveradmin.apps.models import Application
 
@@ -46,17 +46,17 @@ from serveradmin.apps.models import Application
 # complicated magic on them.
 #
 
-attribute_types = (
-    'string',
-    'boolean',
-    'hostname',
-    'reverse_hostname',
-    'number',
-    'inet',
-    'macaddr',
-    'date',
-    'supernet',
-)
+attribute_types = {
+    'string': str,
+    'boolean': lambda x: x in ('1', 'True', 'true', 1, True),
+    'hostname': str,
+    'reverse_hostname': str,
+    'number': lambda x: float(x) if '.' in str(x) else int(x),
+    'inet': lambda x: ip_network(x) if '/' in str(x) else ip_address(x),
+    'macaddr': EUI,
+    'date': str,
+    'supernet': str,
+}
 
 ip_addr_types = (
     'null',
@@ -247,7 +247,7 @@ class Attribute(LookupModel):
     )
     type = models.CharField(
         max_length=32,
-        choices=get_choices(attribute_types),
+        choices=get_choices(attribute_types.keys()),
     )
     multi = models.BooleanField(null=False, default=False)
     hovertext = models.TextField(null=False, blank=True, default='')
@@ -297,6 +297,21 @@ class Attribute(LookupModel):
         if self.type == 'boolean':
             return bool
         return lambda: None
+
+    def from_str(self, value):
+        if self.multi and not isinstance(value, (list, set)):
+            raise ValidationError('Attr is multi, but value is not a list/set')
+
+        if value is None:
+            return value
+
+        from_str_fn = attribute_types[self.type]
+        try:
+            if self.multi:
+                return set(from_str_fn(x) for x in value)
+            return from_str_fn(value)
+        except ValueError as error:
+            raise ValidationError(str(error))
 
 
 class ServerTableSpecial(object):
@@ -409,7 +424,7 @@ class ServertypeAttribute(models.Model):
         else:
             default_value = self.default_value
 
-        return typecast(self.attribute, default_value)
+        return self.attribute.from_str(default_value)
 
     def regexp_match(self, value):
         return self.get_compiled_regexp().match(str(value))
