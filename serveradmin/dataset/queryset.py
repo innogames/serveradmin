@@ -13,8 +13,8 @@ from serveradmin.serverdb.models import (
     ServerAttribute,
     ServerHostnameAttribute,
 )
+from serveradmin.serverdb.querybuilder import QueryBuilder
 from serveradmin.dataset.commit import commit_changes
-from serveradmin.dataset.querybuilder import QueryBuilder
 
 
 CACHE_MIN_QS_COUNT = 3
