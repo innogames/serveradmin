@@ -8,28 +8,52 @@ class FilterValueError(QueryError, ValueError):
 
 
 class BaseFilter(object):
+    def __init__(self, value):
+        self.value = value
+
     def __and__(self, other):
         return And(self, other)
 
     def __or__(self, other):
         return Or(self, other)
 
+    def __repr__(self):
+        return '{}({!r})'.format(type(self).__name__, self.value)
+
+    def serialize(self):
+        return {type(self).__name__: self.value}
+
+    @staticmethod
+    def deserialize(obj):
+        if not isinstance(obj, dict):
+            return obj
+
+        if len(obj) != 1:
+            raise FilterValueError('Malformatted filter')
+
+        for name, value in obj.items():
+            break
+
+        for filter_class in filter_classes:
+            if filter_class.__name__ == name:
+                break
+        else:
+            raise FilterValueError('No such filter: {0}'.format(name))
+
+        return filter_class.deserialize_value(value)
+
+    @classmethod
+    def deserialize_value(cls, value):
+        return cls(value)
+
 
 class ExactMatch(BaseFilter):
     """Exact match with the attribute value"""
 
-    def __init__(self, value):
-        self.value = value
-
-    def __repr__(self):
-        return 'ExactMatch({0!r})'.format(self.value)
-
-    def serialize(self):
-        return {'name': 'exactmatch', 'value': self.value}
-
     def matches(self, value):
         return value == self.value
 
+    # TODO Remove
     @classmethod
     def from_obj(cls, obj):
         if 'value' in obj:
@@ -41,22 +65,17 @@ class ExactMatch(BaseFilter):
 class Regexp(BaseFilter):
     """Match the attribute against a regular expression"""
 
-    def __init__(self, regexp):
-        self.regexp = regexp
+    def __init__(self, value):
+        self.value = value
         try:
-            self._regexp_obj = re_compile(regexp)
+            self._regexp_obj = re_compile(value)
         except re_error as error:
             raise FilterValueError(str(error))
-
-    def __repr__(self):
-        return 'Regexp({0!r})'.format(self.regexp)
-
-    def serialize(self):
-        return {'name': 'regexp', 'regexp': self.regexp}
 
     def matches(self, value):
         return bool(self._regexp_obj.search(str(value)))
 
+    # TODO Remove
     @classmethod
     def from_obj(cls, obj):
         if 'regexp' in obj:
@@ -78,12 +97,17 @@ class Comparison(BaseFilter):
         return 'Comparison({0!r}, {1!r})'.format(self.comparator, self.value)
 
     def serialize(self):
-        return {
-            'name': 'comparison',
-            'comparator': self.comparator,
-            'value': self.value,
-        }
+        return {type(self).__name__: [self.comparator, self.value]}
 
+    @classmethod
+    def deserialize_value(cls, value):
+        if not isinstance(value, list) or len(value) != 2:
+            raise FilterValueError(
+                'Invalid value for {}()'.format(cls.__name__)
+            )
+        return cls(value[0], value[1])
+
+    # TODO Remove
     @classmethod
     def from_obj(cls, obj):
         if 'comparator' in obj and 'value' in obj:
@@ -102,11 +126,20 @@ class Any(BaseFilter):
         return 'Any({0})'.format(', '.join(repr(val) for val in self.values))
 
     def serialize(self):
-        return {'name': 'any', 'values': self.values}
+        return {type(self).__name__: self.values}
+
+    @classmethod
+    def deserialize_value(cls, value):
+        if not isinstance(value, list):
+            raise FilterValueError(
+                'Invalid value for {}()'.format(cls.__name__)
+            )
+        return cls(*value)
 
     def matches(self, value):
         return value in self.values
 
+    # TODO Remove
     @classmethod
     def from_obj(cls, obj):
         if 'values' in obj and isinstance(obj['values'], list):
@@ -126,14 +159,22 @@ class Or(BaseFilter):
         return '{0}({1})'.format(type(self).__name__, args)
 
     def serialize(self):
-        return {
-            'name': type(self).__name__.lower(),
-            'filters': [f.serialize() for f in self.filters],
-        }
+        return {type(self).__name__.lower(): [
+            f.serialize() for f in self.filters
+        ]}
+
+    @classmethod
+    def deserialize_value(cls, value):
+        if not isinstance(value, list):
+            raise FilterValueError(
+                'Invalid value for {}()'.format(cls.__name__)
+            )
+        return cls(*[cls.deserialize(v) for v in value])
 
     def matches(self, value):
         return self.func(f.matches(value) for f in self.filters)
 
+    # TODO Remove
     @classmethod
     def from_obj(cls, obj):
         if 'filters' in obj and isinstance(obj['filters'], list):
@@ -153,25 +194,22 @@ class And(Or):
 class Not(BaseFilter):
     """Negate the given filter"""
 
-    def __init__(self, filter):     # NOQA A002
-        self.filter = filter
-
-    def __repr__(self):
-        return 'Not({0!r})'.format(self.filter)
-
     def serialize(self):
-        if isinstance(self.filter, BaseFilter):
-            value = self.filter.serialize()
-        else:
-            value = self.filter
-        return {'name': 'not', 'filter': value}
+        return {type(self).__name__: (
+            self.value.serialize() if isinstance(self.value, BaseFilter)
+            else self.value
+        )}
+
+    @classmethod
+    def deserialize_value(cls, value):
+        return cls(cls.deserialize(value))
 
     def matches(self, value):
-        if isinstance(self.filter, BaseFilter):
-            return not self.filter.matches(value)
-        else:
-            return value != self.filter
+        if isinstance(self.value, BaseFilter):
+            return not self.value.matches(value)
+        return value != self.value
 
+    # TODO Remove
     @classmethod
     def from_obj(cls, obj):
         if 'filter' in obj:
@@ -183,18 +221,10 @@ class Not(BaseFilter):
 class Startswith(BaseFilter):
     """Check if the value starts with the string"""
 
-    def __init__(self, value):
-        self.value = value
-
-    def __repr__(self):
-        return 'Startswith({0!r})'.format(self.value)
-
-    def serialize(self):
-        return {'name': 'startswith', 'value': self.value}
-
     def matches(self, value):
         return str(value).startswith(self.value)
 
+    # TODO Remove
     @classmethod
     def from_obj(cls, obj):
         if 'value' in obj:
@@ -215,11 +245,20 @@ class Overlap(BaseFilter):
         )
 
     def serialize(self):
-        return {'name': type(self).__name__.lower(), 'networks': self.networks}
+        return {type(self).__name__.lower(): self.networks}
+
+    @classmethod
+    def deserialize_value(cls, value):
+        if not isinstance(value, list):
+            raise FilterValueError(
+                'Invalid value for {}()'.format(cls.__name__)
+            )
+        return cls(*value)
 
     def matches(self, value):
         return any(value in n or n in value for n in self.networks)
 
+    # TODO Remove
     @classmethod
     def from_obj(cls, obj):
         if 'networks' in obj and isinstance(obj['networks'], (tuple, list)):
@@ -246,27 +285,40 @@ class InsideOnlyNetwork(InsideNetwork):
 class Empty(BaseFilter):
     """Check if the attribute exists"""
 
+    def __init__(self):
+        pass
+
     def __repr__(self):
         return 'Empty()'
 
     def serialize(self):
-        return {'name': 'empty'}
+        return {type(self).__name__: None}
+
+    @classmethod
+    def deserialize_value(cls, value):
+        if value is not None:
+            raise FilterValueError(
+                'Invalid value for {}()'.format(cls.__name__)
+            )
+        return cls()
 
     def matches(self, value):
         return value is None
 
+    # TODO Remove
     @classmethod
     def from_obj(cls, obj):
         return cls()
 
 
+# TODO Remove
 def filter_from_obj(obj):
     if isinstance(obj, dict) and 'name' in obj:
         for filter_class in filter_classes:
-            if filter_class.__name__.lower() == obj['name']:
-                return filter_class.from_obj(obj)
-        raise QueryError('No such filter: {0}'.format(obj['name']))
-    return obj
+            if hasattr(filter_class, 'from_obj'):
+                if filter_class.__name__.lower() == obj['name']:
+                    return filter_class.from_obj(obj)
+    return BaseFilter.deserialize(obj)
 
 
 # Collect all classes that are subclass of BaseFilter (exclusive)

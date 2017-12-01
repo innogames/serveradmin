@@ -63,13 +63,13 @@ class QueryBuilder(object):
             negate = not filt or filt == 'false'
 
         elif isinstance(filt, (Regexp, Startswith)):
+            value = filt.value
             if isinstance(filt, Startswith):
                 operator = 'LIKE'
-                filt = filt.value + '%'
+                value += '%'
             else:
                 operator = '~'
-                filt = filt.regexp
-            filt = self._raw_sql_escape(filt)
+            value = self._raw_sql_escape(value)
 
             if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
                 template = (
@@ -78,10 +78,10 @@ class QueryBuilder(object):
                     '   FROM server'
                     '   WHERE hostname {} E{}'
                     ')'
-                    .format(operator, filt)
+                    .format(operator, value)
                 )
             else:
-                template = '{{}}::text {} E{}'.format(operator, filt)
+                template = '{{}}::text {} E{}'.format(operator, value)
 
         elif isinstance(filt, Comparison):
             if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
@@ -150,7 +150,7 @@ class QueryBuilder(object):
     def _logical_filter_sql_condition(self, attribute, filt):
         if isinstance(filt, Not):
             return 'NOT ({0})'.format(self.get_sql_condition(
-                attribute, filt.filter
+                attribute, filt.value
             ))
 
         if isinstance(filt, And):
