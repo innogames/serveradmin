@@ -2,6 +2,7 @@ import re
 import json
 
 from collections import OrderedDict
+from distutils.util import strtobool
 from ipaddress import ip_address, ip_network
 from itertools import chain
 
@@ -48,7 +49,7 @@ from serveradmin.apps.models import Application
 
 attribute_types = {
     'string': str,
-    'boolean': lambda x: x in ('1', 'True', 'true', 1, True),
+    'boolean': strtobool,
     'hostname': str,
     'reverse_hostname': str,
     'number': lambda x: float(x) if '.' in str(x) else int(x),
