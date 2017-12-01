@@ -401,11 +401,15 @@ class ServertypeAttribute(models.Model):
         return self._compiled_regexp
 
     def get_default_value(self):
-        if self.default_value:
-            if self.attribute.multi:
-                return typecast(self.attribute, {self.default_value})
-            return typecast(self.attribute, self.default_value)
-        return self.attribute.initializer()()
+        if not self.default_value:
+            return self.attribute.initializer()()
+
+        if self.attribute.multi:
+            default_value = self.default_value.split(',')
+        else:
+            default_value = self.default_value
+
+        return typecast(self.attribute, default_value)
 
     def regexp_match(self, value):
         return self.get_compiled_regexp().match(str(value))

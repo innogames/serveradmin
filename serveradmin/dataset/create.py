@@ -14,7 +14,6 @@ from serveradmin.serverdb.models import (
     ChangeAdd,
     get_unused_ip_addrs,
 )
-from serveradmin.dataset.typecast import typecast
 from serveradmin.dataset.commit import access_control
 
 
@@ -250,28 +249,16 @@ def _validate_real_attributes(  # NOQA: C901
         # Handle not existing attributes (fill defaults, validate require)
         if attribute not in real_attributes:
             if attribute.multi:
-                if sa.default_value is None:
-                    real_attributes[attribute] = []
-                else:
-                    real_attributes[attribute] = _type_cast_default(
-                        attribute,
-                        sa.default_value,
-                    )
+                real_attributes[attribute] = sa.get_default_value()
             elif sa.required:
                 if fill_defaults and sa.default_value is not None:
-                    real_attributes[attribute] = _type_cast_default(
-                        attribute,
-                        sa.default_value,
-                    )
+                    real_attributes[attribute] = sa.get_default_value()
                 else:
                     violations_required.append(attribute.pk)
                     continue
             else:
                 if fill_defaults_all and sa.default_value is not None:
-                    real_attributes[attribute] = _type_cast_default(
-                        attribute,
-                        sa.default_value,
-                    )
+                    real_attributes[attribute] = sa.get_default_value()
                 else:
                     continue
 
@@ -328,16 +315,6 @@ def _insert_server(
             server.add_attribute(attribute, value)
 
     return server.server_id
-
-
-def _type_cast_default(attribute, value):
-    if attribute.multi:
-        return [
-            typecast(attribute, val, force_single=True)
-            for val in value.split(',')
-        ]
-    else:
-        return typecast(attribute, value, force_single=True)
 
 
 def handle_violations(
