@@ -16,6 +16,8 @@ class BaseFilter(object):
 
 
 class ExactMatch(BaseFilter):
+    """Exact match with the attribute value"""
+
     def __init__(self, value):
         self.value = value
 
@@ -37,6 +39,8 @@ class ExactMatch(BaseFilter):
 
 
 class Regexp(BaseFilter):
+    """Match the attribute against a regular expression"""
+
     def __init__(self, regexp):
         self.regexp = regexp
         try:
@@ -62,6 +66,8 @@ class Regexp(BaseFilter):
 
 
 class Comparison(BaseFilter):
+    """Compare an attribute against a value"""
+
     def __init__(self, comparator, value):
         if comparator not in ('<', '>', '<=', '>='):
             raise FilterValueError('Invalid operator: ' + comparator)
@@ -87,6 +93,8 @@ class Comparison(BaseFilter):
 
 
 class Any(BaseFilter):
+    """Check if an attribute has any of the given values"""
+
     def __init__(self, *values):
         self.values = values
 
@@ -107,6 +115,7 @@ class Any(BaseFilter):
 
 
 class Or(BaseFilter):
+    """Check if at least one of the given filter is true"""
     func = any
 
     def __init__(self, *filters):
@@ -137,10 +146,13 @@ class Or(BaseFilter):
 
 
 class And(Or):
+    """Check if all given filters are true"""
     func = all
 
 
 class Between(BaseFilter):
+    """Check if an attribute is between start and stop (inclusive)"""
+
     def __init__(self, a, b):
         self.a = a
         self.b = b
@@ -163,6 +175,8 @@ class Between(BaseFilter):
 
 
 class Not(BaseFilter):
+    """Negate the given filter"""
+
     def __init__(self, filter):     # NOQA A002
         self.filter = filter
 
@@ -191,6 +205,8 @@ class Not(BaseFilter):
 
 
 class Startswith(BaseFilter):
+    """Check if the value starts with the string"""
+
     def __init__(self, value):
         self.value = value
 
@@ -212,6 +228,8 @@ class Startswith(BaseFilter):
 
 
 class Overlap(BaseFilter):
+    """Check if the attribute is overlapping"""
+
     def __init__(self, *networks):
         self.networks = networks
 
@@ -235,16 +253,23 @@ class Overlap(BaseFilter):
 
 
 class InsideNetwork(Overlap):
+    """Check if an IP address is inside a network"""
+
     def matches(self, value):
         return any(value in n for n in self.networks)
 
 
 class InsideOnlyNetwork(InsideNetwork):
+    """Check if an IP address is inside a network and no other network
+    is in between"""
+
     def matches(self, value):
         raise NotImplementedError()
 
 
 class Empty(BaseFilter):
+    """Check if the attribute exists"""
+
     def __repr__(self):
         return 'Empty()'
 
@@ -261,15 +286,16 @@ class Empty(BaseFilter):
 
 def filter_from_obj(obj):
     if isinstance(obj, dict) and 'name' in obj:
-        if obj['name'] not in filter_classes:
-            raise QueryError('No such filter: {0}'.format(obj['name']))
-        return filter_classes[obj['name']].from_obj(obj)
+        for filter_class in filter_classes:
+            if filter_class.__name__.lower() == obj['name']:
+                return filter_class.from_obj(obj)
+        raise QueryError('No such filter: {0}'.format(obj['name']))
     return obj
 
 
 # Collect all classes that are subclass of BaseFilter (exclusive)
-filter_classes = {
-    k.lower(): v
-    for k, v in globals().items()
+filter_classes = [
+    v
+    for v in globals().values()
     if type(v) == type and BaseFilter in v.mro()[1:]
-}
+]

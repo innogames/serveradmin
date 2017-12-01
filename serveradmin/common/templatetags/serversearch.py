@@ -3,7 +3,7 @@ import json
 from django import template
 from django.conf import settings
 
-from adminapi.filters import filter_classes
+from adminapi.filters import ExactMatch, filter_classes
 from serveradmin.serverdb.models import Attribute
 
 register = template.Library()
@@ -19,17 +19,11 @@ def serversearch_js(search_id):
         for a in Attribute.objects.all()
     }
 
-    filter_dict = {}
-    for filt in filter_classes.keys():
-        if filt == 'exactmatch':
-            continue
-        # TODO: Fill with real description
-        filt = filt.capitalize()
-        filter_dict[filt] = filt
-
     return {
         'attributes_json': json.dumps(attributes),
-        'filters_json': json.dumps(filter_dict),
+        'filters_json': json.dumps(
+            [f.__name__ for f in filter_classes if f != ExactMatch]
+        ),
         'search_id': search_id,
         'STATIC_URL': settings.STATIC_URL
     }

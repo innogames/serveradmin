@@ -17,7 +17,7 @@ from django.db import DataError, IntegrityError
 from django.utils.html import mark_safe, escape as escape_html
 
 from adminapi.base import QueryError
-from adminapi.filters import Any, InsideOnlyNetwork, Startswith
+from adminapi.filters import Any, InsideOnlyNetwork, Startswith, filter_classes
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
 from serveradmin.dataset import Query
@@ -63,6 +63,7 @@ def index(request):
         'command_history': json.dumps(
             request.session.get('command_history', [])
         ),
+        'filters': [(f.__name__, f.__doc__) for f in filter_classes],
     })
 
 

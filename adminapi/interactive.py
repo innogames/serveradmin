@@ -53,7 +53,9 @@ query function.
    query_args = parse_query('servertype=ds game_world=comparison(> 10)')
    servers = Query(query_args)
 '''
-    print(help_text.format(filters=', '.join(filter_classes.keys())))
+    print(help_text.format(filters=', '.join(
+        f.__name__ for f in filter_classes
+    )))
     print()
 
 

@@ -69,15 +69,19 @@ def parse_query(term, hostname=None):  # NOQA C901
                     break
                 else:
                     fn_args.append(s_value)
-            fn_name = s_value.lower()
             fn_args.reverse()
 
-            try:
-                instance = filter_classes[fn_name](*fn_args)
-            except KeyError:
-                raise QueryError('Invalid function ' + fn_name)
-            except TypeError:
-                raise QueryError('Invalid function args ' + fn_name)
+            for filter_class in filter_classes:
+                if filter_class.__name__.lower() == s_value.lower():
+                    try:
+                        instance = filter_class(*fn_args)
+                    except TypeError:
+                        raise QueryError(
+                            'Invalid function args ' + filter_class.__name__
+                        )
+                    break
+            else:
+                raise QueryError('Invalid function ' + s_value)
             stack.append(('instance', instance))
 
         elif token == 'literal':
