@@ -233,11 +233,15 @@ class Startswith(BaseFilter):
         raise FilterValueError('Invalid object for Startswith')
 
 
-class Overlap(BaseFilter):
+class Overlaps(BaseFilter):
     """Check if the attribute is overlapping"""
 
     def matches(self, value):
         return value in self.value or self.value in value
+
+
+class Overlap(Overlaps):
+    """Deprecated, use Overlaps() instead"""
 
     # TODO Remove
     @classmethod

@@ -13,7 +13,7 @@ from adminapi.filters import (
     InsideNetwork,
     InsideOnlyNetwork,
     Or,
-    Overlap,
+    Overlaps,
     Regexp,
     Startswith,
     Not,
@@ -101,7 +101,7 @@ class QueryBuilder(object):
                     self._value_to_sql(attribute, v) for v in filt.values
                 ))
 
-        elif isinstance(filt, Overlap):
+        elif isinstance(filt, Overlaps):
             if attribute.type != 'inet':
                 raise FilterValueError(
                     'Cannot network filter attribute "{}"'.format(attribute)
