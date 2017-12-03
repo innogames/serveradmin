@@ -13,7 +13,6 @@ from adminapi.filters import (
     Empty,
     ExactMatch,
     FilterValueError,
-    Or,
     Overlaps,
     Regexp,
     StartsWith,
@@ -48,7 +47,7 @@ class QueryBuilder(object):
 
     def get_sql_condition(self, attribute, filt):  # NOQA C901
 
-        if isinstance(filt, (Not, Or)):
+        if isinstance(filt, (Not, Any)):
             return self._logical_filter_sql_condition(attribute, filt)
 
         negate = False
@@ -88,13 +87,6 @@ class QueryBuilder(object):
                 self._value_to_sql(attribute, filt.value),
             )
 
-        elif isinstance(filt, Any):
-            # TODO Use arrays of Psycopg2
-            if filt.values:
-                template = '{{}} = ANY (ARRAY[{}])'.format(', '.join(
-                    self._value_to_sql(attribute, v) for v in filt.values
-                ))
-
         elif isinstance(filt, Overlaps):
             template = self._containment_filter_template(attribute, filt)
 
@@ -124,11 +116,11 @@ class QueryBuilder(object):
         else:
             joiner = ' OR '
 
-        if not filt.filters:
+        if not filt.values:
             return 'NOT ({0})'.format(joiner.join(['true', 'false']))
 
         return '({0})'.format(joiner.join(
-            self.get_sql_condition(attribute, f) for f in filt.filters
+            self.get_sql_condition(attribute, v) for v in filt.values
         ))
 
     def _containment_filter_template(self, attribute, filt):

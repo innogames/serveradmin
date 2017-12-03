@@ -1,5 +1,5 @@
 from adminapi.base import QueryError
-from adminapi.filters import Or, Regexp, filter_classes
+from adminapi.filters import Any, Regexp, filter_classes
 
 _trigger_re_chars = ('.*', '.+', '[', ']', '|', '\\', '$', '^', '<')
 
@@ -30,7 +30,7 @@ def parse_query(term, hostname=None):  # NOQA C901
             hostname = hostname_part
 
         if 'hostname' in query_args:
-            query_args['hostname'] = Or(query_args['hostname'], hostname)
+            query_args['hostname'] = Any(query_args['hostname'], hostname)
         else:
             query_args['hostname'] = hostname
 

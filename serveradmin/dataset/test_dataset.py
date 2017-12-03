@@ -6,7 +6,6 @@ from adminapi.filters import (
     Any,
     Comparison,
     Not,
-    Or,
     Regexp,
     Startswith,
 )
@@ -71,7 +70,7 @@ class TestQuery(TestCase):
         pass
 
     def test_or(self):
-        q = Query({'game_world': Or(Comparison('<', 2), Comparison('>', 7))})
+        q = Query({'game_world': Any(Comparison('<', 2), Comparison('>', 7))})
         hostnames = set()
         for s in q:
             hostnames.add(s['hostname'])

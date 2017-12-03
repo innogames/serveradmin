@@ -15,7 +15,7 @@ class BaseFilter(object):
         return And(self, other)
 
     def __or__(self, other):
-        return Or(self, other)
+        return Any(self, other)
 
     def __repr__(self):
         return '{}({!r})'.format(type(self).__name__, self.value)
@@ -48,7 +48,7 @@ class BaseFilter(object):
 
 
 class ExactMatch(BaseFilter):
-    """Exact match with the attribute value"""
+    """Deprecated"""
 
     def matches(self, value):
         return value == self.value
@@ -117,50 +117,22 @@ class Comparison(BaseFilter):
 
 
 class Any(BaseFilter):
-    """Check if an attribute has any of the given values"""
+    """Check if the attribute satisfies any of the conditions"""
+    func = any
 
     def __init__(self, *values):
         self.values = values
 
     def __repr__(self):
-        return 'Any({0})'.format(', '.join(repr(val) for val in self.values))
+        return '{}({})'.format(
+            type(self).__name__,
+            ', '.join(repr(v) for v in self.values),
+        )
 
     def serialize(self):
-        return {type(self).__name__: self.values}
-
-    @classmethod
-    def deserialize_value(cls, value):
-        if not isinstance(value, list):
-            raise FilterValueError(
-                'Invalid value for {}()'.format(cls.__name__)
-            )
-        return cls(*value)
-
-    def matches(self, value):
-        return value in self.values
-
-    # TODO Remove
-    @classmethod
-    def from_obj(cls, obj):
-        if 'values' in obj and isinstance(obj['values'], list):
-            return cls(*obj['values'])
-        raise FilterValueError('Invalid object for Any')
-
-
-class Or(BaseFilter):
-    """Check if at least one of the given filter is true"""
-    func = any
-
-    def __init__(self, *filters):
-        self.filters = filters
-
-    def __repr__(self):
-        args = ', '.join(repr(filter) for filter in self.filters)
-        return '{0}({1})'.format(type(self).__name__, args)
-
-    def serialize(self):
-        return {type(self).__name__.lower(): [
-            f.serialize() for f in self.filters
+        return {type(self).__name__: [
+            v.serialize() if isinstance(v, BaseFilter) else v
+            for v in self.values
         ]}
 
     @classmethod
@@ -172,7 +144,21 @@ class Or(BaseFilter):
         return cls(*[cls.deserialize(v) for v in value])
 
     def matches(self, value):
-        return self.func(f.matches(value) for f in self.filters)
+        return self.func(
+            value == v or (isinstance(v, BaseFilter) and v.matches(value))
+            for v in self.values
+        )
+
+    # TODO Remove
+    @classmethod
+    def from_obj(cls, obj):
+        if 'values' in obj and isinstance(obj['values'], list):
+            return cls(*obj['values'])
+        raise FilterValueError('Invalid object for Any')
+
+
+class Or(Any):
+    """Deprecated, use Any() instead"""
 
     # TODO Remove
     @classmethod
