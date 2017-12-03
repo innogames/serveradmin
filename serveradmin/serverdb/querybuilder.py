@@ -7,11 +7,11 @@ from adminapi.filters import (
     Any,
     BaseFilter,
     Comparison,
+    ContainedOnlyBy,
     Empty,
     ExactMatch,
     FilterValueError,
     InsideNetwork,
-    InsideOnlyNetwork,
     Or,
     Overlaps,
     Regexp,
@@ -107,7 +107,7 @@ class QueryBuilder(object):
                     'Cannot network filter attribute "{}"'.format(attribute)
                 )
 
-            elif isinstance(filt, InsideOnlyNetwork):
+            elif isinstance(filt, ContainedOnlyBy):
                 operator = '<<'
             elif isinstance(filt, InsideNetwork):
                 operator = '<<='
@@ -115,7 +115,7 @@ class QueryBuilder(object):
                 operator = '&&'
 
             template = "{{}} {} '{}'".format(operator, filt.value)
-            if isinstance(filt, InsideOnlyNetwork):
+            if isinstance(filt, ContainedOnlyBy):
                 template += (
                     ' AND NOT EXISTS ('
                     '   SELECT 1 '

@@ -259,7 +259,7 @@ class InsideNetwork(Overlap):
         return value in self.value
 
 
-class InsideOnlyNetwork(InsideNetwork):
+class ContainedOnlyBy(Overlaps):
     """Check if an IP address is inside a network and no other network
     is in between"""
 

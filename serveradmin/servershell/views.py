@@ -17,7 +17,7 @@ from django.db import DataError, IntegrityError
 from django.utils.html import mark_safe, escape as escape_html
 
 from adminapi.base import QueryError
-from adminapi.filters import Any, InsideOnlyNetwork, Startswith, filter_classes
+from adminapi.filters import Any, ContainedOnlyBy, Startswith, filter_classes
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
 from serveradmin.dataset import Query
@@ -424,7 +424,7 @@ def choose_ip_addr(request):
                 s.pk for s in Servertype.objects.all()
                 if s.ip_addr_type == 'network'
             )),
-            'intern_ip': InsideOnlyNetwork(network),
+            'intern_ip': ContainedOnlyBy(network),
         })
         .order_by('hostname')
         .restrict('hostname', 'intern_ip')
