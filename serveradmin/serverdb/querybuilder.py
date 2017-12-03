@@ -7,11 +7,11 @@ from adminapi.filters import (
     Any,
     BaseFilter,
     Comparison,
+    ContainedBy,
     ContainedOnlyBy,
     Empty,
     ExactMatch,
     FilterValueError,
-    InsideNetwork,
     Or,
     Overlaps,
     Regexp,
@@ -102,29 +102,7 @@ class QueryBuilder(object):
                 ))
 
         elif isinstance(filt, Overlaps):
-            if attribute.type != 'inet':
-                raise FilterValueError(
-                    'Cannot network filter attribute "{}"'.format(attribute)
-                )
-
-            elif isinstance(filt, ContainedOnlyBy):
-                operator = '<<'
-            elif isinstance(filt, InsideNetwork):
-                operator = '<<='
-            else:
-                operator = '&&'
-
-            template = "{{}} {} '{}'".format(operator, filt.value)
-            if isinstance(filt, ContainedOnlyBy):
-                template += (
-                    ' AND NOT EXISTS ('
-                    '   SELECT 1 '
-                    '   FROM server AS supernet '
-                    '   WHERE {{}} << supernet.intern_ip AND '
-                    '       supernet.intern_ip << {}'
-                    ')'
-                    .format(filt.value)
-                )
+            template = self._containment_filter_template(attribute, filt)
 
         elif isinstance(filt, Empty):
             negate = True
@@ -158,6 +136,37 @@ class QueryBuilder(object):
         return '({0})'.format(joiner.join(
             self.get_sql_condition(attribute, f) for f in filt.filters
         ))
+
+    def _containment_filter_template(self, attribute, filt):
+        template = None     # To be formatted 2 times
+        value = filt.value
+
+        if attribute.type == 'inet':
+            if isinstance(filt, ContainedOnlyBy):
+                template = (
+                    "{{}} << {} AND NOT EXISTS ("
+                    '   SELECT 1 '
+                    '   FROM server AS supernet '
+                    '   WHERE {{}} << supernet.intern_ip AND '
+                    '       supernet.intern_ip << {}'
+                    ')'
+                )
+            elif isinstance(filt, ContainedBy):
+                template = "{{}} <<= {}"
+            else:
+                template = "{{}} && {}"
+
+        elif attribute.type == 'string':
+            if isinstance(filt, ContainedBy):
+                template = "{} LIKE '%%' || {{}} || '%%'"
+
+        if not template:
+            raise FilterValueError(
+                'Cannot use {} filter on "{}"'
+                .format(type(filt).__name__, attribute)
+            )
+
+        return template.format(self._value_to_sql(attribute, value))
 
     def _value_to_sql(self, attribute, value):
         # Validations of special relation attributes

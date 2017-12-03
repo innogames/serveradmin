@@ -252,11 +252,16 @@ class Overlap(Overlaps):
         raise FilterValueError('Invalid object for {0}'.format(cls))
 
 
-class InsideNetwork(Overlap):
-    """Check if an IP address is inside a network"""
+class ContainedBy(Overlaps):
+    """Check if the attribute is contained by the given value"""
 
     def matches(self, value):
         return value in self.value
+
+
+class InsideNetwork(ContainedBy, Overlaps):
+    """Deprecated, use ContainedBy() instead"""
+    pass
 
 
 class ContainedOnlyBy(Overlaps):
