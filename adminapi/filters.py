@@ -84,8 +84,36 @@ class Regexp(BaseFilter):
         raise FilterValueError('Invalid object for Regexp')
 
 
+class GreaterThanOrEquals(BaseFilter):
+    """Filter the attribute greater than or equals to the value"""
+
+    def matches(self, value):
+        return self.value >= value
+
+
+class GreaterThan(GreaterThanOrEquals):
+    """Filter the attribute greater than the value"""
+
+    def matches(self, value):
+        return self.value > value
+
+
+class LessThanOrEquals(BaseFilter):
+    """Filter the attribute less than or equals to the value"""
+
+    def matches(self, value):
+        return self.value <= value
+
+
+class LessThan(LessThanOrEquals):
+    """Filter the attribute less than the value"""
+
+    def matches(self, value):
+        return self.value < value
+
+
 class Comparison(BaseFilter):
-    """Compare an attribute against a value"""
+    """Deprecated, use (Greater|Less)Than[OrEquals]() instead"""
 
     def __init__(self, comparator, value):
         if comparator not in ('<', '>', '<=', '>='):

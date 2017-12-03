@@ -58,12 +58,12 @@ of queries there is a filters modules which defines some filters you can use.
 The following example will give you all Tribal Wars webservers, which world
 number is between 20 and 30::
 
-    from adminapi.filters import All, Comparison
+    from adminapi.filters import All, GreaterThan, LessThan
 
     hosts = Query({
         'servertype': 'vm',
         'game_function': 'web',
-        'game_world': All(Comparison(>= 20), Comparison(< 30)),
+        'game_world': All(GreaterThan(20), LessThan(30)),
     })
 
 

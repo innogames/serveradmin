@@ -4,7 +4,6 @@ from django.test import TestCase
 
 from adminapi.filters import (
     Any,
-    Comparison,
     Not,
     Regexp,
     Startswith,
@@ -46,33 +45,9 @@ class TestQuery(TestCase):
         s = Query({'servertype': Regexp('^test[870]')}).get()
         self.assertEquals(s['hostname'], 'test0')
 
-    def test_filter_comparison(self):
-        hostnames = set()
-        for s in Query({'game_world': Comparison('<', 2)}):
-            hostnames.add(s['hostname'])
-
-        self.assertNotIn('test0', hostnames)
-        self.assertIn('test1', hostnames)
-        self.assertNotIn('test2', hostnames)
-        self.assertNotIn('test3', hostnames)
-
     def test_filter_any(self):
         hostnames = set()
         for s in Query({'hostname': Any('test1', 'test3')}):
-            hostnames.add(s['hostname'])
-
-        self.assertNotIn('test0', hostnames)
-        self.assertIn('test1', hostnames)
-        self.assertNotIn('test2', hostnames)
-        self.assertIn('test3', hostnames)
-
-    def test_and(self):
-        pass
-
-    def test_or(self):
-        q = Query({'game_world': Any(Comparison('<', 2), Comparison('>', 7))})
-        hostnames = set()
-        for s in q:
             hostnames.add(s['hostname'])
 
         self.assertNotIn('test0', hostnames)

@@ -15,7 +15,7 @@ Querying servers:
 
 We want to find all servers with game_world greater 10:
 
-   servers = Query({'game_world': Comparison('>', 10)})
+   servers = Query({'game_world': GreaterThan(10)})
 
 Available filters: {filters}
 

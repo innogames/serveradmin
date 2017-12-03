@@ -13,6 +13,10 @@ from adminapi.filters import (
     Empty,
     ExactMatch,
     FilterValueError,
+    GreaterThan,
+    GreaterThanOrEquals,
+    LessThan,
+    LessThanOrEquals,
     Overlaps,
     Regexp,
     StartsWith,
@@ -45,7 +49,7 @@ class QueryBuilder(object):
 
         return sql
 
-    def get_sql_condition(self, attribute, filt):  # NOQA C901
+    def get_sql_condition(self, attribute, filt):
 
         if isinstance(filt, (Not, Any)):
             return self._logical_filter_sql_condition(attribute, filt)
@@ -76,16 +80,12 @@ class QueryBuilder(object):
             else:
                 template = '{{}}::text ~ E{}'.format(value)
 
-        elif isinstance(filt, Comparison):
-            if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
-                raise FilterValueError(
-                    'Cannot compare hostnames attribute "{}"'.format(attribute)
-                )
-
-            template = '{{}} {} {}'.format(
-                filt.comparator,
-                self._value_to_sql(attribute, filt.value),
-            )
+        elif isinstance(filt, (
+            Comparison,
+            GreaterThanOrEquals,
+            LessThanOrEquals,
+        )):
+            template = self._basic_comparison_filter_template(attribute, filt)
 
         elif isinstance(filt, Overlaps):
             template = self._containment_filter_template(attribute, filt)
@@ -122,6 +122,27 @@ class QueryBuilder(object):
         return '({0})'.format(joiner.join(
             self.get_sql_condition(attribute, v) for v in filt.values
         ))
+
+    def _basic_comparison_filter_template(self, attribute, filt):
+        if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
+            raise FilterValueError(
+                'Cannot compare hostname attribute "{}"'.format(attribute)
+            )
+
+        if isinstance(filt, Comparison):
+            operator = filt.comparator
+        elif isinstance(filt, GreaterThan):
+            operator = '>'
+        elif isinstance(filt, GreaterThanOrEquals):
+            operator = '>='
+        elif isinstance(filt, LessThan):
+            operator = '<'
+        else:
+            operator = '<='
+
+        return '{{}} {} {}'.format(
+            operator, self._value_to_sql(attribute, filt.value)
+        )
 
     def _containment_filter_template(self, attribute, filt):
         template = None     # To be formatted 2 times
