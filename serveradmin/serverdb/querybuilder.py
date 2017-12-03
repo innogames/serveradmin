@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from decimal import Decimal
 
 from adminapi.filters import (
-    And,
+    All,
     Any,
     BaseFilter,
     Comparison,
@@ -111,7 +111,7 @@ class QueryBuilder(object):
                 attribute, filt.value
             ))
 
-        if isinstance(filt, And):
+        if isinstance(filt, All):
             joiner = ' AND '
         else:
             joiner = ' OR '

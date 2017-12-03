@@ -12,7 +12,7 @@ class BaseFilter(object):
         self.value = value
 
     def __and__(self, other):
-        return And(self, other)
+        return All(self, other)
 
     def __or__(self, other):
         return Any(self, other)
@@ -172,9 +172,14 @@ class Or(Any):
         raise FilterValueError('Invalid object for {0}'.format(cls.__name__))
 
 
-class And(Or):
-    """Check if all given filters are true"""
+class All(Any):
+    """Check if an attribute satisfies all of the conditions"""
     func = all
+
+
+class And(All, Or):
+    """Deprecated, use All() instead"""
+    pass
 
 
 class Not(BaseFilter):
