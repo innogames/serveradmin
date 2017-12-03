@@ -66,55 +66,6 @@ number is between 20 and 30::
         'game_world': All(Comparison(>= 20), Comparison(< 30)),
     })
 
-The following filters are available:
-
-:class:`adminapi.filters.Regexp`
-    Filters the attribute by matching a regular expression. Use this sparingly
-    because it requires a sequence scan over the dataset.
-
-:class:`adminapi.filters.Comparison`
-    Implement simple comparison functions. The first argument is the comparison
-    operator (one of ``<``, ``>``, ``>=`` and ``<=``) and the second is the
-    value that should be compared. ``game_world=Comparison('<' 20)`` will be
-    evaluated as ``game_world < 20``.
-
-:class:`adminapi.filters.Any`
-    If you want to check whether an attribute is *any* of the mentioned
-    values. For example if you want to check whether the servers is running
-    lenny or squeeze (or theoretically both, it the attribute has multiple
-    values) you will write::
-
-        hosts = Query({'os': Any('lenny', 'squeeze')})
-
-    If you have a list with accepted values, just use Python's builtin arg
-    expansion::
-
-        possible_os = ['lenny', 'squeeze']
-        hosts = Query({'os': Any(*possible_os)})
-
-:class:`adminapi.filters.InsideNetwork`
-    Checks if an IP is inside a network. It takes one or more ``Network``
-    objects. If several networks are given, it checks if it's inside any
-    network. See the following example::
-
-        Query({'intern_ip': InsideNetwork(Network('192.168.0.0/24'))})
-
-:class:`adminapi.filters.And`
-    Combines two or more filters by using the conjunction of them. Every filter
-    also implements ``__and__``, which allows you to just write ``and`` between
-    two filters.
-
-:class:`adminapi.filters.Or`
-    Combines two or more filters by using the disjunction of them. Every filter
-    also implements ``__or__``, which allows you to just write ``or`` between
-    two filters.
-
-:class:`adminapi.filters.Not`
-    Negates the given filter or value.
-
-:class:`adminapi.filters.Between`
-    Shorthand for ``And(Comparison('>=', a), Comparison('<=', b))``
-
 
 Magic attributes
 ^^^^^^^^^^^^^^^^
