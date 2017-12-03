@@ -16,7 +16,7 @@ from adminapi.filters import (
     Or,
     Overlaps,
     Regexp,
-    Startswith,
+    StartsWith,
     Not,
 )
 from serveradmin.serverdb.models import Attribute, Server, ServerAttribute
@@ -63,26 +63,19 @@ class QueryBuilder(object):
 
             negate = not filt or filt == 'false'
 
-        elif isinstance(filt, (Regexp, Startswith)):
-            value = filt.value
-            if isinstance(filt, Startswith):
-                operator = 'LIKE'
-                value += '%'
-            else:
-                operator = '~'
-            value = self._raw_sql_escape(value)
-
+        elif isinstance(filt, Regexp):
+            value = self._raw_sql_escape(filt.value)
             if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
                 template = (
                     '{{0}} IN ('
                     '   SELECT server_id'
                     '   FROM server'
-                    '   WHERE hostname {} E{}'
+                    '   WHERE hostname ~ E{}'
                     ')'
-                    .format(operator, value)
+                    .format(value)
                 )
             else:
-                template = '{{}}::text {} E{}'.format(operator, value)
+                template = '{{}}::text ~ E{}'.format(value)
 
         elif isinstance(filt, Comparison):
             if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
@@ -143,7 +136,9 @@ class QueryBuilder(object):
         value = filt.value
 
         if attribute.type == 'inet':
-            if isinstance(filt, Contains):
+            if isinstance(filt, StartsWith):
+                template = "{{}} >>= {} AND host({{}}) = host({})"
+            elif isinstance(filt, Contains):
                 template = "{{}} >>= {}"
             elif isinstance(filt, ContainedOnlyBy):
                 template = (
@@ -162,7 +157,9 @@ class QueryBuilder(object):
         elif attribute.type == 'string':
             if isinstance(filt, Contains):
                 template = "{{}} LIKE {}"
-                value = '%' + value + '%'
+                value = '{}{}{}'.format(
+                    '' if isinstance(filt, StartsWith) else '%', value, '%'
+                )
             elif isinstance(filt, ContainedBy):
                 template = "{} LIKE '%%' || {{}} || '%%'"
 

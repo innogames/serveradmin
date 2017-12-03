@@ -218,21 +218,6 @@ class Not(BaseFilter):
         raise FilterValueError('Invalid object for Not')
 
 
-class Startswith(BaseFilter):
-    """Check if the value starts with the string"""
-
-    def matches(self, value):
-        return str(value).startswith(self.value)
-
-    # TODO Remove
-    @classmethod
-    def from_obj(cls, obj):
-        if 'value' in obj:
-            return cls(obj['value'])
-
-        raise FilterValueError('Invalid object for Startswith')
-
-
 class Overlaps(BaseFilter):
     """Check if the attribute is overlapping"""
 
@@ -257,6 +242,25 @@ class Contains(Overlaps):
 
     def matches(self, value):
         return self.value in value
+
+
+class StartsWith(Contains):
+    """Check if the value starts with"""
+
+    def matches(self, value):
+        return str(value).startswith(self.value)
+
+
+class Startswith(StartsWith):
+    """Deprecated, use StartsWith() instead"""
+
+    # TODO Remove
+    @classmethod
+    def from_obj(cls, obj):
+        if 'value' in obj:
+            return cls(obj['value'])
+
+        raise FilterValueError('Invalid object for Startswith')
 
 
 class ContainedBy(Overlaps):
