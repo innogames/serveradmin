@@ -7,6 +7,7 @@ from adminapi.filters import (
     Any,
     BaseFilter,
     Comparison,
+    Contains,
     ContainedBy,
     ContainedOnlyBy,
     Empty,
@@ -142,7 +143,9 @@ class QueryBuilder(object):
         value = filt.value
 
         if attribute.type == 'inet':
-            if isinstance(filt, ContainedOnlyBy):
+            if isinstance(filt, Contains):
+                template = "{{}} >>= {}"
+            elif isinstance(filt, ContainedOnlyBy):
                 template = (
                     "{{}} << {} AND NOT EXISTS ("
                     '   SELECT 1 '
@@ -157,7 +160,10 @@ class QueryBuilder(object):
                 template = "{{}} && {}"
 
         elif attribute.type == 'string':
-            if isinstance(filt, ContainedBy):
+            if isinstance(filt, Contains):
+                template = "{{}} LIKE {}"
+                value = '%' + value + '%'
+            elif isinstance(filt, ContainedBy):
                 template = "{} LIKE '%%' || {{}} || '%%'"
 
         if not template:

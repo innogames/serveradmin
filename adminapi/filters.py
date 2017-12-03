@@ -252,6 +252,13 @@ class Overlap(Overlaps):
         raise FilterValueError('Invalid object for {0}'.format(cls))
 
 
+class Contains(Overlaps):
+    """Check if the attribute contains"""
+
+    def matches(self, value):
+        return self.value in value
+
+
 class ContainedBy(Overlaps):
     """Check if the attribute is contained by the given value"""
 
