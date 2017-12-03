@@ -236,27 +236,8 @@ class Startswith(BaseFilter):
 class Overlap(BaseFilter):
     """Check if the attribute is overlapping"""
 
-    def __init__(self, *networks):
-        self.networks = networks
-
-    def __repr__(self):
-        return '{0}({1})'.format(
-            type(self), ', '.join(repr(n) for n in self.networks)
-        )
-
-    def serialize(self):
-        return {type(self).__name__.lower(): self.networks}
-
-    @classmethod
-    def deserialize_value(cls, value):
-        if not isinstance(value, list):
-            raise FilterValueError(
-                'Invalid value for {}()'.format(cls.__name__)
-            )
-        return cls(*value)
-
     def matches(self, value):
-        return any(value in n or n in value for n in self.networks)
+        return value in self.value or self.value in value
 
     # TODO Remove
     @classmethod
@@ -271,7 +252,7 @@ class InsideNetwork(Overlap):
     """Check if an IP address is inside a network"""
 
     def matches(self, value):
-        return any(value in n for n in self.networks)
+        return value in self.value
 
 
 class InsideOnlyNetwork(InsideNetwork):

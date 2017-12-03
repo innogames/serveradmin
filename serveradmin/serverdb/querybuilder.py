@@ -114,22 +114,16 @@ class QueryBuilder(object):
             else:
                 operator = '&&'
 
-            network_sql_array = "'{{{{{}}}}}'".format(
-                ','.join(str(n) for n in filt.networks)
-            )
-            template = "{{}} {} ANY({})".format(
-                operator, network_sql_array
-            )
-
+            template = "{{}} {} '{}'".format(operator, filt.value)
             if isinstance(filt, InsideOnlyNetwork):
                 template += (
                     ' AND NOT EXISTS ('
                     '   SELECT 1 '
                     '   FROM server AS supernet '
                     '   WHERE {{}} << supernet.intern_ip AND '
-                    '       supernet.intern_ip << ANY({})'
+                    '       supernet.intern_ip << {}'
                     ')'
-                    .format(network_sql_array)
+                    .format(filt.value)
                 )
 
         elif isinstance(filt, Empty):
