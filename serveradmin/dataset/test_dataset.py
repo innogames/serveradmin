@@ -4,7 +4,6 @@ from django.test import TestCase
 
 from adminapi.filters import (
     Any,
-    Between,
     Comparison,
     Not,
     Or,
@@ -89,16 +88,6 @@ class TestQuery(TestCase):
     def test_not_filter(self):
         s = Query({'os': Not(Any('squeeze', 'lenny'))}).get()
         self.assertEquals(s['hostname'], 'test0')
-
-    def test_between(self):
-        hostnames = set()
-        for s in Query({'game_world': Between(2, 10)}):
-            hostnames.add(s['hostname'])
-
-        self.assertNotIn('test0', hostnames)
-        self.assertNotIn('test1', hostnames)
-        self.assertIn('test2', hostnames)
-        self.assertIn('test3', hostnames)
 
     def test_startswith(self):
         s = Query({'os': Startswith('whee')}).get()

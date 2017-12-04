@@ -150,30 +150,6 @@ class And(Or):
     func = all
 
 
-class Between(BaseFilter):
-    """Check if an attribute is between start and stop (inclusive)"""
-
-    def __init__(self, a, b):
-        self.a = a
-        self.b = b
-
-    def __repr__(self):
-        return 'Between({0!r}, {1!r})'.format(self.a, self.b)
-
-    def serialize(self):
-        return {'name': 'between', 'a': self.a, 'b': self.b}
-
-    def matches(self, value):
-        return self.a <= value <= self.b
-
-    @classmethod
-    def from_obj(cls, obj):
-        if 'a' in obj and 'b' in obj:
-            return cls(obj['a'], obj['b'])
-
-        raise FilterValueError('Invalid object for Between')
-
-
 class Not(BaseFilter):
     """Negate the given filter"""
 

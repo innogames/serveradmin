@@ -6,7 +6,6 @@ from adminapi.filters import (
     And,
     Any,
     BaseFilter,
-    Between,
     Comparison,
     Empty,
     ExactMatch,
@@ -101,12 +100,6 @@ class QueryBuilder(object):
                 template = '{{}} = ANY (ARRAY[{}])'.format(', '.join(
                     self._value_to_sql(attribute, v) for v in filt.values
                 ))
-
-        elif isinstance(filt, Between):
-            template = '{{0}} BETWEEN {0} AND {1}'.format(
-                self._value_to_sql(attribute, filt.a),
-                self._value_to_sql(attribute, filt.b),
-            )
 
         elif isinstance(filt, Overlap):
             if attribute.type != 'inet':
