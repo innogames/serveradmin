@@ -21,7 +21,7 @@ from adminapi.filters import (
     StartsWith,
     Not,
 )
-from serveradmin.serverdb.models import Attribute, Server, ServerAttribute
+from serveradmin.serverdb.models import Server, ServerAttribute
 
 
 class QueryBuilder(object):
@@ -38,10 +38,8 @@ class QueryBuilder(object):
             ' server.servertype_id AS _servertype_id,'
             ' server.project_id AS _project_id'
             ' FROM server'
-        )
-        sql += ' WHERE ' + self.get_sql_condition(
-            Attribute.objects.get(pk='servertype'),
-            Any(*(s.pk for s in self.servertypes)),
+            ' WHERE servertype_id IN ({})'
+            .format(', '.join('\'{}\''.format(s.pk) for s in self.servertypes))
         )
         for attribute, value in self.filters.items():
             sql += ' AND ' + self.get_sql_condition(attribute, value)
