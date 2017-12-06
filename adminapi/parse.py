@@ -86,11 +86,11 @@ def parse_query(term, filter_classes=fc, hostname=None):  # NOQA C901
                 raise QueryError('Invalid function args ' + fn_name)
             stack.append(('instance', instance))
 
-        elif token == 'str':
-            # Do not allow strings without key or function context
+        elif token == 'literal':
+            # Do not allow literals without key or function context
             if not stack or (call_depth == 0 and stack[-1][0] != 'key'):
                 raise QueryError(
-                    'Invalid term: Top level strings are not '
+                    'Invalid term: Top level literals are not '
                     'allowed when attributes are used'
                 )
             stack.append(arg)
@@ -143,14 +143,16 @@ def parse_function_string(args, strict=True):   # NOQA C901
                         raise QueryError('Invalid escape')
                     i += 1
             elif args[i] == string_type:
-                parsed_args.append(('str', args[string_start:i]))
+                parsed_args.append(('literal', args[string_start:i]))
                 i += 1
                 state = 'start'
             else:
                 i += 1
         elif state == 'unquotedstring':
             if args[i] == ' ':
-                parsed_args.append(('str', args[string_start:i]))
+                parsed_args.append(
+                    ('literal', cast_datatype(args[string_start:i]))
+                )
                 state = 'start'
             elif args[i] == '(':
                 if string_start != i:
@@ -159,7 +161,9 @@ def parse_function_string(args, strict=True):   # NOQA C901
                     state = 'start'
             elif args[i] == ')' and call_depth != 0:
                 if string_start != i:
-                    parsed_args.append(('str', args[string_start:i]))
+                    parsed_args.append(
+                        ('literal', cast_datatype(args[string_start:i]))
+                    )
                 parsed_args.append(('endfunc', ''))
                 call_depth -= 1
                 state = 'start'
@@ -172,11 +176,23 @@ def parse_function_string(args, strict=True):   # NOQA C901
                 state = 'start'
             i += 1
     if state == 'unquotedstring':
-        parsed_args.append(('str', args[string_start:]))
+        parsed_args.append(('literal', cast_datatype(args[string_start:])))
     elif state == 'string':
         if strict:
             raise QueryError('Unterminated string')
         else:
-            parsed_args.append(('str', args[string_start:]))
+            parsed_args.append(('literal', args[string_start:]))
 
     return parsed_args
+
+
+def cast_datatype(arg):
+    if arg == 'true':
+        return True
+    if arg == 'false':
+        return False
+    if arg.isdecimal():
+        return int(arg)
+    if all(a.isdecimal() for a in arg.split('.', 1)):
+        return float(arg)
+    return arg
