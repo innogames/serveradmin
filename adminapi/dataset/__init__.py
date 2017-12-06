@@ -4,6 +4,7 @@ from adminapi import _api_settings
 from adminapi.base import (
     BaseQuery, BaseServerObject, DatasetError, MultiAttr
 )
+from adminapi.filters import BaseFilter
 from adminapi.request import send_request
 
 COMMIT_ENDPOINT = '/dataset/commit'
@@ -25,7 +26,10 @@ class Query(BaseQuery):
         auth_token=_api_settings['auth_token'],
         timeout=_api_settings['timeout_dataset'],
     ):
-        BaseQuery.__init__(self, filters)
+        BaseQuery.__init__(self, {
+            a: f if isinstance(f, BaseFilter) else BaseFilter(f)
+            for a, f in filters.items()
+        })
         self.auth_token = auth_token
         self.timeout = timeout
 

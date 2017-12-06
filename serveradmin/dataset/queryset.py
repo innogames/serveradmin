@@ -4,6 +4,7 @@ from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 from django.core.exceptions import ValidationError
 
 from adminapi.base import BaseQuery, BaseServerObject
+from adminapi.filters import BaseFilter
 from serveradmin.serverdb.models import (
     Project,
     Servertype,
@@ -31,7 +32,10 @@ class Query(BaseQuery):
                 raise ValidationError(
                     'Invalid attribute: {0}'.format(attribute_id)
                 )
-            self._filters[attribute] = filter_obj
+            if isinstance(filter_obj, BaseFilter):
+                self._filters[attribute] = filter_obj
+            else:
+                self._filters[attribute] = BaseFilter(filter_obj)
         self._restrict = set()
         self._results = None
         self._num_dirty = 0
@@ -84,15 +88,9 @@ class Query(BaseQuery):
                     if s.ip_addr_type in desired_ip_addr_types(filt)
                 }
 
+            # We can just deal with the servertype filters ourself.
             if attribute.pk == 'servertype':
-                if isinstance(filt, str):
-                    servertypes = {
-                        s for s in servertypes if s.pk == filt
-                    }
-                else:
-                    servertypes = {
-                        s for s in servertypes if filt.matches(s.pk)
-                    }
+                servertypes = {s for s in servertypes if filt.matches(s.pk)}
             else:
                 filters[attribute] = filt
 

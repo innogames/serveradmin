@@ -1,5 +1,5 @@
 from adminapi.base import QueryError
-from adminapi.filters import Any, Regexp, filter_classes
+from adminapi.filters import BaseFilter, Any, Regexp, filter_classes
 
 _trigger_re_chars = ('.*', '.+', '[', ']', '|', '\\', '$', '^', '<')
 
@@ -27,7 +27,7 @@ def parse_query(term, hostname=None):  # NOQA C901
         if any(x in hostname_part for x in _trigger_re_chars):
             hostname = Regexp(hostname_part)
         else:
-            hostname = hostname_part
+            hostname = BaseFilter(hostname_part)
 
         if 'hostname' in query_args:
             query_args['hostname'] = Any(query_args['hostname'], hostname)
@@ -91,7 +91,10 @@ def parse_query(term, hostname=None):  # NOQA C901
                     'Invalid term: Top level literals are not '
                     'allowed when attributes are used'
                 )
-            stack.append(arg)
+            if call_depth == 0:
+                stack.append(('literal', BaseFilter(value)))
+            else:
+                stack.append(('literal', value))
 
     if stack and stack[0][0] == 'key':
         if len(stack) != 2:

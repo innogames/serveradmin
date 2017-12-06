@@ -18,15 +18,19 @@ class BaseFilter(object):
         return Any(self, other)
 
     def __repr__(self):
+        if type(self) == BaseFilter:
+            return repr(self.value)
         return '{}({!r})'.format(type(self).__name__, self.value)
 
     def serialize(self):
+        if type(self) == BaseFilter:
+            return self.value
         return {type(self).__name__: self.value}
 
     @staticmethod
     def deserialize(obj):
         if not isinstance(obj, dict):
-            return obj
+            return BaseFilter(obj)
 
         if len(obj) != 1:
             raise FilterValueError('Malformatted filter')
@@ -46,12 +50,12 @@ class BaseFilter(object):
     def deserialize_value(cls, value):
         return cls(value)
 
+    def matches(self, value):
+        return value == self.value
+
 
 class ExactMatch(BaseFilter):
     """Deprecated"""
-
-    def matches(self, value):
-        return value == self.value
 
     # TODO Remove
     @classmethod
@@ -149,7 +153,10 @@ class Any(BaseFilter):
     func = any
 
     def __init__(self, *values):
-        self.values = values
+        self.values = [
+            v if isinstance(v, BaseFilter) else BaseFilter(v)
+            for v in values
+        ]
 
     def __repr__(self):
         return '{}({})'.format(
@@ -158,10 +165,7 @@ class Any(BaseFilter):
         )
 
     def serialize(self):
-        return {type(self).__name__: [
-            v.serialize() if isinstance(v, BaseFilter) else v
-            for v in self.values
-        ]}
+        return {type(self).__name__: [v.serialize() for v in self.values]}
 
     @classmethod
     def deserialize_value(cls, value):
@@ -172,10 +176,7 @@ class Any(BaseFilter):
         return cls(*[cls.deserialize(v) for v in value])
 
     def matches(self, value):
-        return self.func(
-            value == v or (isinstance(v, BaseFilter) and v.matches(value))
-            for v in self.values
-        )
+        return self.func(v.matches(value) for v in self.values)
 
     # TODO Remove
     @classmethod
@@ -213,20 +214,21 @@ class And(All, Or):
 class Not(BaseFilter):
     """Negate the given filter"""
 
+    def __init__(self, value):
+        if isinstance(value, BaseFilter):
+            self.value = value
+        else:
+            self.value = BaseFilter(value)
+
     def serialize(self):
-        return {type(self).__name__: (
-            self.value.serialize() if isinstance(self.value, BaseFilter)
-            else self.value
-        )}
+        return {type(self).__name__: self.value.serialize()}
 
     @classmethod
     def deserialize_value(cls, value):
         return cls(cls.deserialize(value))
 
     def matches(self, value):
-        if isinstance(self.value, BaseFilter):
-            return not self.value.matches(value)
-        return value != self.value
+        return not self.value.matches(value)
 
     # TODO Remove
     @classmethod

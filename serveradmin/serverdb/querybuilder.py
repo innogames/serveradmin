@@ -11,7 +11,6 @@ from adminapi.filters import (
     ContainedBy,
     ContainedOnlyBy,
     Empty,
-    ExactMatch,
     FilterValueError,
     GreaterThan,
     GreaterThanOrEquals,
@@ -50,6 +49,7 @@ class QueryBuilder(object):
         return sql
 
     def get_sql_condition(self, attribute, filt):
+        assert isinstance(filt, BaseFilter)
 
         if isinstance(filt, (Not, Any)):
             return self._logical_filter_sql_condition(attribute, filt)
@@ -58,13 +58,16 @@ class QueryBuilder(object):
         template = ''
 
         if attribute.type == 'boolean':
-            if isinstance(filt, BaseFilter):
+            # We have already dealt with the logical filters.  Other
+            # complicated filters don't make any sense on booleans.
+            if type(filt) != BaseFilter:
                 raise FilterValueError(
                     'Boolean attribute "{}" cannot be used with {}() filter'
                     .format(attribute, type(filt).__name__)
                 )
 
-            negate = not filt or filt == 'false'
+            # TODO Better return errors for mismatching datatypes than casting
+            negate = not filt.value or filt.value == 'false'
 
         elif isinstance(filt, Regexp):
             value = self._raw_sql_escape(filt.value)
@@ -94,11 +97,8 @@ class QueryBuilder(object):
             negate = True
             template = '{} IS NOT NULL'
 
-        elif isinstance(filt, ExactMatch):
-            template = '{} = ' + self._value_to_sql(attribute, filt.value)
-
         else:
-            template = '{} = ' + self._value_to_sql(attribute, filt)
+            template = '{} = ' + self._value_to_sql(attribute, filt.value)
 
         return (
             ('NOT ' if negate else '') +
@@ -192,13 +192,10 @@ class QueryBuilder(object):
             except Server.DoesNotExist as error:
                 raise FilterValueError(str(error))
 
+        # TODO Better return errors for mismatching datatypes than casting
         if attribute.type == 'number':
             return str(Decimal(value))
 
-        # Those needs to be quoted, because they are stored as string on
-        # the database.
-        if attribute.type == 'boolean':
-            return self._raw_sql_escape(1 if value else 0)
         return self._raw_sql_escape(value)
 
     def _condition_sql(self, attribute, template):  # NOQA C901
