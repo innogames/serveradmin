@@ -35,25 +35,26 @@ def send_request(endpoint, data, auth_token, timeout=None):
         auth_token = get_auth_token()
 
     data_json = json.dumps(data, default=json_encode_extra)
-    try_backup = False
 
-    try:
-        req = _build_request(endpoint, auth_token, data_json, try_backup)
-        return json.loads(urlopen(req, timeout=timeout).read().decode('utf8'))
-    except HTTPError as error:
-        if error.code in (500, 502):
-            try_backup = True
-        else:
-            raise
-    except URLError:
-        try_backup = True
+    for retry in reversed(range(3)):
+        try:
+            req = _build_request(endpoint, auth_token, data_json)
+            return json.loads(
+                urlopen(req, timeout=timeout).read().decode('utf8'))
+        except HTTPError as error:
+            if error.code not in (500, 502):
+                raise
+            if retry == 0:
+                raise
+        except URLError:
+            if retry == 0:
+                raise
 
-    if try_backup:
-        req = _build_request(endpoint, auth_token, data_json, try_backup)
-        return json.loads(urlopen(req, timeout=timeout).read().decode('utf8'))
+        # In case of an api error, sleep 5 seconds and try again three times
+        time.sleep(5)
 
 
-def _build_request(endpoint, auth_token, data_json, backup=False):
+def _build_request(endpoint, auth_token, data_json):
     timestamp = int(time.time())
     application_id = hashlib.sha1(auth_token.encode('utf8')).hexdigest()
     security_token = calc_security_token(auth_token, timestamp, data_json)
