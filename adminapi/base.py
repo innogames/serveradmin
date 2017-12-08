@@ -242,25 +242,6 @@ class BaseServerObject(dict):
                 datatype = type(self.old_values[key])
             _validate_value(key, value, datatype)
 
-    def __delitem__(self, key):
-        self[key] = None
-
-    def clear(self):
-        for key in self:
-            del self[key]
-
-    def pop(self, key, default=None):
-        value = self.get(key, default)
-        del self[key]
-        return value
-
-    def popitem(self):
-        for key in self.keys():
-            break
-        else:
-            raise KeyError()
-        return self.pop(key)
-
     def set(self, key, value):
         if isinstance(self[key], MultiAttr):
             self[key].add(value)
