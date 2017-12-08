@@ -304,8 +304,6 @@ class MultiAttr(set):
         if elem in self:
             self._server_object._save_old_value(self._attribute_id)
         super(MultiAttr, self).remove(elem)
-        if not self:
-            self.datatype = None
 
     def discard(self, elem):
         if elem in self:
@@ -324,7 +322,6 @@ class MultiAttr(set):
             return
         self._server_object._save_old_value(self._attribute_id)
         super(MultiAttr, self).clear()
-        self.datatype = None
 
     def update(self, *others):
         if not others:
