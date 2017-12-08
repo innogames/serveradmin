@@ -147,7 +147,14 @@ class BaseServerObject(dict):
         return 'ServerObject({0}, {1})'.format(parent_repr, self.object_id)
 
     def is_dirty(self):
-        return bool(self.old_values) or self._deleted or self.object_id is None
+        if self.object_id is None:
+            return True
+        if self._deleted:
+            return True
+        for attribute_id, old_value in self.old_values.items():
+            if self[attribute_id] != old_value:
+                return True
+        return False
 
     def is_deleted(self):
         return self._deleted
@@ -201,6 +208,7 @@ class BaseServerObject(dict):
         }
 
     def _save_old_value(self, key):
+        # We need to save the first version only.
         if key not in self.old_values:
             old_value = self[key]
             if isinstance(old_value, MultiAttr):
@@ -211,14 +219,16 @@ class BaseServerObject(dict):
     def __setitem__(self, key, value):
         if self._deleted:
             raise DatasetError('Cannot set attributes to deleted server')
+
         self.validate(key, value)
+        self._save_old_value(key)
+
         if isinstance(self[key], MultiAttr):
             # Multi attributes are guaranteed to exist as MultiAttr, so
             # we can always get the previous datatype from the existing
             # value.
             value = MultiAttr(value, self, key, self[key].datatype)
-        if key not in self.old_values or self.old_values[key] != value:
-            self._save_old_value(key)
+
         return super(BaseServerObject, self).__setitem__(key, value)
 
     def validate(self, key, value):
@@ -270,101 +280,62 @@ class MultiAttr(set):
     to maintain the old values on the BaseServerObject.
     """
 
-    def __init__(self, other, server_object, attribute_id, datatype=None):
-        super(MultiAttr, self).__init__(other)
-        self._server_object = server_object
-        self._attribute_id = attribute_id
-        self.datatype = self._validate(attribute_id, datatype)
-
-    def _validate(self, attribute_id, datatype):
-        """This method accepts class properties as arguments to be called
-        with normal sets."""
-        for elem in self:
+    def __init__(self, other, server, attribute_id, datatype=None):
+        for elem in other:
             datatype = _validate_value(attribute_id, elem, datatype)
-        return datatype
+        super(MultiAttr, self).__init__(other)
+        self.datatype = datatype
+        self._server = server
+        self._attribute_id = attribute_id
 
     def __str__(self):
         return ' '.join(str(x) for x in self)
 
     def copy(self):
-        return MultiAttr(
-            self, self._server_object, self._attribute_id, self.datatype
-        )
+        return MultiAttr(self, self._server, self._attribute_id, self.datatype)
 
     def add(self, elem):
-        if elem in self:
-            return
-        self.datatype = _validate_value(
-            self._attribute_id, elem, self.datatype
-        )
-        self._server_object._save_old_value(self._attribute_id)
-        super(MultiAttr, self).add(elem)
-
-    def remove(self, elem):
-        if elem in self:
-            self._server_object._save_old_value(self._attribute_id)
-        super(MultiAttr, self).remove(elem)
+        self._server[self._attribute_id] = self | {elem}
 
     def discard(self, elem):
-        if elem in self:
-            self.remove(elem)
+        self._server[self._attribute_id] = self - {elem}
+
+    def remove(self, elem):
+        if elem not in self:
+            raise KeyError()
+        self.discard(elem)
 
     def pop(self):
         for elem in self:
             break
         else:
             raise KeyError()
-        self.remove(elem)
+        self.discard(elem)
         return elem
 
     def clear(self):
-        if not self:
-            return
-        self._server_object._save_old_value(self._attribute_id)
-        super(MultiAttr, self).clear()
+        self._server[self._attribute_id] = set()
 
     def update(self, *others):
-        if not others:
-            return
-        new = others[0]
-        for other in others[1:]:
+        new = set(self)
+        for other in others:
             new |= other
-        if not new - self:
-            return
-        MultiAttr._validate(new, self._attribute_id, self.datatype)
-        self._server_object._save_old_value(self._attribute_id)
-        super(MultiAttr, self).difference_update(new)
+        self._server[self._attribute_id] = new
 
     def intersection_update(self, *others):
-        if not others:
-            return
-        new = others[0]
-        for other in others[1:]:
+        new = set(self)
+        for other in others:
             new &= other
-        if not self - new:
-            return
-        self._server_object._save_old_value(self._attribute_id)
-        super(MultiAttr, self).intersection_update(new)
+        self._server[self._attribute_id] = new
 
     def difference_update(self, *others):
-        if not others:
-            return
-        new = others[0]
-        for other in others[1:]:
-            new |= other
-        if not self & new:
-            return
-        self._server_object._save_old_value(self._attribute_id)
-        super(MultiAttr, self).difference_update(new)
+        new = set(self)
+        for other in others:
+            new -= other
+        self._server[self._attribute_id] = new
 
     def symmetric_difference_update(self, other):
-        if not other:
-            return
-        new = other - self
-        if new:
-            MultiAttr._validate(new, self._attribute_id, self.datatype)
-        self._server_object._save_old_value(self._attribute_id)
-        super(MultiAttr, self).symmetric_difference_update(other)
+        self._server[self._attribute_id] = self ^ other
 
 
 def _validate_value(attribute_id, value, datatype=None):
