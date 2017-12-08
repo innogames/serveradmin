@@ -219,37 +219,36 @@ class BaseServerObject(dict):
     def __setitem__(self, key, value):
         if self._deleted:
             raise DatasetError('Cannot set attributes to deleted server')
+        if key not in self:
+            raise DatasetError(
+                'Cannot set nonexistent attribute "{}"'.format(key)
+            )
 
-        self.validate(key, value)
         self._save_old_value(key)
+        self.validate(key, value)
 
         if isinstance(self[key], MultiAttr):
-            # Multi attributes are guaranteed to exist as MultiAttr, so
-            # we can always get the previous datatype from the existing
-            # value.
-            value = MultiAttr(value, self, key, self[key].datatype)
+            value = MultiAttr(value, self, key)
 
         return super(BaseServerObject, self).__setitem__(key, value)
 
     def validate(self, key, value):
-        if key not in self:
-            raise KeyError(
-                'Cannot set nonexistent attribute "{}"'.format(key)
-            )
-        if isinstance(self[key], MultiAttr):
-            # We are not extensively validating multi attributes.  Their
-            # values will validated by the MultiAttr class.
-            if not isinstance(value, (tuple, list, set, frozenset)):
-                raise TypeError('Attribute "{}" must be multi'.format(key))
-        elif isinstance(self[key], bool):
-            # Boolean attributes are guaranteed to exist as booleans, so
-            # we can rely on the existing value.
+        # Boolean attributes are guaranteed to exist as booleans, multi
+        # attributes are guaranteed to exist as sets, so we can rely on
+        # the existing value.
+        old_value = self.old_values.get(key, self[key])
+        datatype = None
+        if isinstance(old_value, bool):
             if not isinstance(value, bool):
                 raise TypeError('Attribute "{}" must be a boolean'.format(key))
+        elif isinstance(old_value, MultiAttr):
+            if not isinstance(value, (tuple, list, set, frozenset)):
+                raise TypeError('Attribute "{}" must be multi'.format(key))
+            for elem in old_value | set(value):
+                datatype = _validate_value(key, elem, datatype)
         elif value is not None:
-            datatype = type(self[key]) if self[key] is not None else None
-            if not datatype and self.old_values.get(key) is not None:
-                datatype = type(self.old_values[key])
+            if old_value is not None:
+                datatype = type(old_value)
             _validate_value(key, value, datatype)
 
     def set(self, key, value):
@@ -280,11 +279,8 @@ class MultiAttr(set):
     to maintain the old values on the BaseServerObject.
     """
 
-    def __init__(self, other, server, attribute_id, datatype=None):
-        for elem in other:
-            datatype = _validate_value(attribute_id, elem, datatype)
+    def __init__(self, other, server, attribute_id):
         super(MultiAttr, self).__init__(other)
-        self.datatype = datatype
         self._server = server
         self._attribute_id = attribute_id
 
@@ -292,7 +288,7 @@ class MultiAttr(set):
         return ' '.join(str(x) for x in self)
 
     def copy(self):
-        return MultiAttr(self, self._server, self._attribute_id, self.datatype)
+        return MultiAttr(self, self._server, self._attribute_id)
 
     def add(self, elem):
         self._server[self._attribute_id] = self | {elem}
@@ -341,7 +337,7 @@ class MultiAttr(set):
 def _validate_value(attribute_id, value, datatype=None):
     """It accepts an optional datatype to validate the values.  The values
     are not necessarily be an instance of this datatype.  They will be checked
-    a common super-class.  The function returns the found super-class,
+    for a common super-class.  The function returns the found super-class,
     so that callers can save and reuse it.  When the datatype is not
     provided, then it will return the class of the value.
 
@@ -350,10 +346,10 @@ def _validate_value(attribute_id, value, datatype=None):
     on the inheritance tree after "object" would increase the errors, because
     with multi-inheritance there can be different top level classes.
     Therefore, this method is not really deterministic.  It can cause
-    unexpected behavior, but it is the best we can do.
+    unexpected behavior, but it is the best we can do without knowing about
+    the datatypes of the attributes.
     """
 
-    # Special types that are allowed only in some contexts.
     special_datatypes = (
         type,
         bool,
