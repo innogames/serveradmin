@@ -17,7 +17,7 @@ from django.db import DataError, IntegrityError
 from django.utils.html import mark_safe, escape as escape_html
 
 from adminapi.base import QueryError
-from adminapi.filters import Any, ContainedOnlyBy, Startswith, filter_classes
+from adminapi.filters import Any, ContainedOnlyBy, StartsWith, filter_classes
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
 from serveradmin.dataset import Query
@@ -73,7 +73,7 @@ def autocomplete(request):
     if 'hostname' in request.GET:
         hostname = request.GET['hostname']
         try:
-            query = Query({'hostname': Startswith(hostname)})
+            query = Query({'hostname': StartsWith(hostname)})
             query.restrict('hostname')
             autocomplete_list += islice((h['hostname'] for h in query), 100)
         except ValidationError:

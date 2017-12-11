@@ -6,7 +6,7 @@ from adminapi.filters import (
     Any,
     Not,
     Regexp,
-    Startswith,
+    StartsWith,
 )
 from serveradmin.dataset import Query, create
 
@@ -64,11 +64,11 @@ class TestQuery(TestCase):
         self.assertEquals(s['hostname'], 'test0')
 
     def test_startswith(self):
-        s = Query({'os': Startswith('whee')}).get()
+        s = Query({'os': StartsWith('whee')}).get()
         self.assertEquals(s['hostname'], 'test0')
 
     def test_startswith_servertype(self):
-        q = Query({'servertype': Startswith('tes')})
+        q = Query({'servertype': StartsWith('tes')})
         self.assertEquals(len(q), 4)
 
 
