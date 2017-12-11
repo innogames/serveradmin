@@ -8,12 +8,12 @@ function parse_function_string(args)
     var state = 'start';
     var args_len = args.length;
     var parsed_args = [];
-    
+
     var i = 0;
     var call_depth = 0;
-    
+
     var string_start, string_type, string_buf;
-    
+
     while (i < args_len) {
         if (state == 'start') {
             if (args[i] == '"' || args[i] == "'") {
@@ -115,7 +115,7 @@ function autocomplete_shell_search(term, autocomplete_cb)
         if (parsed_args[0]['token'] != 'key') {
             hostname = term;
         }
-        
+
         // Check call depth
         var call_depth = 0;
         for(var i = 0; i < plen; i++) {
@@ -125,7 +125,7 @@ function autocomplete_shell_search(term, autocomplete_cb)
                 call_depth--;
             }
         }
-        
+
         // Add attribute to autocomplete
         var prev_token = null;
         if (plen > 1) {
@@ -134,26 +134,24 @@ function autocomplete_shell_search(term, autocomplete_cb)
         if (prev_token != 'key' && parsed_args[plen - 1]['token'] == 'str' && call_depth == 0) {
             _autocomplete_attr(term, parsed_args, autocomplete, '=');
         }
-        
+
         // Add filter functions to autocomplete
         if (prev_token == 'key' && parsed_args[plen -1]['token'] == 'str' && call_depth == 0) {
             for (fn_name in filter_functions) {
-                var fn = filter_functions[fn_name];
                 var filter_name = parsed_args[plen - 1]['value'].toLowerCase();
                 var prefix = term.substring(0, term.length - filter_name.length);
                 if (fn.substr(0, filter_name.length).toLowerCase() == filter_name) {
                     autocomplete.push({
-                        'label': 'Filter: ' + fn,
-                        'value': prefix + fn + '('
+                        'label': 'Filter: ' + fn_name,
+                        'value': prefix + fn_name + '('
                     });
                 }
             }
         } else if (parsed_args[plen -1]['token'] == 'key') {
             for (fn_name in filter_functions) {
-                var fn = filter_functions[fn_name];
                 autocomplete.push({
-                    'label': 'Filter: ' + fn,
-                    'value': term + fn + '('
+                    'label': 'Filter: ' + fn_name,
+                    'value': term + fn_name + '('
                 });
             }
         }

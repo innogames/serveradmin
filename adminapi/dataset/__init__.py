@@ -1,11 +1,11 @@
 from ipaddress import ip_address, ip_network
 
 from adminapi import _api_settings
-from adminapi.request import send_request
-from adminapi.dataset.base import (
-    BaseQuerySet, BaseServerObject, DatasetError, MultiAttr
+from adminapi.base import (
+    BaseQuery, BaseServerObject, DatasetError, MultiAttr
 )
-from adminapi.dataset.filters import BaseFilter
+from adminapi.filters import BaseFilter
+from adminapi.request import send_request
 
 COMMIT_ENDPOINT = '/dataset/commit'
 QUERY_ENDPOINT = '/dataset/query'
@@ -13,15 +13,23 @@ CREATE_ENDPOINT = '/dataset/create'
 
 
 class Attribute(object):
-    def __init__(self, name, type, multi):
+    def __init__(self, name, type, multi):  # NOQA A002
         self.name = name
         self.type = type
         self.multi = multi
 
 
-class QuerySet(BaseQuerySet):
-    def __init__(self, filters, auth_token, timeout):
-        BaseQuerySet.__init__(self, filters)
+class Query(BaseQuery):
+    def __init__(
+        self,
+        filters,
+        auth_token=_api_settings['auth_token'],
+        timeout=_api_settings['timeout_dataset'],
+    ):
+        BaseQuery.__init__(self, {
+            a: f if isinstance(f, BaseFilter) else BaseFilter(f)
+            for a, f in filters.items()
+        })
         self.auth_token = auth_token
         self.timeout = timeout
 
@@ -41,15 +49,8 @@ class QuerySet(BaseQuerySet):
             _handle_exception(result)
 
     def _fetch_results(self):
-        serialized_filters = {}
-        for attribute_id, value in self._filters.items():
-            if isinstance(value, BaseFilter):
-                serialized_filters[attribute_id] = value.serialize()
-            else:
-                serialized_filters[attribute_id] = value
-
         request_data = {
-            'filters': serialized_filters,
+            'filters': self._filters,
             'restrict': self._restrict,
             'order_by': self._order_by,
         }
@@ -89,12 +90,12 @@ class QuerySet(BaseQuerySet):
 
 class ServerObject(BaseServerObject):
 
-    # TODO: Query the datatypes once from the server
+    # TODO Query the datatypes once from the server
     inet_attribute_ids = {'intern_ip', 'primary_ip6'}
 
-    def __init__(self, object_id=None, queryset=None, auth_token=None,
+    def __init__(self, object_id=None, query=None, auth_token=None,
                  timeout=None):
-        BaseServerObject.__init__(self, [], object_id, queryset)
+        BaseServerObject.__init__(self, [], object_id, query)
         self.auth_token = auth_token
         self.timeout = timeout
 
@@ -128,12 +129,9 @@ def _handle_exception(result):
     raise exception_class(result['message'])
 
 
+# XXX Deprecated, use Query() instead
 def query(**kwargs):
-    return QuerySet(
-        filters=kwargs,
-        auth_token=_api_settings['auth_token'],
-        timeout=_api_settings['timeout_dataset'],
-    )
+    return Query(kwargs)
 
 
 def create(
@@ -156,7 +154,7 @@ def create(
     response = send_request(
         CREATE_ENDPOINT, request, auth_token, _api_settings['timeout_dataset']
     )
-    qs = QuerySet(
+    qs = Query(
         filters={'hostname': attributes['hostname']},
         auth_token=auth_token,
         timeout=_api_settings['timeout_dataset'],

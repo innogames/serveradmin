@@ -1,9 +1,8 @@
 from django.db.models import Model, CharField, ManyToManyField
 from django.contrib.auth.models import User
 
-from adminapi.utils.parse import parse_query
+from adminapi.parse import parse_query
 from serveradmin.apps.models import Application
-from serveradmin.dataset.filters import filter_classes
 
 
 class AccessControlGroup(Model):
@@ -38,7 +37,7 @@ class AccessControlGroup(Model):
     def get_filters(self, action):
         if action not in self._filters:
             query = getattr(self, action + '_server_query')
-            self._filters[action] = parse_query(query, filter_classes)
+            self._filters[action] = parse_query(query)
         return self._filters[action]
 
     def match_server(self, action, server):

@@ -1,5 +1,25 @@
 import os
+from os.path import isfile
 import pwd
+
+
+def get_auth_token():
+    user = get_user()
+    config_file = os.path.join(user.pw_dir, '.adminapirc')
+    if isfile(config_file):
+        with open(config_file) as fp:
+            for line in fp:
+                if line.startswith('#'):
+                    continue
+                try:
+                    key, value = line.split('=', 1)
+                except ValueError:
+                    continue
+                key, value = key.strip(), value.strip()
+                if key == 'auth_token':
+                    return value
+    raise Exception('No auth token found')
+
 
 def get_user(home_at=('/home', '/var', '/opt', '/usr')):
     """Try to find the user who executed the script originally.
@@ -16,6 +36,7 @@ def get_user(home_at=('/home', '/var', '/opt', '/usr')):
         return _get_user_proc(home_at)
     else:
         return _get_user_psutil()
+
 
 def _get_user_proc(home_at):
     home_at = [home_dir + '/' for home_dir in home_at if home_dir[-1] != '/']
@@ -40,6 +61,7 @@ def _get_user_proc(home_at):
 
         pid = ppid
 
+
 def _parse_status(pid):
     uid = None
     ppid = None
@@ -59,6 +81,7 @@ def _parse_status(pid):
 
     return pwd.getpwuid(uid), ppid
 
+
 def _get_user_psutil():
     import psutil
     uid = os.getuid()
@@ -67,6 +90,6 @@ def _get_user_psutil():
 
     while uid == 0:
         ppid = psutil.Process(ppid).ppid()
-        uid, effective,saved =  psutil.Process(ppid).uids()
+        uid, effective, saved = psutil.Process(ppid).uids()
 
     return pwd.getpwuid(uid)

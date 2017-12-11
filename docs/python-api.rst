@@ -36,88 +36,35 @@ modify their attributes.
 Basic queries
 ^^^^^^^^^^^^^
 
-You can use the :func:`adminapi.dataset.query` function to find servers which
-match certain criterias. See the following example which will find all
+You can use the :class:`adminapi.dataset.Query` function to find servers which
+match certain criteria.  See the following example which will find all
 webservers of Tribal Wars::
 
-    import adminapi
-    from adminapi.dataset import query
+    from adminapi.dataset import Query
 
-    adminapi.auth('yourScriptsAuthToken')
-
-    hosts = query(servertype='vm', game_function='web')
+    hosts = Query({'servertype': 'vm', 'game_function': 'web'})
 
     for host in hosts:
         print host['hostname']
 
-The query function takes keyword arguments which contain the filter conditions.
+The Query class takes keyword arguments which contain the filter conditions.
 Each key is an attribute of the server while the value is the value that must
 match. You can either use strings, integers or booleans for exact value matching.
 All filter conditions will be ANDed.
 
 More often you need filtering with more complex conditions, for example regular
-expression matching, comparison (less than, greating than) etc. For this kind
+expression matching, comparison (less than, greater than) etc.  For this kind
 of queries there is a filters modules which defines some filters you can use.
 The following example will give you all Tribal Wars webservers, which world
 number is between 20 and 30::
 
-    # see above for usual imports and authentication
-    from adminapi.dataset import filters
+    from adminapi.filters import All, GreaterThan, LessThan
 
-    hosts = query(
-        servertype='vm',
-        game_function='web',
-        game_world=filters.And(filters.GreaterEqual(20), filters.GreaterEqual(30)),
-    )
-
-The following filters are available:
-
-:class:`adminapi.dataset.filters.Regexp`
-    Filters the attribute by matching a regular expression. Use this sparingly
-    because it requires a sequence scan over the dataset.
-
-:class:`adminapi.dataset.filters.Comparison`
-    Implement simple comparison functions. The first argument is the comparison
-    operator (one of ``<``, ``>``, ``>=`` and ``<=``) and the second is the
-    value that should be compared. ``game_world=Comparison('<' 20)`` will be
-    evaluated as ``game_world < 20``.
-
-:class:`adminapi.dataset.filters.Any`
-    If you want to check whether an attribute is *any* of the mentioned
-    values. For example if you want to check whether the servers is running
-    lenny or squeeze (or theoretically both, it the attribute has multiple
-    values) you will write::
-
-        hosts = query(os=filters.Any('lenny', 'squeeze'))
-
-    If you have a list with accepted values, just use Python's builtin arg
-    expansion::
-
-        possible_os = ['lenny', 'squeeze']
-        hosts = query(os=filters.Any(*possible_os))
-
-:class:`adminapi.dataset.filters.InsideNetwork`
-    Checks if an IP is inside a network. It takes one or more ``Network``
-    objects. If several networks are given, it checks if it's inside any
-    network. See the following example::
-
-        query(all_ips=filters.InsideNetwork(Network('192.168.0.0/24')))
-
-:class:`adminapi.dataset.filters.And`
-    Combines two or more filters by using the conjunction of them. Every filter
-    also implements ``__and__``, which allows you to just write ``and`` between
-    two filters.
-
-:class:`adminapi.dataset.filters.Or`
-    Combines two or more filters by using the disjunction of them. Every filter
-    also implements ``__or__``, which allows you to just write ``or`` between
-    two filters.
-
-:class:`adminapi.dataset.filters.Not`
-    Negates the given filter or value.
-
-:class:`adminapi.dataset.filters.Between`
-    Shorthand for ``filters.And(filters.Comparison('>=', a), filters.Comparison('<=', b))``
+    hosts = Query({
+        'servertype': 'vm',
+        'game_function': 'web',
+        'game_world': All(GreaterThan(20), LessThan(30)),
+    })
 
 
 Magic attributes
@@ -141,36 +88,36 @@ Each server is represented by a server object which allows a dictionary-like
 access to their attributes. This means you will have the usual behaviour of
 a dictionary with methods like ``keys()``, ``values()``, ``update(...)`` etc.
 
-You can get server objects by iterating over a query set or by calling
-``get()`` on the query set. Changes to the attributes are not directly
-committed. To commit them you must either call ``commit()`` on the server
-object or on the query set. For performance reasons, use ``commit()`` on the
-query set if you change many servers rather than calling ``commit()`` on every
-server object. You can also use the ``update()`` method on the query set for
+You can get server objects by iterating over a query or by calling
+``get()`` on the query.  Changes to the attributes are not directly
+committed.  To commit them you must either call ``commit()`` on the server
+object or on the query.  For performance reasons, use ``commit()`` on the
+Query, if you change many servers rather than calling ``commit()`` on every
+server object.  You can also use the ``update()`` method on the query for
 mass updates.
 
 Here is an example which cancels all servers for Seven Lands::
 
     # BAD WAY! DON'T DO THIS!
     # It will send a HTTP request for every server!
-    hosts = query(servertype='hardware')
+    hosts = Query({'servertype': 'hardware'})
     for host in hosts:
          host['canceled'] = True
          host.commit()
 
     # GOOD WAY:
-    hosts = query(servertype='hardware')
+    hosts = Query({'servertype': 'hardware'})
     for host in hosts:
         hosts['canceled'] = True
     hosts.commit()
 
     # EVEN BETTER WAY:
-    query(servertype='hardware').update(canceled=True).commit()
+    Query({'servertype': 'hardware'}).update(canceled=True).commit()
 
 Another example will print all attributes of the techerror server and check
 for the existence of the ``game_function`` attribute::
 
-    techerror = query(hostname='techerror.support').get()
+    techerror = Query({'hostname': 'techerror.support.ig.local'}).get()
     for attr, value in techerror.items(): # Iterate like a dict!
          print "{0}={1}".format(key, value)
 
@@ -181,7 +128,7 @@ Multi attributes are stored as instances of :class:`MultiAttr`, which is a
 subclass of set. Take a look at :class:`set` for the available methods. See the
 following example which iterates over all additional IPs and adds another one::
 
-    techerror = query(hostname='techerror.support').get()
+    techerror = Query({'hostname': 'techerror.support.ig.local'}).get()
     for ip in techerror['additional_ips']:
          print ip
     techerror['additional_ips'].add('127.0.0.1')
@@ -191,22 +138,22 @@ following example which iterates over all additional IPs and adds another one::
     raise an exception. The ``update()`` function will skip servers that
     are marked for deletion.
 
-Query set reference
-^^^^^^^^^^^^^^^^^^^
+Query Reference
+^^^^^^^^^^^^^^^
 
-The :func:`adminapi.dataset.query` function returns a query set object that
+The :class:`adminapi.dataset.Query` function returns a query object that
 supports iteration and some additional methods.
 
-.. class:: QuerySet
+.. class:: Query
 
-    .. method:: QuerySet.__iter__()
+    .. method:: Query.__iter__()
 
-        Return an iterator that can be used to iterate over the query set. The
-        result itself is cached, iterating several times will not hit the
-        database again. You usually don't call this function directly but use
-        the class' object in a for-loop.
+        Return an iterator that can be used to iterate over the query.
+        The result itself is cached, iterating several times will not hit
+        thedatabase again.  You usually don't call this function directly,
+        but use the class' object in a for-loop.
 
-    .. method:: QuerySet.__len__()
+    .. method:: Query.__len__()
 
         Return the number of servers that where returned. This will fetch all
         results.
@@ -219,24 +166,24 @@ supports iteration and some additional methods.
         See the following example, which will only fetch hostname and internal
         ip for all servers::
 
-            hosts = query().restrict('hostname', 'internal_ip')
+            hosts = Query().restrict('hostname', 'internal_ip')
 
     .. method:: get()
 
-        Return the first server in the query set but only if there is just one
-        server in the query set. Otherwise you will get an exception.
+        Return the first server in the query, but only if there is just one
+        server in the query.  Otherwise, you will get an exception.
         #FIXME: Decide kind of exception
 
     .. method:: is_dirty()
 
-        Return True, if the query set contains a server object which has
+        Return True, if the query contains a server object which has
         uncomitted changes, False otherwise.
 
     .. method:: commit(skip_validation=False, force_changes=False)
 
         Commit the changes that were done by modifying the attributes of
-        servers in the query set. Please note: This will only affect
-        servers that were accessed through this query set!
+        servers in the query.  Please note: This will only affect
+        servers that were accessed through this query!
 
         If ``skip_validation`` is ``True`` it will neither validate regular
         expressions nor whether the attribute is required.
@@ -246,12 +193,12 @@ supports iteration and some additional methods.
 
     .. method:: rollback()
 
-        Rollback all changes on all servers in the query set. If the server is
+        Rollback all changes on all servers in the query.  If the server is
         marked for deletion, this will be undone too.
 
     .. method:: delete()
 
-        Marks all server in the query set for deletion. You need to commit
+        Marks all server in the query for deletion.  You need to commit
         to execute the deletion.
 
         .. warning::
@@ -260,10 +207,10 @@ supports iteration and some additional methods.
 
     .. method:: update(**attrs)
 
-        Mass update for all servers in the query set using keyword args.
+        Mass update for all servers in the query using keyword args.
         Example: You want to cancel all Seven Land servers::
 
-            query(servertype='hardware').update(canceled=True)
+            Query({'servertype': 'hardware'}).update(canceled=True)
 
         This method will skip servers that are marked for deletion.
 
@@ -296,7 +243,7 @@ For documentation of the dictionary-like access see :class:`dict`.
     .. method:: commit(skip_validation=False, force_changes=False)
 
         Commit changes that were done in this server object. See documentation
-        on the queryset for ``skip_validation`` and ``force_changes``.
+        on the query for ``skip_validation`` and ``force_changes``.
 
     .. method:: rollback()
 

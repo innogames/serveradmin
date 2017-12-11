@@ -3,8 +3,8 @@ import hashlib
 import hmac
 import time
 
-from adminapi.cmdline.utils import get_auth_token
-from adminapi.utils.json import json_encode_extra
+from adminapi.cmduser import get_auth_token
+from adminapi.filters import BaseFilter
 
 try:
     from urllib.request import urlopen, Request
@@ -67,3 +67,11 @@ def _build_request(endpoint, auth_token, data_json):
     url = BASE_URL + endpoint
 
     return Request(url, data_json.encode('utf8'), headers)
+
+
+def json_encode_extra(obj):
+    if isinstance(obj, BaseFilter):
+        return obj.serialize()
+    if isinstance(obj, set):
+        return list(obj)
+    return str(obj)

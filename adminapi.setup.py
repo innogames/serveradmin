@@ -10,8 +10,6 @@ setup(
     packages=[
         'adminapi',
         'adminapi.dataset',
-        'adminapi.utils',
-        'adminapi.cmdline',
     ],
     version='1.0',
     long_description=(
@@ -19,7 +17,7 @@ setup(
     ),
     entry_points={
         'console_scripts': [
-            'igserver=adminapi.cli:main',
+            'adminapi=adminapi.cli:main',
         ],
     },
 )

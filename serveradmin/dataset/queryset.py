@@ -3,8 +3,8 @@ from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 
 from django.core.exceptions import ValidationError
 
-from adminapi.dataset.base import BaseQuerySet, BaseServerObject
-
+from adminapi.base import BaseQuery, BaseServerObject
+from adminapi.filters import BaseFilter
 from serveradmin.serverdb.models import (
     Project,
     Servertype,
@@ -14,15 +14,15 @@ from serveradmin.serverdb.models import (
     ServerAttribute,
     ServerHostnameAttribute,
 )
+from serveradmin.serverdb.querybuilder import QueryBuilder
 from serveradmin.dataset.commit import commit_changes
-from serveradmin.dataset.querybuilder import QueryBuilder
 
 
 CACHE_MIN_QS_COUNT = 3
 NUM_OBJECTS_FOR_FILECACHE = 50
 
 
-class QuerySet(BaseQuerySet):
+class Query(BaseQuery):
     def __init__(self, filters):
         self._filters = {}
         for attribute_id, filter_obj in filters.items():
@@ -32,7 +32,10 @@ class QuerySet(BaseQuerySet):
                 raise ValidationError(
                     'Invalid attribute: {0}'.format(attribute_id)
                 )
-            self._filters[attribute] = filter_obj
+            if isinstance(filter_obj, BaseFilter):
+                self._filters[attribute] = filter_obj
+            else:
+                self._filters[attribute] = BaseFilter(filter_obj)
         self._restrict = set()
         self._results = None
         self._num_dirty = 0
@@ -85,15 +88,9 @@ class QuerySet(BaseQuerySet):
                     if s.ip_addr_type in desired_ip_addr_types(filt)
                 }
 
+            # We can just deal with the servertype filters ourself.
             if attribute.pk == 'servertype':
-                if isinstance(filt, str):
-                    servertypes = {
-                        s for s in servertypes if s.pk == filt
-                    }
-                else:
-                    servertypes = {
-                        s for s in servertypes if filt.matches(s.pk)
-                    }
+                servertypes = {s for s in servertypes if filt.matches(s.pk)}
             else:
                 filters[attribute] = filt
 
@@ -325,7 +322,7 @@ class ServerObject(BaseServerObject):
         # Just pickle it as normal dict
         tpl = dict.__reduce__(self)
         instance_dict = tpl[2].copy()
-        del instance_dict['_queryset']
+        del instance_dict['_query']
         return (tpl[0], tpl[1], instance_dict)
 
     @classmethod

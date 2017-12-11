@@ -9,7 +9,7 @@ from urllib.request import (
 from django.db import models
 from django.conf import settings
 
-from adminapi.dataset.base import MultiAttr
+from adminapi.base import MultiAttr
 
 from serveradmin.serverdb.models import lookup_id_validators
 

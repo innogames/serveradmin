@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""igserver - Convenience script for testing
+"""adminapi - Convenience script for testing
 
 Copyright (c) 2017, InnoGames GmbH
 """

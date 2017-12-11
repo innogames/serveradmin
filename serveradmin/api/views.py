@@ -9,13 +9,12 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.contrib.auth.decorators import login_required
 from django.contrib.admindocs.utils import trim_docstring, parse_docstring
 
-from adminapi.utils.json import json_encode_extra
-
+from adminapi.filters import FilterValueError, filter_from_obj
+from adminapi.request import json_encode_extra
 from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
 from serveradmin.api.decorators import api_view
 from serveradmin.api.utils import build_function_description
-from serveradmin.dataset import QuerySet
-from serveradmin.dataset.filters import filter_from_obj
+from serveradmin.dataset import Query
 from serveradmin.dataset.commit import commit_changes
 from serveradmin.dataset.create import create_server
 
@@ -82,17 +81,17 @@ def dataset_query(request, app, data):
         for attr, filter_obj in data['filters'].items():
             filters[attr] = filter_from_obj(filter_obj)
 
-        queryset = QuerySet(filters=filters)
+        query = Query(filters=filters)
         if data['restrict']:
-            queryset.restrict(*data['restrict'])
+            query.restrict(*data['restrict'])
         if data.get('order_by'):
-            queryset.order_by(*data['order_by'])
+            query.order_by(*data['order_by'])
 
         return json.dumps({
             'status': 'success',
-            'result': queryset.get_results(),
+            'result': query.get_results(),
         }, default=json_encode_extra)
-    except ValidationError as error:
+    except (FilterValueError, ValidationError) as error:
         return json.dumps({
             'status': 'error',
             'type': 'ValueError',
@@ -125,7 +124,7 @@ def dataset_commit(request, app, data):
             'status': 'success',
         }
     except (
-        ValueError,
+        ValueError,     # TODO Stop expecting them
         ValidationError,
     ) as error:
         return {
@@ -159,7 +158,7 @@ def dataset_create(request, app, data):
 
         return {
             'status': 'success',
-            'result': QuerySet(filters={
+            'result': Query(filters={
                 'hostname': data['attributes']['hostname']
             }).get_results(),
         }

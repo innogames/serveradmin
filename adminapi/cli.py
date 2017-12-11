@@ -1,4 +1,4 @@
-"""igserver - The command line interface
+"""adminapi - The command line interface
 
 Copyright (c) 2017, InnoGames GmbH
 """
@@ -8,21 +8,13 @@ from __future__ import print_function
 from argparse import ArgumentParser, ArgumentTypeError
 
 from adminapi import _api_settings
-from adminapi.dataset import QuerySet
-from adminapi.utils.parse import parse_query
-
-DOMAINS = [
-    'acl',
-    'arpa',
-    'hc',
-    'ig.local',
-    'innogames.net',
-]
+from adminapi.dataset import Query
+from adminapi.parse import parse_query
 
 
 def parse_args():
     multi_note = ' (can be specified multiple times)'
-    parser = ArgumentParser('igserver')
+    parser = ArgumentParser('adminapi')
     parser.add_argument('query', nargs='+')
     parser.add_argument(
         '-1',
@@ -69,7 +61,7 @@ def main():
     if args.update:
         attribute_ids_to_fetch.extend(u[0] for u in args.update)
 
-    query = QuerySet(
+    query = Query(
         # TODO: Avoid .join()
         filters=parse_query(' '.join(args.query)),
         auth_token=_api_settings['auth_token'],
@@ -120,12 +112,6 @@ def print_server(server, attribute_ids):
             continue
 
         value = server[attribute_id]
-
-        # XXX Temporary hack
-        if attribute_id == 'hostname':
-            if not any(value == d or value.endswith('.' + d) for d in DOMAINS):
-                value += '.ig.local'
-
         if value in [None, True, False]:
             value = '{{{}}}'.format(str(value).lower())
 

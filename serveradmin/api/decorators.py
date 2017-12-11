@@ -14,8 +14,7 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.crypto import constant_time_compare
 
-from adminapi.utils.json import json_encode_extra
-from adminapi.request import calc_security_token
+from adminapi.request import calc_security_token, json_encode_extra
 from serveradmin.apps.models import Application
 from serveradmin.api import AVAILABLE_API_FUNCTIONS
 
