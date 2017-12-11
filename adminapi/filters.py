@@ -9,6 +9,12 @@ class FilterValueError(QueryError, ValueError):
 
 class BaseFilter(object):
     def __init__(self, value):
+        allowed_types = (bool, int, float)
+        try:
+            allowed_types += (unicode,)
+        except NameError:
+            pass
+
         if isinstance(value, str):
             for char in '\'"()':
                 if char in value:
@@ -16,7 +22,7 @@ class BaseFilter(object):
                         '"{}" character is not allowed on filter values'
                         .format(char)
                     )
-        elif isinstance(value, (bool, int, float)):
+        elif isinstance(value, allowed_types):
             pass
         else:
             raise FilterValueError(
