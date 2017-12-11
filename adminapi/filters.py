@@ -18,8 +18,6 @@ class BaseFilter(object):
                     )
         elif isinstance(value, (bool, int, float)):
             pass
-        elif value is None:     # TODO Don't accept None
-            pass
         else:
             raise FilterValueError(
                 'Filter value cannot be {}'.format(type(value).__name__)
