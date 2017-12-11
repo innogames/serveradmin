@@ -70,8 +70,8 @@ run for some Django bug, we couldn't fix yet.  Please run it in 2 steps and
 ignore the errors emitted by the first one.  To create a new empty schema
 you can use::
 
-    python serveradmin.manage.py migrate auth
-    python serveradmin.manage.py migrate
+    python manage.py migrate auth
+    python manage.py migrate
 
 If you want to work on the production data, you can dump it from the server,
 and restore on your database::
@@ -93,7 +93,7 @@ When editing the config, don't forget to remove the exception at the end.
 To check whether your setup was successful, you can run the integrated test
 webserver::
 
-   ./serveradmin.manage.py runserver
+   ./manage.py runserver
 
 and point your browser to http://localhost:8000/.
 
@@ -118,7 +118,7 @@ Install ``django-extensions`` and ``werkzeug`` using pip::
 and add ``'django_extensions'`` to your ``INSTALLED_APPS`` setting in the
 ``settings.py``.
 
-Now you can use ``./serveradmin.manage.py runserver_plus`` instead of ``./serveradmin.manage.py runserver``
+Now you can use ``./manage.py runserver_plus`` instead of ``./manage.py runserver``
 to start the local test webserver with the Werkzeug debugger.
 
 See http://packages.python.org/django-extensions/ for details.
@@ -145,7 +145,7 @@ Just to have same names:
 
 project:
    Many applications together with settings, a global ``urls.py`` and the
-   ``serveradmin.manage.py`` form a project. The "serveradmin" is a project.
+   ``manage.py`` form a project. The "serveradmin" is a project.
 
 application (or "app"):
    An application is basically a combination of several files for the same
@@ -254,9 +254,9 @@ We will create a small example application named "secinfo" (for "security
 information").  **Please don't commit this application, it is for learning
 purposes only!**
 
-We will use the ``serveradmin.manage.py`` to create our application::
+We will use the ``manage.py`` to create our application::
 
-   ./serveradmin.manage.py startapp secinfo
+   ./manage.py startapp secinfo
 
 Now we have a directory named ``secinfo`` with some files inside it.  We will
 move it into the directory ``serveradmin``.
