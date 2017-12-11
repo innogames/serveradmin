@@ -10,7 +10,7 @@ from django.core.exceptions import (
 )
 from django.template.response import HttpResponse
 
-from adminapi.filters import FilterValueError, filter_from_obj
+from adminapi.filters import BaseFilter, FilterValueError
 from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
 from serveradmin.api.decorators import api_view
 from serveradmin.serverdb.query_committer import commit_query
@@ -50,7 +50,7 @@ def dataset_query(request, app, data):
             raise SuspiciousOperation('Filters must be a dictionary')
         filters = {}
         for attr, filter_obj in data['filters'].items():
-            filters[attr] = filter_from_obj(filter_obj)
+            filters[attr] = BaseFilter.deserialize(filter_obj)
 
         # Empty list means query all attributes to the older versions of
         # the adminapi.
