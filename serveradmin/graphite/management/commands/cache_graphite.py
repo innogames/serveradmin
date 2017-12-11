@@ -15,7 +15,7 @@ from django.core.management.base import NoArgsCommand
 from django.conf import settings
 from django.db import transaction
 
-from serveradmin.dataset import query
+from serveradmin.dataset import Query
 from serveradmin.graphite.models import (
     GRAPHITE_ATTRIBUTE_ID,
     Collection,
@@ -41,7 +41,7 @@ class Command(NoArgsCommand):
             if not isdir(collection_dir):
                 mkdir(collection_dir)
 
-            for server in query(**{GRAPHITE_ATTRIBUTE_ID: collection.name}):
+            for server in Query({GRAPHITE_ATTRIBUTE_ID: collection.name}):
                 graph_table = collection.graph_table(server, sprite_params)
                 if graph_table:
                     self.generate_sprite(collection_dir, graph_table, server)

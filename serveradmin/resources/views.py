@@ -157,10 +157,12 @@ def graph_popup(request):
     # but we don't bother because they are unlikely to be more than a few
     # marked as overview.
     for collection in Collection.objects.filter(overview=True):
-        servers = collection.query(hostname=hostname)
-
+        servers = list(Query({
+            GRAPHITE_ATTRIBUTE_ID: collection.name,
+            'hostname': hostname,
+        }))
         if servers:
-            table = collection.graph_table(servers.get())
+            table = collection.graph_table(servers[0])
             params = [v2 for k1, v1 in table for k2, v2 in v1][int(graph)]
             url = settings.GRAPHITE_URL + '/render?' + params
 
