@@ -205,15 +205,15 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
             attribute = Attribute.objects.get(pk=attribute_id)
             value = value.strip()
 
-            if value == '':
-                value = None
-            elif attribute.multi:
+            if attribute.multi:
                 values = [v.strip() for v in value.splitlines()]
                 try:
                     value = attribute.from_str(values)
                 except ValidationError:
                     invalid_attrs.add(attribute_id)
                     value = set(values)
+            elif value == '':
+                value = None
             else:
                 try:
                     value = attribute.from_str(value)
