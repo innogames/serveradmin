@@ -76,7 +76,7 @@ def autocomplete(request):
             query = Query({'hostname': StartsWith(hostname)})
             query.restrict('hostname')
             autocomplete_list += islice((h['hostname'] for h in query), 100)
-        except ValidationError:
+        except (ValidationError, QueryError):
             pass    # If there is no valid query, just don't auto-complete
 
     return HttpResponse(
