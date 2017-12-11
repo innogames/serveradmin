@@ -255,7 +255,7 @@ class BaseServerObject(dict):
         if isinstance(self[key], MultiAttr):
             self[key].add(value)
         elif type(self[key]) is bool:
-            self[key] = strtobool(value)
+            self[key] = bool(strtobool(value))
         elif type(self[key]) is int:
             self[key] = int(value)
         else:

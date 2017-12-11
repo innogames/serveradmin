@@ -49,7 +49,7 @@ from serveradmin.apps.models import Application
 
 attribute_types = {
     'string': str,
-    'boolean': strtobool,
+    'boolean': lambda x: bool(strtobool(x)),
     'hostname': str,
     'reverse_hostname': str,
     'number': lambda x: float(x) if '.' in str(x) else int(x),
