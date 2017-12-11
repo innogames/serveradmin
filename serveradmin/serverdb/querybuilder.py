@@ -74,12 +74,12 @@ class QueryBuilder(object):
                     '{{0}} IN ('
                     '   SELECT server_id'
                     '   FROM server'
-                    '   WHERE hostname ~ E{}'
+                    '   WHERE hostname ~ E{0}'
                     ')'
                     .format(value)
                 )
             else:
-                template = '{{}}::text ~ E{}'.format(value)
+                template = '{{0}}::text ~ E{0}'.format(value)
 
         elif isinstance(filt, (
             Comparison,
@@ -93,10 +93,10 @@ class QueryBuilder(object):
 
         elif isinstance(filt, Empty):
             negate = True
-            template = '{} IS NOT NULL'
+            template = '{0} IS NOT NULL'
 
         else:
-            template = '{} = ' + self._value_to_sql(attribute, filt.value)
+            template = '{0} = ' + self._value_to_sql(attribute, filt.value)
 
         return (
             ('NOT ' if negate else '') +
@@ -148,31 +148,31 @@ class QueryBuilder(object):
 
         if attribute.type == 'inet':
             if isinstance(filt, StartsWith):
-                template = "{{}} >>= {} AND host({{}}) = host({})"
+                template = "{{0}} >>= {0} AND host({{0}}) = host(0{})"
             elif isinstance(filt, Contains):
-                template = "{{}} >>= {}"
+                template = "{{0}} >>= {0}"
             elif isinstance(filt, ContainedOnlyBy):
                 template = (
-                    "{{}} << {} AND NOT EXISTS ("
+                    "{{0}} << {0} AND NOT EXISTS ("
                     '   SELECT 1 '
                     '   FROM server AS supernet '
-                    '   WHERE {{}} << supernet.intern_ip AND '
-                    '       supernet.intern_ip << {}'
+                    '   WHERE {{0}} << supernet.intern_ip AND '
+                    '       supernet.intern_ip << {0}'
                     ')'
                 )
             elif isinstance(filt, ContainedBy):
-                template = "{{}} <<= {}"
+                template = "{{0}} <<= {0}"
             else:
-                template = "{{}} && {}"
+                template = "{{0}} && {0}"
 
         elif attribute.type == 'string':
             if isinstance(filt, Contains):
-                template = "{{}} LIKE {}"
+                template = "{{0}} LIKE {0}"
                 value = '{}{}{}'.format(
                     '' if isinstance(filt, StartsWith) else '%', value, '%'
                 )
             elif isinstance(filt, ContainedBy):
-                template = "{} LIKE '%%' || {{}} || '%%'"
+                template = "{0} LIKE '%%' || {{0}} || '%%'"
 
         if not template:
             raise FilterValueError(
