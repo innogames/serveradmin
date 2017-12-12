@@ -68,7 +68,7 @@ class HookSlot(object):
             try:
                 hookfn(**kwargs)
             except ValueError as e:
-                failures.append('{}: {}'.format(hookfn.__name__, e.message))
+                failures.append('{}: {}'.format(hookfn.__name__, str(e)))
 
         if failures:
             raise ValueError('\n'.join(failures))
