@@ -1,5 +1,37 @@
+from datetime import date
 from distutils.util import strtobool
+from netaddr import EUI
+from re import compile as re_compile
+from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 from itertools import chain
+
+
+RE_IPV4ADDR = r'([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?'
+RE_IPV6ADDR = (
+    r'('
+    r'([0-9a-f]{1,4}:){7,7}[0-9a-f]{1,4}|'
+    r'([0-9a-f]{1,4}:){1,7}:|'
+    r'([0-9a-f]{1,4}:){1,6}:[0-9a-f]{1,4}|'
+    r'([0-9a-f]{1,4}:){1,5}(:[0-9a-f]{1,4}){1,2}|'
+    r'([0-9a-f]{1,4}:){1,4}(:[0-9a-f]{1,4}){1,3}|'
+    r'([0-9a-f]{1,4}:){1,3}(:[0-9a-f]{1,4}){1,4}|'
+    r'([0-9a-f]{1,4}:){1,2}(:[0-9a-f]{1,4}){1,5}|'
+    r'[0-9a-f]{1,4}:((:[0-9a-f]{1,4}){1,6})|'
+    r':((:[0-9a-f]{1,4}){1,7}|:)'
+    r')'
+)
+RE_32 = r'([0-9]|[1-2][0-9]|3[0-2])'
+RE_128 = r'([0-9]|[1-9][0-9]|1(1[0-9]|2[0-8]))'
+RE_MACADDR = r'([0-9a-f]{2}:){5}([0-9a-f]{2})'
+RE_DATE = r'[0-9]{1,4}-(0[0-9]|1[0-2])-([0-2][0-9]|3[0-1])'
+STR_BASED_DATATYPES = [
+    (IPv4Address, re_compile(r'\A' + RE_IPV4ADDR + r'\Z')),
+    (IPv4Network, re_compile(r'\A' + RE_IPV4ADDR + r'\/' + RE_32 + r'\Z')),
+    (IPv6Address, re_compile(r'\A' + RE_IPV6ADDR + r'\Z')),
+    (IPv6Network, re_compile(r'\A' + RE_IPV6ADDR + r'\/' + RE_128 + r'\Z')),
+    (EUI, re_compile(r'\A' + RE_MACADDR + r'\Z')),
+    (date, re_compile(r'\A' + RE_DATE + r'\Z')),
+]
 
 
 class DatasetError(Exception):
@@ -334,6 +366,7 @@ class MultiAttr(set):
         self._server[self._attribute_id] = self ^ other
 
 
+# TODO Improve this using the datatype list
 def _validate_value(attribute_id, value, datatype=None):
     """It accepts an optional datatype to validate the values.  The values
     are not necessarily be an instance of this datatype.  They will be checked
@@ -388,3 +421,13 @@ def _validate_value(attribute_id, value, datatype=None):
         'existing value from {}'
         .format(attribute_id, type(value), datatype)
     )
+
+
+def cast_datatype(value):
+    for datatype, regexp in STR_BASED_DATATYPES:
+        if regexp.match(str(value)):
+            # date constructor is special.
+            if datatype is date:
+                return date(*value.split('-', 2))
+            return datatype(value)
+    return value

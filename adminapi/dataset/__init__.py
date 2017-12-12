@@ -1,8 +1,6 @@
-from ipaddress import ip_address, ip_network
-
 from adminapi import _api_settings
 from adminapi.base import (
-    BaseQuery, BaseServerObject, DatasetError, MultiAttr
+    BaseQuery, BaseServerObject, DatasetError, MultiAttr, cast_datatype
 )
 from adminapi.filters import BaseFilter
 from adminapi.request import send_request
@@ -69,19 +67,12 @@ class Query(BaseQuery):
                 )
                 for attribute_id, value in list(server.items()):
                     if isinstance(value, list):
-                        server[attribute_id] = MultiAttr(
-                            server[attribute_id], server_obj, attribute_id
-                        )
-                    elif (
-                        attribute_id in ServerObject.inet_attribute_ids and
-                        server[attribute_id]
-                    ):
-                        server[attribute_id] = (
-                            ip_network(server[attribute_id])
-                            if '/' in server[attribute_id]
-                            else ip_address(server[attribute_id])
-                        )
-                dict.update(server_obj, server)
+                        casted_value = MultiAttr((
+                            cast_datatype(v) for v in value
+                        ), server_obj, attribute_id)
+                    else:
+                        casted_value = cast_datatype(value)
+                    dict.__setitem__(server_obj, attribute_id, casted_value)
                 self._results.append(server_obj)
 
         elif response['status'] == 'error':
@@ -89,9 +80,6 @@ class Query(BaseQuery):
 
 
 class ServerObject(BaseServerObject):
-
-    # TODO Query the datatypes once from the server
-    inet_attribute_ids = {'intern_ip', 'primary_ip6'}
 
     def __init__(self, object_id=None, query=None, auth_token=None,
                  timeout=None):
