@@ -19,7 +19,7 @@ def parse_query(term, hostname=None):  # NOQA C901
         term_parts = term.split(None, 1)
         if len(term_parts) == 2:
             hostname_part, remaining_part = term_parts
-            query_args = parse_query(remaining_part, None, hostname_part)
+            query_args = parse_query(remaining_part, hostname_part)
         else:
             hostname_part = term
             query_args = {}
