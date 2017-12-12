@@ -176,16 +176,22 @@ LOGGING = {
             '()': 'django.utils.log.RequireDebugFalse'
         },
     },
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s: %(message)s'
+        }
+    },
     'handlers': {
-        'console': {
+        'file': {
+            'formatter': 'verbose',
             'level': 'DEBUG',
-            'filters': ['require_debug_false'],
-            'class': 'logging.StreamHandler',
+            'class': 'logging.FileHandler',
+            'filename': '/var/log/serveradmin.log',
         },
     },
-        },
-        'queryset': {
-            'handlers': ['console'],
+    'loggers': {
+        'serveradmin': {
+            'handlers': ['file'],
             'level': 'DEBUG',
             'propagate': True,
         },
