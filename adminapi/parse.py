@@ -192,8 +192,8 @@ def cast_datatype(arg):
         return True
     if arg == 'false':
         return False
-    if arg.isdecimal():
+    if arg.isdigit():
         return int(arg)
-    if all(a.isdecimal() for a in arg.split('.', 1)):
+    if all(a.isdigit() for a in arg.split('.', 1)):
         return float(arg)
     return arg
