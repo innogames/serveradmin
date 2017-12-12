@@ -291,7 +291,7 @@ class ContainedBy(Overlaps):
         return value in self.value
 
 
-class InsideNetwork(ContainedBy, Overlaps):
+class InsideNetwork(ContainedBy, Overlap):
     """Deprecated, use ContainedBy() instead"""
     pass
 
