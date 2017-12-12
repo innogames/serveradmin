@@ -61,16 +61,5 @@ class HookSlot(object):
 
     def invoke(self, **kwargs):
         self.validate(**kwargs)
-
-        results = {}
-        failures = []
         for hookfn in self._hooks:
-            try:
-                hookfn(**kwargs)
-            except ValueError as e:
-                failures.append('{}: {}'.format(hookfn.__name__, str(e)))
-
-        if failures:
-            raise ValueError('\n'.join(failures))
-
-        return results
+            hookfn(**kwargs)
