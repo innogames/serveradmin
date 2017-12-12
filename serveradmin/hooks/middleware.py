@@ -1,6 +1,9 @@
-from importlib import import_module
+import importlib
+import logging
 
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 class HooksMiddleware(object):
@@ -8,7 +11,18 @@ class HooksMiddleware(object):
 
     def __init__(self):
         for app in settings.INSTALLED_APPS:
-            try:
-                import_module(app + '.hooks')
-            except ImportError:
-                pass
+            hook = importlib.util.find_spec(app + '.hooks')
+            if hook is None:
+                logger.debug('No hooks found for module {}'.format(app))
+            else:
+                try:
+                    importlib.import_module(app + '.hooks')
+                except ImportError as e:
+                    logger.error(
+                        'Loading hooks for module {} failed: {}'.format(app, e)
+                    )
+                    raise
+                else:
+                    logger.debug(
+                        'Successfuly loaded hooks for module {}'.format(app)
+                    )
