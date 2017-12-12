@@ -9,26 +9,6 @@ class FilterValueError(QueryError, ValueError):
 
 class BaseFilter(object):
     def __init__(self, value):
-        allowed_types = (bool, int, float)
-        try:
-            allowed_types += (unicode,)
-        except NameError:
-            pass
-
-        if isinstance(value, str):
-            for char in '\'"()':
-                if char in value:
-                    raise FilterValueError(
-                        '"{}" character is not allowed on filter values'
-                        .format(char)
-                    )
-        elif isinstance(value, allowed_types):
-            pass
-        else:
-            raise FilterValueError(
-                'Filter value cannot be {}'.format(type(value).__name__)
-            )
-
         self.value = value
 
     def __and__(self, other):
@@ -143,7 +123,7 @@ class Comparison(BaseFilter):
         if comparator not in ('<', '>', '<=', '>='):
             raise FilterValueError('Invalid operator: ' + comparator)
         self.comparator = comparator
-        BaseFilter.__init__(self, value)
+        self.value = value
 
     def __repr__(self):
         return 'Comparison({0!r}, {1!r})'.format(self.comparator, self.value)
