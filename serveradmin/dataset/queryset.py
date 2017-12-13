@@ -37,11 +37,9 @@ class Query(BaseQuery):
             else:
                 self._filters[attribute] = BaseFilter(filter_obj)
         self._restrict = set()
+        self._order_by = None
         self._results = None
         self._num_dirty = 0
-        self._order = None
-        self._order_by = None
-        self._order_dir = 'asc'
 
     def commit(self, *args, **kwargs):
         commit = self._build_commit_object()
@@ -58,16 +56,15 @@ class Query(BaseQuery):
                 )
         return self
 
-    def order_by(self, order_by, order_dir='asc'):
-        try:
-            self._order_by = Attribute.objects.get(pk=order_by)
-        except Attribute.DoesNotExist:
-            raise ValidationError(
-                'Invalid attribute: {0}'.format(order_by)
-            )
-        if order_dir not in ('asc', 'desc'):
-            raise ValueError('Invalid order direction')
-        self._order_dir = order_dir
+    def order_by(self, *attribute_ids):
+        self._order_by = []
+        for attribute_id in attribute_ids:
+            try:
+                self._order_by.append(Attribute.objects.get(pk=attribute_id))
+            except Attribute.DoesNotExist:
+                raise ValidationError(
+                    'Invalid attribute: {0}'.format(attribute_id)
+                )
         return self
 
     def _get_query_builder(self):
@@ -144,7 +141,7 @@ class Query(BaseQuery):
         self._related_servertype_attributes = []
         attributes = self._restrict if self._restrict else None
         if attributes and self._order_by:
-            attributes = list(attributes) + [self._order_by]
+            attributes = list(attributes) + self._order_by
         for sa in ServertypeAttribute.query(servertypes, attributes).all():
             self._select_servertype_attribute(sa)
 
@@ -272,20 +269,23 @@ class Query(BaseQuery):
             self._server_attributes[server_id][attribute] = value
 
     def _order_by_key(self, key):
+        return tuple(self._order_by_attribute(key, a) for a in self._order_by)
+
+    def _order_by_attribute(self, key, attribute):
         """Return a tuple to sort items by the key
 
-        We want the servers which doesn't have this attribute at all
-        to appear at last, the server which this attribute is not set
+        We want the servers which doesn't have the attribute at all
+        to appear at last, the server which the attribute is not set
         to appear in the beginning, and the rest in between.  Keep in
         mind that some datatypes are not sortable with each other, some
         not even with None, so we have to so something in here.
         """
-        if self._order_by not in self._server_attributes[key]:
+        if attribute not in self._server_attributes[key]:
             return 1, None
-        value = self._server_attributes[key][self._order_by]
+        value = self._server_attributes[key][attribute]
         if value is None:
             return -1, None
-        if self._order_by.multi:
+        if attribute.multi:
             return 0, tuple(sort_key(v) for v in value)
         return 0, sort_key(value)
 
