@@ -117,9 +117,30 @@ class QueryBuilder(object):
         if not filt.values:
             return 'NOT ({0})'.format(joiner.join(['true', 'false']))
 
-        return '({0})'.format(joiner.join(
-            self.get_sql_condition(attribute, v) for v in filt.values
-        ))
+        simple_values = []
+        templates = []
+        for value in filt.values:
+            if type(filt) in [Any, All] and type(value) == BaseFilter:
+                simple_values.append(value)
+            else:
+                templates.append(self.get_sql_condition(attribute, value))
+
+        if simple_values:
+            if len(simple_values) == 1:
+                template = self.get_sql_condition(attribute, simple_values[0])
+            else:
+                # TODO Use arrays of Psycopg2
+                template = self._condition_sql(
+                    attribute, '{{0}} = {0} (ARRAY[{1}])'.format(
+                        type(filt).__name__.upper(), ', '.join(
+                            self._value_to_sql(attribute, v.value)
+                            for v in simple_values
+                        )
+                    )
+                )
+            templates.append(template)
+
+        return '({0})'.format(joiner.join(templates))
 
     def _basic_comparison_filter_template(self, attribute, filt):
         if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
