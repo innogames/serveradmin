@@ -43,12 +43,6 @@ class Query(BaseQuery):
         self._order_by = None
         self._order_dir = 'asc'
 
-    def __repr__(self):
-        args = []
-        for attr_name, value in self._filters.items():
-            args.append('{0}={1!r}'.format(attr_name, value))
-        return 'query({0})'.format(', '.join(args))
-
     def commit(self, *args, **kwargs):
         commit = self._build_commit_object()
         commit_changes(commit, *args, **kwargs)

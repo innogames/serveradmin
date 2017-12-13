@@ -7,40 +7,38 @@
 
 <table class="valign-middle">
 <tr>
-    <td>Search: </td>
+    <th>Search: </th>
     <td>
         <form method="post" action="" id="shell_search_form">
-        {% csrf_token %}
-        <input type="text" size="60"  id="shell_search" value="{{ search_term }}" />
+            {% csrf_token %}
+            <input type="text" size="60"  id="shell_search" value="{{ search_term }}" />
         </form>
     </td>
     <td>
-        <a href="?term=" id="shell_search_link">
-            <img src="{{ STATIC_URL }}link.png" alt="Link to this search" 
-                title="Link to this search" />
-        </a>
         <img src="{{ STATIC_URL }}help.png" id="shell_search_help_icon"
-        alt="Help" class="help_icon" />
-    {% comment %}
-        <img src="{{ STATIC_URL }}bookmarked.png" id="shell_bookmarked" />
-        <img src="{{ STATIC_URL }}notbookmarked.png" id="shell_notbookmarked" />
-    {% endcomment %}
+             alt="Help" class="help_icon" />
     </td>
 </tr>
-<tr id="shell_understood_container">
-    <td>Understood: </td>
-    <td colspan="2" id="shell_understood">Nothing yet.</td>
-</tr>
 <tr id="shell_command_container">
-    <td>Command: </td>
+    <th>Command: </th>
     <td>
         <form method="post" action="javascript:return false;" id="shell_command_form">
-        <input type="text" size="60"  id="shell_command" />
+            <input type="text" size="60"  id="shell_command" />
         </form>
     </td>
     <td>
         <img src="{{ STATIC_URL }}help.png" id="shell_command_help_icon"
-        alt="Help" class="help_icon" />
+             alt="Help" class="help_icon" />
+    </td>
+</tr>
+<tr id="shell_understood_container">
+    <th>Understood: </th>
+    <td id="shell_understood"></td>
+    <td>
+        <a href="?term=" id="shell_search_link">
+            <img src="{{ STATIC_URL }}link.png" alt="Link to this search"
+                 title="Link to this search" />
+        </a>
     </td>
 </tr>
 </table>
