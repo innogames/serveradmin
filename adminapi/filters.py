@@ -1,6 +1,11 @@
 from re import compile as re_compile, error as re_error
 
-from adminapi.base import QueryError
+from adminapi.base import STR_BASED_DATATYPES, QueryError
+
+try:
+    STR_DATATYPES = (str, unicode)
+except NameError:
+    STR_DATATYPES = (str,)
 
 
 class FilterValueError(QueryError, ValueError):
@@ -9,6 +14,24 @@ class FilterValueError(QueryError, ValueError):
 
 class BaseFilter(object):
     def __init__(self, value):
+        if type(self) == BaseFilter and isinstance(value, bool):
+            pass
+        elif isinstance(value, (int, float)):
+            pass
+        elif isinstance(value, tuple(s[0] for s in STR_BASED_DATATYPES)):
+            pass
+        elif isinstance(value, STR_DATATYPES):
+            for char in '\'"()':
+                if char in value:
+                    raise FilterValueError(
+                        '"{}" character is not allowed on filter values'
+                        .format(char)
+                    )
+        else:
+            raise FilterValueError(
+                'Filter value cannot be {}'.format(type(value).__name__)
+            )
+
         self.value = value
 
     def __and__(self, other):
