@@ -429,6 +429,6 @@ def cast_datatype(value):
         if regexp.match(str(value)):
             # date constructor is special.
             if datatype is date:
-                return date(*value.split('-', 2))
+                return date(*(int(v) for v in value.split('-', 2)))
             return datatype(value)
     return value
