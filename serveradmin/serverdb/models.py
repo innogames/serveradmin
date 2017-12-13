@@ -17,6 +17,7 @@ from django.contrib.auth.models import User
 
 import netfields
 
+from adminapi.base import STR_BASED_DATATYPES
 from serveradmin.apps.models import Application
 
 
@@ -652,6 +653,22 @@ class ServerStringAttribute(ServerAttribute):
         db_table = 'server_string_attribute'
         unique_together = (('server', '_attribute', 'value'), )
         index_together = (('_attribute', 'value'), )
+
+    def save_value(self, value):
+        for char in '\'"()':
+            if char in value:
+                raise ValidationError(
+                    '"{}" character is not allowed on string attributes'
+                    .format(char)
+                )
+        for datatype, regexp in STR_BASED_DATATYPES:
+            if regexp.match(value):
+                raise ValidationError(
+                    'String attribute value "{}" matches with {} type'
+                    .format(value, datatype.__name__)
+                )
+
+        super().save_value(value)
 
 
 class ServerHostnameAttributeManager(models.Manager):
