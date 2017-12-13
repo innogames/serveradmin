@@ -158,16 +158,6 @@ supports iteration and some additional methods.
         Return the number of servers that where returned. This will fetch all
         results.
 
-    .. method:: restrict(*attrs)
-
-        Use this method to only load a restricted set of attributes. This can be
-        done for performance reasons. Note: You need to fetch the attributes
-        you want to change e.g. add them to the arguments of this methods.
-        See the following example, which will only fetch hostname and internal
-        ip for all servers::
-
-            hosts = Query().restrict('hostname', 'internal_ip')
-
     .. method:: get()
 
         Return the first server in the query, but only if there is just one

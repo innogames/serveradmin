@@ -73,8 +73,7 @@ def autocomplete(request):
     if 'hostname' in request.GET:
         hostname = request.GET['hostname']
         try:
-            query = Query({'hostname': StartsWith(hostname)})
-            query.restrict('hostname')
+            query = Query({'hostname': StartsWith(hostname)}, ['hostname'])
             autocomplete_list += islice((h['hostname'] for h in query), 100)
         except (DatatypeError, ValidationError):
             pass    # If there is no valid query, just don't auto-complete
@@ -102,13 +101,9 @@ def get_results(request):
         limit = NUM_SERVERS_DEFAULT
 
     order_by = request.GET.get('order_by')
-    order_dir = request.GET.get('order_dir', 'asc')
 
     try:
-        query_kwargs = parse_query(term)
-        query = Query(query_kwargs)
-        query.restrict(*shown_attributes)
-        query.order_by(order_by, order_dir)
+        query = Query(parse_query(term), shown_attributes, [order_by])
         results = query.get_results()
     except (DatatypeError, ValidationError, DataError) as error:
         return HttpResponse(json.dumps({
@@ -161,8 +156,7 @@ def get_results(request):
 def export(request):
     term = request.GET.get('term', '')
     try:
-        query_args = parse_query(term)
-        query = Query(query_args).restrict('hostname')
+        query = Query(parse_query(term), ['hostname'])
     except (DatatypeError, ValidationError) as error:
         return HttpResponse(str(error), status=400)
 
@@ -352,14 +346,13 @@ def get_values(request):
 def new_server(request):
     if 'clone_from' in request.REQUEST:
         try:
-            clone_from = (
-                Query({'hostname': request.REQUEST['clone_from']})
-                .restrict(*(
+            clone_from = Query(
+                {'hostname': request.REQUEST['clone_from']},
+                [
                     a.pk for a in Attribute.objects.all()
                     if a.special or a.can_be_materialized()
-                ))
-                .get()
-            )
+                ]
+            ).get()
         except ValidationError:
             raise Http404
     else:
@@ -407,28 +400,28 @@ def new_server(request):
 @login_required
 def choose_ip_addr(request):
     if 'network' not in request.GET:
-        servers = list(
-            Query({'servertype': 'route_network'})
-            .order_by('hostname')
-            .restrict('hostname', 'intern_ip')
-        )
+        servers = list(Query(
+            {'servertype': 'route_network'},
+            ['hostname', 'intern_ip'],
+            ['hostname'],
+        ))
 
         return TemplateResponse(request, 'servershell/choose_ip_addr.html', {
             'servers': servers
         })
 
     network = request.GET['network']
-    servers = list(
-        Query({
+    servers = list(Query(
+        {
             'servertype': Any(*(
                 s.pk for s in Servertype.objects.all()
                 if s.ip_addr_type == 'network'
             )),
             'intern_ip': ContainedOnlyBy(network),
-        })
-        .order_by('hostname')
-        .restrict('hostname', 'intern_ip')
-    )
+        },
+        ['hostname', 'intern_ip'],
+        ['hostname'],
+    ))
 
     if servers:
         return TemplateResponse(request, 'servershell/choose_ip_addr.html', {

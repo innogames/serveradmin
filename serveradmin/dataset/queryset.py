@@ -23,7 +23,7 @@ NUM_OBJECTS_FOR_FILECACHE = 50
 
 
 class Query(BaseQuery):
-    def __init__(self, filters):
+    def __init__(self, filters, restrict=None, order_by=None):
         self._filters = {}
         for attribute_id, filter_obj in filters.items():
             try:
@@ -36,8 +36,14 @@ class Query(BaseQuery):
                 self._filters[attribute] = filter_obj
             else:
                 self._filters[attribute] = BaseFilter(filter_obj)
-        self._restrict = set()
-        self._order_by = None
+        if restrict:
+            self._restrict = {Attribute.objects.get(pk=a) for a in restrict}
+        else:
+            self._restrict = None
+        if order_by:
+            self._order_by = [Attribute.objects.get(pk=a) for a in order_by]
+        else:
+            self._order_by = None
         self._results = None
         self._num_dirty = 0
 
@@ -46,6 +52,7 @@ class Query(BaseQuery):
         commit_changes(commit, *args, **kwargs)
         self._confirm_changes()
 
+    # XXX: Deprecated
     def restrict(self, *attrs):
         for attribute_id in attrs:
             try:
@@ -56,6 +63,7 @@ class Query(BaseQuery):
                 )
         return self
 
+    # XXX: Deprecated
     def order_by(self, *attribute_ids):
         self._order_by = []
         for attribute_id in attribute_ids:
@@ -139,9 +147,10 @@ class Query(BaseQuery):
         self._attributes_by_type = defaultdict(set)
         self._servertypes_by_attribute = defaultdict(list)
         self._related_servertype_attributes = []
-        attributes = self._restrict if self._restrict else None
-        if attributes and self._order_by:
-            attributes = list(attributes) + self._order_by
+        if self._restrict and self._order_by:
+            attributes = list(self._restrict) + self._order_by
+        else:
+            attributes = self._restrict
         for sa in ServertypeAttribute.query(servertypes, attributes).all():
             self._select_servertype_attribute(sa)
 

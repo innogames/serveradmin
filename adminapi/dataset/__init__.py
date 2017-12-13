@@ -15,6 +15,14 @@ class DatasetError(Exception):
 
 
 class BaseQuery(object):
+    def __init__(self, filters, restrict=None, order_by=None):
+        self._filters = {
+            a: f if isinstance(f, BaseFilter) else BaseFilter(f)
+            for a, f in filters.items()
+        }
+        self._restrict = restrict
+        self._order_by = order_by
+        self._results = None
 
     def __iter__(self):
         return iter(self.get_results())
@@ -26,7 +34,12 @@ class BaseQuery(object):
         return bool(self.get_results())
 
     def __repr__(self):
-        return 'Query({!r})'.format(self._filters)
+        args = [repr(self._filters)]
+        if self._restrict is not None:
+            args.append('restrict=' + repr(self._restrict))
+        if self._order_by is not None:
+            args.append('order_by=' + repr(self._order_by))
+        return 'Query({})'.format(', '.join(args))
 
     def get_lookup(self, attr):
         lookup = {}
@@ -35,6 +48,7 @@ class BaseQuery(object):
                 lookup[host[attr]] = host
         return lookup
 
+    # XXX: Deprecated
     def restrict(self, *attrs):
         if not attrs:
             return self
@@ -46,6 +60,7 @@ class BaseQuery(object):
 
         return self
 
+    # XXX: Deprecated
     def order_by(self, *attribute_ids):
         self._order_by = attribute_ids
         return self
@@ -104,14 +119,6 @@ class BaseQuery(object):
 
 
 class Query(BaseQuery):
-    def __init__(self, filters):
-        self._filters = {
-            a: f if isinstance(f, BaseFilter) else BaseFilter(f)
-            for a, f in filters.items()
-        }
-        self._results = None
-        self._restrict = None
-        self._order_by = None
 
     def commit(self, skip_validation=False, force_changes=False):
         commit = self._build_commit_object()
@@ -128,11 +135,12 @@ class Query(BaseQuery):
 
     def get_results(self):
         if self._results is None:
-            request_data = {
-                'filters': self._filters,
-                'restrict': self._restrict,
-                'order_by': self._order_by,
-            }
+            request_data = {'filters': self._filters}
+            if self._restrict is not None:
+                request_data['restrict'] = self._restrict
+            if self._order_by is not None:
+                request_data['order_by'] = self._order_by
+
             response = send_request(QUERY_ENDPOINT, request_data)
             self._handle_response(response)
         return self._results
