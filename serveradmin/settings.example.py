@@ -173,12 +173,12 @@ LOGGING = {
     'disable_existing_loggers': False,
     'filters': {
         'require_debug_false': {
-            '()': 'django.utils.log.RequireDebugFalse'
+            '()': 'django.utils.log.RequireDebugFalse',
         },
     },
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s %(asctime)s: %(message)s'
+            'format': '%(levelname)s %(asctime)s [%(process)d]: %(message)s',
         }
     },
     'handlers': {
