@@ -173,25 +173,34 @@ LOGGING = {
     'disable_existing_loggers': False,
     'filters': {
         'require_debug_false': {
-            '()': 'django.utils.log.RequireDebugFalse'
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
         },
     },
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s %(asctime)s: %(message)s'
+            'format': '%(levelname)s %(asctime)s [%(process)d]: %(message)s',
         }
     },
     'handlers': {
-        'file': {
-            'formatter': 'verbose',
-            'level': 'DEBUG',
+        'logfile': {
             'class': 'logging.FileHandler',
+            'filters': ['require_debug_false'],
+            'level': 'INFO',
+            'formatter': 'verbose',
             'filename': '/var/log/serveradmin.log',
+        },
+        'console': {
+            'class': 'logging.StreamHandler',
+            'filters': ['require_debug_true'],
+            'level': 'DEBUG',
         },
     },
     'loggers': {
         'serveradmin': {
-            'handlers': ['file'],
+            'handlers': ['logfile', 'console'],
             'level': 'DEBUG',
             'propagate': True,
         },

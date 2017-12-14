@@ -1,3 +1,9 @@
+from logging import getLogger
+from time import time
+
+logger = getLogger('serveradmin')
+
+
 class HookError(Exception):
     pass
 
@@ -61,5 +67,12 @@ class HookSlot(object):
 
     def invoke(self, **kwargs):
         self.validate(**kwargs)
+        start_time = time()
         for hookfn in self._hooks:
             hookfn(**kwargs)
+            end_time = time()
+            logger.info('hooks: Invoke: ' + (', '.join([
+                'Function: {}'.format(hookfn.__name__),
+                'Time elapsed: {:.3f}s'.format(end_time - start_time),
+            ])))
+            start_time = end_time
