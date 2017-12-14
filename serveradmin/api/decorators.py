@@ -10,7 +10,6 @@ from django.http import (
     HttpResponseBadRequest,
     HttpResponseForbidden,
 )
-from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.crypto import constant_time_compare
 
@@ -19,51 +18,27 @@ from serveradmin.apps.models import Application
 from serveradmin.api import AVAILABLE_API_FUNCTIONS
 
 
-def api_view(view):     # NOQA: C901
+def api_view(view):
     @csrf_exempt
     def _wrapper(request):
-        try:
-            app_id = request.META['HTTP_X_APPLICATION']
-            timestamp = int(request.META['HTTP_X_TIMESTAMP'])
-            security_token = request.META['HTTP_X_SECURITYTOKEN']
-        except (KeyError, ValueError):
-            return HttpResponseBadRequest(
-                'Invalid API request', content_type='text/plain'
-            )
+        problem = check_authentication_headers(request)
+        if problem:
+            return HttpResponseBadRequest(problem, content_type='text/plain')
+
+        app_id = request.META['HTTP_X_APPLICATION']
+        security_token = request.META['HTTP_X_SECURITYTOKEN']
+        timestamp = int(request.META['HTTP_X_TIMESTAMP'])
+        body = request.body.decode('utf8')
 
         try:
             app = Application.objects.get(app_id=app_id)
         except Application.DoesNotExist:
-            return HttpResponseForbidden(
-                'Invalid application', content_type='text/plain'
-            )
+            problem = 'No such application'
+        else:
+            problem = authenticate_app(app, security_token, timestamp, body)
+        if problem:
+            return HttpResponseForbidden(problem, content_type='text/plain')
 
-        body = request.body.decode('utf8')
-        app = get_object_or_404(Application, app_id=app_id)
-        real_token = calc_security_token(app.auth_token, timestamp, body)
-        if not constant_time_compare(real_token, security_token):
-            return HttpResponseForbidden(
-                'Invalid security token', content_type='text/plain'
-            )
-
-        if timestamp + 300 < time.time():
-            return HttpResponseForbidden(
-                'Expired security token', content_type='text/plain'
-            )
-
-        if app.owner is not None and not app.owner.is_active:
-            return HttpResponseForbidden('Sorry, your user is inactive.')
-
-        if app.disabled:
-            return HttpResponseForbidden('Token disabled')
-
-        if not app.superuser and view.__name__ not in [
-            'api_call',
-            'dataset_commit',
-            'dataset_create',
-            'dataset_query',
-        ]:
-            return HttpResponseForbidden('This token has no rights')
         return_value = view(request, app, json.loads(body))
         if getattr(view, 'encode_json', True):
             return_value = json.dumps(return_value, default=json_encode_extra)
@@ -71,6 +46,31 @@ def api_view(view):     # NOQA: C901
         return HttpResponse(return_value, content_type='application/x-json')
 
     return update_wrapper(_wrapper, view)
+
+
+def check_authentication_headers(request):
+    for header_name in ['APPLICATION', 'SECURITYTOKEN', 'TIMESTAMP']:
+        header = 'HTTP_X_' + header_name
+        if header not in request.META:
+            return 'Missing header "{}"'.format(header)
+
+    if not request.META['HTTP_X_TIMESTAMP'].isdecimal():
+        return 'Malformatted header "HTTP_X_TIMESTAMP"'
+
+
+def authenticate_app(app, security_token, timestamp, body):
+    real_token = calc_security_token(app.auth_token, timestamp, body)
+    if not constant_time_compare(real_token, security_token):
+        return 'Invalid security token'
+
+    if timestamp + 300 < time.time():
+        return 'Expired security token'
+
+    if app.owner is not None and not app.owner.is_active:
+        return 'Inactive user'
+
+    if app.disabled:
+        return 'Disabled application'
 
 
 def api_function(group, name=None):
