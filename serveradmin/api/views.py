@@ -1,8 +1,4 @@
 from operator import itemgetter
-try:
-    import simplejson as json
-except ImportError:
-    import json
 
 from django.template.response import TemplateResponse
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -10,7 +6,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.admindocs.utils import trim_docstring, parse_docstring
 
 from adminapi.filters import FilterValueError, filter_from_obj
-from adminapi.request import json_encode_extra
 from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
 from serveradmin.api.decorators import api_view
 from serveradmin.api.utils import build_function_description
@@ -65,7 +60,7 @@ def echo(request, app, data):
     return data
 
 
-# api_view decorator is used after setting an attribute on this function
+@api_view
 def dataset_query(request, app, data):
     if not all(x in data for x in ['filters', 'restrict']):
         return {
@@ -87,20 +82,16 @@ def dataset_query(request, app, data):
         if data.get('order_by'):
             query.order_by(*data['order_by'])
 
-        return json.dumps({
+        return {
             'status': 'success',
             'result': query.get_results(),
-        }, default=json_encode_extra)
+        }
     except (FilterValueError, ValidationError) as error:
-        return json.dumps({
+        return {
             'status': 'error',
             'type': 'ValueError',
             'message': str(error),
-        })
-
-
-dataset_query.encode_json = False
-dataset_query = api_view(dataset_query)
+        }
 
 
 @api_view

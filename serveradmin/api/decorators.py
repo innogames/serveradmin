@@ -52,9 +52,10 @@ def api_view(view):
             logger.error('api: Forbidden: ' + problem)
             return HttpResponseForbidden(problem, content_type='text/plain')
 
-        return_value = view(request, app, json.loads(body))
-        if getattr(view, 'encode_json', True):
-            return_value = json.dumps(return_value, default=json_encode_extra)
+        return_value = json.dumps(
+            view(request, app, json.loads(body)),
+            default=json_encode_extra,
+        )
 
         logger.info('api: Call: ' + (', '.join([
             'Method: {}'.format(view.__name__),
