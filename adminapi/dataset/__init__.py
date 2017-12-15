@@ -1,4 +1,3 @@
-from adminapi import _api_settings
 from adminapi.base import (
     BaseQuery, BaseServerObject, DatasetError, MultiAttr, cast_datatype
 )
@@ -18,25 +17,20 @@ class Attribute(object):
 
 
 class Query(BaseQuery):
-    def __init__(
-        self,
-        filters,
-        auth_token=_api_settings['auth_token'],
-        timeout=_api_settings['timeout_dataset'],
-    ):
-        BaseQuery.__init__(self, {
+    def __init__(self, filters):
+        self._filters = {
             a: f if isinstance(f, BaseFilter) else BaseFilter(f)
             for a, f in filters.items()
-        })
-        self.auth_token = auth_token
-        self.timeout = timeout
+        }
+        self._results = None
+        self._restrict = None
+        self._order_by = None
 
     def commit(self, skip_validation=False, force_changes=False):
         commit = self._build_commit_object()
         commit['skip_validation'] = skip_validation
         commit['force_changes'] = force_changes
-        result = send_request(COMMIT_ENDPOINT, commit, self.auth_token,
-                              self.timeout)
+        result = send_request(COMMIT_ENDPOINT, commit)
 
         if result['status'] == 'success':
             self.num_dirty = 0
@@ -46,25 +40,23 @@ class Query(BaseQuery):
         elif result['status'] == 'error':
             _handle_exception(result)
 
-    def _fetch_results(self):
-        request_data = {
-            'filters': self._filters,
-            'restrict': self._restrict,
-            'order_by': self._order_by,
-        }
-        response = send_request(
-            QUERY_ENDPOINT, request_data, self.auth_token, self.timeout
-        )
-        return self._handle_response(response)
+    def get_results(self):
+        if self._results is None:
+            request_data = {
+                'filters': self._filters,
+                'restrict': self._restrict,
+                'order_by': self._order_by,
+            }
+            response = send_request(QUERY_ENDPOINT, request_data)
+            self._handle_response(response)
+        return self._results
 
     def _handle_response(self, response):
         if response['status'] == 'success':
             self._results = []
             for server in response['result']:
                 object_id = server['object_id']
-                server_obj = ServerObject(
-                    object_id, self, self.auth_token, self.timeout
-                )
+                server_obj = ServerObject([], object_id, self)
                 for attribute_id, value in list(server.items()):
                     if isinstance(value, list):
                         casted_value = MultiAttr((
@@ -80,19 +72,11 @@ class Query(BaseQuery):
 
 
 class ServerObject(BaseServerObject):
-
-    def __init__(self, object_id=None, query=None, auth_token=None,
-                 timeout=None):
-        BaseServerObject.__init__(self, [], object_id, query)
-        self.auth_token = auth_token
-        self.timeout = timeout
-
     def commit(self, skip_validation=False, force_changes=False):
         commit = self._build_commit_object()
         commit['skip_validation'] = skip_validation
         commit['force_changes'] = force_changes
-        result = send_request(COMMIT_ENDPOINT, commit, self.auth_token,
-                              self.timeout)
+        result = send_request(COMMIT_ENDPOINT, commit)
 
         if result['status'] == 'success':
             self._confirm_changes()
@@ -127,7 +111,6 @@ def create(
     skip_validation=False,
     fill_defaults=True,
     fill_defaults_all=False,
-    auth_token=None,
 ):
     request = {
         'attributes': attributes,
@@ -136,17 +119,8 @@ def create(
         'fill_defaults_all': fill_defaults_all,
     }
 
-    if auth_token is None:
-        auth_token = _api_settings['auth_token']
-
-    response = send_request(
-        CREATE_ENDPOINT, request, auth_token, _api_settings['timeout_dataset']
-    )
-    qs = Query(
-        filters={'hostname': attributes['hostname']},
-        auth_token=auth_token,
-        timeout=_api_settings['timeout_dataset'],
-    )
+    response = send_request(CREATE_ENDPOINT, request)
+    qs = Query({'hostname': attributes['hostname']})
     qs._handle_response(response)
 
     return qs.get()

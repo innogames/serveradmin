@@ -1,11 +1,10 @@
 from __future__ import division
 
-import hashlib
-
 from django.db import models
 from django.db.models.signals import pre_save
 from django.contrib.auth.models import User
 
+from adminapi.request import calc_app_id
 from serveradmin.common.utils import random_alnum_string
 
 
@@ -26,7 +25,7 @@ class Application(models.Model):
 def set_auth_token(sender, instance, **kwargs):
     if not instance.auth_token:
         instance.auth_token = random_alnum_string(24)
-    instance.app_id = hashlib.sha1(instance.auth_token.encode()).hexdigest()
+    instance.app_id = calc_app_id(instance.auth_token)
 
 
 pre_save.connect(set_auth_token, sender=Application)
