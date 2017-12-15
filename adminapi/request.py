@@ -42,7 +42,7 @@ def send_request(endpoint, data, auth_token, timeout=None):
             return json.loads(
                 urlopen(req, timeout=timeout).read().decode('utf8'))
         except HTTPError as error:
-            if error.code not in (500, 502):
+            if error.code < 500:
                 raise
             if retry == 0:
                 raise
