@@ -9,7 +9,8 @@ setup(
     author_email='it@innogames.com',
     packages=[
         'adminapi',
-        'adminapi.dataset',
+        'adminapi.dataset',     # XXX Deprecated
+        'adminapi.utils',       # XXX Deprecated
     ],
     version='1.0',
     long_description=(
