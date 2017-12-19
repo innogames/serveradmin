@@ -1,4 +1,3 @@
-from adminapi import _api_settings
 from adminapi.request import send_request
 
 API_CALL_ENDPOINT = '/call'
@@ -24,25 +23,19 @@ class ExceptionManager(object):
 
 
 class FunctionGroup(object):
-    def __init__(self, group, auth_token, timeout):
+    def __init__(self, group):
         self.group = group
-        self.auth_token = auth_token
-        self.timeout = timeout
 
     def __getattr__(self, attr):
         def _api_function(*args, **kwargs):
             call = {
-                    'group': self.group,
-                    'name': attr,
-                    'args': args,
-                    'kwargs': kwargs,
-                }
+                'group': self.group,
+                'name': attr,
+                'args': args,
+                'kwargs': kwargs,
+            }
 
-            if hasattr(self.auth_token, '__call__'):
-                self.auth_token = self.auth_token()
-
-            result = send_request(API_CALL_ENDPOINT, call, self.auth_token,
-                                  self.timeout)
+            result = send_request(API_CALL_ENDPOINT, call)
 
             if result['status'] == 'success':
                 return result['retval']
@@ -70,11 +63,6 @@ class FunctionGroup(object):
         return _api_function
 
 
+# XXX Deprecated
 def get(group):
-    # We allow delaying the authentication
-    if _api_settings['auth_token'] is None:
-        token = (lambda: _api_settings['auth_token'])
-    else:
-        token = _api_settings['auth_token']
-
-    return FunctionGroup(group, token, _api_settings['timeout_api'])
+    return FunctionGroup(group)

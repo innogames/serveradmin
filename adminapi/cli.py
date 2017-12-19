@@ -7,7 +7,6 @@ from __future__ import print_function
 
 from argparse import ArgumentParser, ArgumentTypeError
 
-from adminapi import _api_settings
 from adminapi.dataset import Query
 from adminapi.parse import parse_query
 
@@ -61,12 +60,8 @@ def main():
     if args.update:
         attribute_ids_to_fetch.extend(u[0] for u in args.update)
 
-    query = Query(
-        # TODO: Avoid .join()
-        filters=parse_query(' '.join(args.query)),
-        auth_token=_api_settings['auth_token'],
-        timeout=_api_settings['timeout_dataset'],
-    )
+    # TODO Avoid .join()
+    query = Query(parse_query(' '.join(args.query)))
     query.restrict(*attribute_ids_to_fetch)
     if args.order:
         query.order_by(*args.order)

@@ -109,6 +109,11 @@ class Query(BaseQuery):
 
         return QueryBuilder(servertypes, filters)
 
+    def get_results(self):
+        if self._results is None:
+            self._fetch_results()
+        return self._results
+
     def _fetch_results(self):
         builder = self._get_query_builder()
         if builder is None:

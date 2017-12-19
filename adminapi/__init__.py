@@ -1,22 +1,12 @@
-from adminapi.cmduser import get_auth_token
-
-_api_settings = {
-    'auth_token': '',
-    'timeout_api': None,
-    'timeout_dataset': 60,
-}
+from adminapi.request import Settings
 
 
+# XXX Deprecated
 def auth(auth_token=None):
-    if auth_token is None:
-        auth_token = get_auth_token()
-    _api_settings['auth_token'] = auth_token
+    if auth_token:
+        Settings.auth_token = auth_token
 
 
+# XXX Deprecated
 def set_timeout(timeout, what='api'):
-    if what == 'api':
-        _api_settings['timeout_api'] = timeout
-    elif what == 'dataset':
-        _api_settings['timeout_dataset'] = timeout
-    else:
-        raise ValueError('Unknown timeout: {0}'.format(what))
+    Settings.timeout = timeout

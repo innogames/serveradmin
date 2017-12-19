@@ -44,12 +44,6 @@ class QueryError(DatasetError):
 
 
 class BaseQuery(object):
-    def __init__(self, filters):
-        self._filters = filters
-        self._results = None
-        self._restrict = None
-        self._order_by = None
-
     def __iter__(self):
         return iter(self.get_results())
 
@@ -116,11 +110,6 @@ class BaseQuery(object):
         return self
 
     def get_results(self):
-        if self._results is None:
-            self._fetch_results()
-        return self._results
-
-    def _fetch_results(self):
         raise NotImplementedError()
 
     def _confirm_changes(self):
