@@ -284,9 +284,6 @@ class Attribute(LookupModel):
         db_table = 'attribute'
         ordering = ('pk', )
 
-    def __repr__(self):
-        return repr(self.pk)
-
     @property
     def related_servertype_attributes(self):
         return self.servertype_attributes.filter(
