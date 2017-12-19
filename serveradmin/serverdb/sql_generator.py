@@ -71,9 +71,14 @@ def _get_sql_condition(attribute, filt, related_vias):
                 'Boolean attribute "{}" cannot be used with {}() filter'
                 .format(attribute, type(filt).__name__)
             )
+            if not isinstance(filt.value, bool):
+                raise FilterValueError(
+                    'Boolean attribute "{}" cannot be checked against {}'
+                    .format(attribute, type(filt.value).__name__)
+                )
 
-        # TODO: Better return errors for mismatching datatypes than casting
-        negate = not filt.value or filt.value == 'false'
+        negate = not filt.value
+
     elif isinstance(filt, Regexp):
         template = '{0}::text ~ E' + _raw_sql_escape(filt.value)
     elif isinstance(filt, (GreaterThanOrEquals, LessThanOrEquals)):
