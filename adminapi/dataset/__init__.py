@@ -1,5 +1,5 @@
 from adminapi.base import (
-    BaseQuery, BaseServerObject, DatasetError, MultiAttr, cast_datatype
+    BaseQuery, BaseServerObject, DatasetError, MultiAttr, json_to_datatype
 )
 from adminapi.filters import BaseFilter
 from adminapi.request import send_request
@@ -60,10 +60,10 @@ class Query(BaseQuery):
                 for attribute_id, value in list(server.items()):
                     if isinstance(value, list):
                         casted_value = MultiAttr((
-                            cast_datatype(v) for v in value
+                            json_to_datatype(v) for v in value
                         ), server_obj, attribute_id)
                     else:
-                        casted_value = cast_datatype(value)
+                        casted_value = json_to_datatype(value)
                     dict.__setitem__(server_obj, attribute_id, casted_value)
                 self._results.append(server_obj)
 

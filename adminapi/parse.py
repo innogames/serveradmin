@@ -1,4 +1,4 @@
-from adminapi.base import QueryError
+from adminapi.base import QueryError, str_to_datatype
 from adminapi.filters import BaseFilter, Any, Regexp, filter_classes
 
 _trigger_re_chars = ('.*', '.+', '[', ']', '|', '\\', '$', '^', '<')
@@ -152,7 +152,7 @@ def parse_function_string(args, strict=True):   # NOQA C901
         elif state == 'unquotedstring':
             if args[i] == ' ':
                 parsed_args.append(
-                    ('literal', cast_datatype(args[string_start:i]))
+                    ('literal', str_to_datatype(args[string_start:i]))
                 )
                 state = 'start'
             elif args[i] == '(':
@@ -163,7 +163,7 @@ def parse_function_string(args, strict=True):   # NOQA C901
             elif args[i] == ')' and call_depth != 0:
                 if string_start != i:
                     parsed_args.append(
-                        ('literal', cast_datatype(args[string_start:i]))
+                        ('literal', str_to_datatype(args[string_start:i]))
                     )
                 parsed_args.append(('endfunc', ''))
                 call_depth -= 1
@@ -177,7 +177,7 @@ def parse_function_string(args, strict=True):   # NOQA C901
                 state = 'start'
             i += 1
     if state == 'unquotedstring':
-        parsed_args.append(('literal', cast_datatype(args[string_start:])))
+        parsed_args.append(('literal', str_to_datatype(args[string_start:])))
     elif state == 'string':
         if strict:
             raise QueryError('Unterminated string')
@@ -185,15 +185,3 @@ def parse_function_string(args, strict=True):   # NOQA C901
             parsed_args.append(('literal', args[string_start:]))
 
     return parsed_args
-
-
-def cast_datatype(arg):
-    if arg == 'true':
-        return True
-    if arg == 'false':
-        return False
-    if arg.isdigit():
-        return int(arg)
-    if all(a.isdigit() for a in arg.split('.', 1)):
-        return float(arg)
-    return arg

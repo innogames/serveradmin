@@ -1,10 +1,10 @@
 from datetime import date
 from distutils.util import strtobool
-from netaddr import EUI
 from re import compile as re_compile
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 from itertools import chain
 
+from netaddr import EUI
 
 RE_32 = r'([0-9]|[1-2][0-9]|3[0-2])'
 RE_128 = r'([0-9]|[1-9][0-9]|1(1[0-9]|2[0-8]))'
@@ -413,7 +413,19 @@ def _validate_value(attribute_id, value, datatype=None):
     )
 
 
-def cast_datatype(value):
+def str_to_datatype(value):
+    if value == 'true':
+        return True
+    if value == 'false':
+        return False
+    if value.isdigit():
+        return int(value)
+    if all(a.isdigit() for a in value.split('.', 1)):
+        return float(value)
+    return json_to_datatype(value)
+
+
+def json_to_datatype(value):
     for datatype, regexp in STR_BASED_DATATYPES:
         if regexp.match(str(value)):
             # date constructor is special.
