@@ -496,11 +496,16 @@ class Server(models.Model):
         super(Server, self).clean(*args, **kwargs)
         self._validate_project()
         if self.servertype.ip_addr_type == 'null':
-            self._validate_null_intern_ip()
-        elif self.servertype.ip_addr_type in ('host', 'loadbalancer'):
-            self._validate_host_intern_ip()
-        elif self.servertype.ip_addr_type == 'network':
-            self._validate_network_intern_ip()
+            if self.intern_ip is not None:
+                raise ValidationError('IP address must be null.')
+        else:
+            if self.intern_ip is None:
+                raise ValidationError('IP address must not be null.')
+
+            if self.servertype.ip_addr_type == 'network':
+                self._validate_network_intern_ip()
+            else:
+                self._validate_host_intern_ip()
 
     def _validate_project(self):
         fixed_project = self.servertype.fixed_project
@@ -508,10 +513,6 @@ class Server(models.Model):
             raise ValidationError(
                 'Project has to be "{0}".'.format(fixed_project)
             )
-
-    def _validate_null_intern_ip(self):
-        if self.intern_ip is not None:
-            raise ValidationError('IP address must be null.')
 
     def _validate_host_intern_ip(self):
         if self.intern_ip.max_prefixlen != self.netmask_len():
