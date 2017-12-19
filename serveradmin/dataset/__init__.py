@@ -92,24 +92,47 @@ def _filter_servers(filters):
 
 
 def _materialize_servers(servers, restrict, order_by=None):
+    joins = {}
     if not restrict:
         # None means query everything to the materializer.
         attribute_ids = None
-    elif order_by:
-        attribute_ids = restrict + set(order_by)
     else:
-        attribute_ids = restrict
+        attribute_ids = set(order_by or [])
+
+        for item in restrict:
+            if isinstance(item, dict):
+                if len(item) != 1:
+                    raise ValidationError('Malformatted join restriction')
+                for attribute_id, value in item.items():
+                    pass
+                joins[attribute_id] = value
+                attribute_ids.add(attribute_id)
+            else:
+                attribute_ids.add(item)
     server_ids = (s.server_id for s in servers)
     materializer = QueryMaterializer(servers, attribute_ids)
     if order_by:
         def order_by_key(key):
             return tuple(
-                materializer.get_order_by_attribute(key, a) for a in order_by
+                materializer.get_order_by_attribute(key, a)
+                for a in order_by
             )
 
         server_ids = sorted(server_ids, key=order_by_key)
 
+    join_results = _get_join_results(materializer, joins)
     return [
-        ServerObject(materializer.get_attributes(i), i)
+        ServerObject(materializer.get_attributes(i, join_results), i)
         for i in server_ids
     ]
+
+
+def _get_join_results(materializer, joins):
+    results = dict()
+    for attribute_id, restrict in joins.items():
+        servers = materializer.get_servers_to_join(attribute_id)
+        results[attribute_id] = {
+            s.object_id: s
+            for s in _materialize_servers(servers, restrict)
+        }
+    return results

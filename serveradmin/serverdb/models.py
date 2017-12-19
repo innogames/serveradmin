@@ -704,9 +704,6 @@ class ServerHostnameAttribute(ServerAttribute):
         unique_together = (('server', '_attribute', 'value'), )
         index_together = (('_attribute', 'value'), )
 
-    def get_value(self):
-        return self.value.hostname
-
     def save_value(self, value):
         target_servertype = self.attribute.target_servertype
 

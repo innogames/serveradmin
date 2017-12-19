@@ -132,7 +132,7 @@ class QueryMaterializer:
                     target = source.get_supernet(attribute.target_servertype)
                 except Server.DoesNotExist:
                     continue
-            self._server_attributes[source.pk][attribute] = target.hostname
+            self._server_attributes[source.pk][attribute] = target
 
     def _add_related_attribute(self, servertype_attribute, servers_by_type):
         attribute = servertype_attribute.attribute
@@ -190,7 +190,7 @@ class QueryMaterializer:
             return 0, tuple(sort_key(v) for v in value)
         return 0, sort_key(value)
 
-    def get_attributes(self, server_id):
+    def get_attributes(self, server_id, join_results):  # NOQA: C901
         yield 'object_id', server_id
         server_attributes = self._server_attributes[server_id]
         for attribute, value in server_attributes.items():
@@ -208,8 +208,39 @@ class QueryMaterializer:
                         else:
                             assert servertype.ip_addr_type == 'network'
                             yield attribute.pk, value.network
+                elif attribute.pk in join_results:
+                    if attribute.multi:
+                        yield attribute.pk, {
+                            join_results[attribute.pk][v.server_id]
+                            for v in value
+                        }
+                    else:
+                        yield attribute.pk, join_results[attribute.pk][
+                            value.server_id
+                        ]
+                elif isinstance(value, Server):
+                    if attribute.multi:
+                        yield attribute.pk, {v.hostname for v in value}
+                    else:
+                        yield attribute.pk, value.hostname
                 else:
                     yield attribute.pk, value
+
+    def get_servers_to_join(self, attribute_id):
+        # The join attribute must be in our list.
+        for attribute in self._attributes:
+            if attribute.pk == attribute_id:
+                break
+
+        servers = set()
+        for server_attributes in self._server_attributes.values():
+            if attribute in server_attributes:
+                if attribute.multi:
+                    for server in server_attributes[attribute]:
+                        servers.add(server)
+                else:
+                    servers.add(server_attributes[attribute])
+        return servers
 
 
 def sort_key(value):

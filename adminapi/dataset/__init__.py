@@ -142,27 +142,10 @@ class Query(BaseQuery):
                 request_data['order_by'] = self._order_by
 
             response = send_request(QUERY_ENDPOINT, request_data)
-            self._handle_response(response)
+            if response['status'] == 'error':
+                _handle_exception(response)
+            self._results = [_format_server(s) for s in response['result']]
         return self._results
-
-    def _handle_response(self, response):
-        if response['status'] == 'success':
-            self._results = []
-            for server in response['result']:
-                object_id = server['object_id']
-                server_obj = ServerObject([], object_id)
-                for attribute_id, value in list(server.items()):
-                    if isinstance(value, list):
-                        casted_value = MultiAttr((
-                            json_to_datatype(v) for v in value
-                        ), server_obj, attribute_id)
-                    else:
-                        casted_value = json_to_datatype(value)
-                    dict.__setitem__(server_obj, attribute_id, casted_value)
-                self._results.append(server_obj)
-
-        elif response['status'] == 'error':
-            _handle_exception(response)
 
 
 class BaseServerObject(dict):
@@ -437,7 +420,32 @@ def create(
     }
 
     response = send_request(CREATE_ENDPOINT, request)
-    qs = Query({'hostname': attributes['hostname']})
-    qs._handle_response(response)
+    if response['status'] == 'error':
+        _handle_exception(response)
 
-    return qs.get()
+    return _format_server(response['result'][0])
+
+
+def _format_server(result):
+    object_id = result['object_id']
+    server_obj = ServerObject([], object_id)
+
+    for attribute_id, value in list(result.items()):
+        if isinstance(value, list):
+            casted_value = MultiAttr(
+                (_format_attribute_value(v) for v in value),
+                server_obj,
+                attribute_id,
+            )
+        else:
+            casted_value = _format_attribute_value(value)
+
+        dict.__setitem__(server_obj, attribute_id, casted_value)
+
+    return server_obj
+
+
+def _format_attribute_value(value):
+    if isinstance(value, dict):
+        return _format_server(value)
+    return json_to_datatype(value)
