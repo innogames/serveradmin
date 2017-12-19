@@ -24,7 +24,7 @@ from adminapi.filters import (
 from serveradmin.serverdb.models import Server, ServerAttribute
 
 
-class QueryBuilder(object):
+class QueryFilterer(object):
     def __init__(self, servertypes, filters):
         self.servertypes = servertypes
         self.filters = filters

@@ -14,7 +14,7 @@ from serveradmin.serverdb.models import (
     ServerAttribute,
     ServerHostnameAttribute,
 )
-from serveradmin.serverdb.querybuilder import QueryBuilder
+from serveradmin.serverdb.query_filterer import QueryFilterer
 from serveradmin.dataset.commit import commit_changes
 
 
@@ -71,7 +71,7 @@ class Query(BaseQuery):
                 )
         return self
 
-    def _get_query_builder(self):
+    def _get_query_filterer(self):
         attributes = []
         filters = {}
         servertypes = set(Servertype.objects.all())
@@ -102,7 +102,7 @@ class Query(BaseQuery):
         if not servertypes:
             return None
 
-        return QueryBuilder(servertypes, filters)
+        return QueryFilterer(servertypes, filters)
 
     def get_results(self):
         if self._results is None:
@@ -110,14 +110,14 @@ class Query(BaseQuery):
         return self._results
 
     def _fetch_results(self):
-        builder = self._get_query_builder()
-        if builder is None:
+        filterer = self._get_query_filterer()
+        if filterer is None:
             self._results = []
             return
 
         self._server_attributes = dict()
         servers_by_type = defaultdict(list)
-        servers = tuple(Server.objects.raw(builder.build_sql()))
+        servers = tuple(Server.objects.raw(filterer.build_sql()))
         for server in servers:
             self._server_attributes[server.pk] = {
                 Attribute.specials['hostname']: server.hostname,
