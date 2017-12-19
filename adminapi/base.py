@@ -136,7 +136,7 @@ class BaseServerObject(dict):
     to cast multi attributes and to validate the values.
     """
 
-    def __init__(self, attributes=[], object_id=None, query=None):
+    def __init__(self, attributes=[], object_id=None):
         # Loop through ourself afterwards would be more efficient, but
         # this would give the caller already initialised object in case
         # anything fails.
@@ -147,7 +147,6 @@ class BaseServerObject(dict):
         super(BaseServerObject, self).__init__(attributes)
         self.object_id = object_id
         self._deleted = False
-        self._query = query
         self.old_values = {}
 
     def __hash__(self):

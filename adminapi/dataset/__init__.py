@@ -56,7 +56,7 @@ class Query(BaseQuery):
             self._results = []
             for server in response['result']:
                 object_id = server['object_id']
-                server_obj = ServerObject([], object_id, self)
+                server_obj = ServerObject([], object_id)
                 for attribute_id, value in list(server.items()):
                     if isinstance(value, list):
                         casted_value = MultiAttr((
