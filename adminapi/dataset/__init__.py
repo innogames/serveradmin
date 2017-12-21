@@ -15,14 +15,18 @@ class DatasetError(Exception):
 
 
 class BaseQuery(object):
-    def __init__(self, filters, restrict=None, order_by=None):
-        self._filters = {
-            a: f if isinstance(f, BaseFilter) else BaseFilter(f)
-            for a, f in filters.items()
-        }
+    def __init__(self, filters=None, restrict=None, order_by=None):
+        if filters is None:
+            self._filters = None
+            self._results = []
+        else:
+            self._filters = {
+                a: f if isinstance(f, BaseFilter) else BaseFilter(f)
+                for a, f in filters.items()
+            }
+            self._results = None
         self._restrict = restrict
         self._order_by = order_by
-        self._results = None
 
     def __iter__(self):
         return iter(self.get_results())
@@ -34,7 +38,9 @@ class BaseQuery(object):
         return bool(self.get_results())
 
     def __repr__(self):
-        args = [repr(self._filters)]
+        args = []
+        if self._filters is not None:
+            args.append(repr(self._filters))
         if self._restrict is not None:
             args.append('restrict=' + repr(self._restrict))
         if self._order_by is not None:
