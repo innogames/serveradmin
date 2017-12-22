@@ -1,6 +1,6 @@
 from re import compile as re_compile, error as re_error
 
-from adminapi.base import STR_BASED_DATATYPES, QueryError
+from adminapi.datatype import STR_BASED_DATATYPES, DatatypeError
 
 try:
     STR_DATATYPES = (str, unicode)
@@ -8,7 +8,8 @@ except NameError:
     STR_DATATYPES = (str,)
 
 
-class FilterValueError(QueryError, ValueError):
+# XXX: Sub-class ValueError for backwards compatibility
+class FilterValueError(DatatypeError, ValueError):
     pass
 
 

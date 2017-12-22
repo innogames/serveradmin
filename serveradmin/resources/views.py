@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 
-from adminapi.base import QueryError
+from adminapi.datatype import DatatypeError
 from adminapi.filters import Any
 from adminapi.parse import parse_query
 from serveradmin.graphite.models import (
@@ -66,7 +66,7 @@ def index(request):
                 return TemplateResponse(
                     request, 'resources/index.html', template_info
                 )
-        except (QueryError, ValidationError) as error:
+        except (DatatypeError, ValidationError) as error:
             template_info.update({
                 'error': str(error)
             })

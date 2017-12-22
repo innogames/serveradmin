@@ -1,2 +1,2 @@
 # XXX Deprecated
-from adminapi.base import DatasetError, MultiAttr     # NOQA F401
+from adminapi.dataset import DatasetError, MultiAttr    # NOQA: F401

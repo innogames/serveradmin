@@ -1,0 +1,109 @@
+from datetime import date
+from re import compile as re_compile
+from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
+
+from netaddr import EUI
+
+RE_32 = r'([0-9]|[1-2][0-9]|3[0-2])'
+RE_128 = r'([0-9]|[1-9][0-9]|1(1[0-9]|2[0-8]))'
+RE_255 = r'([0-9]|[1-9][0-9]|1[0-9]{2}|2([0-4][0-9]|5[0-5]))'
+RE_IPV4ADDR = r'(' + RE_255 + r'\.){3}' + RE_255
+RE_IPV6ADDR = (
+    r'('
+    r'([0-9a-f]{1,4}:){7,7}[0-9a-f]{1,4}|'
+    r'([0-9a-f]{1,4}:){1,7}:|'
+    r'([0-9a-f]{1,4}:){1,6}:[0-9a-f]{1,4}|'
+    r'([0-9a-f]{1,4}:){1,5}(:[0-9a-f]{1,4}){1,2}|'
+    r'([0-9a-f]{1,4}:){1,4}(:[0-9a-f]{1,4}){1,3}|'
+    r'([0-9a-f]{1,4}:){1,3}(:[0-9a-f]{1,4}){1,4}|'
+    r'([0-9a-f]{1,4}:){1,2}(:[0-9a-f]{1,4}){1,5}|'
+    r'[0-9a-f]{1,4}:((:[0-9a-f]{1,4}){1,6})|'
+    r':((:[0-9a-f]{1,4}){1,7}|:)'
+    r')'
+)
+RE_MACADDR = r'([0-9a-f]{2}:){5}([0-9a-f]{2})'
+RE_DATE = r'[0-9]{1,4}-(0[0-9]|1[0-2])-([0-2][0-9]|3[0-1])'
+STR_BASED_DATATYPES = [
+    (IPv4Address, re_compile(r'\A' + RE_IPV4ADDR + r'\Z')),
+    (IPv4Network, re_compile(r'\A' + RE_IPV4ADDR + r'\/' + RE_32 + r'\Z')),
+    (IPv6Address, re_compile(r'\A' + RE_IPV6ADDR + r'\Z')),
+    (IPv6Network, re_compile(r'\A' + RE_IPV6ADDR + r'\/' + RE_128 + r'\Z')),
+    (EUI, re_compile(r'\A' + RE_MACADDR + r'\Z')),
+    (date, re_compile(r'\A' + RE_DATE + r'\Z')),
+]
+
+
+class DatatypeError(Exception):
+    pass
+
+
+# TODO: Improve this using the datatype list
+def validate_value(value, datatype=None):
+    """It accepts an optional datatype to validate the values.  The values
+    are not necessarily be an instance of this datatype.  They will be checked
+    for a common super-class.  The function returns the found super-class,
+    so that callers can save and reuse it.  When the datatype is not
+    provided, then it will return the class of the value.
+
+    The reason behind this method is to preserve the datatype as much as
+    possible without being too strict.  Just getting the top level class
+    on the inheritance tree after "object" would increase the errors, because
+    with multi-inheritance there can be different top level classes.
+    Therefore, this method is not really deterministic.  It can cause
+    unexpected behavior, but it is the best we can do without knowing about
+    the datatypes of the attributes.
+    """
+
+    special_datatypes = (
+        type,
+        bool,
+        tuple,
+        list,
+        set,
+        frozenset,
+        dict,
+        BaseException,
+        type(None),
+    )
+    assert datatype not in special_datatypes
+    if isinstance(value, special_datatypes):
+        raise DatatypeError('Value cannot be from {}'.format(type(value)))
+
+    assert datatype != object
+    if type(value) == object:
+        raise DatatypeError('Value cannot be a generic object')
+
+    newtype = type(value)
+    if datatype is None or issubclass(datatype, newtype):
+        return newtype
+
+    for supertype in datatype.mro():
+        if issubclass(newtype, supertype) and supertype != object:
+            return supertype
+
+    raise DatatypeError(
+        'Value from {} is not compatible with existing value from {}'
+        .format(type(value), datatype)
+    )
+
+
+def str_to_datatype(value):
+    if value == 'true':
+        return True
+    if value == 'false':
+        return False
+    if value.isdigit():
+        return int(value)
+    if all(a.isdigit() for a in value.split('.', 1)):
+        return float(value)
+    return json_to_datatype(value)
+
+
+def json_to_datatype(value):
+    for datatype, regexp in STR_BASED_DATATYPES:
+        if regexp.match(str(value)):
+            # date constructor is special.
+            if datatype is date:
+                return date(*(int(v) for v in value.split('-', 2)))
+            return datatype(value)
+    return value

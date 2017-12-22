@@ -16,7 +16,7 @@ from django.contrib import messages
 from django.db import DataError, IntegrityError
 from django.utils.html import mark_safe, escape as escape_html
 
-from adminapi.base import QueryError
+from adminapi.datatype import DatatypeError
 from adminapi.filters import Any, ContainedOnlyBy, StartsWith, filter_classes
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
@@ -76,7 +76,7 @@ def autocomplete(request):
             query = Query({'hostname': StartsWith(hostname)})
             query.restrict('hostname')
             autocomplete_list += islice((h['hostname'] for h in query), 100)
-        except (ValidationError, QueryError):
+        except (DatatypeError, ValidationError):
             pass    # If there is no valid query, just don't auto-complete
 
     return HttpResponse(
@@ -110,7 +110,7 @@ def get_results(request):
         query.restrict(*shown_attributes)
         query.order_by(order_by, order_dir)
         results = query.get_results()
-    except (QueryError, ValidationError, DataError) as error:
+    except (DatatypeError, ValidationError, DataError) as error:
         return HttpResponse(json.dumps({
             'status': 'error',
             'message': str(error)
@@ -163,7 +163,7 @@ def export(request):
     try:
         query_args = parse_query(term)
         query = Query(query_args).restrict('hostname')
-    except (QueryError, ValidationError) as error:
+    except (DatatypeError, ValidationError) as error:
         return HttpResponse(str(error), status=400)
 
     hostnames = ' '.join(server['hostname'] for server in query)

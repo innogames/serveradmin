@@ -17,7 +17,7 @@ from django.contrib.auth.models import User
 
 import netfields
 
-from adminapi.base import STR_BASED_DATATYPES
+from adminapi.datatype import STR_BASED_DATATYPES
 from serveradmin.apps.models import Application
 
 
