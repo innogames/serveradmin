@@ -8,11 +8,20 @@ from serveradmin.serverdb.models import (   # TODO: Don't use the models at all
     Attribute, Server, Servertype, ServertypeAttribute
 )
 from serveradmin.serverdb.query_filterer import QueryFilterer
-from serveradmin.serverdb.query_materializer import QueryMaterializer
+from serveradmin.serverdb.query_materializer import (
+    QueryMaterializer,
+    get_default_attribute_values,
+)
 from serveradmin.dataset.commit import commit_changes
 
 
 class Query(BaseQuery):
+
+    def new_object(self, servertype):
+        server_obj = ServerObject(get_default_attribute_values(servertype))
+        self.get_results().append(server_obj)
+
+        return server_obj
 
     def commit(self, *args, **kwargs):
         commit = self._build_commit_object()
@@ -33,18 +42,6 @@ class ServerObject(BaseServerObject):
         commit = self._build_commit_object()
         commit_changes(commit, app=app, user=user)
         self._confirm_changes()
-
-    @classmethod
-    def new(cls, servertype, project, hostname, intern_ip):
-        attribute_values = [
-            ('servertype', servertype.pk),
-            ('project', project.pk),
-            ('hostname', hostname),
-            ('intern_ip', intern_ip),
-        ]
-        for sa in servertype.attributes.all():
-            attribute_values.append((sa.attribute.pk, sa.get_default_value()))
-        return cls(attribute_values)
 
 
 # XXX: Deprecated

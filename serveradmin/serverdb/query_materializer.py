@@ -258,3 +258,22 @@ def sort_key(value):
     if isinstance(value, (Servertype, Project)):
         return value.pk
     return value
+
+
+def get_default_attribute_values(servertype_id):
+    servertype = Servertype.objects.get(pk=servertype_id)
+    attribute_values = {}
+
+    for attribute_id in Attribute.specials:
+        if attribute_id == 'servertype':
+            value = servertype_id
+        elif attribute_id == 'project' and servertype.fixed_project:
+            value = servertype.fixed_project.pk
+        else:
+            value = None
+        attribute_values[attribute_id] = value
+
+    for sa in servertype.attributes.all():
+        attribute_values[sa.attribute.pk] = sa.get_default_value()
+
+    return attribute_values

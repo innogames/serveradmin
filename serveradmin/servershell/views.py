@@ -3,7 +3,6 @@ try:
 except ImportError:
     import json
 from operator import attrgetter
-from ipaddress import ip_interface, ip_network
 from itertools import islice
 
 from django.http import HttpResponse, HttpResponseRedirect, Http404
@@ -20,7 +19,7 @@ from adminapi.datatype import DatatypeError
 from adminapi.filters import Any, ContainedOnlyBy, StartsWith, filter_classes
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
-from serveradmin.dataset import Query, ServerObject
+from serveradmin.dataset import Query
 from serveradmin.dataset.commit import (
     commit_changes,
     CommitValidationFailed,
@@ -30,7 +29,6 @@ from serveradmin.dataset.create import create_server
 from serveradmin.serverdb.forms import ServerForm
 from serveradmin.serverdb.models import (
     Servertype,
-    Project,
     Attribute,
     ServertypeAttribute,
     ServerStringAttribute,
@@ -177,16 +175,7 @@ def edit(request):
     if 'object_id' in request.GET:
         server = Query({'object_id': request.GET['object_id']}).get()
     else:
-        servertype = Servertype.objects.get(pk=request.POST['attr_servertype'])
-        project = Project.objects.get(pk=request.POST['attr_project'])
-        hostname = request.POST['attr_hostname']
-        if servertype.ip_addr_type == 'null':
-            intern_ip = None
-        elif servertype.ip_addr_type == 'network':
-            intern_ip = ip_network(request.POST['attr_intern_ip'])
-        else:
-            intern_ip = ip_interface(request.POST['attr_intern_ip'])
-        server = ServerObject.new(servertype, project, hostname, intern_ip)
+        server = Query().new_object(request.POST['attr_servertype'])
 
     return _edit(request, server, True)
 
@@ -364,12 +353,10 @@ def new_server(request):
         form = ServerForm(request.POST)
 
         if form.is_valid():
-            server = ServerObject.new(
-                form.cleaned_data['_servertype'],
-                form.cleaned_data['_project'],
-                form.cleaned_data['hostname'],
-                form.cleaned_data['intern_ip'],
-            )
+            server = Query().new_object(form.cleaned_data['_servertype'].pk)
+            server['project'] = form.cleaned_data['_project'].pk
+            server['hostname'] = form.cleaned_data['hostname']
+            server['intern_ip'] = form.cleaned_data['intern_ip']
 
             if clone_from:
                 for attribute_id, value in clone_from.items():
