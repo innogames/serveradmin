@@ -1,5 +1,5 @@
 from collections import defaultdict
-from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
+from ipaddress import IPv4Address, IPv6Address
 
 from django.core.exceptions import ValidationError
 
@@ -76,12 +76,6 @@ class Query(BaseQuery):
         filters = {}
         servertypes = set(Servertype.objects.all())
         for attribute, filt in self._filters.items():
-            if attribute.pk == 'intern_ip':
-                # Filter out servertypes depending on ip_addr_type
-                servertypes = {
-                    s for s in servertypes
-                    if s.ip_addr_type in desired_ip_addr_types(filt)
-                }
 
             # We can just deal with the servertype filters ourself.
             if attribute.pk == 'servertype':
@@ -341,21 +335,6 @@ def sort_key(value):
     if isinstance(value, (Servertype, Project)):
         return value.pk
     return value
-
-
-def desired_ip_addr_types(value):
-    if value is None:
-        return ['null']
-    if isinstance(value, str):
-        if '/' in str(value):
-            return ['network']
-        else:
-            return ['host', 'loadbalancer']
-    if isinstance(value, (IPv4Address, IPv6Address)):
-        return ['host', 'loadbalancer']
-    if isinstance(value, (IPv4Network, IPv6Network)):
-        return ['network']
-    return ['null', 'host', 'loadbalancer', 'network']
 
 
 # XXX: Deprecated
