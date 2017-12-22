@@ -9,13 +9,6 @@ QUERY_ENDPOINT = '/dataset/query'
 CREATE_ENDPOINT = '/dataset/create'
 
 
-class Attribute(object):
-    def __init__(self, name, type, multi):  # NOQA A002
-        self.name = name
-        self.type = type
-        self.multi = multi
-
-
 class Query(BaseQuery):
     def __init__(self, filters):
         self._filters = {
