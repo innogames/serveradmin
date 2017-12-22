@@ -322,13 +322,6 @@ class ServerObject(BaseServerObject):
         commit_changes(commit, app=app, user=user)
         self._confirm_changes()
 
-    def __reduce__(self):
-        # Just pickle it as normal dict
-        tpl = dict.__reduce__(self)
-        instance_dict = tpl[2].copy()
-        del instance_dict['_query']
-        return (tpl[0], tpl[1], instance_dict)
-
     @classmethod
     def new(cls, servertype, project, hostname, intern_ip):
         attribute_values = [
