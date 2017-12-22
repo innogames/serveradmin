@@ -20,14 +20,13 @@ from adminapi.datatype import DatatypeError
 from adminapi.filters import Any, ContainedOnlyBy, StartsWith, filter_classes
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
-from serveradmin.dataset import Query
+from serveradmin.dataset import Query, ServerObject
 from serveradmin.dataset.commit import (
     commit_changes,
     CommitValidationFailed,
     CommitIncomplete,
 )
 from serveradmin.dataset.create import create_server
-from serveradmin.dataset.queryset import ServerObject
 from serveradmin.serverdb.forms import ServerForm
 from serveradmin.serverdb.models import (
     Servertype,
