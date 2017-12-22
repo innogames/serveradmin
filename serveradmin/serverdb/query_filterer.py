@@ -43,6 +43,7 @@ class QueryFilterer(object):
         )
         for attribute, value in self.filters.items():
             sql += ' AND ' + self.get_sql_condition(attribute, value)
+        sql += ' ORDER BY server.hostname, server.intern_ip, server.server_id'
 
         return sql
 

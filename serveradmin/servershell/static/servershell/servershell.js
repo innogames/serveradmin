@@ -5,7 +5,7 @@ var search = {
     'num_servers': 0,
     'page': 1,
     'per_page': 100,
-    'order_by': 'hostname',
+    'order_by': null,
     'no_mapping': {},
     'first_server': null
 };
@@ -22,8 +22,10 @@ function refresh_servers(callback) {
         'offset': (search['page'] - 1) * search['per_page'],
         'limit': search['per_page'],
         'no_mapping': {},
-        'order_by': search['order_by'],
     };
+    if (search['order_by'])
+        search_request['order_by'] = search['order_by'];
+
     $.getJSON(shell_results_url, search_request, function(data) {
         if (data['status'] != 'success') {
             var error = $('<span class="error"></span>').text(data['message']);

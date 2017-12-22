@@ -99,10 +99,13 @@ def get_results(request):
         offset = 0
         limit = NUM_SERVERS_DEFAULT
 
-    order_by = request.GET.get('order_by')
+    if 'order_by' in request.GET:
+        order_by = [request.GET['order_by']]
+    else:
+        order_by = None
 
     try:
-        query = Query(parse_query(term), shown_attributes, [order_by])
+        query = Query(parse_query(term), shown_attributes, order_by)
         results = query.get_results()
     except (DatatypeError, ValidationError, DataError) as error:
         return HttpResponse(json.dumps({
