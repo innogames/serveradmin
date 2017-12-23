@@ -177,17 +177,16 @@ def api_call(request, app, data):
         try:
             fn = AVAILABLE_API_FUNCTIONS[data['group']][data['name']]
         except KeyError:
-            raise ValueError('No such function')
+            raise ApiError('No such function')
 
         retval = fn(*data['args'], **data['kwargs'])
         return {
             'status': 'success',
             'retval': retval,
         }
-
-    except (ValueError, TypeError, ApiError) as error:
+    except ApiError as error:
         return {
             'status': 'error',
-            'type': error.__class__.__name__,
+            'type': 'ApiError',
             'message': str(error),
         }

@@ -1,4 +1,3 @@
-AVAILABLE_API_FUNCTIONS = {}
+from adminapi.api import ApiError   # NOQA: F401
 
-class ApiError(Exception):
-    pass
+AVAILABLE_API_FUNCTIONS = {}
