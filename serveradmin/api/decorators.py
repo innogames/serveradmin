@@ -39,7 +39,7 @@ def api_view(view):
             raise SuspiciousOperation(error)
 
         now = time()
-        body = request.body.decode('utf8')
+        body = request.body.decode('utf8') if request.body else None
 
         try:
             app = Application.objects.get(app_id=app_id)
@@ -47,9 +47,10 @@ def api_view(view):
             raise PermissionDenied(error)
         authenticate_app(app, token, timestamp, now, body)
 
+        body_json = json.loads(body) if body else None
         try:
             status_code = 200
-            return_value = view(request, app, json.loads(body))
+            return_value = view(request, app, body_json)
         except (
             ObjectDoesNotExist,
             FilterValueError,

@@ -8,7 +8,7 @@ from adminapi.filters import (
     Regexp,
     StartsWith,
 )
-from serveradmin.dataset import Query, create
+from serveradmin.dataset import Query
 
 
 class TestQuery(TestCase):
@@ -103,16 +103,3 @@ class TestCommit(TestCase):
 
     def test_commit_newer_data(self):
         pass
-
-
-class TestCreate(TestCase):
-    def test_create(self):
-        s = {
-            'hostname': 'test4',
-            'intern_ip': '127.0.0.1',
-            'servertype': 'test0',
-            'os': 'squeeze',
-            'database': ['pgsql']
-        }
-        s_res = create(s, fill_defaults=True, fill_defaults_all=True)
-        self.assertEqual(s_res['hostname'], 'test4')

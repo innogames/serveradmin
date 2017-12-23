@@ -1,10 +1,19 @@
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 
-urlpatterns = patterns(
-    'serveradmin.api.views',
-    url(r'^functions$', 'doc_functions', name='api_doc_functions'),
-    url(r'^dataset/query$', 'dataset_query', name='api_dataset_query'),
-    url(r'^dataset/commit$', 'dataset_commit', name='api_dataset_commit'),
-    url(r'^dataset/create$', 'dataset_create', name='api_dataset_create'),
-    url(r'^call', 'api_call', name='api_call'),
+from serveradmin.api.views import (
+    doc_functions,
+    dataset_query,
+    dataset_commit,
+    dataset_new_object,
+    dataset_create,
+    api_call,
 )
+
+urlpatterns = [
+    url('^functions$', doc_functions),
+    url('^dataset/query$', dataset_query),
+    url('^dataset/commit$', dataset_commit),
+    url('^dataset/new_object$', dataset_new_object),
+    url('^dataset/create$', dataset_create),
+    url('^call$', api_call),
+]

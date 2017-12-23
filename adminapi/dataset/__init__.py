@@ -7,6 +7,7 @@ from adminapi.datatype import validate_value, json_to_datatype
 from adminapi.filters import Any, BaseFilter, ContainedOnlyBy
 from adminapi.request import send_request
 
+NEW_OBJECT_ENDPOINT = '/dataset/new_object'
 COMMIT_ENDPOINT = '/dataset/commit'
 QUERY_ENDPOINT = '/dataset/query'
 CREATE_ENDPOINT = '/dataset/create'
@@ -113,17 +114,20 @@ class BaseQuery(object):
 
     def _build_commit_object(self):
         commit = {
-            'deleted': [],
+            'created': [],
             'changed': [],
+            'deleted': [],
         }
 
         for obj in self:
             state = obj.commit_state()
 
-            if state == 'deleted':
-                commit['deleted'].append(obj.object_id)
+            if state == 'created':
+                commit['created'].append(obj)
             elif state == 'changed':
                 commit['changed'].append(obj._serialize_changes())
+            elif state == 'deleted':
+                commit['deleted'].append(obj.object_id)
 
         return commit
 
@@ -166,6 +170,15 @@ class BaseQuery(object):
 
 
 class Query(BaseQuery):
+
+    def new_object(self, servertype):
+        response = send_request(
+            NEW_OBJECT_ENDPOINT + '?servertype=' + servertype
+        )
+        server_obj = _format_obj(response['result'])
+        self.get_results().append(server_obj)
+
+        return server_obj
 
     def commit(self):
         commit = self._build_commit_object()
@@ -231,7 +244,7 @@ class DatasetObject(dict):
 
     def commit_state(self):
         if self.object_id is None:
-            return 'new'
+            return 'created'
         if self._deleted:
             return 'deleted'
         for attribute_id, old_value in self.old_values.items():
@@ -288,13 +301,16 @@ class DatasetObject(dict):
         state = self.commit_state()
 
         commit_obj = {
-            'deleted': [],
+            'created': [],
             'changed': [],
+            'deleted': [],
         }
-        if state == 'deleted':
-            commit_obj['deleted'].append(self.object_id)
+        if state == 'created':
+            commit_obj['created'].append(self)
         elif state == 'changed':
             commit_obj['changed'].append(self._serialize_changes())
+        elif state == 'deleted':
+            commit_obj['deleted'].append(self.object_id)
 
         return commit_obj
 
@@ -459,11 +475,12 @@ def _handle_exception(result):
     raise exception_class(result['message'])
 
 
-# XXX Deprecated, use Query() instead
+# XXX: Deprecated, use Query() instead
 def query(**kwargs):
     return Query(kwargs)
 
 
+# XXX: Deprecated, use Query().new_object() instead
 def create(attributes):
     request = {
         'attributes': attributes,

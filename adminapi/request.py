@@ -38,8 +38,10 @@ class APIError(Exception):
         super(Exception, self).__init__(*args, **kwargs)
 
 
-def calc_security_token(auth_token, timestamp, content):
-    message = str(timestamp) + ':' + str(content)
+def calc_security_token(auth_token, timestamp, data=None):
+    message = str(timestamp)
+    if data:
+        message += ':' + data
     return hmac.new(
         auth_token.encode('utf8'), message.encode('utf8'), sha1
     ).hexdigest()
@@ -49,11 +51,11 @@ def calc_app_id(auth_token):
     return sha1(auth_token.encode('utf8')).hexdigest()
 
 
-def send_request(endpoint, data):
+def send_request(endpoint, data=None):
     if not Settings.auth_token:
         Settings.auth_token = get_auth_token()
 
-    data_json = json.dumps(data, default=json_encode_extra)
+    data_json = json.dumps(data, default=json_encode_extra) if data else None
     for retry in reversed(range(Settings.tries)):
         request = _build_request(endpoint, Settings.auth_token, data_json)
         response = _try_request(request, retry)
@@ -68,10 +70,10 @@ def send_request(endpoint, data):
     return json.loads(response.read().decode())
 
 
-def _build_request(endpoint, auth_token, data_json):
+def _build_request(endpoint, auth_token, data):
     timestamp = int(time.time())
     app_id = calc_app_id(auth_token)
-    security_token = calc_security_token(auth_token, timestamp, data_json)
+    security_token = calc_security_token(auth_token, timestamp, data)
     headers = {
         'Content-Encoding': 'application/x-json',
         'X-Timestamp': str(timestamp),
@@ -79,8 +81,10 @@ def _build_request(endpoint, auth_token, data_json):
         'X-SecurityToken': security_token,
     }
     url = Settings.base_url + endpoint
+    if data:
+        data = data.encode('utf8')
 
-    return Request(url, data_json.encode('utf8'), headers)
+    return Request(url, data, headers)
 
 
 def _try_request(request, retry=False):

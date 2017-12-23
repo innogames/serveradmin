@@ -1,6 +1,5 @@
 from operator import itemgetter
 
-from django.template.response import TemplateResponse
 from django.core.exceptions import (
     SuspiciousOperation,
     PermissionDenied,
@@ -8,6 +7,7 @@ from django.core.exceptions import (
 )
 from django.contrib.auth.decorators import login_required
 from django.contrib.admindocs.utils import trim_docstring, parse_docstring
+from django.template.response import TemplateResponse
 
 from adminapi.filters import FilterValueError, filter_from_obj
 from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
@@ -15,7 +15,10 @@ from serveradmin.api.decorators import api_view
 from serveradmin.api.utils import build_function_description
 from serveradmin.serverdb.query_committer import QueryCommitter
 from serveradmin.serverdb.query_filterer import QueryFilterer
-from serveradmin.serverdb.query_materializer import QueryMaterializer
+from serveradmin.serverdb.query_materializer import (
+    QueryMaterializer,
+    get_default_attribute_values,
+)
 
 
 class StringEncoder(object):
@@ -93,6 +96,21 @@ def dataset_query(request, app, data):
 
 
 @api_view
+def dataset_new_object(request, app, data):
+    try:
+        servertype = request.GET['servertype']
+    except KeyError as error:
+        raise SuspiciousOperation(error)
+
+    try:
+        result = get_default_attribute_values(servertype)
+    except ObjectDoesNotExist as error:
+        raise APIError(error, status_code=404)
+
+    return {'result': result}
+
+
+@api_view
 def dataset_commit(request, app, data):
     if not isinstance(data, dict):
         raise SuspiciousOperation('Invalid payload')
@@ -126,6 +144,11 @@ def dataset_commit(request, app, data):
     return {
         'status': 'success',
     }
+
+
+def _validate_commit_created(created):
+    if not isinstance(created, dict):
+        raise SuspiciousOperation('Invalid commit created')
 
 
 def _validate_commit_changed(changes):
@@ -177,6 +200,7 @@ def _validate_commit_deleted(deleted):
         )
 
 
+# XXX: Deprecated
 @api_view
 def dataset_create(request, app, data):
     required = [

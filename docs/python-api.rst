@@ -200,16 +200,6 @@ For documentation of the dictionary-like access see :class:`dict`.
 
 .. *** this line fixes vim syntax highlighting
 
-Creating servers
-----------------
-
-The function :func:`adminapi.dataset.create` allows you to create new servers:
-
-.. function:: create(attributes)
-
-    :param attributes: A dictionary with the attributes of the server.
-    :return: The server (``DatasetObject``) that was created with all attributes
-             (given and filled attributes)
 
 Making API calls
 ----------------
