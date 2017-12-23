@@ -56,11 +56,6 @@ def doc_functions(request):
 
 
 @api_view
-def echo(request, app, data):
-    return data
-
-
-@api_view
 def dataset_query(request, app, data):
     try:
         if 'filters' not in data or not isinstance(data['filters'], dict):
