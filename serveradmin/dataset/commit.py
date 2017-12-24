@@ -15,6 +15,7 @@ from serveradmin.serverdb.models import (
     ChangeUpdate,
     ChangeDelete,
 )
+from serveradmin.serverdb.query_materializer import QueryMaterializer
 
 
 class Commit(object):
@@ -23,20 +24,33 @@ class Commit(object):
     def __init__(self, commit):
         if 'deleted' in commit:
             self.deletions = commit['deleted']
+            self._servers_to_delete = {
+                s.server_id: s for s in (
+                    Server.objects.select_for_update()
+                    .filter(server_id__in=self.deletions)
+                )
+            }
             self._validate_deletes()
         else:
             self.deletions = []
+            self._servers_to_delete = {}
 
         if 'changes' in commit:
             self.changes = commit['changes']
-            self._decorate_changes()
+            self._servers_to_change = {
+                s.server_id: s for s in (
+                    Server.objects.select_for_update()
+                    .filter(server_id__in=self.changes.keys())
+                )
+            }
             self._validate_changes()
             self._clean_changes()
         else:
             self.changes = {}
+            self._servers_to_change = {}
 
-        self.servers_to_change = _fetch_servers(self.changes.keys())
-        self.servers_to_delete = _fetch_servers(self.deletions)
+        self._objects_to_change = _materialize_servers(self._servers_to_change)
+        self._objects_to_delete = _materialize_servers(self._servers_to_delete)
 
         # If non-empty, the commit will go through the backend, but an error
         # will be shown on the client.
@@ -48,16 +62,6 @@ class Commit(object):
             all(isinstance(x, int) for x in self.deletions)
         ):
             raise CommitError('Invalid servers to delete')
-
-    def _decorate_changes(self):
-        servers = {s.server_id: s for s in (
-            Server.objects.select_for_update()
-            .filter(server_id__in=self.changes.keys())
-        )}
-        for server_id, changes in self.changes.items():
-            for attribute_id, change in changes.items():
-                change['server'] = servers[server_id]
-                change['attribute'] = Attribute.objects.get(pk=attribute_id)
 
     def _validate_changes(self):    # NOQA: C901
         for changes in self.changes.values():
@@ -76,8 +80,6 @@ class Commit(object):
                 elif action == 'multi':
                     if not all(x in change for x in ('add', 'remove')):
                         raise ValueError('Invalid multi change')
-                    if not change['attribute'].multi:
-                        raise ValueError('Not a multi attribute')
 
     def _clean_changes(self):   # NOQA: C901
         for server_id, changes in tuple(self.changes.items()):
@@ -114,11 +116,11 @@ class Commit(object):
 
         # Re-fetch servers before invoking hook, otherwise the hook will
         # receive incomplete data.
-        self.servers_to_change = _fetch_servers(self.changes.keys())
+        self._objects_to_change = _materialize_servers(self._servers_to_change)
         try:
             on_server_attribute_changed.invoke(
                 commit=self,
-                servers=list(self.servers_to_change.values()),
+                servers=list(self._objects_to_change.values()),
                 changes=self.changes,
             )
         except CommitIncomplete as error:
@@ -138,9 +140,9 @@ class Commit(object):
             )
 
         for server_id, changes in self.changes.items():
-            for key, change in changes.items():
-                server = change['server']
-                attribute = change['attribute']
+            for attribute_id, change in changes.items():
+                server = self._servers_to_change[server_id]
+                attribute = Attribute.objects.get(pk=attribute_id)
                 action = change['action']
 
                 if action == 'delete' or (
@@ -160,7 +162,8 @@ class Commit(object):
             return
 
         try:
-            Server.objects.filter(server_id__in=self.deletions).delete()
+            for server in self._servers_to_delete.values():
+                server.delete()
         except IntegrityError as error:
             raise CommitError(
                 'Cannot delete servers because they are referenced by {0}'
@@ -175,12 +178,12 @@ class Commit(object):
     def _update_servers(self):
         changed = set()
         for server_id, changes in self.changes.items():
-            for change in changes.values():
-                attribute = change['attribute']
+            for attribute_id, change in changes.items():
+                attribute = Attribute.objects.get(pk=attribute_id)
                 if not attribute.special:
                     continue
                 assert change['action'] in ('new', 'update', 'multi')
-                server = change['server']
+                server = self._servers_to_change[server_id]
                 setattr(server, attribute.special.field, change.get('new'))
                 changed.add(server)
         for server in changed:
@@ -189,9 +192,9 @@ class Commit(object):
 
     def _upsert_attributes(self):
         for server_id, changes in self.changes.items():
-            for change in changes.values():
-                server = change['server']
-                attribute = change['attribute']
+            for attribute_id, change in changes.items():
+                server = self._servers_to_change[server_id]
+                attribute = Attribute.objects.get(pk=attribute_id)
                 action = change['action']
 
                 if attribute.special:
@@ -302,29 +305,29 @@ def commit_changes(
     with transaction.atomic():
         commit = Commit(commit)
 
-        access_control('edit', commit.servers_to_change, user, app)
-        access_control('delete', commit.servers_to_delete, user, app)
+        access_control('edit', commit._objects_to_change, user, app)
+        access_control('delete', commit._objects_to_delete, user, app)
 
         servertype_attributes = _get_servertype_attributes(
-            commit.servers_to_change
+            commit._objects_to_change
         )
 
         # Attributes must be always validated
         violations_attribs = _validate_attributes(
-            commit.changes, commit.servers_to_change, servertype_attributes
+            commit.changes, commit._objects_to_change, servertype_attributes
         )
 
         if not skip_validation:
             violations_readonly = _validate_readonly(
-                commit.changes, commit.servers_to_change
+                commit.changes, commit._objects_to_change
             )
             violations_regexp = list(_validate_regexp(
                 commit.changes,
-                commit.servers_to_change,
+                commit._objects_to_change,
                 servertype_attributes,
             ))
             violations_required = _validate_required(
-                commit.changes, commit.servers_to_change, servertype_attributes
+                commit.changes, commit._objects_to_change, servertype_attributes
             )
             if (
                 violations_attribs or violations_readonly or
@@ -349,13 +352,13 @@ def commit_changes(
             raise CommitValidationFailed(error_message, violations_attribs)
 
         if not force_changes:
-            newer = _validate_commit(commit.changes, commit.servers_to_change)
+            newer = _validate_commit(commit.changes, commit._objects_to_change)
             if newer:
                 raise CommitNewerData('Newer data available', newer)
 
-        _log_changes(commit.servers_to_delete, commit.changes, user, app)
+        _log_changes(commit._objects_to_delete, commit.changes, user, app)
         commit.apply_changes()
-        access_control('commit', commit.servers_to_change, user, app)
+        access_control('commit', commit._objects_to_change, user, app)
 
     if commit.warnings:
         warnings = '\n'.join(commit.warnings)
@@ -398,8 +401,8 @@ def access_control(action, servers, user, app):
                 )
 
 
-def _log_changes(servers_to_delete, changes, user, app):
-    if not (changes or servers_to_delete):
+def _log_changes(_objects_to_delete, changes, user, app):
+    if not (changes or _objects_to_delete):
         return
 
     commit = ChangeCommit.objects.create(app=app, user=user)
@@ -409,7 +412,7 @@ def _log_changes(servers_to_delete, changes, user, app):
             server_id=server_id,
             updates_json=json.dumps(updates, default=json_encode_extra),
         )
-    for attributes in servers_to_delete.values():
+    for attributes in _objects_to_delete.values():
         attributes_json = json.dumps(attributes, default=json_encode_extra)
         ChangeDelete.objects.create(
             commit=commit,
@@ -418,14 +421,11 @@ def _log_changes(servers_to_delete, changes, user, app):
         )
 
 
-def _fetch_servers(server_ids):
-    # Import here to break cyclic import
-    from adminapi.filters import Any
-    from serveradmin.dataset import Query
-
-    query = Query({'object_id': Any(*server_ids)})
-
-    return {s.object_id: s for s in query.get_results()}
+def _materialize_servers(servers):
+    return {
+        o['object_id']: o
+        for o in QueryMaterializer(servers.values(), None)
+    }
 
 
 def _get_servertype_attributes(servers):

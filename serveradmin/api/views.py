@@ -13,9 +13,11 @@ from adminapi.filters import FilterValueError, filter_from_obj
 from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
 from serveradmin.api.decorators import api_view
 from serveradmin.api.utils import build_function_description
-from serveradmin.dataset import Query
+from serveradmin.dataset import Query   # TODO: Don't access it from here
 from serveradmin.dataset.commit import commit_changes
 from serveradmin.dataset.create import create_server
+from serveradmin.serverdb.query_filterer import QueryFilterer
+from serveradmin.serverdb.query_materializer import QueryMaterializer
 
 
 class StringEncoder(object):
@@ -68,11 +70,21 @@ def dataset_query(request, app, data):
         for attr, filter_obj in data['filters'].items():
             filters[attr] = filter_from_obj(filter_obj)
 
-        query = Query(filters, data.get('restrict'), data.get('order_by'))
+        # Empty list means query all attributes to the older versions of
+        # the adminapi.
+        if not data.get('restrict'):
+            restrict = None
+        else:
+            restrict = data['restrict']
+
+        order_by = data.get('order_by')
+
+        filterer = QueryFilterer(filters)
+        materializer = QueryMaterializer(filterer, restrict, order_by)
 
         return {
             'status': 'success',
-            'result': query.get_results(),
+            'result': list(materializer),
         }
     except (FilterValueError, ValidationError) as error:
         return {

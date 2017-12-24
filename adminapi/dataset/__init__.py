@@ -159,7 +159,7 @@ class DatasetObject(dict):
     to cast multi attributes and to validate the values.
     """
 
-    def __init__(self, attributes=[], object_id=None):
+    def __init__(self, attributes=[]):
         # Loop through ourself afterwards would be more efficient, but
         # this would give the caller already initialised object in case
         # anything fails.
@@ -168,7 +168,7 @@ class DatasetObject(dict):
             if isinstance(value, (tuple, list, set, frozenset)):
                 attributes[attribute_id] = MultiAttr(value, self, attribute_id)
         super(DatasetObject, self).__init__(attributes)
-        self.object_id = object_id
+        self.object_id = self['object_id']
         self._deleted = False
         self.old_values = {}
 
@@ -431,8 +431,7 @@ def create(
 
 
 def _format_obj(result):
-    object_id = result['object_id']
-    obj = DatasetObject([], object_id)
+    obj = DatasetObject([('object_id', result.pop('object_id'))])
 
     for attribute_id, value in list(result.items()):
         if isinstance(value, list):
