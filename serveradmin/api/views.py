@@ -98,10 +98,7 @@ def dataset_commit(request, app, data):
         return {
             'status': 'success',
         }
-    except (
-        ValueError,     # TODO Stop expecting them
-        ValidationError,
-    ) as error:
+    except ValidationError as error:
         return {
             'status': 'error',
             'type': error.__class__.__name__,
