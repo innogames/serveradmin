@@ -1,7 +1,11 @@
 from operator import itemgetter
 
 from django.template.response import TemplateResponse
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import (
+    SuspiciousOperation,
+    PermissionDenied,
+    ValidationError,
+)
 from django.contrib.auth.decorators import login_required
 from django.contrib.admindocs.utils import trim_docstring, parse_docstring
 
@@ -59,7 +63,7 @@ def doc_functions(request):
 def dataset_query(request, app, data):
     try:
         if 'filters' not in data or not isinstance(data['filters'], dict):
-            raise ValidationError('Filters must be a dictionary')
+            raise SuspiciousOperation('Filters must be a dictionary')
         filters = {}
         for attr, filter_obj in data['filters'].items():
             filters[attr] = filter_from_obj(filter_obj)
@@ -82,7 +86,7 @@ def dataset_query(request, app, data):
 def dataset_commit(request, app, data):
     try:
         if 'changes' not in data or 'deleted' not in data:
-            raise ValueError('Invalid changes')
+            raise SuspiciousOperation('Invalid changes')
 
         skip_validation = bool(data.get('skip_validation', False))
         force_changes = bool(data.get('force_changes', False))
@@ -116,9 +120,9 @@ def dataset_create(request, app, data):
             'fill_defaults_all',
         ]
         if not all(key in data for key in required):
-            raise ValueError('Invalid create request')
+            raise SuspiciousOperation('Invalid create request')
         if not isinstance(data['attributes'], dict):
-            raise ValueError('Attributes must be a dictionary')
+            raise SuspiciousOperation('Attributes must be a dictionary')
 
         create_server(
             data['attributes'],
@@ -146,7 +150,7 @@ def dataset_create(request, app, data):
 def api_call(request, app, data):
     try:
         if not all(x in data for x in ('group', 'name', 'args', 'kwargs')):
-            raise ValueError('Invalid API call')
+            raise SuspiciousOperation('Invalid API call')
 
         allowed_methods = app.allowed_methods.splitlines()
         method_name = u'{0}.{1}'.format(data['group'], data['name'])
