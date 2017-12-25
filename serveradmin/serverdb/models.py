@@ -129,7 +129,8 @@ class LookupManager(models.Manager):
                     self._build_cache()
                     return self.get(*args, **kwargs)
                 raise self.model.DoesNotExist(
-                    'Attribute "{0}" does not exist.'.format(value)
+                    '{} "{}" does not exist.'
+                    .format(self.model.__name__, value)
                 )
             return self._lookup_dict[value]
 
