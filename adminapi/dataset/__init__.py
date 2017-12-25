@@ -77,6 +77,7 @@ class BaseQuery(object):
             raise DatasetError('get() requires exactly 1 matched object')
         return results[0]
 
+    # XXX: Deprecated
     def is_dirty(self):
         return any(s.is_dirty() for s in self)
 
@@ -95,8 +96,7 @@ class BaseQuery(object):
 
     def update(self, **attrs):
         for obj in self:
-            if not obj.is_deleted():
-                obj.update(attrs)
+            obj.update(attrs)
         return self
 
     def iterattrs(self, attr='hostname'):
@@ -116,9 +116,11 @@ class BaseQuery(object):
         }
 
         for obj in self:
-            if obj.is_deleted():
+            state = obj.commit_state()
+
+            if state == 'deleted':
                 commit['deleted'].append(obj.object_id)
-            elif obj.is_dirty():
+            elif state == 'changed':
                 commit['changes'][obj.object_id] = obj._serialize_changes()
 
         return commit
@@ -190,18 +192,23 @@ class DatasetObject(dict):
             return 'DatasetObject({0})'.format(parent_repr)
         return 'DatasetObject({0}, {1})'.format(parent_repr, self.object_id)
 
-    def is_dirty(self):
+    def commit_state(self):
         if self.object_id is None:
-            return True
+            return 'new'
         if self._deleted:
-            return True
+            return 'deleted'
         for attribute_id, old_value in self.old_values.items():
             if self[attribute_id] != old_value:
-                return True
-        return False
+                return 'changed'
+        return 'consistent'
 
+    # XXX: Deprecated
+    def is_dirty(self):
+        return self.commit_state() != 'consistent'
+
+    # XXX: Deprecated
     def is_deleted(self):
-        return self._deleted
+        return self.commit_state() == 'deleted'
 
     # XXX: Deprecated
     def rollback(self):
@@ -241,13 +248,18 @@ class DatasetObject(dict):
             self._deleted = False
 
     def _build_commit_object(self):
-        changes = {}
-        if self.is_dirty():
-            changes[self.object_id] = self._serialize_changes()
-        return {
-            'deleted': [self.object_id] if self.is_deleted() else [],
-            'changes': changes,
+        state = self.commit_state()
+
+        commit_obj = {
+            'deleted': [],
+            'changes': {},
         }
+        if state == 'deleted':
+            commit_obj['deleted'].append(self.object_id)
+        elif state == 'changed':
+            commit_obj['changes'][self.object_id] = self._serialize_changes()
+
+        return commit_obj
 
     def _save_old_value(self, key):
         # We need to save the first version only.

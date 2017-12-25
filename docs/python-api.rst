@@ -135,10 +135,9 @@ supports iteration and some additional methods.
         server in the query.  Otherwise, you will get an exception.
         #FIXME: Decide kind of exception
 
-    .. method:: is_dirty()
+    .. method:: commit_state()
 
-        Return True, if the query contains a server object which has
-        uncomitted changes, False otherwise.
+        Return the state of the object.
 
     .. method:: commit(skip_validation=False, force_changes=False)
 
