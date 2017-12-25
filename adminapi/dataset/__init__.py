@@ -388,6 +388,7 @@ class MultiAttr(set):
         self._obj[self._attribute_id] = self ^ other
 
 
+# XXX: Deprecated
 def _handle_exception(result):
     if result['type'] == 'ValueError':
         exception_class = ValueError

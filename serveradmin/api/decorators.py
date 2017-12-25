@@ -6,12 +6,18 @@ try:
 except ImportError:
     import json
 
-from django.core.exceptions import PermissionDenied, SuspiciousOperation
+from django.core.exceptions import (
+    ObjectDoesNotExist,
+    SuspiciousOperation,
+    PermissionDenied,
+    ValidationError,
+)
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.crypto import constant_time_compare
 
 from adminapi.request import calc_security_token, json_encode_extra
+from adminapi.filters import FilterValueError
 from serveradmin.apps.models import Application
 from serveradmin.api import AVAILABLE_API_FUNCTIONS
 
@@ -41,17 +47,31 @@ def api_view(view):
             raise PermissionDenied(error)
         authenticate_app(app, token, timestamp, now, body)
 
-        return_value = json.dumps(
-            view(request, app, json.loads(body)),
-            default=json_encode_extra,
-        )
+        try:
+            status_code = 200
+            return_value = view(request, app, json.loads(body))
+        except (
+            ObjectDoesNotExist,
+            FilterValueError,
+            ValidationError,
+        ) as error:
+            status_code = 404 if isinstance(error, ObjectDoesNotExist) else 400
+            return_value = {
+                'error': {
+                    'message': str(error),
+                }
+            }
 
         logger.info('api: Call: ' + (', '.join([
             'Method: {}'.format(view.__name__),
             'Application: {}'.format(app),
             'Time elapsed: {:.3f}s'.format(time() - now),
         ])))
-        return HttpResponse(return_value, content_type='application/x-json')
+        return HttpResponse(
+            json.dumps(return_value, default=json_encode_extra),
+            content_type='application/x-json',
+            status=status_code,
+        )
 
     return update_wrapper(_wrapper, view)
 
