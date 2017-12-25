@@ -4,6 +4,13 @@ from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 
 from netaddr import EUI
 
+# We use a set of regular expressions to cast to datatypes.  This module
+# is not aware of the attributes types of the server, neither it tries
+# to match with them one to one.  Its purpose is to provide convenience
+# to the user.  A string must not match with multiple expressions, or
+# anything that can be reasonably used as a string attribute.  Therefore,
+# they are not specified to cover broad range of inputs, but the cover
+# the way the server returns such types.
 RE_32 = r'([0-9]|[1-2][0-9]|3[0-2])'
 RE_128 = r'([0-9]|[1-9][0-9]|1(1[0-9]|2[0-8]))'
 RE_255 = r'([0-9]|[1-9][0-9]|1[0-9]{2}|2([0-4][0-9]|5[0-5]))'
