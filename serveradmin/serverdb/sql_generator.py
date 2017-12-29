@@ -130,7 +130,7 @@ def _logical_filter_sql_condition(servertypes, attribute, filt):
     simple_values = []
     templates = []
     for value in filt.values:
-        if type(filt) in [Any, All] and type(value) == BaseFilter:
+        if type(filt) == Any and type(value) == BaseFilter:
             simple_values.append(value)
         else:
             templates.append(_get_sql_condition(servertypes, attribute, value))
@@ -141,14 +141,10 @@ def _logical_filter_sql_condition(servertypes, attribute, filt):
                 servertypes, attribute, simple_values[0]
             )
         else:
-            # TODO: Use arrays of Psycopg2
             template = _condition_sql(
-                servertypes, attribute, '{{0}} = {0} (ARRAY[{1}])'.format(
-                    type(filt).__name__.upper(), ', '.join(
-                        _value_to_sql(attribute, v.value)
-                        for v in simple_values
-                    )
-                )
+                servertypes, attribute, '{{0}} IN ({0})'.format(', '.join(
+                    _value_to_sql(attribute, v.value) for v in simple_values
+                ))
             )
         templates.append(template)
 
