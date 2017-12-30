@@ -23,27 +23,29 @@ class Commit(object):
 
     def __init__(self, commit):
         if 'deleted' in commit:
-            self.deletions = commit['deleted']
+            self.deleted = commit['deleted']
             self._servers_to_delete = {
                 s.server_id: s for s in (
                     Server.objects.select_for_update()
-                    .filter(server_id__in=self.deletions)
+                    .filter(server_id__in=self.deleted)
                 )
             }
         else:
-            self.deletions = []
+            self.deleted = []
             self._servers_to_delete = {}
 
         if 'changes' in commit:
-            self.changes = commit['changes']
+            self.changed = commit['changed']
             self._servers_to_change = {
                 s.server_id: s for s in (
                     Server.objects.select_for_update()
-                    .filter(server_id__in=self.changes.keys())
+                    .filter(server_id__in=[
+                        c['object_id'] for c in self.changed
+                    ])
                 )
             }
         else:
-            self.changes = {}
+            self.changed = []
             self._servers_to_change = {}
 
         self._objects_to_change = _materialize_servers(self._servers_to_change)
@@ -67,7 +69,7 @@ class Commit(object):
             on_server_attribute_changed.invoke(
                 commit=self,
                 servers=list(self._objects_to_change.values()),
-                changes=self.changes,
+                changed=self.changed,
             )
         except CommitIncomplete as error:
             self.warnings.append(
@@ -78,16 +80,21 @@ class Commit(object):
         # We first have to delete all of the hostname attributes
         # to avoid integrity errors.  Other attributes will just go away
         # with the servers.
-        if self.deletions:
+        if self.deleted:
             (
                 ServerHostnameAttribute.objects
-                .filter(server_id__in=self.deletions)
+                .filter(server_id__in=self.deleted)
                 .delete()
             )
 
-        for server_id, changes in self.changes.items():
+        for changes in self.changed:
+            object_id = changes['object_id']
+
             for attribute_id, change in changes.items():
-                server = self._servers_to_change[server_id]
+                if attribute_id == 'object_id':
+                    continue
+
+                server = self._servers_to_change[object_id]
                 attribute = Attribute.objects.get(pk=attribute_id)
                 action = change['action']
 
@@ -104,7 +111,7 @@ class Commit(object):
                             server_attribute.delete()
 
     def _delete_servers(self):
-        if not self.deletions:
+        if not self.deleted:
             return
 
         try:
@@ -117,44 +124,53 @@ class Commit(object):
             )
 
         # We should ignore the changes to the deleted servers.
-        for server_id in self.deletions:
-            if server_id in self.changes:
+        for server_id in self.deleted:
+            if server_id in self.changed:
                 del self.changes[server_id]
 
     def _update_servers(self):
         changed = set()
-        for server_id, changes in self.changes.items():
+        for changes in self.changed:
+            object_id = changes['object_id']
+
             for attribute_id, change in changes.items():
+                if attribute_id == 'object_id':
+                    continue
+
                 attribute = Attribute.objects.get(pk=attribute_id)
                 if not attribute.special:
                     continue
+
                 assert change['action'] in ('new', 'update', 'multi')
-                server = self._servers_to_change[server_id]
+                server = self._servers_to_change[object_id]
                 setattr(server, attribute.special.field, change.get('new'))
                 changed.add(server)
+
         for server in changed:
             server.full_clean()
             server.save()
 
     def _upsert_attributes(self):
-        for server_id, changes in self.changes.items():
-            for attribute_id, change in changes.items():
-                server = self._servers_to_change[server_id]
-                attribute = Attribute.objects.get(pk=attribute_id)
-                action = change['action']
+        for changes in self.changed:
+            object_id = changes['object_id']
 
+            for attribute_id, change in changes.items():
+                attribute = Attribute.objects.get(pk=attribute_id)
                 if attribute.special:
                     continue
 
+                server = self._servers_to_change[object_id]
+
+                action = change['action']
                 if action == 'multi':
                     for value in change['add']:
                         server.add_attribute(attribute, value)
                     continue
-
                 if action not in ('new', 'update'):
                     continue
                 if change['new'] is None:
                     continue
+
                 try:
                     server_attribute = server.get_attributes(attribute).get()
                 except ServerAttribute.get_model(attribute.type).DoesNotExist:
@@ -192,14 +208,15 @@ class CommitIncomplete(CommitError):
 
 
 class _ServerAttributedChangedHook(HookSlot):
-    """Specialized hook that filters based on changes attributes."""
+    """Specialized hook that filters based on changed attributes."""
     def connect(self, hookfn, attribute_id, servertypes=None, filter=None):
         if servertypes and not isinstance(servertypes, tuple):
             raise ValueError(
                 'Servertypes filter must be tuple: {}'.format(servertypes)
             )
 
-        def filtered_fn(servers, changes, **kwargs):
+        def filtered_fn(servers, changed, **kwargs):
+            changes = {c['object_id'] for c in changed}
             filtered_servers = []
             for server in servers:
                 if servertypes and server['servertype'] not in servertypes:
@@ -221,10 +238,7 @@ class _ServerAttributedChangedHook(HookSlot):
 
 
 on_server_attribute_changed = _ServerAttributedChangedHook(
-    'commit_server_changed',
-    servers=list,
-    changes=dict,
-    commit=Commit,
+    'commit_server_changed', servers=list, changed=list, commit=Commit
 )
 
 
@@ -242,7 +256,7 @@ def commit_changes(
                    a list of deleted servers and a dictionary of the servers'
                    changes.
     """
-    if not commit['changes'] and not commit['deleted']:
+    if not commit['changed'] and not commit['deleted']:
         return
 
     if not user:
@@ -260,20 +274,22 @@ def commit_changes(
 
         # Attributes must be always validated
         violations_attribs = _validate_attributes(
-            commit.changes, commit._objects_to_change, servertype_attributes
+            commit.changed, commit._objects_to_change, servertype_attributes
         )
 
         if not skip_validation:
             violations_readonly = _validate_readonly(
-                commit.changes, commit._objects_to_change
+                commit.changed, commit._objects_to_change
             )
             violations_regexp = list(_validate_regexp(
-                commit.changes,
+                commit.changed,
                 commit._objects_to_change,
                 servertype_attributes,
             ))
             violations_required = _validate_required(
-                commit.changes, commit._objects_to_change, servertype_attributes
+                commit.changed,
+                commit._objects_to_change,
+                servertype_attributes,
             )
             if (
                 violations_attribs or violations_readonly or
@@ -298,11 +314,11 @@ def commit_changes(
             raise CommitValidationFailed(error_message, violations_attribs)
 
         if not force_changes:
-            newer = _validate_commit(commit.changes, commit._objects_to_change)
+            newer = _validate_commit(commit.changed, commit._objects_to_change)
             if newer:
                 raise CommitNewerData('Newer data available', newer)
 
-        _log_changes(commit._objects_to_delete, commit.changes, user, app)
+        _log_changes(commit._objects_to_delete, commit.changed, user, app)
         commit.apply_changes()
         access_control('commit', commit._objects_to_change, user, app)
 
@@ -352,10 +368,10 @@ def _log_changes(_objects_to_delete, changes, user, app):
         return
 
     commit = ChangeCommit.objects.create(app=app, user=user)
-    for server_id, updates in changes.items():
+    for updates in changes:
         ChangeUpdate.objects.create(
             commit=commit,
-            server_id=server_id,
+            server_id=updates['object_id'],
             updates_json=json.dumps(updates, default=json_encode_extra),
         )
     for attributes in _objects_to_delete.values():
@@ -386,8 +402,9 @@ def _get_servertype_attributes(servers):
 
 def _validate_attributes(changes, servers, servertype_attributes):
     violations = []
-    for server_id, attribute_changes in changes.items():
-        server = servers[server_id]
+    for attribute_changes in changes:
+        object_id = attribute_changes['object_id']
+        server = servers[object_id]
         attributes = servertype_attributes[server['servertype']]
 
         for attribute_id, change in attribute_changes.items():
@@ -406,26 +423,28 @@ def _validate_attributes(changes, servers, servertype_attributes):
                 # Attributes related via another one, cannot be changed.
                 attributes[attribute_id].related_via_attribute
             ):
-                violations.append((server_id, attribute_id))
-                violations.append((server_id, attribute_id))
+                violations.append((object_id, attribute_id))
+                violations.append((object_id, attribute_id))
 
     return violations
 
 
 def _validate_readonly(changes, servers):
     violations = []
-    for server_id, attribute_changes in changes.items():
-        server = servers[server_id]
+    for attribute_changes in changes:
+        object_id = attribute_changes['object_id']
+        server = servers[object_id]
         for attr, change in attribute_changes.items():
             if Attribute.objects.get(pk=attr).readonly:
                 if attr in server and server[attr] != '':
-                    violations.append((server_id, attr))
+                    violations.append((object_id, attr))
     return violations
 
 
 def _validate_regexp(changes, servers, servertype_attributes):
-    for server_id, attribute_changes in changes.items():
-        server = servers[server_id]
+    for attribute_changes in changes:
+        object_id = attribute_changes['object_id']
+        server = servers[object_id]
         for attribute_id, change in attribute_changes.items():
             sa = servertype_attributes[server['servertype']].get(attribute_id)
             if not sa or not sa.regexp:
@@ -436,18 +455,19 @@ def _validate_regexp(changes, servers, servertype_attributes):
                 if change['new'] is None:
                     continue
                 if not sa.regexp_match(change['new']):
-                    yield server_id, attribute_id
+                    yield object_id, attribute_id
             elif action == 'multi':
                 for value in change['add']:
                     if not sa.regexp_match(value):
-                        yield server_id, attribute_id
+                        yield object_id, attribute_id
                         break
 
 
 def _validate_required(changes, servers, servertype_attributes):
     violations = []
-    for server_id, attribute_changes in changes.items():
-        server = servers[server_id]
+    for attribute_changes in changes:
+        object_id = attribute_changes['object_id']
+        server = servers[object_id]
         for attribute_id, change in attribute_changes.items():
             attribute = Attribute.objects.get(pk=attribute_id)
             if attribute.special:
@@ -455,25 +475,30 @@ def _validate_required(changes, servers, servertype_attributes):
 
             sa = servertype_attributes[server['servertype']][attribute_id]
             if change['action'] == 'delete' and sa.required:
-                violations.append((server_id, attribute_id))
+                violations.append((object_id, attribute_id))
     return violations
 
 
 def _validate_commit(changes, servers):
     newer = []
-    for server_id, attribute_changes in changes.items():
-        server = servers[server_id]
+    for attribute_changes in changes:
+        object_id = attribute_changes['object_id']
+        server = servers[object_id]
         for attr, change in attribute_changes.items():
+            if attr == 'object_id':
+                continue
+
             action = change['action']
             if action == 'new':
                 if attr in server:
-                    newer.append((server_id, attr, server[attr]))
+                    newer.append((object_id, attr, server[attr]))
             elif action == 'update' or action == 'delete':
                 try:
                     if str(server[attr]) != str(change['old']):
-                        newer.append((server_id, attr, server[attr]))
+                        newer.append((object_id, attr, server[attr]))
                 except KeyError:
-                    newer.append((server_id, attr, None))
+                    newer.append((object_id, attr, None))
+
     return newer
 
 

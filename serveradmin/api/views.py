@@ -99,12 +99,12 @@ def dataset_commit(request, app, data):
     if not isinstance(data, dict):
         raise SuspiciousOperation('Invalid payload')
 
+    # For backwards compatibility
     if 'changes' in data:
+        data['changed'] = list(data['changes'].values())
         # Convert keys back to integers (json doesn't handle integer keys)
-        changes = {}
         for object_id, change in data['changes'].items():
-            changes[int(object_id)] = change
-        data['changes'] = changes
+            change['object_id'] = int(object_id)
 
     _validate_commit(data)
     skip_validation = bool(data.get('skip_validation'))
@@ -125,58 +125,56 @@ def dataset_commit(request, app, data):
 
 
 def _validate_commit(commit):
-    for state in ['changes', 'deleted']:
+    for state in ['changed', 'deleted']:
         if state not in commit:
             continue
 
+        if not isinstance(commit[state], list):
+            raise SuspiciousOperation('Invalid commit {}'.format(state))
+
         func = globals()['_validate_commit_' + state]
-
-        if state == 'deleted':
-            if not isinstance(commit['deleted'], list):
-                raise SuspiciousOperation('Invalid commit delete')
-
-            for value in commit[state]:
-                func(value)
-
-        if state == 'changes':
-            if not isinstance(commit['changes'], dict):
-                raise SuspiciousOperation('Invalid commit changes')
-
-            for value in commit[state].values():
-                func(value)
+        for value in commit[state]:
+            func(value)
 
 
-def _validate_commit_changes(changes):
+def _validate_commit_changed(changes):
     if not isinstance(changes, dict):
         raise SuspiciousOperation('Invalid commit changes')
 
     for attribute_id, change in changes.items():
+        if attribute_id == 'object_id':
+            object_id_found = True
+            continue
+
         if not isinstance(change, dict) or 'action' not in change:
             raise SuspiciousOperation(
-                'Invalid commit changes for attribute "{}"'
+                'Invalid commit changed for attribute "{}"'
                 .format(attribute_id)
             )
 
-        func = globals()['_validate_commit_changes_' + change['action']]
+        func = globals()['_validate_commit_changed_' + change['action']]
         func(change)
 
+    if not object_id_found:
+        raise SuspiciousOperation('Commit changed without object_id')
 
-def _validate_commit_changes_update(change):
+
+def _validate_commit_changed_update(change):
     if not all(x in change for x in ('old', 'new')):
         raise SuspiciousOperation('Invalid update change')
 
 
-def _validate_commit_changes_new(change):
+def _validate_commit_changed_new(change):
     if 'new' not in change:
         raise SuspiciousOperation('Invalid new change')
 
 
-def _validate_commit_changes_delete(change):
+def _validate_commit_changed_delete(change):
     if 'old' not in change:
         raise SuspiciousOperation('Invalid delete change')
 
 
-def _validate_commit_changes_multi(change):
+def _validate_commit_changed_multi(change):
     if not all(x in change for x in ('add', 'remove')):
         raise SuspiciousOperation('Invalid multi change')
 

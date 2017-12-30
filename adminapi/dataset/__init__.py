@@ -112,7 +112,7 @@ class BaseQuery(object):
     def _build_commit_object(self):
         commit = {
             'deleted': [],
-            'changes': {},
+            'changed': [],
         }
 
         for obj in self:
@@ -121,7 +121,7 @@ class BaseQuery(object):
             if state == 'deleted':
                 commit['deleted'].append(obj.object_id)
             elif state == 'changed':
-                commit['changes'][obj.object_id] = obj._serialize_changes()
+                commit['changed'].append(obj._serialize_changes())
 
         return commit
 
@@ -221,7 +221,7 @@ class DatasetObject(dict):
         self._deleted = True
 
     def _serialize_changes(self):
-        changes = {}
+        changes = {'object_id': self['object_id']}
         for key, old_value in self.old_values.items():
             new_value = self[key]
             if isinstance(old_value, MultiAttr):
@@ -252,12 +252,12 @@ class DatasetObject(dict):
 
         commit_obj = {
             'deleted': [],
-            'changes': {},
+            'changed': [],
         }
         if state == 'deleted':
             commit_obj['deleted'].append(self.object_id)
         elif state == 'changed':
-            commit_obj['changes'][self.object_id] = self._serialize_changes()
+            commit_obj['changed'].append(self._serialize_changes())
 
         return commit_obj
 
