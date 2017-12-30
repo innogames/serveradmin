@@ -30,7 +30,6 @@ class Commit(object):
                     .filter(server_id__in=self.deletions)
                 )
             }
-            self._validate_deletes()
         else:
             self.deletions = []
             self._servers_to_delete = {}
@@ -43,7 +42,6 @@ class Commit(object):
                     .filter(server_id__in=self.changes.keys())
                 )
             }
-            self._validate_changes()
             self._clean_changes()
         else:
             self.changes = {}
@@ -55,31 +53,6 @@ class Commit(object):
         # If non-empty, the commit will go through the backend, but an error
         # will be shown on the client.
         self.warnings = []
-
-    def _validate_deletes(self):
-        if not (
-            isinstance(self.deletions, (list, set)) and
-            all(isinstance(x, int) for x in self.deletions)
-        ):
-            raise CommitError('Invalid servers to delete')
-
-    def _validate_changes(self):    # NOQA: C901
-        for changes in self.changes.values():
-            for change in changes.values():
-                action = change['action']
-
-                if action == 'update':
-                    if not all(x in change for x in ('old', 'new')):
-                        raise ValueError('Invalid update change')
-                elif action == 'new':
-                    if 'new' not in change:
-                        raise ValueError('Invalid new change')
-                elif action == 'delete':
-                    if 'old' not in change:
-                        raise ValueError('Invalid delete change')
-                elif action == 'multi':
-                    if not all(x in change for x in ('add', 'remove')):
-                        raise ValueError('Invalid multi change')
 
     def _clean_changes(self):   # NOQA: C901
         for server_id, changes in tuple(self.changes.items()):

@@ -96,30 +96,96 @@ def dataset_query(request, app, data):
 
 @api_view
 def dataset_commit(request, app, data):
-    try:
-        if 'changes' not in data or 'deleted' not in data:
-            raise SuspiciousOperation('Invalid changes')
+    if not isinstance(data, dict):
+        raise SuspiciousOperation('Invalid payload')
 
-        skip_validation = bool(data.get('skip_validation', False))
-        force_changes = bool(data.get('force_changes', False))
-
+    if 'changes' in data:
         # Convert keys back to integers (json doesn't handle integer keys)
         changes = {}
-        for server_id, change in data['changes'].items():
-            changes[int(server_id)] = change
+        for object_id, change in data['changes'].items():
+            changes[int(object_id)] = change
+        data['changes'] = changes
 
-        commit = {'deleted': data['deleted'], 'changes': changes}
-        commit_changes(commit, skip_validation, force_changes, app=app)
+    _validate_commit(data)
+    skip_validation = bool(data.get('skip_validation'))
+    force_changes = bool(data.get('force_changes'))
 
-        return {
-            'status': 'success',
-        }
+    try:
+        commit_changes(data, skip_validation, force_changes, app=app)
     except ValidationError as error:
         return {
             'status': 'error',
             'type': error.__class__.__name__,
             'message': str(error),
         }
+
+    return {
+        'status': 'success',
+    }
+
+
+def _validate_commit(commit):
+    for state in ['changes', 'deleted']:
+        if state not in commit:
+            continue
+
+        func = globals()['_validate_commit_' + state]
+
+        if state == 'deleted':
+            if not isinstance(commit['deleted'], list):
+                raise SuspiciousOperation('Invalid commit delete')
+
+            for value in commit[state]:
+                func(value)
+
+        if state == 'changes':
+            if not isinstance(commit['changes'], dict):
+                raise SuspiciousOperation('Invalid commit changes')
+
+            for value in commit[state].values():
+                func(value)
+
+
+def _validate_commit_changes(changes):
+    if not isinstance(changes, dict):
+        raise SuspiciousOperation('Invalid commit changes')
+
+    for attribute_id, change in changes.items():
+        if not isinstance(change, dict) or 'action' not in change:
+            raise SuspiciousOperation(
+                'Invalid commit changes for attribute "{}"'
+                .format(attribute_id)
+            )
+
+        func = globals()['_validate_commit_changes_' + change['action']]
+        func(change)
+
+
+def _validate_commit_changes_update(change):
+    if not all(x in change for x in ('old', 'new')):
+        raise SuspiciousOperation('Invalid update change')
+
+
+def _validate_commit_changes_new(change):
+    if 'new' not in change:
+        raise SuspiciousOperation('Invalid new change')
+
+
+def _validate_commit_changes_delete(change):
+    if 'old' not in change:
+        raise SuspiciousOperation('Invalid delete change')
+
+
+def _validate_commit_changes_multi(change):
+    if not all(x in change for x in ('add', 'remove')):
+        raise SuspiciousOperation('Invalid multi change')
+
+
+def _validate_commit_deleted(deleted):
+    if not isinstance(deleted, int):
+        raise SuspiciousOperation(
+            'Invalid commit deleted "{}"'.format(deleted)
+        )
 
 
 @api_view
