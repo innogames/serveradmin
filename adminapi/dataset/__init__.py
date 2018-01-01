@@ -119,13 +119,12 @@ class Query(BaseQuery):
         commit['force_changes'] = force_changes
         result = send_request(COMMIT_ENDPOINT, commit)
 
-        if result['status'] == 'success':
-            self.num_dirty = 0
-            for obj in self:
-                obj._confirm_changes()
-            return True
-        elif result['status'] == 'error':
+        if result['status'] == 'error':
             _handle_exception(result)
+
+        self.num_dirty = 0
+        for obj in self:
+            obj._confirm_changes()
 
     def get_results(self):
         if self._results is None:
@@ -329,11 +328,10 @@ class ServerObject(BaseServerObject):
         commit['force_changes'] = force_changes
         result = send_request(COMMIT_ENDPOINT, commit)
 
-        if result['status'] == 'success':
-            self._confirm_changes()
-            return True
-        elif result['status'] == 'error':
+        if result['status'] == 'error':
             _handle_exception(result)
+
+        self._confirm_changes()
 
 
 class MultiAttr(set):
