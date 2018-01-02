@@ -42,7 +42,6 @@ class Commit(object):
                     .filter(server_id__in=self.changes.keys())
                 )
             }
-            self._clean_changes()
         else:
             self.changes = {}
             self._servers_to_change = {}
@@ -53,32 +52,6 @@ class Commit(object):
         # If non-empty, the commit will go through the backend, but an error
         # will be shown on the client.
         self.warnings = []
-
-    def _clean_changes(self):   # NOQA: C901
-        for server_id, changes in tuple(self.changes.items()):
-            server_changed = False
-            for attr, change in tuple(changes.items()):
-                action = change['action']
-
-                if action == 'new':
-                    server_changed = True
-                elif action == 'update':
-                    if change['old'] != change['new']:
-                        server_changed = True
-                    else:
-                        del changes[attr]
-                elif action == 'multi':
-                    if change['add'] or change['remove']:
-                        if change['add'] or change['remove']:
-                            server_changed = True
-                        else:
-                            del changes[attr]
-                    else:
-                        del changes[attr]
-                elif action == 'delete':
-                    server_changed = True
-            if not server_changed:
-                del self.changes[server_id]
 
     def apply_changes(self):
         # Changes should be applied in order to prevent integrity errors.
