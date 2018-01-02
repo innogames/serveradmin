@@ -107,7 +107,7 @@ def print_server(server, attribute_ids):
             continue
 
         value = server[attribute_id]
-        if value in [None, True, False]:
+        if any(value is v for v in (None, True, False)):
             value = '{{{}}}'.format(str(value).lower())
 
         values.append(value)
