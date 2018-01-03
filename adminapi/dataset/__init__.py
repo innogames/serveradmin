@@ -81,7 +81,7 @@ class BaseQuery(object):
     def is_dirty(self):
         return any(s.is_dirty() for s in self)
 
-    def commit(self, skip_validation, force_changes):
+    def commit(self):
         raise NotImplementedError()
 
     def rollback(self):
@@ -128,10 +128,8 @@ class BaseQuery(object):
 
 class Query(BaseQuery):
 
-    def commit(self, skip_validation=False, force_changes=False):
+    def commit(self):
         commit = self._build_commit_object()
-        commit['skip_validation'] = skip_validation
-        commit['force_changes'] = force_changes
         result = send_request(COMMIT_ENDPOINT, commit)
 
         if result['status'] == 'error':
@@ -328,10 +326,8 @@ class DatasetObject(dict):
             self[key] = value
 
     # XXX: Deprecated
-    def commit(self, skip_validation=False, force_changes=False):
+    def commit(self):
         commit = self._build_commit_object()
-        commit['skip_validation'] = skip_validation
-        commit['force_changes'] = force_changes
         result = send_request(COMMIT_ENDPOINT, commit)
 
         if result['status'] == 'error':
@@ -422,17 +418,9 @@ def query(**kwargs):
     return Query(kwargs)
 
 
-def create(
-    attributes,
-    skip_validation=False,
-    fill_defaults=True,
-    fill_defaults_all=False,
-):
+def create(attributes):
     request = {
         'attributes': attributes,
-        'skip_validation': skip_validation,
-        'fill_defaults': fill_defaults,
-        'fill_defaults_all': fill_defaults_all,
     }
 
     response = send_request(CREATE_ENDPOINT, request)

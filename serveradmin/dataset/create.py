@@ -21,14 +21,7 @@ class CreateError(ValidationError):
     pass
 
 
-def create_server(
-    attributes,
-    skip_validation,
-    fill_defaults,
-    fill_defaults_all,
-    user=None,
-    app=None,
-):
+def create_server(attributes, user=None, app=None):
     with transaction.atomic():
         if 'hostname' not in attributes:
             raise CreateError('"hostname" attribute is required.')
@@ -42,13 +35,7 @@ def create_server(
             user = app.owner
 
         real_attributes = dict(_get_real_attributes(attributes))
-        _validate_real_attributes(
-            servertype,
-            real_attributes,
-            skip_validation,
-            fill_defaults,
-            fill_defaults_all,
-        )
+        _validate_real_attributes(servertype, real_attributes)
 
         server_id = _insert_server(
             hostname,
@@ -226,13 +213,7 @@ def _get_real_attributes(attributes):
         yield attribute, value
 
 
-def _validate_real_attributes(  # NOQA: C901
-    servertype,
-    real_attributes,
-    skip_validation,
-    fill_defaults,
-    fill_defaults_all,
-):
+def _validate_real_attributes(servertype, real_attributes):     # NOQA: C901
     violations_regexp = []
     violations_required = []
     servertype_attributes = set()
@@ -251,13 +232,13 @@ def _validate_real_attributes(  # NOQA: C901
             if attribute.multi:
                 real_attributes[attribute] = sa.get_default_value()
             elif sa.required:
-                if fill_defaults and sa.default_value is not None:
+                if sa.default_value is not None:
                     real_attributes[attribute] = sa.get_default_value()
                 else:
                     violations_required.append(attribute.pk)
                     continue
             else:
-                if fill_defaults_all and sa.default_value is not None:
+                if sa.default_value is not None:
                     real_attributes[attribute] = sa.get_default_value()
                 else:
                     continue
@@ -280,7 +261,6 @@ def _validate_real_attributes(  # NOQA: C901
             violations_attribs.append(str(attr))
 
     handle_violations(
-        skip_validation,
         violations_regexp,
         violations_required,
         violations_attribs,
@@ -318,30 +298,28 @@ def _insert_server(
 
 
 def handle_violations(
-    skip_validation,
     violations_regexp,
     violations_required,
     violations_attribs,
 ):
-    if not skip_validation:
-        if violations_regexp or violations_required:
-            if violations_regexp:
-                regexp_msg = 'Attributes violating regexp: {0}. '.format(
-                    ', '.join(violations_regexp)
-                )
-            else:
-                regexp_msg = ''
-            if violations_required:
-                required_msg = 'Attributes violating required: {0}.'.format(
-                    ', '.join(violations_required)
-                )
-            else:
-                required_msg = ''
-
-            raise CreateError(
-                'Validation failed. {0}{1}'.format(regexp_msg, required_msg),
-                violations_regexp + violations_required,
+    if violations_regexp or violations_required:
+        if violations_regexp:
+            regexp_msg = 'Attributes violating regexp: {0}. '.format(
+                ', '.join(violations_regexp)
             )
+        else:
+            regexp_msg = ''
+        if violations_required:
+            required_msg = 'Attributes violating required: {0}.'.format(
+                ', '.join(violations_required)
+            )
+        else:
+            required_msg = ''
+
+        raise CreateError(
+            'Validation failed. {0}{1}'.format(regexp_msg, required_msg),
+            violations_regexp + violations_required,
+        )
     if violations_attribs:
         raise CreateError(
             'Attributes {0} are not defined on '

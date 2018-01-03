@@ -139,17 +139,11 @@ supports iteration and some additional methods.
 
         Return the state of the object.
 
-    .. method:: commit(skip_validation=False, force_changes=False)
+    .. method:: commit()
 
         Commit the changes that were done by modifying the attributes of
         servers in the query.  Please note: This will only affect
         servers that were accessed through this query!
-
-        If ``skip_validation`` is ``True`` it will neither validate regular
-        expressions nor whether the attribute is required.
-
-        If ``force_changes`` is ``True`` it will override any changes
-        which were done in the meantime.
 
     .. method:: rollback()
 
@@ -211,14 +205,9 @@ Creating servers
 
 The function :func:`adminapi.dataset.create` allows you to create new servers:
 
-.. function:: create(attributes, skip_validation=False, fill_defaults=True, fill_defaults_all=False)
+.. function:: create(attributes)
 
     :param attributes: A dictionary with the attributes of the server.
-    :param skip_validation: Will skip regular expression and required validation.
-    :param fill_defaults: Automatically fill it the default if the attribute is
-                          required.
-    :param fill_defaults_all: Like ``fill_defaults``, but also fill attributes
-                              with defaults which are not required.
     :return: The server (``DatasetObject``) that was created with all attributes
              (given and filled attributes)
 

@@ -214,13 +214,7 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
                     server.commit(user=request.user)
                 else:
                     action = 'created'
-                    server.object_id = create_server(
-                        server,
-                        skip_validation=False,
-                        fill_defaults=False,
-                        fill_defaults_all=False,
-                        user=request.user,
-                    )
+                    server.object_id = create_server(server, user=request.user)
             except CommitValidationFailed as e:
                 invalid_attrs.update([attr for obj_id, attr in e.violations])
             except (PermissionDenied, ValidationError, IntegrityError) as err:

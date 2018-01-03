@@ -243,13 +243,7 @@ on_server_attribute_changed = _ServerAttributedChangedHook(
 
 
 # TODO: Move to commit object?
-def commit_changes(
-    commit,
-    skip_validation=False,
-    force_changes=False,
-    app=None,
-    user=None,
-):
+def commit_changes(commit, app=None, user=None):
     """Commit server changes to the database after validation
 
     :param commit: Dictionary with the keys 'deleted' and 'changes' containing
@@ -276,47 +270,44 @@ def commit_changes(
         violations_attribs = _validate_attributes(
             commit.changed, commit._objects_to_change, servertype_attributes
         )
-
-        if not skip_validation:
-            violations_readonly = _validate_readonly(
-                commit.changed, commit._objects_to_change
+        violations_readonly = _validate_readonly(
+            commit.changed, commit._objects_to_change
+        )
+        violations_regexp = list(_validate_regexp(
+            commit.changed,
+            commit._objects_to_change,
+            servertype_attributes,
+        ))
+        violations_required = _validate_required(
+            commit.changed,
+            commit._objects_to_change,
+            servertype_attributes,
+        )
+        if (
+            violations_attribs or violations_readonly or
+            violations_regexp or violations_required
+        ):
+            error_message = _build_error_message(
+                violations_attribs,
+                violations_readonly,
+                violations_regexp,
+                violations_required,
             )
-            violations_regexp = list(_validate_regexp(
-                commit.changed,
-                commit._objects_to_change,
-                servertype_attributes,
-            ))
-            violations_required = _validate_required(
-                commit.changed,
-                commit._objects_to_change,
-                servertype_attributes,
+            raise CommitValidationFailed(
+                error_message,
+                violations_attribs +
+                violations_readonly +
+                violations_regexp +
+                violations_required,
             )
-            if (
-                violations_attribs or violations_readonly or
-                violations_regexp or violations_required
-            ):
-                error_message = _build_error_message(
-                    violations_attribs,
-                    violations_readonly,
-                    violations_regexp,
-                    violations_required,
-                )
-                raise CommitValidationFailed(
-                    error_message,
-                    violations_attribs +
-                    violations_readonly +
-                    violations_regexp +
-                    violations_required,
-                )
 
         if violations_attribs:
             error_message = _build_error_message(violations_attribs, [], [])
             raise CommitValidationFailed(error_message, violations_attribs)
 
-        if not force_changes:
-            newer = _validate_commit(commit.changed, commit._objects_to_change)
-            if newer:
-                raise CommitNewerData('Newer data available', newer)
+        newer = _validate_commit(commit.changed, commit._objects_to_change)
+        if newer:
+            raise CommitNewerData('Newer data available', newer)
 
         _log_changes(commit._objects_to_delete, commit.changed, user, app)
         commit.apply_changes()

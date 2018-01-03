@@ -107,11 +107,9 @@ def dataset_commit(request, app, data):
             change['object_id'] = int(object_id)
 
     _validate_commit(data)
-    skip_validation = bool(data.get('skip_validation'))
-    force_changes = bool(data.get('force_changes'))
 
     try:
-        commit_changes(data, skip_validation, force_changes, app=app)
+        commit_changes(data, app=app)
     except ValidationError as error:
         return {
             'status': 'error',
@@ -191,22 +189,13 @@ def dataset_create(request, app, data):
     try:
         required = [
             'attributes',
-            'skip_validation',
-            'fill_defaults',
-            'fill_defaults_all',
         ]
         if not all(key in data for key in required):
             raise SuspiciousOperation('Invalid create request')
         if not isinstance(data['attributes'], dict):
             raise SuspiciousOperation('Attributes must be a dictionary')
 
-        create_server(
-            data['attributes'],
-            data['skip_validation'],
-            data['fill_defaults'],
-            data['fill_defaults_all'],
-            app=app,
-        )
+        create_server(data['attributes'], app=app)
 
         return {
             'status': 'success',
