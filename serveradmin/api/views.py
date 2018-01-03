@@ -13,9 +13,7 @@ from adminapi.filters import FilterValueError, filter_from_obj
 from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
 from serveradmin.api.decorators import api_view
 from serveradmin.api.utils import build_function_description
-from serveradmin.dataset import Query   # TODO: Don't access it from here
-from serveradmin.dataset.commit import commit_changes
-from serveradmin.dataset.create import create_server
+from serveradmin.serverdb.query_committer import QueryCommitter
 from serveradmin.serverdb.query_filterer import QueryFilterer
 from serveradmin.serverdb.query_materializer import QueryMaterializer
 
@@ -106,10 +104,18 @@ def dataset_commit(request, app, data):
         for object_id, change in data['changes'].items():
             change['object_id'] = int(object_id)
 
-    _validate_commit(data)
+    kwargs = {}
+    for key, value in data.items():
+        validate_func = globals().get('_validate_commit_' + key)
+        if validate_func:
+            if not isinstance(value, list):
+                raise SuspiciousOperation('Invalid commit {}'.format(key))
+            for item in value:
+                validate_func(item)
+            kwargs[key] = value
 
     try:
-        commit_changes(data, app=app)
+        QueryCommitter(app=app, **kwargs)()
     except ValidationError as error:
         return {
             'status': 'error',
@@ -120,19 +126,6 @@ def dataset_commit(request, app, data):
     return {
         'status': 'success',
     }
-
-
-def _validate_commit(commit):
-    for state in ['changed', 'deleted']:
-        if state not in commit:
-            continue
-
-        if not isinstance(commit[state], list):
-            raise SuspiciousOperation('Invalid commit {}'.format(state))
-
-        func = globals()['_validate_commit_' + state]
-        for value in commit[state]:
-            func(value)
 
 
 def _validate_commit_changed(changes):
@@ -186,29 +179,27 @@ def _validate_commit_deleted(deleted):
 
 @api_view
 def dataset_create(request, app, data):
+    required = [
+        'attributes',
+    ]
+    if not all(key in data for key in required):
+        raise SuspiciousOperation('Invalid create request')
+    if not isinstance(data['attributes'], dict):
+        raise SuspiciousOperation('Attributes must be a dictionary')
+
     try:
-        required = [
-            'attributes',
-        ]
-        if not all(key in data for key in required):
-            raise SuspiciousOperation('Invalid create request')
-        if not isinstance(data['attributes'], dict):
-            raise SuspiciousOperation('Attributes must be a dictionary')
-
-        create_server(data['attributes'], app=app)
-
-        return {
-            'status': 'success',
-            'result': Query(filters={
-                'hostname': data['attributes']['hostname']
-            }).get_results(),
-        }
+        commit = QueryCommitter([data['attributes']], app=app)()
     except ValidationError as error:
         return {
             'status': 'error',
             'type': error.__class__.__name__,
             'message': str(error),
         }
+
+    return {
+        'status': 'success',
+        'result': commit.created,
+    }
 
 
 @api_view

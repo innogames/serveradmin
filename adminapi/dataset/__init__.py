@@ -396,6 +396,13 @@ class MultiAttr(set):
         self._obj[self._attribute_id] = self ^ other
 
 
+class DatasetCommit(object):
+    def __init__(self, created, changed, deleted):
+        self.created = created
+        self.changed = changed
+        self.deleted = deleted
+
+
 # XXX: Deprecated
 def _handle_exception(result):
     if result['type'] == 'ValueError':

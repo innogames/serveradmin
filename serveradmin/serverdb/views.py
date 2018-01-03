@@ -6,14 +6,13 @@ from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 
-from serveradmin.dataset.create import create_server
-from serveradmin.dataset.commit import CommitError
 from serveradmin.serverdb.models import (
     ChangeCommit,
     ChangeAdd,
     ChangeUpdate,
     ChangeDelete,
 )
+from serveradmin.serverdb.query_committer import CommitError, QueryCommitter
 
 
 @login_required
@@ -84,7 +83,7 @@ def restore_deleted(request, change_commit):
 
     server_obj = deleted.attributes
     try:
-        create_server(server_obj, user=request.user)
+        QueryCommitter([server_obj], user=request.user)
     except CommitError as error:
         messages.error(request, str(error))
     else:

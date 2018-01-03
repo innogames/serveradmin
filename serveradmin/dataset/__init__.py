@@ -1,10 +1,10 @@
 from adminapi.dataset import BaseQuery, DatasetObject
+from serveradmin.serverdb.query_committer import QueryCommitter
 from serveradmin.serverdb.query_filterer import QueryFilterer
 from serveradmin.serverdb.query_materializer import (
     QueryMaterializer,
     get_default_attribute_values,
 )
-from serveradmin.dataset.commit import commit_changes
 
 
 class Query(BaseQuery):
@@ -15,9 +15,9 @@ class Query(BaseQuery):
 
         return obj
 
-    def commit(self, *args, **kwargs):
+    def commit(self, app=None, user=None):
         commit = self._build_commit_object()
-        commit_changes(commit, *args, **kwargs)
+        QueryCommitter(app=app, user=user, **commit)()
         self._confirm_changes()
 
     def get_results(self):

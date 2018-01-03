@@ -20,12 +20,6 @@ from adminapi.filters import Any, ContainedOnlyBy, StartsWith, filter_classes
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
 from serveradmin.dataset import Query
-from serveradmin.dataset.commit import (
-    commit_changes,
-    CommitValidationFailed,
-    CommitIncomplete,
-)
-from serveradmin.dataset.create import create_server
 from serveradmin.serverdb.forms import ServerForm
 from serveradmin.serverdb.models import (
     Servertype,
@@ -33,6 +27,11 @@ from serveradmin.serverdb.models import (
     ServertypeAttribute,
     ServerStringAttribute,
     get_unused_ip_addrs,
+)
+from serveradmin.serverdb.query_committer import (  # TODO: Use dataset module
+    QueryCommitter,
+    CommitValidationFailed,
+    CommitIncomplete,
 )
 
 MAX_DISTINGUISHED_VALUES = 50
@@ -214,7 +213,8 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
                     server.commit(user=request.user)
                 else:
                     action = 'created'
-                    server.object_id = create_server(server, user=request.user)
+                    commit = QueryCommitter([server], user=request.user)()
+                    server = commit.created[0]
             except CommitValidationFailed as e:
                 invalid_attrs.update([attr for obj_id, attr in e.violations])
             except (PermissionDenied, ValidationError, IntegrityError) as err:
@@ -291,7 +291,7 @@ def commit(request):
             commit['changes'] = changes
 
         try:
-            commit_changes(commit, user=request.user)
+            QueryCommitter(commit, user=request.user)()
         except (PermissionDenied, ValidationError, IntegrityError) as error:
             result = {
                 'status': 'error',
