@@ -1,9 +1,10 @@
 from distutils.util import strtobool
+from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 from itertools import chain
 from types import GeneratorType
 
 from adminapi.datatype import validate_value, json_to_datatype
-from adminapi.filters import BaseFilter
+from adminapi.filters import Any, BaseFilter, ContainedOnlyBy
 from adminapi.request import send_request
 
 COMMIT_ENDPOINT = '/dataset/commit'
@@ -125,6 +126,43 @@ class BaseQuery(object):
                 commit['changed'].append(obj._serialize_changes())
 
         return commit
+
+    def get_network_ip_addrs(self):
+        if self._restrict is not None and 'intern_ip' not in self._restrict:
+            raise DatasetError('"intern_ip" is not queried')
+
+        for obj in self:
+            addr = obj['intern_ip']
+            if isinstance(addr, (IPv4Network, IPv6Network)):
+                yield addr
+
+    def get_free_ip_addrs(self):
+        networks = list(self.get_network_ip_addrs())
+        if not networks:
+            raise DatasetError('No networks')
+
+        # Index host and network addresses separately
+        used_hosts = set()
+        used_networks = list()
+        for obj in type(self)({
+            'intern_ip': Any(*(ContainedOnlyBy(n) for n in networks)),
+        }, ['intern_ip']):
+            addr = obj['intern_ip']
+            if isinstance(addr, (IPv4Address, IPv6Address)):
+                used_hosts.add(addr)
+            else:
+                assert isinstance(addr, (IPv4Network, IPv6Network))
+                used_networks.append(addr)
+
+        # Now, we are ready to return.
+        for network in networks:
+            for host in network.hosts():
+                for other_network in used_networks:
+                    if host in other_network:
+                        break
+                else:
+                    if host not in used_hosts:
+                        yield host
 
 
 class Query(BaseQuery):

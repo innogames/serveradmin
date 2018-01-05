@@ -18,7 +18,6 @@ from serveradmin.serverdb.models import (
     ChangeUpdate,
     ChangeDelete,
     Project,
-    get_unused_ip_addrs,
 )
 from serveradmin.serverdb.query_materializer import QueryMaterializer
 
@@ -656,6 +655,7 @@ def _get_network_ip_addr(attributes, networks):
     return intern_ip
 
 
+# XXX: Deprecated
 def _choose_ip_addr(networks):
     smallest_network = None
     for network in networks:
@@ -666,8 +666,21 @@ def _choose_ip_addr(networks):
                 continue
         smallest_network = network
     if smallest_network is not None:
-        for ip_addr in get_unused_ip_addrs(smallest_network):
+        return _get_free_ip_addr(smallest_network)
+
+
+# XXX: Deprecated
+def _get_free_ip_addr(network):
+    used = {i.ip for i in (
+        Server.objects
+        .filter(intern_ip__net_contained_or_equal=network)
+        .order_by()     # Clear ordering for database performance
+        .values_list('intern_ip', flat=True)
+    )}
+    for ip_addr in ip_network(network).hosts():
+        if ip_addr not in used:
             return ip_addr
+    return None
 
 
 def _check_in_networks(networks, intern_ip_network):

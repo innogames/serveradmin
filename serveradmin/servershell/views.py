@@ -26,7 +26,6 @@ from serveradmin.serverdb.models import (
     Attribute,
     ServertypeAttribute,
     ServerStringAttribute,
-    get_unused_ip_addrs,
 )
 from serveradmin.serverdb.query_committer import (  # TODO: Use dataset module
     QueryCommitter,
@@ -411,8 +410,10 @@ def choose_ip_addr(request):
             'servers': servers
         })
 
+    network_query = Query({'intern_ip': network})
+
     return TemplateResponse(request, 'servershell/choose_ip_addr.html', {
-        'ip_addrs': islice(get_unused_ip_addrs(network), 1000)
+        'ip_addrs': islice(network_query.get_free_ip_addrs(), 1000)
     })
 
 
