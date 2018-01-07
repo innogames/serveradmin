@@ -154,7 +154,7 @@ class Query(BaseQuery):
         return self._results
 
 
-class BaseServerObject(dict):
+class ServerObject(dict):
     """This class must redefine all mutable methods of the dict class
     to cast multi attributes and to validate the values.
     """
@@ -167,7 +167,7 @@ class BaseServerObject(dict):
         for attribute_id, value in attributes.items():
             if isinstance(value, (tuple, list, set, frozenset)):
                 attributes[attribute_id] = MultiAttr(value, self, attribute_id)
-        super(BaseServerObject, self).__init__(attributes)
+        super(ServerObject, self).__init__(attributes)
         self.object_id = object_id
         self._deleted = False
         self.old_values = {}
@@ -185,7 +185,7 @@ class BaseServerObject(dict):
         return self.object_id
 
     def __repr__(self):
-        parent_repr = super(BaseServerObject, self).__repr__()
+        parent_repr = super(ServerObject, self).__repr__()
         if not self.object_id:
             return 'ServerObject({0})'.format(parent_repr)
         return 'ServerObject({0}, {1})'.format(parent_repr, self.object_id)
@@ -203,13 +203,11 @@ class BaseServerObject(dict):
     def is_deleted(self):
         return self._deleted
 
-    def commit(self):
-        raise NotImplementedError()
-
+    # XXX: Deprecated
     def rollback(self):
         self._deleted = False
         for attr, old_value in self.old_values.items():
-            super(BaseServerObject, self).__setitem__(attr, old_value)
+            super(ServerObject, self).__setitem__(attr, old_value)
         self.old_values.clear()
 
     def delete(self):
@@ -274,7 +272,7 @@ class BaseServerObject(dict):
         if isinstance(self[key], MultiAttr):
             value = MultiAttr(value, self, key)
 
-        return super(BaseServerObject, self).__setitem__(key, value)
+        return super(ServerObject, self).__setitem__(key, value)
 
     def validate(self, key, value):
         # Boolean attributes are guaranteed to exist as booleans, multi
@@ -317,8 +315,7 @@ class BaseServerObject(dict):
         for key, value in chain(other, kwargs.items()):
             self[key] = value
 
-
-class ServerObject(BaseServerObject):
+    # XXX: Deprecated
     def commit(self, skip_validation=False, force_changes=False):
         commit = self._build_commit_object()
         commit['skip_validation'] = skip_validation
@@ -333,7 +330,7 @@ class ServerObject(BaseServerObject):
 
 class MultiAttr(set):
     """This class must redefine all mutable methods of the set class
-    to maintain the old values on the BaseServerObject.
+    to maintain the old values on the ServerObject.
     """
 
     def __init__(self, other, server, attribute_id):

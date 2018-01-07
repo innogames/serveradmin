@@ -76,29 +76,14 @@ a dictionary with methods like ``keys()``, ``values()``, ``update(...)`` etc.
 
 You can get server objects by iterating over a query or by calling
 ``get()`` on the query.  Changes to the attributes are not directly
-committed.  To commit them you must either call ``commit()`` on the server
-object or on the query.  For performance reasons, use ``commit()`` on the
-Query, if you change many servers rather than calling ``commit()`` on every
-server object.  You can also use the ``update()`` method on the query for
-mass updates.
+committed.  To commit them you must call ``commit()`` on the query.
 
 Here is an example which cancels all servers for Seven Lands::
 
-    # BAD WAY! DON'T DO THIS!
-    # It will send a HTTP request for every server!
-    hosts = Query({'servertype': 'hardware'})
-    for host in hosts:
-         host['canceled'] = True
-         host.commit()
-
-    # GOOD WAY:
     hosts = Query({'servertype': 'hardware'})
     for host in hosts:
         hosts['canceled'] = True
     hosts.commit()
-
-    # EVEN BETTER WAY:
-    Query({'servertype': 'hardware'}).update(canceled=True).commit()
 
 Another example will print all attributes of the techerror server and check
 for the existence of the ``game_function`` attribute::
@@ -215,16 +200,6 @@ For documentation of the dictionary-like access see :class:`dict`.
     .. method:: is_deleted()
 
         Return True, if the server object is marked for deletion.
-
-    .. method:: commit(skip_validation=False, force_changes=False)
-
-        Commit changes that were done in this server object. See documentation
-        on the query for ``skip_validation`` and ``force_changes``.
-
-    .. method:: rollback()
-
-        Rollback all changes on the server object. If the server is marked for
-        deletion, this will be undone too.
 
     .. method:: delete()
 

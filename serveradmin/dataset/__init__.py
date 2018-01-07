@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from django.core.exceptions import ValidationError
 
-from adminapi.dataset import BaseQuery, BaseServerObject
+from adminapi.dataset import BaseQuery, ServerObject
 from adminapi.filters import BaseFilter
 from serveradmin.serverdb.models import (   # TODO: Don't use the models at all
     Attribute, Server, Servertype, ServertypeAttribute
@@ -35,13 +35,6 @@ class Query(BaseQuery):
                 servers, self._restrict, self._order_by
             )
         return self._results
-
-
-class ServerObject(BaseServerObject):
-    def commit(self, app=None, user=None):
-        commit = self._build_commit_object()
-        commit_changes(commit, app=app, user=user)
-        self._confirm_changes()
 
 
 # XXX: Deprecated
