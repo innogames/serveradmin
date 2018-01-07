@@ -150,11 +150,11 @@ class Query(BaseQuery):
             response = send_request(QUERY_ENDPOINT, request_data)
             if response['status'] == 'error':
                 _handle_exception(response)
-            self._results = [_format_server(s) for s in response['result']]
+            self._results = [_format_obj(s) for s in response['result']]
         return self._results
 
 
-class ServerObject(dict):
+class DatasetObject(dict):
     """This class must redefine all mutable methods of the dict class
     to cast multi attributes and to validate the values.
     """
@@ -167,7 +167,7 @@ class ServerObject(dict):
         for attribute_id, value in attributes.items():
             if isinstance(value, (tuple, list, set, frozenset)):
                 attributes[attribute_id] = MultiAttr(value, self, attribute_id)
-        super(ServerObject, self).__init__(attributes)
+        super(DatasetObject, self).__init__(attributes)
         self.object_id = object_id
         self._deleted = False
         self.old_values = {}
@@ -185,10 +185,10 @@ class ServerObject(dict):
         return self.object_id
 
     def __repr__(self):
-        parent_repr = super(ServerObject, self).__repr__()
+        parent_repr = super(DatasetObject, self).__repr__()
         if not self.object_id:
-            return 'ServerObject({0})'.format(parent_repr)
-        return 'ServerObject({0}, {1})'.format(parent_repr, self.object_id)
+            return 'DatasetObject({0})'.format(parent_repr)
+        return 'DatasetObject({0}, {1})'.format(parent_repr, self.object_id)
 
     def is_dirty(self):
         if self.object_id is None:
@@ -207,7 +207,7 @@ class ServerObject(dict):
     def rollback(self):
         self._deleted = False
         for attr, old_value in self.old_values.items():
-            super(ServerObject, self).__setitem__(attr, old_value)
+            super(DatasetObject, self).__setitem__(attr, old_value)
         self.old_values.clear()
 
     def delete(self):
@@ -260,7 +260,7 @@ class ServerObject(dict):
 
     def __setitem__(self, key, value):
         if self._deleted:
-            raise DatasetError('Cannot set attributes to deleted server')
+            raise DatasetError('Cannot set attributes to deleted object')
         if key not in self:
             raise DatasetError(
                 'Cannot set nonexistent attribute "{}"'.format(key)
@@ -272,7 +272,7 @@ class ServerObject(dict):
         if isinstance(self[key], MultiAttr):
             value = MultiAttr(value, self, key)
 
-        return super(ServerObject, self).__setitem__(key, value)
+        return super(DatasetObject, self).__setitem__(key, value)
 
     def validate(self, key, value):
         # Boolean attributes are guaranteed to exist as booleans, multi
@@ -330,25 +330,25 @@ class ServerObject(dict):
 
 class MultiAttr(set):
     """This class must redefine all mutable methods of the set class
-    to maintain the old values on the ServerObject.
+    to maintain the old values on the DatasetObject.
     """
 
-    def __init__(self, other, server, attribute_id):
+    def __init__(self, other, obj, attribute_id):
         super(MultiAttr, self).__init__(other)
-        self._server = server
+        self._obj = obj
         self._attribute_id = attribute_id
 
     def __str__(self):
         return ' '.join(str(x) for x in self)
 
     def copy(self):
-        return MultiAttr(self, self._server, self._attribute_id)
+        return MultiAttr(self, self._obj, self._attribute_id)
 
     def add(self, elem):
-        self._server[self._attribute_id] = self | {elem}
+        self._obj[self._attribute_id] = self | {elem}
 
     def discard(self, elem):
-        self._server[self._attribute_id] = self - {elem}
+        self._obj[self._attribute_id] = self - {elem}
 
     def remove(self, elem):
         if elem not in self:
@@ -364,28 +364,28 @@ class MultiAttr(set):
         return elem
 
     def clear(self):
-        self._server[self._attribute_id] = set()
+        self._obj[self._attribute_id] = set()
 
     def update(self, *others):
         new = set(self)
         for other in others:
             new |= other
-        self._server[self._attribute_id] = new
+        self._obj[self._attribute_id] = new
 
     def intersection_update(self, *others):
         new = set(self)
         for other in others:
             new &= other
-        self._server[self._attribute_id] = new
+        self._obj[self._attribute_id] = new
 
     def difference_update(self, *others):
         new = set(self)
         for other in others:
             new -= other
-        self._server[self._attribute_id] = new
+        self._obj[self._attribute_id] = new
 
     def symmetric_difference_update(self, other):
-        self._server[self._attribute_id] = self ^ other
+        self._obj[self._attribute_id] = self ^ other
 
 
 def _handle_exception(result):
@@ -426,29 +426,29 @@ def create(
     if response['status'] == 'error':
         _handle_exception(response)
 
-    return _format_server(response['result'][0])
+    return _format_obj(response['result'][0])
 
 
-def _format_server(result):
+def _format_obj(result):
     object_id = result['object_id']
-    server_obj = ServerObject([], object_id)
+    obj = DatasetObject([], object_id)
 
     for attribute_id, value in list(result.items()):
         if isinstance(value, list):
             casted_value = MultiAttr(
                 (_format_attribute_value(v) for v in value),
-                server_obj,
+                obj,
                 attribute_id,
             )
         else:
             casted_value = _format_attribute_value(value)
 
-        dict.__setitem__(server_obj, attribute_id, casted_value)
+        dict.__setitem__(obj, attribute_id, casted_value)
 
-    return server_obj
+    return obj
 
 
 def _format_attribute_value(value):
     if isinstance(value, dict):
-        return _format_server(value)
+        return _format_obj(value)
     return json_to_datatype(value)

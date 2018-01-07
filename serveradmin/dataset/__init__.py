@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from django.core.exceptions import ValidationError
 
-from adminapi.dataset import BaseQuery, ServerObject
+from adminapi.dataset import BaseQuery, DatasetObject
 from adminapi.filters import BaseFilter
 from serveradmin.serverdb.models import (   # TODO: Don't use the models at all
     Attribute, Server, Servertype, ServertypeAttribute
@@ -18,10 +18,10 @@ from serveradmin.dataset.commit import commit_changes
 class Query(BaseQuery):
 
     def new_object(self, servertype):
-        server_obj = ServerObject(get_default_attribute_values(servertype))
-        self.get_results().append(server_obj)
+        obj = DatasetObject(get_default_attribute_values(servertype))
+        self.get_results().append(obj)
 
-        return server_obj
+        return obj
 
     def commit(self, *args, **kwargs):
         commit = self._build_commit_object()
@@ -112,7 +112,7 @@ def _materialize_servers(servers, restrict, order_by=None):
 
     join_results = _get_join_results(materializer, joins)
     return [
-        ServerObject(materializer.get_attributes(i, join_results), i)
+        DatasetObject(materializer.get_attributes(i, join_results), i)
         for i in server_ids
     ]
 

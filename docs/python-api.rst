@@ -185,7 +185,7 @@ Server object reference
 The reference will only include the additional methods of the server object.
 For documentation of the dictionary-like access see :class:`dict`.
 
-.. class:: ServerObject
+.. class:: DatasetObject
 
     .. attribute:: old_values
 
@@ -220,7 +220,7 @@ The function :func:`adminapi.dataset.create` allows you to create new servers:
                           required.
     :param fill_defaults_all: Like ``fill_defaults``, but also fill attributes
                               with defaults which are not required.
-    :return: The server (``ServerObject``) that was created with all attributes
+    :return: The server (``DatasetObject``) that was created with all attributes
              (given and filled attributes)
 
 Making API calls
