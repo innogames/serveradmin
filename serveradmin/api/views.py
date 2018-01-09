@@ -62,25 +62,14 @@ def echo(request, app, data):
 
 @api_view
 def dataset_query(request, app, data):
-    if not all(x in data for x in ['filters', 'restrict']):
-        return {
-            'status': 'error',
-            'type': 'ValueError',
-            'message': 'Invalid query object',
-        }
-
     try:
-        if not isinstance(data['filters'], dict):
+        if 'filters' not in data or not isinstance(data['filters'], dict):
             raise ValidationError('Filters must be a dictionary')
         filters = {}
         for attr, filter_obj in data['filters'].items():
             filters[attr] = filter_from_obj(filter_obj)
 
-        query = Query(filters=filters)
-        if data['restrict']:
-            query.restrict(*data['restrict'])
-        if data.get('order_by'):
-            query.order_by(*data['order_by'])
+        query = Query(filters, data.get('restrict'), data.get('order_by'))
 
         return {
             'status': 'success',
@@ -177,17 +166,16 @@ def api_call(request, app, data):
         try:
             fn = AVAILABLE_API_FUNCTIONS[data['group']][data['name']]
         except KeyError:
-            raise ValueError('No such function')
+            raise ApiError('No such function')
 
         retval = fn(*data['args'], **data['kwargs'])
         return {
             'status': 'success',
             'retval': retval,
         }
-
-    except (ValueError, TypeError, ApiError) as error:
+    except ApiError as error:
         return {
             'status': 'error',
-            'type': error.__class__.__name__,
+            'type': 'ApiError',
             'message': str(error),
         }

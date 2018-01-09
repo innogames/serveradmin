@@ -24,7 +24,7 @@ from adminapi.filters import (
 from serveradmin.serverdb.models import Server, ServerAttribute
 
 
-class QueryBuilder(object):
+class QueryFilterer(object):
     def __init__(self, servertypes, filters):
         self.servertypes = servertypes
         self.filters = filters
@@ -43,6 +43,7 @@ class QueryBuilder(object):
         )
         for attribute, value in self.filters.items():
             sql += ' AND ' + self.get_sql_condition(attribute, value)
+        sql += ' ORDER BY server.hostname, server.intern_ip, server.server_id'
 
         return sql
 

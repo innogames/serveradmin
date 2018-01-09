@@ -138,6 +138,7 @@ function autocomplete_shell_search(term, autocomplete_cb)
         // Add filter functions to autocomplete
         if (prev_token == 'key' && parsed_args[plen -1]['token'] == 'str' && call_depth == 0) {
             for (fn_name in filter_functions) {
+                var fn = filter_functions[fn_name];
                 var filter_name = parsed_args[plen - 1]['value'].toLowerCase();
                 var prefix = term.substring(0, term.length - filter_name.length);
                 if (fn.substr(0, filter_name.length).toLowerCase() == filter_name) {

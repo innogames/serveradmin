@@ -193,17 +193,17 @@ def index(request):
                             hardware = list(Query({
                                 'rack': rack['hostname'],
                                 'bladecenter': Empty(),
-                            }).restrict(
+                            }, [
                                 'hostname',
                                 'hardware_model',
-                            ))
+                            ]))
                             hardware += list(Query({
                                 'rack': rack['hostname'],
                                 'servertype': 'blade_enclosure',
-                            }).restrict(
+                            }, [
                                 'hostname',
                                 'hardware_model',
-                            ))
+                            ]))
                     row['igcolumns'].append({
                         'style': 'extreme' if [
                             hw for hw in hardware if

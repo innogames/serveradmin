@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 
-from adminapi.base import QueryError
+from adminapi.datatype import DatatypeError
 from adminapi.filters import Any
 from adminapi.parse import parse_query
 from serveradmin.graphite.models import (
@@ -48,7 +48,7 @@ def index(request):
     if term:
         try:
             query_args = parse_query(term)
-            host_query = Query(query_args).restrict('hostname', 'xen_host')
+            host_query = Query(query_args, ['hostname', 'xen_host'])
             for host in host_query:
                 matched_hostnames.append(host['hostname'])
                 if 'xen_host' in host:
@@ -66,7 +66,7 @@ def index(request):
                 return TemplateResponse(
                     request, 'resources/index.html', template_info
                 )
-        except (QueryError, ValidationError) as error:
+        except (DatatypeError, ValidationError) as error:
             template_info.update({
                 'error': str(error)
             })
@@ -98,14 +98,10 @@ def index(request):
                 graph_index += 1
 
     hosts = OrderedDict()
-    query_kwargs = {GRAPHITE_ATTRIBUTE_ID: collection.name}
+    filters = {GRAPHITE_ATTRIBUTE_ID: collection.name}
     if len(hostnames) > 0:
-        query_kwargs['hostname'] = Any(*hostnames)
-    for server in (
-        Query(query_kwargs)
-        .restrict('hostname', 'servertype')
-        .order_by('hostname')
-    ):
+        filters['hostname'] = Any(*hostnames)
+    for server in Query(filters, ['hostname', 'servertype'], ['hostname']):
         hosts[server['hostname']] = {
             'hostname': server['hostname'],
             'servertype': server['servertype'],
@@ -115,12 +111,8 @@ def index(request):
 
     # Add guests for the table cells.
     guests = False
-    query_kwargs = {'xen_host': Any(*hosts.keys())}
-    for server in (
-        Query(query_kwargs)
-        .restrict('hostname', 'xen_host')
-        .order_by('hostname')
-    ):
+    filters = {'xen_host': Any(*hosts.keys())}
+    for server in Query(filters, ['hostname', 'xen_host'], ['hostname']):
         guests = True
         hosts[server['xen_host']]['guests'].append(server['hostname'])
 
@@ -177,13 +169,13 @@ def graph_popup(request):
 def projects(request):
 
     counters = {}
-    for server in Query({}).restrict(
+    for server in Query({}, [
         'project',
         'servertype',
         'disk_size_gib',
         'memory',
         'num_cpu',
-    ):
+    ]):
         if server['project'] not in counters:
             counters[server['project']] = [
                 defaultdict(int),   # For servertypes

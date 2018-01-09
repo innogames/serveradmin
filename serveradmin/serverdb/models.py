@@ -17,7 +17,7 @@ from django.contrib.auth.models import User
 
 import netfields
 
-from adminapi.base import STR_BASED_DATATYPES
+from adminapi.datatype import STR_BASED_DATATYPES
 from serveradmin.apps.models import Application
 
 
@@ -703,9 +703,6 @@ class ServerHostnameAttribute(ServerAttribute):
         db_table = 'server_hostname_attribute'
         unique_together = (('server', '_attribute', 'value'), )
         index_together = (('_attribute', 'value'), )
-
-    def get_value(self):
-        return self.value.hostname
 
     def save_value(self, value):
         target_servertype = self.attribute.target_servertype

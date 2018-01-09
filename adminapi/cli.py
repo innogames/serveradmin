@@ -60,11 +60,9 @@ def main():
     if args.update:
         attribute_ids_to_fetch.extend(u[0] for u in args.update)
 
-    # TODO Avoid .join()
-    query = Query(parse_query(' '.join(args.query)))
-    query.restrict(*attribute_ids_to_fetch)
-    if args.order:
-        query.order_by(*args.order)
+    # TODO: Avoid .join()
+    filters = parse_query(' '.join(args.query))
+    query = Query(filters, attribute_ids_to_fetch, args.order)
 
     if args.one and len(query) > 1:
         raise Exception(

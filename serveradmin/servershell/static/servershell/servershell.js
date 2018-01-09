@@ -5,8 +5,7 @@ var search = {
     'num_servers': 0,
     'page': 1,
     'per_page': 100,
-    'order_by': 'hostname',
-    'order_dir': 'asc',
+    'order_by': null,
     'no_mapping': {},
     'first_server': null
 };
@@ -23,9 +22,10 @@ function refresh_servers(callback) {
         'offset': (search['page'] - 1) * search['per_page'],
         'limit': search['per_page'],
         'no_mapping': {},
-        'order_by': search['order_by'],
-        'order_dir': search['order_dir']
     };
+    if (search['order_by'])
+        search_request['order_by'] = search['order_by'];
+
     $.getJSON(shell_results_url, search_request, function(data) {
         if (data['status'] != 'success') {
             var error = $('<span class="error"></span>').text(data['message']);
@@ -460,25 +460,8 @@ function autocomplete_shell_command(term, autocomplete_cb) {
             }
             _autocomplete_attr(term, parsed_args, autocomplete, '=', only_multi);
         }
-    } else if (command == 'orderby') {
-        if (plen == 2 && parsed_args[1]['token'] == 'str') {
-            _autocomplete_attr(term, parsed_args, autocomplete, ' ');
-        } else if (plen == 3 && parsed_args[2]['token'] == 'str') {
-            var order_dir = parsed_args[2]['value'];
-            var prefix = term.substring(0, term.length - order_dir.length);
-            if (startswith('asc', order_dir)) {
-                autocomplete.push({
-                    'label': 'Ascending',
-                    'value': prefix + 'asc'
-                });
-            }
-            if (startswith('desc', order_dir)) {
-                autocomplete.push({
-                    'label': 'Descending',
-                    'value': prefix + 'desc'
-                });
-            }
-        }
+    } else if (command == 'orderby' && parsed_args[1]['token'] == 'str') {
+        _autocomplete_attr(term, parsed_args, autocomplete, ' ');
     }
     autocomplete_cb(autocomplete);
 }
@@ -803,13 +786,6 @@ function handle_command_goto(parsed_args) {
 function handle_command_order(parsed_args) {
     if (parsed_args[1]['token'] != 'str') {
         return;
-    }
-
-    if (parsed_args.length == 3) {
-        if (parsed_args[2]['token'] != 'str') {
-            return;
-        }
-        search['order_dir'] = parsed_args[2]['value'];
     }
 
     search['order_by'] = parsed_args[1]['value'];

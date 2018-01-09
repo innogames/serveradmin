@@ -1,10 +1,11 @@
+# XXX: This module is pretty complicated even though the functions are not
+# on their own.  They store a lot of stuff on the object.  It is probably
+# a good idea to refactor this by using more top level functions instead of
+# object methods.
+
 from collections import defaultdict
-from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
+from ipaddress import IPv4Address, IPv6Address
 
-from django.core.exceptions import ValidationError
-
-from adminapi.base import BaseQuery, BaseServerObject
-from adminapi.filters import BaseFilter
 from serveradmin.serverdb.models import (
     Project,
     Servertype,
@@ -14,116 +15,20 @@ from serveradmin.serverdb.models import (
     ServerAttribute,
     ServerHostnameAttribute,
 )
-from serveradmin.serverdb.querybuilder import QueryBuilder
-from serveradmin.dataset.commit import commit_changes
 
 
-CACHE_MIN_QS_COUNT = 3
-NUM_OBJECTS_FOR_FILECACHE = 50
-
-
-class Query(BaseQuery):
-    def __init__(self, filters):
-        self._filters = {}
-        for attribute_id, filter_obj in filters.items():
-            try:
-                attribute = Attribute.objects.get(pk=attribute_id)
-            except Attribute.DoesNotExist:
-                raise ValidationError(
-                    'Invalid attribute: {0}'.format(attribute_id)
-                )
-            if isinstance(filter_obj, BaseFilter):
-                self._filters[attribute] = filter_obj
-            else:
-                self._filters[attribute] = BaseFilter(filter_obj)
-        self._restrict = set()
-        self._results = None
-        self._num_dirty = 0
-        self._order = None
-        self._order_by = None
-        self._order_dir = 'asc'
-
-    def __repr__(self):
-        args = []
-        for attr_name, value in self._filters.items():
-            args.append('{0}={1!r}'.format(attr_name, value))
-        return 'query({0})'.format(', '.join(args))
-
-    def commit(self, *args, **kwargs):
-        commit = self._build_commit_object()
-        commit_changes(commit, *args, **kwargs)
-        self._confirm_changes()
-
-    def restrict(self, *attrs):
-        for attribute_id in attrs:
-            try:
-                self._restrict.add(Attribute.objects.get(pk=attribute_id))
-            except Attribute.DoesNotExist:
-                raise ValidationError(
-                    'Invalid attribute: {0}'.format(attribute_id)
-                )
-        return self
-
-    def order_by(self, order_by, order_dir='asc'):
-        try:
-            self._order_by = Attribute.objects.get(pk=order_by)
-        except Attribute.DoesNotExist:
-            raise ValidationError(
-                'Invalid attribute: {0}'.format(order_by)
-            )
-        if order_dir not in ('asc', 'desc'):
-            raise ValueError('Invalid order direction')
-        self._order_dir = order_dir
-        return self
-
-    def _get_query_builder(self):
-        attributes = []
-        filters = {}
-        servertypes = set(Servertype.objects.all())
-        for attribute, filt in self._filters.items():
-            if attribute.pk == 'intern_ip':
-                # Filter out servertypes depending on ip_addr_type
-                servertypes = {
-                    s for s in servertypes
-                    if s.ip_addr_type in desired_ip_addr_types(filt)
-                }
-
-            # We can just deal with the servertype filters ourself.
-            if attribute.pk == 'servertype':
-                servertypes = {s for s in servertypes if filt.matches(s.pk)}
-            else:
-                filters[attribute] = filt
-
-            if not attribute.special:
-                attributes.append(attribute)
-
-        if attributes:
-            attribute_servertypes = defaultdict(set)
-            for sa in ServertypeAttribute.query(attributes=attributes).all():
-                attribute_servertypes[sa.attribute].add(sa.servertype)
-            for new in attribute_servertypes.values():
-                servertypes = servertypes.intersection(new)
-
-        if not servertypes:
-            return None
-
-        return QueryBuilder(servertypes, filters)
-
-    def get_results(self):
-        if self._results is None:
-            self._fetch_results()
-        return self._results
-
-    def _fetch_results(self):
-        builder = self._get_query_builder()
-        if builder is None:
-            self._results = []
-            return
-
+class QueryMaterializer:
+    def __init__(self, servers, attribute_ids):
+        self._servers = servers
+        if attribute_ids is None:
+            self._attributes = None
+        else:
+            self._attributes = [
+                Attribute.objects.get(pk=a) for a in attribute_ids
+            ]
         self._server_attributes = dict()
         servers_by_type = defaultdict(list)
-        servers = tuple(Server.objects.raw(builder.build_sql()))
-        for server in servers:
+        for server in self._servers:
             self._server_attributes[server.pk] = {
                 Attribute.specials['hostname']: server.hostname,
                 Attribute.specials['intern_ip']: server.intern_ip,
@@ -137,21 +42,11 @@ class Query(BaseQuery):
         self._add_attributes(servers_by_type)
         self._add_related_attributes(servers_by_type)
 
-        server_ids = self._server_attributes.keys()
-        if self._order_by:
-            server_ids = sorted(server_ids, key=self._order_by_key)
-        self._results = [
-            ServerObject(self._get_attributes(i), i, self) for i in server_ids
-        ]
-
     def _select_attributes(self, servertypes):
         self._attributes_by_type = defaultdict(set)
         self._servertypes_by_attribute = defaultdict(list)
         self._related_servertype_attributes = []
-        attributes = self._restrict if self._restrict else None
-        if attributes and self._order_by:
-            attributes = list(attributes) + [self._order_by]
-        for sa in ServertypeAttribute.query(servertypes, attributes).all():
+        for sa in ServertypeAttribute.query(servertypes, self._attributes):
             self._select_servertype_attribute(sa)
 
     def _select_servertype_attribute(self, sa):
@@ -160,14 +55,14 @@ class Query(BaseQuery):
 
         related_via_attribute = sa.related_via_attribute
         if related_via_attribute:
-            # TODO Order the list in a way to support recursive related
+            # TODO: Order the list in a way to support recursive related
             # attributes.
             self._related_servertype_attributes.append(sa)
 
-            # If we have related attributes in the restrict list, we have
+            # If we have related attributes in the attribute list, we have
             # to add the relations in there, too.  We are going to use
             # those to query the related attributes.
-            if self._restrict:
+            if self._attributes is not None:
                 self._select_servertype_attribute(ServertypeAttribute.query(
                     (sa.servertype, ), (related_via_attribute, )
                 ).get())
@@ -237,7 +132,7 @@ class Query(BaseQuery):
                     target = source.get_supernet(attribute.target_servertype)
                 except Server.DoesNotExist:
                     continue
-            self._server_attributes[source.pk][attribute] = target.hostname
+            self._server_attributes[source.pk][attribute] = target
 
     def _add_related_attribute(self, servertype_attribute, servers_by_type):
         attribute = servertype_attribute.attribute
@@ -277,29 +172,29 @@ class Query(BaseQuery):
         else:
             self._server_attributes[server_id][attribute] = value
 
-    def _order_by_key(self, key):
+    def get_order_by_attribute(self, server_id, attribute):
         """Return a tuple to sort items by the key
 
-        We want the servers which doesn't have this attribute at all
-        to appear at last, the server which this attribute is not set
+        We want the servers which doesn't have the attribute at all
+        to appear at last, the server which the attribute is not set
         to appear in the beginning, and the rest in between.  Keep in
         mind that some datatypes are not sortable with each other, some
         not even with None, so we have to so something in here.
         """
-        if self._order_by not in self._server_attributes[key]:
+        if attribute not in self._server_attributes[server_id]:
             return 1, None
-        value = self._server_attributes[key][self._order_by]
+        value = self._server_attributes[server_id][attribute]
         if value is None:
             return -1, None
-        if self._order_by.multi:
+        if attribute.multi:
             return 0, tuple(sort_key(v) for v in value)
         return 0, sort_key(value)
 
-    def _get_attributes(self, server_id):
+    def get_attributes(self, server_id, join_results):  # NOQA: C901
         yield 'object_id', server_id
         server_attributes = self._server_attributes[server_id]
         for attribute, value in server_attributes.items():
-            if not self._restrict or attribute in self._restrict:
+            if self._attributes is None or attribute in self._attributes:
                 if attribute.pk in ('project', 'servertype'):
                     yield attribute.pk, value.pk
                 elif attribute.type == 'inet':
@@ -313,34 +208,39 @@ class Query(BaseQuery):
                         else:
                             assert servertype.ip_addr_type == 'network'
                             yield attribute.pk, value.network
+                elif attribute.pk in join_results:
+                    if attribute.multi:
+                        yield attribute.pk, {
+                            join_results[attribute.pk][v.server_id]
+                            for v in value
+                        }
+                    else:
+                        yield attribute.pk, join_results[attribute.pk][
+                            value.server_id
+                        ]
+                elif isinstance(value, Server):
+                    if attribute.multi:
+                        yield attribute.pk, {v.hostname for v in value}
+                    else:
+                        yield attribute.pk, value.hostname
                 else:
                     yield attribute.pk, value
 
+    def get_servers_to_join(self, attribute_id):
+        # The join attribute must be in our list.
+        for attribute in self._attributes:
+            if attribute.pk == attribute_id:
+                break
 
-class ServerObject(BaseServerObject):
-    def commit(self, app=None, user=None):
-        commit = self._build_commit_object()
-        commit_changes(commit, app=app, user=user)
-        self._confirm_changes()
-
-    def __reduce__(self):
-        # Just pickle it as normal dict
-        tpl = dict.__reduce__(self)
-        instance_dict = tpl[2].copy()
-        del instance_dict['_query']
-        return (tpl[0], tpl[1], instance_dict)
-
-    @classmethod
-    def new(cls, servertype, project, hostname, intern_ip):
-        attribute_values = [
-            ('servertype', servertype.pk),
-            ('project', project.pk),
-            ('hostname', hostname),
-            ('intern_ip', intern_ip),
-        ]
-        for sa in servertype.attributes.all():
-            attribute_values.append((sa.attribute.pk, sa.get_default_value()))
-        return cls(attribute_values)
+        servers = set()
+        for server_attributes in self._server_attributes.values():
+            if attribute in server_attributes:
+                if attribute.multi:
+                    for server in server_attributes[attribute]:
+                        servers.add(server)
+                else:
+                    servers.add(server_attributes[attribute])
+        return servers
 
 
 def sort_key(value):
@@ -349,18 +249,3 @@ def sort_key(value):
     if isinstance(value, (Servertype, Project)):
         return value.pk
     return value
-
-
-def desired_ip_addr_types(value):
-    if value is None:
-        return ['null']
-    if isinstance(value, str):
-        if '/' in str(value):
-            return ['network']
-        else:
-            return ['host', 'loadbalancer']
-    if isinstance(value, (IPv4Address, IPv6Address)):
-        return ['host', 'loadbalancer']
-    if isinstance(value, (IPv4Network, IPv6Network)):
-        return ['network']
-    return ['null', 'host', 'loadbalancer', 'network']

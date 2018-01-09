@@ -7,21 +7,6 @@ class ApiError(Exception):
     pass
 
 
-class ExceptionManager(object):
-    def __init__(self):
-        self._cache = {}
-
-    def __getattr__(self, attr):
-        if attr == 'ApiError':
-            return ApiError
-
-        if attr not in self._cache:
-            exc = type(attr, (ApiError, ), {})
-            self._cache[attr] = exc
-
-        return self._cache[attr]
-
-
 class FunctionGroup(object):
     def __init__(self, group):
         self.group = group
@@ -37,28 +22,10 @@ class FunctionGroup(object):
 
             result = send_request(API_CALL_ENDPOINT, call)
 
-            if result['status'] == 'success':
-                return result['retval']
-
             if result['status'] == 'error':
+                raise ApiError(result['message'])
 
-                if result['type'] == 'ValueError':
-                    exception_class = ValueError
-                elif result['type'] == 'TypeError':
-                    exception_class = TypeError
-                else:
-                    exception_class = getattr(
-                        ExceptionManager(), result['type']
-                    )
-
-                #
-                # Dear traceback reader,
-                #
-                # This is not the location of the exception, please read the
-                # exception message and figure out what's wrong with your
-                # code.
-                #
-                raise exception_class(result['message'])
+            return result['retval']
 
         return _api_function
 
