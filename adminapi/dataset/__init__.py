@@ -1,5 +1,6 @@
 from distutils.util import strtobool
 from itertools import chain
+from types import GeneratorType
 
 from adminapi.datatype import validate_value, json_to_datatype
 from adminapi.filters import BaseFilter
@@ -269,6 +270,11 @@ class DatasetObject(dict):
                 self.old_values[key] = old_value
 
     def __setitem__(self, key, value):
+        if isinstance(self[key], MultiAttr):
+            value = MultiAttr(value, self, key)
+        elif isinstance(value, GeneratorType):
+            value = next(value)
+
         if self._deleted:
             raise DatasetError('Cannot set attributes to deleted object')
         if key not in self:
@@ -278,9 +284,6 @@ class DatasetObject(dict):
 
         self._save_old_value(key)
         self.validate(key, value)
-
-        if isinstance(self[key], MultiAttr):
-            value = MultiAttr(value, self, key)
 
         return super(DatasetObject, self).__setitem__(key, value)
 
@@ -294,8 +297,6 @@ class DatasetObject(dict):
             if not isinstance(value, bool):
                 raise TypeError('Attribute "{}" must be a boolean'.format(key))
         elif isinstance(old_value, MultiAttr):
-            if not isinstance(value, (tuple, list, set, frozenset)):
-                raise TypeError('Attribute "{}" must be multi'.format(key))
             for elem in old_value | set(value):
                 datatype = validate_value(elem, datatype)
         elif value is not None:
