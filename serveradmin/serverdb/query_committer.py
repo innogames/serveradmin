@@ -1,8 +1,9 @@
 import json
 from ipaddress import ip_network, ip_interface
 
-from django.db import IntegrityError, transaction
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import IntegrityError, transaction
+from django.dispatch.dispatcher import Signal
 
 from adminapi.dataset import DatasetCommit
 from adminapi.request import json_encode_extra
@@ -21,6 +22,8 @@ from serveradmin.serverdb.models import (
 )
 from serveradmin.serverdb.query_materializer import QueryMaterializer
 
+pre_commit = Signal()
+
 
 class QueryCommitter:
     def __init__(
@@ -38,6 +41,13 @@ class QueryCommitter:
         self.user = user or app.owner
 
     def __call__(self):
+        pre_commit.send_robust(
+            QueryCommitter,
+            created=self.created,
+            changed=self.changed,
+            deleted=self.deleted,
+        )
+
         # If non-empty, the commit will go through the backend, but an error
         # will be shown on the client.
         self.warnings = []
