@@ -139,25 +139,25 @@ class QueryMaterializer:
         related_via_attribute = servertype_attribute.related_via_attribute
 
         # First, index the related servers for fast access later
-        servers_by_related_hostnames = defaultdict(list)
-        for server in servers_by_type[servertype_attribute.servertype]:
-            attributes = self._server_attributes[server.pk]
+        servers_by_related = defaultdict(list)
+        for target in servers_by_type[servertype_attribute.servertype]:
+            attributes = self._server_attributes[target.pk]
             if related_via_attribute in attributes:
                 if related_via_attribute.multi:
-                    for hostname in attributes[related_via_attribute]:
-                        servers_by_related_hostnames[hostname].append(server)
+                    for source in attributes[related_via_attribute]:
+                        servers_by_related[source].append(target)
                 else:
-                    hostname = attributes[related_via_attribute]
-                    servers_by_related_hostnames[hostname].append(server)
+                    source = attributes[related_via_attribute]
+                    servers_by_related[source].append(target)
 
         # Then, query and set the related attributes
         for sa in ServerAttribute.get_model(attribute.type).objects.filter(
-            server__hostname__in=servers_by_related_hostnames.keys(),
+            server__hostname__in=servers_by_related.keys(),
             _attribute=attribute,
         ).select_related('server'):
-            for server in servers_by_related_hostnames[sa.server.hostname]:
+            for target in servers_by_related[sa.server]:
                 self._add_attribute_value(
-                    server.pk, sa.attribute, sa.get_value()
+                    target.pk, sa.attribute, sa.get_value()
                 )
 
     def _add_attribute_value(self, server_id, attribute, value):
