@@ -14,15 +14,14 @@ class HooksMiddleware(object):
             hook = importlib.util.find_spec(app + '.hooks')
             if hook is None:
                 logger.debug('No hooks found for module {}'.format(app))
-            else:
-                try:
-                    importlib.import_module(app + '.hooks')
-                except ImportError as e:
-                    logger.error(
-                        'Loading hooks for module {} failed: {}'.format(app, e)
-                    )
-                    raise
-                else:
-                    logger.debug(
-                        'Successfuly loaded hooks for module {}'.format(app)
-                    )
+                continue
+
+            try:
+                importlib.import_module(app + '.hooks')
+            except ImportError as e:
+                logger.error(
+                    'Loading hooks for module {} failed: {}'.format(app, e)
+                )
+                raise
+
+            logger.debug('Successfully loaded hooks for module {}'.format(app))
