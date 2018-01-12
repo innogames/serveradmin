@@ -218,11 +218,13 @@ class QueryMaterializer:
                         yield attribute.pk, join_results[attribute.pk][
                             value.server_id
                         ]
+                elif attribute.multi:
+                    yield attribute.pk, {
+                        v.hostname if isinstance(v, Server) else v
+                        for v in value
+                    }
                 elif isinstance(value, Server):
-                    if attribute.multi:
-                        yield attribute.pk, {v.hostname for v in value}
-                    else:
-                        yield attribute.pk, value.hostname
+                    yield attribute.pk, value.hostname
                 else:
                     yield attribute.pk, value
 
