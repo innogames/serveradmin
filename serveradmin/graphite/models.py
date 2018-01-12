@@ -11,7 +11,7 @@ from django.conf import settings
 
 from adminapi.dataset import MultiAttr
 
-from serveradmin.serverdb.models import lookup_id_validators
+from serveradmin.serverdb.models import lookup_id_validators, Attribute
 
 GRAPHITE_ATTRIBUTE_ID = 'graphite_graphs'
 
@@ -78,7 +78,7 @@ class Collection(models.Model):
             ]
         """
         column = []
-        for template in self.template_set.filter(numeric_value=False):
+        for template in self.template_set.all():
             for foreach_metric in template.foreach(server):
                 formatter = AttributeFormatter({
                     'foreach_id': foreach_metric['id'],
@@ -114,7 +114,7 @@ class Collection(models.Model):
         """
 
         table = []
-        for template in self.template_set.filter(numeric_value=False):
+        for template in self.template_set.all():
             for foreach_metric in template.foreach(server):
                 column = []
                 for variation in self.variation_set.all():
@@ -149,6 +149,30 @@ class Collection(models.Model):
         return params
 
 
+class Numeric(models.Model):
+    """Templates in the collections"""
+    collection = models.ForeignKey(Collection, limit_choices_to={
+        'overview': True,
+    })
+    params = models.TextField(
+        blank=True, help_text="Same as the params of the collections"
+    )
+    sort_order = models.FloatField(default=0)
+    attribute = models.ForeignKey(Attribute, limit_choices_to={
+        'multi': False,
+        'type': 'number',
+        'readonly': True,
+    })
+
+    class Meta:
+        db_table = 'graphite_numeric'
+        ordering = ['sort_order']
+        unique_together = [['collection', 'attribute']]
+
+    def __str__(self):
+        return self.attribute_id
+
+
 class Template(models.Model):
     """Templates in the collections"""
     collection = models.ForeignKey(Collection)
@@ -158,10 +182,6 @@ class Template(models.Model):
         """)
     sort_order = models.FloatField(default=0)
     description = models.TextField(blank=True)
-    numeric_value = models.BooleanField(default=False, help_text="""
-        Marks the template as a numeric value instead of a graph.  Numerical
-        values will be queried from the Graphite and saved in a table.
-        """)
     foreach_path = models.CharField(max_length=256, blank=True, help_text="""
         Generates multiple graphs from the same template.  Variables can be
         used like "params".  It will be a variable for the "params" that can
@@ -238,20 +258,6 @@ class Variation(models.Model):
 
     def __str__(self):
         return self.name
-
-
-class NumericCache(models.Model):
-    """Cached value for the servers
-    """
-
-    template = models.ForeignKey(Template)
-    hostname = models.CharField(max_length=255)
-    value = models.FloatField(default=0)
-    last_modified = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'graphite_numeric_cache'
-        unique_together = [['template', 'hostname']]
 
 
 class AttributeFormatter(Formatter):

@@ -10,11 +10,7 @@ from django.conf import settings
 from adminapi.datatype import DatatypeError
 from adminapi.filters import Any
 from adminapi.parse import parse_query
-from serveradmin.graphite.models import (
-    GRAPHITE_ATTRIBUTE_ID,
-    Collection,
-    NumericCache,
-)
+from serveradmin.graphite.models import GRAPHITE_ATTRIBUTE_ID, Collection
 from serveradmin.dataset import Query
 from serveradmin.serverdb.models import Project
 
@@ -76,38 +72,34 @@ def index(request):
     else:
         understood = repr(Query({}))
 
-    templates = list(current_collection.template_set.all())
     variations = list(current_collection.variation_set.all())
     columns = []
+    attribute_ids = ['hostname', 'servertype']
     graph_index = 0
     sprite_width = settings.GRAPHITE_SPRITE_WIDTH
-    for template in templates:
-        if template.numeric_value:
+    for template in current_collection.template_set.all():
+        for variation in variations:
             columns.append({
-                'name': str(template),
-                'numeric_value': True,
+                'name': str(template) + ' ' + str(variation),
+                'numeric': False,
+                'graph_index': graph_index,
+                'sprite_offset': graph_index * sprite_width,
             })
-        else:
-            for variation in variations:
-                columns.append({
-                    'name': str(template) + ' ' + str(variation),
-                    'numeric_value': False,
-                    'graph_index': graph_index,
-                    'sprite_offset': graph_index * sprite_width,
-                })
-                graph_index += 1
+            graph_index += 1
+    for numeric in current_collection.numeric_set.all():
+        columns.append({
+            'name': str(numeric),
+            'numeric': True,
+        })
+        attribute_ids.append(numeric.attribute_id)
 
     hosts = OrderedDict()
     filters = {GRAPHITE_ATTRIBUTE_ID: collection.name}
     if len(hostnames) > 0:
         filters['hostname'] = Any(*hostnames)
-    for server in Query(filters, ['hostname', 'servertype'], ['hostname']):
-        hosts[server['hostname']] = {
-            'hostname': server['hostname'],
-            'servertype': server['servertype'],
-            'guests': [],
-            'cells': [{'column': c} for c in columns],
-        }
+    for server in Query(filters, attribute_ids):
+        hosts[server['hostname']] = dict(server)
+        hosts[server['hostname']]['guests'] = []
 
     # Add guests for the table cells.
     guests = False
@@ -115,14 +107,6 @@ def index(request):
     for server in Query(filters, ['hostname', 'xen_host'], ['hostname']):
         guests = True
         hosts[server['xen_host']]['guests'].append(server['hostname'])
-
-    # Add cached numerical values to the table cells.
-    column_names = [c['name'] for c in columns]
-    for numericCache in NumericCache.objects.filter(hostname__in=hosts.keys()):
-        if numericCache.template.name in column_names:
-            index = column_names.index(numericCache.template.name)
-            value = '{:.2f}'.format(numericCache.value)
-            hosts[numericCache.hostname]['cells'][index]['value'] = value
 
     sprite_url = settings.MEDIA_URL + 'graph_sprite/' + collection.name
     template_info.update({

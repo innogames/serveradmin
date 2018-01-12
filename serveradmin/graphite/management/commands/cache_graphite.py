@@ -19,9 +19,9 @@ from serveradmin.dataset import Query
 from serveradmin.graphite.models import (
     GRAPHITE_ATTRIBUTE_ID,
     Collection,
-    NumericCache,
     AttributeFormatter,
 )
+from serveradmin.serverdb.models import ServerNumberAttribute
 
 
 class Command(NoArgsCommand):
@@ -45,7 +45,7 @@ class Command(NoArgsCommand):
                 graph_table = collection.graph_table(server, sprite_params)
                 if graph_table:
                     self.generate_sprite(collection_dir, graph_table, server)
-                self.cache_numeric_values(collection, server)
+                self.cache_numerics(collection, server)
 
     def generate_sprite(self, collection_dir, graph_table, server):
         """Generate sprites for the given server using the given collection"""
@@ -63,11 +63,11 @@ class Command(NoArgsCommand):
 
         sprite_img.save(collection_dir + '/' + server['hostname'] + '.png')
 
-    def cache_numeric_values(self, collection, server):
+    def cache_numerics(self, collection, server):
         """Generate sprites for the given server using the given collection"""
-        for template in collection.template_set.filter(numeric_value=True):
+        for numeric in collection.numeric_set.all():
             formatter = AttributeFormatter()
-            params = formatter.vformat(template.params, (), server)
+            params = formatter.vformat(numeric.params, (), server)
             response = self.get_from_graphite(params)
             if not response:
                 continue
@@ -90,9 +90,9 @@ class Command(NoArgsCommand):
             # it is setted up like this.  This process takes a long time.
             # We want the values to be immediately available to the users.
             with transaction.atomic():
-                NumericCache.objects.update_or_create(
-                    template=template,
-                    hostname=server['hostname'],
+                ServerNumberAttribute.objects.update_or_create(
+                    _server=server,
+                    _attribute=numeric.attribute,
                     defaults={'value': value},
                 )
 

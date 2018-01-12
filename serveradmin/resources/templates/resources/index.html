@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load common %}
 {% load serversearch %}
 
 {% block title %}Hardware Resources{% endblock %}
@@ -72,15 +73,15 @@
 
             <p class="graph_servertype">({{ hwhost.servertype }})</p>
         </td>
-{% for cell in hwhost.cells %}
+{% for column in columns %}
         <td>
-{% if cell.column.numeric_value %}
-            {{ cell.value }}
+{% if column.numeric %}
+            {{ hwhost|dict_get:column.name }}
 {% else %}
             <a class="graph_sprite"
-               style="background:url({{ STATIC_URL }}empty.png) -{{ cell.column.sprite_offset }}px 0;"
+               style="background:url({{ STATIC_URL }}empty.png) -{{ column.sprite_offset }}px 0;"
                data-hostname="{{ hwhost.hostname }}"
-               data-graph="{{ cell.column.graph_index }}"
+               data-graph="{{ column.graph_index }}"
                data-image="{{ sprite_url }}/{{ hwhost.hostname }}.png"></a>
 {% endif %}
         </td>

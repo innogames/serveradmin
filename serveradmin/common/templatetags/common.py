@@ -10,3 +10,8 @@ def logo():
         return settings.STATIC_URL + 'logo_innogames_bigbulb_120_warn.png'
     else:
         return settings.STATIC_URL + 'logo_innogames_bigbulb_120.png'
+
+
+@register.filter
+def dict_get(value, arg):
+    return value.get(arg)
