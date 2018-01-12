@@ -59,43 +59,36 @@
 {% for column in columns %}
         <th>{{ column.name }}</th>
 {% endfor %}
-{% if guests %}
-        <th>Guests</th>
-{% endif %}
     </tr>
-{% for hwhost in hosts %}
+{% for obj in hosts %}
     <tr>
         <td>
             <p>
-                <a href="{% url 'graphite_graph_table' %}?hostname={{ hwhost.hostname }}"
-                   >{{ hwhost.hostname }}</a>
+                <a href="{% url 'graphite_graph_table' %}?hostname={{ obj.hostname }}"
+                   >{{ obj.hostname }}</a>
             </p>
 
-            <p class="graph_servertype">({{ hwhost.servertype }})</p>
+            <p class="graph_servertype">({{ obj.servertype }})</p>
         </td>
 {% for column in columns %}
         <td>
-{% if column.numeric %}
-            {{ hwhost|dict_get:column.name }}
+{% if column.type == 'numeric' %}
+            {{ obj|dict_get:column.name }}
+{% elif column.type == 'relation' %}
+{% for rel in obj|dict_get:column.name %}
+            <a href="{% url 'graphite_graph_table' %}?hostname={{ rel }}"
+               {% if rel in matched_hostnames %}style="color:#d00;"{% endif %}
+               >{{ rel }}</a>
+{% endfor %}
 {% else %}
             <a class="graph_sprite"
                style="background:url({{ STATIC_URL }}empty.png) -{{ column.sprite_offset }}px 0;"
-               data-hostname="{{ hwhost.hostname }}"
+               data-hostname="{{ obj.hostname }}"
                data-graph="{{ column.graph_index }}"
-               data-image="{{ sprite_url }}/{{ hwhost.hostname }}.png"></a>
+               data-image="{{ sprite_url }}/{{ obj.hostname }}.png"></a>
 {% endif %}
         </td>
 {% endfor %}
-
-{% if guests %}
-        <td>
-{% for guest in hwhost.guests %}
-            <a href="{% url 'graphite_graph_table' %}?hostname={{ guest }}"
-               {% if guest in matched_hostnames  %}style="color:#d00;"{% endif %}
-               >{{ guest }}</a>
-{% endfor %}
-        </td>
-{% endif %}
     </tr>
 {% endfor %}
 </table>

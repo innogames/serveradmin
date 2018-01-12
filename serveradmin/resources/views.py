@@ -39,6 +39,7 @@ def index(request):
         'current_collection': current_collection.id,
     }
 
+    # TODO: Generalize this part using the relations
     hostnames = []
     matched_hostnames = []
     if term:
@@ -81,7 +82,7 @@ def index(request):
         for variation in variations:
             columns.append({
                 'name': str(template) + ' ' + str(variation),
-                'numeric': False,
+                'type': 'graph',
                 'graph_index': graph_index,
                 'sprite_offset': graph_index * sprite_width,
             })
@@ -89,9 +90,15 @@ def index(request):
     for numeric in current_collection.numeric_set.all():
         columns.append({
             'name': str(numeric),
-            'numeric': True,
+            'type': 'numeric',
         })
         attribute_ids.append(numeric.attribute_id)
+    for relation in current_collection.relation_set.all():
+        columns.append({
+            'name': str(relation),
+            'type': 'relation',
+        })
+        attribute_ids.append(relation.attribute_id)
 
     hosts = OrderedDict()
     filters = {GRAPHITE_ATTRIBUTE_ID: collection.name}
@@ -99,14 +106,6 @@ def index(request):
         filters['hostname'] = Any(*hostnames)
     for server in Query(filters, attribute_ids):
         hosts[server['hostname']] = dict(server)
-        hosts[server['hostname']]['guests'] = []
-
-    # Add guests for the table cells.
-    guests = False
-    filters = {'xen_host': Any(*hosts.keys())}
-    for server in Query(filters, ['hostname', 'xen_host'], ['hostname']):
-        guests = True
-        hosts[server['xen_host']]['guests'].append(server['hostname'])
 
     sprite_url = settings.MEDIA_URL + 'graph_sprite/' + collection.name
     template_info.update({
@@ -115,7 +114,6 @@ def index(request):
         'matched_hostnames': matched_hostnames,
         'understood': understood,
         'error': None,
-        'guests': guests,
         'sprite_url': sprite_url,
     })
     return TemplateResponse(request, 'resources/index.html', template_info)

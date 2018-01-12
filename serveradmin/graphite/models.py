@@ -173,6 +173,25 @@ class Numeric(models.Model):
         return self.attribute_id
 
 
+class Relation(models.Model):
+    """Templates in the collections"""
+    collection = models.ForeignKey(Collection, limit_choices_to={
+        'overview': True,
+    })
+    sort_order = models.FloatField(default=0)
+    attribute = models.ForeignKey(Attribute, limit_choices_to={
+        'type': ['hostname', 'reverse_hostname', 'supernet'],
+    })
+
+    class Meta:
+        db_table = 'graphite_relation'
+        ordering = ['sort_order']
+        unique_together = [['collection', 'attribute']]
+
+    def __str__(self):
+        return self.attribute_id
+
+
 class Template(models.Model):
     """Templates in the collections"""
     collection = models.ForeignKey(Collection)
