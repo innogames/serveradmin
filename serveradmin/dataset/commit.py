@@ -149,7 +149,10 @@ class Commit(object):
                     server.get_attributes(attribute).delete()
                 elif action == 'multi' and change['remove']:
                     for server_attribute in server.get_attributes(attribute):
-                        if server_attribute.get_value() in change['remove']:
+                        value = server_attribute.get_value()
+                        if isinstance(value, Server):
+                            value = value.hostname
+                        if value in change['remove']:
                             server_attribute.delete()
 
     def _delete_servers(self):
