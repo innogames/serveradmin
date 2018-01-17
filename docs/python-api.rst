@@ -67,20 +67,6 @@ number is between 20 and 30::
     })
 
 
-Magic attributes
-^^^^^^^^^^^^^^^^
-
-Magic attributes are attributes that do not exist but are generated on the
-fly. They can only be used for filtering and don't appear in the attributes
-itself.
-
-The following magic attributes are available:
-
-all_ips
-    Combines all available IPs for the server. This includes internal and
-    public IPs.
-
-
 Accessing and modifying attributes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
