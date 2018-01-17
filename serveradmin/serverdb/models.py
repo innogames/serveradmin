@@ -656,7 +656,7 @@ class ServerStringAttribute(ServerAttribute):
         index_together = (('_attribute', 'value'), )
 
     def save_value(self, value):
-        for char in '\'"()':
+        for char in '\'"':
             if char in value:
                 raise ValidationError(
                     '"{}" character is not allowed on string attributes'

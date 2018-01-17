@@ -22,7 +22,7 @@ class BaseFilter(object):
         elif isinstance(value, tuple(s[0] for s in STR_BASED_DATATYPES)):
             pass
         elif isinstance(value, STR_DATATYPES):
-            for char in '\'"()':
+            for char in '\'"':
                 if char in value:
                     raise FilterValueError(
                         '"{}" character is not allowed on filter values'
