@@ -208,6 +208,8 @@ class QueryMaterializer:
                         else:
                             assert servertype.ip_addr_type == 'network'
                             yield attribute.pk, value.network
+                elif value is None:
+                    yield attribute.pk, None
                 elif attribute.pk in join_results:
                     if attribute.multi:
                         yield attribute.pk, {
@@ -237,11 +239,16 @@ class QueryMaterializer:
         servers = set()
         for server_attributes in self._server_attributes.values():
             if attribute in server_attributes:
+                value = server_attributes[attribute]
+                if value is None:
+                    continue
+
                 if attribute.multi:
-                    for server in server_attributes[attribute]:
+                    for server in value:
                         servers.add(server)
                 else:
-                    servers.add(server_attributes[attribute])
+                    servers.add(value)
+
         return servers
 
 
