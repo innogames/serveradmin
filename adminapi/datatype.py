@@ -2,7 +2,7 @@ from datetime import date
 from re import compile as re_compile
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 
-from netaddr import EUI
+from netaddr import EUI, mac_unix_expanded
 
 # We use a set of regular expressions to cast to datatypes.  This module
 # is not aware of the attributes types of the server, neither it tries
@@ -112,5 +112,13 @@ def json_to_datatype(value):
             # date constructor is special.
             if datatype is date:
                 return date(*(int(v) for v in value.split('-', 2)))
+            # EUI class represents MAC addresses in minus separated format
+            # by default.  We want colon separated for for 2 reasons.
+            # First, it is way more popular among the systems we care about.
+            # Second, it is the format we store the addresses on the database.
+            # Sometimes we pass things without casting to EUI and expect
+            # the outputs to match.
+            if datatype is EUI:
+                return EUI(value, dialect=mac_unix_expanded)
             return datatype(value)
     return value
