@@ -76,29 +76,14 @@ a dictionary with methods like ``keys()``, ``values()``, ``update(...)`` etc.
 
 You can get server objects by iterating over a query or by calling
 ``get()`` on the query.  Changes to the attributes are not directly
-committed.  To commit them you must either call ``commit()`` on the server
-object or on the query.  For performance reasons, use ``commit()`` on the
-Query, if you change many servers rather than calling ``commit()`` on every
-server object.  You can also use the ``update()`` method on the query for
-mass updates.
+committed.  To commit them you must call ``commit()`` on the query.
 
 Here is an example which cancels all servers for Seven Lands::
 
-    # BAD WAY! DON'T DO THIS!
-    # It will send a HTTP request for every server!
-    hosts = Query({'servertype': 'hardware'})
-    for host in hosts:
-         host['canceled'] = True
-         host.commit()
-
-    # GOOD WAY:
     hosts = Query({'servertype': 'hardware'})
     for host in hosts:
         hosts['canceled'] = True
     hosts.commit()
-
-    # EVEN BETTER WAY:
-    Query({'servertype': 'hardware'}).update(canceled=True).commit()
 
 Another example will print all attributes of the techerror server and check
 for the existence of the ``game_function`` attribute::
@@ -150,22 +135,15 @@ supports iteration and some additional methods.
         server in the query.  Otherwise, you will get an exception.
         #FIXME: Decide kind of exception
 
-    .. method:: is_dirty()
+    .. method:: commit_state()
 
-        Return True, if the query contains a server object which has
-        uncomitted changes, False otherwise.
+        Return the state of the object.
 
-    .. method:: commit(skip_validation=False, force_changes=False)
+    .. method:: commit()
 
         Commit the changes that were done by modifying the attributes of
         servers in the query.  Please note: This will only affect
         servers that were accessed through this query!
-
-        If ``skip_validation`` is ``True`` it will neither validate regular
-        expressions nor whether the attribute is required.
-
-        If ``force_changes`` is ``True`` it will override any changes
-        which were done in the meantime.
 
     .. method:: rollback()
 
@@ -200,7 +178,7 @@ Server object reference
 The reference will only include the additional methods of the server object.
 For documentation of the dictionary-like access see :class:`dict`.
 
-.. class:: ServerObject
+.. class:: DatasetObject
 
     .. attribute:: old_values
 
@@ -216,37 +194,12 @@ For documentation of the dictionary-like access see :class:`dict`.
 
         Return True, if the server object is marked for deletion.
 
-    .. method:: commit(skip_validation=False, force_changes=False)
-
-        Commit changes that were done in this server object. See documentation
-        on the query for ``skip_validation`` and ``force_changes``.
-
-    .. method:: rollback()
-
-        Rollback all changes on the server object. If the server is marked for
-        deletion, this will be undone too.
-
     .. method:: delete()
 
         Mark the server for deletion. You need to commit to delete it.
 
 .. *** this line fixes vim syntax highlighting
 
-Creating servers
-----------------
-
-The function :func:`adminapi.dataset.create` allows you to create new servers:
-
-.. function:: create(attributes, skip_validation=False, fill_defaults=True, fill_defaults_all=False)
-
-    :param attributes: A dictionary with the attributes of the server.
-    :param skip_validation: Will skip regular expression and required validation.
-    :param fill_defaults: Automatically fill it the default if the attribute is
-                          required.
-    :param fill_defaults_all: Like ``fill_defaults``, but also fill attributes
-                              with defaults which are not required.
-    :return: The server (``ServerObject``) that was created with all attributes
-             (given and filled attributes)
 
 Making API calls
 ----------------

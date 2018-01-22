@@ -6,6 +6,9 @@
 from collections import defaultdict
 from ipaddress import IPv4Address, IPv6Address
 
+from django.core.exceptions import ValidationError
+
+from adminapi.dataset import DatasetObject
 from serveradmin.serverdb.models import (
     Project,
     Servertype,
@@ -18,18 +21,32 @@ from serveradmin.serverdb.models import (
 
 
 class QueryMaterializer:
-    def __init__(self, servers, attribute_ids):
-        self._servers = servers
-        if attribute_ids is None:
+    def __init__(self, servers, restrict, order_by=None):
+        self._servers = list(servers)
+        self._order_by = order_by
+
+        if restrict is None:
             self._attributes = None
         else:
-            self._attributes = [
-                Attribute.objects.get(pk=a) for a in attribute_ids
-            ]
-        self._server_attributes = dict()
+            self._attributes = {}
+
+            for item in restrict:
+                if isinstance(item, dict):
+                    if len(item) != 1:
+                        raise ValidationError('Malformatted join restriction')
+                    for attribute_id, value in item.items():
+                        pass
+                else:
+                    attribute_id = item
+                    value = None
+
+                attribute = Attribute.objects.get(pk=attribute_id)
+                self._attributes[attribute] = value
+
+        self._server_attributes = {}
         servers_by_type = defaultdict(list)
         for server in self._servers:
-            self._server_attributes[server.pk] = {
+            self._server_attributes[server] = {
                 Attribute.specials['hostname']: server.hostname,
                 Attribute.specials['intern_ip']: server.intern_ip,
                 Attribute.specials['servertype']: server.servertype,
@@ -41,6 +58,19 @@ class QueryMaterializer:
         self._initialize_attributes(servers_by_type)
         self._add_attributes(servers_by_type)
         self._add_related_attributes(servers_by_type)
+
+    def __iter__(self):
+        servers = self._servers
+        if self._order_by:
+            def order_by_key(key):
+                return tuple(
+                    self._get_order_by_attribute(key, a)
+                    for a in self._order_by
+                )
+
+            servers = sorted(servers, key=order_by_key)
+
+        return (DatasetObject(self._get_attributes(s)) for s in servers)
 
     def _select_attributes(self, servertypes):
         self._attributes_by_type = defaultdict(set)
@@ -72,7 +102,7 @@ class QueryMaterializer:
             init = attribute.initializer()
             for servertype in servertypes:
                 for server in servers_by_type[servertype]:
-                    self._server_attributes[server.pk][attribute] = init()
+                    self._server_attributes[server][attribute] = init()
 
     def _add_attributes(self, servers_by_type):
         """Add the attributes to the results"""
@@ -98,11 +128,11 @@ class QueryMaterializer:
                     )
             else:
                 for sa in ServerAttribute.get_model(key).objects.filter(
-                    server_id__in=self._server_attributes.keys(),
+                    server__in=self._server_attributes.keys(),
                     _attribute__in=attributes,
                 ):
                     self._add_attribute_value(
-                        sa.server_id, sa.attribute, sa.get_value()
+                        sa.server, sa.attribute, sa.get_value()
                     )
 
     def _add_related_attributes(self, servers_by_type):
@@ -116,7 +146,7 @@ class QueryMaterializer:
         overlapping with each other.
         """
         target = None
-        for source in sorted(servers, key=lambda s: sort_key(s.intern_ip)):
+        for source in sorted(servers, key=lambda s: _sort_key(s.intern_ip)):
             # Check the previous target
             if target is not None:
                 network = target.intern_ip.network
@@ -132,7 +162,7 @@ class QueryMaterializer:
                     target = source.get_supernet(attribute.target_servertype)
                 except Server.DoesNotExist:
                     continue
-            self._server_attributes[source.pk][attribute] = target
+            self._server_attributes[source][attribute] = target
 
     def _add_related_attribute(self, servertype_attribute, servers_by_type):
         attribute = servertype_attribute.attribute
@@ -141,7 +171,7 @@ class QueryMaterializer:
         # First, index the related servers for fast access later
         servers_by_related = defaultdict(list)
         for target in servers_by_type[servertype_attribute.servertype]:
-            attributes = self._server_attributes[target.pk]
+            attributes = self._server_attributes[target]
             if related_via_attribute in attributes:
                 if related_via_attribute.multi:
                     for source in attributes[related_via_attribute]:
@@ -156,23 +186,21 @@ class QueryMaterializer:
             _attribute=attribute,
         ).select_related('server'):
             for target in servers_by_related[sa.server]:
-                self._add_attribute_value(
-                    target.pk, sa.attribute, sa.get_value()
-                )
+                self._add_attribute_value(target, sa.attribute, sa.get_value())
 
-    def _add_attribute_value(self, server_id, attribute, value):
+    def _add_attribute_value(self, server, attribute, value):
         if attribute.multi:
             try:
-                self._server_attributes[server_id][attribute].add(value)
+                self._server_attributes[server][attribute].add(value)
             except KeyError:
                 # If the attribute is removed from the servertype but
                 # left on the servers, this error would occur.  It is not
                 # really expected, but we don't want to crash either.
                 pass
         else:
-            self._server_attributes[server_id][attribute] = value
+            self._server_attributes[server][attribute] = value
 
-    def get_order_by_attribute(self, server_id, attribute):
+    def _get_order_by_attribute(self, server, attribute):
         """Return a tuple to sort items by the key
 
         We want the servers which doesn't have the attribute at all
@@ -181,18 +209,19 @@ class QueryMaterializer:
         mind that some datatypes are not sortable with each other, some
         not even with None, so we have to so something in here.
         """
-        if attribute not in self._server_attributes[server_id]:
+        if attribute not in self._server_attributes[server]:
             return 1, None
-        value = self._server_attributes[server_id][attribute]
+        value = self._server_attributes[server][attribute]
         if value is None:
             return -1, None
         if attribute.multi:
-            return 0, tuple(sort_key(v) for v in value)
-        return 0, sort_key(value)
+            return 0, tuple(_sort_key(v) for v in value)
+        return 0, _sort_key(value)
 
-    def get_attributes(self, server_id, join_results):  # NOQA: C901
-        yield 'object_id', server_id
-        server_attributes = self._server_attributes[server_id]
+    def _get_attributes(self, server):   # NOQA: C901
+        yield 'object_id', server.pk
+        server_attributes = self._server_attributes[server]
+        join_results = self._get_join_results()
         for attribute, value in server_attributes.items():
             if self._attributes is None or attribute in self._attributes:
                 if attribute.pk in ('project', 'servertype'):
@@ -210,16 +239,13 @@ class QueryMaterializer:
                             yield attribute.pk, value.network
                 elif value is None:
                     yield attribute.pk, None
-                elif attribute.pk in join_results:
+                elif attribute in join_results:
                     if attribute.multi:
-                        yield attribute.pk, {
-                            join_results[attribute.pk][v.server_id]
-                            for v in value
-                        }
-                    else:
-                        yield attribute.pk, join_results[attribute.pk][
-                            value.server_id
+                        yield attribute.pk, [
+                            join_results[attribute][v] for v in value
                         ]
+                    else:
+                        yield attribute.pk, join_results[attribute][value]
                 elif attribute.multi:
                     yield attribute.pk, {
                         v.hostname if isinstance(v, Server) else v
@@ -230,12 +256,18 @@ class QueryMaterializer:
                 else:
                     yield attribute.pk, value
 
-    def get_servers_to_join(self, attribute_id):
-        # The join attribute must be in our list.
-        for attribute in self._attributes:
-            if attribute.pk == attribute_id:
-                break
+    def _get_join_results(self):
+        results = dict()
+        if self._attributes:
+            for attribute, restrict in self._attributes.items():
+                if restrict is not None:
+                    servers = self._get_servers_to_join(attribute)
+                    server_objs = type(self)(servers, restrict)
+                    results[attribute] = dict(zip(servers, server_objs))
 
+        return results
+
+    def _get_servers_to_join(self, attribute):
         servers = set()
         for server_attributes in self._server_attributes.values():
             if attribute in server_attributes:
@@ -252,9 +284,28 @@ class QueryMaterializer:
         return servers
 
 
-def sort_key(value):
+def _sort_key(value):
     if isinstance(value, (IPv4Address, IPv6Address)):
         return value.version, value
     if isinstance(value, (Servertype, Project)):
         return value.pk
     return value
+
+
+def get_default_attribute_values(servertype_id):
+    servertype = Servertype.objects.get(pk=servertype_id)
+    attribute_values = {}
+
+    for attribute_id in Attribute.specials:
+        if attribute_id == 'servertype':
+            value = servertype_id
+        elif attribute_id == 'project' and servertype.fixed_project:
+            value = servertype.fixed_project.pk
+        else:
+            value = None
+        attribute_values[attribute_id] = value
+
+    for sa in servertype.attributes.all():
+        attribute_values[sa.attribute.pk] = sa.get_default_value()
+
+    return attribute_values

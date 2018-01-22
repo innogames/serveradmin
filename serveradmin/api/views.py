@@ -1,17 +1,24 @@
 from operator import itemgetter
 
-from django.template.response import TemplateResponse
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import (
+    SuspiciousOperation,
+    PermissionDenied,
+    ValidationError,
+)
 from django.contrib.auth.decorators import login_required
 from django.contrib.admindocs.utils import trim_docstring, parse_docstring
+from django.template.response import TemplateResponse
 
 from adminapi.filters import FilterValueError, filter_from_obj
 from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
 from serveradmin.api.decorators import api_view
 from serveradmin.api.utils import build_function_description
-from serveradmin.dataset import Query
-from serveradmin.dataset.commit import commit_changes
-from serveradmin.dataset.create import create_server
+from serveradmin.serverdb.query_committer import QueryCommitter
+from serveradmin.serverdb.query_filterer import QueryFilterer
+from serveradmin.serverdb.query_materializer import (
+    QueryMaterializer,
+    get_default_attribute_values,
+)
 
 
 class StringEncoder(object):
@@ -56,24 +63,29 @@ def doc_functions(request):
 
 
 @api_view
-def echo(request, app, data):
-    return data
-
-
-@api_view
 def dataset_query(request, app, data):
     try:
         if 'filters' not in data or not isinstance(data['filters'], dict):
-            raise ValidationError('Filters must be a dictionary')
+            raise SuspiciousOperation('Filters must be a dictionary')
         filters = {}
         for attr, filter_obj in data['filters'].items():
             filters[attr] = filter_from_obj(filter_obj)
 
-        query = Query(filters, data.get('restrict'), data.get('order_by'))
+        # Empty list means query all attributes to the older versions of
+        # the adminapi.
+        if not data.get('restrict'):
+            restrict = None
+        else:
+            restrict = data['restrict']
+
+        order_by = data.get('order_by')
+
+        filterer = QueryFilterer(filters)
+        materializer = QueryMaterializer(filterer, restrict, order_by)
 
         return {
             'status': 'success',
-            'result': query.get_results(),
+            'result': list(materializer),
         }
     except (FilterValueError, ValidationError) as error:
         return {
@@ -84,64 +96,44 @@ def dataset_query(request, app, data):
 
 
 @api_view
-def dataset_commit(request, app, data):
+def dataset_new_object(request, app, data):
     try:
-        if 'changes' not in data or 'deleted' not in data:
-            raise ValueError('Invalid changes')
+        servertype = request.GET['servertype']
+    except KeyError as error:
+        raise SuspiciousOperation(error)
 
-        skip_validation = bool(data.get('skip_validation', False))
-        force_changes = bool(data.get('force_changes', False))
+    try:
+        result = get_default_attribute_values(servertype)
+    except ObjectDoesNotExist as error:
+        raise APIError(error, status_code=404)
 
-        # Convert keys back to integers (json doesn't handle integer keys)
-        changes = {}
-        for server_id, change in data['changes'].items():
-            changes[int(server_id)] = change
-
-        commit = {'deleted': data['deleted'], 'changes': changes}
-        commit_changes(commit, skip_validation, force_changes, app=app)
-
-        return {
-            'status': 'success',
-        }
-    except (
-        ValueError,     # TODO Stop expecting them
-        ValidationError,
-    ) as error:
-        return {
-            'status': 'error',
-            'type': error.__class__.__name__,
-            'message': str(error),
-        }
+    return {'result': result}
 
 
 @api_view
-def dataset_create(request, app, data):
+def dataset_commit(request, app, data):
+    if not isinstance(data, dict):
+        raise SuspiciousOperation('Invalid payload')
+
+    # For backwards compatibility
+    if 'changes' in data:
+        data['changed'] = list(data['changes'].values())
+        # Convert keys back to integers (json doesn't handle integer keys)
+        for object_id, change in data['changes'].items():
+            change['object_id'] = int(object_id)
+
+    kwargs = {}
+    for key, value in data.items():
+        validate_func = globals().get('_validate_commit_' + key)
+        if validate_func:
+            if not isinstance(value, list):
+                raise SuspiciousOperation('Invalid commit {}'.format(key))
+            for item in value:
+                validate_func(item)
+            kwargs[key] = value
+
     try:
-        required = [
-            'attributes',
-            'skip_validation',
-            'fill_defaults',
-            'fill_defaults_all',
-        ]
-        if not all(key in data for key in required):
-            raise ValueError('Invalid create request')
-        if not isinstance(data['attributes'], dict):
-            raise ValueError('Attributes must be a dictionary')
-
-        create_server(
-            data['attributes'],
-            data['skip_validation'],
-            data['fill_defaults'],
-            data['fill_defaults_all'],
-            app=app,
-        )
-
-        return {
-            'status': 'success',
-            'result': Query(filters={
-                'hostname': data['attributes']['hostname']
-            }).get_results(),
-        }
+        QueryCommitter(app=app, **kwargs)()
     except ValidationError as error:
         return {
             'status': 'error',
@@ -149,12 +141,96 @@ def dataset_create(request, app, data):
             'message': str(error),
         }
 
+    return {
+        'status': 'success',
+    }
+
+
+def _validate_commit_created(created):
+    if not isinstance(created, dict):
+        raise SuspiciousOperation('Invalid commit created')
+
+
+def _validate_commit_changed(changes):
+    if not isinstance(changes, dict):
+        raise SuspiciousOperation('Invalid commit changes')
+
+    for attribute_id, change in changes.items():
+        if attribute_id == 'object_id':
+            object_id_found = True
+            continue
+
+        if not isinstance(change, dict) or 'action' not in change:
+            raise SuspiciousOperation(
+                'Invalid commit changed for attribute "{}"'
+                .format(attribute_id)
+            )
+
+        func = globals()['_validate_commit_changed_' + change['action']]
+        func(change)
+
+    if not object_id_found:
+        raise SuspiciousOperation('Commit changed without object_id')
+
+
+def _validate_commit_changed_update(change):
+    if not all(x in change for x in ('old', 'new')):
+        raise SuspiciousOperation('Invalid update change')
+
+
+def _validate_commit_changed_new(change):
+    if 'new' not in change:
+        raise SuspiciousOperation('Invalid new change')
+
+
+def _validate_commit_changed_delete(change):
+    if 'old' not in change:
+        raise SuspiciousOperation('Invalid delete change')
+
+
+def _validate_commit_changed_multi(change):
+    if not all(x in change for x in ('add', 'remove')):
+        raise SuspiciousOperation('Invalid multi change')
+
+
+def _validate_commit_deleted(deleted):
+    if not isinstance(deleted, int):
+        raise SuspiciousOperation(
+            'Invalid commit deleted "{}"'.format(deleted)
+        )
+
+
+# XXX: Deprecated
+@api_view
+def dataset_create(request, app, data):
+    required = [
+        'attributes',
+    ]
+    if not all(key in data for key in required):
+        raise SuspiciousOperation('Invalid create request')
+    if not isinstance(data['attributes'], dict):
+        raise SuspiciousOperation('Attributes must be a dictionary')
+
+    try:
+        commit = QueryCommitter([data['attributes']], app=app)()
+    except ValidationError as error:
+        return {
+            'status': 'error',
+            'type': error.__class__.__name__,
+            'message': str(error),
+        }
+
+    return {
+        'status': 'success',
+        'result': commit.created,
+    }
+
 
 @api_view
 def api_call(request, app, data):
     try:
         if not all(x in data for x in ('group', 'name', 'args', 'kwargs')):
-            raise ValueError('Invalid API call')
+            raise SuspiciousOperation('Invalid API call')
 
         allowed_methods = app.allowed_methods.splitlines()
         method_name = u'{0}.{1}'.format(data['group'], data['name'])

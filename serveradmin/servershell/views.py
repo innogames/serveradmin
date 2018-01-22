@@ -3,7 +3,6 @@ try:
 except ImportError:
     import json
 from operator import attrgetter
-from ipaddress import ip_interface, ip_network
 from itertools import islice
 
 from django.http import HttpResponse, HttpResponseRedirect, Http404
@@ -20,21 +19,18 @@ from adminapi.datatype import DatatypeError
 from adminapi.filters import Any, ContainedOnlyBy, StartsWith, filter_classes
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
-from serveradmin.dataset import Query, ServerObject
-from serveradmin.dataset.commit import (
-    commit_changes,
-    CommitValidationFailed,
-    CommitIncomplete,
-)
-from serveradmin.dataset.create import create_server
+from serveradmin.dataset import Query
 from serveradmin.serverdb.forms import ServerForm
 from serveradmin.serverdb.models import (
     Servertype,
-    Project,
     Attribute,
     ServertypeAttribute,
     ServerStringAttribute,
-    get_unused_ip_addrs,
+)
+from serveradmin.serverdb.query_committer import (  # TODO: Use dataset module
+    QueryCommitter,
+    CommitValidationFailed,
+    CommitIncomplete,
 )
 
 MAX_DISTINGUISHED_VALUES = 50
@@ -177,16 +173,7 @@ def edit(request):
     if 'object_id' in request.GET:
         server = Query({'object_id': request.GET['object_id']}).get()
     else:
-        servertype = Servertype.objects.get(pk=request.POST['attr_servertype'])
-        project = Project.objects.get(pk=request.POST['attr_project'])
-        hostname = request.POST['attr_hostname']
-        if servertype.ip_addr_type == 'null':
-            intern_ip = None
-        elif servertype.ip_addr_type == 'network':
-            intern_ip = ip_network(request.POST['attr_intern_ip'])
-        else:
-            intern_ip = ip_interface(request.POST['attr_intern_ip'])
-        server = ServerObject.new(servertype, project, hostname, intern_ip)
+        server = Query().new_object(request.POST['attr_servertype'])
 
     return _edit(request, server, True)
 
@@ -225,13 +212,8 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
                     server.commit(user=request.user)
                 else:
                     action = 'created'
-                    server.object_id = create_server(
-                        server,
-                        skip_validation=False,
-                        fill_defaults=False,
-                        fill_defaults_all=False,
-                        user=request.user,
-                    )
+                    commit = QueryCommitter([server], user=request.user)()
+                    server = commit.created[0]
             except CommitValidationFailed as e:
                 invalid_attrs.update([attr for obj_id, attr in e.violations])
             except (PermissionDenied, ValidationError, IntegrityError) as err:
@@ -308,7 +290,7 @@ def commit(request):
             commit['changes'] = changes
 
         try:
-            commit_changes(commit, user=request.user)
+            QueryCommitter(commit, user=request.user)()
         except (PermissionDenied, ValidationError, IntegrityError) as error:
             result = {
                 'status': 'error',
@@ -364,12 +346,10 @@ def new_server(request):
         form = ServerForm(request.POST)
 
         if form.is_valid():
-            server = ServerObject.new(
-                form.cleaned_data['_servertype'],
-                form.cleaned_data['_project'],
-                form.cleaned_data['hostname'],
-                form.cleaned_data['intern_ip'],
-            )
+            server = Query().new_object(form.cleaned_data['_servertype'].pk)
+            server['project'] = form.cleaned_data['_project'].pk
+            server['hostname'] = form.cleaned_data['hostname']
+            server['intern_ip'] = form.cleaned_data['intern_ip']
 
             if clone_from:
                 for attribute_id, value in clone_from.items():
@@ -430,8 +410,10 @@ def choose_ip_addr(request):
             'servers': servers
         })
 
+    network_query = Query({'intern_ip': network})
+
     return TemplateResponse(request, 'servershell/choose_ip_addr.html', {
-        'ip_addrs': islice(get_unused_ip_addrs(network), 1000)
+        'ip_addrs': islice(network_query.get_free_ip_addrs(), 1000)
     })
 
 

@@ -6,15 +6,18 @@ try:
 except ImportError:
     import json
 
-from django.http import (
-    HttpResponse,
-    HttpResponseBadRequest,
-    HttpResponseForbidden,
+from django.core.exceptions import (
+    ObjectDoesNotExist,
+    SuspiciousOperation,
+    PermissionDenied,
+    ValidationError,
 )
+from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.crypto import constant_time_compare
 
 from adminapi.request import calc_security_token, json_encode_extra
+from adminapi.filters import FilterValueError
 from serveradmin.apps.models import Application
 from serveradmin.api import AVAILABLE_API_FUNCTIONS
 
@@ -28,65 +31,65 @@ def api_view(view):
             request.scheme, request.path
         ))
 
-        problem = check_authentication_headers(request)
-        if problem:
-            logger.error('api: Bad request: ' + problem)
-            return HttpResponseBadRequest(problem, content_type='text/plain')
+        try:
+            app_id = request.META['HTTP_X_APPLICATION']
+            token = request.META['HTTP_X_SECURITYTOKEN']
+            timestamp = int(request.META['HTTP_X_TIMESTAMP'])
+        except (KeyError, ValueError) as error:
+            raise SuspiciousOperation(error)
 
-        app_id = request.META['HTTP_X_APPLICATION']
-        token = request.META['HTTP_X_SECURITYTOKEN']
-        timestamp = int(request.META['HTTP_X_TIMESTAMP'])
         now = time()
-        body = request.body.decode('utf8')
+        body = request.body.decode('utf8') if request.body else None
 
         try:
             app = Application.objects.get(app_id=app_id)
-        except Application.DoesNotExist:
-            problem = 'No such application'
-        else:
-            if timestamp + 300 < now:
-                problem = 'Expired security token'
-            else:
-                problem = authenticate_app(app, token, timestamp, body)
-        if problem:
-            logger.error('api: Forbidden: ' + problem)
-            return HttpResponseForbidden(problem, content_type='text/plain')
+        except Application.DoesNotExist as error:
+            raise PermissionDenied(error)
+        authenticate_app(app, token, timestamp, now, body)
 
-        return_value = json.dumps(
-            view(request, app, json.loads(body)),
-            default=json_encode_extra,
-        )
+        body_json = json.loads(body) if body else None
+        try:
+            status_code = 200
+            return_value = view(request, app, body_json)
+        except (
+            ObjectDoesNotExist,
+            FilterValueError,
+            ValidationError,
+        ) as error:
+            status_code = 404 if isinstance(error, ObjectDoesNotExist) else 400
+            return_value = {
+                'error': {
+                    'message': str(error),
+                }
+            }
 
         logger.info('api: Call: ' + (', '.join([
             'Method: {}'.format(view.__name__),
             'Application: {}'.format(app),
             'Time elapsed: {:.3f}s'.format(time() - now),
         ])))
-        return HttpResponse(return_value, content_type='application/x-json')
+        return HttpResponse(
+            json.dumps(return_value, default=json_encode_extra),
+            content_type='application/x-json',
+            status=status_code,
+        )
 
     return update_wrapper(_wrapper, view)
 
 
-def check_authentication_headers(request):
-    for header_name in ['APPLICATION', 'SECURITYTOKEN', 'TIMESTAMP']:
-        header = 'HTTP_X_' + header_name
-        if header not in request.META:
-            return 'Missing header "{}"'.format(header)
+def authenticate_app(app, token, timestamp, now, body):
+    if timestamp + 300 < now:
+        raise PermissionDenied('Expired security token')
 
-    if not request.META['HTTP_X_TIMESTAMP'].isdecimal():
-        return 'Malformatted header "HTTP_X_TIMESTAMP"'
-
-
-def authenticate_app(app, token, timestamp, body):
     real_token = calc_security_token(app.auth_token, timestamp, body)
     if not constant_time_compare(real_token, token):
-        return 'Invalid security token'
+        raise PermissionDenied('Invalid security token')
 
     if app.owner is not None and not app.owner.is_active:
-        return 'Inactive user'
+        raise PermissionDenied('Inactive user')
 
     if app.disabled:
-        return 'Disabled application'
+        raise PermissionDenied('Disabled application')
 
 
 def api_function(group, name=None):

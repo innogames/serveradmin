@@ -129,7 +129,8 @@ class LookupManager(models.Manager):
                     self._build_cache()
                     return self.get(*args, **kwargs)
                 raise self.model.DoesNotExist(
-                    'Attribute "{0}" does not exist.'.format(value)
+                    '{} "{}" does not exist.'
+                    .format(self.model.__name__, value)
                 )
             return self._lookup_dict[value]
 
@@ -947,22 +948,3 @@ class ChangeAdd(models.Model):
 
     def __str__(self):
         return '{0}: {1}'.format(str(self.commit), self.server_id)
-
-
-#
-# Helper Functions
-#
-# They are not accepting or returning Model instances, otherwise they would
-# better live inside the model.
-#
-
-def get_unused_ip_addrs(network_ip_addr):
-    used = {i.ip for i in (
-        Server.objects
-        .filter(intern_ip__net_contained_or_equal=network_ip_addr)
-        .order_by()     # Clear ordering for database performance
-        .values_list('intern_ip', flat=True)
-    )}
-    for ip_addr in ip_network(network_ip_addr).hosts():
-        if ip_addr not in used:
-            yield ip_addr

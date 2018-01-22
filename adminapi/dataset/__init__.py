@@ -1,10 +1,13 @@
 from distutils.util import strtobool
+from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 from itertools import chain
+from types import GeneratorType
 
 from adminapi.datatype import validate_value, json_to_datatype
-from adminapi.filters import BaseFilter
+from adminapi.filters import Any, BaseFilter, ContainedOnlyBy
 from adminapi.request import send_request
 
+NEW_OBJECT_ENDPOINT = '/dataset/new_object'
 COMMIT_ENDPOINT = '/dataset/commit'
 QUERY_ENDPOINT = '/dataset/query'
 CREATE_ENDPOINT = '/dataset/create'
@@ -15,14 +18,18 @@ class DatasetError(Exception):
 
 
 class BaseQuery(object):
-    def __init__(self, filters, restrict=None, order_by=None):
-        self._filters = {
-            a: f if isinstance(f, BaseFilter) else BaseFilter(f)
-            for a, f in filters.items()
-        }
+    def __init__(self, filters=None, restrict=None, order_by=None):
+        if filters is None:
+            self._filters = None
+            self._results = []
+        else:
+            self._filters = {
+                a: f if isinstance(f, BaseFilter) else BaseFilter(f)
+                for a, f in filters.items()
+            }
+            self._results = None
         self._restrict = restrict
         self._order_by = order_by
-        self._results = None
 
     def __iter__(self):
         return iter(self.get_results())
@@ -34,7 +41,9 @@ class BaseQuery(object):
         return bool(self.get_results())
 
     def __repr__(self):
-        args = [repr(self._filters)]
+        args = []
+        if self._filters is not None:
+            args.append(repr(self._filters))
         if self._restrict is not None:
             args.append('restrict=' + repr(self._restrict))
         if self._order_by is not None:
@@ -71,10 +80,11 @@ class BaseQuery(object):
             raise DatasetError('get() requires exactly 1 matched object')
         return results[0]
 
+    # XXX: Deprecated
     def is_dirty(self):
         return any(s.is_dirty() for s in self)
 
-    def commit(self, skip_validation, force_changes):
+    def commit(self):
         raise NotImplementedError()
 
     def rollback(self):
@@ -89,8 +99,7 @@ class BaseQuery(object):
 
     def update(self, **attrs):
         for obj in self:
-            if not obj.is_deleted():
-                obj.update(attrs)
+            obj.update(attrs)
         return self
 
     def iterattrs(self, attr='hostname'):
@@ -105,25 +114,74 @@ class BaseQuery(object):
 
     def _build_commit_object(self):
         commit = {
+            'created': [],
+            'changed': [],
             'deleted': [],
-            'changes': {},
         }
 
         for obj in self:
-            if obj.is_deleted():
+            state = obj.commit_state()
+
+            if state == 'created':
+                commit['created'].append(obj)
+            elif state == 'changed':
+                commit['changed'].append(obj._serialize_changes())
+            elif state == 'deleted':
                 commit['deleted'].append(obj.object_id)
-            elif obj.is_dirty():
-                commit['changes'][obj.object_id] = obj._serialize_changes()
 
         return commit
+
+    def get_network_ip_addrs(self):
+        if self._restrict is not None and 'intern_ip' not in self._restrict:
+            raise DatasetError('"intern_ip" is not queried')
+
+        for obj in self:
+            addr = obj['intern_ip']
+            if isinstance(addr, (IPv4Network, IPv6Network)):
+                yield addr
+
+    def get_free_ip_addrs(self):
+        networks = list(self.get_network_ip_addrs())
+        if not networks:
+            raise DatasetError('No networks')
+
+        # Index host and network addresses separately
+        used_hosts = set()
+        used_networks = list()
+        for obj in type(self)({
+            'intern_ip': Any(*(ContainedOnlyBy(n) for n in networks)),
+        }, ['intern_ip']):
+            addr = obj['intern_ip']
+            if isinstance(addr, (IPv4Address, IPv6Address)):
+                used_hosts.add(addr)
+            else:
+                assert isinstance(addr, (IPv4Network, IPv6Network))
+                used_networks.append(addr)
+
+        # Now, we are ready to return.
+        for network in networks:
+            for host in network.hosts():
+                for other_network in used_networks:
+                    if host in other_network:
+                        break
+                else:
+                    if host not in used_hosts:
+                        yield host
 
 
 class Query(BaseQuery):
 
-    def commit(self, skip_validation=False, force_changes=False):
+    def new_object(self, servertype):
+        response = send_request(
+            NEW_OBJECT_ENDPOINT + '?servertype=' + servertype
+        )
+        server_obj = _format_obj(response['result'])
+        self.get_results().append(server_obj)
+
+        return server_obj
+
+    def commit(self):
         commit = self._build_commit_object()
-        commit['skip_validation'] = skip_validation
-        commit['force_changes'] = force_changes
         result = send_request(COMMIT_ENDPOINT, commit)
 
         if result['status'] == 'error':
@@ -144,16 +202,16 @@ class Query(BaseQuery):
             response = send_request(QUERY_ENDPOINT, request_data)
             if response['status'] == 'error':
                 _handle_exception(response)
-            self._results = [_format_server(s) for s in response['result']]
+            self._results = [_format_obj(s) for s in response['result']]
         return self._results
 
 
-class BaseServerObject(dict):
+class DatasetObject(dict):
     """This class must redefine all mutable methods of the dict class
     to cast multi attributes and to validate the values.
     """
 
-    def __init__(self, attributes=[], object_id=None):
+    def __init__(self, attributes=[]):
         # Loop through ourself afterwards would be more efficient, but
         # this would give the caller already initialised object in case
         # anything fails.
@@ -161,8 +219,8 @@ class BaseServerObject(dict):
         for attribute_id, value in attributes.items():
             if isinstance(value, (tuple, list, set, frozenset)):
                 attributes[attribute_id] = MultiAttr(value, self, attribute_id)
-        super(BaseServerObject, self).__init__(attributes)
-        self.object_id = object_id
+        super(DatasetObject, self).__init__(attributes)
+        self.object_id = self['object_id']
         self._deleted = False
         self.old_values = {}
 
@@ -179,38 +237,41 @@ class BaseServerObject(dict):
         return self.object_id
 
     def __repr__(self):
-        parent_repr = super(BaseServerObject, self).__repr__()
+        parent_repr = super(DatasetObject, self).__repr__()
         if not self.object_id:
-            return 'ServerObject({0})'.format(parent_repr)
-        return 'ServerObject({0}, {1})'.format(parent_repr, self.object_id)
+            return 'DatasetObject({0})'.format(parent_repr)
+        return 'DatasetObject({0}, {1})'.format(parent_repr, self.object_id)
 
-    def is_dirty(self):
+    def commit_state(self):
         if self.object_id is None:
-            return True
+            return 'created'
         if self._deleted:
-            return True
+            return 'deleted'
         for attribute_id, old_value in self.old_values.items():
             if self[attribute_id] != old_value:
-                return True
-        return False
+                return 'changed'
+        return 'consistent'
 
+    # XXX: Deprecated
+    def is_dirty(self):
+        return self.commit_state() != 'consistent'
+
+    # XXX: Deprecated
     def is_deleted(self):
-        return self._deleted
+        return self.commit_state() == 'deleted'
 
-    def commit(self):
-        raise NotImplementedError()
-
+    # XXX: Deprecated
     def rollback(self):
         self._deleted = False
         for attr, old_value in self.old_values.items():
-            super(BaseServerObject, self).__setitem__(attr, old_value)
+            super(DatasetObject, self).__setitem__(attr, old_value)
         self.old_values.clear()
 
     def delete(self):
         self._deleted = True
 
     def _serialize_changes(self):
-        changes = {}
+        changes = {'object_id': self['object_id']}
         for key, old_value in self.old_values.items():
             new_value = self[key]
             if isinstance(old_value, MultiAttr):
@@ -237,13 +298,21 @@ class BaseServerObject(dict):
             self._deleted = False
 
     def _build_commit_object(self):
-        changes = {}
-        if self.is_dirty():
-            changes[self.object_id] = self._serialize_changes()
-        return {
-            'deleted': [self.object_id] if self.is_deleted() else [],
-            'changes': changes,
+        state = self.commit_state()
+
+        commit_obj = {
+            'created': [],
+            'changed': [],
+            'deleted': [],
         }
+        if state == 'created':
+            commit_obj['created'].append(self)
+        elif state == 'changed':
+            commit_obj['changed'].append(self._serialize_changes())
+        elif state == 'deleted':
+            commit_obj['deleted'].append(self.object_id)
+
+        return commit_obj
 
     def _save_old_value(self, key):
         # We need to save the first version only.
@@ -255,8 +324,13 @@ class BaseServerObject(dict):
                 self.old_values[key] = old_value
 
     def __setitem__(self, key, value):
+        if isinstance(self[key], MultiAttr):
+            value = MultiAttr(value, self, key)
+        elif isinstance(value, GeneratorType):
+            value = next(value)
+
         if self._deleted:
-            raise DatasetError('Cannot set attributes to deleted server')
+            raise DatasetError('Cannot set attributes to deleted object')
         if key not in self:
             raise DatasetError(
                 'Cannot set nonexistent attribute "{}"'.format(key)
@@ -265,10 +339,7 @@ class BaseServerObject(dict):
         self._save_old_value(key)
         self.validate(key, value)
 
-        if isinstance(self[key], MultiAttr):
-            value = MultiAttr(value, self, key)
-
-        return super(BaseServerObject, self).__setitem__(key, value)
+        return super(DatasetObject, self).__setitem__(key, value)
 
     def validate(self, key, value):
         # Boolean attributes are guaranteed to exist as booleans, multi
@@ -280,8 +351,6 @@ class BaseServerObject(dict):
             if not isinstance(value, bool):
                 raise TypeError('Attribute "{}" must be a boolean'.format(key))
         elif isinstance(old_value, MultiAttr):
-            if not isinstance(value, (tuple, list, set, frozenset)):
-                raise TypeError('Attribute "{}" must be multi'.format(key))
             for elem in old_value | set(value):
                 datatype = validate_value(elem, datatype)
         elif value is not None:
@@ -311,12 +380,9 @@ class BaseServerObject(dict):
         for key, value in chain(other, kwargs.items()):
             self[key] = value
 
-
-class ServerObject(BaseServerObject):
-    def commit(self, skip_validation=False, force_changes=False):
+    # XXX: Deprecated
+    def commit(self):
         commit = self._build_commit_object()
-        commit['skip_validation'] = skip_validation
-        commit['force_changes'] = force_changes
         result = send_request(COMMIT_ENDPOINT, commit)
 
         if result['status'] == 'error':
@@ -327,25 +393,25 @@ class ServerObject(BaseServerObject):
 
 class MultiAttr(set):
     """This class must redefine all mutable methods of the set class
-    to maintain the old values on the BaseServerObject.
+    to maintain the old values on the DatasetObject.
     """
 
-    def __init__(self, other, server, attribute_id):
+    def __init__(self, other, obj, attribute_id):
         super(MultiAttr, self).__init__(other)
-        self._server = server
+        self._obj = obj
         self._attribute_id = attribute_id
 
     def __str__(self):
         return ' '.join(str(x) for x in self)
 
     def copy(self):
-        return MultiAttr(self, self._server, self._attribute_id)
+        return MultiAttr(self, self._obj, self._attribute_id)
 
     def add(self, elem):
-        self._server[self._attribute_id] = self | {elem}
+        self._obj[self._attribute_id] = self | {elem}
 
     def discard(self, elem):
-        self._server[self._attribute_id] = self - {elem}
+        self._obj[self._attribute_id] = self - {elem}
 
     def remove(self, elem):
         if elem not in self:
@@ -361,30 +427,38 @@ class MultiAttr(set):
         return elem
 
     def clear(self):
-        self._server[self._attribute_id] = set()
+        self._obj[self._attribute_id] = set()
 
     def update(self, *others):
         new = set(self)
         for other in others:
             new |= other
-        self._server[self._attribute_id] = new
+        self._obj[self._attribute_id] = new
 
     def intersection_update(self, *others):
         new = set(self)
         for other in others:
             new &= other
-        self._server[self._attribute_id] = new
+        self._obj[self._attribute_id] = new
 
     def difference_update(self, *others):
         new = set(self)
         for other in others:
             new -= other
-        self._server[self._attribute_id] = new
+        self._obj[self._attribute_id] = new
 
     def symmetric_difference_update(self, other):
-        self._server[self._attribute_id] = self ^ other
+        self._obj[self._attribute_id] = self ^ other
 
 
+class DatasetCommit(object):
+    def __init__(self, created, changed, deleted):
+        self.created = created
+        self.changed = changed
+        self.deleted = deleted
+
+
+# XXX: Deprecated
 def _handle_exception(result):
     if result['type'] == 'ValueError':
         exception_class = ValueError
@@ -401,51 +475,43 @@ def _handle_exception(result):
     raise exception_class(result['message'])
 
 
-# XXX Deprecated, use Query() instead
+# XXX: Deprecated, use Query() instead
 def query(**kwargs):
     return Query(kwargs)
 
 
-def create(
-    attributes,
-    skip_validation=False,
-    fill_defaults=True,
-    fill_defaults_all=False,
-):
+# XXX: Deprecated, use Query().new_object() instead
+def create(attributes):
     request = {
         'attributes': attributes,
-        'skip_validation': skip_validation,
-        'fill_defaults': fill_defaults,
-        'fill_defaults_all': fill_defaults_all,
     }
 
     response = send_request(CREATE_ENDPOINT, request)
     if response['status'] == 'error':
         _handle_exception(response)
 
-    return _format_server(response['result'][0])
+    return _format_obj(response['result'][0])
 
 
-def _format_server(result):
-    object_id = result['object_id']
-    server_obj = ServerObject([], object_id)
+def _format_obj(result):
+    obj = DatasetObject([('object_id', result.pop('object_id'))])
 
     for attribute_id, value in list(result.items()):
         if isinstance(value, list):
             casted_value = MultiAttr(
                 (_format_attribute_value(v) for v in value),
-                server_obj,
+                obj,
                 attribute_id,
             )
         else:
             casted_value = _format_attribute_value(value)
 
-        dict.__setitem__(server_obj, attribute_id, casted_value)
+        dict.__setitem__(obj, attribute_id, casted_value)
 
-    return server_obj
+    return obj
 
 
 def _format_attribute_value(value):
     if isinstance(value, dict):
-        return _format_server(value)
+        return _format_obj(value)
     return json_to_datatype(value)
