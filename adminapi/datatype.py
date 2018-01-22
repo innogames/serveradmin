@@ -28,7 +28,7 @@ RE_IPV6ADDR = (
     r':((:[0-9a-f]{1,4}){1,7}|:)'
     r')'
 )
-RE_MACADDR = r'([0-9a-f]{2}:){5}([0-9a-f]{2})'
+RE_MACADDR = r'([0-9a-f]{1,2}:){5}([0-9a-f]{1,2})'
 RE_DATE = r'[0-9]{1,4}-(0[0-9]|1[0-2])-([0-2][0-9]|3[0-1])'
 STR_BASED_DATATYPES = [
     (IPv4Address, re_compile(r'\A' + RE_IPV4ADDR + r'\Z')),
