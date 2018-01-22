@@ -2,7 +2,7 @@ from datetime import date
 from re import compile as re_compile
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 
-from netaddr import EUI, mac_unix_expanded
+from netaddr import EUI, mac_unix
 
 # We use a set of regular expressions to cast to datatypes.  This module
 # is not aware of the attributes types of the server, neither it tries
@@ -119,6 +119,6 @@ def json_to_datatype(value):
             # Sometimes we pass things without casting to EUI and expect
             # the outputs to match.
             if datatype is EUI:
-                return EUI(value, dialect=mac_unix_expanded)
+                return EUI(value, dialect=mac_unix)
             return datatype(value)
     return value
