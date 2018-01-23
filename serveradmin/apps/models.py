@@ -2,6 +2,7 @@ from __future__ import division
 
 from django.db import models
 from django.db.models.signals import pre_save
+from django.dispatch import receiver
 from django.contrib.auth.models import User
 
 from adminapi.request import calc_app_id
@@ -22,10 +23,8 @@ class Application(models.Model):
         return self.name
 
 
+@receiver(pre_save, sender=Application)
 def set_auth_token(sender, instance, **kwargs):
     if not instance.auth_token:
         instance.auth_token = random_alnum_string(24)
     instance.app_id = calc_app_id(instance.auth_token)
-
-
-pre_save.connect(set_auth_token, sender=Application)
