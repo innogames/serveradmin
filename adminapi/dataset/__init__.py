@@ -32,13 +32,13 @@ class BaseQuery(object):
         self._order_by = order_by
 
     def __iter__(self):
-        return iter(self.get_results())
+        return iter(self._get_results())
 
     def __len__(self):
-        return len(self.get_results())
+        return len(self._get_results())
 
     def __bool__(self):
-        return bool(self.get_results())
+        return bool(self._get_results())
 
     def __repr__(self):
         args = []
@@ -49,6 +49,14 @@ class BaseQuery(object):
         if self._order_by is not None:
             args.append('order_by=' + repr(self._order_by))
         return 'Query({})'.format(', '.join(args))
+
+    def _get_results(self):
+        if self._results is None:
+            self._results = list(self._fetch_results())
+        return self._results
+
+    def _fetch_results(self):
+        raise NotImplementedError()
 
     def get_lookup(self, attr):
         lookup = {}
@@ -75,7 +83,7 @@ class BaseQuery(object):
         return self
 
     def get(self):
-        results = self.get_results()
+        results = self._get_results()
         if len(results) != 1:
             raise DatasetError('get() requires exactly 1 matched object')
         return results[0]
@@ -104,9 +112,6 @@ class BaseQuery(object):
 
     def iterattrs(self, attr='hostname'):
         return (obj[attr] for obj in self)
-
-    def get_results(self):
-        raise NotImplementedError()
 
     def _confirm_changes(self):
         for obj in self:
@@ -176,7 +181,7 @@ class Query(BaseQuery):
             NEW_OBJECT_ENDPOINT + '?servertype=' + servertype
         )
         server_obj = _format_obj(response['result'])
-        self.get_results().append(server_obj)
+        self._get_results().append(server_obj)
 
         return server_obj
 
@@ -191,19 +196,17 @@ class Query(BaseQuery):
         for obj in self:
             obj._confirm_changes()
 
-    def get_results(self):
-        if self._results is None:
-            request_data = {'filters': self._filters}
-            if self._restrict is not None:
-                request_data['restrict'] = self._restrict
-            if self._order_by is not None:
-                request_data['order_by'] = self._order_by
+    def _fetch_results(self):
+        request_data = {'filters': self._filters}
+        if self._restrict is not None:
+            request_data['restrict'] = self._restrict
+        if self._order_by is not None:
+            request_data['order_by'] = self._order_by
 
-            response = send_request(QUERY_ENDPOINT, request_data)
-            if response['status'] == 'error':
-                _handle_exception(response)
-            self._results = [_format_obj(s) for s in response['result']]
-        return self._results
+        response = send_request(QUERY_ENDPOINT, request_data)
+        if response['status'] == 'error':
+            _handle_exception(response)
+        return (_format_obj(s) for s in response['result'])
 
 
 class DatasetObject(dict):

@@ -11,7 +11,7 @@ class Query(BaseQuery):
 
     def new_object(self, servertype):
         obj = DatasetObject(get_default_attribute_values(servertype))
-        self.get_results().append(obj)
+        self._get_results().append(obj)
 
         return obj
 
@@ -20,13 +20,9 @@ class Query(BaseQuery):
         QueryCommitter(app=app, user=user, **commit)()
         self._confirm_changes()
 
-    def get_results(self):
-        if self._results is None:
-            filterer = QueryFilterer(self._filters)
-            self._results = list(QueryMaterializer(
-                filterer, self._restrict, self._order_by
-            ))
-        return self._results
+    def _fetch_results(self):
+        filterer = QueryFilterer(self._filters)
+        return QueryMaterializer(filterer, self._restrict, self._order_by)
 
 
 # XXX: Deprecated
