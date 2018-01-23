@@ -58,6 +58,27 @@ class BaseQuery(object):
     def _fetch_results(self):
         raise NotImplementedError()
 
+    def _fetch_new_object(self, servertype):
+        raise NotImplementedError()
+
+    def new_object(self, servertype):
+        obj = self._fetch_new_object(servertype)
+        if self._filters:
+            for attribute, filt in self._filters:
+                if attribute not in obj:
+                    raise DatasetError(
+                        '"{}" is not on the new object'.format(attribute)
+                    )
+                if not filt.matches(obj[attribute]):
+                    raise DatasetError(
+                        '"{}" is not consistent with the query'
+                        .format(attribute)
+                    )
+
+        self._get_results().append(obj)
+
+        return obj
+
     def get_lookup(self, attr):
         lookup = {}
         for host in self:
@@ -176,14 +197,11 @@ class BaseQuery(object):
 
 class Query(BaseQuery):
 
-    def new_object(self, servertype):
+    def _fetch_new_object(self, servertype):
         response = send_request(
             NEW_OBJECT_ENDPOINT + '?servertype=' + servertype
         )
-        server_obj = _format_obj(response['result'])
-        self._get_results().append(server_obj)
-
-        return server_obj
+        return _format_obj(response['result'])
 
     def commit(self):
         commit = self._build_commit_object()

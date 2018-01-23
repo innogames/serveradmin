@@ -9,11 +9,8 @@ from serveradmin.serverdb.query_materializer import (
 
 class Query(BaseQuery):
 
-    def new_object(self, servertype):
-        obj = DatasetObject(get_default_attribute_values(servertype))
-        self._get_results().append(obj)
-
-        return obj
+    def _fetch_new_object(self, servertype):
+        return DatasetObject(get_default_attribute_values(servertype))
 
     def commit(self, app=None, user=None):
         commit = self._build_commit_object()
