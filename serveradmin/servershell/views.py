@@ -9,7 +9,9 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import (
+    ObjectDoesNotExist, PermissionDenied, ValidationError
+)
 from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django.db import DataError, IntegrityError
@@ -103,7 +105,9 @@ def get_results(request):
     try:
         query = Query(parse_query(term), shown_attributes, order_by)
         results = query.get_results()
-    except (DatatypeError, ValidationError, DataError) as error:
+    except (
+        DatatypeError, ObjectDoesNotExist, ValidationError, DataError
+    ) as error:
         return HttpResponse(json.dumps({
             'status': 'error',
             'message': str(error)
@@ -155,7 +159,7 @@ def export(request):
     term = request.GET.get('term', '')
     try:
         query = Query(parse_query(term), ['hostname'])
-    except (DatatypeError, ValidationError) as error:
+    except (DatatypeError, ObjectDoesNotExist, ValidationError) as error:
         return HttpResponse(str(error), status=400)
 
     hostnames = ' '.join(server['hostname'] for server in query)
