@@ -368,7 +368,7 @@ class _ServerAttributedChangedHook(HookSlot):
             )
 
         def filtered_fn(servers, changed, **kwargs):
-            changes = {c['object_id'] for c in changed}
+            changes = {c['object_id']: c for c in changed}
             filtered_servers = []
             for server in servers:
                 if servertypes and server['servertype'] not in servertypes:
