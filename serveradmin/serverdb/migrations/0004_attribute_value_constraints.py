@@ -4,7 +4,7 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [('serverdb_extra', '0002_server_indexing')]
+    dependencies = [('serverdb', '0003_server_indexing')]
     operations = [
         migrations.RunSQL(
             'ALTER TABLE server '

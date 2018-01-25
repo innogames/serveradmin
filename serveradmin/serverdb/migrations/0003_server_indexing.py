@@ -4,7 +4,7 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [('serverdb_extra', '0001_lookup_constraints')]
+    dependencies = [('serverdb', '0002_lookup_constraints')]
     operations = [
         migrations.RunSQL('CREATE EXTENSION IF NOT EXISTS pg_trgm'),
         migrations.RunSQL('CREATE EXTENSION IF NOT EXISTS btree_gist'),

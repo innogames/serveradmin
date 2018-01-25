@@ -4,6 +4,7 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
+    dependencies = [('serverdb', '0001_initial')]
     operations = [
         migrations.RunSQL(
             'ALTER TABLE project '
