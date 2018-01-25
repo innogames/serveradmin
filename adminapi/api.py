@@ -20,7 +20,7 @@ class FunctionGroup(object):
                 'kwargs': kwargs,
             }
 
-            result = send_request(API_CALL_ENDPOINT, call)
+            result = send_request(API_CALL_ENDPOINT, post_params=call)
 
             if result['status'] == 'error':
                 raise ApiError(result['message'])

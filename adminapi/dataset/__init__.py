@@ -199,13 +199,13 @@ class Query(BaseQuery):
 
     def _fetch_new_object(self, servertype):
         response = send_request(
-            NEW_OBJECT_ENDPOINT + '?servertype=' + servertype
+            NEW_OBJECT_ENDPOINT, [('servertype', servertype)]
         )
         return _format_obj(response['result'])
 
     def commit(self):
         commit = self._build_commit_object()
-        result = send_request(COMMIT_ENDPOINT, commit)
+        result = send_request(COMMIT_ENDPOINT, post_params=commit)
 
         if result['status'] == 'error':
             _handle_exception(result)
@@ -221,7 +221,7 @@ class Query(BaseQuery):
         if self._order_by is not None:
             request_data['order_by'] = self._order_by
 
-        response = send_request(QUERY_ENDPOINT, request_data)
+        response = send_request(QUERY_ENDPOINT, post_params=request_data)
         if response['status'] == 'error':
             _handle_exception(response)
         return (_format_obj(s) for s in response['result'])
@@ -404,7 +404,7 @@ class DatasetObject(dict):
     # XXX: Deprecated
     def commit(self):
         commit = self._build_commit_object()
-        result = send_request(COMMIT_ENDPOINT, commit)
+        result = send_request(COMMIT_ENDPOINT, post_params=commit)
 
         if result['status'] == 'error':
             _handle_exception(result)
@@ -507,7 +507,7 @@ def create(attributes):
         'attributes': attributes,
     }
 
-    response = send_request(CREATE_ENDPOINT, request)
+    response = send_request(CREATE_ENDPOINT, post_params=request)
     if response['status'] == 'error':
         _handle_exception(response)
 

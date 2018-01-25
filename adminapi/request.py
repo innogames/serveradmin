@@ -8,9 +8,11 @@ from adminapi.cmduser import get_auth_token
 from adminapi.filters import BaseFilter
 
 try:
-    from urllib.request import urlopen, Request
     from urllib.error import HTTPError, URLError
+    from urllib.parse import urlencode
+    from urllib.request import urlopen, Request
 except ImportError:
+    from urllib import urlencode
     from urllib2 import urlopen, Request, HTTPError, URLError
 
 try:
@@ -52,13 +54,14 @@ def calc_app_id(auth_token):
     return sha1(auth_token.encode('utf8')).hexdigest()
 
 
-def send_request(endpoint, data=None):
+def send_request(endpoint, get_params=None, post_params=None):
     if not Settings.auth_token:
         Settings.auth_token = get_auth_token()
 
-    data_json = json.dumps(data, default=json_encode_extra) if data else None
+    request = _build_request(
+        endpoint, Settings.auth_token, get_params, post_params
+    )
     for retry in reversed(range(Settings.tries)):
-        request = _build_request(endpoint, Settings.auth_token, data_json)
         response = _try_request(request, retry)
         if response:
             break
@@ -71,10 +74,15 @@ def send_request(endpoint, data=None):
     return json.loads(response.read().decode())
 
 
-def _build_request(endpoint, auth_token, data):
+def _build_request(endpoint, auth_token, get_params, post_params):
+    if post_params:
+        post_data = json.dumps(post_params, default=json_encode_extra)
+    else:
+        post_data = None
+
     timestamp = int(time.time())
     app_id = calc_app_id(auth_token)
-    security_token = calc_security_token(auth_token, timestamp, data)
+    security_token = calc_security_token(auth_token, timestamp, post_data)
     headers = {
         'Content-Encoding': 'application/x-json',
         'X-Timestamp': str(timestamp),
@@ -82,10 +90,12 @@ def _build_request(endpoint, auth_token, data):
         'X-SecurityToken': security_token,
     }
     url = Settings.base_url + endpoint
-    if data:
-        data = data.encode('utf8')
+    if get_params:
+        url += '?' + urlencode(get_params)
+    if post_data:
+        post_data = post_data.encode('utf8')
 
-    return Request(url, data, headers)
+    return Request(url, post_data, headers)
 
 
 def _try_request(request, retry=False):
