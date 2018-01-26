@@ -1,5 +1,5 @@
-from ipaddress import ip_interface
-
+from ipaddress import IPv4Address
+from django.contrib.auth.models import User
 from django.test import TestCase
 
 from adminapi.filters import (
@@ -20,7 +20,7 @@ class TestQuery(TestCase):
 
     def test_query_os(self):
         s = Query({'os': 'wheezy'}).get()
-        self.assertEquals(s['hostname'], 'test0')
+        self.assertEqual(s['hostname'], 'test0')
 
     def test_query_iterate(self):
         hostnames = set()
@@ -43,7 +43,7 @@ class TestQuery(TestCase):
 
     def test_filter_regexp_servertype(self):
         s = Query({'servertype': Regexp('^test[870]')}).get()
-        self.assertEquals(s['hostname'], 'test0')
+        self.assertEqual(s['hostname'], 'test0')
 
     def test_filter_any(self):
         hostnames = set()
@@ -57,19 +57,19 @@ class TestQuery(TestCase):
 
     def test_not(self):
         s = Query({'os': Not('squeeze')}).get()
-        self.assertEquals(s['hostname'], 'test0')
+        self.assertEqual(s['hostname'], 'test0')
 
     def test_not_filter(self):
         s = Query({'os': Not(Any('squeeze', 'lenny'))}).get()
-        self.assertEquals(s['hostname'], 'test0')
+        self.assertEqual(s['hostname'], 'test0')
 
     def test_startswith(self):
         s = Query({'os': StartsWith('whee')}).get()
-        self.assertEquals(s['hostname'], 'test0')
+        self.assertEqual(s['hostname'], 'test0')
 
     def test_startswith_servertype(self):
         q = Query({'servertype': StartsWith('tes')})
-        self.assertEquals(len(q), 4)
+        self.assertEqual(len(q), 4)
 
 
 class TestCommit(TestCase):
@@ -79,12 +79,12 @@ class TestCommit(TestCase):
         q = Query({'hostname': 'test1'})
         s = q.get()
         s['os'] = 'wheezy'
-        s['intern_ip'] = '10.16.2.1'
-        q.commit()
+        s['intern_ip'] = IPv4Address('10.16.2.1')
+        q.commit(user=User.objects.first())
 
         s = Query({'hostname': 'test1'}).get()
-        self.assertEquals(s['os'], 'wheezy')
-        self.assertEquals(s['intern_ip'], ip_interface('10.16.2.1'))
+        self.assertEqual(s['os'], 'wheezy')
+        self.assertEqual(s['intern_ip'], IPv4Address('10.16.2.1'))
 
     def test_commit_regexp_violation(self):
         pass
