@@ -102,12 +102,7 @@ def dataset_new_object(request, app, data):
     except KeyError as error:
         raise SuspiciousOperation(error)
 
-    try:
-        result = get_default_attribute_values(servertype)
-    except ObjectDoesNotExist as error:
-        raise APIError(error, status_code=404)
-
-    return {'result': result}
+    return {'result': get_default_attribute_values(servertype)}
 
 
 @api_view
