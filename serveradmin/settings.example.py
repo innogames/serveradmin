@@ -19,7 +19,6 @@ DATABASES = {
         'OPTIONS': {
             'connect_timeout': 1,
             'client_encoding': 'UTF8',
-            'options': '-c lock_timeout=60000',
         },
     },
 }
