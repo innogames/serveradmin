@@ -65,12 +65,9 @@ You would also need a database for the application::
     createdb serveradmin
 
 Now you can either create the schema with no data using migrate or import a
-dump from an existing data.  The migrate command doesn't work on the first
-run for some Django bug, we couldn't fix yet.  Please run it in 2 steps and
-ignore the errors emitted by the first one.  To create a new empty schema
+dump from an existing data.  To create a new empty schema
 you can use::
 
-    python manage.py migrate auth
     python manage.py migrate
 
 If you want to work on the production data, you can dump it from the server,

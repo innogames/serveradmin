@@ -1,199 +1,212 @@
 [
     {
-        "pk": "os",
-        "model": "dataset.attribute",
+        "pk": 1,
+        "model": "auth.user",
         "fields": {
-            "multi": false,
-            "base": false,
-            "type": "string",
-            "modifier": null
+            "first_name": "Hannah",
+            "last_name": "Acker",
+            "username": "hannah.acker",
+            "password": "!",
+            "email": "hannah.acker@example.com",
+            "user_permissions": [],
+            "groups": [],
+            "last_login": null,
+            "is_staff": true,
+            "is_active": true,
+            "is_superuser": true,
+            "date_joined": "2018-01-26T11:55:03.947Z"
+        }
+    },
+    {
+        "pk": "someproject",
+        "model": "serverdb.project",
+        "fields": {
+            "subdomain": "some",
+            "responsible_admin": 1
+        }
+    },
+    {
+        "pk": "os",
+        "model": "serverdb.attribute",
+        "fields": {
+            "type": "string"
         }
     },
     {
         "pk": "game_world",
-        "model": "dataset.attribute",
+        "model": "serverdb.attribute",
         "fields": {
-            "multi": false,
-            "base": false,
-            "type": "number",
-            "modifier": null
+            "type": "number"
         }
     },
     {
         "pk": "additional_ips",
-        "model": "dataset.attribute",
+        "model": "serverdb.attribute",
         "fields": {
-            "multi": false,
-            "base": false,
-            "type": "integer",
-            "modifier": null
+            "type": "integer"
         }
     },
     {
         "pk": "database",
-        "model": "dataset.attribute",
+        "model": "serverdb.attribute",
         "fields": {
             "multi": true,
-            "base": false,
-            "type": "string",
-            "modifier": null
+            "type": "string"
         }
     },
     {
         "pk": "test0",
-        "model": "dataset.servertype",
+        "model": "serverdb.servertype",
         "fields": {
+            "ip_addr_type": "host"
         }
     },
     {
         "pk": "test2",
-        "model": "dataset.servertype",
+        "model": "serverdb.servertype",
         "fields": {
+            "ip_addr_type": "host"
         }
     },
     {
         "pk": 1,
-        "model": "dataset.servertypeattributes",
+        "model": "serverdb.servertypeattribute",
         "fields": {
             "regexp": "(wheezy|squeeze)",
             "required": true,
             "default_value": "squeeze",
-            "servertype": 1,
-            "default_visible": false,
-            "attrib": "os"
+            "_servertype": "test0",
+            "_attribute": "os"
         }
     },
     {
         "pk": 2,
-        "model": "dataset.servertypeattributes",
+        "model": "serverdb.servertypeattribute",
         "fields": {
             "regexp": "(wheezy|squeeze)",
             "required": true,
             "default_value": null,
-            "servertype": 2,
-            "default_visible": false,
-            "attrib": "ox"
+            "_servertype": "test2",
+            "_attribute": "os"
         }
     },
     {
         "pk": 3,
-        "model": "dataset.servertypeattributes",
+        "model": "serverdb.servertypeattribute",
         "fields": {
-            "regexp": null,
-            "required": false,
             "default_value": null,
-            "servertype": 2,
-            "default_visible": false,
-            "attrib": "game_world"
+            "_servertype": "test2",
+            "_attribute": "game_world"
         }
     },
     {
         "pk": 4,
-        "model": "dataset.servertypeattributes",
+        "model": "serverdb.servertypeattribute",
         "fields": {
-            "regexp": null,
-            "required": false,
             "default_value": null,
-            "servertype": 1,
-            "default_visible": false,
-            "attrib": "database"
+            "_servertype": "test0",
+            "_attribute": "database"
         }
     },
     {
         "pk": 1,
-        "model": "dataset.serverobject",
+        "model": "serverdb.server",
         "fields": {
             "intern_ip": 168820737,
             "hostname": "test0",
-            "servertype": 1
+            "_servertype": "test0",
+            "_project": "someproject"
         }
     },
     {
         "pk": 2,
-        "model": "dataset.serverobject",
+        "model": "serverdb.server",
         "fields": {
             "intern_ip": 168820738,
             "hostname": "test1",
-            "servertype": 2
+            "_servertype": "test2",
+            "_project": "someproject"
         }
     },
     {
         "pk": 3,
-        "model": "dataset.serverobject",
+        "model": "serverdb.server",
         "fields": {
             "intern_ip": 168820739,
             "hostname": "test2",
-            "servertype": 2
+            "_servertype": "test2",
+            "_project": "someproject"
         }
     },
     {
         "pk": 4,
-        "model": "dataset.serverobject",
+        "model": "serverdb.server",
         "fields": {
             "intern_ip": 168820740,
             "hostname": "test3",
-            "servertype": 2
+            "_servertype": "test2",
+            "_project": "someproject"
         }
     },
     {
         "pk": 1,
-        "model": "dataset.attributevalue",
+        "model": "serverdb.serverstringattribute",
         "fields": {
-            "attrib": "os",
+            "_attribute": "os",
             "value": "wheezy",
             "server": 1
         }
     },
     {
         "pk": 2,
-        "model": "dataset.attributevalue",
+        "model": "serverdb.serverstringattribute",
         "fields": {
-            "attrib": "os",
+            "_attribute": "os",
             "value": "squeeze",
             "server": 2
         }
     },
     {
         "pk": 3,
-        "model": "dataset.attributevalue",
+        "model": "serverdb.serverstringattribute",
         "fields": {
-            "attrib": "os",
+            "_attribute": "os",
             "value": "squeeze",
             "server": 3
         }
     },
     {
         "pk": 4,
-        "model": "dataset.attributevalue",
+        "model": "serverdb.serverstringattribute",
         "fields": {
-            "attrib": "os",
+            "_attribute": "os",
             "value": "squeeze",
             "server": 4
         }
     },
     {
         "pk": 5,
-        "model": "dataset.attributevalue",
+        "model": "serverdb.servernumberattribute",
         "fields": {
-            "attrib": "game_world",
+            "_attribute": "game_world",
             "value": "1",
             "server": 2
         }
     },
     {
         "pk": 6,
-        "model": "dataset.attributevalue",
+        "model": "serverdb.servernumberattribute",
         "fields": {
-            "attrib": "game_world",
+            "_attribute": "game_world",
             "value": "2",
             "server": 3
         }
     },
     {
         "pk": 7,
-        "model": "dataset.attributevalue",
+        "model": "serverdb.servernumberattribute",
         "fields": {
-            "attrib": "game_world",
+            "_attribute": "game_world",
             "value": "10",
             "server": 4
         }
