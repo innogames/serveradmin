@@ -1,25 +1,24 @@
 dist: trusty
 sudo: false
 services:
-  - postgresql
+    - postgresql
 addons:
-  postgresql: "9.6"
+    postgresql: "9.6"
 language: python
 python:
-  - "3.4"
-  - "3.5"
-  - "3.6"
+    - "3.4"
+    - "3.5"
+    - "3.6"
 install:
-  - pip install -r serveradmin/requirements.txt
-  - pip install .
+    - pip install -r serveradmin/requirements.txt
+    - pip install .
 before_script:
-  - psql --version
-  - psql -U postgres -c 'SELECT version();'
-  - psql -c 'create database serveradmin owner travis;' -U postgres
-  - cp serveradmin/settings.example.py serveradmin/settings.py
-  - sed -i 's/\/var\/log/\/tmp/' serveradmin/settings.py
-  - ./manage.py migrate
+    - psql --version
+    - psql -U postgres -c 'SELECT version();'
+    - psql -c 'create database serveradmin owner travis;' -U postgres
+    - cp serveradmin/settings.example.py serveradmin/settings.py
+    - sed -i 's/\/var\/log/\/tmp/' serveradmin/settings.py
+    - ./manage.py migrate
 script:
-  # This will use pythons standard unit test discovery feature.
-  # Name your tests like test*.py
-  - python3 -Wall manage.py test
+    # This will use Python's standard unit test discovery feature.
+    - python3 -Wall manage.py test
