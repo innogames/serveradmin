@@ -1,7 +1,8 @@
 from __future__ import division
 
 from django.db import models
-from django.db.models.signals import pre_save
+from django.db.models.signals import pre_save, post_save
+from django.dispatch import receiver
 from django.contrib.auth.models import User
 
 from adminapi.request import calc_app_id
@@ -22,10 +23,25 @@ class Application(models.Model):
         return self.name
 
 
+@receiver(pre_save, sender=Application)
 def set_auth_token(sender, instance, **kwargs):
     if not instance.auth_token:
         instance.auth_token = random_alnum_string(24)
     instance.app_id = calc_app_id(instance.auth_token)
 
 
-pre_save.connect(set_auth_token, sender=Application)
+@receiver(post_save, sender=User)
+def set_disabled(sender, instance, **kwargs):
+    """Set the applications to disabled when the owner is
+
+    If the user is disabled, we are setting all of their applications
+    to disabled as well, so that if they are enabled again,
+    the applications wouldn't be automatically re-enabled.  Somebody
+    doing this explicitly is a better idea.  The code should still check
+    both application and the owner user being active to be on the safer
+    side.  There are ways to change objects on Django without emitting
+    signals like we are doing in here, and somebody can always change
+    things on the database.
+    """
+    if not instance.is_active:
+        Application.objects.filter(owner=instance).update(disabled=True)
