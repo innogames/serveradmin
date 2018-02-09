@@ -1026,7 +1026,7 @@ function get_marked_servers() {
 
 $(function() {
     $('#shell_search_form').submit(function(ev) {
-        $('#shell_understood').text('Nothing yet');
+        $('#shell_understood').text('');
         $('#shell_servers').empty();
         search['page'] = 1;
         ev.stopPropagation();
@@ -1040,7 +1040,7 @@ $(function() {
     });
 
     $('#shell_search').bind('change', function(ev) {
-        $('#shell_understood').text('Nothing yet');
+        $('#shell_understood').text('');
         $('#shell_servers').empty();
     });
 
