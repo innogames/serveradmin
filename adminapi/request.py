@@ -1,6 +1,7 @@
 import os
 from hashlib import sha1
 import hmac
+from ssl import SSLError
 import time
 
 from adminapi.cmduser import get_auth_token
@@ -102,6 +103,10 @@ def _try_request(request, retry=False):
                 raise APIError(message, status_code=error.code)
         raise
     except URLError:
+        if retry:
+            return None
+        raise
+    except SSLError:
         if retry:
             return None
         raise
