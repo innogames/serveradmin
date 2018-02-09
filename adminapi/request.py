@@ -102,11 +102,7 @@ def _try_request(request, retry=False):
                 message = payload['error']['message']
                 raise APIError(message, status_code=error.code)
         raise
-    except URLError:
-        if retry:
-            return None
-        raise
-    except SSLError:
+    except (SSLError, URLError):
         if retry:
             return None
         raise
