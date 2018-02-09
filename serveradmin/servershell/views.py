@@ -104,7 +104,6 @@ def get_results(request):
 
     try:
         query = Query(parse_query(term), shown_attributes, order_by)
-        results = query.get_results()
     except (
         DatatypeError, ObjectDoesNotExist, ValidationError, DataError
     ) as error:
@@ -113,8 +112,8 @@ def get_results(request):
             'message': str(error)
         }))
 
-    num_servers = len(results)
-    servers = list(islice(results, offset, offset + limit))
+    num_servers = len(query)
+    servers = list(islice(query, offset, offset + limit))
 
     request.session['term'] = term
     request.session['per_page'] = limit
