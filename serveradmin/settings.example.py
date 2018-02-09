@@ -153,7 +153,6 @@ INSTALLED_APPS = (
     'serveradmin.access_control',
     'serveradmin.common',
     'serveradmin.servershell',
-    'serveradmin.colo',
     'serveradmin.apps',
     'serveradmin.dataset',
     'serveradmin.serverdb',
