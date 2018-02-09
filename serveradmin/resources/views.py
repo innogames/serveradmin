@@ -1,4 +1,4 @@
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseBadRequest
@@ -12,7 +12,6 @@ from adminapi.filters import Any
 from adminapi.parse import parse_query
 from serveradmin.graphite.models import GRAPHITE_ATTRIBUTE_ID, Collection
 from serveradmin.dataset import Query
-from serveradmin.serverdb.models import Project
 
 
 @login_required     # NOQA: C901
@@ -145,55 +144,3 @@ def graph_popup(request):
             })
 
     return HttpResponseBadRequest('No graph found')
-
-
-@login_required
-def projects(request):
-
-    counters = {}
-    for server in Query({}, [
-        'project',
-        'servertype',
-        'disk_size_gib',
-        'memory',
-        'num_cpu',
-    ]):
-        if server['project'] not in counters:
-            counters[server['project']] = [
-                defaultdict(int),   # For servertypes
-                0,                  # For disk_size_gib
-                0,                  # For memory
-                0,                  # For num_cpu
-            ]
-        counters[server['project']][0][server['servertype']] += 1
-        if server.get('disk_size_gib'):
-            counters[server['project']][1] += server['disk_size_gib']
-        if server.get('memory'):
-            counters[server['project']][2] += server['memory']
-        if server.get('num_cpu'):
-            counters[server['project']][3] += server['num_cpu']
-
-    items = []
-    for project in Project.objects.all():
-        item = {
-            'project_id': project.project_id,
-            'subdomain': project.subdomain,
-            'responsible_admin': project.responsible_admin.get_full_name(),
-            'servertypes': [],
-            'disk_size_gib': 0,
-            'memory': 0,
-            'num_cpu': 0,
-        }
-
-        if project.project_id in counters:
-            item['servertypes'] = list(counters[project.project_id][0].items())
-            item['servertypes'].sort()
-            item['disk_size_gib'] = counters[project.project_id][1]
-            item['memory'] = counters[project.project_id][2]
-            item['num_cpu'] = counters[project.project_id][3]
-
-        items.append(item)
-
-    return TemplateResponse(request, 'resources/projects.html', {
-        'projects': items,
-    })
