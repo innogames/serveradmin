@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from operator import itemgetter
 
 from django.core.exceptions import (
@@ -13,6 +14,8 @@ from adminapi.filters import FilterValueError, filter_from_obj
 from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
 from serveradmin.api.decorators import api_view
 from serveradmin.api.utils import build_function_description
+from serveradmin.apps.models import ApplicationSlot
+from serveradmin.changes.models import Commit
 from serveradmin.serverdb.query_committer import QueryCommitter
 from serveradmin.serverdb.query_executer import execute_query
 from serveradmin.serverdb.query_materializer import (
@@ -209,6 +212,43 @@ def dataset_create(request, app, data):
         'status': 'success',
         'result': commit.created,
     }
+
+
+@api_view
+def dataset_get_commits(request, app, data):
+    if request.method != 'POST':
+        raise SuspiciousOperation('Method not allowed')
+    if not isinstance(data, dict):
+        raise SuspiciousOperation('Invalid payload')
+
+    if 'filters' not in data or not isinstance(data['filters'], dict):
+        raise SuspiciousOperation('"filters" must be a dictionary')
+
+    queryset = Commit.objects
+
+    if 'newer_than_mins' in data:
+        if not isinstance(data['newer_than_mins'], int):
+            raise SuspiciousOperation('"newer_than_mins" must be an int')
+        queryset = queryset.filter(change_on__gt=(
+            datetime.now() - timedelta(minutes=data['newer_than_mins'])
+        ))
+
+    if 'slot' in data:
+        if not isinstance(data['slot'], str):
+            raise SuspiciousOperation('"newer_than_mins" must be a string')
+        try:
+            slot = ApplicationSlot.objects.get(
+                application=app, name=data['slot']
+            )
+        except ApplicationSlot.DoesNotExist:
+            pass
+        else:
+            queryset = queryset.filter(id__gt=slot.commit_id)
+
+    return [{
+        'user': c.user.username,
+        'application': c.app.application_id,
+    } for c in queryset]
 
 
 @api_view

@@ -1,6 +1,7 @@
 from distutils.util import strtobool
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 from itertools import chain
+from time import sleep
 from types import GeneratorType
 
 from adminapi.datatype import validate_value, json_to_datatype
@@ -11,6 +12,7 @@ NEW_OBJECT_ENDPOINT = '/dataset/new_object'
 COMMIT_ENDPOINT = '/dataset/commit'
 QUERY_ENDPOINT = '/dataset/query'
 CREATE_ENDPOINT = '/dataset/create'
+GET_COMMITS_ENDPOINT = '/dataset/get_commits'
 
 
 class DatasetError(Exception):
@@ -194,6 +196,17 @@ class BaseQuery(object):
                     if host not in used_hosts:
                         yield host
 
+    def subscribe_changes(self, callback, newer_than_mins=None, slot=None):
+        self._results = self._fetch_results()
+        while True:
+            for commit in self._fetch_commits(newer_than_mins, slot):
+                callback(commit)
+                self._save_changes_slot(commit)
+            sleep(1)
+
+    def _apply_commit(self, commit):
+        pass
+
 
 class Query(BaseQuery):
 
@@ -225,6 +238,23 @@ class Query(BaseQuery):
         if response['status'] == 'error':
             _handle_exception(response)
         return [_format_obj(s) for s in response['result']]
+
+    def _fetch_commits(self, newer_than_mins=None, slot=None):
+        request_data = {'filters': self._filters}
+        if self._restrict is not None:
+            request_data['restrict'] = self._restrict
+        if self._order_by is not None:
+            request_data['order_by'] = self._order_by
+        if newer_than_mins is not None:
+            request_data['newer_than_mins'] = newer_than_mins
+        if slot is not None:
+            request_data['slot'] = slot
+
+        response = send_request(GET_COMMITS_ENDPOINT, post_params=request_data)
+        for result in response['result']:
+            print(result)
+            if False:
+                yield result
 
 
 class DatasetObject(dict):
