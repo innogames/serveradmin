@@ -64,6 +64,9 @@ def doc_functions(request):
 
 @api_view
 def dataset_query(request, app, data):
+    if request.method != 'POST':
+        raise SuspiciousOperation('Method not allowed')
+
     try:
         if 'filters' not in data or not isinstance(data['filters'], dict):
             raise SuspiciousOperation('Filters must be a dictionary')
@@ -97,6 +100,9 @@ def dataset_query(request, app, data):
 
 @api_view
 def dataset_new_object(request, app, data):
+    if request.method != 'GET':
+        raise SuspiciousOperation('Method not allowed')
+
     try:
         servertype = request.GET['servertype']
     except KeyError as error:
@@ -105,8 +111,10 @@ def dataset_new_object(request, app, data):
     return {'result': get_default_attribute_values(servertype)}
 
 
-@api_view
+@api_view   # NOQA: C901
 def dataset_commit(request, app, data):
+    if request.method != 'POST':
+        raise SuspiciousOperation('Method not allowed')
     if not isinstance(data, dict):
         raise SuspiciousOperation('Invalid payload')
 
@@ -198,6 +206,9 @@ def _validate_commit_deleted(deleted):
 # XXX: Deprecated
 @api_view
 def dataset_create(request, app, data):
+    if request.method != 'POST':
+        raise SuspiciousOperation('Method not allowed')
+
     required = [
         'attributes',
     ]
@@ -223,6 +234,9 @@ def dataset_create(request, app, data):
 
 @api_view
 def api_call(request, app, data):
+    if request.method != 'POST':
+        raise SuspiciousOperation('Method not allowed')
+
     try:
         if not all(x in data for x in ('group', 'name', 'args', 'kwargs')):
             raise SuspiciousOperation('Invalid API call')
