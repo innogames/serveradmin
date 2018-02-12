@@ -8,6 +8,7 @@ from django.dispatch.dispatcher import Signal
 
 from adminapi.dataset import DatasetCommit
 from adminapi.request import json_encode_extra
+from serveradmin.changes.models import Addition, Commit, Modification, Deletion
 from serveradmin.hooks.slots import HookSlot
 from serveradmin.serverdb.models import (
     Servertype,
@@ -15,10 +16,6 @@ from serveradmin.serverdb.models import (
     Server,
     ServerAttribute,
     ServerHostnameAttribute,
-    ChangeAdd,
-    ChangeCommit,
-    ChangeUpdate,
-    ChangeDelete,
     Project,
 )
 from serveradmin.serverdb.query_materializer import (
@@ -143,10 +140,10 @@ class QueryCommitter:
             raise CommitNewerData('Newer data available', newer)
 
     def _log_changes(self, created_objects):
-        commit = ChangeCommit.objects.create(app=self.app, user=self.user)
+        commit = Commit.objects.create(app=self.app, user=self.user)
 
         for updates in self.changed:
-            ChangeUpdate.objects.create(
+            Modification.objects.create(
                 commit=commit,
                 server_id=updates['object_id'],
                 updates_json=json.dumps(updates, default=json_encode_extra),
@@ -154,7 +151,7 @@ class QueryCommitter:
 
         for attributes in self._deleted_objects.values():
             attributes_json = json.dumps(attributes, default=json_encode_extra)
-            ChangeDelete.objects.create(
+            Deletion.objects.create(
                 commit=commit,
                 server_id=attributes['object_id'],
                 attributes_json=attributes_json,
@@ -164,7 +161,7 @@ class QueryCommitter:
             attributes_json = json.dumps(
                 obj, default=json_encode_extra
             )
-            ChangeAdd.objects.create(
+            Addition.objects.create(
                 commit=commit,
                 server_id=obj['object_id'],
                 attributes_json=attributes_json,

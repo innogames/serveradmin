@@ -6,25 +6,20 @@ from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 
-from serveradmin.serverdb.models import (
-    ChangeCommit,
-    ChangeAdd,
-    ChangeUpdate,
-    ChangeDelete,
-)
+from serveradmin.changes.models import Commit, Addition, Modification, Deletion
 from serveradmin.serverdb.query_committer import CommitError, QueryCommitter
 
 
 @login_required
-def changes(request):
-    commits = ChangeCommit.objects.order_by('-change_on').prefetch_related()
+def commits(request):
+    commits = Commit.objects.order_by('-change_on').prefetch_related()
     paginator = Paginator(commits, 100)
     try:
         page = paginator.page(request.GET.get('page', 1))
     except (PageNotAnInteger, EmptyPage):
         page = paginator.page(1)
 
-    return TemplateResponse(request, 'serverdb/changes.html', {
+    return TemplateResponse(request, 'changes/commits.html', {
         'commits': page
     })
 
@@ -40,9 +35,9 @@ def history(request):
     except (KeyError, ValueError):
         commit_id = None
 
-    adds = ChangeAdd.objects.filter(server_id=server_id).select_related()
-    updates = ChangeUpdate.objects.filter(server_id=server_id).select_related()
-    deletes = ChangeDelete.objects.filter(server_id=server_id).select_related()
+    adds = Addition.objects.filter(server_id=server_id).select_related()
+    updates = Modification.objects.filter(server_id=server_id).select_related()
+    deletes = Deletion.objects.filter(server_id=server_id).select_related()
 
     if commit_id:
         adds = adds.filter(commit__pk=commit_id)
@@ -63,7 +58,7 @@ def history(request):
         else:
             commit.commit_by = 'unknown'
 
-    return TemplateResponse(request, 'serverdb/history.html', {
+    return TemplateResponse(request, 'changes/history.html', {
         'change_list': change_list,
         'commit_id': commit_id,
         'server_id': server_id,
@@ -76,7 +71,7 @@ def history(request):
 @login_required
 def restore_deleted(request, change_commit):
     deleted = get_object_or_404(
-        ChangeDelete,
+        Deletion,
         server_id=request.POST.get('server_id'),
         commit__pk=change_commit,
     )
@@ -90,6 +85,6 @@ def restore_deleted(request, change_commit):
         messages.success(request, 'Server restored.')
 
     return redirect(
-        reverse('serverdb_history') +
+        reverse('changes_history') +
         '?server_id=' + str(server_obj['object_id'])
     )

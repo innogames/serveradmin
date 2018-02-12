@@ -8,7 +8,6 @@ from serveradmin.serverdb.models import (
     Server,
     ServerHostnameAttribute,
     ServerStringAttribute,
-    ChangeDelete,
 )
 
 
@@ -42,4 +41,3 @@ admin.site.register(Project)
 admin.site.register(Servertype, ServertypeAdmin)
 admin.site.register(Attribute)
 admin.site.register(Server, ServerAdmin)
-admin.site.register(ChangeDelete)

@@ -97,7 +97,7 @@ by {{ change.commit.commit_by }}</h3>
 {% endfor %}
 
 {% if commit_id %}
-<p><a href="{% url 'serverdb_history' %}?server_id={{ server_id }}">Show complete history</a></p>
+<p><a href="{% url 'changes_history' %}?server_id={{ server_id }}">Show complete history</a></p>
 {% endif %}
 
 {% endblock %}

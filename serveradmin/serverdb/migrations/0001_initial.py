@@ -35,41 +35,6 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name='ChangeAdd',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('server_id', models.IntegerField(db_index=True)),
-                ('attributes_json', models.TextField()),
-            ],
-        ),
-        migrations.CreateModel(
-            name='ChangeCommit',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('change_on', models.DateTimeField(db_index=True, default=django.utils.timezone.now)),
-                ('app', models.ForeignKey(to='apps.Application', on_delete=django.db.models.deletion.PROTECT, null=True)),
-                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=django.db.models.deletion.PROTECT, null=True)),
-            ],
-        ),
-        migrations.CreateModel(
-            name='ChangeDelete',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('server_id', models.IntegerField(db_index=True)),
-                ('attributes_json', models.TextField()),
-                ('commit', models.ForeignKey(to='serverdb.ChangeCommit')),
-            ],
-        ),
-        migrations.CreateModel(
-            name='ChangeUpdate',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('server_id', models.IntegerField(db_index=True)),
-                ('updates_json', models.TextField()),
-                ('commit', models.ForeignKey(to='serverdb.ChangeCommit')),
-            ],
-        ),
-        migrations.CreateModel(
             name='Project',
             fields=[
                 ('project_id', models.CharField(primary_key=True, validators=[django.core.validators.RegexValidator('\\A[a-z][a-z0-9_]+\\Z', 'Invalid id')], serialize=False, max_length=32)),
@@ -211,11 +176,6 @@ class Migration(migrations.Migration):
             field=models.ForeignKey(db_column='servertype_id', to='serverdb.Servertype', on_delete=django.db.models.deletion.PROTECT),
         ),
         migrations.AddField(
-            model_name='changeadd',
-            name='commit',
-            field=models.ForeignKey(to='serverdb.ChangeCommit'),
-        ),
-        migrations.AddField(
             model_name='attribute',
             name='_target_servertype',
             field=models.ForeignKey(db_column='target_servertype_id', to='serverdb.Servertype', blank=True, null=True, db_index=False),
@@ -279,17 +239,5 @@ class Migration(migrations.Migration):
         migrations.AlterIndexTogether(
             name='serverbooleanattribute',
             index_together=set([('_attribute',)]),
-        ),
-        migrations.AlterUniqueTogether(
-            name='changeupdate',
-            unique_together=set([('commit', 'server_id')]),
-        ),
-        migrations.AlterUniqueTogether(
-            name='changedelete',
-            unique_together=set([('commit', 'server_id')]),
-        ),
-        migrations.AlterUniqueTogether(
-            name='changeadd',
-            unique_together=set([('commit', 'server_id')]),
         ),
     ]

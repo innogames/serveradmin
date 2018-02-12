@@ -1,5 +1,4 @@
 import re
-import json
 
 from collections import OrderedDict
 from distutils.util import strtobool
@@ -12,13 +11,11 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.signals import request_started
 from django.core.validators import RegexValidator
-from django.utils.timezone import now
 from django.contrib.auth.models import User
 
 import netfields
 
 from adminapi.datatype import STR_BASED_DATATYPES
-from serveradmin.apps.models import Application
 
 
 #
@@ -837,88 +834,3 @@ class ServerDateAttribute(ServerAttribute):
         db_table = 'server_date_attribute'
         unique_together = (('server', '_attribute', 'value'), )
         index_together = (('_attribute', 'value'), )
-
-
-#
-# Change Log Models
-#
-
-
-class ChangeCommit(models.Model):
-    change_on = models.DateTimeField(default=now, db_index=True)
-    user = models.ForeignKey(
-        User,
-        null=True,
-        on_delete=models.PROTECT,
-    )
-    app = models.ForeignKey(
-        Application,
-        null=True,
-        on_delete=models.PROTECT,
-    )
-
-    class Meta:
-        app_label = 'serverdb'
-
-    def __str__(self):
-        return str(self.change_on)
-
-
-class ChangeDelete(models.Model):
-    commit = models.ForeignKey(
-        ChangeCommit,
-        on_delete=models.CASCADE,
-    )
-    server_id = models.IntegerField(db_index=True)
-    attributes_json = models.TextField()
-
-    class Meta:
-        app_label = 'serverdb'
-        unique_together = [['commit', 'server_id']]
-
-    @property
-    def attributes(self):
-        return json.loads(self.attributes_json)
-
-    def __str__(self):
-        return '{0}: {1}'.format(str(self.commit), self.server_id)
-
-
-class ChangeUpdate(models.Model):
-    commit = models.ForeignKey(
-        ChangeCommit,
-        on_delete=models.CASCADE,
-    )
-    server_id = models.IntegerField(db_index=True)
-    updates_json = models.TextField()
-
-    class Meta:
-        app_label = 'serverdb'
-        unique_together = [['commit', 'server_id']]
-
-    @property
-    def updates(self):
-        return json.loads(self.updates_json)
-
-    def __str__(self):
-        return '{0}: {1}'.format(str(self.commit), self.server_id)
-
-
-class ChangeAdd(models.Model):
-    commit = models.ForeignKey(
-        ChangeCommit,
-        on_delete=models.CASCADE,
-    )
-    server_id = models.IntegerField(db_index=True)
-    attributes_json = models.TextField()
-
-    class Meta:
-        app_label = 'serverdb'
-        unique_together = [['commit', 'server_id']]
-
-    @property
-    def attributes(self):
-        return json.loads(self.attributes_json)
-
-    def __str__(self):
-        return '{0}: {1}'.format(str(self.commit), self.server_id)
