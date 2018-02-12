@@ -153,7 +153,6 @@ INSTALLED_APPS = (
     'serveradmin.common',
     'serveradmin.servershell',
     'serveradmin.apps',
-    'serveradmin.dataset',
     'serveradmin.serverdb',
     'serveradmin.api',
     'serveradmin.graphite',
