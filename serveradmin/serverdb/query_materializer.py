@@ -122,9 +122,7 @@ class QueryMaterializer:
                     _attribute__in=reversed_attributes.keys(),
                 ).select_related('server'):
                     self._add_attribute_value(
-                        sa.value_id,
-                        reversed_attributes[sa.attribute],
-                        sa.server.hostname
+                        sa.value, reversed_attributes[sa.attribute], sa.server
                     )
             else:
                 for sa in ServerAttribute.get_model(key).objects.filter(
