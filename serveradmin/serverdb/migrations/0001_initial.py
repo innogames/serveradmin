@@ -35,16 +35,6 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name='Change',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('change_on', models.DateTimeField(db_index=True, default=django.utils.timezone.now)),
-                ('changes_json', models.TextField()),
-                ('app', models.ForeignKey(to='apps.Application', on_delete=django.db.models.deletion.PROTECT, null=True)),
-                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=django.db.models.deletion.PROTECT, null=True)),
-            ],
-        ),
-        migrations.CreateModel(
             name='ChangeAdd',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
