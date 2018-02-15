@@ -284,16 +284,17 @@ def commit(request):
             'message': str(error),
         }
     else:
+        changed = []
         if 'changes' in commit:
-            changes = {}
             for key, value in commit['changes'].items():
-                if not key.isdigit():
-                    continue
-                changes[int(key)] = value
-            commit['changes'] = changes
+                value['object_id'] = int(key)
+                changed.append(value)
+
+        deleted = commit.get('deleted', [])
+        user = request.user
 
         try:
-            QueryCommitter(commit, user=request.user)()
+            QueryCommitter(changed=changed, deleted=deleted, user=user)()
         except (PermissionDenied, ValidationError, IntegrityError) as error:
             result = {
                 'status': 'error',
