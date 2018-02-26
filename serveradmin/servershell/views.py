@@ -29,9 +29,8 @@ from serveradmin.serverdb.models import (
     ServertypeAttribute,
     ServerStringAttribute,
 )
-from serveradmin.serverdb.query_committer import (  # TODO: Use dataset module
+from serveradmin.serverdb.query_committer import (
     QueryCommitter,
-    CommitValidationFailed,
     CommitIncomplete,
 )
 
@@ -209,20 +208,24 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
             server[attribute_id] = value
 
         if not invalid_attrs:
+            if server.object_id:
+                action = 'edited'
+                created = []
+                changed = [server._serialize_changes()]
+            else:
+                action = 'created'
+                created = [server]
+                changed = []
+
             try:
-                if server.object_id:
-                    action = 'edited'
-                    server.commit(user=request.user)
-                else:
-                    action = 'created'
-                    commit = QueryCommitter([server], user=request.user)()
-                    server = commit.created[0]
-            except CommitValidationFailed as e:
-                invalid_attrs.update([attr for obj_id, attr in e.violations])
+                commit = QueryCommitter(created, changed, user=request.user)()
             except (PermissionDenied, ValidationError, IntegrityError) as err:
                 messages.error(request, str(err))
             else:
                 messages.success(request, 'Server successfully ' + action)
+                if action == 'created':
+                    server = commit.created[0]
+
                 url = '{0}?object_id={1}'.format(
                     reverse('servershell_inspect'),
                     server.object_id,

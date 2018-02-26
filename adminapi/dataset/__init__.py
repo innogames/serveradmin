@@ -295,6 +295,10 @@ class DatasetObject(dict):
         changes = {'object_id': self['object_id']}
         for key, old_value in self.old_values.items():
             new_value = self[key]
+
+            if old_value == new_value:
+                continue
+
             if isinstance(old_value, MultiAttr):
                 action = 'multi'
             else:
