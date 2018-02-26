@@ -128,7 +128,7 @@ class QueryMaterializer:
                 for sa in ServerAttribute.get_model(key).objects.filter(
                     server__in=self._server_attributes.keys(),
                     _attribute__in=attributes,
-                ):
+                ).select_related('server'):
                     self._add_attribute_value(
                         sa.server, sa.attribute, sa.get_value()
                     )
