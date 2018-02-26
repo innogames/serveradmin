@@ -123,6 +123,10 @@ TEMPLATES = [
     },
 ]
 
+MENU_TEMPLATES = [
+    'resources/menu.html',
+]
+
 MIDDLEWARE_CLASSES = [
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
