@@ -12,7 +12,7 @@ setup(
         'adminapi.dataset',     # XXX Deprecated
         'adminapi.utils',       # XXX Deprecated
     ],
-    version='1.1',
+    version='1.2',
     long_description='Serveradmin client library',
     entry_points={
         'console_scripts': [
