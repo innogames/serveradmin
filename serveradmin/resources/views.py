@@ -47,7 +47,7 @@ def index(request):
             host_query = Query(query_args, ['hostname', 'xen_host'])
             for host in host_query:
                 matched_hostnames.append(host['hostname'])
-                if 'xen_host' in host:
+                if host.get('xen_host'):
                     hostnames.append(host['xen_host'])
                 else:
                     # If it's not guest, it might be a server, so we add it
