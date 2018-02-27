@@ -56,6 +56,7 @@ class QueryCommitter:
             self._fetch()
             self._validate()
             self._apply()
+            self._log_changes()
 
         if self.warnings:
             warnings = '\n'.join(self.warnings)
@@ -156,7 +157,7 @@ class QueryCommitter:
                 attributes_json=attributes_json,
             )
 
-        for obj in self._objects_created:
+        for obj in self._created_objects.values():
             attributes_json = json.dumps(
                 obj, default=json_encode_extra
             )
