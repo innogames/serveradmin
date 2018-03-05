@@ -70,7 +70,11 @@ class QueryMaterializer:
 
             servers = sorted(servers, key=order_by_key)
 
-        return (DatasetObject(self._get_attributes(s)) for s in servers)
+        join_results = self._get_join_results()
+        return (
+            DatasetObject(self._get_attributes(s, join_results))
+            for s in servers
+        )
 
     def _select_attributes(self, servertypes):
         self._attributes_by_type = defaultdict(set)
@@ -216,10 +220,9 @@ class QueryMaterializer:
             return 0, tuple(_sort_key(v) for v in value)
         return 0, _sort_key(value)
 
-    def _get_attributes(self, server):   # NOQA: C901
+    def _get_attributes(self, server, join_results):   # NOQA: C901
         yield 'object_id', server.pk
         server_attributes = self._server_attributes[server]
-        join_results = self._get_join_results()
         for attribute, value in server_attributes.items():
             if self._attributes is None or attribute in self._attributes:
                 if attribute.pk in ('project', 'servertype'):
