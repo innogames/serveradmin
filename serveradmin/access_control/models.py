@@ -7,10 +7,7 @@ from serveradmin.apps.models import Application
 
 class AccessControlGroup(Model):
     name = CharField(max_length=80, unique=True)
-    create_server_query = CharField(max_length=1000)
-    edit_server_query = CharField(max_length=1000)
-    commit_server_query = CharField(max_length=1000)
-    delete_server_query = CharField(max_length=1000)
+    query = CharField(max_length=1000)
     members = ManyToManyField(
         User,
         blank=True,
@@ -29,18 +26,15 @@ class AccessControlGroup(Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._filters = {}
+        self._filters = None
 
     def __str__(self):
         return self.name
 
-    def get_filters(self, action):
-        if action not in self._filters:
-            query = getattr(self, action + '_server_query')
-            self._filters[action] = parse_query(query)
-        return self._filters[action]
+    def get_filters(self):
+        if self._filters is None:
+            self._filters = parse_query(self.query)
+        return self._filters
 
-    def match_server(self, action, server):
-        return all(
-            f.matches(server[a]) for a, f in self.get_filters(action).items()
-        )
+    def match_server(self, server):
+        return all(f.matches(server[a]) for a, f in self.get_filters().items())

@@ -1,5 +1,6 @@
 import json
 from ipaddress import ip_network, ip_interface
+from itertools import chain
 
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
@@ -56,6 +57,7 @@ class QueryCommitter:
             self._fetch()
             self._validate()
             self._apply()
+            self._access_control()
             self._log_changes()
 
         if self.warnings:
@@ -80,7 +82,6 @@ class QueryCommitter:
             )
         }
         self._changed_objects = _materialize_servers(self._changed_servers)
-        access_control('edit', self._changed_objects, self.user, self.app)
 
         self._deleted_servers = {
             s.server_id: s for s in (
@@ -89,7 +90,6 @@ class QueryCommitter:
             )
         }
         self._deleted_objects = _materialize_servers(self._deleted_servers)
-        access_control('delete', self._deleted_objects, self.user, self.app)
 
     def _validate(self):
         servertype_attributes = _get_servertype_attributes(
@@ -178,7 +178,6 @@ class QueryCommitter:
         # Re-fetch servers before invoking hook, otherwise the hook will
         # receive incomplete data.
         self._changed_objects = _materialize_servers(self._changed_servers)
-        access_control('commit', self._changed_objects, self.user, self.app)
         try:
             on_server_attribute_changed.invoke(
                 commit=self,
@@ -270,12 +269,6 @@ class QueryCommitter:
             created_server['project'] = project.pk
             created_server['intern_ip'] = intern_ip
 
-            access_control(
-                'create',
-                {server.server_id: created_server},
-                self.user,
-                self.app,
-            )
             self._created_servers[server.server_id] = server
 
         self._created_objects = _materialize_servers(self._created_servers)
@@ -330,6 +323,33 @@ class QueryCommitter:
                     server.add_attribute(attribute, change['new'])
                 else:
                     server_attribute.save_value(change['new'])
+
+    def _access_control(self):
+        entities = list()
+        if not self.user.is_superuser:
+            entities.append((
+                'user',
+                self.user,
+                list(self.user.access_control_groups.all()),
+            ))
+        if self.app and not self.app.superuser:
+            entities.append((
+                'application',
+                self.app,
+                list(self.app.access_control_groups.all()),
+            ))
+
+        for server in chain(
+            self._created_objects.values(),
+            self._changed_objects.values(),
+            self._deleted_objects.values(),
+        ):
+            for entity_class, entity_name, groups in entities:
+                if not any(g.match_server(server) for g in groups):
+                    raise PermissionDenied(
+                        'Insufficient access rights to server "{}" for {} "{}"'
+                        .format(server['hostname'], entity_class, entity_name)
+                    )
 
 
 class CommitError(ValidationError):
@@ -393,40 +413,6 @@ class _ServerAttributedChangedHook(HookSlot):
 on_server_attribute_changed = _ServerAttributedChangedHook(
     'commit_server_changed', servers=list, changed=list, commit=QueryCommitter
 )
-
-
-def access_control(action, servers, user, app):
-    entities = list()
-    if not user.is_superuser:
-        entities.append((
-            'user',
-            user,
-            list(user.access_control_groups.all()),
-        ))
-    if app and not app.superuser:
-        entities.append((
-            'application',
-            app,
-            list(app.access_control_groups.all()),
-        ))
-
-    for server in servers.values():
-        matched_groups = set()
-        for entity_class, entity_name, entity_groups in entities:
-            for group in entity_groups:
-                if group in matched_groups:
-                    break
-                if group.match_server(action, server):
-                    matched_groups.add(group)
-                    break
-            else:
-                raise PermissionDenied(
-                    'Insufficient access rights on {} of server "{}" '
-                    'for {} "{}"'
-                    .format(
-                        action, server['hostname'], entity_class, entity_name
-                    )
-                )
 
 
 def _materialize_servers(servers):
