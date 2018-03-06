@@ -215,12 +215,15 @@ def _containment_filter_template(attribute, filt):
 
 
 def _value_to_sql(attribute, value):
-    # Validations of special relation attributes
+    # Validations of relation attributes
     if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
         try:
             return str(Server.objects.get(hostname=value).server_id)
         except Server.DoesNotExist as error:
-            raise FilterValueError(str(error))
+            raise FilterValueError(
+                'No matching objects with "{}" for attribute "{}"'
+                .format(value, attribute)
+            )
 
     # TODO: Better return errors for mismatching datatypes than casting
     if attribute.type == 'number':
