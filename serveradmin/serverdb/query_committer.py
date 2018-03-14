@@ -21,7 +21,10 @@ from serveradmin.serverdb.models import (
     ChangeDelete,
     Project,
 )
-from serveradmin.serverdb.query_materializer import QueryMaterializer
+from serveradmin.serverdb.query_materializer import (
+    QueryMaterializer,
+    get_default_attribute_values,
+)
 
 pre_commit = Signal()
 
@@ -56,9 +59,9 @@ class QueryCommitter:
         with transaction.atomic():
             self._fetch()
             self._validate()
-            self._apply()
-            self._access_control()
-            self._log_changes()
+            created_objects, changed_objects = self._apply()
+            self._access_control(created_objects, changed_objects)
+            self._log_changes(created_objects)
 
         if self.warnings:
             warnings = '\n'.join(self.warnings)
@@ -67,8 +70,8 @@ class QueryCommitter:
             )
 
         return DatasetCommit(
-            list(self._created_objects.values()),
-            list(self._changed_objects.values()),
+            list(created_objects.values()),
+            list(changed_objects.values()),
             list(self._deleted_objects.values()),
         )
 
@@ -139,7 +142,7 @@ class QueryCommitter:
         if newer:
             raise CommitNewerData('Newer data available', newer)
 
-    def _log_changes(self):
+    def _log_changes(self, created_objects):
         commit = ChangeCommit.objects.create(app=self.app, user=self.user)
 
         for updates in self.changed:
@@ -157,7 +160,7 @@ class QueryCommitter:
                 attributes_json=attributes_json,
             )
 
-        for obj in self._created_objects.values():
+        for obj in created_objects.values():
             attributes_json = json.dumps(
                 obj, default=json_encode_extra
             )
@@ -171,23 +174,25 @@ class QueryCommitter:
         # Changes should be applied in order to prevent integrity errors.
         self._delete_attributes()
         self._delete_servers()
-        self._create_servers()
+        created_objects = self._create_servers()
         self._update_servers()
         self._upsert_attributes()
 
         # Re-fetch servers before invoking hook, otherwise the hook will
         # receive incomplete data.
-        self._changed_objects = _materialize_servers(self._changed_servers)
+        changed_objects = _materialize_servers(self._changed_servers)
         try:
             on_server_attribute_changed.invoke(
                 commit=self,
-                servers=list(self._changed_objects.values()),
+                servers=list(changed_objects.values()),
                 changed=self.changed,
             )
         except CommitIncomplete as error:
             self.warnings.append(
                 'Commit hook failed:\n{}'.format(' '.join(error.messages))
             )
+
+        return created_objects, changed_objects
 
     def _delete_attributes(self):
         # We first have to delete all of the hostname attributes
@@ -271,7 +276,7 @@ class QueryCommitter:
 
             self._created_servers[server.server_id] = server
 
-        self._created_objects = _materialize_servers(self._created_servers)
+        return _materialize_servers(self._created_servers)
 
     def _update_servers(self):
         changed = set()
@@ -324,7 +329,7 @@ class QueryCommitter:
                 else:
                     server_attribute.save_value(change['new'])
 
-    def _access_control(self):
+    def _access_control(self, created_objects, changed_objects):
         entities = list()
         if not self.user.is_superuser:
             entities.append((
@@ -340,16 +345,38 @@ class QueryCommitter:
             ))
 
         for server in chain(
-            self._created_objects.values(),
-            self._changed_objects.values(),
+            created_objects.values(),
+            changed_objects.values(),
             self._deleted_objects.values(),
         ):
             for entity_class, entity_name, groups in entities:
-                if not any(g.match_server(server) for g in groups):
+                if not any(self._can_access_server(server, g) for g in groups):
                     raise PermissionDenied(
                         'Insufficient access rights to server "{}" for {} "{}"'
                         .format(server['hostname'], entity_class, entity_name)
                     )
+
+    def _can_access_server(self, new_object, acl):
+        if not all(
+            f.matches(new_object[a])
+            for a, f in acl.get_filters().items()
+        ):
+            return False
+
+        if new_object['object_id'] in self._changed_objects:
+            old_object = self._changed_objects[new_object['object_id']]
+        else:
+            old_object = get_default_attribute_values(new_object['servertype'])
+
+        attribute_ids = {a.pk for a in acl.attributes.all()}
+        if not all(
+            a in attribute_ids or v == old_object[a] or
+            Attribute.objects.get(pk=a).readonly
+            for a, v in new_object.items()
+        ):
+            return False
+
+        return True
 
 
 class CommitError(ValidationError):

@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 
 from adminapi.parse import parse_query
 from serveradmin.apps.models import Application
+from serveradmin.serverdb.models import Attribute
 
 
 class AccessControlGroup(Model):
@@ -20,6 +21,12 @@ class AccessControlGroup(Model):
         limit_choices_to={'disabled': False, 'superuser': False},
         related_name='access_control_groups',
     )
+    attributes = ManyToManyField(
+        Attribute,
+        blank=True,
+        limit_choices_to={'readonly': False},
+        related_name='access_control_groups',
+    )
 
     class Meta:
         db_table = 'access_control_group'
@@ -35,6 +42,3 @@ class AccessControlGroup(Model):
         if self._filters is None:
             self._filters = parse_query(self.query)
         return self._filters
-
-    def match_server(self, server):
-        return all(f.matches(server[a]) for a, f in self.get_filters().items())
