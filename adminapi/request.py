@@ -106,7 +106,7 @@ def _try_request(request, retry=False):
             if retry:
                 return None
         elif error.code >= 400:
-            content_type = error.info().getheader('Content-Type')
+            content_type = error.info()['Content-Type']
             if content_type == 'application/x-json':
                 payload = json.loads(error.read().decode())
                 message = payload['error']['message']
