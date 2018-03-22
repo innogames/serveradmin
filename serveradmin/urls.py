@@ -18,8 +18,6 @@ urlpatterns = [
     url(r'^logout', 'django.contrib.auth.views.logout_then_login',
         name='logout'),
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^failoverlogin$', 'serveradmin.common.views.failoverlogin'),
-    url(r'^check$', 'serveradmin.common.views.check'),
 ]
 
 for app in settings.INSTALLED_APPS:
