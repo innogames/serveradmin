@@ -6,8 +6,8 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth.models import update_last_login
 from django.contrib.auth.signals import user_logged_in
+from django.contrib.auth.views import logout_then_login
 from django.shortcuts import redirect
-
 
 user_logged_in.disconnect(update_last_login)
 
@@ -15,8 +15,7 @@ admin.autodiscover()
 
 urlpatterns = [
     url(r'^$', lambda req: redirect('servershell_index'), name='home'),
-    url(r'^logout', 'django.contrib.auth.views.logout_then_login',
-        name='logout'),
+    url(r'^logout', logout_then_login, name='logout'),
     url(r'^admin/', include(admin.site.urls)),
 ]
 

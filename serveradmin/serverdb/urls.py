@@ -1,12 +1,13 @@
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 
-urlpatterns = patterns(
-    'serveradmin.serverdb.views',
-    url(r'^changes$', 'changes', name='serverdb_changes'),
+from serveradmin.serverdb.views import changes, restore_deleted, history
+
+urlpatterns = [
+    url(r'^changes$', changes, name='serverdb_changes'),
     url(
         r'^changes_restore/(\d+)$',
-        'restore_deleted',
+        restore_deleted,
         name='serverdb_restore_deleted',
     ),
-    url(r'^history$', 'history', name='serverdb_history'),
-)
+    url(r'^history$', history, name='serverdb_history'),
+]

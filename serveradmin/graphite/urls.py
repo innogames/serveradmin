@@ -1,7 +1,8 @@
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 
-urlpatterns = patterns(
-    'serveradmin.graphite.views',
-    url(r'^graph_table$', 'graph_table', name='graphite_graph_table'),
-    url(r'^graph', 'graph', name='graphite_graph'),
-)
+from serveradmin.graphite.views import graph, graph_table
+
+urlpatterns = [
+    url(r'^graph_table$', graph_table, name='graphite_graph_table'),
+    url(r'^graph', graph, name='graphite_graph'),
+]
