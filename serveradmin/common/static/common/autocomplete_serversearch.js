@@ -137,7 +137,8 @@ function autocomplete_shell_search(term, autocomplete_cb)
 
         // Add filter functions to autocomplete
         if (prev_token == 'key' && parsed_args[plen -1]['token'] == 'str' && call_depth == 0) {
-            for (fn_name in filter_functions) {
+            for (var i = 0; i < filter_functions.length; i++) {
+                var fn_name = filter_functions[i];
                 var fn = filter_functions[fn_name];
                 var filter_name = parsed_args[plen - 1]['value'].toLowerCase();
                 var prefix = term.substring(0, term.length - filter_name.length);
@@ -149,7 +150,8 @@ function autocomplete_shell_search(term, autocomplete_cb)
                 }
             }
         } else if (parsed_args[plen -1]['token'] == 'key') {
-            for (fn_name in filter_functions) {
+            for (var i = 0; i < filter_functions.length; i++) {
+                var fn_name = filter_functions[i];
                 autocomplete.push({
                     'label': 'Filter: ' + fn_name,
                     'value': term + fn_name + '('
