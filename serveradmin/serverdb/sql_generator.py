@@ -1,8 +1,6 @@
 # XXX: It is terrible to generate SQL this way.  We should make this use
 # parameterized queries at least.
 
-from decimal import Decimal
-
 from adminapi.filters import (
     All,
     Any,
@@ -22,7 +20,7 @@ from adminapi.filters import (
     StartsWith,
     Not,
 )
-from serveradmin.serverdb.models import Server, ServerAttribute
+from serveradmin.serverdb.models import ServerAttribute
 
 
 def get_server_query(servertypes, attribute_filters):
@@ -75,37 +73,31 @@ def _get_sql_condition(servertypes, attribute, filt):
 
         # TODO: Better return errors for mismatching datatypes than casting
         negate = not filt.value or filt.value == 'false'
-
     elif isinstance(filt, Regexp):
-        value = _raw_sql_escape(filt.value)
-        if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
-            template = (
-                '{{0}} IN ('
-                '   SELECT server_id'
-                '   FROM server'
-                '   WHERE hostname ~ E{0}'
-                ')'
-                .format(value)
-            )
-        else:
-            template = '{{0}}::text ~ E{0}'.format(value)
-
+        template = '{0}::text ~ E' + _raw_sql_escape(filt.value)
     elif isinstance(filt, (
         Comparison,
         GreaterThanOrEquals,
         LessThanOrEquals,
     )):
         template = _basic_comparison_filter_template(attribute, filt)
-
     elif isinstance(filt, Overlaps):
         template = _containment_filter_template(attribute, filt)
-
     elif isinstance(filt, Empty):
         negate = True
         template = '{0} IS NOT NULL'
-
     else:
-        template = '{0} = ' + _value_to_sql(attribute, filt.value)
+        template = '{0} = ' + _raw_sql_escape(filt.value)
+
+    if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
+        template = (
+            '{{0}} IN ('
+            '   SELECT server_id'
+            '   FROM server'
+            '   WHERE {}'
+            ')'
+            .format(template.format('hostname'))
+        )
 
     return (
         ('NOT ' if negate else '') +
@@ -143,7 +135,7 @@ def _logical_filter_sql_condition(servertypes, attribute, filt):
         else:
             template = _condition_sql(
                 servertypes, attribute, '{{0}} IN ({0})'.format(', '.join(
-                    _value_to_sql(attribute, v.value) for v in simple_values
+                    _raw_sql_escape(v.value) for v in simple_values
                 ))
             )
         templates.append(template)
@@ -152,11 +144,6 @@ def _logical_filter_sql_condition(servertypes, attribute, filt):
 
 
 def _basic_comparison_filter_template(attribute, filt):
-    if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
-        raise FilterValueError(
-            'Cannot compare hostname attribute "{}"'.format(attribute)
-        )
-
     if isinstance(filt, Comparison):
         operator = filt.comparator
     elif isinstance(filt, GreaterThan):
@@ -169,7 +156,7 @@ def _basic_comparison_filter_template(attribute, filt):
         operator = '<='
 
     return '{{}} {} {}'.format(
-        operator, _value_to_sql(attribute, filt.value)
+        operator, _raw_sql_escape(filt.value)
     )
 
 
@@ -211,25 +198,7 @@ def _containment_filter_template(attribute, filt):
             .format(type(filt).__name__, attribute)
         )
 
-    return template.format(_value_to_sql(attribute, value))
-
-
-def _value_to_sql(attribute, value):
-    # Validations of relation attributes
-    if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
-        try:
-            return str(Server.objects.get(hostname=value).server_id)
-        except Server.DoesNotExist as error:
-            raise FilterValueError(
-                'No matching objects with "{}" for attribute "{}"'
-                .format(value, attribute)
-            )
-
-    # TODO: Better return errors for mismatching datatypes than casting
-    if attribute.type == 'number':
-        return str(Decimal(value))
-
-    return _raw_sql_escape(value)
+    return template.format(_raw_sql_escape(value))
 
 
 def _condition_sql(servertypes, attribute, template):   # NOQA: C901
