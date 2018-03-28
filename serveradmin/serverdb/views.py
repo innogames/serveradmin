@@ -83,11 +83,12 @@ def restore_deleted(request, change_commit):
 
     server_obj = deleted.attributes
     try:
-        QueryCommitter([server_obj], user=request.user)
+        QueryCommitter([server_obj], user=request.user)()
     except CommitError as error:
         messages.error(request, str(error))
     else:
         messages.success(request, 'Server restored.')
+
     return redirect(
         reverse('serverdb_history') +
         '?server_id=' + str(server_obj['object_id'])
