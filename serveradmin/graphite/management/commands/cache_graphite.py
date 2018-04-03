@@ -85,13 +85,13 @@ class Command(NoArgsCommand):
             if value is None:
                 continue
 
-            # Django can be setted up to encapsulate thing into database
-            # transactions.  We don't want that behavior in here, even when
-            # it is setted up like this.  This process takes a long time.
+            # Django can be set up to implicitly execute commands in database
+            # transactions.  We don't want that behavior in here even when
+            # it is set up like this.  This process takes a long time.
             # We want the values to be immediately available to the users.
             with transaction.atomic():
                 ServerNumberAttribute.objects.update_or_create(
-                    _server=server,
+                    server_id=server.object_id,
                     _attribute=numeric.attribute,
                     defaults={'value': value},
                 )
