@@ -89,6 +89,10 @@ def _get_sql_condition(servertypes, attribute, filt):
     else:
         template = '{0} = ' + _raw_sql_escape(filt.value)
 
+    return _covered_sql_condition(servertypes, attribute, template, negate)
+
+
+def _covered_sql_condition(servertypes, attribute, template, negate=False):
     if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
         template = (
             '{{0}} IN ('
@@ -133,7 +137,7 @@ def _logical_filter_sql_condition(servertypes, attribute, filt):
                 servertypes, attribute, simple_values[0]
             )
         else:
-            template = _condition_sql(
+            template = _covered_sql_condition(
                 servertypes, attribute, '{{0}} IN ({0})'.format(', '.join(
                     _raw_sql_escape(v.value) for v in simple_values
                 ))
