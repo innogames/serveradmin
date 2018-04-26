@@ -39,7 +39,6 @@ NUM_SERVERS_DEFAULT = 100
 
 
 @login_required
-@ensure_csrf_cookie
 def index(request):
     attributes = Attribute.objects.all()
     attribute_groups = {}
