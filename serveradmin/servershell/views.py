@@ -340,7 +340,7 @@ def new_server(request):
                 {'hostname': request.GET['clone_from']},
                 [
                     a.pk for a in Attribute.objects.all()
-                    if a.special or a.can_be_materialized()
+                    if a.special or a.clone
                 ]
             ).get()
         except ValidationError:
