@@ -14,10 +14,9 @@ from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
 from serveradmin.api.decorators import api_view
 from serveradmin.api.utils import build_function_description
 from serveradmin.serverdb.query_committer import QueryCommitter
-from serveradmin.serverdb.query_filterer import QueryFilterer
+from serveradmin.serverdb.query_executer import execute_query
 from serveradmin.serverdb.query_materializer import (
-    QueryMaterializer,
-    get_default_attribute_values,
+    get_default_attribute_values
 )
 
 
@@ -74,12 +73,9 @@ def dataset_query(request, app, data):
         restrict = data.get('restrict')
         order_by = data.get('order_by')
 
-        filterer = QueryFilterer(filters)
-        materializer = QueryMaterializer(filterer, restrict, order_by)
-
         return {
             'status': 'success',
-            'result': list(materializer),
+            'result': execute_query(filters, restrict, order_by),
         }
     except (FilterValueError, ValidationError) as error:
         return {

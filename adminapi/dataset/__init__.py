@@ -52,7 +52,7 @@ class BaseQuery(object):
 
     def _get_results(self):
         if self._results is None:
-            self._results = list(self._fetch_results())
+            self._results = self._fetch_results()
         return self._results
 
     def _fetch_results(self):
@@ -224,7 +224,7 @@ class Query(BaseQuery):
         response = send_request(QUERY_ENDPOINT, post_params=request_data)
         if response['status'] == 'error':
             _handle_exception(response)
-        return (_format_obj(s) for s in response['result'])
+        return [_format_obj(s) for s in response['result']]
 
 
 class DatasetObject(dict):
