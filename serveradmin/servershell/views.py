@@ -334,10 +334,10 @@ def get_values(request):
 
 @login_required     # NOQA: C901
 def new_server(request):
-    if 'clone_from' in request.REQUEST:
+    if 'clone_from' in request.GET:
         try:
             clone_from = Query(
-                {'hostname': request.REQUEST['clone_from']},
+                {'hostname': request.GET['clone_from']},
                 [
                     a.pk for a in Attribute.objects.all()
                     if a.special or a.can_be_materialized()
