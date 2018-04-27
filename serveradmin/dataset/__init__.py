@@ -1,8 +1,7 @@
 from adminapi.dataset import BaseQuery, DatasetObject
 from serveradmin.serverdb.query_committer import QueryCommitter
-from serveradmin.serverdb.query_filterer import QueryFilterer
+from serveradmin.serverdb.query_executer import execute_query
 from serveradmin.serverdb.query_materializer import (
-    QueryMaterializer,
     get_default_attribute_values,
 )
 
@@ -18,8 +17,7 @@ class Query(BaseQuery):
         self._confirm_changes()
 
     def _fetch_results(self):
-        filterer = QueryFilterer(self._filters)
-        return QueryMaterializer(filterer, self._restrict, self._order_by)
+        return execute_query(self._filters, self._restrict, self._order_by)
 
 
 # XXX: Deprecated
