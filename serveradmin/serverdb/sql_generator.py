@@ -1,6 +1,9 @@
 # XXX: It is terrible to generate SQL this way.  We should make this use
 # parameterized queries at least.
 
+# XXX: The code in this module is almost randomly split into functions.  Do
+# not try to guess what they would do.
+
 from adminapi.filters import (
     All,
     Any,
@@ -20,7 +23,11 @@ from adminapi.filters import (
     StartsWith,
     Not,
 )
-from serveradmin.serverdb.models import ServerAttribute
+from serveradmin.serverdb.models import (
+    Server,
+    ServerAttribute,
+    ServerHostnameAttribute,
+)
 
 
 def get_server_query(servertypes, attribute_filters):
@@ -205,7 +212,7 @@ def _containment_filter_template(attribute, filt):
     return template.format(_raw_sql_escape(value))
 
 
-def _condition_sql(servertypes, attribute, template):   # NOQA: C901
+def _condition_sql(servertypes, attribute, template):
     if attribute.special:
         field = attribute.special.field
         if field.startswith('_'):
@@ -214,7 +221,7 @@ def _condition_sql(servertypes, attribute, template):   # NOQA: C901
         return template.format('server.' + field)
 
     if attribute.type == 'supernet':
-        return _exists_sql('server', 'sub', (
+        return _exists_sql(Server, 'sub', (
             "sub.servertype_id = '{0}'".format(
                 attribute.target_servertype.pk
             ),
@@ -222,10 +229,8 @@ def _condition_sql(servertypes, attribute, template):   # NOQA: C901
             template.format('sub.server_id'),
         ))
 
-    rel_table = ServerAttribute.get_model('hostname')._meta.db_table
-
     if attribute.type == 'reverse_hostname':
-        return _exists_sql(rel_table, 'sub', (
+        return _exists_sql(ServerHostnameAttribute, 'sub', (
             "sub.attribute_id = '{0}'".format(
                 attribute.reversed_attribute.pk
             ),
@@ -233,8 +238,12 @@ def _condition_sql(servertypes, attribute, template):   # NOQA: C901
             template.format('sub.server_id'),
         ))
 
-    # We must have handled the virtual attribute types.
-    assert attribute.can_be_materialized()
+    return _real_condition_sql(servertypes, attribute, template)
+
+
+def _real_condition_sql(servertypes, attribute, template):
+    model = ServerAttribute.get_model(attribute.type)
+    assert model is not None
 
     # We start with the condition for the attributes the server has on
     # its own.  Then, add the conditions for all possible relations.  They
@@ -258,7 +267,7 @@ def _condition_sql(servertypes, attribute, template):   # NOQA: C901
         )
         assert related_via_servertypes
         if related_via_attribute.type == 'supernet':
-            relation_condition = _exists_sql('server', 'rel1', (
+            relation_condition = _exists_sql(Server, 'rel1', (
                 "rel1.servertype_id = '{0}'".format(
                     related_via_attribute.target_servertype.pk
                 ),
@@ -266,7 +275,7 @@ def _condition_sql(servertypes, attribute, template):   # NOQA: C901
                 'rel1.server_id = sub.server_id',
             ))
         elif related_via_attribute.type == 'reverse_hostname':
-            relation_condition = _exists_sql(rel_table, 'rel1', (
+            relation_condition = _exists_sql(ServerHostnameAttribute, 'rel1', (
                 "rel1.attribute_id = '{0}'".format(
                     related_via_attribute.reversed_attribute.pk
                 ),
@@ -275,7 +284,7 @@ def _condition_sql(servertypes, attribute, template):   # NOQA: C901
             ))
         else:
             assert related_via_attribute.type == 'hostname'
-            relation_condition = _exists_sql(rel_table, 'rel1', (
+            relation_condition = _exists_sql(ServerHostnameAttribute, 'rel1', (
                 "rel1.attribute_id = '{0}'".format(
                     related_via_attribute.pk
                 ),
@@ -291,7 +300,6 @@ def _condition_sql(servertypes, attribute, template):   # NOQA: C901
         )
     assert relation_conditions
 
-    table = ServerAttribute.get_model(attribute.type)._meta.db_table
     if len(relation_conditions) == 1:
         mixed_relation_condition = relation_conditions[0][0]
     else:
@@ -303,16 +311,16 @@ def _condition_sql(servertypes, attribute, template):   # NOQA: C901
             for relation_condition, servertypes in relation_conditions
         ))
 
-    return _exists_sql(table, 'sub', (
+    return _exists_sql(model, 'sub', (
         mixed_relation_condition,
         "sub.attribute_id = '{0}'".format(attribute.pk),
         template.format('sub.value'),
     ))
 
 
-def _exists_sql(table, alias, conditions):
+def _exists_sql(model, alias, conditions):
     return 'EXISTS (SELECT 1 FROM {0} AS {1} WHERE {2})'.format(
-        table, alias, ' AND '.join(c for c in conditions if c)
+        model._meta.db_table, alias, ' AND '.join(c for c in conditions if c)
     )
 
 
