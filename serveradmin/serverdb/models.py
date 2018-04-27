@@ -279,6 +279,7 @@ class Attribute(LookupModel):
         '_reversed_attribute_id'
     )
     target_servertype = Servertype.foreign_key_lookup('_target_servertype_id')
+    clone = models.BooleanField(null=False, default=False)
 
     class Meta:
         app_label = 'serverdb'
@@ -290,9 +291,6 @@ class Attribute(LookupModel):
         return self.servertype_attributes.filter(
             _related_via_attribute__isnull=False
         )
-
-    def can_be_materialized(self):
-        return bool(ServerAttribute.get_model(self.type))
 
     def initializer(self):
         if self.multi:
