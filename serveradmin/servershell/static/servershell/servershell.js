@@ -1030,7 +1030,6 @@ $(function() {
         $('#shell_servers').empty();
         search['page'] = 1;
         ev.stopPropagation();
-        console.log(search);
         search['term'] = $('#shell_search').val();
         refresh_servers(function() {
             render_server_table();
