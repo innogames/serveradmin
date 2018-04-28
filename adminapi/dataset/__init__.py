@@ -217,7 +217,7 @@ class Query(BaseQuery):
     def _fetch_results(self):
         request_data = {'filters': self._filters}
         if self._restrict is not None:
-            request_data['restrict'] = self._restrict
+            request_data['restrict'] = list(self._restrict) + ['object_id']
         if self._order_by is not None:
             request_data['order_by'] = self._order_by
 
