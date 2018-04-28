@@ -18,7 +18,7 @@ class DatasetError(Exception):
 
 
 class BaseQuery(object):
-    def __init__(self, filters=None, restrict=None, order_by=None):
+    def __init__(self, filters=None, restrict=[], order_by=None):
         if filters is None:
             self._filters = None
             self._results = []
@@ -502,7 +502,7 @@ def _handle_exception(result):
 
 # XXX: Deprecated, use Query() instead
 def query(**kwargs):
-    return Query(kwargs)
+    return Query(kwargs, None)
 
 
 # XXX: Deprecated, use Query().new_object() instead

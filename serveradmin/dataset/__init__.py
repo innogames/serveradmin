@@ -24,4 +24,4 @@ class Query(BaseQuery):
 
 # XXX: Deprecated
 def query(**kwargs):
-    return Query(kwargs)
+    return Query(kwargs, None)
