@@ -76,13 +76,13 @@ class TestCommit(TransactionTestCase):
     fixtures = ['test_dataset.json']
 
     def test_commit_query(self):
-        q = Query({'hostname': 'test1'})
+        q = Query({'hostname': 'test1'}, ['os', 'intern_ip'])
         s = q.get()
         s['os'] = 'wheezy'
         s['intern_ip'] = IPv4Address('10.16.2.1')
         q.commit(user=User.objects.first())
 
-        s = Query({'hostname': 'test1'}).get()
+        s = Query({'hostname': 'test1'}, ['os', 'intern_ip']).get()
         self.assertEqual(s['os'], 'wheezy')
         self.assertEqual(s['intern_ip'], IPv4Address('10.16.2.1'))
 
