@@ -163,6 +163,9 @@ INSTALLED_APPS = [
     'serveradmin.servershell',
 ]
 
+SESSION_ENGINE = 'django.contrib.sessions.backends.file'
+SESSION_FILE_PATH = '/run/serveradmin'
+
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
 # the site admins on every HTTP 500 error when DEBUG=False.
