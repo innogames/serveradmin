@@ -18,7 +18,7 @@ class DatasetError(Exception):
 
 
 class BaseQuery(object):
-    def __init__(self, filters=None, restrict=[], order_by=None):
+    def __init__(self, filters=None, restrict=['hostname'], order_by=None):
         if filters is None:
             self._filters = None
             self._results = []
