@@ -1,4 +1,4 @@
-# Django settings for Serveradmin project.
+# Django settings for Serveradmin project
 
 import os
 
@@ -75,19 +75,19 @@ STATIC_ROOT = os.path.join(ROOT_DIR, '_static')
 STATIC_URL = '/static/'
 
 # Additional locations of static files
-STATICFILES_DIRS = (
+STATICFILES_DIRS = [
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-)
+]
 
 # List of finder classes that know how to find static files in
 # various locations.
-STATICFILES_FINDERS = (
+STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     # 'django.contrib.staticfiles.finders.DefaultStorageFinder',
-)
+]
 
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = 'SET-RANDOM-SECRET-KEY'
@@ -143,25 +143,25 @@ ROOT_URLCONF = 'serveradmin.urls'
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'serveradmin.wsgi.application'
 
-INSTALLED_APPS = (
+INSTALLED_APPS = [
+    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
+    'django.contrib.messages',
     'django.contrib.sessions',
     'django.contrib.sites',
-    'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.admin',
-    'netfields',
     'markup_deprecated',
+    'netfields',
     'serveradmin.access_control',
-    'serveradmin.common',
-    'serveradmin.servershell',
-    'serveradmin.apps',
-    'serveradmin.serverdb',
     'serveradmin.api',
+    'serveradmin.apps',
+    'serveradmin.common',
     'serveradmin.graphite',
     'serveradmin.resources',
-)
+    'serveradmin.serverdb',
+    'serveradmin.servershell',
+]
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
