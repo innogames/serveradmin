@@ -1,6 +1,6 @@
 from ipaddress import IPv4Address
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import TransactionTestCase
 
 from adminapi.filters import (
     Any,
@@ -11,7 +11,7 @@ from adminapi.filters import (
 from serveradmin.dataset import Query
 
 
-class TestQuery(TestCase):
+class TestQuery(TransactionTestCase):
     fixtures = ['test_dataset.json']
 
     def test_query_hostname(self):
@@ -72,7 +72,7 @@ class TestQuery(TestCase):
         self.assertEqual(len(q), 4)
 
 
-class TestCommit(TestCase):
+class TestCommit(TransactionTestCase):
     fixtures = ['test_dataset.json']
 
     def test_commit_query(self):
