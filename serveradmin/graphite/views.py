@@ -33,7 +33,9 @@ def graph_table(request):
     servers = {}
     for hostname in hostnames:
         try:
-            servers[hostname] = Query({'hostname': hostname}).get()
+            # We need all attributes, because they can be used as variables
+            # inside the graph params.
+            servers[hostname] = Query({'hostname': hostname}, None).get()
         except DatasetError:
             raise Http404
 
