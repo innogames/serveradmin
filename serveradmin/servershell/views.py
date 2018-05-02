@@ -8,7 +8,6 @@ from itertools import islice
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import ensure_csrf_cookie
 from django.core.exceptions import (
     ObjectDoesNotExist, PermissionDenied, ValidationError
 )
