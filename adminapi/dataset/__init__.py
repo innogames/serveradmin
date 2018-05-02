@@ -21,15 +21,17 @@ class BaseQuery(object):
     def __init__(self, filters=None, restrict=['hostname'], order_by=None):
         if filters is None:
             self._filters = None
+            self._restrict = None
+            self._order_by = None
             self._results = []
         else:
             self._filters = {
                 a: f if isinstance(f, BaseFilter) else BaseFilter(f)
                 for a, f in filters.items()
             }
+            self._restrict = restrict
+            self._order_by = order_by
             self._results = None
-        self._restrict = restrict
-        self._order_by = order_by
 
     def __iter__(self):
         return iter(self._get_results())
