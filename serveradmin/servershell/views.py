@@ -164,14 +164,14 @@ def export(request):
 
 @login_required
 def inspect(request):
-    server = Query({'object_id': request.GET['object_id']}).get()
+    server = Query({'object_id': request.GET['object_id']}, None).get()
     return _edit(request, server, template='inspect')
 
 
 @login_required
 def edit(request):
     if 'object_id' in request.GET:
-        server = Query({'object_id': request.GET['object_id']}).get()
+        server = Query({'object_id': request.GET['object_id']}, None).get()
     else:
         server = Query().new_object(request.POST['attr_servertype'])
 
