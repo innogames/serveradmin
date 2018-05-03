@@ -179,9 +179,9 @@ class Relation(models.Model):
         'overview': True,
     })
     sort_order = models.FloatField(default=0)
-    attribute = models.ForeignKey(Attribute, limit_choices_to={
-        'type': ['relation', 'reverse', 'supernet'],
-    })
+    attribute = models.ForeignKey(Attribute, limit_choices_to=models.Q(
+        type__in=['relation', 'reverse', 'supernet']
+    ))
 
     class Meta:
         db_table = 'graphite_relation'

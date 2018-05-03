@@ -390,7 +390,9 @@ class ServertypeAttribute(models.Model):
         db_index=False,
         # It can only be related via a relation (AKA as an hostname
         # attribute).
-        limit_choices_to={'type': ['relation', 'reverse', 'supernet']},
+        limit_choices_to=models.Q(
+            type__in=['relation', 'reverse', 'supernet']
+        ),
     )
     related_via_attribute = Attribute.foreign_key_lookup(
         '_related_via_attribute_id'
