@@ -334,15 +334,20 @@ def get_values(request):
 @login_required     # NOQA: C901
 def new_server(request):
     if 'clone_from' in request.GET:
+        clone_from = request.GET['clone_from']
+    elif 'clone_from' in request.POST:
+        clone_from = request.POST['clone_from']
+    else:
+        clone_from = None
+
+    if clone_from:
         try:
             clone_from = Query(
-                {'hostname': request.GET['clone_from']},
+                {'hostname': clone_from},
                 [a.pk for a in Attribute.objects.all() if a.clone]
             ).get()
         except ValidationError:
             raise Http404
-    else:
-        clone_from = None
 
     if request.method == 'POST':
         form = ServerForm(request.POST)
