@@ -14,7 +14,7 @@ from serveradmin.serverdb.models import (
     Attribute,
     Server,
     ServerAttribute,
-    ServerHostnameAttribute,
+    ServerRelationAttribute,
     ChangeAdd,
     ChangeCommit,
     ChangeUpdate,
@@ -195,12 +195,12 @@ class QueryCommitter:
         return created_objects, changed_objects
 
     def _delete_attributes(self):
-        # We first have to delete all of the hostname attributes
+        # We first have to delete all of the relation attributes
         # to avoid integrity errors.  Other attributes will just go away
         # with the servers.
         if self.deleted:
             (
-                ServerHostnameAttribute.objects
+                ServerRelationAttribute.objects
                 .filter(server_id__in=self.deleted)
                 .delete()
             )
@@ -746,7 +746,7 @@ def _get_real_attributes(attributes):
             continue
 
         # Ignore the virtual attribute types
-        if attribute.type in ('reverse_hostname', 'supernet'):
+        if attribute.type in ['reverse', 'supernet']:
             continue
 
         yield attribute, value

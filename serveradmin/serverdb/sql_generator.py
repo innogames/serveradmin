@@ -26,7 +26,7 @@ from adminapi.filters import (
 from serveradmin.serverdb.models import (
     Server,
     ServerAttribute,
-    ServerHostnameAttribute,
+    ServerRelationAttribute,
 )
 
 
@@ -100,7 +100,7 @@ def _get_sql_condition(servertypes, attribute, filt):
 
 
 def _covered_sql_condition(servertypes, attribute, template, negate=False):
-    if attribute.type in ('hostname', 'reverse_hostname', 'supernet'):
+    if attribute.type in ['relation', 'reverse', 'supernet']:
         template = (
             '{{0}} IN ('
             '   SELECT server_id'
@@ -222,18 +222,14 @@ def _condition_sql(servertypes, attribute, template):
 
     if attribute.type == 'supernet':
         return _exists_sql(Server, 'sub', (
-            "sub.servertype_id = '{0}'".format(
-                attribute.target_servertype.pk
-            ),
+            "sub.servertype_id = '{0}'".format(attribute.target_servertype.pk),
             'sub.intern_ip >>= server.intern_ip',
             template.format('sub.server_id'),
         ))
 
-    if attribute.type == 'reverse_hostname':
-        return _exists_sql(ServerHostnameAttribute, 'sub', (
-            "sub.attribute_id = '{0}'".format(
-                attribute.reversed_attribute.pk
-            ),
+    if attribute.type == 'reverse':
+        return _exists_sql(ServerRelationAttribute, 'sub', (
+            "sub.attribute_id = '{0}'".format(attribute.reversed_attribute.pk),
             'sub.value = server.server_id',
             template.format('sub.server_id'),
         ))
@@ -274,8 +270,8 @@ def _real_condition_sql(servertypes, attribute, template):
                 'rel1.intern_ip >>= server.intern_ip',
                 'rel1.server_id = sub.server_id',
             ))
-        elif related_via_attribute.type == 'reverse_hostname':
-            relation_condition = _exists_sql(ServerHostnameAttribute, 'rel1', (
+        elif related_via_attribute.type == 'reverse':
+            relation_condition = _exists_sql(ServerRelationAttribute, 'rel1', (
                 "rel1.attribute_id = '{0}'".format(
                     related_via_attribute.reversed_attribute.pk
                 ),
@@ -283,11 +279,9 @@ def _real_condition_sql(servertypes, attribute, template):
                 'rel1.server_id = sub.server_id',
             ))
         else:
-            assert related_via_attribute.type == 'hostname'
-            relation_condition = _exists_sql(ServerHostnameAttribute, 'rel1', (
-                "rel1.attribute_id = '{0}'".format(
-                    related_via_attribute.pk
-                ),
+            assert related_via_attribute.type == 'relation'
+            relation_condition = _exists_sql(ServerRelationAttribute, 'rel1', (
+                "rel1.attribute_id = '{0}'".format(related_via_attribute.pk),
                 'rel1.server_id = server.server_id',
                 'rel1.value = sub.server_id',
             ))

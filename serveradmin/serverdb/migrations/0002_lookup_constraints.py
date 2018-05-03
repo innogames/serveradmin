@@ -23,22 +23,17 @@ class Migration(migrations.Migration):
             'ADD CONSTRAINT attribute_attribute_id_check '
             r"   CHECK (attribute_id ~ '\A[a-z][a-z0-9_]+\Z'), "
             'ADD CONSTRAINT attribute_multi_check '
-            '   CHECK ('
-            "       type NOT IN ('boolean', 'supernet') OR NOT multi"
-            '   ), '
+            "   CHECK (type NOT IN ('boolean', 'supernet') OR NOT multi), "
             'ADD CONSTRAINT attribute_readonly_check '
-            '   CHECK ('
-            "       type NOT IN ('reverse_hostname', 'supernet') OR readonly"
-            '   ), '
+            "   CHECK (type NOT IN ('reverse', 'supernet') OR readonly), "
             'ADD CONSTRAINT attribute_target_servertype_id_check '
             '   CHECK ('
-            "       (type IN ('hostname', 'supernet')) = "
+            "       (type IN ('relation', 'supernet')) = "
             '           (target_servertype_id IS NOT NULL)'
             '   ), '
             'ADD CONSTRAINT attribute_reversed_attribute_id_check '
             '   CHECK ('
-            "       (type = 'reverse_hostname') = "
-            '           (reversed_attribute_id IS NOT NULL)'
+            "       (type = 'reverse') = (reversed_attribute_id IS NOT NULL)"
             '   )'
         ),
     ]

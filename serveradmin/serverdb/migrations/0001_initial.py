@@ -21,7 +21,17 @@ class Migration(migrations.Migration):
             name='Attribute',
             fields=[
                 ('attribute_id', models.CharField(primary_key=True, validators=[django.core.validators.RegexValidator('\\A[a-z][a-z0-9_]+\\Z', 'Invalid id')], serialize=False, max_length=32)),
-                ('type', models.CharField(choices=[('date', 'date'), ('string', 'string'), ('reverse_hostname', 'reverse_hostname'), ('inet', 'inet'), ('boolean', 'boolean'), ('macaddr', 'macaddr'), ('supernet', 'supernet'), ('hostname', 'hostname'), ('number', 'number')], max_length=32)),
+                ('type', models.CharField(choices=[
+                    ('string', 'string'),
+                    ('boolean', 'boolean'),
+                    ('relation', 'relation'),
+                    ('reverse', 'reverse'),
+                    ('number', 'number'),
+                    ('inet', 'inet'),
+                    ('macaddr', 'macaddr'),
+                    ('date', 'date'),
+                    ('supernet', 'supernet'),
+                ], max_length=32)),
                 ('multi', models.BooleanField(default=False)),
                 ('hovertext', models.TextField(default='', blank=True)),
                 ('group', models.CharField(default='other', max_length=32)),
@@ -127,15 +137,15 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name='ServerHostnameAttribute',
+            name='ServerRelationAttribute',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('_attribute', models.ForeignKey(db_column='attribute_id', to='serverdb.Attribute', db_index=False)),
                 ('server', models.ForeignKey(to='serverdb.Server', db_index=False)),
-                ('value', models.ForeignKey(related_name='hostname_attribute_servers', db_column='value', to='serverdb.Server', on_delete=django.db.models.deletion.PROTECT, db_index=False, related_query_name='hostname_attribute_server')),
+                ('value', models.ForeignKey(related_name='relation_attribute_servers', db_column='value', to='serverdb.Server', on_delete=django.db.models.deletion.PROTECT, db_index=False, related_query_name='relation_attribute_server')),
             ],
             options={
-                'db_table': 'server_hostname_attribute',
+                'db_table': 'server_relation_attribute',
             },
         ),
         migrations.CreateModel(

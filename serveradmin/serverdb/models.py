@@ -51,8 +51,8 @@ from serveradmin.apps.models import Application
 attribute_types = {
     'string': str,
     'boolean': lambda x: bool(strtobool(x)),
-    'hostname': str,
-    'reverse_hostname': str,
+    'relation': str,
+    'reverse': str,
     'number': lambda x: float(x) if '.' in str(x) else int(x),
     'inet': lambda x: ip_network(x) if '/' in str(x) else ip_address(x),
     'macaddr': EUI,
@@ -273,7 +273,7 @@ class Attribute(LookupModel):
         blank=True,
         db_column='reversed_attribute_id',
         db_index=False,
-        limit_choices_to=dict(type='hostname'),
+        limit_choices_to=dict(type='relation'),
     )
     reversed_attribute = LookupModel.foreign_key_lookup(
         '_reversed_attribute_id'
@@ -390,9 +390,7 @@ class ServertypeAttribute(models.Model):
         db_index=False,
         # It can only be related via a relation (AKA as an hostname
         # attribute).
-        limit_choices_to=models.Q(type__in=(
-            'hostname', 'reverse_hostname', 'supernet'
-        )),
+        limit_choices_to={'type': ['relation', 'reverse', 'supernet']},
     )
     related_via_attribute = Attribute.foreign_key_lookup(
         '_related_via_attribute_id'
@@ -623,8 +621,8 @@ class ServerAttribute(models.Model):
     def get_model(attribute_type):
         if attribute_type in 'string':
             return ServerStringAttribute
-        if attribute_type == 'hostname':
-            return ServerHostnameAttribute
+        if attribute_type == 'relation':
+            return ServerRelationAttribute
         if attribute_type == 'boolean':
             return ServerBooleanAttribute
         if attribute_type == 'number':
@@ -671,21 +669,21 @@ class ServerStringAttribute(ServerAttribute):
         super().save_value(value)
 
 
-class ServerHostnameAttributeManager(models.Manager):
+class ServerRelationAttributeManager(models.Manager):
     def get_queryset(self):
-        manager = super(ServerHostnameAttributeManager, self)
+        manager = super(ServerRelationAttributeManager, self)
         return manager.get_queryset().select_related('value')
 
 
-class ServerHostnameAttribute(ServerAttribute):
-    objects = ServerHostnameAttributeManager()
+class ServerRelationAttribute(ServerAttribute):
+    objects = ServerRelationAttributeManager()
 
     _attribute = models.ForeignKey(
         Attribute,
         db_column='attribute_id',
         db_index=False,
         on_delete=models.CASCADE,
-        limit_choices_to=dict(type='hostname'),
+        limit_choices_to=dict(type='relation'),
     )
     attribute = Attribute.foreign_key_lookup('_attribute_id')
     value = models.ForeignKey(
@@ -693,13 +691,13 @@ class ServerHostnameAttribute(ServerAttribute):
         db_column='value',
         db_index=False,
         on_delete=models.PROTECT,
-        related_name='hostname_attribute_servers',
-        related_query_name='hostname_attribute_server',
+        related_name='relation_attribute_servers',
+        related_query_name='relation_attribute_server',
     )
 
     class Meta:
         app_label = 'serverdb'
-        db_table = 'server_hostname_attribute'
+        db_table = 'server_relation_attribute'
         unique_together = (('server', '_attribute', 'value'), )
         index_together = (('_attribute', 'value'), )
 

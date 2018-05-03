@@ -6,7 +6,7 @@ from serveradmin.serverdb.models import (
     Attribute,
     ServertypeAttribute,
     Server,
-    ServerHostnameAttribute,
+    ServerRelationAttribute,
     ServerStringAttribute,
     ChangeDelete,
 )
@@ -22,8 +22,8 @@ class ServertypeAdmin(admin.ModelAdmin):
     )
 
 
-class ServerHostnameAttributeInline(admin.TabularInline):
-    model = ServerHostnameAttribute
+class ServerRelationAttributeInline(admin.TabularInline):
+    model = ServerRelationAttribute
     fk_name = 'server'
 
 
@@ -33,7 +33,7 @@ class ServerStringAttributeInline(admin.TabularInline):
 
 class ServerAdmin(admin.ModelAdmin):
     inlines = (
-        ServerHostnameAttributeInline,
+        ServerRelationAttributeInline,
         ServerStringAttributeInline,
     )
 

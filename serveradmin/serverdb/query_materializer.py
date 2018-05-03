@@ -16,7 +16,7 @@ from serveradmin.serverdb.models import (
     ServertypeAttribute,
     Server,
     ServerAttribute,
-    ServerHostnameAttribute,
+    ServerRelationAttribute,
 )
 
 
@@ -117,11 +117,11 @@ class QueryMaterializer:
                         s for st in self._servertypes_by_attribute[attribute]
                         for s in servers_by_type[st]
                     ))
-            elif key == 'reverse_hostname':
+            elif key == 'reverse':
                 reversed_attributes = {
                     a.reversed_attribute: a for a in attributes
                 }
-                for sa in ServerHostnameAttribute.objects.filter(
+                for sa in ServerRelationAttribute.objects.filter(
                     value_id__in=self._server_attributes.keys(),
                     _attribute__in=reversed_attributes.keys(),
                 ).select_related('server'):

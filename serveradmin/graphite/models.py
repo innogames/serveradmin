@@ -180,7 +180,7 @@ class Relation(models.Model):
     })
     sort_order = models.FloatField(default=0)
     attribute = models.ForeignKey(Attribute, limit_choices_to={
-        'type': ['hostname', 'reverse_hostname', 'supernet'],
+        'type': ['relation', 'reverse', 'supernet'],
     })
 
     class Meta:
