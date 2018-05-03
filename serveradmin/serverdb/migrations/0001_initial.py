@@ -277,11 +277,11 @@ class Migration(migrations.Migration):
             index_together=set([('_attribute', 'value')]),
         ),
         migrations.AlterUniqueTogether(
-            name='serverhostnameattribute',
+            name='serverrelationattribute',
             unique_together=set([('server', '_attribute', 'value')]),
         ),
         migrations.AlterIndexTogether(
-            name='serverhostnameattribute',
+            name='serverrelationattribute',
             index_together=set([('_attribute', 'value')]),
         ),
         migrations.AlterUniqueTogether(
