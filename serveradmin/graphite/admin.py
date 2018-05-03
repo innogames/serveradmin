@@ -2,9 +2,10 @@ from django.contrib import admin
 
 from serveradmin.graphite.models import (
     Collection,
+    Numeric,
+    Relation,
     Template,
     Variation,
-    Numeric,
 )
 
 
@@ -20,8 +21,12 @@ class NumericInline(admin.TabularInline):
     model = Numeric
 
 
+class RelationInline(admin.TabularInline):
+    model = Relation
+
+
 class CollectionAdmin(admin.ModelAdmin):
-    inlines = (TemplateInline, VariationInline, NumericInline)
+    inlines = (TemplateInline, VariationInline, NumericInline, RelationInline)
 
 
 admin.site.register(Collection, CollectionAdmin)
