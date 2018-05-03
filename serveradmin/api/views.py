@@ -70,7 +70,13 @@ def dataset_query(request, app, data):
         for attr, filter_obj in data['filters'].items():
             filters[attr] = filter_from_obj(filter_obj)
 
-        restrict = data.get('restrict')
+        # Empty list means query all attributes to the older versions of
+        # the adminapi.
+        if not data.get('restrict'):
+            restrict = None
+        else:
+            restrict = data['restrict']
+
         order_by = data.get('order_by')
 
         return {
