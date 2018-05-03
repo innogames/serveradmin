@@ -404,6 +404,7 @@ class ServertypeAttribute(models.Model):
     class Meta:
         app_label = 'serverdb'
         db_table = 'servertype_attribute'
+        ordering = ['_servertype', '_attribute']
         unique_together = (('_servertype', '_attribute'), )
 
     def __str__(self):
