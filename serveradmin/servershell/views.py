@@ -415,7 +415,7 @@ def choose_ip_addr(request):
             'servers': servers
         })
 
-    network_query = Query({'intern_ip': network})
+    network_query = Query({'intern_ip': network}, ['intern_ip'])
 
     return TemplateResponse(request, 'servershell/choose_ip_addr.html', {
         'ip_addrs': islice(network_query.get_free_ip_addrs(), 1000)
