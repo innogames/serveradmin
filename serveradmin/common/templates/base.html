@@ -17,7 +17,11 @@
 {% endblock %}
 </head>
 <body>
-
+{% if debug %}
+<div id="development-indicator">
+		This is a Development instance running on {% gethostname %}!
+</div>
+{% endif %}
 <div id="menu">
 <div style="text-align: center">
 <a href="/"><img src="{% logo %}" alt="InnoGames" /></a>

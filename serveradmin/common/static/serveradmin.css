@@ -1,3 +1,12 @@
+#development-indicator {
+  border: 1px solid #6A0E0E;
+  background-color: #FFBABA;
+  color: #6A0E0E;
+  text-align: center;
+  padding: 5px;
+  font: 15px bold;
+}
+
 .messages {
  list-style:none;
  padding:0;
