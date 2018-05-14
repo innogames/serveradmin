@@ -12,6 +12,7 @@ from serveradmin.servershell.views import (
     new_server,
     choose_ip_addr,
     store_command,
+    bookmark_command,
 )
 
 
@@ -31,4 +32,6 @@ urlpatterns = [
         name='servershell_choose_ip_addr',
     ),
     url(r'^store_command$', store_command, name='servershell_store_command'),
+    url(r'^servershell_bookmark_command$', bookmark_command,
+        name='servershell_bookmark_command'),
 ]

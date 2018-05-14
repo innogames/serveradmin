@@ -18,6 +18,14 @@
         <img src="{{ STATIC_URL }}help.png" id="shell_search_help_icon"
              alt="Help" class="help_icon" />
     </td>
+    <td>
+        <select id="shell_search_bookmarks">
+            <option value=""></option>
+            {% for bookmark in bookmarks %}
+            <option value="{{ bookmark.term }}" onclick="apply_bookmark(this)">{{ bookmark.name }}</option>
+            {% endfor %}
+        </select>
+    </td>
 </tr>
 <tr id="shell_command_container">
     <th>Command: </th>
@@ -315,6 +323,7 @@ var shell_new_url = "{% url 'servershell_new' %}";
 var shell_graph_url = "{% url 'graphite_graph_table' %}";
 var shell_changes_url = "{% url 'serverdb_changes' %}";
 var shell_store_command_url = "{% url 'servershell_store_command' %}";
+var shell_bookmark_url = "{% url 'servershell_bookmark_command' %}";
 var serverdb_history_url = "{% url 'serverdb_history' %}";
 //]]>
 </script>

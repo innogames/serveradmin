@@ -409,13 +409,14 @@ function autocomplete_shell_command(term, autocomplete_cb) {
         'commit': 'Commit outstanding changes',
         'export': 'Export all hostnames for usage in shell',
         'perpage': 'Show a specific number of hosts per page (e.g. "perpage 50")',
-        'graph': 'Show configured Graohite graph table for selected hosts',
+        'graph': 'Show configured Graphite graph table for selected hosts',
         'new': 'Create a new server',
         'clone': 'Clone a server with it\'s attributes',
         'inspect': 'List all attributes of a server',
         'edit': 'Edit all attributes of a server',
         'changes': 'Show all changes',
-        'history': 'Show history for selected hosts'
+        'history': 'Show history for selected hosts',
+        'bookmark': 'Bookmark current Search'
     };
 
     if (plen == 1 && parsed_args[0]['token'] == 'str') {
@@ -552,6 +553,24 @@ function handle_command_select(value) {
 function handle_command_search() {
     $('#shell_search').focus();
     return '';
+}
+
+function handle_command_bookmark(parsed_args) {
+    if (parsed_args.length < 2) {
+        alert('Please provide a bookmark name!')
+        return '';
+    }
+
+    name = ''
+    for (i = 1; i < parsed_args.length; i++) {
+        name += parsed_args[i].value + ' '
+    }
+
+    query_string = { 'term': $('#shell_search').val(), 'name': name}
+    $.get(shell_bookmark_url, query_string, function(data) {
+          alert(data['message'])        
+    });
+    return ''
 }
 
 function handle_command_export() {
@@ -735,6 +754,8 @@ function handle_command_other(command) {
         return handle_command_commit(parsed_args);
     } else if (command_name == 'perpage') {
         return handle_command_perpage(parsed_args);
+    } else if (command_name == 'bookmark') {
+        return handle_command_bookmark(parsed_args)
     }
 }
 
@@ -1192,3 +1213,9 @@ $(function() {
         });
     }
 });
+
+
+function apply_bookmark(element)
+{
+    $('#shell_search')[0].value = element.value
+}
