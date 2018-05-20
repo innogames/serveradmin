@@ -3,6 +3,7 @@
 import os
 
 DEBUG = True
+INTERNAL_IPS = ['127.0.0.1', '::1']
 
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
