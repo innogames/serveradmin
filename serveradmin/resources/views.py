@@ -44,11 +44,11 @@ def index(request):
     if term:
         try:
             query_args = parse_query(term)
-            host_query = Query(query_args, ['hostname', 'xen_host'])
+            host_query = Query(query_args, ['hostname', 'hypervisor'])
             for host in host_query:
                 matched_hostnames.append(host['hostname'])
-                if host.get('xen_host'):
-                    hostnames.append(host['xen_host'])
+                if host.get('hypervisor'):
+                    hostnames.append(host['hypervisor'])
                 else:
                     # If it's not guest, it might be a server, so we add it
                     hostnames.append(host['hostname'])
