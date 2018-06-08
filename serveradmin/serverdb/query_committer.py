@@ -358,7 +358,7 @@ class QueryCommitter:
 
     def _can_access_server(self, new_object, acl):
         if not all(
-            f.matches(new_object[a])
+            f.matches(new_object.get(a))
             for a, f in acl.get_filters().items()
         ):
             return False
