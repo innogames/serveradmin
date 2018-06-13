@@ -115,7 +115,7 @@ def graph(request):
     """Proxy Graphite graphs
 
     We don't want to bother the user with authenticating to Graphite.
-    Instead here we download the graph using our credentials and pass
+    Instead, here we download the graph using our credentials and pass
     it to the user.
     """
     password_mgr = HTTPPasswordMgrWithDefaultRealm()
@@ -132,9 +132,9 @@ def graph(request):
 
     # If the Graphite server fails, we would return proper server error
     # to the user instead of failing.  This is not really a matter for
-    # the user as they would get a 500 in any case, but it is matter for
-    # the server.  We expect any kind of error in here, but the socket
-    # errors are more likely to happen.  Graphite has tendency to return
+    # the user as they would get a 500 in any case, but it is a matter for
+    # the server.  We expect any kind of IO error in here, but the socket
+    # errors are more likely to happen.  Graphite has the tendency to return
     # empty result with 200 instead of proper error codes.
     try:
         with build_opener(auth_handler).open(url) as response:

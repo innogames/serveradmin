@@ -1,17 +1,19 @@
 from collections import OrderedDict
 
+from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseBadRequest
 from django.template.response import TemplateResponse
-from django.contrib.auth.decorators import login_required
+from django.urls import reverse
 from django.views.decorators.csrf import ensure_csrf_cookie
-from django.conf import settings
 
 from adminapi.datatype import DatatypeError
 from adminapi.filters import Any
 from adminapi.parse import parse_query
-from serveradmin.graphite.models import GRAPHITE_ATTRIBUTE_ID, Collection
 from serveradmin.dataset import Query
+from serveradmin.graphite.models import GRAPHITE_ATTRIBUTE_ID, Collection
+from serveradmin.graphite.views import graph
 
 
 @login_required     # NOQA: C901
@@ -122,7 +124,7 @@ def index(request):
 def graph_popup(request):
     try:
         hostname = request.GET['hostname']
-        graph = request.GET['graph']
+        graph_id = request.GET['graph']
     except KeyError:
         return HttpResponseBadRequest('Hostname and graph not supplied')
 
@@ -136,8 +138,8 @@ def graph_popup(request):
         }))
         if servers:
             table = collection.graph_table(servers[0])
-            params = [v2 for k1, v1 in table for k2, v2 in v1][int(graph)]
-            url = settings.GRAPHITE_URL + '/render?' + params
+            params = [v2 for k1, v1 in table for k2, v2 in v1][int(graph_id)]
+            url = reverse(graph) + '?' + params
 
             return TemplateResponse(request, 'resources/graph_popup.html', {
                 'image': url
