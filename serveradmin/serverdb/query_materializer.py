@@ -288,6 +288,8 @@ class QueryMaterializer:
 def _sort_key(value):
     if isinstance(value, (IPv4Address, IPv6Address)):
         return value.version, value
+    if isinstance(value, (Server)):
+        return value.hostname
     if isinstance(value, (Servertype, Project)):
         return value.pk
     return value
