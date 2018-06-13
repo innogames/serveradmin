@@ -39,6 +39,7 @@ by {{ change.commit.commit_by }}</h3>
         <th>New/Added</th>
     </tr>
 {% for key, value in change.updates.items %}
+{% if key != 'object_id' %}
     <tr>
         <td>{{ key }}</td>
     {% if value.action == 'multi' %}
@@ -69,6 +70,7 @@ by {{ change.commit.commit_by }}</h3>
         <td>{{ value.new }}</td>
     {% endif %}
     </tr>
+{% endif %}
 {% endfor %}
 </table>
 {% endif %}
