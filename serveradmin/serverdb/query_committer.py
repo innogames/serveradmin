@@ -76,22 +76,12 @@ class QueryCommitter:
         )
 
     def _fetch(self):
-        self._changed_servers = {
-            s.server_id: s for s in (
-                Server.objects.select_for_update()
-                .filter(server_id__in=[
-                    c['object_id'] for c in self.changed
-                ])
-            )
-        }
+        self._changed_servers = _fetch_servers(
+            set(c['object_id'] for c in self.changed)
+        )
         self._changed_objects = _materialize_servers(self._changed_servers)
 
-        self._deleted_servers = {
-            s.server_id: s for s in (
-                Server.objects.select_for_update()
-                .filter(server_id__in=self.deleted)
-            )
-        }
+        self._deleted_servers = _fetch_servers(self.deleted)
         self._deleted_objects = _materialize_servers(self._deleted_servers)
 
     def _validate(self):
@@ -440,6 +430,20 @@ class _ServerAttributedChangedHook(HookSlot):
 on_server_attribute_changed = _ServerAttributedChangedHook(
     'commit_server_changed', servers=list, changed=list, commit=QueryCommitter
 )
+
+
+def _fetch_servers(object_ids):
+    servers = {
+        s.server_id: s
+        for s
+        in Server.objects.select_for_update().filter(server_id__in=object_ids)
+    }
+    for object_id in object_ids:
+        if object_id in servers:
+            continue
+        raise CommitError('Cannot find object with id {}'.format(object_id))
+
+    return servers
 
 
 def _materialize_servers(servers):
