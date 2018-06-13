@@ -27,9 +27,13 @@ by {{ change.commit.commit_by }}</h3>
     </tr>
 {% endfor %}
 </table>
-{% endif %}
 
-{% if type == 'update' %}
+<form method="post" action="{% url 'serverdb_restore_deleted' change.commit.pk %}">
+{% csrf_token %}
+<input type="hidden" name="server_id" value="{{ change.server_id }}" />
+<p><input type="submit" value="Restore this server" /></p>
+</form>
+{% elif type == 'update' %}
 <h3>Changed attributes on {{ change.commit.change_on|date:"DATETIME_FORMAT" }}
 by {{ change.commit.commit_by }}</h3>
 <table>
@@ -73,29 +77,10 @@ by {{ change.commit.commit_by }}</h3>
 {% endif %}
 {% endfor %}
 </table>
-{% endif %}
-
-{% if type == 'delete' %}
+{% elif type == 'delete' %}
 <h3>Deleted server on {{ change.commit.change_on|date:"DATETIME_FORMAT" }}
 by {{ change.commit.commit_by }}</h3>
 {% endif %}
-{% if change.attributes %}
-<table>
-{% for key, value in change.attributes.items %}
-    <tr>
-        <th>{{ key }}:</th>
-        <td>{{ value }}</td>
-    </tr>
-{% endfor %}
-</table>
-
-<form method="post" action="{% url 'serverdb_restore_deleted' change.commit.pk %}">
-{% csrf_token %}
-<input type="hidden" name="server_id" value="{{ change.server_id }}" />
-<p><input type="submit" value="Restore this server" /></p>
-</form>
-{% endif %}
-
 {% endfor %}
 
 {% if commit_id %}
