@@ -50,11 +50,8 @@ USE_L10N = False
 # If you set this to False, Django will not use timezone-aware datetimes.
 USE_TZ = True
 
-SHORT_DATE_FORMAT = 'Y-m-d'
 DATE_FORMAT = 'Y-m-d'
-SHORT_DATETIME_FORMAT = 'Y-m-d H:M e'
-DATETIME_FORMAT = 'Y-m-d H:M:S.fO'
-TIME_FORMAT = 'H:M'
+DATETIME_FORMAT = 'Y-m-d H:i:s.uO'
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
