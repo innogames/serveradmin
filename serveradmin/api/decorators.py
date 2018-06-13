@@ -7,9 +7,10 @@ except ImportError:
     import json
 
 from django.core.exceptions import (
+    DataError,
     ObjectDoesNotExist,
-    SuspiciousOperation,
     PermissionDenied,
+    SuspiciousOperation,
     ValidationError,
 )
 from django.http import HttpResponse
@@ -52,8 +53,9 @@ def api_view(view):
             status_code = 200
             return_value = view(request, app, body_json)
         except (
-            ObjectDoesNotExist,
+            DataError,
             FilterValueError,
+            ObjectDoesNotExist,
             ValidationError,
         ) as error:
             status_code = 404 if isinstance(error, ObjectDoesNotExist) else 400
