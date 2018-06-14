@@ -7,7 +7,6 @@ except ImportError:
     import json
 
 from django.core.exceptions import (
-    DataError,
     ObjectDoesNotExist,
     PermissionDenied,
     SuspiciousOperation,

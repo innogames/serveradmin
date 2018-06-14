@@ -22,7 +22,7 @@ from serveradmin.serverdb.models import (
 
 class QueryMaterializer:
     def __init__(self, servers, restrict, order_by=None):
-        self._servers = list(servers)
+        self._servers = servers
         self._order_by = [Attribute.objects.get(pk=a) for a in order_by or []]
 
         if restrict is None:

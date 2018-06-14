@@ -13,7 +13,6 @@ from django.core.exceptions import (
 )
 from django.core.urlresolvers import reverse
 from django.contrib import messages
-from django.db import DataError, IntegrityError
 from django.utils.html import mark_safe, escape as escape_html
 
 from adminapi.datatype import DatatypeError
@@ -102,9 +101,7 @@ def get_results(request):
     try:
         query = Query(parse_query(term), shown_attributes, order_by)
         num_servers = len(query)
-    except (
-        DatatypeError, ObjectDoesNotExist, ValidationError, DataError
-    ) as error:
+    except (DatatypeError, ObjectDoesNotExist, ValidationError) as error:
         return HttpResponse(json.dumps({
             'status': 'error',
             'message': str(error)
@@ -217,7 +214,7 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
 
             try:
                 commit = QueryCommitter(created, changed, user=request.user)()
-            except (PermissionDenied, ValidationError, IntegrityError) as err:
+            except (PermissionDenied, ValidationError) as err:
                 messages.error(request, str(err))
             else:
                 messages.success(request, 'Server successfully ' + action)
@@ -296,7 +293,7 @@ def commit(request):
 
         try:
             QueryCommitter(changed=changed, deleted=deleted, user=user)()
-        except (PermissionDenied, ValidationError, IntegrityError) as error:
+        except (PermissionDenied, ValidationError) as error:
             result = {
                 'status': 'error',
                 'message': str(error),

@@ -449,7 +449,7 @@ def _fetch_servers(object_ids):
 def _materialize_servers(servers):
     return {
         o['object_id']: o
-        for o in QueryMaterializer(servers.values(), None)
+        for o in QueryMaterializer(list(servers.values()), None)
     }
 
 

@@ -1,6 +1,7 @@
 from collections import defaultdict
 
-from django.db import connection, transaction
+from django.core.exceptions import ValidationError
+from django.db import DataError, connection, transaction
 
 from serveradmin.serverdb.models import (
     Attribute,
@@ -48,7 +49,11 @@ def _get_servers(filters):
     if not servertypes:
         return []
 
-    return Server.objects.raw(get_server_query(servertypes, attribute_filters))
+    sql_query = get_server_query(servertypes, attribute_filters)
+    try:
+        return list(Server.objects.raw(sql_query))
+    except DataError as error:
+        raise ValidationError(error)
 
 
 def _get_possible_servertypes(attributes):
