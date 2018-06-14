@@ -204,15 +204,6 @@ class Servertype(LookupModel):
         validators=lookup_id_validators,
     )
     description = models.CharField(max_length=1024)
-    _fixed_project = models.ForeignKey(
-        Project,
-        blank=True,
-        null=True,
-        db_column='fixed_project_id',
-        db_index=False,
-        on_delete=models.PROTECT,
-    )
-    fixed_project = Project.foreign_key_lookup('_fixed_project_id')
     ip_addr_type = models.CharField(
         max_length=32,
         choices=get_choices(ip_addr_types),
@@ -499,7 +490,6 @@ class Server(models.Model):
 
     def clean(self, *args, **kwargs):
         super(Server, self).clean(*args, **kwargs)
-        self._validate_project()
         if self.servertype.ip_addr_type == 'null':
             if self.intern_ip is not None:
                 raise ValidationError('IP address must be null.')
@@ -512,13 +502,6 @@ class Server(models.Model):
             else:
                 self._validate_host_intern_ip()
 
-    def _validate_project(self):
-        fixed_project = self.servertype.fixed_project
-        if fixed_project and self.project != fixed_project:
-            raise ValidationError(
-                'Project has to be "{0}".'.format(fixed_project)
-            )
-
     def _validate_host_intern_ip(self):
         if self.intern_ip.max_prefixlen != self.netmask_len():
             raise ValidationError(
@@ -530,18 +513,6 @@ class Server(models.Model):
         for server in Server.objects.filter(
             intern_ip__net_overlaps=self.intern_ip
         ).exclude(pk=self.pk):
-            if (
-                server.servertype.ip_addr_type == 'network' and
-                server.project != self.project and
-                not server.servertype.fixed_project and
-                not self.servertype.fixed_project
-            ):
-                raise ValidationError(
-                    'IP address overlaps with the network "{0}" from '
-                    'a different project.'
-                    .format(server.hostname)
-                )
-
             if server.servertype.ip_addr_type == 'host':
                 raise ValidationError(
                     'IP address already taken by the host "{0}".'
@@ -568,17 +539,6 @@ class Server(models.Model):
         for server in Server.objects.filter(
             intern_ip__net_overlaps=self.intern_ip
         ).exclude(pk=self.pk):
-            if (
-                server.project != self.project and
-                not server.servertype.fixed_project and
-                not self.servertype.fixed_project
-            ):
-                raise ValidationError(
-                    'IP address overlaps with "{0}" from a different '
-                    'project.'
-                    .format(server.hostname)
-                )
-
             if self.servertype == server.servertype:
                 raise ValidationError(
                     'IP address overlaps with "{0}" in the same '
@@ -723,18 +683,6 @@ class ServerRelationAttribute(ServerAttribute):
             raise ValidationError(
                 'Attribute "{0}" has to be from servertype "{1}".'
                 .format(self.attribute, self.attribute.target_servertype)
-            )
-
-        # We are also going to check that the servers have the same
-        # project, but only if this servertype doesn't have a fixed
-        # project.
-        if (
-            not target_servertype.fixed_project and
-            target_server.project != self.server.project
-        ):
-            raise ValidationError(
-                'Attribute "{0}" has to be from the project {1}.'
-                .format(self.attribute, self.server.project)
             )
 
         ServerAttribute.save_value(self, target_server)

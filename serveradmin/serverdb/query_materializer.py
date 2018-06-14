@@ -302,8 +302,6 @@ def get_default_attribute_values(servertype_id):
     for attribute_id in Attribute.specials:
         if attribute_id == 'servertype':
             value = servertype_id
-        elif attribute_id == 'project' and servertype.fixed_project:
-            value = servertype.fixed_project.pk
         else:
             value = None
         attribute_values[attribute_id] = value

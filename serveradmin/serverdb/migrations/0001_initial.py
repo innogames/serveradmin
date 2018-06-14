@@ -202,7 +202,6 @@ class Migration(migrations.Migration):
                 ('servertype_id', models.CharField(primary_key=True, validators=[django.core.validators.RegexValidator('\\A[a-z][a-z0-9_]+\\Z', 'Invalid id')], serialize=False, max_length=32)),
                 ('description', models.CharField(max_length=1024)),
                 ('ip_addr_type', models.CharField(choices=[('null', 'null'), ('host', 'host'), ('loadbalancer', 'loadbalancer'), ('network', 'network')], max_length=32)),
-                ('_fixed_project', models.ForeignKey(db_column='fixed_project_id', to='serverdb.Project', blank=True, on_delete=django.db.models.deletion.PROTECT, null=True, db_index=False)),
             ],
             options={
                 'ordering': ('pk',),
