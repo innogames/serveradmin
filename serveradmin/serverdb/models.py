@@ -6,16 +6,13 @@ Copyright (c) 2018 InnoGames GmbH
 import re
 import json
 
-from collections import OrderedDict
 from distutils.util import strtobool
 from ipaddress import ip_address, ip_network
-from itertools import chain
 
 from netaddr import EUI
 
 from django.db import models
 from django.core.exceptions import ValidationError
-from django.core.signals import request_started
 from django.core.validators import RegexValidator
 from django.utils.timezone import now
 from django.contrib.auth.models import User
@@ -24,34 +21,6 @@ import netfields
 
 from adminapi.datatype import STR_BASED_DATATYPES
 from serveradmin.apps.models import Application
-
-
-#
-# Lookup Models
-#
-# We need a few models for extensibility of the system.  Those tables
-# are going to store just a few rows, but we need those rows over and
-# over again.  Django is not terribly good at optimizing this.  It
-# makes database queries every time a foreign key field is accessed.
-# Using select_related() or prefetch_related() would mitigate this
-# problem, but they would also cause the same rows to be downloaded
-# over and over again.  What we really need it to read all of them
-# just once.
-#
-# The existing caching solutions for Django are quite complicated for
-# our need.  Here we are implementing a really basic Django Model
-# Manager to read all rows for a model on first time one of them is
-# accessed.
-#
-# We are, on purpose, not trying to override all functions of
-# the manager.  Overriding the all() and get() methods are good enough
-# for the callers on our application.  We don't want Django internals
-# to use the cached objects anyway.
-#
-# We also need to encapsulate all the foreign keys to the lookup models
-# for them to be cached.  Otherwise Django does some hard-to-interfere
-# complicated magic on them.
-#
 
 ATTRIBUTE_TYPES = {
     'string': str,
@@ -90,93 +59,7 @@ def get_choices(types):
     return zip(*([types] * 2))
 
 
-class LookupManager(models.Manager):
-    """Custom Django model manager to cache lookup tables
-
-    The purpose of this manager is to avoid accessing the lookup tables
-    multiple times.
-    """
-    def __init__(self):
-        super(LookupManager, self).__init__()
-        self._reset_cache()
-        # Make sure the cache is clean on every new request.
-        request_started.connect(self._reset_cache)
-
-    def _reset_cache(self, **kwargs):
-        self._cache_built = False
-        self._lookup_dict = {}
-
-    def _build_cache(self):
-        self._cache_built = True
-        self._lookup_dict = OrderedDict(
-            (o.pk, o) for o in super(LookupManager, self).all()
-        )
-
-    def all(self):
-        """Override all method to cache all objects"""
-        if not self._cache_built:
-            self._build_cache()
-        return self._lookup_dict.values()
-
-    def get(self, *args, **kwargs):
-        """Override the get method to cache PK lookups
-
-        We are only caching lookups with the special "pk" property.
-        """
-        # Implement anti-cache pattern to make things faster in here.
-        # This is one of the hottest function of the application according
-        # to the profiles.
-        for key, value in kwargs.items():
-            if key != 'pk':
-                raise Exception(
-                    'get() except "pk" are not supported on lookup models.'
-                )
-            if value not in self._lookup_dict:
-                if not self._cache_built:
-                    self._build_cache()
-                    return self.get(*args, **kwargs)
-                raise self.model.DoesNotExist(
-                    '{} "{}" does not exist.'
-                    .format(self.model.__name__, value)
-                )
-            return self._lookup_dict[value]
-
-    def create(self, *args, **kwargs):
-        super(LookupManager, self).create(*args, **kwargs)
-        self._reset_cache()
-
-
-class LookupModel(models.Model):
-    class Meta:
-        abstract = True
-
-    def __str__(self):
-        return self.pk
-
-    def save(self, *args, **kwargs):
-        super(LookupModel, self).save(*args, **kwargs)
-        type(self).objects._reset_cache()
-
-    def delete(self, *args, **kwargs):
-        super(LookupModel, self).delete(*args, **kwargs)
-        type(self).objects._reset_cache()
-
-    @classmethod
-    def foreign_key_lookup(cls, field):
-
-        @property
-        def wrapped(self):
-            """Encapsulate the foreign key field"""
-            if getattr(self, field):
-                model = type(self) if cls == LookupModel else cls
-                return model.objects.get(pk=getattr(self, field))
-
-        return wrapped
-
-
-class Servertype(LookupModel):
-    objects = LookupManager()
-
+class Servertype(models.Model):
     servertype_id = models.CharField(
         max_length=32,
         primary_key=True,
@@ -192,22 +75,13 @@ class Servertype(LookupModel):
     class Meta:
         app_label = 'serverdb'
         db_table = 'servertype'
-        ordering = ('pk', )
+        ordering = ['servertype_id']
 
     def __str__(self):
         return self.servertype_id
 
 
-class AttributeManager(LookupManager):
-    def _build_cache(self):
-        super(AttributeManager, self)._build_cache()
-        self._lookup_dict = OrderedDict(chain(
-            Attribute.specials.items(), self._lookup_dict.items()
-        ))
-
-
-class Attribute(LookupModel):
-    objects = AttributeManager()
+class Attribute(models.Model):
     special = None
 
     def __init__(self, *args, **kwargs):
@@ -233,32 +107,26 @@ class Attribute(LookupModel):
     )
     help_link = models.CharField(max_length=255, blank=True, null=True)
     readonly = models.BooleanField(null=False, default=False)
-    _target_servertype = models.ForeignKey(
-        Servertype,
-        db_column='target_servertype_id',
-        db_index=False,
-        null=True,
-        blank=True,
+    target_servertype = models.ForeignKey(
+        Servertype, db_index=False, null=True, blank=True
     )
-    _reversed_attribute = models.ForeignKey(
+    reversed_attribute = models.ForeignKey(
         'self',
         related_name='reversed_attribute_set',
         null=True,
         blank=True,
-        db_column='reversed_attribute_id',
         db_index=False,
         limit_choices_to=dict(type='relation'),
     )
-    reversed_attribute = LookupModel.foreign_key_lookup(
-        '_reversed_attribute_id'
-    )
-    target_servertype = Servertype.foreign_key_lookup('_target_servertype_id')
     clone = models.BooleanField(null=False, default=False)
 
     class Meta:
         app_label = 'serverdb'
         db_table = 'attribute'
-        ordering = ('pk', )
+        ordering = ['attribute_id']
+
+    def __str__(self):
+        return self.attribute_id
 
     def initializer(self):
         if self.multi:
@@ -312,7 +180,7 @@ Attribute.specials = {
         multi=False,
         clone=True,
         group='base',
-        special=ServerTableSpecial('_servertype_id'),
+        special=ServerTableSpecial('servertype_id'),
     ),
     'intern_ip': Attribute(
         attribute_id='intern_ip',
@@ -325,33 +193,24 @@ Attribute.specials = {
 }
 
 
-#
-# Servertype Attribute Relation
-#
-
 class ServertypeAttribute(models.Model):
-    _servertype = models.ForeignKey(
+    servertype = models.ForeignKey(
         Servertype,
         related_name='attributes',
-        db_column='servertype_id',
         db_index=False,
         on_delete=models.CASCADE,
     )
-    servertype = Servertype.foreign_key_lookup('_servertype_id')
-    _attribute = models.ForeignKey(
+    attribute = models.ForeignKey(
         Attribute,
         related_name='servertype_attributes',
-        db_column='attribute_id',
         db_index=False,
         on_delete=models.CASCADE,
     )
-    attribute = Attribute.foreign_key_lookup('_attribute_id')
-    _related_via_attribute = models.ForeignKey(
+    related_via_attribute = models.ForeignKey(
         Attribute,
         related_name='related_via_servertype_attributes',
         null=True,
         blank=True,
-        db_column='related_via_attribute_id',
         db_index=False,
         # It can only be related via a relation (AKA as an hostname
         # attribute).
@@ -359,19 +218,13 @@ class ServertypeAttribute(models.Model):
             type__in=['relation', 'reverse', 'supernet']
         ),
     )
-    related_via_attribute = Attribute.foreign_key_lookup(
-        '_related_via_attribute_id'
-    )
-    _consistent_via_attribute = models.ForeignKey(
+    consistent_via_attribute = models.ForeignKey(
         Attribute,
         related_name='consistent_via_servertype_attributes',
         null=True,
         blank=True,
         db_column='consistent_via_attribute_id',
         db_index=False,
-    )
-    consistent_attribute = LookupModel.foreign_key_lookup(
-        '_consistent_via_attribute_id'
     )
     required = models.BooleanField(null=False, default=False)
     default_value = models.CharField(max_length=255, null=True, blank=True)
@@ -382,8 +235,8 @@ class ServertypeAttribute(models.Model):
     class Meta:
         app_label = 'serverdb'
         db_table = 'servertype_attribute'
-        ordering = ['_servertype', '_attribute']
-        unique_together = (('_servertype', '_attribute'), )
+        ordering = ['servertype', 'attribute']
+        unique_together = [['servertype', 'attribute']]
 
     def __str__(self):
         return '{0} - {1}'.format(self.servertype, self.attribute)
@@ -414,25 +267,12 @@ class ServertypeAttribute(models.Model):
             self.regexp = None
         super(ServertypeAttribute, self).clean()
 
-    @classmethod
-    def query(self, servertypes=None, attributes=None):
-        queryset = self.objects
-        if servertypes is not None:
-            queryset = queryset.filter(_servertype__in=servertypes)
-        if attributes is not None:
-            queryset = queryset.filter(_attribute__in=attributes)
-        return queryset
-
-
-#
-# Server Models
-#
-# Servers are the main objects of the system.  They are stored in
-# entity-attribute-value schema.  There are multiple models to store
-# the attribute values of the servers by different data types.
-#
 
 class Server(models.Model):
+    """Servers are the main objects of the system.  They are stored in
+    entity-attribute-value schema.  There are multiple models to store
+    the attribute values of the servers by different data types.
+    """
     objects = netfields.NetManager()
 
     server_id = models.AutoField(primary_key=True)
@@ -440,12 +280,7 @@ class Server(models.Model):
         max_length=64, unique=True, validators=HOSTNAME_VALIDATORS
     )
     intern_ip = netfields.InetAddressField(null=True, blank=True)
-    _servertype = models.ForeignKey(
-        Servertype,
-        db_column='servertype_id',
-        on_delete=models.PROTECT,
-    )
-    servertype = Servertype.foreign_key_lookup('_servertype_id')
+    servertype = models.ForeignKey(Servertype, on_delete=models.PROTECT)
 
     class Meta:
         app_label = 'serverdb'
@@ -456,7 +291,7 @@ class Server(models.Model):
 
     def get_supernet(self, servertype):
         return Server.objects.get(
-            _servertype=servertype,
+            servertype=servertype,
             intern_ip__net_contains_or_equals=self.intern_ip,
         )
 
@@ -484,7 +319,7 @@ class Server(models.Model):
         # Check for other server with overlapping addresses
         for server in Server.objects.filter(
             intern_ip__net_overlaps=self.intern_ip
-        ).exclude(pk=self.pk):
+        ).exclude(server_id=self.server_id):
             if server.servertype.ip_addr_type == 'host':
                 raise ValidationError(
                     'IP address already taken by the host "{0}".'
@@ -500,7 +335,7 @@ class Server(models.Model):
         # Check for other server with overlapping addresses
         for server in Server.objects.filter(
             intern_ip__net_overlaps=self.intern_ip
-        ).exclude(pk=self.pk):
+        ).exclude(server_id=self.server_id):
             if self.servertype == server.servertype:
                 raise ValidationError(
                     'IP address overlaps with "{0}" in the same '
@@ -513,7 +348,7 @@ class Server(models.Model):
 
     def get_attributes(self, attribute):
         model = ServerAttribute.get_model(attribute.type)
-        return model.objects.filter(server=self, _attribute=attribute)
+        return model.objects.filter(server=self, attribute=attribute)
 
     def add_attribute(self, attribute, value):
         model = ServerAttribute.get_model(attribute.type)
@@ -564,21 +399,19 @@ class ServerAttribute(models.Model):
 
 
 class ServerStringAttribute(ServerAttribute):
-    _attribute = models.ForeignKey(
+    attribute = models.ForeignKey(
         Attribute,
-        db_column='attribute_id',
         db_index=False,
         on_delete=models.CASCADE,
         limit_choices_to=dict(type='string'),
     )
-    attribute = Attribute.foreign_key_lookup('_attribute_id')
     value = models.CharField(max_length=1024)
 
     class Meta:
         app_label = 'serverdb'
         db_table = 'server_string_attribute'
-        unique_together = (('server', '_attribute', 'value'), )
-        index_together = (('_attribute', 'value'), )
+        unique_together = [['server', 'attribute', 'value']]
+        index_together = [['attribute', 'value']]
 
     def save_value(self, value):
         for char in '\'"':
@@ -606,14 +439,12 @@ class ServerRelationAttributeManager(models.Manager):
 class ServerRelationAttribute(ServerAttribute):
     objects = ServerRelationAttributeManager()
 
-    _attribute = models.ForeignKey(
+    attribute = models.ForeignKey(
         Attribute,
-        db_column='attribute_id',
         db_index=False,
         on_delete=models.CASCADE,
         limit_choices_to=dict(type='relation'),
     )
-    attribute = Attribute.foreign_key_lookup('_attribute_id')
     value = models.ForeignKey(
         Server,
         db_column='value',
@@ -626,8 +457,8 @@ class ServerRelationAttribute(ServerAttribute):
     class Meta:
         app_label = 'serverdb'
         db_table = 'server_relation_attribute'
-        unique_together = (('server', '_attribute', 'value'), )
-        index_together = (('_attribute', 'value'), )
+        unique_together = [['server', 'attribute', 'value']]
+        index_together = [['attribute', 'value']]
 
     def save_value(self, value):
         target_servertype = self.attribute.target_servertype
@@ -649,20 +480,17 @@ class ServerRelationAttribute(ServerAttribute):
 
 
 class ServerBooleanAttribute(ServerAttribute):
-    _attribute = models.ForeignKey(
+    attribute = models.ForeignKey(
         Attribute,
-        db_column='attribute_id',
-        db_index=False,
         on_delete=models.CASCADE,
         limit_choices_to=dict(type='boolean'),
     )
-    attribute = Attribute.foreign_key_lookup('_attribute_id')
 
     class Meta:
         app_label = 'serverdb'
         db_table = 'server_boolean_attribute'
-        unique_together = (('server', '_attribute'), )
-        index_together = (('_attribute', ), )
+        unique_together = [['server', 'attribute']]
+        index_together = [['attribute']]
 
     def get_value(self):
         return True
@@ -675,21 +503,19 @@ class ServerBooleanAttribute(ServerAttribute):
 
 
 class ServerNumberAttribute(ServerAttribute):
-    _attribute = models.ForeignKey(
+    attribute = models.ForeignKey(
         Attribute,
-        db_column='attribute_id',
         db_index=False,
         on_delete=models.CASCADE,
         limit_choices_to=dict(type='number'),
     )
-    attribute = Attribute.foreign_key_lookup('_attribute_id')
     value = models.DecimalField(max_digits=65, decimal_places=0)
 
     class Meta:
         app_label = 'serverdb'
         db_table = 'server_number_attribute'
-        unique_together = (('server', '_attribute', 'value'), )
-        index_together = (('_attribute', 'value'), )
+        unique_together = [['server', 'attribute', 'value']]
+        index_together = [['attribute', 'value']]
 
     def get_value(self):
         return (
@@ -700,75 +526,57 @@ class ServerNumberAttribute(ServerAttribute):
 
 
 class ServerInetAttribute(ServerAttribute):
-    _attribute = models.ForeignKey(
+    attribute = models.ForeignKey(
         Attribute,
-        db_column='attribute_id',
         db_index=False,
         on_delete=models.CASCADE,
         limit_choices_to=dict(type='inet'),
     )
-    attribute = Attribute.foreign_key_lookup('_attribute_id')
     value = netfields.InetAddressField()
 
     class Meta:
         app_label = 'serverdb'
         db_table = 'server_inet_attribute'
-        unique_together = (('server', '_attribute', 'value'), )
-        index_together = (('_attribute', 'value'), )
+        unique_together = [['server', 'attribute', 'value']]
+        index_together = [['attribute', 'value']]
 
 
 class ServerMACAddressAttribute(ServerAttribute):
-    _attribute = models.ForeignKey(
+    attribute = models.ForeignKey(
         Attribute,
-        db_column='attribute_id',
         db_index=False,
         on_delete=models.CASCADE,
         limit_choices_to=dict(type='macaddr'),
     )
-    attribute = Attribute.foreign_key_lookup('_attribute_id')
     value = netfields.MACAddressField()
 
     class Meta:
         app_label = 'serverdb'
         db_table = 'server_macaddr_attribute'
-        unique_together = (('server', '_attribute', 'value'), )
-        index_together = (('_attribute', 'value'), )
+        unique_together = [['server', 'attribute', 'value']]
+        index_together = [['attribute', 'value']]
 
 
 class ServerDateAttribute(ServerAttribute):
-    _attribute = models.ForeignKey(
+    attribute = models.ForeignKey(
         Attribute,
-        db_column='attribute_id',
         db_index=False,
         on_delete=models.CASCADE,
         limit_choices_to=dict(type='date'),
     )
-    attribute = Attribute.foreign_key_lookup('_attribute_id')
     value = models.DateField()
 
     class Meta:
         app_label = 'serverdb'
         db_table = 'server_date_attribute'
-        unique_together = (('server', '_attribute', 'value'), )
-        index_together = (('_attribute', 'value'), )
+        unique_together = [['server', 'attribute', 'value']]
+        index_together = [['attribute', 'value']]
 
-
-#
-# Change Log Models
-#
 
 class Change(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)
-    user = models.ForeignKey(
-        User,
-        null=True,
-        on_delete=models.PROTECT,
-    )
-    app = models.ForeignKey(
-        Application,
-        null=True,
-        on_delete=models.PROTECT,
-    )
+    user = models.ForeignKey(User, null=True, on_delete=models.PROTECT)
+    app = models.ForeignKey(Application, null=True, on_delete=models.PROTECT)
     changes_json = models.TextField()
 
     class Meta:
@@ -784,16 +592,8 @@ class Change(models.Model):
 
 class ChangeCommit(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)
-    user = models.ForeignKey(
-        User,
-        null=True,
-        on_delete=models.PROTECT,
-    )
-    app = models.ForeignKey(
-        Application,
-        null=True,
-        on_delete=models.PROTECT,
-    )
+    user = models.ForeignKey(User, null=True, on_delete=models.PROTECT)
+    app = models.ForeignKey(Application, null=True, on_delete=models.PROTECT)
 
     class Meta:
         app_label = 'serverdb'
@@ -803,10 +603,7 @@ class ChangeCommit(models.Model):
 
 
 class ChangeDelete(models.Model):
-    commit = models.ForeignKey(
-        ChangeCommit,
-        on_delete=models.CASCADE,
-    )
+    commit = models.ForeignKey(ChangeCommit, on_delete=models.CASCADE)
     server_id = models.IntegerField(db_index=True)
     attributes_json = models.TextField()
 
@@ -823,10 +620,7 @@ class ChangeDelete(models.Model):
 
 
 class ChangeUpdate(models.Model):
-    commit = models.ForeignKey(
-        ChangeCommit,
-        on_delete=models.CASCADE,
-    )
+    commit = models.ForeignKey(ChangeCommit, on_delete=models.CASCADE)
     server_id = models.IntegerField(db_index=True)
     updates_json = models.TextField()
 
@@ -843,10 +637,7 @@ class ChangeUpdate(models.Model):
 
 
 class ChangeAdd(models.Model):
-    commit = models.ForeignKey(
-        ChangeCommit,
-        on_delete=models.CASCADE,
-    )
+    commit = models.ForeignKey(ChangeCommit, on_delete=models.CASCADE)
     server_id = models.IntegerField(db_index=True)
     attributes_json = models.TextField()
 

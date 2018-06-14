@@ -73,9 +73,7 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
         )
 
     # TODO: Find out which attributes we actually need
-    attribute_lookup = {
-        a.pk: a for a in Attribute.objects.all() if not a.special
-    }
+    attribute_lookup = {a.pk: a for a in Attribute.objects.all()}
     joined_attributes = {
         a: None
         for a
@@ -621,7 +619,7 @@ def _insert_server(hostname, intern_ip, servertype, attributes):
     server = Server.objects.create(
         hostname=hostname,
         intern_ip=intern_ip,
-        _servertype=servertype,
+        servertype=servertype,
     )
     server.full_clean()
     server.save()

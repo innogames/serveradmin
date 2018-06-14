@@ -25,7 +25,6 @@ def execute_query(filters, restrict, order_by):
     # modules.  We start by collecting the attributes we need on all parts
     # of the query.
     attribute_ids = set(_collect_attribute_ids(joins, filters, order_by))
-    attribute_ids.add('servertype')     # We may need "servertype" later.
 
     # We can fetch the attributes altogether before starting the database
     # transaction.  None on the restrict argument is special meaning
@@ -128,11 +127,19 @@ def _collect_attribute_ids(joins=None, filters=None, order_by=None):
 def _get_attribute_lookup(attribute_ids=None):
     """Prepare the attribute lookup and make sure all exist"""
 
-    return {
-        a.pk: a
-        for a in Attribute.objects.all()
-        if attribute_ids is None or a.pk in attribute_ids
-    }
+    # Start by the special attributes and fetch more if necessary
+    attribute_lookup = dict(Attribute.specials)
+
+    queryset = None
+    if attribute_ids is None:
+        queryset = Attribute.objects.all()
+    elif any(a not in attribute_lookup for a in attribute_ids):
+        queryset = Attribute.objects.filter(attribute_id__in=attribute_ids)
+    if queryset:
+        for attribute in queryset:
+            attribute_lookup[attribute.attribute_id] = attribute
+
+    return attribute_lookup
 
 
 def _check_attributes_exist(attribute_ids, attribute_lookup):
@@ -156,10 +163,10 @@ def _get_possible_servertype_ids(attribute_ids):
     # First, we need to index the servertypes by the attributes.
     attribute_servertype_ids = {}
     for sa in ServertypeAttribute.objects.filter(
-        _attribute_id__in=attribute_ids
+        attribute_id__in=attribute_ids
     ):
-        attribute_servertype_ids.setdefault(sa.attribute, set()).add(
-            sa.servertype.pk
+        attribute_servertype_ids.setdefault(sa.attribute_id, set()).add(
+            sa.servertype_id
         )
 
     # Then we get the servertype list of the first attribute, and continue

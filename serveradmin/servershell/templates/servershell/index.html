@@ -51,9 +51,9 @@
     <h4>{{ attr_group }}</h4>
     <ul>
     {% for attr in attribute_list %}
-    <li data-attr="{{ attr.pk }}" data-attr-type="{{ attr.type }}" data-attr-multi="{{ attr.multi }}" >
+    <li data-attr="{{ attr.attribute_id }}" data-attr-type="{{ attr.type }}" data-attr-multi="{{ attr.multi }}" >
         <label>
-                <input type="checkbox" name="attr" value="{{ attr.pk }}" {% if attr.pk in checked_attributes %}checked="checked" {% endif %}/>
+                <input type="checkbox" name="attr" value="{{ attr.attribute_id }}" {% if attr.attribute_id in checked_attributes %}checked="checked" {% endif %}/>
             {{ attr }}
         </label>
 {% if attr.hovertext %}

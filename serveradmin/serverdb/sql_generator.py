@@ -42,7 +42,7 @@ def get_server_query(attribute_filters, possible_servertype_ids=None):
         ' server.server_id,'
         ' server.hostname,'
         ' server.intern_ip,'
-        ' server.servertype_id AS _servertype_id'
+        ' server.servertype_id'
         ' FROM server'
     )
     if attribute_filters:
@@ -222,22 +222,18 @@ def _containment_filter_template(attribute, filt):
 
 def _condition_sql(attribute, template, possible_servertype_ids=None):
     if attribute.special:
-        field = attribute.special.field
-        if field.startswith('_'):
-            field = field[1:]
-
-        return template.format('server.' + field)
+        return template.format('server.' + attribute.special.field)
 
     if attribute.type == 'supernet':
         return _exists_sql(Server, 'sub', (
-            "sub.servertype_id = '{0}'".format(attribute.target_servertype.pk),
+            "sub.servertype_id = '{0}'".format(attribute.target_servertype_id),
             'sub.intern_ip >>= server.intern_ip',
             template.format('sub.server_id'),
         ))
 
     if attribute.type == 'reverse':
         return _exists_sql(ServerRelationAttribute, 'sub', (
-            "sub.attribute_id = '{0}'".format(attribute.reversed_attribute.pk),
+            "sub.attribute_id = '{0}'".format(attribute.reversed_attribute_id),
             'sub.value = server.server_id',
             template.format('sub.server_id'),
         ))
@@ -255,26 +251,26 @@ def _real_condition_sql(attribute, template, possible_servertype_ids=None):
     relation_conditions = []
     related_via_attributes = set()
     other_servertype_ids = list()
-    queryset = attribute.servertype_attributes
+    queryset = attribute.servertype_attributes  # TODO: Stop making queries
     if possible_servertype_ids:
-        queryset = queryset.filter(_servertype_id__in=possible_servertype_ids)
+        queryset = queryset.filter(servertype_id__in=possible_servertype_ids)
     for sa in queryset:
         if sa.related_via_attribute:
             related_via_attributes.add(sa.related_via_attribute)
         else:
-            other_servertype_ids.append(sa.servertype.pk)
+            other_servertype_ids.append(sa.servertype_id)
     for related_via_attribute in related_via_attributes:
         queryset = related_via_attribute.servertype_attributes
         if possible_servertype_ids:
             queryset = queryset.filter(
-                _servertype_id__in=possible_servertype_ids
+                servertype_id__in=possible_servertype_ids
             )
-        related_via_servertype_ids = [sa.servertype.pk for sa in queryset]
+        related_via_servertype_ids = [sa.servertype_id for sa in queryset]
         assert related_via_servertype_ids
         if related_via_attribute.type == 'supernet':
             relation_condition = _exists_sql(Server, 'rel1', (
                 "rel1.servertype_id = '{0}'".format(
-                    related_via_attribute.target_servertype.pk
+                    related_via_attribute.target_servertype_id
                 ),
                 'rel1.intern_ip >>= server.intern_ip',
                 'rel1.server_id = sub.server_id',
@@ -282,7 +278,7 @@ def _real_condition_sql(attribute, template, possible_servertype_ids=None):
         elif related_via_attribute.type == 'reverse':
             relation_condition = _exists_sql(ServerRelationAttribute, 'rel1', (
                 "rel1.attribute_id = '{0}'".format(
-                    related_via_attribute.reversed_attribute.pk
+                    related_via_attribute.reversed_attribute.attribute_id
                 ),
                 'rel1.value = server.server_id',
                 'rel1.server_id = sub.server_id',
@@ -290,7 +286,8 @@ def _real_condition_sql(attribute, template, possible_servertype_ids=None):
         else:
             assert related_via_attribute.type == 'relation'
             relation_condition = _exists_sql(ServerRelationAttribute, 'rel1', (
-                "rel1.attribute_id = '{0}'".format(related_via_attribute.pk),
+                "rel1.attribute_id = '{0}'"
+                .format(related_via_attribute.attribute_id),
                 'rel1.server_id = server.server_id',
                 'rel1.value = sub.server_id',
             ))
@@ -316,7 +313,7 @@ def _real_condition_sql(attribute, template, possible_servertype_ids=None):
 
     return _exists_sql(model, 'sub', (
         mixed_relation_condition,
-        "sub.attribute_id = '{0}'".format(attribute.pk),
+        "sub.attribute_id = '{0}'".format(attribute.attribute_id),
         template.format('sub.value'),
     ))
 

@@ -29,7 +29,7 @@
         {% if commit.changedelete_set.count %}
         {% for change_del in commit.changedelete_set.all %}
         <ul class="nolist">
-            <li><a href="{% url 'serverdb_history' %}?server_id={{ change_del.server_id }}&amp;commit={{ commit.pk }}"
+            <li><a href="{% url 'serverdb_history' %}?server_id={{ change_del.server_id }}&amp;commit={{ commit.id }}"
             >{{ change_del.server_id }}</li>
         {% endfor %}
         </ul>
@@ -40,7 +40,7 @@
 		{% if commit.changeadd_set.count %}
         <ul class="nolist">
         {% for change_add in commit.changeadd_set.all %}
-            <li><a href="{% url 'serverdb_history' %}?server_id={{ change_add.server_id }}&amp;commit={{ commit.pk }}"
+            <li><a href="{% url 'serverdb_history' %}?server_id={{ change_add.server_id }}&amp;commit={{ commit.id }}"
             >{{ change_add.server_id }}</li>
         {% endfor %}
         </ul>
@@ -51,7 +51,7 @@
 		{% if commit.changeupdate_set.count %}
         <ul class="nolist">
         {% for change_update in commit.changeupdate_set.all %}
-            <li><a href="{% url 'serverdb_history' %}?server_id={{ change_update.server_id }}&amp;commit={{ commit.pk }}"
+            <li><a href="{% url 'serverdb_history' %}?server_id={{ change_update.server_id }}&amp;commit={{ commit.id }}"
             >{{ change_update.server_id }}</li>
         {% endfor %}
         </ul>

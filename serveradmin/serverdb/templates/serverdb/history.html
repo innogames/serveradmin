@@ -28,7 +28,7 @@ by {{ change.commit.commit_by }}</h3>
 {% endfor %}
 </table>
 
-<form method="post" action="{% url 'serverdb_restore_deleted' change.commit.pk %}">
+<form method="post" action="{% url 'serverdb_restore_deleted' change.commit.id %}">
 {% csrf_token %}
 <input type="hidden" name="server_id" value="{{ change.server_id }}" />
 <p><input type="submit" value="Restore this server" /></p>
