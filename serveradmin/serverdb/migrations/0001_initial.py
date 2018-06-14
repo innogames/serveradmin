@@ -97,24 +97,11 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='Project',
-            fields=[
-                ('project_id', models.CharField(primary_key=True, validators=[django.core.validators.RegexValidator('\\A[a-z][a-z0-9_]+\\Z', 'Invalid id')], serialize=False, max_length=32)),
-                ('subdomain', models.CharField(validators=[django.core.validators.RegexValidator('\\A([a-z0-9]+[\\.\\-])*[a-z0-9]+\\Z', 'Invalid hostname')], unique=True, max_length=16)),
-                ('responsible_admin', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL, db_index=False)),
-            ],
-            options={
-                'ordering': ('pk',),
-                'db_table': 'project',
-            },
-        ),
-        migrations.CreateModel(
             name='Server',
             fields=[
                 ('server_id', models.AutoField(primary_key=True, serialize=False)),
                 ('hostname', models.CharField(validators=[django.core.validators.RegexValidator('\\A([a-z0-9]+[\\.\\-])*[a-z0-9]+\\Z', 'Invalid hostname')], unique=True, max_length=64)),
                 ('intern_ip', netfields.fields.InetAddressField(null=True, blank=True, max_length=39)),
-                ('_project', models.ForeignKey(db_column='project_id', to='serverdb.Project', on_delete=django.db.models.deletion.PROTECT)),
             ],
             options={
                 'db_table': 'server',

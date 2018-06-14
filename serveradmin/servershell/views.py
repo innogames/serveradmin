@@ -351,7 +351,6 @@ def new_server(request):
 
         if form.is_valid():
             server = Query().new_object(form.cleaned_data['_servertype'].pk)
-            server['project'] = form.cleaned_data['_project'].pk
             server['hostname'] = form.cleaned_data['hostname']
             server['intern_ip'] = form.cleaned_data['intern_ip']
 
@@ -368,7 +367,6 @@ def new_server(request):
         if clone_from:
             form = ServerForm(initial={
                 '_servertype': clone_from['servertype'],
-                '_project': clone_from['project'],
                 'hostname': clone_from['hostname'],
                 'intern_ip': clone_from['intern_ip'],
             })

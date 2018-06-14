@@ -167,33 +167,6 @@ class LookupModel(models.Model):
         return wrapped
 
 
-class Project(LookupModel):
-    objects = LookupManager()
-
-    project_id = models.CharField(
-        max_length=32,
-        primary_key=True,
-        db_index=False,
-        validators=lookup_id_validators,
-    )
-    subdomain = models.CharField(
-        max_length=16,
-        unique=True,
-        db_index=False,
-        validators=hostname_validators,
-    )
-    responsible_admin = models.ForeignKey(
-        User,
-        on_delete=models.PROTECT,
-        db_index=False,
-    )
-
-    class Meta:
-        app_label = 'serverdb'
-        db_table = 'project'
-        ordering = ('pk', )
-
-
 class Servertype(LookupModel):
     objects = LookupManager()
 
@@ -337,14 +310,6 @@ Attribute.specials = {
         group='base',
         special=ServerTableSpecial('_servertype_id'),
     ),
-    'project': Attribute(
-        attribute_id='project',
-        type='string',
-        multi=False,
-        clone=True,
-        group='base',
-        special=ServerTableSpecial('_project_id'),
-    ),
     'intern_ip': Attribute(
         attribute_id='intern_ip',
         type='inet',
@@ -473,12 +438,6 @@ class Server(models.Model):
         validators=hostname_validators,
     )
     intern_ip = netfields.InetAddressField(null=True, blank=True)
-    _project = models.ForeignKey(
-        Project,
-        db_column='project_id',
-        on_delete=models.PROTECT,
-    )
-    project = Project.foreign_key_lookup('_project_id')
     _servertype = models.ForeignKey(
         Servertype,
         db_column='servertype_id',
@@ -527,16 +486,6 @@ class Server(models.Model):
             if server.servertype.ip_addr_type == 'host':
                 raise ValidationError(
                     'IP address already taken by the host "{0}".'
-                    .format(server.hostname)
-                )
-
-            if server.servertype.ip_addr_type == 'loadbalancer' and (
-                server.servertype != self.servertype or
-                server.project != self.project
-            ):
-                raise ValidationError(
-                    'IP address already taken by the loadbalancer "{0}" from '
-                    'a different project.'
                     .format(server.hostname)
                 )
 

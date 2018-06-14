@@ -19,7 +19,6 @@ from serveradmin.serverdb.models import (
     ChangeCommit,
     ChangeUpdate,
     ChangeDelete,
-    Project,
 )
 from serveradmin.serverdb.query_materializer import (
     QueryMaterializer,
@@ -244,24 +243,18 @@ class QueryCommitter:
             hostname = attributes['hostname']
 
             servertype = _get_servertype(attributes)
-            project = _get_project(attributes)
             intern_ip = _get_ip_addr(servertype, attributes)
 
             real_attributes = dict(_get_real_attributes(attributes))
             _validate_real_attributes(servertype, real_attributes)
 
             server = _insert_server(
-                hostname,
-                intern_ip,
-                servertype,
-                project,
-                real_attributes,
+                hostname, intern_ip, servertype, real_attributes
             )
 
             created_server = {k.pk: v for k, v in real_attributes.items()}
             created_server['hostname'] = hostname
             created_server['servertype'] = servertype.pk
-            created_server['project'] = project.pk
             created_server['intern_ip'] = intern_ip
 
             self._created_servers[server.server_id] = server
@@ -602,13 +595,6 @@ def _get_servertype(attributes):
         raise CommitError('Unknown servertype: ' + attributes['servertype'])
 
 
-def _get_project(attributes):
-    if 'project' not in attributes:
-        raise CommitError('"project" attribute is required.')
-
-    return Project.objects.select_for_update().get(pk=attributes['project'])
-
-
 def _get_ip_addr(servertype, attributes):
     networks = tuple(_get_networks(attributes))
     if servertype.ip_addr_type == 'null':
@@ -810,13 +796,7 @@ def _validate_real_attributes(servertype, real_attributes):     # NOQA: C901
     )
 
 
-def _insert_server(
-    hostname,
-    intern_ip,
-    servertype,
-    project,
-    attributes,
-):
+def _insert_server(hostname, intern_ip, servertype, attributes):
 
     if Server.objects.filter(hostname=hostname).exists():
         raise CommitError('Server with that hostname already exists')
@@ -825,7 +805,6 @@ def _insert_server(
         hostname=hostname,
         intern_ip=intern_ip,
         _servertype=servertype,
-        _project=project,
     )
     server.full_clean()
     server.save()
