@@ -393,6 +393,17 @@ class ServertypeAttribute(models.Model):
     related_via_attribute = Attribute.foreign_key_lookup(
         '_related_via_attribute_id'
     )
+    _consistent_via_attribute = models.ForeignKey(
+        Attribute,
+        related_name='consistent_via_servertype_attributes',
+        null=True,
+        blank=True,
+        db_column='consistent_via_attribute_id',
+        db_index=False,
+    )
+    consistent_attribute = LookupModel.foreign_key_lookup(
+        '_consistent_via_attribute_id'
+    )
     required = models.BooleanField(null=False, default=False)
     default_value = models.CharField(max_length=255, null=True, blank=True)
     regexp = models.CharField(max_length=255, null=True, blank=True)

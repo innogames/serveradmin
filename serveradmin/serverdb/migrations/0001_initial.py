@@ -37,7 +37,14 @@ class Migration(migrations.Migration):
                 ('group', models.CharField(default='other', max_length=32)),
                 ('help_link', models.CharField(null=True, blank=True, max_length=255)),
                 ('readonly', models.BooleanField(default=False)),
-                ('_reversed_attribute', models.ForeignKey(related_name='reversed_attribute_set', db_column='reversed_attribute_id', to='serverdb.Attribute', blank=True, null=True, db_index=False)),
+                ('_reversed_attribute', models.ForeignKey(
+                    related_name='reversed_attribute_set',
+                    db_column='reversed_attribute_id',
+                    to='serverdb.Attribute',
+                    blank=True,
+                    null=True,
+                    db_index=False,
+                )),
             ],
             options={
                 'ordering': ('pk',),
@@ -217,7 +224,14 @@ class Migration(migrations.Migration):
                 ('regexp', models.CharField(null=True, blank=True, max_length=255)),
                 ('default_visible', models.BooleanField(default=False)),
                 ('_attribute', models.ForeignKey(related_name='servertype_attributes', db_column='attribute_id', to='serverdb.Attribute', db_index=False)),
-                ('_related_via_attribute', models.ForeignKey(related_name='related_via_servertype_attributes', db_column='related_via_attribute_id', to='serverdb.Attribute', blank=True, null=True, db_index=False)),
+                ('_related_via_attribute', models.ForeignKey(
+                    related_name='related_via_servertype_attributes',
+                    db_column='related_via_attribute_id',
+                    to='serverdb.Attribute',
+                    blank=True,
+                    null=True,
+                    db_index=False,
+                )),
                 ('_servertype', models.ForeignKey(related_name='attributes', db_column='servertype_id', to='serverdb.Servertype', db_index=False)),
             ],
             options={
