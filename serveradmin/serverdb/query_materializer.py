@@ -10,7 +10,6 @@ from django.core.exceptions import ValidationError
 
 from adminapi.dataset import DatasetObject
 from serveradmin.serverdb.models import (
-    Project,
     Servertype,
     Attribute,
     ServertypeAttribute,
@@ -50,7 +49,6 @@ class QueryMaterializer:
                 Attribute.specials['hostname']: server.hostname,
                 Attribute.specials['intern_ip']: server.intern_ip,
                 Attribute.specials['servertype']: server.servertype,
-                Attribute.specials['project']: server.project,
             }
             servers_by_type[server.servertype].append(server)
 
@@ -225,7 +223,7 @@ class QueryMaterializer:
         server_attributes = self._server_attributes[server]
         for attribute, value in server_attributes.items():
             if self._attributes is None or attribute in self._attributes:
-                if attribute.pk in ('project', 'servertype'):
+                if attribute.pk == 'servertype':
                     yield attribute.pk, value.pk
                 elif attribute.type == 'inet':
                     if value is None:
@@ -288,9 +286,9 @@ class QueryMaterializer:
 def _sort_key(value):
     if isinstance(value, (IPv4Address, IPv6Address)):
         return value.version, value
-    if isinstance(value, (Server)):
+    if isinstance(value, Server):
         return value.hostname
-    if isinstance(value, (Servertype, Project)):
+    if isinstance(value, Servertype):
         return value.pk
     return value
 
@@ -302,8 +300,6 @@ def get_default_attribute_values(servertype_id):
     for attribute_id in Attribute.specials:
         if attribute_id == 'servertype':
             value = servertype_id
-        elif attribute_id == 'project' and servertype.fixed_project:
-            value = servertype.fixed_project.pk
         else:
             value = None
         attribute_values[attribute_id] = value

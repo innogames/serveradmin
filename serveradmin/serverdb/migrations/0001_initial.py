@@ -37,7 +37,14 @@ class Migration(migrations.Migration):
                 ('group', models.CharField(default='other', max_length=32)),
                 ('help_link', models.CharField(null=True, blank=True, max_length=255)),
                 ('readonly', models.BooleanField(default=False)),
-                ('_reversed_attribute', models.ForeignKey(related_name='reversed_attribute_set', db_column='reversed_attribute_id', to='serverdb.Attribute', blank=True, null=True, db_index=False)),
+                ('_reversed_attribute', models.ForeignKey(
+                    related_name='reversed_attribute_set',
+                    db_column='reversed_attribute_id',
+                    to='serverdb.Attribute',
+                    blank=True,
+                    null=True,
+                    db_index=False,
+                )),
             ],
             options={
                 'ordering': ('pk',),
@@ -90,24 +97,11 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='Project',
-            fields=[
-                ('project_id', models.CharField(primary_key=True, validators=[django.core.validators.RegexValidator('\\A[a-z][a-z0-9_]+\\Z', 'Invalid id')], serialize=False, max_length=32)),
-                ('subdomain', models.CharField(validators=[django.core.validators.RegexValidator('\\A([a-z0-9]+[\\.\\-])*[a-z0-9]+\\Z', 'Invalid hostname')], unique=True, max_length=16)),
-                ('responsible_admin', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL, db_index=False)),
-            ],
-            options={
-                'ordering': ('pk',),
-                'db_table': 'project',
-            },
-        ),
-        migrations.CreateModel(
             name='Server',
             fields=[
                 ('server_id', models.AutoField(primary_key=True, serialize=False)),
                 ('hostname', models.CharField(validators=[django.core.validators.RegexValidator('\\A([a-z0-9]+[\\.\\-])*[a-z0-9]+\\Z', 'Invalid hostname')], unique=True, max_length=64)),
                 ('intern_ip', netfields.fields.InetAddressField(null=True, blank=True, max_length=39)),
-                ('_project', models.ForeignKey(db_column='project_id', to='serverdb.Project', on_delete=django.db.models.deletion.PROTECT)),
             ],
             options={
                 'db_table': 'server',
@@ -202,7 +196,6 @@ class Migration(migrations.Migration):
                 ('servertype_id', models.CharField(primary_key=True, validators=[django.core.validators.RegexValidator('\\A[a-z][a-z0-9_]+\\Z', 'Invalid id')], serialize=False, max_length=32)),
                 ('description', models.CharField(max_length=1024)),
                 ('ip_addr_type', models.CharField(choices=[('null', 'null'), ('host', 'host'), ('loadbalancer', 'loadbalancer'), ('network', 'network')], max_length=32)),
-                ('_fixed_project', models.ForeignKey(db_column='fixed_project_id', to='serverdb.Project', blank=True, on_delete=django.db.models.deletion.PROTECT, null=True, db_index=False)),
             ],
             options={
                 'ordering': ('pk',),
@@ -218,7 +211,14 @@ class Migration(migrations.Migration):
                 ('regexp', models.CharField(null=True, blank=True, max_length=255)),
                 ('default_visible', models.BooleanField(default=False)),
                 ('_attribute', models.ForeignKey(related_name='servertype_attributes', db_column='attribute_id', to='serverdb.Attribute', db_index=False)),
-                ('_related_via_attribute', models.ForeignKey(related_name='related_via_servertype_attributes', db_column='related_via_attribute_id', to='serverdb.Attribute', blank=True, null=True, db_index=False)),
+                ('_related_via_attribute', models.ForeignKey(
+                    related_name='related_via_servertype_attributes',
+                    db_column='related_via_attribute_id',
+                    to='serverdb.Attribute',
+                    blank=True,
+                    null=True,
+                    db_index=False,
+                )),
                 ('_servertype', models.ForeignKey(related_name='attributes', db_column='servertype_id', to='serverdb.Servertype', db_index=False)),
             ],
             options={

@@ -41,8 +41,7 @@ def get_server_query(servertypes, attribute_filters):
         ' server.server_id,'
         ' server.hostname,'
         ' server.intern_ip,'
-        ' server.servertype_id AS _servertype_id,'
-        ' server.project_id AS _project_id'
+        ' server.servertype_id AS _servertype_id'
         ' FROM server'
         ' WHERE servertype_id IN ({})'
         .format(', '.join(

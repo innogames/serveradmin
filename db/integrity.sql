@@ -146,14 +146,4 @@ and target.server_id = extra.value
 and attribute.target_servertype_id != target.servertype_id
 returning attribute.attribute_id, target.hostname;
 
-delete from server_relation_attribute as extra
-using server, server as target_server, attribute, servertype as target_servertype
-where server.server_id = extra.server_id
-and target_server.server_id = extra.value
-and attribute.attribute_id = extra.attribute_id
-and attribute.target_servertype_id = target_servertype.servertype_id
-and target_servertype.fixed_project_id is null
-and server.project_id != target_server.project_id
-returning *;
-
 commit;

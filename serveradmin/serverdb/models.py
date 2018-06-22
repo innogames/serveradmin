@@ -167,33 +167,6 @@ class LookupModel(models.Model):
         return wrapped
 
 
-class Project(LookupModel):
-    objects = LookupManager()
-
-    project_id = models.CharField(
-        max_length=32,
-        primary_key=True,
-        db_index=False,
-        validators=lookup_id_validators,
-    )
-    subdomain = models.CharField(
-        max_length=16,
-        unique=True,
-        db_index=False,
-        validators=hostname_validators,
-    )
-    responsible_admin = models.ForeignKey(
-        User,
-        on_delete=models.PROTECT,
-        db_index=False,
-    )
-
-    class Meta:
-        app_label = 'serverdb'
-        db_table = 'project'
-        ordering = ('pk', )
-
-
 class Servertype(LookupModel):
     objects = LookupManager()
 
@@ -204,15 +177,6 @@ class Servertype(LookupModel):
         validators=lookup_id_validators,
     )
     description = models.CharField(max_length=1024)
-    _fixed_project = models.ForeignKey(
-        Project,
-        blank=True,
-        null=True,
-        db_column='fixed_project_id',
-        db_index=False,
-        on_delete=models.PROTECT,
-    )
-    fixed_project = Project.foreign_key_lookup('_fixed_project_id')
     ip_addr_type = models.CharField(
         max_length=32,
         choices=get_choices(ip_addr_types),
@@ -346,14 +310,6 @@ Attribute.specials = {
         group='base',
         special=ServerTableSpecial('_servertype_id'),
     ),
-    'project': Attribute(
-        attribute_id='project',
-        type='string',
-        multi=False,
-        clone=True,
-        group='base',
-        special=ServerTableSpecial('_project_id'),
-    ),
     'intern_ip': Attribute(
         attribute_id='intern_ip',
         type='inet',
@@ -401,6 +357,17 @@ class ServertypeAttribute(models.Model):
     )
     related_via_attribute = Attribute.foreign_key_lookup(
         '_related_via_attribute_id'
+    )
+    _consistent_via_attribute = models.ForeignKey(
+        Attribute,
+        related_name='consistent_via_servertype_attributes',
+        null=True,
+        blank=True,
+        db_column='consistent_via_attribute_id',
+        db_index=False,
+    )
+    consistent_attribute = LookupModel.foreign_key_lookup(
+        '_consistent_via_attribute_id'
     )
     required = models.BooleanField(null=False, default=False)
     default_value = models.CharField(max_length=255, null=True, blank=True)
@@ -471,12 +438,6 @@ class Server(models.Model):
         validators=hostname_validators,
     )
     intern_ip = netfields.InetAddressField(null=True, blank=True)
-    _project = models.ForeignKey(
-        Project,
-        db_column='project_id',
-        on_delete=models.PROTECT,
-    )
-    project = Project.foreign_key_lookup('_project_id')
     _servertype = models.ForeignKey(
         Servertype,
         db_column='servertype_id',
@@ -499,7 +460,6 @@ class Server(models.Model):
 
     def clean(self, *args, **kwargs):
         super(Server, self).clean(*args, **kwargs)
-        self._validate_project()
         if self.servertype.ip_addr_type == 'null':
             if self.intern_ip is not None:
                 raise ValidationError('IP address must be null.')
@@ -512,13 +472,6 @@ class Server(models.Model):
             else:
                 self._validate_host_intern_ip()
 
-    def _validate_project(self):
-        fixed_project = self.servertype.fixed_project
-        if fixed_project and self.project != fixed_project:
-            raise ValidationError(
-                'Project has to be "{0}".'.format(fixed_project)
-            )
-
     def _validate_host_intern_ip(self):
         if self.intern_ip.max_prefixlen != self.netmask_len():
             raise ValidationError(
@@ -530,31 +483,9 @@ class Server(models.Model):
         for server in Server.objects.filter(
             intern_ip__net_overlaps=self.intern_ip
         ).exclude(pk=self.pk):
-            if (
-                server.servertype.ip_addr_type == 'network' and
-                server.project != self.project and
-                not server.servertype.fixed_project and
-                not self.servertype.fixed_project
-            ):
-                raise ValidationError(
-                    'IP address overlaps with the network "{0}" from '
-                    'a different project.'
-                    .format(server.hostname)
-                )
-
             if server.servertype.ip_addr_type == 'host':
                 raise ValidationError(
                     'IP address already taken by the host "{0}".'
-                    .format(server.hostname)
-                )
-
-            if server.servertype.ip_addr_type == 'loadbalancer' and (
-                server.servertype != self.servertype or
-                server.project != self.project
-            ):
-                raise ValidationError(
-                    'IP address already taken by the loadbalancer "{0}" from '
-                    'a different project.'
                     .format(server.hostname)
                 )
 
@@ -568,17 +499,6 @@ class Server(models.Model):
         for server in Server.objects.filter(
             intern_ip__net_overlaps=self.intern_ip
         ).exclude(pk=self.pk):
-            if (
-                server.project != self.project and
-                not server.servertype.fixed_project and
-                not self.servertype.fixed_project
-            ):
-                raise ValidationError(
-                    'IP address overlaps with "{0}" from a different '
-                    'project.'
-                    .format(server.hostname)
-                )
-
             if self.servertype == server.servertype:
                 raise ValidationError(
                     'IP address overlaps with "{0}" in the same '
@@ -723,18 +643,6 @@ class ServerRelationAttribute(ServerAttribute):
             raise ValidationError(
                 'Attribute "{0}" has to be from servertype "{1}".'
                 .format(self.attribute, self.attribute.target_servertype)
-            )
-
-        # We are also going to check that the servers have the same
-        # project, but only if this servertype doesn't have a fixed
-        # project.
-        if (
-            not target_servertype.fixed_project and
-            target_server.project != self.server.project
-        ):
-            raise ValidationError(
-                'Attribute "{0}" has to be from the project {1}.'
-                .format(self.attribute, self.server.project)
             )
 
         ServerAttribute.save_value(self, target_server)

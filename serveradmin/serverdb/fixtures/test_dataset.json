@@ -18,14 +18,6 @@
         }
     },
     {
-        "pk": "someproject",
-        "model": "serverdb.project",
-        "fields": {
-            "subdomain": "some",
-            "responsible_admin": 1
-        }
-    },
-    {
         "pk": "os",
         "model": "serverdb.attribute",
         "fields": {
@@ -114,8 +106,7 @@
         "fields": {
             "intern_ip": 168820737,
             "hostname": "test0",
-            "_servertype": "test0",
-            "_project": "someproject"
+            "_servertype": "test0"
         }
     },
     {
@@ -124,8 +115,7 @@
         "fields": {
             "intern_ip": 168820738,
             "hostname": "test1",
-            "_servertype": "test2",
-            "_project": "someproject"
+            "_servertype": "test2"
         }
     },
     {
@@ -134,8 +124,7 @@
         "fields": {
             "intern_ip": 168820739,
             "hostname": "test2",
-            "_servertype": "test2",
-            "_project": "someproject"
+            "_servertype": "test2"
         }
     },
     {
@@ -144,8 +133,7 @@
         "fields": {
             "intern_ip": 168820740,
             "hostname": "test3",
-            "_servertype": "test2",
-            "_project": "someproject"
+            "_servertype": "test2"
         }
     },
     {

@@ -7,13 +7,6 @@ class Migration(migrations.Migration):
     dependencies = [('serverdb', '0001_initial')]
     operations = [
         migrations.RunSQL(
-            'ALTER TABLE project '
-            'ADD CONSTRAINT project_project_id_check '
-            r"   CHECK (project_id ~ '\A[a-z][a-z0-9_]+\Z'), "
-            'ADD CONSTRAINT project_subdomain_check '
-            r"   CHECK (subdomain ~ '\A[a-z][a-z0-9\.\-]+\Z')"
-        ),
-        migrations.RunSQL(
             'ALTER TABLE servertype '
             'ADD CONSTRAINT servertype_servertype_id_check '
             r"   CHECK (servertype_id ~ '\A[a-z][a-z0-9_]+\Z')"
