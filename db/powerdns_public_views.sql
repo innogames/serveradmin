@@ -84,6 +84,15 @@ union all
 union all
     select
         server.hostname as name,
+        'MX'::text as type,
+        mx.hostname as content
+    from public.server
+    join public.server_relation_attribute as mx_attribute using (server_id)
+    join public.server as mx on mx_attribute.value = mx.server_id
+    where mx_attribute.attribute_id = 'mx'
+union all
+    select
+        server.hostname as name,
         'SSHFP'::text as type,
         attribute.value as content
     from public.server
