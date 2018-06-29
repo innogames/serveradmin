@@ -62,6 +62,27 @@ union all
     where server.servertype_id in ('vm_external', 'hardware_external')
 union all
     select
+        domain.hostname as name,
+        case family(server.intern_ip) when 4 then 'A'::text else 'AAAA'::text end as type,
+        host(server.intern_ip) as content
+    from public.server
+    join public.server_relation_attribute as domain_attribute using (server_id)
+    join public.server as domain on domain_attribute.value = domain.server_id
+    where server.intern_ip is not null and
+        domain_attribute.attribute_id = 'domain'
+union all
+    select
+        domain.hostname as name,
+        case family(attribute.value) when 4 then 'A'::text else 'AAAA'::text end as type,
+        host(attribute.value) as content
+    from public.server
+    join public.server_inet_attribute as attribute using (server_id)
+    join public.server_relation_attribute as domain_attribute using (server_id)
+    join public.server as domain on domain_attribute.value = domain.server_id
+    where server.intern_ip is not null and
+        domain_attribute.attribute_id = 'domain'
+union all
+    select
         server.hostname as name,
         'SSHFP'::text as type,
         attribute.value as content
