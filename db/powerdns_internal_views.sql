@@ -41,6 +41,13 @@ from (
 union all
     select
         server.hostname as name,
+        NULL as type,
+        NULL as content
+    from public.server
+    where server.servertype_id = 'project_domain'
+union all
+    select
+        server.hostname as name,
         case family(server.intern_ip) when 4 then 'A'::text else 'AAAA'::text end as type,
         host(server.intern_ip) as content
     from public.server
