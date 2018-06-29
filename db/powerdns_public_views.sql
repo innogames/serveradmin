@@ -66,23 +66,25 @@ union all
     select
         public.ptr(server.intern_ip) as name,
         'PTR'::text as type,
-        domain.value as content
+        domain.hostname as content
     from public.server
-    join public.server_string_attribute as domain using (server_id)
+    join public.server_relation_attribute as domain_attribute using (server_id)
+    join public.server as domain on domain_attribute.value = domain.server_id
     where server.intern_ip is not null and
         hostmask(server.intern_ip) in ('0.0.0.0', '::') and
-        domain.attribute_id = 'domain'
+        domain_attribute.attribute_id = 'domain'
 union all
     select
         public.ptr(attribute.value) as name,
         'PTR'::text as type,
-        domain.value as content
+        domain.hostname as content
     from public.server
     join public.server_inet_attribute as attribute using (server_id)
-    join public.server_string_attribute as domain using (server_id)
+    join public.server_relation_attribute as domain_attribute using (server_id)
+    join public.server as domain on domain_attribute.value = domain.server_id
     where server.intern_ip is not null and
         hostmask(attribute.value) in ('0.0.0.0', '::') and
-        domain.attribute_id = 'domain'
+        domain_attribute.attribute_id = 'domain'
 ) as r
 join dns_public.domains as d
     on r.name like ('%' || d.name);
