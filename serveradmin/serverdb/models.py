@@ -72,7 +72,7 @@ lookup_id_validators = [
 ]
 
 hostname_validators = [
-    RegexValidator(r'\A([a-z0-9]+[\.\-])*[a-z0-9]+\Z', 'Invalid hostname'),
+    RegexValidator(r'\A(\*\.)?([a-z0-9]+[\.\-])*[a-z0-9]+\Z', 'Invalid hostname'),
 ]
 
 

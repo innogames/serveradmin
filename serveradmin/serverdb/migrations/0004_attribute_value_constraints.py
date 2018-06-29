@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
         migrations.RunSQL(
             'ALTER TABLE server '
             'ADD CONSTRAINT server_hostname_check '
-            r"   CHECK (hostname ~ '\A([a-z0-9]+[\.\-])*[a-z0-9]+\Z')"
+            r"   CHECK (hostname ~ '\A(\*\.)?([a-z0-9]+[\.\-])*[a-z0-9]+\Z')"
         ),
         migrations.RunSQL(
             'ALTER TABLE servertype_attribute '
