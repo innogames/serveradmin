@@ -1140,6 +1140,9 @@ $(function() {
         var attribute_type = attr_item.attr('data-attr-type');
         var symbol;
         switch (attribute_type) {
+            case 'reverse':
+                symbol = 'Я';
+                break;
             case 'supernet':
                 symbol = 'P';
                 break;
