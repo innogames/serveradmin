@@ -3,6 +3,7 @@
 //<![CDATA[
 var shell_autocomplete_url = "{% url 'servershell_autocomplete' %}";
 var available_attributes = {{ attributes_json|safe }};
+var available_servertypes = {{ servertypes_json|safe }};
 var filter_functions = {{ filters_json|safe }};
 $(function() {
     $('#{{ search_id }}').autocomplete({

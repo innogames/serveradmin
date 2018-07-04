@@ -462,6 +462,8 @@ function autocomplete_shell_command(term, autocomplete_cb) {
         }
     } else if (command == 'orderby' && parsed_args[1]['token'] == 'str') {
         _autocomplete_attr(term, parsed_args, autocomplete, ' ');
+    } else if (command == 'new' && parsed_args[1]['token'] == 'str') {
+        _autocomplete_server(term, parsed_args, autocomplete, ' ');
     }
     autocomplete_cb(autocomplete);
 }
@@ -502,8 +504,6 @@ function handle_command(command) {
         return handle_command_export();
     } else if (command == 'graph') {
         return handle_command_graph();
-    } else if (command == 'new') {
-        return handle_command_new();
     } else if (command == 'clone') {
         return handle_command_clone();
     } else if (command == 'inspect') {
@@ -642,17 +642,6 @@ function handle_command_inspect() {
     return '';
 }
 
-function handle_command_new() {
-    $.get(shell_new_url, function(page) {
-        $('<div title="New server"></div>').append(page).dialog({
-            'width': 600
-        }).on('dialogclose', function(event, ui) {
-            $(event.currentTarget).empty().dialog('destroy');
-        });
-    });
-    return '';
-}
-
 function handle_command_delete() {
     execute_on_servers(function(server) {
         commit['deleted'].push(server['object_id']);
@@ -719,6 +708,8 @@ function handle_command_other(command) {
     var command_name = parsed_args[0]['value'];
     if (command_name == 'attr') {
         return handle_command_attr(parsed_args);
+    } else if (command_name == 'new') {
+        return handle_command_new(parsed_args);
     } else if (command_name == 'goto') {
         return handle_command_goto(parsed_args);
     } else if (command_name == 'orderby') {
@@ -766,6 +757,15 @@ function handle_command_attr(parsed_args) {
         render_server_table();
     }
 
+    return '';
+}
+
+function handle_command_new(parsed_args) {
+    if (parsed_args[1]['token'] != 'str') {
+        return;
+    }
+    var new_url = shell_new_url + '?servertype=' + parsed_args[1]['value'];
+    window.location.href = new_url;
     return '';
 }
 
