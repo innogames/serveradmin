@@ -20,7 +20,6 @@ from adminapi.filters import Any, ContainedOnlyBy, StartsWith, filter_classes
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
 from serveradmin.dataset import Query
-from serveradmin.serverdb.forms import ServerForm
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
@@ -330,23 +329,13 @@ def get_values(request):
 
 @login_required
 def new_server(request):
-    if request.method == 'POST':
-        form = ServerForm(request.POST)
+    try:
+        servertype = request.GET.get('servertype')
+        server = Query().new_object(servertype)
+    except Servertype.DoesNotExist:
+        raise Http404
 
-        if form.is_valid():
-            server = Query().new_object(form.cleaned_data['_servertype'].pk)
-            server['hostname'] = form.cleaned_data['hostname']
-            server['intern_ip'] = form.cleaned_data['intern_ip']
-
-            return _edit(request, server)
-    else:
-        form = ServerForm()
-
-    return TemplateResponse(request, 'servershell/new_server.html', {
-        'form': form,
-        'is_ajax': request.is_ajax(),
-        'base_template': 'empty.html' if request.is_ajax() else 'base.html',
-    })
+    return _edit(request, server)
 
 
 @login_required
