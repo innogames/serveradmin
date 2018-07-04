@@ -10,6 +10,7 @@ from serveradmin.servershell.views import (
     commit,
     get_values,
     new_server,
+    clone_server,
     choose_ip_addr,
     store_command,
 )
@@ -25,6 +26,7 @@ urlpatterns = [
     url(r'^commit$', commit, name='servershell_commit'),
     url(r'^values$', get_values, name='servershell_values'),
     url(r'^new$', new_server, name='servershell_new'),
+    url(r'^clone$', clone_server, name='servershell_clone'),
     url(
         r'^choose_ip_addr$',
         choose_ip_addr,

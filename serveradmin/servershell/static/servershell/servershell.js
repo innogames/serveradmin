@@ -600,13 +600,8 @@ function handle_command_graph() {
 
 function handle_command_clone() {
     function clone_server(server) {
-        $.get(shell_new_url, {'clone_from': server['hostname']}, function(page) {
-            var title = 'Clone server from ' + server['hostname'];
-            $('<div title="' + title + '"></div>').append(page).dialog({
-                'width': 600
-            });
-        });
-        return false;
+        var clone_url = shell_clone_url + '?hostname=' + server['hostname'];
+        window.location.href = clone_url;
     }
     execute_on_servers(clone_server);
     return '';
