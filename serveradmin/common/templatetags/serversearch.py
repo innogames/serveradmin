@@ -4,13 +4,14 @@ from django import template
 from django.conf import settings
 
 from adminapi.filters import ExactMatch, filter_classes
-from serveradmin.serverdb.models import Attribute
+from serveradmin.serverdb.models import Attribute, Servertype
 
 register = template.Library()
 
 
 @register.inclusion_tag('serversearch.html')
 def serversearch_js(search_id):
+    servertypes = {s.pk: {} for s in Servertype.objects.all()}
     attributes = {
         a.pk: {
             'multi': a.multi,
@@ -20,6 +21,7 @@ def serversearch_js(search_id):
     }
 
     return {
+        'servertypes_json': json.dumps(servertypes),
         'attributes_json': json.dumps(attributes),
         'filters_json': json.dumps(
             [

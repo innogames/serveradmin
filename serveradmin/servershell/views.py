@@ -20,7 +20,6 @@ from adminapi.filters import Any, ContainedOnlyBy, StartsWith, filter_classes
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
 from serveradmin.dataset import Query
-from serveradmin.serverdb.forms import ServerForm
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
@@ -328,57 +327,32 @@ def get_values(request):
     })
 
 
-@login_required     # NOQA: C901
-def new_server(request):
-    if 'clone_from' in request.GET:
-        clone_from = request.GET['clone_from']
-    elif 'clone_from' in request.POST:
-        clone_from = request.POST['clone_from']
-    else:
-        clone_from = None
+@login_required
+def new_object(request):
+    try:
+        servertype = request.GET.get('servertype')
+        new_object = Query().new_object(servertype)
+    except Servertype.DoesNotExist:
+        raise Http404
 
-    if clone_from:
-        try:
-            clone_from = Query(
-                {'hostname': clone_from},
-                [a.pk for a in Attribute.objects.all() if a.clone]
-            ).get()
-        except ValidationError:
-            raise Http404
+    return _edit(request, new_object)
 
-    if request.method == 'POST':
-        form = ServerForm(request.POST)
 
-        if form.is_valid():
-            server = Query().new_object(form.cleaned_data['_servertype'].pk)
-            server['hostname'] = form.cleaned_data['hostname']
-            server['intern_ip'] = form.cleaned_data['intern_ip']
+@login_required
+def clone_object(request):
+    try:
+        old_object = Query(
+            {'hostname': request.GET.get('hostname')},
+            [a.pk for a in Attribute.objects.all() if a.clone]
+        ).get()
+    except ValidationError:
+        raise Http404
 
-            if clone_from:
-                for attribute_id, value in clone_from.items():
-                    if attribute_id not in server:
-                        continue
-                    if attribute_id in Attribute.specials:
-                        continue
-                    server[attribute_id] = value
+    new_object = Query().new_object(old_object['servertype'])
+    for attribute_id, value in old_object.items():
+        new_object[attribute_id] = value
 
-            return _edit(request, server)
-    else:
-        if clone_from:
-            form = ServerForm(initial={
-                '_servertype': clone_from['servertype'],
-                'hostname': clone_from['hostname'],
-                'intern_ip': clone_from['intern_ip'],
-            })
-        else:
-            form = ServerForm()
-
-    return TemplateResponse(request, 'servershell/new_server.html', {
-        'form': form,
-        'is_ajax': request.is_ajax(),
-        'base_template': 'empty.html' if request.is_ajax() else 'base.html',
-        'clone_from': clone_from,
-    })
+    return _edit(request, new_object)
 
 
 @login_required

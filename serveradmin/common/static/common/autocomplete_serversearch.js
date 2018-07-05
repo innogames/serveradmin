@@ -186,6 +186,16 @@ function autocomplete_shell_search(term, autocomplete_cb)
 
 function _autocomplete_attr(term, parsed_args, autocomplete_list, suffix, filter_fn)
 {
+    _autocomplete(available_attributes, 'Attr: ', term, parsed_args, autocomplete_list, suffix, filter_fn)
+}
+
+function _autocomplete_server(term, parsed_args, autocomplete_list, suffix, filter_fn)
+{
+    _autocomplete(available_servertypes, 'Server: ', term, parsed_args, autocomplete_list, suffix, filter_fn)
+}
+
+function _autocomplete(options, option_label, term, parsed_args, autocomplete_list, suffix, filter_fn)
+{
     if (typeof(suffix) == 'undefined') {
         suffix = '';
     }
@@ -194,10 +204,10 @@ function _autocomplete_attr(term, parsed_args, autocomplete_list, suffix, filter
     }
     var attr_name = parsed_args[parsed_args.length - 1]['value'].toLowerCase();
     var prefix = term.substring(0, term.length - attr_name.length);
-    for (attr in available_attributes) {
+    for (attr in options) {
         if (attr.substr(0, attr_name.length).toLowerCase() == attr_name && filter_fn(attr)) {
             autocomplete_list.push({
-                'label': 'Attr: ' + attr,
+                'label': option_label + attr,
                 'value': prefix + attr + suffix
             })
         }
