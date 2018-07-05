@@ -187,6 +187,9 @@ class Servertype(LookupModel):
         db_table = 'servertype'
         ordering = ('pk', )
 
+    def __str__(self):
+        return self.servertype_id
+
 
 class AttributeManager(LookupManager):
     def _build_cache(self):
