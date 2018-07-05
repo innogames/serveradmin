@@ -73,7 +73,7 @@ you can use::
 If you want to work on the production data, you can dump it from the server,
 and restore on your database::
 
-    pg_dump --no-owner --no-privileges --exclude-table-data=sshaccess_state serveradmin > serveradmin.sql
+    pg_dump --no-owner --no-privileges serveradmin > serveradmin.sql
     psql -1 serveradmin < serveradmin.sql
 
 
