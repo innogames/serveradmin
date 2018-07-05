@@ -5,7 +5,12 @@ except ImportError:
 from operator import attrgetter
 from itertools import islice
 
-from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.http import (
+    HttpResponse,
+    HttpResponseRedirect,
+    Http404,
+    JsonResponse,
+)
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import (
@@ -30,6 +35,8 @@ from serveradmin.serverdb.query_committer import (
     QueryCommitter,
     CommitIncomplete,
 )
+from serveradmin.servershell.models import Bookmark
+
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 100
@@ -56,6 +63,7 @@ def index(request):
             request.session.get('command_history', [])
         ),
         'filters': [(f.__name__, f.__doc__) for f in filter_classes],
+        'bookmarks': Bookmark.objects.all(),
     })
 
 
@@ -402,6 +410,28 @@ def store_command(request):
             command_history.append(command)
             request.session.modified = True
     return HttpResponse('{"status": "OK"}', content_type='application/x-json')
+
+
+@login_required
+def bookmark_command(request):
+    """Bookmark term or inform user if exists"""
+
+    term = request.GET['term']
+    name = request.GET['name']
+    response = dict()
+
+    if Bookmark.objects.filter(term=term).exists():
+        response['message'] = 'Bookmark already exists with name {}!'.format(
+            Bookmark.objects.get(term=term).name
+        )
+    else:
+        b = Bookmark()
+        b.name = name.strip()
+        b.term = term
+        b.save()
+        response['message'] = 'Bookmark created!'
+
+    return JsonResponse(response, content_type='application/x-json')
 
 
 def _prepare_regexp_html(regexp):
