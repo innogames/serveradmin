@@ -32,6 +32,7 @@ ATTRIBUTE_TYPES = {
     'macaddr': EUI,
     'date': str,
     'supernet': str,
+    'domain': str,
 }
 
 IP_ADDR_TYPES = (
@@ -215,7 +216,7 @@ class ServertypeAttribute(models.Model):
         # It can only be related via a relation (AKA as an hostname
         # attribute).
         limit_choices_to=models.Q(
-            type__in=['relation', 'reverse', 'supernet']
+            type__in=['relation', 'reverse', 'supernet', 'domain']
         ),
     )
     consistent_via_attribute = models.ForeignKey(

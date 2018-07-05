@@ -101,7 +101,7 @@ def _get_sql_condition(attribute, filt, possible_servertype_ids=None):
 def _covered_sql_condition(
     attribute, template, negate=False, possible_servertype_ids=None
 ):
-    if attribute.type in ['relation', 'reverse', 'supernet']:
+    if attribute.type in ['relation', 'reverse', 'supernet', 'domain']:
         template = (
             '{{0}} IN ('
             '   SELECT server_id'
@@ -230,7 +230,15 @@ def _condition_sql(attribute, template, possible_servertype_ids=None):
             'sub.intern_ip >>= server.intern_ip',
             template.format('sub.server_id'),
         ))
-
+    if attribute.type == 'domain':
+        return _exists_sql(Server, 'sub', (
+            # If you are here because this is not quick enough: Create an index
+            # over reversed(hostname) and change the query like:
+            # reversed(server.hostname) LIKE reversed(sub.hostname) || '%'
+            "sub.servertype_id = '{0}'".format(attribute.target_servertype_id),
+            "server.hostname LIKE '%%' || sub.hostname",
+            template.format('sub.server_id'),
+        ))
     if attribute.type == 'reverse':
         return _exists_sql(ServerRelationAttribute, 'sub', (
             "sub.attribute_id = '{0}'".format(attribute.reversed_attribute_id),

@@ -31,6 +31,7 @@ class Migration(migrations.Migration):
                     ('macaddr', 'macaddr'),
                     ('date', 'date'),
                     ('supernet', 'supernet'),
+                    ('domain', 'domain'),
                 ], max_length=32)),
                 ('multi', models.BooleanField(default=False)),
                 ('hovertext', models.TextField(default='', blank=True)),

@@ -1141,6 +1141,9 @@ $(function() {
             case 'supernet':
                 symbol = 'P';
                 break;
+            case 'domain':
+                symbol = 'O';
+                break;
             default:
                 symbol = attribute_type.charAt(0).toUpperCase();
         }

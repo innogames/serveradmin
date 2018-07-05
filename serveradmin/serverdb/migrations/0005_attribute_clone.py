@@ -18,11 +18,12 @@ class Migration(migrations.Migration):
         migrations.RunSQL(
             'UPDATE attribute '
             'SET clone = true '
-            "WHERE type NOT IN ('reverse', 'supernet')"
+            "WHERE type NOT IN ('reverse', 'supernet', 'domain')"
         ),
         migrations.RunSQL(
             'ALTER TABLE attribute '
             'ADD CONSTRAINT attribute_clone_check '
-            "   CHECK (NOT clone OR type NOT IN ('reverse', 'supernet'))"
+            "   CHECK (NOT clone OR type NOT IN ("
+            "   'reverse', 'supernet', 'domain'))"
         ),
     ]
