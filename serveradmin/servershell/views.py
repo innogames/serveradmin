@@ -328,31 +328,31 @@ def get_values(request):
 
 
 @login_required
-def new_server(request):
+def new_object(request):
     try:
         servertype = request.GET.get('servertype')
-        server = Query().new_object(servertype)
+        new_object = Query().new_object(servertype)
     except Servertype.DoesNotExist:
         raise Http404
 
-    return _edit(request, server)
+    return _edit(request, new_object)
 
 
 @login_required
-def clone_server(request):
+def clone_object(request):
     try:
-        clone_from = Query(
+        old_object = Query(
             {'hostname': request.GET.get('hostname')},
             [a.pk for a in Attribute.objects.all() if a.clone]
         ).get()
     except ValidationError:
         raise Http404
 
-    server = Query().new_object(clone_from['servertype'])
-    for attribute_id, value in clone_from.items():
-        server[attribute_id] = value
+    new_object = Query().new_object(old_object['servertype'])
+    for attribute_id, value in old_object.items():
+        new_object[attribute_id] = value
 
-    return _edit(request, server)
+    return _edit(request, new_object)
 
 
 @login_required
