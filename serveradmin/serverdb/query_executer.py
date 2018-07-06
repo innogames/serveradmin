@@ -19,6 +19,10 @@ from serveradmin.serverdb.query_materializer import QueryMaterializer
 def execute_query(filters, restrict, order_by):
     """The main function to execute queries"""
 
+    servertypes, attribute_filters = _get_servertypes(filters)
+    if not servertypes:
+        return []
+
     # REPEATABLE READ isolation level ensures Postgres to give us a consistent
     # snapshot for the database transaction.  We also set READ ONLY as this
     # is a query operation.  Perhaps this is also enabling some optimization
@@ -36,12 +40,12 @@ def execute_query(filters, restrict, order_by):
         # for ordering may be lost after the materialization.  See the query
         # materializer module for its details.  The functions on this module
         # continues with the filtering step.
-        servers = _get_servers(filters)
+        servers = _get_servers(servertypes, attribute_filters)
         return list(QueryMaterializer(servers, restrict, order_by))
 
 
-def _get_servers(filters):
-    """Get the servers objects matching the filters
+def _get_servertypes(filters):
+    """Get the servertype objects that can possible match with the filters
 
     In here, we would need a list of all possible servertypes that can match
     with the given query.  This is easy to find, because if a servertype
@@ -79,19 +83,7 @@ def _get_servers(filters):
             servertypes,
         ))
 
-    # If we found out that no servertype can match with the query only by
-    # looking at the list of attributes used on the query filters, we can
-    # take the short path and just return an empty list.
-    if not servertypes:
-        return []
-
-    # If you managed to read this so far, the last step is refreshingly
-    # easy: get and execute the raw SQL query.
-    sql_query = get_server_query(servertypes, attribute_filters)
-    try:
-        return list(Server.objects.raw(sql_query))
-    except DataError as error:
-        raise ValidationError(error)
+    return servertypes, attribute_filters
 
 
 def _get_possible_servertypes(attributes):
@@ -113,3 +105,30 @@ def _get_possible_servertypes(attributes):
         servertypes = servertypes.intersection(new)
 
     return servertypes
+
+
+def _get_servers(servertypes, attribute_filters):
+    """Evaluate the filters to fetch the matching servers"""
+
+    unsettled_filters = []
+    for attribute, filt in attribute_filters:
+        # Before we actually execute the query, we can check the destiny of
+        # the filters.  If one is destined to fail, we can just return empty
+        # result.  If some are destined to pass, we can just remove them.
+        # We could do this much earlier, even before preparing the attribute
+        # lookup, but we don't because we still want to raise an error for
+        # nonexistent attributes.
+        destiny = filt.destiny()
+        if destiny is False:
+            return []
+        if destiny is True:
+            continue
+        unsettled_filters.append((attribute, filt))
+
+    # If you managed to read this so far, the last step is refreshingly
+    # easy: get and execute the raw SQL query.
+    sql_query = get_server_query(unsettled_filters, servertypes)
+    try:
+        return list(Server.objects.raw(sql_query))
+    except DataError as error:
+        raise ValidationError(error)
