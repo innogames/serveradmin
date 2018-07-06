@@ -11,14 +11,14 @@ from django.conf import settings
 
 from adminapi.dataset import MultiAttr
 
-from serveradmin.serverdb.models import lookup_id_validators, Attribute
+from serveradmin.serverdb.models import LOOKUP_ID_VALIDATORS, Attribute
 
 GRAPHITE_ATTRIBUTE_ID = 'graphite_graphs'
 
 
 class Collection(models.Model):
     """Collection of graphs and values to be shown for the servers"""
-    name = models.CharField(max_length=255, validators=lookup_id_validators)
+    name = models.CharField(max_length=255, validators=LOOKUP_ID_VALIDATORS)
     params = models.TextField(blank=True, help_text="""
         Part of the URL after "?" to GET the graph or the value from
         the Graphite.  It will be concatenated with the params for
@@ -195,7 +195,7 @@ class Relation(models.Model):
 class Template(models.Model):
     """Templates in the collections"""
     collection = models.ForeignKey(Collection)
-    name = models.CharField(max_length=255, validators=lookup_id_validators)
+    name = models.CharField(max_length=255, validators=LOOKUP_ID_VALIDATORS)
     params = models.TextField(blank=True, help_text="""
         Same as the params of the collections.
         """)
@@ -259,7 +259,7 @@ class Variation(models.Model):
     """
 
     collection = models.ForeignKey(Collection)
-    name = models.CharField(max_length=255, validators=lookup_id_validators)
+    name = models.CharField(max_length=255, validators=LOOKUP_ID_VALIDATORS)
     params = models.TextField(blank=True, help_text="""
         Same as the params of the collections.
         """)

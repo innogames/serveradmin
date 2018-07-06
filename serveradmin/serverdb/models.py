@@ -48,7 +48,7 @@ from serveradmin.apps.models import Application
 # complicated magic on them.
 #
 
-attribute_types = {
+ATTRIBUTE_TYPES = {
     'string': str,
     'boolean': lambda x: bool(strtobool(x)),
     'relation': str,
@@ -60,19 +60,21 @@ attribute_types = {
     'supernet': str,
 }
 
-ip_addr_types = (
+IP_ADDR_TYPES = (
     'null',
     'host',
     'loadbalancer',
     'network',
 )
 
-lookup_id_validators = [
+LOOKUP_ID_VALIDATORS = [
     RegexValidator(r'\A[a-z][a-z0-9_]+\Z', 'Invalid id'),
 ]
 
-hostname_validators = [
-    RegexValidator(r'\A(\*\.)?([a-z0-9]+[\.\-])*[a-z0-9]+\Z', 'Invalid hostname'),
+HOSTNAME_VALIDATORS = [
+    RegexValidator(
+        r'\A(\*\.)?([a-z0-9]+[\.\-])*[a-z0-9]+\Z', 'Invalid hostname'
+    ),
 ]
 
 
@@ -174,12 +176,12 @@ class Servertype(LookupModel):
         max_length=32,
         primary_key=True,
         db_index=False,
-        validators=lookup_id_validators,
+        validators=LOOKUP_ID_VALIDATORS,
     )
     description = models.CharField(max_length=1024)
     ip_addr_type = models.CharField(
         max_length=32,
-        choices=get_choices(ip_addr_types),
+        choices=get_choices(IP_ADDR_TYPES),
     )
 
     class Meta:
@@ -213,11 +215,11 @@ class Attribute(LookupModel):
         max_length=32,
         primary_key=True,
         db_index=False,
-        validators=lookup_id_validators,
+        validators=LOOKUP_ID_VALIDATORS,
     )
     type = models.CharField(
         max_length=32,
-        choices=get_choices(attribute_types.keys()),
+        choices=get_choices(ATTRIBUTE_TYPES.keys()),
     )
     multi = models.BooleanField(null=False, default=False)
     hovertext = models.TextField(null=False, blank=True, default='')
@@ -273,7 +275,7 @@ class Attribute(LookupModel):
         if value is None:
             return value
 
-        from_str_fn = attribute_types[self.type]
+        from_str_fn = ATTRIBUTE_TYPES[self.type]
         try:
             if self.multi:
                 return set(from_str_fn(x) for x in value)
@@ -436,9 +438,7 @@ class Server(models.Model):
 
     server_id = models.AutoField(primary_key=True)
     hostname = models.CharField(
-        max_length=64,
-        unique=True,
-        validators=hostname_validators,
+        max_length=64, unique=True, validators=HOSTNAME_VALIDATORS
     )
     intern_ip = netfields.InetAddressField(null=True, blank=True)
     _servertype = models.ForeignKey(
@@ -526,9 +526,7 @@ class Server(models.Model):
 
 class ServerAttribute(models.Model):
     server = models.ForeignKey(
-        Server,
-        db_index=False,
-        on_delete=models.CASCADE,
+        Server, db_index=False, on_delete=models.CASCADE
     )
 
     class Meta:
