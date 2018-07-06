@@ -1,4 +1,4 @@
-import json
+from json import dumps
 
 from django import template
 from django.conf import settings
@@ -11,19 +11,19 @@ register = template.Library()
 
 @register.inclusion_tag('serversearch.html')
 def serversearch_js(search_id):
-    servertypes = {s.pk: {} for s in Servertype.objects.all()}
-    attributes = {
-        a.pk: {
-            'multi': a.multi,
-            'type': a.type,
-        }
-        for a in Attribute.objects.all()
-    }
+    servertypes = Servertype.objects.all()
+    attributes = Attribute.objects.all()
 
     return {
-        'servertypes_json': json.dumps(servertypes),
-        'attributes_json': json.dumps(attributes),
-        'filters_json': json.dumps(
+        'servertypes_json': dumps({s.pk: {} for s in servertypes}),
+        'attributes_json': dumps({
+            a.pk: {
+                'multi': a.multi,
+                'type': a.type,
+            }
+            for a in attributes
+        }),
+        'filters_json': dumps(
             [
                 f.__name__
                 for f in filter_classes
@@ -32,5 +32,5 @@ def serversearch_js(search_id):
             ]
         ),
         'search_id': search_id,
-        'STATIC_URL': settings.STATIC_URL
+        'STATIC_URL': settings.STATIC_URL,
     }
