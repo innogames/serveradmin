@@ -255,12 +255,6 @@ class Attribute(LookupModel):
         db_table = 'attribute'
         ordering = ('pk', )
 
-    @property
-    def related_servertype_attributes(self):
-        return self.servertype_attributes.filter(
-            _related_via_attribute__isnull=False
-        )
-
     def initializer(self):
         if self.multi:
             return set
