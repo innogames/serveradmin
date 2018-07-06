@@ -31,11 +31,6 @@ from serveradmin.serverdb.models import (
 
 
 def get_server_query(servertypes, attribute_filters):
-    # If there are no possible matches, there is no need to make
-    # a database query.
-    if not servertypes:
-        return []
-
     sql = (
         'SELECT'
         ' server.server_id,'
