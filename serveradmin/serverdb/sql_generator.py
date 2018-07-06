@@ -52,7 +52,7 @@ def get_server_query(servertypes, attribute_filters):
 
         sql += ' AND ' + _get_sql_condition(servertypes, attribute, filt)
 
-    sql += ' ORDER BY server.hostname, server.intern_ip, server.server_id'
+    sql += ' ORDER BY server.hostname'
 
     return sql
 
