@@ -6,12 +6,8 @@ Copyright (c) 2018 InnoGames GmbH
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import DataError, connection, transaction
 
-from serveradmin.serverdb.models import (
-    Attribute,
-    Servertype,
-    ServertypeAttribute,
-    Server,
-)
+from adminapi.filters import Any
+from serveradmin.serverdb.models import Attribute, ServertypeAttribute, Server
 from serveradmin.serverdb.sql_generator import get_server_query
 from serveradmin.serverdb.query_materializer import QueryMaterializer
 
@@ -44,9 +40,18 @@ def execute_query(filters, restrict, order_by):
         attribute_lookup = _get_attribute_lookup(attribute_ids)
     _check_attributes_exist(attribute_ids, attribute_lookup)
 
-    servertypes = _get_servertypes(filters)
-    if not servertypes:
-        return []
+    # If we have real attributes on the query filter, we can use them to
+    # get the possible servertypes.  This is necessary to eliminate
+    # not-desired objects.
+    real_attribute_ids = [a for a in filters if a not in Attribute.specials]
+    if real_attribute_ids:
+        possible_servertype_ids = _get_possible_servertype_ids(
+            real_attribute_ids
+        )
+        filters = dict(filters)
+        _override_servertype_filter(filters, possible_servertype_ids)
+    else:
+        possible_servertype_ids = None
 
     # Here we prepare the join dictionary for the query materializer.
     # For None on the restrict argument, we just use the complete list of
@@ -81,7 +86,9 @@ def execute_query(filters, restrict, order_by):
         # for ordering may be lost after the materialization.  See the query
         # materializer module for its details.  The functions on this module
         # continues with the filtering step.
-        servers = _get_servers(servertypes, filters, attribute_lookup)
+        servers = _get_servers(
+            filters, attribute_lookup, possible_servertype_ids
+        )
         return list(QueryMaterializer(servers, *materializer_args))
 
 
@@ -136,8 +143,9 @@ def _check_attributes_exist(attribute_ids, attribute_lookup):
             raise ObjectDoesNotExist('No attribute "{}"'.format(attribute_id))
 
 
-def _get_servertypes(filters):
-    """Get the servertype objects that can possible match with the filters
+def _get_possible_servertype_ids(attribute_ids):
+    """Get the servertypes that can possible match with the query with
+    the given attributes
 
     In here, we would need a list of all possible servertypes that can match
     with the given query.  This is easy to find, because if a servertype
@@ -145,50 +153,40 @@ def _get_servertypes(filters):
     a result of a query filtering by this attribute.
     """
 
-    # If we have real attributes on the query filter, we can use them to
-    # get the possible servertypes.  This is necessary to eliminate
-    # not-desired objects.
-    real_attribute_ids = [a for a in filters if a not in Attribute.specials]
-    if real_attribute_ids:
-        servertypes = _get_possible_servertypes(real_attribute_ids)
-    else:
-        servertypes = Servertype.objects.all()
-
-    # If the servertype filter is also on the filters, we can deal with
-    # it ourself.  This is only an optimization.
-    if 'servertype' in filters:
-        servertypes = list(filter(
-            lambda s: filters['servertype'].matches(s.pk),
-            servertypes,
-        ))
-
-    return servertypes
-
-
-def _get_possible_servertypes(attribute_ids):
-    """Get the servertypes that can possible match with the query with
-    the given attributes
-    """
-
     # First, we need to index the servertypes by the attributes.
-    attribute_servertypes = {}
+    attribute_servertype_ids = {}
     for sa in ServertypeAttribute.objects.filter(
         _attribute_id__in=attribute_ids
     ):
-        attribute_servertypes.setdefault(sa.attribute, set()).add(
-            sa.servertype
+        attribute_servertype_ids.setdefault(sa.attribute, set()).add(
+            sa.servertype.pk
         )
 
     # Then we get the servertype list of the first attribute, and continue
     # reducing it by getting intersection of the list of the next attribute.
-    servertypes = attribute_servertypes.popitem()[1]
-    for new in attribute_servertypes.values():
-        servertypes = servertypes.intersection(new)
+    servertype_ids = attribute_servertype_ids.popitem()[1]
+    for new in attribute_servertype_ids.values():
+        servertype_ids = servertype_ids.intersection(new)
 
-    return servertypes
+    return servertype_ids
 
 
-def _get_servers(servertypes, filters, attribute_lookup):
+def _override_servertype_filter(filters, possible_servertype_ids):
+    """Override the servertype filter using the possible servertypes"""
+
+    # If the servertype filter is also on the filters, we can deal with
+    # it ourself.  This is an optimization.  We could not do this, but
+    # then we wouldn't be able to override the same filter.
+    if 'servertype' in filters:
+        possible_servertype_ids = filter(
+            filters['servertype'].matches, possible_servertype_ids
+        )
+
+    # Here we add the servertype filter or override the existing one.
+    filters['servertype'] = Any(*possible_servertype_ids)
+
+
+def _get_servers(filters, attribute_lookup, possible_servertype_ids=None):
     """Evaluate the filters to fetch the matching servers"""
 
     # From now on, we will pass the filters dictionary using the attribute
@@ -214,7 +212,7 @@ def _get_servers(servertypes, filters, attribute_lookup):
 
     # If you managed to read this so far, the last step is refreshingly
     # easy: get and execute the raw SQL query.
-    sql_query = get_server_query(servertypes, attribute_filters)
+    sql_query = get_server_query(attribute_filters, possible_servertype_ids)
     try:
         return list(Server.objects.raw(sql_query))
     except DataError as error:
