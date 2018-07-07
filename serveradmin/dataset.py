@@ -3,14 +3,11 @@
 Copyright (c) 2018 InnoGames GmbH
 """
 
-from django.db import transaction
-
 from adminapi.dataset import BaseQuery, DatasetObject
 from serveradmin.serverdb.query_committer import commit_query
-from serveradmin.serverdb.query_executer import _get_servers
+from serveradmin.serverdb.query_executer import execute_query
 from serveradmin.serverdb.query_materializer import (
-    QueryMaterializer,
-    get_default_attribute_values,
+    get_default_attribute_values
 )
 
 
@@ -24,8 +21,5 @@ class Query(BaseQuery):
         commit_query(app=app, user=user, **commit_obj)
         self._confirm_changes()
 
-    @transaction.atomic
     def _fetch_results(self):
-        servers = _get_servers(self._filters)
-
-        return list(QueryMaterializer(servers, self._restrict, self._order_by))
+        return execute_query(self._filters, self._restrict, self._order_by)

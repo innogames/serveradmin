@@ -3,7 +3,7 @@
 Copyright (c) 2018 InnoGames GmbH
 """
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import DataError, connection, transaction
 
 from serveradmin.serverdb.models import (
@@ -19,7 +19,32 @@ from serveradmin.serverdb.query_materializer import QueryMaterializer
 def execute_query(filters, restrict, order_by):
     """The main function to execute queries"""
 
-    servertypes, attribute_filters = _get_servertypes(filters)
+    # We need the restrict argument in slightly different structure.
+    if restrict is None:
+        joins = None
+    else:
+        joins = _get_joins(restrict)
+
+    # We would need the attribute objects on this module and the depending
+    # modules.  We start by collecting the attributes we need on all parts
+    # of the query.
+    attribute_ids = set(_collect_attribute_ids(joins, filters, order_by))
+    attribute_ids.add('servertype')     # We may need "servertype" later.
+
+    # We can fetch the attributes altogether before starting the database
+    # transaction.  None on the restrict argument is special meaning
+    # materialize all possible attributes, so we query them all.  The database
+    # transaction doesn't have to be started yet, because the metadata like
+    # the attributes are mostly stable, and the data model wouldn't let us
+    # see anything in inconsistent state, even while it is being changed
+    # concurrently.
+    if restrict is None:
+        attribute_lookup = _get_attribute_lookup()
+    else:
+        attribute_lookup = _get_attribute_lookup(attribute_ids)
+    _check_attributes_exist(attribute_ids, attribute_lookup)
+
+    servertypes = _get_servertypes(filters)
     if not servertypes:
         return []
 
@@ -40,8 +65,59 @@ def execute_query(filters, restrict, order_by):
         # for ordering may be lost after the materialization.  See the query
         # materializer module for its details.  The functions on this module
         # continues with the filtering step.
-        servers = _get_servers(servertypes, attribute_filters)
+        servers = _get_servers(servertypes, filters, attribute_lookup)
         return list(QueryMaterializer(servers, restrict, order_by))
+
+
+def _get_joins(restrict):
+    """Iterate the restrict clause with the joins"""
+
+    for item in restrict:
+        if isinstance(item, dict):
+            if len(item) != 1:
+                raise ValidationError('Malformatted join restriction')
+
+            for attribute_id, join in item.items():
+                yield (attribute_id, _get_joins(join))
+        else:
+            yield (item, None)
+
+
+def _collect_attribute_ids(joins=None, filters=None, order_by=None):
+    """Yield the attribute_ids from all parts of the query"""
+
+    if joins is not None:
+        for attribute_id, join in joins:
+            yield attribute_id
+
+            for attribute_id in _collect_attribute_ids(join):
+                yield attribute_id
+
+    if filters is not None:
+        for attribute_id in filters:
+            yield attribute_id
+
+    if order_by is not None:
+        for attribute_id in order_by:
+            yield attribute_id
+
+
+def _get_attribute_lookup(attribute_ids=None):
+    """Prepare the attribute lookup and make sure all exist"""
+
+    return {
+        a.pk: a
+        for a in Attribute.objects.all()
+        if attribute_ids is None or a.pk in attribute_ids
+    }
+
+
+def _check_attributes_exist(attribute_ids, attribute_lookup):
+    """Check whether all required attribute ids are valid"""
+
+    for attribute_id in attribute_ids:
+        if attribute_id not in attribute_lookup:
+            raise ObjectDoesNotExist('No attribute "{}"'.format(attribute_id))
 
 
 def _get_servertypes(filters):
@@ -53,47 +129,36 @@ def _get_servertypes(filters):
     a result of a query filtering by this attribute.
     """
 
-    # We can just deal with the servertype filter ourself.
-    if 'servertype' in filters:
-        servertype_filt = filters.pop('servertype')
-    else:
-        servertype_filt = None
-
-    attribute_filters = []
-    real_attributes = []
-    for attribute_id, filt in filters.items():
-        attribute = Attribute.objects.get(pk=attribute_id)
-        attribute_filters.append((attribute, filt))
-        if not attribute.special:
-            real_attributes.append(attribute)
-
     # If we have real attributes on the query filter, we can use them to
     # get the possible servertypes.  This is necessary to eliminate
     # not-desired objects.
-    if real_attributes:
-        servertypes = _get_possible_servertypes(real_attributes)
+    real_attribute_ids = [a for a in filters if a not in Attribute.specials]
+    if real_attribute_ids:
+        servertypes = _get_possible_servertypes(real_attribute_ids)
     else:
         servertypes = Servertype.objects.all()
 
     # If the servertype filter is also on the filters, we can deal with
     # it ourself.  This is only an optimization.
-    if servertype_filt:
+    if 'servertype' in filters:
         servertypes = list(filter(
-            lambda s: servertype_filt.matches(s.pk),
+            lambda s: filters['servertype'].matches(s.pk),
             servertypes,
         ))
 
-    return servertypes, attribute_filters
+    return servertypes
 
 
-def _get_possible_servertypes(attributes):
+def _get_possible_servertypes(attribute_ids):
     """Get the servertypes that can possible match with the query with
     the given attributes
     """
 
     # First, we need to index the servertypes by the attributes.
     attribute_servertypes = {}
-    for sa in ServertypeAttribute.query(attributes=attributes).all():
+    for sa in ServertypeAttribute.objects.filter(
+        _attribute_id__in=attribute_ids
+    ):
         attribute_servertypes.setdefault(sa.attribute, set()).add(
             sa.servertype
         )
@@ -107,11 +172,16 @@ def _get_possible_servertypes(attributes):
     return servertypes
 
 
-def _get_servers(servertypes, attribute_filters):
+def _get_servers(servertypes, filters, attribute_lookup):
     """Evaluate the filters to fetch the matching servers"""
 
-    unsettled_filters = []
-    for attribute, filt in attribute_filters:
+    # From now on, we will pass the filters dictionary using the attribute
+    # objects as the keys.  The SQL generator module will repeatedly need
+    # the properties of the attributes.
+    attribute_filters = []
+    for attribute_id, filt in filters.items():
+        attribute_filters.append((attribute_lookup[attribute_id], filt))
+
         # Before we actually execute the query, we can check the destiny of
         # the filters.  If one is destined to fail, we can just return empty
         # result.  If some are destined to pass, we can just remove them.
@@ -123,11 +193,12 @@ def _get_servers(servertypes, attribute_filters):
             return []
         if destiny is True:
             continue
-        unsettled_filters.append((attribute, filt))
+
+        attribute_filters.append((attribute_lookup[attribute_id], filt))
 
     # If you managed to read this so far, the last step is refreshingly
     # easy: get and execute the raw SQL query.
-    sql_query = get_server_query(unsettled_filters, servertypes)
+    sql_query = get_server_query(servertypes, attribute_filters)
     try:
         return list(Server.objects.raw(sql_query))
     except DataError as error:

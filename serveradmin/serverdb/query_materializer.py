@@ -9,8 +9,6 @@ Copyright (c) 2018 InnoGames GmbH
 
 from ipaddress import IPv4Address, IPv6Address
 
-from django.core.exceptions import ValidationError
-
 from adminapi.dataset import DatasetObject
 from serveradmin.serverdb.models import (
     Servertype,
@@ -34,8 +32,6 @@ class QueryMaterializer:
 
             for item in restrict:
                 if isinstance(item, dict):
-                    if len(item) != 1:
-                        raise ValidationError('Malformatted join restriction')
                     for attribute_id, value in item.items():
                         pass
                 else:
