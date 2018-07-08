@@ -221,14 +221,10 @@ class QueryMaterializer:
             elif attribute.type == 'inet':
                 if value is None:
                     yield attribute.pk, None
+                elif str(value.hostmask) in ['0.0.0.0', '::']:
+                    yield attribute.pk, value.ip
                 else:
-                    servertype_attribute = Attribute.specials['servertype']
-                    servertype = server_attributes[servertype_attribute]
-                    if servertype.ip_addr_type in ('host', 'loadbalancer'):
-                        yield attribute.pk, value.ip
-                    else:
-                        assert servertype.ip_addr_type == 'network'
-                        yield attribute.pk, value.network
+                    yield attribute.pk, value.network
             elif value is None:
                 yield attribute.pk, None
             elif attribute in join_results:
