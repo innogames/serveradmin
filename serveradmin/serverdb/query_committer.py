@@ -76,24 +76,29 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
     attribute_lookup = {
         a.pk: a for a in Attribute.objects.all() if not a.special
     }
+    joined_attributes = {
+        a: None
+        for a
+        in list(attribute_lookup.values()) + list(Attribute.specials.values())
+    }
 
     with transaction.atomic():
         change_commit = ChangeCommit.objects.create(app=app, user=user)
         changed_servers = _fetch_servers(set(c['object_id'] for c in changed))
-        changed_objects = _materialize(changed_servers)
+        changed_objects = _materialize(changed_servers, joined_attributes)
 
         deleted_servers = _fetch_servers(deleted)
-        deleted_objects = _materialize(deleted_servers)
+        deleted_objects = _materialize(deleted_servers, joined_attributes)
         _validate(attribute_lookup, changed, changed_objects)
 
         # Changes should be applied in order to prevent integrity errors.
         _delete_attributes(attribute_lookup, changed, changed_servers, deleted)
         _delete_servers(changed, deleted, deleted_servers)
         created_servers = _create_servers(attribute_lookup, created)
-        created_objects = _materialize(created_servers)
+        created_objects = _materialize(created_servers, joined_attributes)
         _update_servers(changed, changed_servers)
         _upsert_attributes(attribute_lookup, changed, changed_servers)
-        changed_objects = _materialize(changed_servers)
+        changed_objects = _materialize(changed_servers, joined_attributes)
 
         _access_control(
             entities, created_objects, changed_objects, deleted_objects
@@ -364,10 +369,10 @@ def _fetch_servers(object_ids):
     return servers
 
 
-def _materialize(servers):
+def _materialize(servers, joined_attributes):
     return {
         o['object_id']: o
-        for o in QueryMaterializer(list(servers.values()), None)
+        for o in QueryMaterializer(list(servers.values()), joined_attributes)
     }
 
 

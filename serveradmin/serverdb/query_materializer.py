@@ -21,25 +21,10 @@ from serveradmin.serverdb.models import (
 
 
 class QueryMaterializer:
-    def __init__(self, servers, restrict, order_by=None):
+    def __init__(self, servers, joined_attributes, order_by_attributes=[]):
         self._servers = servers
-        self._order_by = [Attribute.objects.get(pk=a) for a in order_by or []]
-
-        if restrict is None:
-            self._attributes = None
-        else:
-            self._attributes = {}
-
-            for item in restrict:
-                if isinstance(item, dict):
-                    for attribute_id, value in item.items():
-                        pass
-                else:
-                    attribute_id = item
-                    value = None
-
-                attribute = Attribute.objects.get(pk=attribute_id)
-                self._attributes[attribute] = value
+        self._joined_attributes = joined_attributes
+        self._order_by_attributes = order_by_attributes
 
         self._server_attributes = {}
         servers_by_type = {}
@@ -58,11 +43,11 @@ class QueryMaterializer:
 
     def __iter__(self):
         servers = self._servers
-        if self._order_by:
+        if self._order_by_attributes:
             def order_by_key(key):
                 return tuple(
                     self._get_order_by_attribute(key, a)
-                    for a in self._order_by
+                    for a in self._order_by_attributes
                 )
 
             servers = sorted(servers, key=order_by_key)
@@ -77,7 +62,9 @@ class QueryMaterializer:
         self._attributes_by_type = {}
         self._servertypes_by_attribute = {}
         self._related_servertype_attributes = []
-        for sa in ServertypeAttribute.query(servertypes, self._attributes):
+        for sa in ServertypeAttribute.query(
+            servertypes, self._joined_attributes
+        ):
             self._select_servertype_attribute(sa)
 
     def _select_servertype_attribute(self, sa):
@@ -97,10 +84,9 @@ class QueryMaterializer:
             # If we have related attributes in the attribute list, we have
             # to add the relations in there, too.  We are going to use
             # those to query the related attributes.
-            if self._attributes is not None:
-                self._select_servertype_attribute(ServertypeAttribute.query(
-                    (sa.servertype, ), (related_via_attribute, )
-                ).get())
+            self._select_servertype_attribute(ServertypeAttribute.query(
+                (sa.servertype, ), (related_via_attribute, )
+            ).get())
 
     def _initialize_attributes(self, servers_by_type):
         for attribute, servertypes in self._servertypes_by_attribute.items():
@@ -227,47 +213,50 @@ class QueryMaterializer:
         yield 'object_id', server.pk
         server_attributes = self._server_attributes[server]
         for attribute, value in server_attributes.items():
-            if self._attributes is None or attribute in self._attributes:
-                if attribute.pk == 'servertype':
-                    yield attribute.pk, value.pk
-                elif attribute.type == 'inet':
-                    if value is None:
-                        yield attribute.pk, None
-                    else:
-                        servertype_attribute = Attribute.specials['servertype']
-                        servertype = server_attributes[servertype_attribute]
-                        if servertype.ip_addr_type in ('host', 'loadbalancer'):
-                            yield attribute.pk, value.ip
-                        else:
-                            assert servertype.ip_addr_type == 'network'
-                            yield attribute.pk, value.network
-                elif value is None:
+            if attribute not in self._joined_attributes:
+                continue
+
+            if attribute.pk == 'servertype':
+                yield attribute.pk, value.pk
+            elif attribute.type == 'inet':
+                if value is None:
                     yield attribute.pk, None
-                elif attribute in join_results:
-                    if attribute.multi:
-                        yield attribute.pk, [
-                            join_results[attribute][v] for v in value
-                        ]
-                    else:
-                        yield attribute.pk, join_results[attribute][value]
-                elif attribute.multi:
-                    yield attribute.pk, {
-                        v.hostname if isinstance(v, Server) else v
-                        for v in value
-                    }
-                elif isinstance(value, Server):
-                    yield attribute.pk, value.hostname
                 else:
-                    yield attribute.pk, value
+                    servertype_attribute = Attribute.specials['servertype']
+                    servertype = server_attributes[servertype_attribute]
+                    if servertype.ip_addr_type in ('host', 'loadbalancer'):
+                        yield attribute.pk, value.ip
+                    else:
+                        assert servertype.ip_addr_type == 'network'
+                        yield attribute.pk, value.network
+            elif value is None:
+                yield attribute.pk, None
+            elif attribute in join_results:
+                if attribute.multi:
+                    yield attribute.pk, [
+                        join_results[attribute][v] for v in value
+                    ]
+                else:
+                    yield attribute.pk, join_results[attribute][value]
+            elif attribute.multi:
+                yield attribute.pk, {
+                    v.hostname if isinstance(v, Server) else v
+                    for v in value
+                }
+            elif isinstance(value, Server):
+                yield attribute.pk, value.hostname
+            else:
+                yield attribute.pk, value
 
     def _get_join_results(self):
         results = dict()
-        if self._attributes:
-            for attribute, restrict in self._attributes.items():
-                if restrict is not None:
-                    servers = self._get_servers_to_join(attribute)
-                    server_objs = type(self)(servers, restrict)
-                    results[attribute] = dict(zip(servers, server_objs))
+        for attribute, joined_attributes in self._joined_attributes.items():
+            if joined_attributes is None:
+                continue
+
+            servers = self._get_servers_to_join(attribute)
+            server_objs = type(self)(servers, joined_attributes)
+            results[attribute] = dict(zip(servers, server_objs))
 
         return results
 

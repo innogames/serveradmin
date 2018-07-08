@@ -23,7 +23,7 @@ def execute_query(filters, restrict, order_by):
     if restrict is None:
         joins = None
     else:
-        joins = _get_joins(restrict)
+        joins = list(_get_joins(restrict))
 
     # We would need the attribute objects on this module and the depending
     # modules.  We start by collecting the attributes we need on all parts
@@ -48,6 +48,22 @@ def execute_query(filters, restrict, order_by):
     if not servertypes:
         return []
 
+    # Here we prepare the join dictionary for the query materializer.
+    # For None on the restrict argument, we just use the complete list of
+    # attributes prepared by the previous step.
+    if restrict is None:
+        materializer_args = [{a: None for a in attribute_lookup.values()}]
+    else:
+        def cast(join):
+            return {
+                attribute_lookup[a]: j if j is None else cast(j)
+                for a, j in join
+            }
+        materializer_args = [cast(joins)]
+
+    if order_by is not None:
+        materializer_args.append([attribute_lookup[a] for a in order_by])
+
     # REPEATABLE READ isolation level ensures Postgres to give us a consistent
     # snapshot for the database transaction.  We also set READ ONLY as this
     # is a query operation.  Perhaps this is also enabling some optimization
@@ -66,7 +82,7 @@ def execute_query(filters, restrict, order_by):
         # materializer module for its details.  The functions on this module
         # continues with the filtering step.
         servers = _get_servers(servertypes, filters, attribute_lookup)
-        return list(QueryMaterializer(servers, restrict, order_by))
+        return list(QueryMaterializer(servers, *materializer_args))
 
 
 def _get_joins(restrict):
@@ -78,7 +94,7 @@ def _get_joins(restrict):
                 raise ValidationError('Malformatted join restriction')
 
             for attribute_id, join in item.items():
-                yield (attribute_id, _get_joins(join))
+                yield (attribute_id, list(_get_joins(join)))
         else:
             yield (item, None)
 
