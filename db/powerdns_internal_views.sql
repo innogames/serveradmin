@@ -6,7 +6,7 @@ select
     hostname::text as name,
     null::text as master,
     null::int as last_check,
-    'NATIVE' as type,
+    'NATIVE'::text as type,
     null::int as notified_serial,
     null::text as account
 from public.server
@@ -28,8 +28,8 @@ select
 from (
     select
         server.hostname::text as name,
-        v.type,
-        v.content
+        v.type::text,
+        v.content::text
     from public.server
     cross join (values
         ('SOA', 'dnspub-af.innogames.de. hostmaster.innogames.de.'),
@@ -48,14 +48,14 @@ union all
 union all
     select
         server.hostname::text as name,
-        case family(server.intern_ip) when 4 then 'A' else 'AAAA' end as type,
+        case family(server.intern_ip) when 4 then 'A'::text else 'AAAA'::text end as type,
         host(server.intern_ip) as content
     from public.server
     where server.intern_ip is not null
 union all
     select
         server.hostname::text as name,
-        case family(attribute.value) when 4 then 'A' else 'AAAA' end as type,
+        case family(attribute.value) when 4 then 'A'::text else 'AAAA'::text end as type,
         host(attribute.value) as content
     from public.server
     join public.server_inet_attribute as attribute using (server_id)
@@ -63,7 +63,7 @@ union all
 union all
     select
         domain.hostname::text as name,
-        case family(server.intern_ip) when 4 then 'A' else 'AAAA' end as type,
+        case family(server.intern_ip) when 4 then 'A'::text else 'AAAA'::text end as type,
         host(server.intern_ip) as content
     from public.server
     join public.server_relation_attribute as domain_attribute using (server_id)
@@ -73,7 +73,7 @@ union all
 union all
     select
         domain.hostname::text as name,
-        case family(attribute.value) when 4 then 'A' else 'AAAA' end as type,
+        case family(attribute.value) when 4 then 'A'::text else 'AAAA'::text end as type,
         host(attribute.value) as content
     from public.server
     join public.server_inet_attribute as attribute using (server_id)
@@ -84,7 +84,7 @@ union all
 union all
     select
         server.hostname::text as name,
-        'MX' as type,
+        'MX'::text as type,
         mx.hostname::text as content
     from public.server
     join public.server_relation_attribute as mx_attribute using (server_id)
@@ -93,7 +93,7 @@ union all
 union all
     select
         server.hostname::text as name,
-        'SSHFP' as type,
+        'SSHFP'::text as type,
         attribute.value::text as content
     from public.server
     join public.server_string_attribute as attribute using (server_id)
@@ -102,7 +102,7 @@ union all
 union all
     select
         public.ptr(server.intern_ip) as name,
-        'PTR' as type,
+        'PTR'::text as type,
         server.hostname::text as content
     from public.server
     where server.intern_ip is not null and
@@ -110,7 +110,7 @@ union all
 union all
     select
         public.ptr(attribute.value) as name,
-        'PTR' as type,
+        'PTR'::text as type,
         server.hostname::text as content
     from public.server
     join public.server_inet_attribute as attribute using (server_id)
