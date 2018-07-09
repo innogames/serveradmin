@@ -18,7 +18,7 @@ from adminapi.filters import FilterValueError, filter_from_obj
 from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
 from serveradmin.api.decorators import api_view
 from serveradmin.api.utils import build_function_description
-from serveradmin.serverdb.query_committer import QueryCommitter
+from serveradmin.serverdb.query_committer import commit_query
 from serveradmin.serverdb.query_executer import execute_query
 from serveradmin.serverdb.query_materializer import (
     get_default_attribute_values
@@ -129,7 +129,7 @@ def dataset_commit(request, app, data):
             kwargs[key] = value
 
     try:
-        QueryCommitter(app=app, **kwargs)()
+        commit_query(app=app, **kwargs)
     except ValidationError as error:
         return {
             'status': 'error',
@@ -208,7 +208,7 @@ def dataset_create(request, app, data):
         raise SuspiciousOperation('Attributes must be a dictionary')
 
     try:
-        commit = QueryCommitter([data['attributes']], app=app)()
+        commit_obj = commit_query([data['attributes']], app=app)
     except ValidationError as error:
         return {
             'status': 'error',
@@ -218,7 +218,7 @@ def dataset_create(request, app, data):
 
     return {
         'status': 'success',
-        'result': commit.created,
+        'result': commit_obj.created,
     }
 
 

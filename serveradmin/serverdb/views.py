@@ -17,7 +17,7 @@ from serveradmin.serverdb.models import (
     ChangeUpdate,
     ChangeDelete,
 )
-from serveradmin.serverdb.query_committer import CommitError, QueryCommitter
+from serveradmin.serverdb.query_committer import CommitError, commit_query
 
 
 @login_required
@@ -88,7 +88,7 @@ def restore_deleted(request, change_commit):
 
     server_obj = deleted.attributes
     try:
-        QueryCommitter([server_obj], user=request.user)()
+        commit_query([server_obj], user=request.user)
     except CommitError as error:
         messages.error(request, str(error))
     else:

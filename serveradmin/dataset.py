@@ -6,7 +6,7 @@ Copyright (c) 2018 InnoGames GmbH
 from django.db import transaction
 
 from adminapi.dataset import BaseQuery, DatasetObject
-from serveradmin.serverdb.query_committer import QueryCommitter
+from serveradmin.serverdb.query_committer import commit_query
 from serveradmin.serverdb.query_executer import _get_servers
 from serveradmin.serverdb.query_materializer import (
     QueryMaterializer,
@@ -20,8 +20,8 @@ class Query(BaseQuery):
         return DatasetObject(get_default_attribute_values(servertype))
 
     def commit(self, app=None, user=None):
-        commit = self._build_commit_object()
-        QueryCommitter(app=app, user=user, **commit)()
+        commit_obj = self._build_commit_object()
+        commit_query(app=app, user=user, **commit_obj)
         self._confirm_changes()
 
     @transaction.atomic

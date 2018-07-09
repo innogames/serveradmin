@@ -31,317 +31,6 @@ from serveradmin.serverdb.query_materializer import (
 pre_commit = Signal()
 
 
-class QueryCommitter:
-    def __init__(
-        self,
-        created=[],
-        changed=[],
-        deleted=[],
-        app=None,
-        user=None,
-    ):
-        self.created = created
-        self.changed = changed
-        self.deleted = deleted
-        self.app = app
-        self.user = user or app.owner
-
-    def __call__(self):
-        pre_commit.send_robust(
-            QueryCommitter,
-            created=self.created,
-            changed=self.changed,
-            deleted=self.deleted,
-        )
-
-        with transaction.atomic():
-            self._fetch()
-            self._validate()
-            created_objects, changed_objects = self._apply()
-            self._access_control(created_objects, changed_objects)
-            self._log_changes(created_objects)
-
-        return DatasetCommit(
-            list(created_objects.values()),
-            list(changed_objects.values()),
-            list(self._deleted_objects.values()),
-        )
-
-    def _fetch(self):
-        self._changed_servers = _fetch_servers(
-            set(c['object_id'] for c in self.changed)
-        )
-        self._changed_objects = _materialize_servers(self._changed_servers)
-
-        self._deleted_servers = _fetch_servers(self.deleted)
-        self._deleted_objects = _materialize_servers(self._deleted_servers)
-
-    def _validate(self):
-        servertype_attributes = _get_servertype_attributes(
-            self._changed_objects
-        )
-
-        # Attributes must be always validated
-        violations_attribs = _validate_attributes(
-            self.changed, self._changed_objects, servertype_attributes
-        )
-        violations_readonly = _validate_readonly(
-            self.changed, self._changed_objects
-        )
-        violations_regexp = list(_validate_regexp(
-            self.changed,
-            self._changed_objects,
-            servertype_attributes,
-        ))
-        violations_required = _validate_required(
-            self.changed,
-            self._changed_objects,
-            servertype_attributes,
-        )
-        if (
-            violations_attribs or violations_readonly or
-            violations_regexp or violations_required
-        ):
-            error_message = _build_error_message(
-                violations_attribs,
-                violations_readonly,
-                violations_regexp,
-                violations_required,
-            )
-            raise CommitValidationFailed(
-                error_message,
-                violations_attribs +
-                violations_readonly +
-                violations_regexp +
-                violations_required,
-            )
-
-        newer = _validate_commit(self.changed, self._changed_objects)
-        if newer:
-            raise CommitNewerData('Newer data available', newer)
-
-    def _log_changes(self, created_objects):
-        commit = ChangeCommit.objects.create(app=self.app, user=self.user)
-
-        for updates in self.changed:
-            ChangeUpdate.objects.create(
-                commit=commit,
-                server_id=updates['object_id'],
-                updates_json=json.dumps(updates, default=json_encode_extra),
-            )
-
-        for attributes in self._deleted_objects.values():
-            attributes_json = json.dumps(attributes, default=json_encode_extra)
-            ChangeDelete.objects.create(
-                commit=commit,
-                server_id=attributes['object_id'],
-                attributes_json=attributes_json,
-            )
-
-        for obj in created_objects.values():
-            attributes_json = json.dumps(
-                obj, default=json_encode_extra
-            )
-            ChangeAdd.objects.create(
-                commit=commit,
-                server_id=obj['object_id'],
-                attributes_json=attributes_json,
-            )
-
-    def _apply(self):
-        # Changes should be applied in order to prevent integrity errors.
-        self._delete_attributes()
-        self._delete_servers()
-        created_objects = self._create_servers()
-        self._update_servers()
-        self._upsert_attributes()
-        changed_objects = _materialize_servers(self._changed_servers)
-
-        return created_objects, changed_objects
-
-    def _delete_attributes(self):
-        # We first have to delete all of the relation attributes
-        # to avoid integrity errors.  Other attributes will just go away
-        # with the servers.
-        if self.deleted:
-            (
-                ServerRelationAttribute.objects
-                .filter(server_id__in=self.deleted)
-                .delete()
-            )
-
-        for changes in self.changed:
-            object_id = changes['object_id']
-
-            for attribute_id, change in changes.items():
-                if attribute_id == 'object_id':
-                    continue
-
-                server = self._changed_servers[object_id]
-                attribute = Attribute.objects.get(pk=attribute_id)
-                action = change['action']
-
-                if action == 'delete' or (
-                    action == 'update' and change['new'] is None
-                ):
-                    server.get_attributes(attribute).delete()
-                elif action == 'multi' and change['remove']:
-                    for server_attribute in server.get_attributes(attribute):
-                        value = server_attribute.get_value()
-                        if isinstance(value, Server):
-                            value = value.hostname
-                        if value in change['remove']:
-                            server_attribute.delete()
-
-    def _delete_servers(self):
-        if not self.deleted:
-            return
-
-        try:
-            for server in self._deleted_servers.values():
-                server.delete()
-        except IntegrityError as error:
-            raise CommitError(
-                'Cannot delete servers because they are referenced by {0}'
-                .format(', '.join(str(o) for o in error.protected_objects))
-            )
-
-        # We should ignore the changes to the deleted servers.
-        for server_id in self.deleted:
-            if server_id in self.changed:
-                del self.changes[server_id]
-
-    def _create_servers(self):
-        self._created_servers = {}
-        for attributes in self.created:
-            if 'hostname' not in attributes:
-                raise CommitError('"hostname" attribute is required.')
-            hostname = attributes['hostname']
-
-            if 'servertype' not in attributes:
-                raise CommitError('"servertype" attribute is required.')
-            servertype = _get_servertype(attributes)
-
-            if 'intern_ip' not in attributes:
-                raise CommitError('"intern_ip" attribute is required.')
-            intern_ip = attributes['intern_ip']
-
-            real_attributes = dict(_get_real_attributes(attributes))
-            _validate_real_attributes(servertype, real_attributes)
-
-            server = _insert_server(
-                hostname, intern_ip, servertype, real_attributes
-            )
-
-            created_server = {k.pk: v for k, v in real_attributes.items()}
-            created_server['hostname'] = hostname
-            created_server['servertype'] = servertype.pk
-            created_server['intern_ip'] = intern_ip
-
-            self._created_servers[server.server_id] = server
-
-        return _materialize_servers(self._created_servers)
-
-    def _update_servers(self):
-        changed = set()
-        for changes in self.changed:
-            object_id = changes['object_id']
-
-            for attribute_id, change in changes.items():
-                if attribute_id == 'object_id':
-                    continue
-
-                attribute = Attribute.objects.get(pk=attribute_id)
-                if not attribute.special:
-                    continue
-
-                assert change['action'] in ('new', 'update', 'multi')
-                server = self._changed_servers[object_id]
-                setattr(server, attribute.special.field, change.get('new'))
-                changed.add(server)
-
-        for server in changed:
-            server.full_clean()
-            server.save()
-
-    def _upsert_attributes(self):
-        for changes in self.changed:
-            object_id = changes['object_id']
-
-            for attribute_id, change in changes.items():
-                attribute = Attribute.objects.get(pk=attribute_id)
-                if attribute.special:
-                    continue
-
-                server = self._changed_servers[object_id]
-
-                action = change['action']
-                if action == 'multi':
-                    for value in change['add']:
-                        server.add_attribute(attribute, value)
-                    continue
-
-                if action not in ('new', 'update'):
-                    continue
-                if change['new'] is None:
-                    continue
-
-                try:
-                    server_attribute = server.get_attributes(attribute).get()
-                except ServerAttribute.get_model(attribute.type).DoesNotExist:
-                    server.add_attribute(attribute, change['new'])
-                else:
-                    server_attribute.save_value(change['new'])
-
-    def _access_control(self, created_objects, changed_objects):
-        entities = list()
-        if not self.user.is_superuser:
-            entities.append((
-                'user',
-                self.user,
-                list(self.user.access_control_groups.all()),
-            ))
-        if self.app and not self.app.superuser:
-            entities.append((
-                'application',
-                self.app,
-                list(self.app.access_control_groups.all()),
-            ))
-
-        for server in chain(
-            created_objects.values(),
-            changed_objects.values(),
-            self._deleted_objects.values(),
-        ):
-            for entity_class, entity_name, groups in entities:
-                if not any(self._can_access_server(server, g) for g in groups):
-                    raise PermissionDenied(
-                        'Insufficient access rights to server "{}" for {} "{}"'
-                        .format(server['hostname'], entity_class, entity_name)
-                    )
-
-    def _can_access_server(self, new_object, acl):
-        if not all(
-            f.matches(new_object.get(a))
-            for a, f in acl.get_filters().items()
-        ):
-            return False
-
-        if new_object['object_id'] in self._changed_objects:
-            old_object = self._changed_objects[new_object['object_id']]
-        else:
-            old_object = get_default_attribute_values(new_object['servertype'])
-
-        attribute_ids = {a.pk for a in acl.attributes.all()}
-        if not all(
-            a in attribute_ids or v == old_object[a]
-            for a, v in new_object.items()
-        ):
-            return False
-
-        return True
-
-
 class CommitError(ValidationError):
     pass
 
@@ -363,6 +52,297 @@ class CommitNewerData(CommitError):
         self.newer = newer
 
 
+def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
+    """The main function to commit queries"""
+
+    if not user:
+        user = app.owner
+
+    pre_commit.send_robust(
+        commit_query, created=created, changed=changed, deleted=deleted
+    )
+
+    entities = []
+    if not user.is_superuser:
+        entities.append(
+            ('user', user, list(user.access_control_groups.all()))
+        )
+    if app and not app.superuser:
+        entities.append(
+            ('application', app, list(app.access_control_groups.all()))
+        )
+
+    with transaction.atomic():
+        change_commit = ChangeCommit.objects.create(app=app, user=user)
+        changed_servers = _fetch_servers(set(c['object_id'] for c in changed))
+        changed_objects = _materialize(changed_servers)
+
+        deleted_servers = _fetch_servers(deleted)
+        deleted_objects = _materialize(deleted_servers)
+        _validate(changed, changed_objects)
+
+        # Changes should be applied in order to prevent integrity errors.
+        _delete_attributes(changed, changed_servers, deleted)
+        _delete_servers(changed, deleted, deleted_servers)
+        created_servers = _create_servers(created)
+        created_objects = _materialize(created_servers)
+        _update_servers(changed, changed_servers)
+        _upsert_attributes(changed, changed_servers)
+        changed_objects = _materialize(changed_servers)
+
+        _access_control(
+            entities, created_objects, changed_objects, deleted_objects
+        )
+        _log_changes(change_commit, changed, created_objects, deleted_objects)
+
+    return DatasetCommit(
+        list(created_objects.values()),
+        list(changed_objects.values()),
+        list(deleted_objects.values()),
+    )
+
+
+def _validate(changed, changed_objects):
+    servertype_attributes = _get_servertype_attributes(changed_objects)
+
+    # Attributes must be always validated
+    violations_attribs = _validate_attributes(
+        changed, changed_objects, servertype_attributes
+    )
+    violations_readonly = _validate_readonly(changed, changed_objects)
+    violations_regexp = list(
+        _validate_regexp(changed, changed_objects, servertype_attributes)
+    )
+    violations_required = _validate_required(
+        changed, changed_objects, servertype_attributes
+    )
+    if (
+        violations_attribs or violations_readonly or
+        violations_regexp or violations_required
+    ):
+        error_message = _build_error_message(
+            violations_attribs,
+            violations_readonly,
+            violations_regexp,
+            violations_required,
+        )
+        raise CommitValidationFailed(
+            error_message,
+            violations_attribs +
+            violations_readonly +
+            violations_regexp +
+            violations_required,
+        )
+
+    newer = _validate_commit(changed, changed_objects)
+    if newer:
+        raise CommitNewerData('Newer data available', newer)
+
+
+def _delete_attributes(changed, changed_servers, deleted):
+    # We first have to delete all of the relation attributes
+    # to avoid integrity errors.  Other attributes will just go away
+    # with the servers.
+    if deleted:
+        (
+            ServerRelationAttribute.objects
+            .filter(server_id__in=deleted)
+            .delete()
+        )
+
+    for changes in changed:
+        object_id = changes['object_id']
+
+        for attribute_id, change in changes.items():
+            if attribute_id == 'object_id':
+                continue
+
+            server = changed_servers[object_id]
+            attribute = Attribute.objects.get(pk=attribute_id)
+            action = change['action']
+
+            if action == 'delete' or (
+                action == 'update' and change['new'] is None
+            ):
+                server.get_attributes(attribute).delete()
+            elif action == 'multi' and change['remove']:
+                for server_attribute in server.get_attributes(attribute):
+                    value = server_attribute.get_value()
+                    if isinstance(value, Server):
+                        value = value.hostname
+                    if value in change['remove']:
+                        server_attribute.delete()
+
+
+def _delete_servers(changed, deleted, deleted_servers):
+    if not deleted:
+        return
+
+    try:
+        for server in deleted_servers.values():
+            server.delete()
+    except IntegrityError as error:
+        raise CommitError(
+            'Cannot delete servers because they are referenced by {0}'
+            .format(', '.join(str(o) for o in error.protected_objects))
+        )
+
+    # We should ignore the changes to the deleted servers.
+    for server_id in deleted:
+        if server_id in changed:
+            del changed[server_id]
+
+
+def _create_servers(created):
+    created_servers = {}
+    for attributes in created:
+        if 'hostname' not in attributes:
+            raise CommitError('"hostname" attribute is required.')
+        hostname = attributes['hostname']
+
+        if 'servertype' not in attributes:
+            raise CommitError('"servertype" attribute is required.')
+        servertype = _get_servertype(attributes)
+
+        if 'intern_ip' not in attributes:
+            raise CommitError('"intern_ip" attribute is required.')
+        intern_ip = attributes['intern_ip']
+
+        attributes = dict(_get_real_attributes(attributes))
+        _validate_real_attributes(servertype, attributes)
+
+        server = _insert_server(hostname, intern_ip, servertype, attributes)
+
+        created_server = {k.pk: v for k, v in attributes.items()}
+        created_server['hostname'] = hostname
+        created_server['servertype'] = servertype.pk
+        created_server['intern_ip'] = intern_ip
+
+        created_servers[server.server_id] = server
+
+    return created_servers
+
+
+def _update_servers(changed, changed_servers):
+    really_changed = set()
+    for changes in changed:
+        object_id = changes['object_id']
+
+        for attribute_id, change in changes.items():
+            if attribute_id == 'object_id':
+                continue
+
+            attribute = Attribute.objects.get(pk=attribute_id)
+            if not attribute.special:
+                continue
+
+            assert change['action'] in ('new', 'update', 'multi')
+            server = changed_servers[object_id]
+            setattr(server, attribute.special.field, change.get('new'))
+            really_changed.add(server)
+
+    for server in really_changed:
+        server.full_clean()
+        server.save()
+
+
+def _upsert_attributes(changed, changed_servers):
+    for changes in changed:
+        object_id = changes['object_id']
+
+        for attribute_id, change in changes.items():
+            attribute = Attribute.objects.get(pk=attribute_id)
+            if attribute.special:
+                continue
+
+            server = changed_servers[object_id]
+
+            action = change['action']
+            if action == 'multi':
+                for value in change['add']:
+                    server.add_attribute(attribute, value)
+                continue
+
+            if action not in ('new', 'update'):
+                continue
+            if change['new'] is None:
+                continue
+
+            try:
+                server_attribute = server.get_attributes(attribute).get()
+            except ServerAttribute.get_model(attribute.type).DoesNotExist:
+                server.add_attribute(attribute, change['new'])
+            else:
+                server_attribute.save_value(change['new'])
+
+
+def _access_control(
+    entities, created_objects, changed_objects, deleted_objects
+):
+    for server in chain(
+        created_objects.values(),
+        changed_objects.values(),
+        deleted_objects.values(),
+    ):
+        for entity_class, entity_name, groups in entities:
+            if not any(
+                _can_access_server(changed_objects, server, g) for g in groups
+            ):
+                raise PermissionDenied(
+                    'Insufficient access rights to server "{}" for {} "{}"'
+                    .format(server['hostname'], entity_class, entity_name)
+                )
+
+
+def _can_access_server(changed_objects, new_object, acl):
+    if not all(
+        f.matches(new_object.get(a))
+        for a, f in acl.get_filters().items()
+    ):
+        return False
+
+    if new_object['object_id'] in changed_objects:
+        old_object = changed_objects[new_object['object_id']]
+    else:
+        old_object = get_default_attribute_values(new_object['servertype'])
+
+    attribute_ids = {a.pk for a in acl.attributes.all()}
+    if not all(
+        a in attribute_ids or v == old_object[a]
+        for a, v in new_object.items()
+    ):
+        return False
+
+    return True
+
+
+def _log_changes(commit, changed, created_objects, deleted_objects):
+    for updates in changed:
+        ChangeUpdate.objects.create(
+            commit=commit,
+            server_id=updates['object_id'],
+            updates_json=json.dumps(updates, default=json_encode_extra),
+        )
+
+    for attributes in deleted_objects.values():
+        attributes_json = json.dumps(attributes, default=json_encode_extra)
+        ChangeDelete.objects.create(
+            commit=commit,
+            server_id=attributes['object_id'],
+            attributes_json=attributes_json,
+        )
+
+    for obj in created_objects.values():
+        attributes_json = json.dumps(
+            obj, default=json_encode_extra
+        )
+        ChangeAdd.objects.create(
+            commit=commit,
+            server_id=obj['object_id'],
+            attributes_json=attributes_json,
+        )
+
+
 def _fetch_servers(object_ids):
     servers = {
         s.server_id: s
@@ -377,7 +357,7 @@ def _fetch_servers(object_ids):
     return servers
 
 
-def _materialize_servers(servers):
+def _materialize(servers):
     return {
         o['object_id']: o
         for o in QueryMaterializer(list(servers.values()), None)

@@ -31,7 +31,7 @@ from serveradmin.serverdb.models import (
     ServertypeAttribute,
     ServerStringAttribute,
 )
-from serveradmin.serverdb.query_committer import QueryCommitter
+from serveradmin.serverdb.query_committer import commit_query
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 100
@@ -214,13 +214,13 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
                 changed = []
 
             try:
-                commit = QueryCommitter(created, changed, user=request.user)()
+                commit_obj = commit_query(created, changed, user=request.user)
             except (PermissionDenied, ValidationError) as err:
                 messages.error(request, str(err))
             else:
                 messages.success(request, 'Server successfully ' + action)
                 if action == 'created':
-                    server = commit.created[0]
+                    server = commit_obj.created[0]
 
                 url = '{0}?object_id={1}'.format(
                     reverse('servershell_inspect'),
@@ -276,7 +276,7 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
 @login_required
 def commit(request):
     try:
-        commit = json.loads(request.POST['commit'])
+        commit_obj = json.loads(request.POST['commit'])
     except (KeyError, ValueError) as error:
         result = {
             'status': 'error',
@@ -284,8 +284,8 @@ def commit(request):
         }
     else:
         changed = []
-        if 'changes' in commit:
-            for key, value in commit['changes'].items():
+        if 'changes' in commit_obj:
+            for key, value in commit_obj['changes'].items():
                 value['object_id'] = int(key)
                 changed.append(value)
 
@@ -293,7 +293,7 @@ def commit(request):
         user = request.user
 
         try:
-            QueryCommitter(changed=changed, deleted=deleted, user=user)()
+            commit_query(changed=changed, deleted=deleted, user=user)
         except (PermissionDenied, ValidationError) as error:
             result = {
                 'status': 'error',
