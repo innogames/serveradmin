@@ -7,7 +7,6 @@ Copyright (c) 2018 InnoGames GmbH
 # a good idea to refactor this by using more top level functions instead of
 # object methods.
 
-from collections import defaultdict
 from ipaddress import IPv4Address, IPv6Address
 
 from django.core.exceptions import ValidationError
@@ -47,14 +46,14 @@ class QueryMaterializer:
                 self._attributes[attribute] = value
 
         self._server_attributes = {}
-        servers_by_type = defaultdict(list)
+        servers_by_type = {}
         for server in self._servers:
             self._server_attributes[server] = {
                 Attribute.specials['hostname']: server.hostname,
                 Attribute.specials['intern_ip']: server.intern_ip,
                 Attribute.specials['servertype']: server.servertype,
             }
-            servers_by_type[server.servertype].append(server)
+            servers_by_type.setdefault(server.servertype, []).append(server)
 
         self._select_attributes(servers_by_type.keys())
         self._initialize_attributes(servers_by_type)
@@ -79,15 +78,19 @@ class QueryMaterializer:
         )
 
     def _select_attributes(self, servertypes):
-        self._attributes_by_type = defaultdict(set)
-        self._servertypes_by_attribute = defaultdict(list)
+        self._attributes_by_type = {}
+        self._servertypes_by_attribute = {}
         self._related_servertype_attributes = []
         for sa in ServertypeAttribute.query(servertypes, self._attributes):
             self._select_servertype_attribute(sa)
 
     def _select_servertype_attribute(self, sa):
-        self._attributes_by_type[sa.attribute.type].add(sa.attribute)
-        self._servertypes_by_attribute[sa.attribute].append(sa.servertype)
+        self._attributes_by_type.setdefault(sa.attribute.type, set()).add(
+            sa.attribute
+        )
+        self._servertypes_by_attribute.setdefault(sa.attribute, []).append(
+            sa.servertype
+        )
 
         related_via_attribute = sa.related_via_attribute
         if related_via_attribute:
@@ -173,16 +176,18 @@ class QueryMaterializer:
         related_via_attribute = servertype_attribute.related_via_attribute
 
         # First, index the related servers for fast access later
-        servers_by_related = defaultdict(list)
+        servers_by_related = {}
         for target in servers_by_type[servertype_attribute.servertype]:
             attributes = self._server_attributes[target]
             if related_via_attribute in attributes:
                 if related_via_attribute.multi:
                     for source in attributes[related_via_attribute]:
-                        servers_by_related[source].append(target)
+                        servers_by_related.setdefault(source, []).append(
+                            target
+                        )
                 else:
                     source = attributes[related_via_attribute]
-                    servers_by_related[source].append(target)
+                    servers_by_related.setdefault(source, []).append(target)
 
         # Then, query and set the related attributes
         for sa in ServerAttribute.get_model(attribute.type).objects.filter(

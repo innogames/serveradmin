@@ -3,8 +3,6 @@
 Copyright (c) 2018 InnoGames GmbH
 """
 
-from collections import defaultdict
-
 from django.core.exceptions import ValidationError
 from django.db import DataError, connection, transaction
 
@@ -65,9 +63,11 @@ def _get_possible_servertypes(attributes):
     servertypes = set(Servertype.objects.all())
 
     if attributes:
-        attribute_servertypes = defaultdict(set)
+        attribute_servertypes = {}
         for sa in ServertypeAttribute.query(attributes=attributes).all():
-            attribute_servertypes[sa.attribute].add(sa.servertype)
+            attribute_servertypes.setdefault(sa.attribute, set()).add(
+                sa.servertype
+            )
 
         for new in attribute_servertypes.values():
             servertypes = servertypes.intersection(new)
