@@ -26,10 +26,7 @@ from serveradmin.serverdb.models import (
     ServertypeAttribute,
     ServerStringAttribute,
 )
-from serveradmin.serverdb.query_committer import (
-    QueryCommitter,
-    CommitIncomplete,
-)
+from serveradmin.serverdb.query_committer import QueryCommitter
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 100
@@ -296,11 +293,6 @@ def commit(request):
             result = {
                 'status': 'error',
                 'message': str(error),
-            }
-        except CommitIncomplete as error:
-            result = {
-                'status': 'success',
-                'message': ' '.join(error.messages)
             }
         else:
             result = {'status': 'success'}

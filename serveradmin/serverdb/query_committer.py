@@ -8,7 +8,6 @@ from django.dispatch.dispatcher import Signal
 
 from adminapi.dataset import DatasetCommit
 from adminapi.request import json_encode_extra
-from serveradmin.hooks.slots import HookSlot
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
@@ -51,22 +50,12 @@ class QueryCommitter:
             deleted=self.deleted,
         )
 
-        # If non-empty, the commit will go through the backend, but an error
-        # will be shown on the client.
-        self.warnings = []
-
         with transaction.atomic():
             self._fetch()
             self._validate()
             created_objects, changed_objects = self._apply()
             self._access_control(created_objects, changed_objects)
             self._log_changes(created_objects)
-
-        if self.warnings:
-            warnings = '\n'.join(self.warnings)
-            raise CommitIncomplete(
-                'Commit was written, but hooks failed:\n\n{}'.format(warnings)
-            )
 
         return DatasetCommit(
             list(created_objects.values()),
@@ -166,20 +155,7 @@ class QueryCommitter:
         created_objects = self._create_servers()
         self._update_servers()
         self._upsert_attributes()
-
-        # Re-fetch servers before invoking hook, otherwise the hook will
-        # receive incomplete data.
         changed_objects = _materialize_servers(self._changed_servers)
-        try:
-            on_server_attribute_changed.invoke(
-                commit=self,
-                servers=list(changed_objects.values()),
-                changed=self.changed,
-            )
-        except CommitIncomplete as error:
-            self.warnings.append(
-                'Commit hook failed:\n{}'.format(' '.join(error.messages))
-            )
 
         return created_objects, changed_objects
 
@@ -381,48 +357,6 @@ class CommitNewerData(CommitError):
         if newer is None:
             newer = []
         self.newer = newer
-
-
-class CommitIncomplete(CommitError):
-    """This is a skip-able error.  It indicates that a commit was
-    successfully stored, but some hooks have failed.
-    """
-    pass
-
-
-class _ServerAttributedChangedHook(HookSlot):
-    """Specialized hook that filters based on changed attributes."""
-    def connect(self, hookfn, attribute_id, servertypes=None, filter=None):
-        if servertypes and not isinstance(servertypes, tuple):
-            raise ValueError(
-                'Servertypes filter must be tuple: {}'.format(servertypes)
-            )
-
-        def filtered_fn(servers, changed, **kwargs):
-            changes = {c['object_id']: c for c in changed}
-            filtered_servers = []
-            for server in servers:
-                if servertypes and server['servertype'] not in servertypes:
-                    continue
-                server_changes = changes[server.object_id]
-                if attribute_id not in server_changes:
-                    continue
-
-                old = server_changes[attribute_id].get('old', None)
-                new = server_changes[attribute_id].get('new', None)
-                if filter and not filter(server, old, new):
-                    continue
-                filtered_servers.append(server)
-            if not filtered_servers:
-                return
-            hookfn(servers=filtered_servers, changes=changes, **kwargs)
-        filtered_fn.__name__ = hookfn.__name__
-        return HookSlot.connect(self, filtered_fn)
-
-
-on_server_attribute_changed = _ServerAttributedChangedHook(
-    'commit_server_changed', servers=list, changed=list, commit=QueryCommitter
-)
 
 
 def _fetch_servers(object_ids):
