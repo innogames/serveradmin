@@ -1,3 +1,8 @@
+"""Serveradmin
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from ipaddress import IPv4Address
 from django.contrib.auth.models import User
 from django.test import TransactionTestCase

@@ -1,3 +1,8 @@
+"""Serveradmin - Query Committer
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 import json
 from ipaddress import ip_network, ip_interface
 from itertools import chain

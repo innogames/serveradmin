@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-"""adminapi - Convenience script for testing
+"""Serveradmin - adminapi - Convenience script for testing
 
-Copyright (c) 2017, InnoGames GmbH
+Copyright (c) 2018 InnoGames GmbH
 """
 
 from adminapi.cli import main

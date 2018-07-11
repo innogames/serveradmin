@@ -1,3 +1,8 @@
+"""Serveradmin - Servershell
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from django.conf.urls import url
 
 from serveradmin.servershell.views import (

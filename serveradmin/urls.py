@@ -1,3 +1,8 @@
+"""Serveradmin
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from importlib import import_module
 
 from django.conf import settings

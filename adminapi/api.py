@@ -1,3 +1,8 @@
+"""Serveradmin - adminapi
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from adminapi.request import send_request
 
 API_CALL_ENDPOINT = '/call'

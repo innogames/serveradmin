@@ -1,3 +1,8 @@
+"""Serveradmin - Graphite Integration
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 import json
 from os import mkdir
 from os.path import isdir

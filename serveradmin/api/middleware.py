@@ -1,3 +1,8 @@
+"""Serveradmin - Remote HTTP API
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 import importlib
 import logging
 from django.conf import settings

@@ -1,6 +1,6 @@
-"""adminapi - The command line interface
+"""Serveradmin - adminapi - Command Line Interface
 
-Copyright (c) 2017, InnoGames GmbH
+Copyright (c) 2018 InnoGames GmbH
 """
 
 from __future__ import print_function

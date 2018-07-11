@@ -1,3 +1,8 @@
+"""Serveradmin
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from json import dumps
 
 from django import template

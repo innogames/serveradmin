@@ -1,3 +1,8 @@
+"""Serveradmin - adminapi
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 import os
 from os.path import isfile
 from os.path import expanduser

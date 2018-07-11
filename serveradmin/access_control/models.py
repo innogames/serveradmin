@@ -1,3 +1,8 @@
+"""Serveradmin - Access Control for Users and Applications
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from django.db.models import Model, CharField, ManyToManyField
 from django.contrib.auth.models import User
 

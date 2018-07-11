@@ -1,3 +1,8 @@
+"""Serveradmin - adminapi
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 import os
 from hashlib import sha1
 import hmac

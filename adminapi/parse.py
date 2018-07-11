@@ -1,3 +1,8 @@
+"""Serveradmin - adminapi
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from adminapi.datatype import DatatypeError, str_to_datatype
 from adminapi.filters import BaseFilter, Any, Regexp, filter_classes
 

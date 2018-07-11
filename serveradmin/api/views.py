@@ -1,3 +1,8 @@
+"""Serveradmin - Remote HTTP API
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from operator import itemgetter
 
 from django.core.exceptions import (

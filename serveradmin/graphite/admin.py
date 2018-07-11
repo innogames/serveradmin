@@ -1,3 +1,8 @@
+"""Serveradmin - Graphite Integration
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from django.contrib import admin
 
 from serveradmin.graphite.models import (

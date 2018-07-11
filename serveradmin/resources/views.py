@@ -1,3 +1,8 @@
+"""Serveradmin - Graphite Integration
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from collections import OrderedDict
 
 from django.conf import settings

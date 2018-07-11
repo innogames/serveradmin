@@ -1,3 +1,8 @@
+"""Serveradmin
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from django.db import transaction
 
 from adminapi.dataset import BaseQuery, DatasetObject

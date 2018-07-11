@@ -1,3 +1,8 @@
+"""Serveradmin - Query Executer
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from collections import defaultdict
 
 from django.core.exceptions import ValidationError

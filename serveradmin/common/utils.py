@@ -1,3 +1,8 @@
+"""Serveradmin
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 import re
 import os
 from base64 import b64encode

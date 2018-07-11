@@ -1,3 +1,8 @@
+"""Serveradmin - Remote HTTP API
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from time import time
 from functools import update_wrapper
 from logging import getLogger
