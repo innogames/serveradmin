@@ -34,9 +34,10 @@
     {% if field.multi %}
     <textarea rows="3" cols="40" name="attr_{{ field.key }}"
               {% if field.readonly %} disabled="disabled"{% endif %}
-              {% if field.error %} style="border:2px solid #d00"{% endif %}
-              >{% for val in field.value %}{{ val }}
-{% endfor %}</textarea>
+              {% if field.error %} style="border:2px solid #d00"{% endif %}>
+{% for val in field.value %}{{ val }}
+{% endfor %}
+    </textarea>
     <br />Multiple values, one value per row.
     {% else %}
     <input type="text" name="attr_{{ field.key }}"
@@ -44,11 +45,20 @@
            size="30"
            {% if field.readonly %}disabled="disabled" {% endif %}
            {% if field.error %} style="border:2px solid #d00;"{% endif %} />
+    {% if field.key == 'intern_ip' %}
+    <a href="javascript:choose_ip_addr($('input[name=\'attr_intern_ip\']'));">Choose IP Address</a>
+    {% endif %}
     {% endif %}
     </td>
 </tr>
 {% endfor %}
 </table>
 <p><input type="submit" value="Change server" /></p>
+<script type="text/javascript">
+//<![CDATA[
+var servershell_choose_ip_addr_url = "{% url 'servershell_choose_ip_addr' %}";
+//]]>
+</script>
+<script type="text/javascript" src="{{ STATIC_URL }}servershell/choose_ip_addr.js"></script>
 </form>
 {% endblock %}
