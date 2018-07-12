@@ -338,8 +338,7 @@ class QueryCommitter:
 
         attribute_ids = {a.pk for a in acl.attributes.all()}
         if not all(
-            a in attribute_ids or v == old_object[a] or
-            Attribute.objects.get(pk=a).readonly
+            a in attribute_ids or v == old_object[a]
             for a, v in new_object.items()
         ):
             return False
