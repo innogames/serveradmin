@@ -410,7 +410,7 @@ function autocomplete_shell_command(term, autocomplete_cb) {
         'export': 'Export all hostnames for usage in shell',
         'perpage': 'Show a specific number of hosts per page (e.g. "perpage 50")',
         'graph': 'Show configured Graohite graph table for selected hosts',
-        'new': 'Create a new server',
+        'new': 'Create a new server (e.g. "new vm")',
         'clone': 'Clone a server with it\'s attributes',
         'inspect': 'List all attributes of a server',
         'edit': 'Edit all attributes of a server',
@@ -756,7 +756,7 @@ function handle_command_attr(parsed_args) {
 }
 
 function handle_command_new(parsed_args) {
-    if (parsed_args[1]['token'] != 'str') {
+    if (parsed_args.length != 2 || parsed_args[1]['token'] != 'str') {
         return;
     }
     var new_url = shell_new_url + '?servertype=' + parsed_args[1]['value'];
@@ -765,7 +765,7 @@ function handle_command_new(parsed_args) {
 }
 
 function handle_command_goto(parsed_args) {
-    if (parsed_args[1]['token'] != 'str') {
+    if (parsed_args.length != 2 || parsed_args[1]['token'] != 'str') {
         return;
     }
     var goto_page = parseInt(parsed_args[1]['value'], 10);
@@ -779,7 +779,7 @@ function handle_command_goto(parsed_args) {
 }
 
 function handle_command_order(parsed_args) {
-    if (parsed_args[1]['token'] != 'str') {
+    if (parsed_args.length != 2 || parsed_args[1]['token'] != 'str') {
         return;
     }
 
@@ -791,7 +791,7 @@ function handle_command_order(parsed_args) {
 }
 
 function handle_command_perpage(parsed_args) {
-    if (parsed_args[1]['token'] != 'str') {
+    if (parsed_args.length != 2 || parsed_args[1]['token'] != 'str') {
         return;
     }
     search['per_page'] = parseInt(parsed_args[1]['value'], 10);
