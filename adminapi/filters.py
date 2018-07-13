@@ -1,3 +1,8 @@
+"""Serveradmin - adminapi
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from re import compile as re_compile, error as re_error
 
 from adminapi.datatype import STR_BASED_DATATYPES, DatatypeError

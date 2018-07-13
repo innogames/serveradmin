@@ -1,5 +1,9 @@
+"""Serveradmin - Query Committer
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 import json
-from ipaddress import ip_network, ip_interface
 from itertools import chain
 
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -8,7 +12,6 @@ from django.dispatch.dispatcher import Signal
 
 from adminapi.dataset import DatasetCommit
 from adminapi.request import json_encode_extra
-from serveradmin.hooks.slots import HookSlot
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
@@ -51,22 +54,12 @@ class QueryCommitter:
             deleted=self.deleted,
         )
 
-        # If non-empty, the commit will go through the backend, but an error
-        # will be shown on the client.
-        self.warnings = []
-
         with transaction.atomic():
             self._fetch()
             self._validate()
             created_objects, changed_objects = self._apply()
             self._access_control(created_objects, changed_objects)
             self._log_changes(created_objects)
-
-        if self.warnings:
-            warnings = '\n'.join(self.warnings)
-            raise CommitIncomplete(
-                'Commit was written, but hooks failed:\n\n{}'.format(warnings)
-            )
 
         return DatasetCommit(
             list(created_objects.values()),
@@ -166,20 +159,7 @@ class QueryCommitter:
         created_objects = self._create_servers()
         self._update_servers()
         self._upsert_attributes()
-
-        # Re-fetch servers before invoking hook, otherwise the hook will
-        # receive incomplete data.
         changed_objects = _materialize_servers(self._changed_servers)
-        try:
-            on_server_attribute_changed.invoke(
-                commit=self,
-                servers=list(changed_objects.values()),
-                changed=self.changed,
-            )
-        except CommitIncomplete as error:
-            self.warnings.append(
-                'Commit hook failed:\n{}'.format(' '.join(error.messages))
-            )
 
         return created_objects, changed_objects
 
@@ -242,8 +222,13 @@ class QueryCommitter:
                 raise CommitError('"hostname" attribute is required.')
             hostname = attributes['hostname']
 
+            if 'servertype' not in attributes:
+                raise CommitError('"servertype" attribute is required.')
             servertype = _get_servertype(attributes)
-            intern_ip = _get_ip_addr(servertype, attributes)
+
+            if 'intern_ip' not in attributes:
+                raise CommitError('"intern_ip" attribute is required.')
+            intern_ip = attributes['intern_ip']
 
             real_attributes = dict(_get_real_attributes(attributes))
             _validate_real_attributes(servertype, real_attributes)
@@ -381,48 +366,6 @@ class CommitNewerData(CommitError):
         if newer is None:
             newer = []
         self.newer = newer
-
-
-class CommitIncomplete(CommitError):
-    """This is a skip-able error.  It indicates that a commit was
-    successfully stored, but some hooks have failed.
-    """
-    pass
-
-
-class _ServerAttributedChangedHook(HookSlot):
-    """Specialized hook that filters based on changed attributes."""
-    def connect(self, hookfn, attribute_id, servertypes=None, filter=None):
-        if servertypes and not isinstance(servertypes, tuple):
-            raise ValueError(
-                'Servertypes filter must be tuple: {}'.format(servertypes)
-            )
-
-        def filtered_fn(servers, changed, **kwargs):
-            changes = {c['object_id']: c for c in changed}
-            filtered_servers = []
-            for server in servers:
-                if servertypes and server['servertype'] not in servertypes:
-                    continue
-                server_changes = changes[server.object_id]
-                if attribute_id not in server_changes:
-                    continue
-
-                old = server_changes[attribute_id].get('old', None)
-                new = server_changes[attribute_id].get('new', None)
-                if filter and not filter(server, old, new):
-                    continue
-                filtered_servers.append(server)
-            if not filtered_servers:
-                return
-            hookfn(servers=filtered_servers, changes=changes, **kwargs)
-        filtered_fn.__name__ = hookfn.__name__
-        return HookSlot.connect(self, filtered_fn)
-
-
-on_server_attribute_changed = _ServerAttributedChangedHook(
-    'commit_server_changed', servers=list, changed=list, commit=QueryCommitter
-)
 
 
 def _fetch_servers(object_ids):
@@ -587,125 +530,10 @@ def _build_error_message(violations_attribs, violations_readonly,
 
 
 def _get_servertype(attributes):
-    if 'servertype' not in attributes:
-        raise CommitError('"servertype" attribute is required.')
     try:
         return Servertype.objects.get(pk=attributes['servertype'])
     except Servertype.DoesNotExist:
         raise CommitError('Unknown servertype: ' + attributes['servertype'])
-
-
-def _get_ip_addr(servertype, attributes):
-    networks = tuple(_get_networks(attributes))
-    if servertype.ip_addr_type == 'null':
-        return _get_null_ip_addr(attributes, networks)
-    if servertype.ip_addr_type in ('host', 'loadbalancer'):
-        return _get_host_ip_addr(attributes, networks)
-    return _get_network_ip_addr(attributes, networks)
-
-
-def _get_networks(attributes):
-    for attribute in Attribute.objects.all():
-        if attribute.type == 'supernet' and attributes.get(attribute.pk):
-            attribute_value = attributes[attribute.pk]
-            try:
-                server = Server.objects.get(hostname=attribute_value)
-            except Server.DoesNotExist:
-                raise CommitError(
-                    'No server named "{0}" for attribute "{1}"'
-                    .format(attribute_value, attribute)
-                )
-            target_servertype = attribute.target_servertype
-            if server.servertype != target_servertype:
-                raise CommitError(
-                    'Matching server "{0}" for attribute "{1}" is not from '
-                    'servertype "{2}"'
-                    .format(attribute_value, attribute, target_servertype)
-                )
-            yield server.intern_ip.network
-
-
-def _get_null_ip_addr(attributes, networks):
-    if attributes.get('intern_ip') is not None:
-        raise CommitError('"intern_ip" has to be None.')
-    if networks:
-        raise CommitError('There must not be any networks.')
-
-    return None
-
-
-def _get_host_ip_addr(attributes, networks):
-    if 'intern_ip' not in attributes:
-        if not networks:
-            raise CommitError(
-                '"intern_ip" is not given, and no networks could be found.'
-            )
-        intern_ip = _choose_ip_addr(networks)
-        if intern_ip is None:
-            raise CommitError(
-                'No IP address could be selected from the given networks.'
-            )
-        return intern_ip
-
-    try:
-        intern_ip = ip_interface(attributes['intern_ip'])
-    except ValueError as error:
-        raise CommitError(str(error))
-
-    _check_in_networks(networks, intern_ip.network)
-    return intern_ip.ip
-
-
-def _get_network_ip_addr(attributes, networks):
-    if 'intern_ip' not in attributes:
-        raise CommitError('"intern_ip" attribute is required.')
-
-    try:
-        intern_ip = ip_network(attributes['intern_ip'])
-    except ValueError as error:
-        raise CommitError(str(error))
-
-    _check_in_networks(networks, intern_ip)
-    return intern_ip
-
-
-# XXX: Deprecated
-def _choose_ip_addr(networks):
-    smallest_network = None
-    for network in networks:
-        if smallest_network is not None:
-            if not network.overlaps(smallest_network):
-                raise CommitError('Networks are not overlapping.')
-            if network.prefixlen < smallest_network.prefixlen:
-                continue
-        smallest_network = network
-    if smallest_network is not None:
-        return _get_free_ip_addr(smallest_network)
-
-
-# XXX: Deprecated
-def _get_free_ip_addr(network):
-    used = {i.ip for i in (
-        Server.objects
-        .filter(intern_ip__net_contained_or_equal=network)
-        .order_by()     # Clear ordering for database performance
-        .values_list('intern_ip', flat=True)
-    )}
-    for ip_addr in ip_network(network).hosts():
-        if ip_addr not in used:
-            return ip_addr
-    return None
-
-
-def _check_in_networks(networks, intern_ip_network):
-    for network in networks:
-        if (
-            network.prefixlen > intern_ip_network.prefixlen or
-            not network.overlaps(intern_ip_network)
-        ):
-            raise CommitError(
-                '"intern_ip" does not belong to the given networks.'
-            )
 
 
 def _get_real_attributes(attributes):

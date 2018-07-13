@@ -1,3 +1,8 @@
+"""Serveradmin - adminapi
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from distutils.util import strtobool
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 from itertools import chain

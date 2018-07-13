@@ -1,3 +1,8 @@
+"""Serveradmin
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from jinja2 import Environment
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.core.urlresolvers import reverse

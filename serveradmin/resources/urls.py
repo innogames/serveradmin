@@ -1,3 +1,8 @@
+"""Serveradmin - Graphite Integration
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from django.conf.urls import url
 
 from serveradmin.resources.views import index, graph_popup

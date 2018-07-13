@@ -1,3 +1,8 @@
+"""Serveradmin - Core Models
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 import re
 import json
 

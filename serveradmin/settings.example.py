@@ -1,3 +1,8 @@
+"""Serveradmin
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 # Django settings for Serveradmin project
 
 import os
@@ -133,7 +138,6 @@ MIDDLEWARE_CLASSES = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'serveradmin.api.middleware.ApiMiddleware',
-    'serveradmin.hooks.middleware.HooksMiddleware',
 ]
 
 ROOT_URLCONF = 'serveradmin.urls'

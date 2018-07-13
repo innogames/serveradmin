@@ -1,3 +1,8 @@
+"""Serveradmin - Graphite Integration
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from django.conf.urls import url
 
 from serveradmin.graphite.views import graph, graph_table

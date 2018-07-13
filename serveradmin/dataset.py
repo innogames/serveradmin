@@ -1,3 +1,8 @@
+"""Serveradmin
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from django.db import transaction
 
 from adminapi.dataset import BaseQuery, DatasetObject
@@ -24,8 +29,3 @@ class Query(BaseQuery):
         servers = _get_servers(self._filters)
 
         return list(QueryMaterializer(servers, self._restrict, self._order_by))
-
-
-# XXX: Deprecated
-def query(**kwargs):
-    return Query(kwargs, None)

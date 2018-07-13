@@ -1,6 +1,9 @@
+"""Serveradmin - SQL Generator
+
+Copyright (c) 2018 InnoGames GmbH
+"""
 # XXX: It is terrible to generate SQL this way.  We should make this use
 # parameterized queries at least.
-
 # XXX: The code in this module is almost randomly split into functions.  Do
 # not try to guess what they would do.
 

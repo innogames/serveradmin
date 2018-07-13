@@ -1,3 +1,8 @@
+"""Serveradmin - adminapi
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 from __future__ import print_function
 
 import adminapi                                 # NOQA F401

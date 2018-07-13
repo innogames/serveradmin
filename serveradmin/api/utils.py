@@ -1,3 +1,8 @@
+"""Serveradmin - Remote HTTP API
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
 def build_function_description(fn):
     code = fn.__code__
     is_args = code.co_flags & 0x04
