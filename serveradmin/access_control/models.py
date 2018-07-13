@@ -29,7 +29,6 @@ class AccessControlGroup(Model):
     attributes = ManyToManyField(
         Attribute,
         blank=True,
-        limit_choices_to={'readonly': False},
         related_name='access_control_groups',
     )
 
