@@ -20,15 +20,13 @@
 <tr>
     <th style="width:14em;">Attribute</th>
     <th style="width:6em;">Type</th>
-    <th style="width:6em;">Required</th>
     <th style="width:10em;">Regexp</th>
     <th>Value</th>
 </tr>
 {% for field in fields %}
 <tr>
-    <td>{{ field.key }}</td>
+    <td>{{ field.key }}{% if field.required %}*{% endif %}</td>
     <td>{{ field.type }}</td>
-    <td>{{ field.required }}</td>
     <td>{% if field.regexp %}{{ field.regexp }}{% endif %}</td>
     <td>
     {% if field.multi %}
