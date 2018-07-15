@@ -34,8 +34,7 @@
               {% if field.readonly %} disabled="disabled"{% endif %}
               {% if field.error %} style="border:2px solid #d00"{% endif %}>
 {% for val in field.value %}{{ val }}
-{% endfor %}
-    </textarea>
+{% endfor %}</textarea>
     <br />Multiple values, one value per row.
     {% else %}
     <input type="text" name="attr_{{ field.key }}"
