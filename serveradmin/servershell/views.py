@@ -229,6 +229,7 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
         if invalid_attrs:
             messages.error(request, 'Attributes contain invalid values')
 
+    servertype = Servertype.objects.get(pk=server['servertype'])
     servertype_attributes = {sa.attribute_id: sa for sa in (
         ServertypeAttribute.objects.filter(servertype_id=server['servertype'])
     )}
@@ -236,8 +237,12 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
     fields = []
     fields_set = set()
     for key, value in server.items():
-        if key == 'object_id':
+        if (
+            key == 'object_id' or
+            key == 'intern_ip' and servertype.ip_addr_type == 'null'
+        ):
             continue
+
         attribute = Attribute.objects.get(attribute_id=key)
         servertype_attribute = servertype_attributes.get(key)
         if servertype_attribute and servertype_attribute.related_via_attribute:
