@@ -258,7 +258,10 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
                 servertype_attribute and servertype_attribute.required or
                 key in Attribute.specials.keys()
             ),
-            'regexp': _prepare_regexp_html(
+            'regexp_display': _prepare_regexp_html(
+                servertype_attribute and servertype_attribute.regexp
+            ),
+            'regexp': (
                 servertype_attribute and servertype_attribute.regexp
             ),
             'default': (

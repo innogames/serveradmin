@@ -31,6 +31,7 @@
     <textarea rows="3" cols="40" name="attr_{{ field.key }}"
               {% if field.readonly %} disabled="disabled"{% endif %}
               {% if field.error %} style="border:2px solid #d00"{% endif %}
+              {% if field.regexp %}pattern="{{ field.regexp }}"{% endif %}
               {% if field.required %} required {% endif %}>
 {% for val in field.value %}{{ val }}
 {% endfor %}</textarea>
@@ -41,6 +42,7 @@
            size="30"
            {% if field.readonly %}disabled="disabled" {% endif %}
            {% if field.error %} style="border:2px solid #d00;"{% endif %}
+           {% if field.regexp %}pattern="{{ field.regexp }}"{% endif %}
            {% if field.required %} required {% endif %}/>
     {% if field.key == 'intern_ip' %}
     <a href="javascript:choose_ip_addr($('input[name=\'attr_intern_ip\']'));">Choose IP Address</a>
@@ -48,7 +50,7 @@
     {% endif %}
     </td>
     <td>{{ field.type }}</td>
-    <td>{% if field.regexp %}{{ field.regexp }}{% endif %}</td>
+    <td>{% if field.regexp %}{{ field.regexp_display }}{% endif %}</td>
 </tr>
 {% endfor %}
 </table>
