@@ -268,6 +268,7 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
             'error': key in invalid_attrs,
         })
 
+    fields.sort(key=lambda k: (not k['required'], k['key']))
     return TemplateResponse(request, 'servershell/{}.html'.format(template), {
         'object_id': server.object_id,
         'fields': fields,
