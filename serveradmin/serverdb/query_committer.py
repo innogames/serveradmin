@@ -72,6 +72,11 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
             ('application', app, list(app.access_control_groups.all()))
         )
 
+    # TODO: Find out which attributes we actually need
+    attribute_lookup = {
+        a.pk: a for a in Attribute.objects.all() if not a.special
+    }
+
     with transaction.atomic():
         change_commit = ChangeCommit.objects.create(app=app, user=user)
         changed_servers = _fetch_servers(set(c['object_id'] for c in changed))
@@ -79,15 +84,15 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
 
         deleted_servers = _fetch_servers(deleted)
         deleted_objects = _materialize(deleted_servers)
-        _validate(changed, changed_objects)
+        _validate(attribute_lookup, changed, changed_objects)
 
         # Changes should be applied in order to prevent integrity errors.
-        _delete_attributes(changed, changed_servers, deleted)
+        _delete_attributes(attribute_lookup, changed, changed_servers, deleted)
         _delete_servers(changed, deleted, deleted_servers)
-        created_servers = _create_servers(created)
+        created_servers = _create_servers(attribute_lookup, created)
         created_objects = _materialize(created_servers)
         _update_servers(changed, changed_servers)
-        _upsert_attributes(changed, changed_servers)
+        _upsert_attributes(attribute_lookup, changed, changed_servers)
         changed_objects = _materialize(changed_servers)
 
         _access_control(
@@ -102,14 +107,16 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
     )
 
 
-def _validate(changed, changed_objects):
+def _validate(attribute_lookup, changed, changed_objects):
     servertype_attributes = _get_servertype_attributes(changed_objects)
 
     # Attributes must be always validated
     violations_attribs = _validate_attributes(
         changed, changed_objects, servertype_attributes
     )
-    violations_readonly = _validate_readonly(changed, changed_objects)
+    violations_readonly = _validate_readonly(
+        attribute_lookup, changed, changed_objects
+    )
     violations_regexp = list(
         _validate_regexp(changed, changed_objects, servertype_attributes)
     )
@@ -139,7 +146,7 @@ def _validate(changed, changed_objects):
         raise CommitNewerData('Newer data available', newer)
 
 
-def _delete_attributes(changed, changed_servers, deleted):
+def _delete_attributes(attribute_lookup, changed, changed_servers, deleted):
     # We first have to delete all of the relation attributes
     # to avoid integrity errors.  Other attributes will just go away
     # with the servers.
@@ -154,11 +161,11 @@ def _delete_attributes(changed, changed_servers, deleted):
         object_id = changes['object_id']
 
         for attribute_id, change in changes.items():
-            if attribute_id == 'object_id':
+            if attribute_id in Attribute.specials:
                 continue
 
             server = changed_servers[object_id]
-            attribute = Attribute.objects.get(pk=attribute_id)
+            attribute = attribute_lookup[attribute_id]
             action = change['action']
 
             if action == 'delete' or (
@@ -193,7 +200,7 @@ def _delete_servers(changed, deleted, deleted_servers):
             del changed[server_id]
 
 
-def _create_servers(created):
+def _create_servers(attribute_lookup, created):
     created_servers = {}
     for attributes in created:
         if 'hostname' not in attributes:
@@ -208,7 +215,7 @@ def _create_servers(created):
             raise CommitError('"intern_ip" attribute is required.')
         intern_ip = attributes['intern_ip']
 
-        attributes = dict(_get_real_attributes(attributes))
+        attributes = dict(_get_real_attributes(attributes, attribute_lookup))
         _validate_real_attributes(servertype, attributes)
 
         server = _insert_server(hostname, intern_ip, servertype, attributes)
@@ -232,12 +239,12 @@ def _update_servers(changed, changed_servers):
             if attribute_id == 'object_id':
                 continue
 
-            attribute = Attribute.objects.get(pk=attribute_id)
-            if not attribute.special:
+            if attribute_id not in Attribute.specials:
                 continue
 
             assert change['action'] in ('new', 'update', 'multi')
             server = changed_servers[object_id]
+            attribute = Attribute.specials[attribute_id]
             setattr(server, attribute.special.field, change.get('new'))
             really_changed.add(server)
 
@@ -246,15 +253,15 @@ def _update_servers(changed, changed_servers):
         server.save()
 
 
-def _upsert_attributes(changed, changed_servers):
+def _upsert_attributes(attribute_lookup, changed, changed_servers):
     for changes in changed:
         object_id = changes['object_id']
 
         for attribute_id, change in changes.items():
-            attribute = Attribute.objects.get(pk=attribute_id)
-            if attribute.special:
+            if attribute_id in Attribute.specials:
                 continue
 
+            attribute = attribute_lookup[attribute_id]
             server = changed_servers[object_id]
 
             action = change['action']
@@ -403,15 +410,19 @@ def _validate_attributes(changes, servers, servertype_attributes):
     return violations
 
 
-def _validate_readonly(changes, servers):
+def _validate_readonly(attribute_lookup, changes, servers):
     violations = []
     for attribute_changes in changes:
         object_id = attribute_changes['object_id']
         server = servers[object_id]
         for attr, change in attribute_changes.items():
-            if Attribute.objects.get(pk=attr).readonly:
+            if attr in Attribute.specials:
+                continue
+
+            if attribute_lookup[attr].readonly:
                 if attr in server and server[attr] != '':
                     violations.append((object_id, attr))
+
     return violations
 
 
@@ -443,8 +454,7 @@ def _validate_required(changes, servers, servertype_attributes):
         object_id = attribute_changes['object_id']
         server = servers[object_id]
         for attribute_id, change in attribute_changes.items():
-            attribute = Attribute.objects.get(pk=attribute_id)
-            if attribute.special:
+            if attribute_id in Attribute.specials:
                 continue
 
             sa = servertype_attributes[server['servertype']][attribute_id]
@@ -511,9 +521,12 @@ def _get_servertype(attributes):
         raise CommitError('Unknown servertype: ' + attributes['servertype'])
 
 
-def _get_real_attributes(attributes):
+def _get_real_attributes(attributes, attribute_lookup):
     for attribute_id, value in attributes.items():
-        attribute = Attribute.objects.get(pk=attribute_id)
+        if attribute_id in Attribute.specials:
+            continue
+
+        attribute = attribute_lookup[attribute_id]
         value_multi = (
             isinstance(value, (list, set)) or
             hasattr(value, '_proxied_set')
@@ -529,10 +542,6 @@ def _get_real_attributes(attributes):
                 '{0} is not a multi attribute, but {1} of type {2} given.'
                 .format(attribute, repr(value), type(value).__name__)
             )
-
-        # Ignore special attributes
-        if attribute.special:
-            continue
 
         # Ignore nulls
         if not value_multi and value is None:
