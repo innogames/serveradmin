@@ -19,15 +19,13 @@
 <table class="border_table" style="width:100%; table-layout:fixed;">
 <tr>
     <th style="width:14em;">Attribute</th>
+    <th>Value</th>
     <th style="width:6em;">Type</th>
     <th style="width:10em;">Regexp</th>
-    <th>Value</th>
 </tr>
 {% for field in fields %}
 <tr>
     <td>{{ field.key }}{% if field.required %}*{% endif %}</td>
-    <td>{{ field.type }}</td>
-    <td>{% if field.regexp %}{{ field.regexp }}{% endif %}</td>
     <td>
     {% if field.multi %}
     <textarea rows="3" cols="40" name="attr_{{ field.key }}"
@@ -49,6 +47,8 @@
     {% endif %}
     {% endif %}
     </td>
+    <td>{{ field.type }}</td>
+    <td>{% if field.regexp %}{{ field.regexp }}{% endif %}</td>
 </tr>
 {% endfor %}
 </table>
