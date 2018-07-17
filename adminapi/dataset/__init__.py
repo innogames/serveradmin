@@ -29,14 +29,18 @@ class BaseQuery(object):
             self._restrict = None
             self._order_by = None
             self._results = []
+            return
+
+        self._filters = {
+            a: f if isinstance(f, BaseFilter) else BaseFilter(f)
+            for a, f in filters.items()
+        }
+        if 'object_id' not in restrict:
+            self._restrict = list(restrict) + ['object_id']
         else:
-            self._filters = {
-                a: f if isinstance(f, BaseFilter) else BaseFilter(f)
-                for a, f in filters.items()
-            }
             self._restrict = restrict
-            self._order_by = order_by
-            self._results = None
+        self._order_by = order_by
+        self._results = None
 
     def __iter__(self):
         return iter(self._get_results())
@@ -224,7 +228,7 @@ class Query(BaseQuery):
     def _fetch_results(self):
         request_data = {'filters': self._filters}
         if self._restrict is not None:
-            request_data['restrict'] = list(self._restrict) + ['object_id']
+            request_data['restrict'] = self._restrict
         if self._order_by is not None:
             request_data['order_by'] = self._order_by
 
