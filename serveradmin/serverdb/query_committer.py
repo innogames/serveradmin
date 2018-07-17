@@ -116,10 +116,6 @@ class QueryCommitter:
                 violations_required,
             )
 
-        if violations_attribs:
-            error_message = _build_error_message(violations_attribs, [], [])
-            raise CommitValidationFailed(error_message, violations_attribs)
-
         newer = _validate_commit(self.changed, self._changed_objects)
         if newer:
             raise CommitNewerData('Newer data available', newer)
