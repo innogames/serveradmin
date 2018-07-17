@@ -177,13 +177,16 @@ def edit(request):
 def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
     invalid_attrs = set()
     if edit_mode and request.POST:
+        attribute_lookup = {a.pk: a for a in Attribute.objects.filter(
+            attribute_id__in=(k[len('attr_'):] for k in request.POST.keys())
+        )}
+        attribute_lookup.update(Attribute.specials)
         for key, value in request.POST.items():
             if not key.startswith('attr_'):
                 continue
             attribute_id = key[len('attr_'):]
-            attribute = Attribute.objects.get(attribute_id=attribute_id)
+            attribute = attribute_lookup[attribute_id]
             value = value.strip()
-
             if attribute.multi:
                 values = [v.strip() for v in value.splitlines()]
                 try:
@@ -230,6 +233,10 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
             messages.error(request, 'Attributes contain invalid values')
 
     servertype = Servertype.objects.get(pk=server['servertype'])
+    attribute_lookup = {a.pk: a for a in Attribute.objects.filter(
+        attribute_id__in=(server.keys())
+    )}
+    attribute_lookup.update(Attribute.specials)
     servertype_attributes = {sa.attribute_id: sa for sa in (
         ServertypeAttribute.objects.filter(servertype_id=server['servertype'])
     )}
@@ -243,7 +250,7 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
         ):
             continue
 
-        attribute = Attribute.objects.get(attribute_id=key)
+        attribute = attribute_lookup[key]
         servertype_attribute = servertype_attributes.get(key)
         if servertype_attribute and servertype_attribute.related_via_attribute:
             continue

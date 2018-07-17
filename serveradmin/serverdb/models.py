@@ -354,7 +354,7 @@ class Server(models.Model):
         model = ServerAttribute.get_model(attribute.type)
         if model is ServerBooleanAttribute and not value:
             return
-        server_attribute = model(server=self, _attribute=attribute)
+        server_attribute = model(server=self, attribute=attribute)
         server_attribute.save_value(value)
 
 
