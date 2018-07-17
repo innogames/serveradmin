@@ -19,37 +19,38 @@
 <table class="border_table" style="width:100%; table-layout:fixed;">
 <tr>
     <th style="width:14em;">Attribute</th>
-    <th style="width:6em;">Type</th>
-    <th style="width:6em;">Required</th>
-    <th style="width:10em;">Regexp</th>
     <th>Value</th>
+    <th style="width:6em;">Type</th>
+    <th style="width:10em;">Regexp</th>
 </tr>
 {% for field in fields %}
 <tr>
-    <td>{{ field.key }}</td>
-    <td>{{ field.type }}</td>
-    <td>{{ field.required }}</td>
-    <td>{% if field.regexp %}{{ field.regexp }}{% endif %}</td>
+    <td>{{ field.key }}{% if field.required %}*{% endif %}</td>
     <td>
     {% if field.multi %}
     <textarea rows="3" cols="40" name="attr_{{ field.key }}"
               {% if field.readonly %} disabled="disabled"{% endif %}
-              {% if field.error %} style="border:2px solid #d00"{% endif %}>
+              {% if field.error %} style="border:2px solid #d00"{% endif %}
+              {% if field.regexp %}pattern="{{ field.regexp }}"{% endif %}
+              {% if field.required %} required {% endif %}>
 {% for val in field.value %}{{ val }}
-{% endfor %}
-    </textarea>
+{% endfor %}</textarea>
     <br />Multiple values, one value per row.
     {% else %}
     <input type="text" name="attr_{{ field.key }}"
            value="{% if field.value != None %}{{ field.value }}{% endif %}"
            size="30"
            {% if field.readonly %}disabled="disabled" {% endif %}
-           {% if field.error %} style="border:2px solid #d00;"{% endif %} />
+           {% if field.error %} style="border:2px solid #d00;"{% endif %}
+           {% if field.regexp %}pattern="{{ field.regexp }}"{% endif %}
+           {% if field.required %} required {% endif %}/>
     {% if field.key == 'intern_ip' %}
     <a href="javascript:choose_ip_addr($('input[name=\'attr_intern_ip\']'));">Choose IP Address</a>
     {% endif %}
     {% endif %}
     </td>
+    <td>{{ field.type }}</td>
+    <td>{% if field.regexp %}{{ field.regexp_display }}{% endif %}</td>
 </tr>
 {% endfor %}
 </table>

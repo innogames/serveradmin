@@ -177,13 +177,16 @@ def edit(request):
 def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
     invalid_attrs = set()
     if edit_mode and request.POST:
+        attribute_lookup = {a.pk: a for a in Attribute.objects.filter(
+            attribute_id__in=(k[len('attr_'):] for k in request.POST.keys())
+        )}
+        attribute_lookup.update(Attribute.specials)
         for key, value in request.POST.items():
             if not key.startswith('attr_'):
                 continue
             attribute_id = key[len('attr_'):]
-            attribute = Attribute.objects.get(attribute_id=attribute_id)
+            attribute = attribute_lookup[attribute_id]
             value = value.strip()
-
             if attribute.multi:
                 values = [v.strip() for v in value.splitlines()]
                 try:
@@ -229,6 +232,11 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
         if invalid_attrs:
             messages.error(request, 'Attributes contain invalid values')
 
+    servertype = Servertype.objects.get(pk=server['servertype'])
+    attribute_lookup = {a.pk: a for a in Attribute.objects.filter(
+        attribute_id__in=(server.keys())
+    )}
+    attribute_lookup.update(Attribute.specials)
     servertype_attributes = {sa.attribute_id: sa for sa in (
         ServertypeAttribute.objects.filter(servertype_id=server['servertype'])
     )}
@@ -236,9 +244,13 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
     fields = []
     fields_set = set()
     for key, value in server.items():
-        if key == 'object_id':
+        if (
+            key == 'object_id' or
+            key == 'intern_ip' and servertype.ip_addr_type == 'null'
+        ):
             continue
-        attribute = Attribute.objects.get(attribute_id=key)
+
+        attribute = attribute_lookup[key]
         servertype_attribute = servertype_attributes.get(key)
         if servertype_attribute and servertype_attribute.related_via_attribute:
             continue
@@ -249,8 +261,14 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
             'value': value,
             'type': attribute.type,
             'multi': attribute.multi,
-            'required': servertype_attribute and servertype_attribute.required,
-            'regexp': _prepare_regexp_html(
+            'required': (
+                servertype_attribute and servertype_attribute.required or
+                key in Attribute.specials.keys()
+            ),
+            'regexp_display': _prepare_regexp_html(
+                servertype_attribute and servertype_attribute.regexp
+            ),
+            'regexp': (
                 servertype_attribute and servertype_attribute.regexp
             ),
             'default': (
@@ -260,6 +278,7 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
             'error': key in invalid_attrs,
         })
 
+    fields.sort(key=lambda k: (not k['required'], k['key']))
     return TemplateResponse(request, 'servershell/{}.html'.format(template), {
         'object_id': server.object_id,
         'fields': fields,

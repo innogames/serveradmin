@@ -97,7 +97,7 @@ class Command(NoArgsCommand):
             with transaction.atomic():
                 ServerNumberAttribute.objects.update_or_create(
                     server_id=server.object_id,
-                    _attribute=numeric.attribute,
+                    attribute=numeric.attribute,
                     defaults={'value': value},
                 )
 
