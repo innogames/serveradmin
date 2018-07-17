@@ -82,6 +82,9 @@ class BaseFilter(object):
     def matches(self, value):
         return value == self.value
 
+    def destiny(self):
+        return None
+
 
 class ExactMatch(BaseFilter):
     """Deprecated"""
@@ -207,6 +210,11 @@ class Any(BaseFilter):
     def matches(self, value):
         return self.func(v.matches(value) for v in self.values)
 
+    def destiny(self):
+        if not self.values:
+            return False
+        return None
+
     # TODO Remove
     @classmethod
     def from_obj(cls, obj):
@@ -234,6 +242,11 @@ class All(Any):
     """Check if an attribute satisfies all of the conditions"""
     func = all
 
+    def destiny(self):
+        if not self.values:
+            return True
+        return None
+
 
 class And(All, Or):
     """Deprecated, use All() instead"""
@@ -258,6 +271,12 @@ class Not(BaseFilter):
 
     def matches(self, value):
         return not self.value.matches(value)
+
+    def destiny(self):
+        value_destiny = self.value.destiny()
+        if isinstance(value_destiny, bool):
+            return not value_destiny
+        return None
 
     # TODO Remove
     @classmethod

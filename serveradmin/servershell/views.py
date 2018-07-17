@@ -18,6 +18,7 @@ from django.core.exceptions import (
 )
 from django.core.urlresolvers import reverse
 from django.contrib import messages
+from django.shortcuts import get_object_or_404
 from django.utils.html import mark_safe, escape as escape_html
 
 from adminapi.datatype import DatatypeError
@@ -31,7 +32,7 @@ from serveradmin.serverdb.models import (
     ServertypeAttribute,
     ServerStringAttribute,
 )
-from serveradmin.serverdb.query_committer import QueryCommitter
+from serveradmin.serverdb.query_committer import commit_query
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 100
@@ -39,12 +40,13 @@ NUM_SERVERS_DEFAULT = 100
 
 @login_required
 def index(request):
-    attributes = Attribute.objects.all()
+    attributes = list(Attribute.objects.all())
+    attributes.extend(Attribute.specials.values())
     attribute_groups = {}
     for attribute in attributes:
         attribute_groups.setdefault(attribute.group, []).append(attribute)
     for attributes in attribute_groups.values():
-        attributes.sort(key=attrgetter('pk'))
+        attributes.sort(key=attrgetter('attribute_id'))
     attribute_groups = sorted(attribute_groups.items(), key=lambda x: x[0])
 
     return TemplateResponse(request, 'servershell/index.html', {
@@ -122,22 +124,18 @@ def get_results(request):
         })
         for a in Attribute.specials.keys()
     )
-    servertypes = [
-        Servertype.objects.get(pk=s['servertype']) for s in servers
-    ]
-    attributes = [
-        a for a in (Attribute.objects.get(pk=a) for a in shown_attributes)
-        if not a.readonly
-    ]
+    servertype_ids = {s['servertype'] for s in servers}
     avail_attributes = dict()
-    for servertype in servertypes:
-        avail_attributes[servertype.pk] = dict(specials)
-    for sa in ServertypeAttribute.query(servertypes, attributes).all():
-        if not sa.related_via_attribute:
-            avail_attributes[sa.servertype.pk][sa.attribute.pk] = {
-                'regexp': sa.regexp,
-                'default': sa.default_value,
-            }
+    for servertype_id in servertype_ids:
+        avail_attributes[servertype_id] = dict(specials)
+    for sa in ServertypeAttribute.objects.filter(
+        servertype_id__in=servertype_ids,
+        attribute_id__in=shown_attributes,
+    ):
+        avail_attributes[sa.servertype_id][sa.attribute_id] = {
+            'regexp': sa.regexp,
+            'default': sa.default_value,
+        }
 
     return HttpResponse(json.dumps({
         'status': 'success',
@@ -183,7 +181,7 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
             if not key.startswith('attr_'):
                 continue
             attribute_id = key[len('attr_'):]
-            attribute = Attribute.objects.get(pk=attribute_id)
+            attribute = Attribute.objects.get(attribute_id=attribute_id)
             value = value.strip()
 
             if attribute.multi:
@@ -214,13 +212,13 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
                 changed = []
 
             try:
-                commit = QueryCommitter(created, changed, user=request.user)()
+                commit_obj = commit_query(created, changed, user=request.user)
             except (PermissionDenied, ValidationError) as err:
                 messages.error(request, str(err))
             else:
                 messages.success(request, 'Server successfully ' + action)
                 if action == 'created':
-                    server = commit.created[0]
+                    server = commit_obj.created[0]
 
                 url = '{0}?object_id={1}'.format(
                     reverse('servershell_inspect'),
@@ -231,18 +229,16 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
         if invalid_attrs:
             messages.error(request, 'Attributes contain invalid values')
 
-    servertype_attributes = {
-        sa.attribute.pk: sa
-        for sa
-        in Servertype.objects.get(pk=server['servertype']).attributes.all()
-    }
+    servertype_attributes = {sa.attribute_id: sa for sa in (
+        ServertypeAttribute.objects.filter(servertype_id=server['servertype'])
+    )}
 
     fields = []
     fields_set = set()
     for key, value in server.items():
         if key == 'object_id':
             continue
-        attribute = Attribute.objects.get(pk=key)
+        attribute = Attribute.objects.get(attribute_id=key)
         servertype_attribute = servertype_attributes.get(key)
         if servertype_attribute and servertype_attribute.related_via_attribute:
             continue
@@ -276,7 +272,7 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
 @login_required
 def commit(request):
     try:
-        commit = json.loads(request.POST['commit'])
+        commit_obj = json.loads(request.POST['commit'])
     except (KeyError, ValueError) as error:
         result = {
             'status': 'error',
@@ -284,8 +280,8 @@ def commit(request):
         }
     else:
         changed = []
-        if 'changes' in commit:
-            for key, value in commit['changes'].items():
+        if 'changes' in commit_obj:
+            for key, value in commit_obj['changes'].items():
                 value['object_id'] = int(key)
                 changed.append(value)
 
@@ -293,7 +289,7 @@ def commit(request):
         user = request.user
 
         try:
-            QueryCommitter(changed=changed, deleted=deleted, user=user)()
+            commit_query(changed=changed, deleted=deleted, user=user)
         except (PermissionDenied, ValidationError) as error:
             result = {
                 'status': 'error',
@@ -307,12 +303,10 @@ def commit(request):
 
 @login_required
 def get_values(request):
-    try:
-        attribute = Attribute.objects.get(pk=request.GET['attribute'])
-    except Attribute.DoesNotExist:
-        raise Http404
-
-    queryset = ServerStringAttribute.objects.filter(_attribute=attribute)
+    attribute = get_object_or_404(
+        Attribute, attribute_id=request.GET['attribute']
+    )
+    queryset = ServerStringAttribute.objects.filter(attribute=attribute)
     value_queryset = queryset.values('value').distinct().order_by('value')
 
     return TemplateResponse(request, 'servershell/values.html', {
@@ -340,7 +334,7 @@ def clone_object(request):
     try:
         old_object = Query(
             {'hostname': request.GET.get('hostname')},
-            [a.pk for a in Attribute.objects.all() if a.clone]
+            Attribute.objects.filter(clone=True)
         ).get()
     except ValidationError:
         raise Http404
@@ -369,8 +363,8 @@ def choose_ip_addr(request):
     servers = list(Query(
         {
             'servertype': Any(*(
-                s.pk for s in Servertype.objects.all()
-                if s.ip_addr_type == 'network'
+                s.servertype_id
+                for s in Servertype.objects.filter(ip_addr_type='network')
             )),
             'intern_ip': ContainedOnlyBy(network),
         },

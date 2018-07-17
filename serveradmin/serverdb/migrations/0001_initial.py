@@ -37,7 +37,7 @@ class Migration(migrations.Migration):
                 ('group', models.CharField(default='other', max_length=32)),
                 ('help_link', models.CharField(null=True, blank=True, max_length=255)),
                 ('readonly', models.BooleanField(default=False)),
-                ('_reversed_attribute', models.ForeignKey(
+                ('reversed_attribute', models.ForeignKey(
                     related_name='reversed_attribute_set',
                     db_column='reversed_attribute_id',
                     to='serverdb.Attribute',
@@ -111,7 +111,7 @@ class Migration(migrations.Migration):
             name='ServerBooleanAttribute',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('_attribute', models.ForeignKey(db_column='attribute_id', to='serverdb.Attribute', db_index=False)),
+                ('attribute', models.ForeignKey(to='serverdb.Attribute', db_index=False)),
                 ('server', models.ForeignKey(to='serverdb.Server', db_index=False)),
             ],
             options={
@@ -123,7 +123,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('value', models.DateField()),
-                ('_attribute', models.ForeignKey(db_column='attribute_id', to='serverdb.Attribute', db_index=False)),
+                ('attribute', models.ForeignKey(to='serverdb.Attribute', db_index=False)),
                 ('server', models.ForeignKey(to='serverdb.Server', db_index=False)),
             ],
             options={
@@ -134,7 +134,7 @@ class Migration(migrations.Migration):
             name='ServerRelationAttribute',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('_attribute', models.ForeignKey(db_column='attribute_id', to='serverdb.Attribute', db_index=False)),
+                ('attribute', models.ForeignKey(to='serverdb.Attribute', db_index=False)),
                 ('server', models.ForeignKey(to='serverdb.Server', db_index=False)),
                 ('value', models.ForeignKey(related_name='relation_attribute_servers', db_column='value', to='serverdb.Server', on_delete=django.db.models.deletion.PROTECT, db_index=False, related_query_name='relation_attribute_server')),
             ],
@@ -147,7 +147,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('value', netfields.fields.InetAddressField(max_length=39)),
-                ('_attribute', models.ForeignKey(db_column='attribute_id', to='serverdb.Attribute', db_index=False)),
+                ('attribute', models.ForeignKey(to='serverdb.Attribute', db_index=False)),
                 ('server', models.ForeignKey(to='serverdb.Server', db_index=False)),
             ],
             options={
@@ -159,7 +159,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('value', netfields.fields.MACAddressField()),
-                ('_attribute', models.ForeignKey(db_column='attribute_id', to='serverdb.Attribute', db_index=False)),
+                ('attribute', models.ForeignKey(to='serverdb.Attribute', db_index=False)),
                 ('server', models.ForeignKey(to='serverdb.Server', db_index=False)),
             ],
             options={
@@ -171,7 +171,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('value', models.DecimalField(max_digits=65, decimal_places=0)),
-                ('_attribute', models.ForeignKey(db_column='attribute_id', to='serverdb.Attribute', db_index=False)),
+                ('attribute', models.ForeignKey(to='serverdb.Attribute', db_index=False)),
                 ('server', models.ForeignKey(to='serverdb.Server', db_index=False)),
             ],
             options={
@@ -183,7 +183,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('value', models.CharField(max_length=1024)),
-                ('_attribute', models.ForeignKey(db_column='attribute_id', to='serverdb.Attribute', db_index=False)),
+                ('attribute', models.ForeignKey(to='serverdb.Attribute', db_index=False)),
                 ('server', models.ForeignKey(to='serverdb.Server', db_index=False)),
             ],
             options={
@@ -210,8 +210,13 @@ class Migration(migrations.Migration):
                 ('default_value', models.CharField(null=True, blank=True, max_length=255)),
                 ('regexp', models.CharField(null=True, blank=True, max_length=255)),
                 ('default_visible', models.BooleanField(default=False)),
-                ('_attribute', models.ForeignKey(related_name='servertype_attributes', db_column='attribute_id', to='serverdb.Attribute', db_index=False)),
-                ('_related_via_attribute', models.ForeignKey(
+                ('attribute', models.ForeignKey(
+                    related_name='servertype_attributes',
+                    db_column='attribute_id',
+                    to='serverdb.Attribute',
+                    db_index=False,
+                )),
+                ('related_via_attribute', models.ForeignKey(
                     related_name='related_via_servertype_attributes',
                     db_column='related_via_attribute_id',
                     to='serverdb.Attribute',
@@ -219,7 +224,12 @@ class Migration(migrations.Migration):
                     null=True,
                     db_index=False,
                 )),
-                ('_servertype', models.ForeignKey(related_name='attributes', db_column='servertype_id', to='serverdb.Servertype', db_index=False)),
+                ('servertype', models.ForeignKey(
+                    related_name='attributes',
+                    db_column='servertype_id',
+                    to='serverdb.Servertype',
+                    db_index=False,
+                )),
             ],
             options={
                 'db_table': 'servertype_attribute',
@@ -227,8 +237,8 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='server',
-            name='_servertype',
-            field=models.ForeignKey(db_column='servertype_id', to='serverdb.Servertype', on_delete=django.db.models.deletion.PROTECT),
+            name='servertype',
+            field=models.ForeignKey(to='serverdb.Servertype', on_delete=django.db.models.deletion.PROTECT),
         ),
         migrations.AddField(
             model_name='changeadd',
@@ -237,68 +247,68 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='attribute',
-            name='_target_servertype',
-            field=models.ForeignKey(db_column='target_servertype_id', to='serverdb.Servertype', blank=True, null=True, db_index=False),
+            name='target_servertype',
+            field=models.ForeignKey(to='serverdb.Servertype', blank=True, null=True, db_index=False),
         ),
         migrations.AlterUniqueTogether(
             name='servertypeattribute',
-            unique_together=set([('_servertype', '_attribute')]),
+            unique_together=set([('servertype', 'attribute')]),
         ),
         migrations.AlterUniqueTogether(
             name='serverstringattribute',
-            unique_together=set([('server', '_attribute', 'value')]),
+            unique_together=set([('server', 'attribute', 'value')]),
         ),
         migrations.AlterIndexTogether(
             name='serverstringattribute',
-            index_together=set([('_attribute', 'value')]),
+            index_together=set([('attribute', 'value')]),
         ),
         migrations.AlterUniqueTogether(
             name='servernumberattribute',
-            unique_together=set([('server', '_attribute', 'value')]),
+            unique_together=set([('server', 'attribute', 'value')]),
         ),
         migrations.AlterIndexTogether(
             name='servernumberattribute',
-            index_together=set([('_attribute', 'value')]),
+            index_together=set([('attribute', 'value')]),
         ),
         migrations.AlterUniqueTogether(
             name='servermacaddressattribute',
-            unique_together=set([('server', '_attribute', 'value')]),
+            unique_together=set([('server', 'attribute', 'value')]),
         ),
         migrations.AlterIndexTogether(
             name='servermacaddressattribute',
-            index_together=set([('_attribute', 'value')]),
+            index_together=set([('attribute', 'value')]),
         ),
         migrations.AlterUniqueTogether(
             name='serverinetattribute',
-            unique_together=set([('server', '_attribute', 'value')]),
+            unique_together=set([('server', 'attribute', 'value')]),
         ),
         migrations.AlterIndexTogether(
             name='serverinetattribute',
-            index_together=set([('_attribute', 'value')]),
+            index_together=set([('attribute', 'value')]),
         ),
         migrations.AlterUniqueTogether(
             name='serverrelationattribute',
-            unique_together=set([('server', '_attribute', 'value')]),
+            unique_together=set([('server', 'attribute', 'value')]),
         ),
         migrations.AlterIndexTogether(
             name='serverrelationattribute',
-            index_together=set([('_attribute', 'value')]),
+            index_together=set([('attribute', 'value')]),
         ),
         migrations.AlterUniqueTogether(
             name='serverdateattribute',
-            unique_together=set([('server', '_attribute', 'value')]),
+            unique_together=set([('server', 'attribute', 'value')]),
         ),
         migrations.AlterIndexTogether(
             name='serverdateattribute',
-            index_together=set([('_attribute', 'value')]),
+            index_together=set([('attribute', 'value')]),
         ),
         migrations.AlterUniqueTogether(
             name='serverbooleanattribute',
-            unique_together=set([('server', '_attribute')]),
+            unique_together=set([('server', 'attribute')]),
         ),
         migrations.AlterIndexTogether(
             name='serverbooleanattribute',
-            index_together=set([('_attribute',)]),
+            index_together=set([('attribute',)]),
         ),
         migrations.AlterUniqueTogether(
             name='changeupdate',

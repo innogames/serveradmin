@@ -17,12 +17,13 @@ register = template.Library()
 @register.inclusion_tag('serversearch.html')
 def serversearch_js(search_id):
     servertypes = Servertype.objects.all()
-    attributes = Attribute.objects.all()
+    attributes = list(Attribute.objects.all())
+    attributes.extend(Attribute.specials.values())
 
     return {
-        'servertypes_json': dumps({s.pk: {} for s in servertypes}),
+        'servertypes_json': dumps({s.servertype_id: {} for s in servertypes}),
         'attributes_json': dumps({
-            a.pk: {
+            a.attribute_id: {
                 'multi': a.multi,
                 'type': a.type,
             }

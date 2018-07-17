@@ -33,35 +33,35 @@ from serveradmin.serverdb.models import (
 )
 
 
-def get_server_query(servertypes, attribute_filters):
+# The "possible_servertypes_id" argument is carried all the way through
+# most of the functions to optimize related_via_attribute selection.
+# TODO: Find a nicer way to achieve this
+def get_server_query(attribute_filters, possible_servertype_ids=None):
     sql = (
         'SELECT'
         ' server.server_id,'
         ' server.hostname,'
         ' server.intern_ip,'
-        ' server.servertype_id AS _servertype_id'
+        ' server.servertype_id'
         ' FROM server'
-        ' WHERE servertype_id IN ({})'
-        .format(', '.join(
-            '\'{}\''.format(s.pk) for s in servertypes)
-        )
     )
-
-    for attribute, filt in attribute_filters:
-        assert isinstance(filt, BaseFilter)
-
-        sql += ' AND ' + _get_sql_condition(servertypes, attribute, filt)
-
-    sql += ' ORDER BY server.hostname, server.intern_ip, server.server_id'
+    if attribute_filters:
+        sql += ' WHERE ' + ' AND '.join(
+            _get_sql_condition(a, f, possible_servertype_ids)
+            for a, f in attribute_filters
+        )
+    sql += ' ORDER BY server.hostname'
 
     return sql
 
 
-def _get_sql_condition(servertypes, attribute, filt):
+def _get_sql_condition(attribute, filt, possible_servertype_ids=None):
     assert isinstance(filt, BaseFilter)
 
     if isinstance(filt, (Not, Any)):
-        return _logical_filter_sql_condition(servertypes, attribute, filt)
+        return _logical_filter_sql_condition(
+            attribute, filt, possible_servertype_ids
+        )
 
     negate = False
     template = ''
@@ -93,10 +93,14 @@ def _get_sql_condition(servertypes, attribute, filt):
     else:
         template = '{0} = ' + _raw_sql_escape(filt.value)
 
-    return _covered_sql_condition(servertypes, attribute, template, negate)
+    return _covered_sql_condition(
+        attribute, template, negate, possible_servertype_ids
+    )
 
 
-def _covered_sql_condition(servertypes, attribute, template, negate=False):
+def _covered_sql_condition(
+    attribute, template, negate=False, possible_servertype_ids=None
+):
     if attribute.type in ['relation', 'reverse', 'supernet']:
         template = (
             '{{0}} IN ('
@@ -109,14 +113,16 @@ def _covered_sql_condition(servertypes, attribute, template, negate=False):
 
     return (
         ('NOT ' if negate else '') +
-        _condition_sql(servertypes, attribute, template)
+        _condition_sql(attribute, template, possible_servertype_ids)
     )
 
 
-def _logical_filter_sql_condition(servertypes, attribute, filt):
+def _logical_filter_sql_condition(
+    attribute, filt, possible_servertype_ids=None
+):
     if isinstance(filt, Not):
         return 'NOT ({0})'.format(_get_sql_condition(
-            servertypes, attribute, filt.value
+            attribute, filt.value, possible_servertype_ids
         ))
 
     if isinstance(filt, All):
@@ -133,18 +139,23 @@ def _logical_filter_sql_condition(servertypes, attribute, filt):
         if type(filt) == Any and type(value) == BaseFilter:
             simple_values.append(value)
         else:
-            templates.append(_get_sql_condition(servertypes, attribute, value))
+            templates.append(_get_sql_condition(
+                attribute, value, possible_servertype_ids
+            ))
 
     if simple_values:
         if len(simple_values) == 1:
             template = _get_sql_condition(
-                servertypes, attribute, simple_values[0]
+                attribute, simple_values[0], possible_servertype_ids
             )
         else:
             template = _covered_sql_condition(
-                servertypes, attribute, '{{0}} IN ({0})'.format(', '.join(
+                attribute,
+                '{{0}} IN ({0})'.format(', '.join(
                     _raw_sql_escape(v.value) for v in simple_values
-                ))
+                )),
+                False,
+                possible_servertype_ids,
             )
         templates.append(template)
 
@@ -209,32 +220,28 @@ def _containment_filter_template(attribute, filt):
     return template.format(_raw_sql_escape(value))
 
 
-def _condition_sql(servertypes, attribute, template):
+def _condition_sql(attribute, template, possible_servertype_ids=None):
     if attribute.special:
-        field = attribute.special.field
-        if field.startswith('_'):
-            field = field[1:]
-
-        return template.format('server.' + field)
+        return template.format('server.' + attribute.special.field)
 
     if attribute.type == 'supernet':
         return _exists_sql(Server, 'sub', (
-            "sub.servertype_id = '{0}'".format(attribute.target_servertype.pk),
+            "sub.servertype_id = '{0}'".format(attribute.target_servertype_id),
             'sub.intern_ip >>= server.intern_ip',
             template.format('sub.server_id'),
         ))
 
     if attribute.type == 'reverse':
         return _exists_sql(ServerRelationAttribute, 'sub', (
-            "sub.attribute_id = '{0}'".format(attribute.reversed_attribute.pk),
+            "sub.attribute_id = '{0}'".format(attribute.reversed_attribute_id),
             'sub.value = server.server_id',
             template.format('sub.server_id'),
         ))
 
-    return _real_condition_sql(servertypes, attribute, template)
+    return _real_condition_sql(attribute, template, possible_servertype_ids)
 
 
-def _real_condition_sql(servertypes, attribute, template):
+def _real_condition_sql(attribute, template, possible_servertype_ids=None):
     model = ServerAttribute.get_model(attribute.type)
     assert model is not None
 
@@ -243,26 +250,27 @@ def _real_condition_sql(servertypes, attribute, template):
     # are going to be OR'ed together.
     relation_conditions = []
     related_via_attributes = set()
-    other_servertypes = list()
-    for sa in attribute.servertype_attributes.filter(
-        _servertype__in=servertypes
-    ):
+    other_servertype_ids = list()
+    queryset = attribute.servertype_attributes  # TODO: Stop making queries
+    if possible_servertype_ids:
+        queryset = queryset.filter(servertype_id__in=possible_servertype_ids)
+    for sa in queryset:
         if sa.related_via_attribute:
             related_via_attributes.add(sa.related_via_attribute)
         else:
-            other_servertypes.append(sa.servertype)
+            other_servertype_ids.append(sa.servertype_id)
     for related_via_attribute in related_via_attributes:
-        related_via_servertypes = tuple(
-            sa.servertype
-            for sa in related_via_attribute.servertype_attributes.filter(
-                _servertype__in=servertypes
+        queryset = related_via_attribute.servertype_attributes
+        if possible_servertype_ids:
+            queryset = queryset.filter(
+                servertype_id__in=possible_servertype_ids
             )
-        )
-        assert related_via_servertypes
+        related_via_servertype_ids = [sa.servertype_id for sa in queryset]
+        assert related_via_servertype_ids
         if related_via_attribute.type == 'supernet':
             relation_condition = _exists_sql(Server, 'rel1', (
                 "rel1.servertype_id = '{0}'".format(
-                    related_via_attribute.target_servertype.pk
+                    related_via_attribute.target_servertype_id
                 ),
                 'rel1.intern_ip >>= server.intern_ip',
                 'rel1.server_id = sub.server_id',
@@ -270,7 +278,7 @@ def _real_condition_sql(servertypes, attribute, template):
         elif related_via_attribute.type == 'reverse':
             relation_condition = _exists_sql(ServerRelationAttribute, 'rel1', (
                 "rel1.attribute_id = '{0}'".format(
-                    related_via_attribute.reversed_attribute.pk
+                    related_via_attribute.reversed_attribute.attribute_id
                 ),
                 'rel1.value = server.server_id',
                 'rel1.server_id = sub.server_id',
@@ -278,16 +286,17 @@ def _real_condition_sql(servertypes, attribute, template):
         else:
             assert related_via_attribute.type == 'relation'
             relation_condition = _exists_sql(ServerRelationAttribute, 'rel1', (
-                "rel1.attribute_id = '{0}'".format(related_via_attribute.pk),
+                "rel1.attribute_id = '{0}'"
+                .format(related_via_attribute.attribute_id),
                 'rel1.server_id = server.server_id',
                 'rel1.value = sub.server_id',
             ))
         relation_conditions.append(
-            (relation_condition, related_via_servertypes)
+            (relation_condition, related_via_servertype_ids)
         )
-    if other_servertypes:
+    if other_servertype_ids:
         relation_conditions.append(
-            ('server.server_id = sub.server_id', other_servertypes)
+            ('server.server_id = sub.server_id', other_servertype_ids)
         )
     assert relation_conditions
 
@@ -297,14 +306,14 @@ def _real_condition_sql(servertypes, attribute, template):
         mixed_relation_condition = '({0})'.format(' OR '.join(
             '({0} AND server.servertype_id IN ({1}))'
             .format(relation_condition, ', '.join(
-                "'{0}'".format(s.pk) for s in servertypes)
+                "'{0}'".format(s) for s in servertype_ids)
             )
-            for relation_condition, servertypes in relation_conditions
+            for relation_condition, servertype_ids in relation_conditions
         ))
 
     return _exists_sql(model, 'sub', (
         mixed_relation_condition,
-        "sub.attribute_id = '{0}'".format(attribute.pk),
+        "sub.attribute_id = '{0}'".format(attribute.attribute_id),
         template.format('sub.value'),
     ))
 

@@ -67,8 +67,8 @@
             "regexp": "(wheezy|squeeze)",
             "required": true,
             "default_value": "squeeze",
-            "_servertype": "test0",
-            "_attribute": "os"
+            "servertype": "test0",
+            "attribute": "os"
         }
     },
     {
@@ -78,8 +78,8 @@
             "regexp": "(wheezy|squeeze)",
             "required": true,
             "default_value": null,
-            "_servertype": "test2",
-            "_attribute": "os"
+            "servertype": "test2",
+            "attribute": "os"
         }
     },
     {
@@ -87,8 +87,8 @@
         "model": "serverdb.servertypeattribute",
         "fields": {
             "default_value": null,
-            "_servertype": "test2",
-            "_attribute": "game_world"
+            "servertype": "test2",
+            "attribute": "game_world"
         }
     },
     {
@@ -96,8 +96,8 @@
         "model": "serverdb.servertypeattribute",
         "fields": {
             "default_value": null,
-            "_servertype": "test0",
-            "_attribute": "database"
+            "servertype": "test0",
+            "attribute": "database"
         }
     },
     {
@@ -106,7 +106,7 @@
         "fields": {
             "intern_ip": 168820737,
             "hostname": "test0",
-            "_servertype": "test0"
+            "servertype": "test0"
         }
     },
     {
@@ -115,7 +115,7 @@
         "fields": {
             "intern_ip": 168820738,
             "hostname": "test1",
-            "_servertype": "test2"
+            "servertype": "test2"
         }
     },
     {
@@ -124,7 +124,7 @@
         "fields": {
             "intern_ip": 168820739,
             "hostname": "test2",
-            "_servertype": "test2"
+            "servertype": "test2"
         }
     },
     {
@@ -133,14 +133,14 @@
         "fields": {
             "intern_ip": 168820740,
             "hostname": "test3",
-            "_servertype": "test2"
+            "servertype": "test2"
         }
     },
     {
         "pk": 1,
         "model": "serverdb.serverstringattribute",
         "fields": {
-            "_attribute": "os",
+            "attribute": "os",
             "value": "wheezy",
             "server": 1
         }
@@ -149,7 +149,7 @@
         "pk": 2,
         "model": "serverdb.serverstringattribute",
         "fields": {
-            "_attribute": "os",
+            "attribute": "os",
             "value": "squeeze",
             "server": 2
         }
@@ -158,7 +158,7 @@
         "pk": 3,
         "model": "serverdb.serverstringattribute",
         "fields": {
-            "_attribute": "os",
+            "attribute": "os",
             "value": "squeeze",
             "server": 3
         }
@@ -167,7 +167,7 @@
         "pk": 4,
         "model": "serverdb.serverstringattribute",
         "fields": {
-            "_attribute": "os",
+            "attribute": "os",
             "value": "squeeze",
             "server": 4
         }
@@ -176,7 +176,7 @@
         "pk": 5,
         "model": "serverdb.servernumberattribute",
         "fields": {
-            "_attribute": "game_world",
+            "attribute": "game_world",
             "value": "1",
             "server": 2
         }
@@ -185,7 +185,7 @@
         "pk": 6,
         "model": "serverdb.servernumberattribute",
         "fields": {
-            "_attribute": "game_world",
+            "attribute": "game_world",
             "value": "2",
             "server": 3
         }
@@ -194,7 +194,7 @@
         "pk": 7,
         "model": "serverdb.servernumberattribute",
         "fields": {
-            "_attribute": "game_world",
+            "attribute": "game_world",
             "value": "10",
             "server": 4
         }
