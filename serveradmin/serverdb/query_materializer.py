@@ -30,6 +30,7 @@ class QueryMaterializer:
         servers_by_type = {}
         for server in self._servers:
             self._server_attributes[server] = {
+                Attribute.specials['object_id']: server.server_id,
                 Attribute.specials['hostname']: server.hostname,
                 Attribute.specials['intern_ip']: server.intern_ip,
                 Attribute.specials['servertype']: server.servertype_id,
@@ -228,7 +229,6 @@ class QueryMaterializer:
         return 0, _sort_key(value)
 
     def _get_attributes(self, server, join_results):   # NOQA: C901
-        yield 'object_id', server.server_id
         server_attributes = self._server_attributes[server]
         for attribute, value in server_attributes.items():
             if attribute not in self._joined_attributes:
