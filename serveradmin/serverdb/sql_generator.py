@@ -232,11 +232,9 @@ def _condition_sql(attribute, template, possible_servertype_ids=None):
         ))
     if attribute.type == 'domain':
         return _exists_sql(Server, 'sub', (
-            # If you are here because this is not quick enough: Create an index
-            # over reversed(hostname) and change the query like:
-            # reversed(server.hostname) LIKE reversed(sub.hostname) || '%'
             "sub.servertype_id = '{0}'".format(attribute.target_servertype_id),
-            "server.hostname LIKE '%%' || sub.hostname",
+            "server.hostname ~ ('\\A[^\.]+\.' || regexp_replace(",
+            "sub.hostname, '(\*|\-|\.)', '\\\1', 'g') || '\\Z')",
             template.format('sub.server_id'),
         ))
     if attribute.type == 'reverse':

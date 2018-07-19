@@ -154,16 +154,8 @@ class QueryMaterializer:
             self._add_related_attribute(attribute, sa, servers_by_type)
 
     def _add_domain_attribute(self, attribute, servers):
-        def _hostname_splitter(hostname):
-            while '.' in hostname:
-                hostname = hostname.split('.', 1)[-1]
-                yield hostname
-
-        domain_names = set()
-        for server in servers:
-            domain_names.update(_hostname_splitter(server.hostname))
-
-        domains = {
+        domain_names = {s.hostname.split('.', 1)[-1] for s in servers}
+        domain_lookup = {
             domain.hostname: domain
             for domain in Server.objects.filter(
                 servertype=attribute.target_servertype,
@@ -172,12 +164,9 @@ class QueryMaterializer:
         }
 
         for server in servers:
-            for subdomain in _hostname_splitter(server.hostname):
-                if subdomain in domains:
-                    self._server_attributes[server][attribute] = domains[
-                        subdomain
-                    ]
-                    break
+            self._server_attributes[server][attribute] = domain_lookup.get(
+                server.hostname.split('.', 1)[-1]
+            )
 
     def _add_supernet_attribute(self, attribute, servers):
         """Merge-join networks to the servers
