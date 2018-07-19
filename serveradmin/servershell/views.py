@@ -304,7 +304,7 @@ def commit(request):
                 value['object_id'] = int(key)
                 changed.append(value)
 
-        deleted = commit.get('deleted', [])
+        deleted = commit_obj.get('deleted', [])
         user = request.user
 
         try:

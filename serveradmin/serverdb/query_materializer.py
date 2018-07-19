@@ -117,6 +117,13 @@ class QueryMaterializer:
                         for st in self._servertype_ids_by_attribute[attribute]
                         for s in servers_by_type[st]
                     ))
+            elif key == 'domain':
+                for attribute in attributes:
+                    self._add_domain_attribute(attribute, [
+                        s
+                        for st in self._servertype_ids_by_attribute[attribute]
+                        for s in servers_by_type[st]
+                    ])
             elif key == 'reverse':
                 reversed_attributes = {
                     a.reversed_attribute_id: a for a in attributes
@@ -145,6 +152,21 @@ class QueryMaterializer:
     def _add_related_attributes(self, servers_by_type):
         for attribute, sa in self._related_servertype_attributes:
             self._add_related_attribute(attribute, sa, servers_by_type)
+
+    def _add_domain_attribute(self, attribute, servers):
+        domain_names = {s.hostname.split('.', 1)[-1] for s in servers}
+        domain_lookup = {
+            domain.hostname: domain
+            for domain in Server.objects.filter(
+                servertype=attribute.target_servertype,
+                hostname__in=domain_names,
+            )
+        }
+
+        for server in servers:
+            self._server_attributes[server][attribute] = domain_lookup.get(
+                server.hostname.split('.', 1)[-1]
+            )
 
     def _add_supernet_attribute(self, attribute, servers):
         """Merge-join networks to the servers

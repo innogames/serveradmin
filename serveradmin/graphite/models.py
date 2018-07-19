@@ -185,7 +185,7 @@ class Relation(models.Model):
     })
     sort_order = models.FloatField(default=0)
     attribute = models.ForeignKey(Attribute, limit_choices_to=models.Q(
-        type__in=['relation', 'reverse', 'supernet']
+        type__in=['relation', 'reverse', 'supernet', 'domain']
     ))
 
     class Meta:
