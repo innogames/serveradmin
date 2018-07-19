@@ -35,7 +35,7 @@ class BaseQuery(object):
             a: f if isinstance(f, BaseFilter) else BaseFilter(f)
             for a, f in filters.items()
         }
-        if 'object_id' not in restrict:
+        if restrict is not None and 'object_id' not in restrict:
             self._restrict = list(restrict) + ['object_id']
         else:
             self._restrict = restrict
