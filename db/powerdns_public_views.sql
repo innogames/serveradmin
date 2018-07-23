@@ -127,7 +127,6 @@ union all
 grant usage on schema dns_public to dns_public;
 grant select on dns_public.domains to dns_public;
 grant select on dns_public.records to dns_public;
-grant select on dns_public.extra_record to dns_public;
 grant select on public.server to dns_public;
 grant select on public.server_string_attribute to dns_public;
 
