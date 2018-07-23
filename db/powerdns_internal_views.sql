@@ -2,7 +2,7 @@ begin;
 
 create or replace view dns_internal.domains as
 select
-    server_id as id,
+    0 as id,
     hostname::text as name,
     null::text as master,
     null::int as last_check,
@@ -15,7 +15,7 @@ where servertype_id = 'provider_domain';
 create or replace view dns_internal.records as
 select
     0 as id,
-    d.id as domain_id,
+    0 as domain_id,
     r.name,
     r.type,
     r.content,
@@ -116,9 +116,7 @@ union all
     join public.server_inet_attribute as attribute using (server_id)
     where server.intern_ip is not null and
         hostmask(attribute.value) in ('0.0.0.0', '::')
-) as r
-join dns_internal.domains as d
-    on r.name like ('%' || d.name);
+) as r;
 
 grant usage on schema dns_internal to dns_internal;
 grant select on dns_internal.domains to dns_internal;

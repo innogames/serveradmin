@@ -2,7 +2,7 @@ begin;
 
 create or replace view dns_public.domains as
 select
-    server_id as id,
+    0 as id,
     hostname::text as name,
     null::text as master,
     null::int as last_check,
@@ -15,7 +15,7 @@ where servertype_id = 'provider_domain';
 create or replace view dns_public.records as
 select
     0 as id,
-    d.id as domain_id,
+    0 as domain_id,
     r.name,
     r.type,
     r.content,
@@ -122,9 +122,7 @@ union all
     where server.intern_ip is not null and
         hostmask(attribute.value) in ('0.0.0.0', '::') and
         domain_attribute.attribute_id = 'domain'
-) as r
-join dns_public.domains as d
-    on r.name like ('%' || d.name);
+) as r;
 
 grant usage on schema dns_public to dns_public;
 grant select on dns_public.domains to dns_public;
