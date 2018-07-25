@@ -252,7 +252,7 @@ class DatasetObject(dict):
             if isinstance(value, (tuple, list, set, frozenset)):
                 attributes[attribute_id] = MultiAttr(value, self, attribute_id)
         super(DatasetObject, self).__init__(attributes)
-        self.object_id = self['object_id']
+        self.object_id = self.get('object_id')
         self._deleted = False
         self.old_values = {}
 
