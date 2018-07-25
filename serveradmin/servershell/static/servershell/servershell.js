@@ -409,7 +409,7 @@ function autocomplete_shell_command(term, autocomplete_cb) {
         'commit': 'Commit outstanding changes',
         'export': 'Export all hostnames for usage in shell',
         'perpage': 'Show a specific number of hosts per page (e.g. "perpage 50")',
-        'graph': 'Show configured Graohite graph table for selected hosts',
+        'graph': 'Show configured Graphite graph table for selected hosts',
         'new': 'Create a new server (e.g. "new vm")',
         'clone': 'Clone a server with it\'s attributes',
         'inspect': 'List all attributes of a server',
