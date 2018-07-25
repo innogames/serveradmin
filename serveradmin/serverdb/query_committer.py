@@ -29,6 +29,7 @@ from serveradmin.serverdb.query_materializer import (
 )
 
 pre_commit = Signal()
+post_commit = Signal()
 
 
 class CommitError(ValidationError):
@@ -102,6 +103,10 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
             entities, created_objects, changed_objects, deleted_objects
         )
         _log_changes(change_commit, changed, created_objects, deleted_objects)
+
+    post_commit.send_robust(
+        commit_query, created=created, changed=changed, deleted=deleted
+    )
 
     return DatasetCommit(
         list(created_objects.values()),
