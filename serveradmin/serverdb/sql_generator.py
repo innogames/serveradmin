@@ -251,28 +251,28 @@ def _real_condition_sql(attribute, template, possible_servertype_ids=None):
     model = ServerAttribute.get_model(attribute.type)
     assert model is not None
 
+    # First we need to group the servertype_attributes by related_via_attribute
+    # properties.
+    # TODO: Stop making queries in here
+    related_vias = {}
+    queryset = attribute.servertype_attributes
+    if possible_servertype_ids:
+        queryset = queryset.filter(servertype_id__in=possible_servertype_ids)
+    for sa in queryset:
+        ids = related_vias.setdefault(sa.related_via_attribute, [])
+        ids.append(sa.servertype_id)
+
     # We start with the condition for the attributes the server has on
     # its own.  Then, add the conditions for all possible relations.  They
     # are going to be OR'ed together.
     relation_conditions = []
-    related_via_attributes = set()
-    other_servertype_ids = list()
-    queryset = attribute.servertype_attributes  # TODO: Stop making queries
-    if possible_servertype_ids:
-        queryset = queryset.filter(servertype_id__in=possible_servertype_ids)
-    for sa in queryset:
-        if sa.related_via_attribute:
-            related_via_attributes.add(sa.related_via_attribute)
-        else:
-            other_servertype_ids.append(sa.servertype_id)
-    for related_via_attribute in related_via_attributes:
-        queryset = related_via_attribute.servertype_attributes
-        if possible_servertype_ids:
-            queryset = queryset.filter(
-                servertype_id__in=possible_servertype_ids
-            )
-        related_via_servertype_ids = [sa.servertype_id for sa in queryset]
-        assert related_via_servertype_ids
+    if None in related_vias:
+        # The condition for directly attached attributes
+        relation_conditions.append((
+            'server.server_id = sub.server_id',
+            related_vias.pop(None),
+        ))
+    for related_via_attribute, servertype_ids in related_vias.items():
         if related_via_attribute.type == 'supernet':
             relation_condition = _exists_sql(Server, 'rel1', (
                 "rel1.servertype_id = '{0}'".format(
@@ -297,13 +297,7 @@ def _real_condition_sql(attribute, template, possible_servertype_ids=None):
                 'rel1.server_id = server.server_id',
                 'rel1.value = sub.server_id',
             ))
-        relation_conditions.append(
-            (relation_condition, related_via_servertype_ids)
-        )
-    if other_servertype_ids:
-        relation_conditions.append(
-            ('server.server_id = sub.server_id', other_servertype_ids)
-        )
+        relation_conditions.append((relation_condition, servertype_ids))
     assert relation_conditions
 
     if len(relation_conditions) == 1:
