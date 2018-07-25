@@ -284,7 +284,7 @@ def _real_condition_sql(attribute, template, possible_servertype_ids=None):
         elif related_via_attribute.type == 'reverse':
             relation_condition = _exists_sql(ServerRelationAttribute, 'rel1', (
                 "rel1.attribute_id = '{0}'".format(
-                    related_via_attribute.reversed_attribute.attribute_id
+                    related_via_attribute.reversed_attribute_id
                 ),
                 'rel1.value = server.server_id',
                 'rel1.server_id = sub.server_id',
