@@ -201,7 +201,6 @@ def _get_servers(filters, attribute_lookup, possible_servertype_ids=None):
     # the properties of the attributes.
     attribute_filters = []
     for attribute_id, filt in filters.items():
-        attribute_filters.append((attribute_lookup[attribute_id], filt))
 
         # Before we actually execute the query, we can check the destiny of
         # the filters.  If one is destined to fail, we can just return empty
