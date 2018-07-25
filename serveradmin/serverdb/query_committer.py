@@ -440,18 +440,18 @@ def _validate_regexp(changes, servers, servertype_attributes):
         server = servers[object_id]
         for attribute_id, change in attribute_changes.items():
             sa = servertype_attributes[server['servertype']].get(attribute_id)
-            if not sa or not sa.regexp:
+            if not sa or not sa.attribute or not sa.attribute.regexp:
                 continue
 
             action = change['action']
             if action == 'update' or action == 'new':
                 if change['new'] is None:
                     continue
-                if not sa.regexp_match(change['new']):
+                if not sa.attribute.regexp_match(change['new']):
                     yield object_id, attribute_id
             elif action == 'multi':
                 for value in change['add']:
-                    if not sa.regexp_match(value):
+                    if not sa.attribute.regexp_match(value):
                         yield object_id, attribute_id
                         break
 
@@ -594,13 +594,12 @@ def _validate_real_attributes(servertype, real_attributes):     # NOQA: C901
 
         value = real_attributes[attribute]
 
-        if attribute.multi:
-            if sa.regexp:
+        if attribute.regexp:
+            if attribute.multi:
                 for val in value:
-                    if not sa.regexp_match(str(val)):
+                    if not attribute.regexp_match(str(val)):
                         violations_regexp.append(attribute.pk)
-        elif sa.regexp:
-            if not sa.regexp_match(value):
+            elif not attribute.regexp_match(value):
                 violations_regexp.append(attribute.pk)
 
     # Check for attributes that are not defined on this servertype

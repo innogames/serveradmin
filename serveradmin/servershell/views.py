@@ -135,7 +135,7 @@ def get_results(request):
         attribute__readonly=False,
     ):
         editable_attributes[sa.servertype_id][sa.attribute_id] = {
-            'regexp': sa.regexp,
+            'regexp': sa.attribute.regexp,
             'default': sa.default_value,
         }
 
@@ -268,10 +268,10 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
                 key in Attribute.specials.keys()
             ),
             'regexp_display': _prepare_regexp_html(
-                servertype_attribute and servertype_attribute.regexp
+                attribute.regexp and '^' + attribute.regexp + '$'
             ),
             'regexp': (
-                servertype_attribute and servertype_attribute.regexp
+                attribute.regexp and '^' + attribute.regexp + '$'
             ),
             'default': (
                 servertype_attribute and servertype_attribute.default_value
