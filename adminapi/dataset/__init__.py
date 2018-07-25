@@ -106,6 +106,8 @@ class BaseQuery(object):
             attrs = attrs[0]
 
         self._restrict = {str(a) for a in attrs}
+        if 'object_id' not in attrs:
+            self._restrict.add('object_id')
 
         return self
 
@@ -226,6 +228,10 @@ class Query(BaseQuery):
             obj._confirm_changes()
 
     def _fetch_results(self):
+        # Query expects to always get object_id. If we don't ask for it,
+        # something has gone terribly wrong while preparing this Query.
+        assert self._restrict is None or 'object_id' in self._restrict
+
         request_data = {'filters': self._filters}
         if self._restrict is not None:
             request_data['restrict'] = self._restrict
