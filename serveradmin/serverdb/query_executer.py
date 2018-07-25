@@ -33,25 +33,37 @@ def execute_query(filters, restrict, order_by):
     # transaction doesn't have to be started yet, because the metadata like
     # the attributes are mostly stable, and the data model wouldn't let us
     # see anything in inconsistent state, even while it is being changed
-    # concurrently.
+    # concurrently.  We start by the special attributes and fetch more
+    # if necessary.
+    attribute_lookup = dict(Attribute.specials)
     if restrict is None:
-        attribute_lookup = _get_attribute_lookup()
-    else:
-        attribute_lookup = _get_attribute_lookup(attribute_ids)
+        _update_attribute_lookup(attribute_lookup)
+    elif any(a not in attribute_lookup for a in attribute_ids):
+        _update_attribute_lookup(attribute_lookup, attribute_ids)
     _check_attributes_exist(attribute_ids, attribute_lookup)
 
     # If we have real attributes on the query filter, we can use them to
     # get the possible servertypes.  This is necessary to eliminate
-    # not-desired objects.
+    # not-desired objects.  We also use them to eliminate the servertype
+    # attribute relations passed to the SQL generator module in "related_vias".
+    # This is an optimization that matters, because all of those in
+    # "related_vias" hit the database as complicated sub-queries.
+    related_vias = {}
     real_attribute_ids = [a for a in filters if a not in Attribute.specials]
     if real_attribute_ids:
-        possible_servertype_ids = _get_possible_servertype_ids(
-            real_attribute_ids
-        )
+        servertype_attributes = list(ServertypeAttribute.objects.filter(
+            attribute_id__in=real_attribute_ids
+        ))
+        servertype_ids = _get_possible_servertype_ids(servertype_attributes)
         filters = dict(filters)
-        _override_servertype_filter(filters, possible_servertype_ids)
-    else:
-        possible_servertype_ids = None
+        servertype_ids = _override_servertype_filter(filters, servertype_ids)
+        servertype_attributes = [
+            sa for sa in servertype_attributes
+            if sa.servertype_id in servertype_ids
+        ]
+        _update_related_vias(
+            related_vias, servertype_attributes, attribute_lookup
+        )
 
     # Here we prepare the join dictionary for the query materializer.
     # For None on the restrict argument, we just use the complete list of
@@ -86,9 +98,7 @@ def execute_query(filters, restrict, order_by):
         # for ordering may be lost after the materialization.  See the query
         # materializer module for its details.  The functions on this module
         # continues with the filtering step.
-        servers = _get_servers(
-            filters, attribute_lookup, possible_servertype_ids
-        )
+        servers = _get_servers(filters, attribute_lookup, related_vias)
         return list(QueryMaterializer(servers, *materializer_args))
 
 
@@ -125,22 +135,14 @@ def _collect_attribute_ids(joins=None, filters=None, order_by=None):
             yield attribute_id
 
 
-def _get_attribute_lookup(attribute_ids=None):
-    """Prepare the attribute lookup and make sure all exist"""
-
-    # Start by the special attributes and fetch more if necessary
-    attribute_lookup = dict(Attribute.specials)
-
-    queryset = None
+def _update_attribute_lookup(attribute_lookup, attribute_ids=None):
     if attribute_ids is None:
         queryset = Attribute.objects.all()
-    elif any(a not in attribute_lookup for a in attribute_ids):
+    else:
         queryset = Attribute.objects.filter(attribute_id__in=attribute_ids)
-    if queryset:
-        for attribute in queryset:
-            attribute_lookup[attribute.attribute_id] = attribute
 
-    return attribute_lookup
+    for attribute in queryset:
+        attribute_lookup[attribute.attribute_id] = attribute
 
 
 def _check_attributes_exist(attribute_ids, attribute_lookup):
@@ -151,7 +153,7 @@ def _check_attributes_exist(attribute_ids, attribute_lookup):
             raise ObjectDoesNotExist('No attribute "{}"'.format(attribute_id))
 
 
-def _get_possible_servertype_ids(attribute_ids):
+def _get_possible_servertype_ids(servertype_attributes):
     """Get the servertypes that can possible match with the query with
     the given attributes
 
@@ -163,12 +165,9 @@ def _get_possible_servertype_ids(attribute_ids):
 
     # First, we need to index the servertypes by the attributes.
     attribute_servertype_ids = {}
-    for sa in ServertypeAttribute.objects.filter(
-        attribute_id__in=attribute_ids
-    ):
-        attribute_servertype_ids.setdefault(sa.attribute_id, set()).add(
-            sa.servertype_id
-        )
+    for sa in servertype_attributes:
+        ids = attribute_servertype_ids.setdefault(sa.attribute_id, set())
+        ids.add(sa.servertype_id)
 
     # Then we get the servertype list of the first attribute, and continue
     # reducing it by getting intersection of the list of the next attribute.
@@ -179,22 +178,59 @@ def _get_possible_servertype_ids(attribute_ids):
     return servertype_ids
 
 
-def _override_servertype_filter(filters, possible_servertype_ids):
+def _override_servertype_filter(filters, servertype_ids):
     """Override the servertype filter using the possible servertypes"""
 
     # If the servertype filter is also on the filters, we can deal with
     # it ourself.  This is an optimization.  We could not do this, but
     # then we wouldn't be able to override the same filter.
     if 'servertype' in filters:
-        possible_servertype_ids = filter(
-            filters['servertype'].matches, possible_servertype_ids
-        )
+        servertype_ids = filter(filters['servertype'].matches, servertype_ids)
 
     # Here we add the servertype filter or override the existing one.
-    filters['servertype'] = Any(*possible_servertype_ids)
+    filters['servertype'] = Any(*servertype_ids)
+
+    return servertype_ids
 
 
-def _get_servers(filters, attribute_lookup, possible_servertype_ids=None):
+def _update_related_vias(
+    related_vias, servertype_attributes, attribute_lookup
+):
+    """Prepare the related_vias dictionary for the SQL generator module
+
+    It is lists in dictionaries of dictionaries indexed first by attribute_id
+    and then by the related_via_attribute.  The attribute lookup dictionary
+    passed to here may not have all of the related via attributes we need.
+    In this case we recursively query them and repeat the process for
+    the remaining object.
+    """
+    to_be_looked_up = []
+    for sa in servertype_attributes:
+        related_via_attribute_id = sa.related_via_attribute_id
+        if not related_via_attribute_id:
+            related_via_attribute = None
+        elif related_via_attribute_id not in attribute_lookup:
+            to_be_looked_up.append(sa)
+            continue
+        else:
+            related_via_attribute = attribute_lookup[related_via_attribute_id]
+
+        (
+            related_vias
+            .setdefault(sa.attribute_id, {})
+            .setdefault(related_via_attribute, [])
+            .append(sa.servertype_id)
+        )
+
+    if to_be_looked_up:
+        _update_attribute_lookup(
+            attribute_lookup,
+            {sa.related_via_attribute_id for sa in to_be_looked_up},
+        )
+        _update_related_vias(related_vias, to_be_looked_up, attribute_lookup)
+
+
+def _get_servers(filters, attribute_lookup, related_vias):
     """Evaluate the filters to fetch the matching servers"""
 
     # From now on, we will pass the filters dictionary using the attribute
@@ -219,7 +255,7 @@ def _get_servers(filters, attribute_lookup, possible_servertype_ids=None):
 
     # If you managed to read this so far, the last step is refreshingly
     # easy: get and execute the raw SQL query.
-    sql_query = get_server_query(attribute_filters, possible_servertype_ids)
+    sql_query = get_server_query(attribute_filters, related_vias)
     try:
         return list(Server.objects.raw(sql_query))
     except DataError as error:

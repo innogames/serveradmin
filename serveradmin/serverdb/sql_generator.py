@@ -33,10 +33,10 @@ from serveradmin.serverdb.models import (
 )
 
 
-# The "possible_servertypes_id" argument is carried all the way through
-# most of the functions to optimize related_via_attribute selection.
-# TODO: Find a nicer way to achieve this
-def get_server_query(attribute_filters, possible_servertype_ids=None):
+# XXX: The "related_vias" argument is carried all the way through most of
+# the functions to optimize related_via_attribute selection.  We should find
+# a nicer way to achieve this.
+def get_server_query(attribute_filters, related_vias):
     sql = (
         'SELECT'
         ' server.server_id,'
@@ -47,7 +47,7 @@ def get_server_query(attribute_filters, possible_servertype_ids=None):
     )
     if attribute_filters:
         sql += ' WHERE ' + ' AND '.join(
-            _get_sql_condition(a, f, possible_servertype_ids)
+            _get_sql_condition(a, f, related_vias)
             for a, f in attribute_filters
         )
     sql += ' ORDER BY server.hostname'
@@ -55,13 +55,11 @@ def get_server_query(attribute_filters, possible_servertype_ids=None):
     return sql
 
 
-def _get_sql_condition(attribute, filt, possible_servertype_ids=None):
+def _get_sql_condition(attribute, filt, related_vias):
     assert isinstance(filt, BaseFilter)
 
     if isinstance(filt, (Not, Any)):
-        return _logical_filter_sql_condition(
-            attribute, filt, possible_servertype_ids
-        )
+        return _logical_filter_sql_condition(attribute, filt, related_vias)
 
     negate = False
     template = ''
@@ -93,14 +91,10 @@ def _get_sql_condition(attribute, filt, possible_servertype_ids=None):
     else:
         template = '{0} = ' + _raw_sql_escape(filt.value)
 
-    return _covered_sql_condition(
-        attribute, template, negate, possible_servertype_ids
-    )
+    return _covered_sql_condition(attribute, template, negate, related_vias)
 
 
-def _covered_sql_condition(
-    attribute, template, negate=False, possible_servertype_ids=None
-):
+def _covered_sql_condition(attribute, template, negate, related_vias):
     if attribute.type in ['relation', 'reverse', 'supernet', 'domain']:
         template = (
             '{{0}} IN ('
@@ -113,17 +107,15 @@ def _covered_sql_condition(
 
     return (
         ('NOT ' if negate else '') +
-        _condition_sql(attribute, template, possible_servertype_ids)
+        _condition_sql(attribute, template, related_vias)
     )
 
 
-def _logical_filter_sql_condition(
-    attribute, filt, possible_servertype_ids=None
-):
+def _logical_filter_sql_condition(attribute, filt, related_vias):
     if isinstance(filt, Not):
-        return 'NOT ({0})'.format(_get_sql_condition(
-            attribute, filt.value, possible_servertype_ids
-        ))
+        return 'NOT ({0})'.format(
+            _get_sql_condition(attribute, filt.value, related_vias)
+        )
 
     if isinstance(filt, All):
         joiner = ' AND '
@@ -139,14 +131,14 @@ def _logical_filter_sql_condition(
         if type(filt) == Any and type(value) == BaseFilter:
             simple_values.append(value)
         else:
-            templates.append(_get_sql_condition(
-                attribute, value, possible_servertype_ids
-            ))
+            templates.append(
+                _get_sql_condition(attribute, value, related_vias)
+            )
 
     if simple_values:
         if len(simple_values) == 1:
             template = _get_sql_condition(
-                attribute, simple_values[0], possible_servertype_ids
+                attribute, simple_values[0], related_vias
             )
         else:
             template = _covered_sql_condition(
@@ -155,7 +147,7 @@ def _logical_filter_sql_condition(
                     _raw_sql_escape(v.value) for v in simple_values
                 )),
                 False,
-                possible_servertype_ids,
+                related_vias,
             )
         templates.append(template)
 
@@ -220,7 +212,7 @@ def _containment_filter_template(attribute, filt):
     return template.format(_raw_sql_escape(value))
 
 
-def _condition_sql(attribute, template, possible_servertype_ids=None):
+def _condition_sql(attribute, template, related_vias):
     if attribute.special:
         return template.format('server.' + attribute.special.field)
 
@@ -244,23 +236,13 @@ def _condition_sql(attribute, template, possible_servertype_ids=None):
             template.format('sub.server_id'),
         ))
 
-    return _real_condition_sql(attribute, template, possible_servertype_ids)
+    return _real_condition_sql(attribute, template, related_vias)
 
 
-def _real_condition_sql(attribute, template, possible_servertype_ids=None):
+def _real_condition_sql(attribute, template, related_vias):
     model = ServerAttribute.get_model(attribute.type)
     assert model is not None
-
-    # First we need to group the servertype_attributes by related_via_attribute
-    # properties.
-    # TODO: Stop making queries in here
-    related_vias = {}
-    queryset = attribute.servertype_attributes
-    if possible_servertype_ids:
-        queryset = queryset.filter(servertype_id__in=possible_servertype_ids)
-    for sa in queryset:
-        ids = related_vias.setdefault(sa.related_via_attribute, [])
-        ids.append(sa.servertype_id)
+    related_vias = related_vias[attribute.attribute_id]
 
     # We start with the condition for the attributes the server has on
     # its own.  Then, add the conditions for all possible relations.  They
