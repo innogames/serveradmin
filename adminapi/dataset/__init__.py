@@ -35,10 +35,8 @@ class BaseQuery(object):
             a: f if isinstance(f, BaseFilter) else BaseFilter(f)
             for a, f in filters.items()
         }
-        if restrict is not None and 'object_id' not in restrict:
-            self._restrict = list(restrict) + ['object_id']
-        else:
-            self._restrict = restrict
+
+        self._restrict = restrict
         self._order_by = order_by
         self._results = None
 
@@ -60,6 +58,23 @@ class BaseQuery(object):
         if self._order_by is not None:
             args.append('order_by=' + repr(self._order_by))
         return 'Query({})'.format(', '.join(args))
+
+    @property
+    def _restrict(self):
+        return self.__restrict
+
+    @_restrict.setter
+    def _restrict(self, new_restrict):
+        def _ensure_object_id(restrict):
+            # The Query classes expect to always get an object_id to correlate
+            # objects when commiting them. If the user didn't ask for it, we
+            # will add it here.
+            return [
+                {k: _ensure_object_id(v) for k, v in i.items()} if
+                isinstance(i, dict) else i for i in restrict
+            ] + ['object_id']
+
+        self.__restrict = _ensure_object_id(new_restrict)
 
     def _get_results(self):
         if self._results is None:
@@ -106,8 +121,6 @@ class BaseQuery(object):
             attrs = attrs[0]
 
         self._restrict = {str(a) for a in attrs}
-        if 'object_id' not in attrs:
-            self._restrict.add('object_id')
 
         return self
 
@@ -209,7 +222,6 @@ class BaseQuery(object):
 
 
 class Query(BaseQuery):
-
     def _fetch_new_object(self, servertype):
         response = send_request(
             NEW_OBJECT_ENDPOINT, [('servertype', servertype)]
@@ -228,10 +240,6 @@ class Query(BaseQuery):
             obj._confirm_changes()
 
     def _fetch_results(self):
-        # Query expects to always get object_id. If we don't ask for it,
-        # something has gone terribly wrong while preparing this Query.
-        assert self._restrict is None or 'object_id' in self._restrict
-
         request_data = {'filters': self._filters}
         if self._restrict is not None:
             request_data['restrict'] = self._restrict
@@ -265,7 +273,7 @@ class DatasetObject(dict):
     def __hash__(self):
         """Make the objects hashable
 
-        Note that it will not work for objects which doesn't have object_id.
+        Note that it will not work for objects which don't have object_id.
         It is the callers responsibility not to use the them in hashable
         context.  We could try harder to make them hashable with a fallback
         method, but that would lead them to considered as different objects
