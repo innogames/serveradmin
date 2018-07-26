@@ -131,6 +131,7 @@ def get_results(request):
     for sa in ServertypeAttribute.objects.filter(
         servertype_id__in=servertype_ids,
         attribute_id__in=shown_attributes,
+        related_via_attribute_id__isnull=True,
     ):
         avail_attributes[sa.servertype_id][sa.attribute_id] = {
             'regexp': sa.regexp,
