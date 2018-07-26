@@ -69,6 +69,9 @@ class BaseQuery(object):
             # The Query classes expect to always get an object_id to correlate
             # objects when commiting them. If the user didn't ask for it, we
             # will add it here.
+            if restrict is None:
+                return None
+
             return [
                 {k: _ensure_object_id(v) for k, v in i.items()} if
                 isinstance(i, dict) else i for i in restrict
