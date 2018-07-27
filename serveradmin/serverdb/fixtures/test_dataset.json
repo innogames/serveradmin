@@ -22,7 +22,7 @@
         "model": "serverdb.attribute",
         "fields": {
             "type": "string",
-            "regexp": "(wheezy|squeeze)"
+            "regexp": "\\A(wheezy|squeeze)\\Z"
         }
     },
     {

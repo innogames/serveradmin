@@ -54,9 +54,8 @@ HOSTNAME_VALIDATORS = [
 
 REGEX_VALIDATORS = [
     RegexValidator(
-        r'^(?!\\A|\^).*(?<!\\Z)(?<!\$)$',
-        'Do not wrap your pattern in "^$" or "\\A\\Z", we enforce full line '
-        'matching for you.'
+        r'^\\A.*\\Z$',
+        'You must wrap your pattern in "\\A" and "\\Z" to force line matching'
     ),
 ]
 
@@ -168,9 +167,7 @@ class Attribute(models.Model):
 
     def _get_compiled_regexp(self):
         if not self._compiled_regexp and self.regexp is not None:
-            self._compiled_regexp = re.compile(
-                '\\A' + self.regexp + '\\Z'
-            )
+            self._compiled_regexp = re.compile(self.regexp)
 
         return self._compiled_regexp
 

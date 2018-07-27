@@ -256,11 +256,11 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
                 servertype_attribute and servertype_attribute.required or
                 key in Attribute.specials.keys()
             ),
-            'regexp_display': _prepare_regexp_html(
-                attribute.regexp and '^' + attribute.regexp + '$'
-            ),
+            'regexp_display': _prepare_regexp_html(attribute.regexp),
             'regexp': (
-                attribute.regexp and '^' + attribute.regexp + '$'
+                # XXX: HTML5 input patterns do not support these
+                None if not attribute.regexp else
+                attribute.regexp.replace('\\A', '^').replace('\\Z', '$')
             ),
             'default': (
                 servertype_attribute and servertype_attribute.default_value
