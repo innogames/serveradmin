@@ -185,7 +185,9 @@ def _override_servertype_filter(filters, servertype_ids):
     # it ourself.  This is an optimization.  We could not do this, but
     # then we wouldn't be able to override the same filter.
     if 'servertype' in filters:
-        servertype_ids = filter(filters['servertype'].matches, servertype_ids)
+        servertype_ids = [
+            s for s in servertype_ids if filters['servertype'].matches(s)
+        ]
 
     # Here we add the servertype filter or override the existing one.
     filters['servertype'] = Any(*servertype_ids)
