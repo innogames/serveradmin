@@ -126,7 +126,7 @@ def _validate(attribute_lookup, changed, changed_objects):
         attribute_lookup, changed, changed_objects
     )
     violations_regexp = list(
-        _validate_regexp(changed, changed_objects, servertype_attributes)
+        _validate_regexp(changed, changed_objects, attribute_lookup)
     )
     violations_required = _validate_required(
         changed, changed_objects, servertype_attributes
@@ -384,7 +384,7 @@ def _get_servertype_attributes(servers):
     for servertype_id in {s['servertype'] for s in servers.values()}:
         servertype_attributes[servertype_id] = dict()
         for sa in Servertype.objects.get(pk=servertype_id).attributes.all():
-            servertype_attributes[servertype_id][sa.attribute.pk] = sa
+            servertype_attributes[servertype_id][sa.attribute_id] = sa
 
     return servertype_attributes
 
@@ -434,24 +434,26 @@ def _validate_readonly(attribute_lookup, changes, servers):
     return violations
 
 
-def _validate_regexp(changes, servers, servertype_attributes):
+def _validate_regexp(changes, servers, attribute_lookup):
     for attribute_changes in changes:
         object_id = attribute_changes['object_id']
-        server = servers[object_id]
         for attribute_id, change in attribute_changes.items():
-            sa = servertype_attributes[server['servertype']].get(attribute_id)
-            if not sa or not sa.attribute or not sa.attribute.regexp:
+            if attribute_id in Attribute.specials:
+                continue
+
+            attribute = attribute_lookup[attribute_id]
+            if not attribute.regexp:
                 continue
 
             action = change['action']
             if action == 'update' or action == 'new':
                 if change['new'] is None:
                     continue
-                if not sa.attribute.regexp_match(change['new']):
+                if not attribute.regexp_match(change['new']):
                     yield object_id, attribute_id
             elif action == 'multi':
                 for value in change['add']:
-                    if not sa.attribute.regexp_match(value):
+                    if not attribute.regexp_match(value):
                         yield object_id, attribute_id
                         break
 
