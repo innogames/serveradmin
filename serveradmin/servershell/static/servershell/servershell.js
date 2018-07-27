@@ -1,6 +1,6 @@
 var search = {
     'shown_attributes': ['hostname', 'intern_ip', 'servertype', 'state'],
-    'avail_attributes': {},
+    'editable_attributes': {},
     'servers': [],
     'num_servers': 0,
     'page': 1,
@@ -34,7 +34,7 @@ function refresh_servers(callback) {
         }
         search['servers'] = data['servers'];
         search['num_servers'] = data['num_servers'];
-        search['avail_attributes'] = data['avail_attributes'];
+        search['editable_attributes'] = data['editable_attributes'];
         search['num_pages'] = Math.max(1, Math.ceil(search['num_servers'] / search['per_page']));
 
         if (search['page'] > search['num_pages']) {
@@ -77,7 +77,7 @@ function build_server_table(servers, attributes, offset) {
         delete_set[commit['deleted'][i]] = true;
     }
 
-    var avail_attrs = search['avail_attributes'];
+    var avail_attrs = search['editable_attributes'];
 
     // Fill table
     search['no_mapping'] = {};
@@ -227,7 +227,7 @@ function _make_attr_editable(cell, server, attr_name, value) {
         var ok_button = $('<input type="submit" value="edit" />');
         form.append(ok_button);
 
-        var stype_attr = search['avail_attributes'][server['servertype']][attr_name];
+        var stype_attr = search['editable_attributes'][server['servertype']][attr_name];
         if (stype_attr.regexp !== null) {
             form.append($('<div/>').text('Regexp: ' + stype_attr.regexp));
         }
@@ -844,7 +844,7 @@ function handle_command_setattr(parsed_args) {
                 continue;
             }
 
-            if (!search['avail_attributes'][server['servertype']][attr_name]) {
+            if (!search['editable_attributes'][server['servertype']][attr_name]) {
                 continue;
             }
 
@@ -951,7 +951,7 @@ function handle_command_multiattr(parsed_args, action) {
             }
 
             // Don't modify multiattr if it doesn't exist
-            if (!search['avail_attributes'][server['servertype']][attr_name]) {
+            if (!search['editable_attributes'][server['servertype']][attr_name]) {
                 continue;
             }
 

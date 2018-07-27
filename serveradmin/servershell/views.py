@@ -125,15 +125,15 @@ def get_results(request):
         for a in Attribute.specials.keys()
     )
     servertype_ids = {s['servertype'] for s in servers}
-    avail_attributes = dict()
+    editable_attributes = dict()
     for servertype_id in servertype_ids:
-        avail_attributes[servertype_id] = dict(specials)
+        editable_attributes[servertype_id] = dict(specials)
     for sa in ServertypeAttribute.objects.filter(
         servertype_id__in=servertype_ids,
         attribute_id__in=shown_attributes,
         related_via_attribute_id__isnull=True,
     ):
-        avail_attributes[sa.servertype_id][sa.attribute_id] = {
+        editable_attributes[sa.servertype_id][sa.attribute_id] = {
             'regexp': sa.regexp,
             'default': sa.default_value,
         }
@@ -143,7 +143,7 @@ def get_results(request):
         'understood': repr(query),
         'servers': servers,
         'num_servers': num_servers,
-        'avail_attributes': avail_attributes,
+        'editable_attributes': editable_attributes,
     }, default=json_encode_extra), content_type='application/x-json')
 
 
