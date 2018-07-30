@@ -128,7 +128,7 @@ class Attribute(models.Model):
     )
     clone = models.BooleanField(null=False, default=False)
     regexp = models.CharField(
-        max_length=255,
+        max_length=1024,
         null=True,
         blank=True,
         validators=REGEX_VALIDATORS,
