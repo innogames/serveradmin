@@ -54,7 +54,7 @@ HOSTNAME_VALIDATORS = [
 
 REGEX_VALIDATORS = [
     RegexValidator(
-        r'^\\A.*\\Z$',
+        r'\A\\A.*\\Z\Z',
         'You must wrap your pattern in "\\A" and "\\Z" to force line matching'
     ),
 ]

@@ -29,6 +29,8 @@ class Migration(migrations.Migration):
             'ADD CONSTRAINT attribute_reversed_attribute_id_check '
             '   CHECK ('
             "       (type = 'reverse') = (reversed_attribute_id IS NOT NULL)"
-            '   )'
+            '   ), '
+            'ADD CONSTRAINT attribute_regexp_check '
+            "   CHECK (regexp ~ '\A\\A.*\\Z\Z')"
         ),
     ]
