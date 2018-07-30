@@ -174,7 +174,14 @@ class Attribute(models.Model):
                 .format(self.attribute_id)
             )
 
-        return re_compiled.match(str(value))
+        # We use lower case booleans in our regexes but python __str__ methods
+        # on booleans return them in upper case.
+        if isinstance(value, bool):
+            value = str(value).lower()
+        else:
+            value = str(value)
+
+        return re_compiled.match(value)
 
     def clean(self):
         if self.regexp == '':
