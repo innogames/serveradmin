@@ -21,7 +21,8 @@
         "pk": "os",
         "model": "serverdb.attribute",
         "fields": {
-            "type": "string"
+            "type": "string",
+            "regexp": "\\A(wheezy|squeeze)\\Z"
         }
     },
     {
@@ -64,7 +65,6 @@
         "pk": 1,
         "model": "serverdb.servertypeattribute",
         "fields": {
-            "regexp": "(wheezy|squeeze)",
             "required": true,
             "default_value": "squeeze",
             "servertype": "test0",
@@ -75,7 +75,6 @@
         "pk": 2,
         "model": "serverdb.servertypeattribute",
         "fields": {
-            "regexp": "(wheezy|squeeze)",
             "required": true,
             "default_value": null,
             "servertype": "test2",

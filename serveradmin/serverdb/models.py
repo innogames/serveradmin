@@ -52,6 +52,13 @@ HOSTNAME_VALIDATORS = [
     ),
 ]
 
+REGEX_VALIDATORS = [
+    RegexValidator(
+        r'^\\A.*\\Z$',
+        'You must wrap your pattern in "\\A" and "\\Z" to force line matching'
+    ),
+]
+
 
 def get_choices(types):
     # Django allows the choices to be stored and named differently,
@@ -120,6 +127,13 @@ class Attribute(models.Model):
         limit_choices_to=dict(type='relation'),
     )
     clone = models.BooleanField(null=False, default=False)
+    regexp = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        validators=REGEX_VALIDATORS,
+    )
+    _compiled_regexp = None
 
     class Meta:
         app_label = 'serverdb'
@@ -150,6 +164,27 @@ class Attribute(models.Model):
             return from_str_fn(value)
         except ValueError as error:
             raise ValidationError(str(error))
+
+    def _get_compiled_regexp(self):
+        if not self._compiled_regexp and self.regexp is not None:
+            self._compiled_regexp = re.compile(self.regexp)
+
+        return self._compiled_regexp
+
+    def regexp_match(self, value):
+        re_compiled = self._get_compiled_regexp()
+        if re_compiled is None:
+            raise ValidationError(
+                'Attribute {} has no value validation regexp set'
+                .format(self.attribute_id)
+            )
+
+        return re_compiled.match(str(value))
+
+    def clean(self):
+        if self.regexp == '':
+            self.regexp = None
+        super(Attribute, self).clean()
 
 
 class ServerTableSpecial(object):
@@ -229,8 +264,6 @@ class ServertypeAttribute(models.Model):
     )
     required = models.BooleanField(null=False, default=False)
     default_value = models.CharField(max_length=255, null=True, blank=True)
-    regexp = models.CharField(max_length=255, null=True, blank=True)
-    _compiled_regexp = None
     default_visible = models.BooleanField(null=False, default=False)
 
     class Meta:
@@ -241,11 +274,6 @@ class ServertypeAttribute(models.Model):
 
     def __str__(self):
         return '{0} - {1}'.format(self.servertype, self.attribute)
-
-    def get_compiled_regexp(self):
-        if self.regexp is not None and not self._compiled_regexp:
-            self._compiled_regexp = re.compile(self.regexp)
-        return self._compiled_regexp
 
     def get_default_value(self):
         if not self.default_value:
@@ -258,14 +286,9 @@ class ServertypeAttribute(models.Model):
 
         return self.attribute.from_str(default_value)
 
-    def regexp_match(self, value):
-        return self.get_compiled_regexp().match(str(value))
-
     def clean(self):
         if self.default_value == '':
             self.default_value = None
-        if self.regexp == '':
-            self.regexp = None
         super(ServertypeAttribute, self).clean()
 
 

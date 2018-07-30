@@ -115,29 +115,18 @@ def get_results(request):
     request.session['term'] = term
     request.session['per_page'] = limit
 
-    # Add information about available attributes on servertypes
-    # It will be encoded as map avail[servertype][attr] = stypeattr
-    specials = tuple(
-        (a, {
-            'regexp': None,
-            'default': None,
-        })
-        for a in Attribute.specials.keys()
-    )
+    # Add information about available, editable attributes on servertypes
     servertype_ids = {s['servertype'] for s in servers}
     editable_attributes = dict()
     for servertype_id in servertype_ids:
-        editable_attributes[servertype_id] = dict(specials)
+        editable_attributes[servertype_id] = list(Attribute.specials)
     for sa in ServertypeAttribute.objects.filter(
         servertype_id__in=servertype_ids,
         attribute_id__in=shown_attributes,
         related_via_attribute_id__isnull=True,
         attribute__readonly=False,
     ):
-        editable_attributes[sa.servertype_id][sa.attribute_id] = {
-            'regexp': sa.regexp,
-            'default': sa.default_value,
-        }
+        editable_attributes[sa.servertype_id].append(sa.attribute_id)
 
     return HttpResponse(json.dumps({
         'status': 'success',
@@ -267,11 +256,11 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
                 servertype_attribute and servertype_attribute.required or
                 key in Attribute.specials.keys()
             ),
-            'regexp_display': _prepare_regexp_html(
-                servertype_attribute and servertype_attribute.regexp
-            ),
+            'regexp_display': _prepare_regexp_html(attribute.regexp),
             'regexp': (
-                servertype_attribute and servertype_attribute.regexp
+                # XXX: HTML5 input patterns do not support these
+                None if not attribute.regexp else
+                attribute.regexp.replace('\\A', '^').replace('\\Z', '$')
             ),
             'default': (
                 servertype_attribute and servertype_attribute.default_value

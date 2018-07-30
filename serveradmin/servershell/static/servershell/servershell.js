@@ -77,8 +77,6 @@ function build_server_table(servers, attributes, offset) {
         delete_set[commit['deleted'][i]] = true;
     }
 
-    var avail_attrs = search['editable_attributes'];
-
     // Fill table
     search['no_mapping'] = {};
     var marked_servers = get_marked_servers();
@@ -107,6 +105,7 @@ function build_server_table(servers, attributes, offset) {
         row.append($('<td></td>').text(offset + i + 1));
         for (var j = 0; j < attributes.length; j++) {
             var attr_name = attributes[j];
+            var is_editable = search['editable_attributes'][server['servertype']].includes(attr_name);
             var value = server[attr_name];
             var changes = commit['changes'];
             if (typeof changes[server['object_id']] != 'undefined' &&
@@ -169,7 +168,7 @@ function build_server_table(servers, attributes, offset) {
                         current_values.push(change['add'][k]);
                     }
 
-                    if (!avail_attrs[server['servertype']][attr_name]) {
+                    if (!is_editable) {
                         table_cell.addClass('cell-disabled');
                     } else {
                         _make_attr_editable(table_cell, server, attr_name, current_values);
@@ -180,11 +179,10 @@ function build_server_table(servers, attributes, offset) {
                 var value_str = format_value(value, attr_name);
                 var table_cell = $('<td></td>').text(value_str);
                 row.append(table_cell);
-                var has_attr = avail_attrs[server['servertype']][attr_name];
-                if (attr_name != 'servertype' && has_attr) {
+                if (attr_name != 'servertype' && is_editable) {
                     _make_attr_editable(table_cell, server, attr_name, value);
                 }
-                if (!has_attr) {
+                if (!is_editable) {
                     table_cell.addClass('cell-disabled');
                 }
             }
@@ -227,12 +225,8 @@ function _make_attr_editable(cell, server, attr_name, value) {
         var ok_button = $('<input type="submit" value="edit" />');
         form.append(ok_button);
 
-        var stype_attr = search['editable_attributes'][server['servertype']][attr_name];
-        if (stype_attr.regexp !== null) {
-            form.append($('<div/>').text('Regexp: ' + stype_attr.regexp));
-        }
-        if (stype_attr.default !== null) {
-            form.append($('<div/>').text('Default: ' + stype_attr.default));
+        if (attr_obj.regexp !== null) {
+            form.append($('<div/>').text('Regexp: ' + attr_obj.regexp));
         }
 
         form.submit(function(ev) {
@@ -844,7 +838,7 @@ function handle_command_setattr(parsed_args) {
                 continue;
             }
 
-            if (!search['editable_attributes'][server['servertype']][attr_name]) {
+            if (!search['editable_attributes'][server['servertype']].includes(attr_name)) {
                 continue;
             }
 
@@ -951,7 +945,7 @@ function handle_command_multiattr(parsed_args, action) {
             }
 
             // Don't modify multiattr if it doesn't exist
-            if (!search['editable_attributes'][server['servertype']][attr_name]) {
+            if (!search['editable_attributes'][server['servertype']].includes(attr_name)) {
                 continue;
             }
 

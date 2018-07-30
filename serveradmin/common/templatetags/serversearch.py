@@ -26,6 +26,7 @@ def serversearch_js(search_id):
             a.attribute_id: {
                 'multi': a.multi,
                 'type': a.type,
+                'regexp': a.regexp,
             }
             for a in attributes
         }),

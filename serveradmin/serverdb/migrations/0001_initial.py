@@ -46,6 +46,7 @@ class Migration(migrations.Migration):
                     null=True,
                     db_index=False,
                 )),
+                ('regexp', models.CharField(null=True, blank=True, max_length=255)),
             ],
             options={
                 'ordering': ('pk',),
@@ -209,7 +210,6 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('required', models.BooleanField(default=False)),
                 ('default_value', models.CharField(null=True, blank=True, max_length=255)),
-                ('regexp', models.CharField(null=True, blank=True, max_length=255)),
                 ('default_visible', models.BooleanField(default=False)),
                 ('attribute', models.ForeignKey(
                     related_name='servertype_attributes',
