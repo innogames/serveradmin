@@ -344,7 +344,10 @@ def clone_object(request):
     try:
         old_object = Query(
             {'hostname': request.GET.get('hostname')},
-            Attribute.objects.filter(clone=True)
+            list(Attribute.specials) + list(
+                Attribute.objects.filter(clone=True)
+                .values_list('attribute_id', flat=True)
+            ),
         ).get()
     except ValidationError:
         raise Http404
