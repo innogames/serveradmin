@@ -46,7 +46,7 @@ class Migration(migrations.Migration):
                     null=True,
                     db_index=False,
                 )),
-                ('regexp', models.CharField(null=True, blank=True, max_length=1024)),
+                ('regexp', models.CharField(max_length=1024)),
             ],
             options={
                 'ordering': ('pk',),

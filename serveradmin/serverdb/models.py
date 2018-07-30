@@ -127,12 +127,7 @@ class Attribute(models.Model):
         limit_choices_to=dict(type='relation'),
     )
     clone = models.BooleanField(null=False, default=False)
-    regexp = models.CharField(
-        max_length=1024,
-        null=True,
-        blank=True,
-        validators=REGEX_VALIDATORS,
-    )
+    regexp = models.CharField(max_length=1024, validators=REGEX_VALIDATORS)
     _compiled_regexp = None
 
     class Meta:
