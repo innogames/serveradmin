@@ -38,7 +38,7 @@
     <br />Multiple values, one value per row.
     {% else %}
     <input type="text" name="attr_{{ field.key }}"
-           value="{% if field.value != None %}{{ field.value }}{% endif %}"
+           value="{% if field.type == 'boolean' %}{{ field.value|lower }}{% elif field.value != None %}{{ field.value }}{% endif %}"
            size="30"
            {% if field.readonly %}disabled="disabled" {% endif %}
            {% if field.error %} style="border:2px solid #d00;"{% endif %}
