@@ -31,10 +31,10 @@ class Settings:
         'SERVERADMIN_BASE_URL',
         'https://serveradmin.innogames.de/api'
     )
+    auth_token = os.environ.get('SERVERADMIN_TOKEN')
     timeout = 60
     tries = 3
     sleep_interval = 5
-    auth_token = None
 
 
 class APIError(Exception):
