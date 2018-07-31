@@ -160,7 +160,10 @@ def edit(request):
     if 'object_id' in request.GET:
         server = Query({'object_id': request.GET['object_id']}, None).get()
     else:
-        server = Query().new_object(request.POST['attr_servertype'])
+        servertype = request.POST.get('attr_servertype')
+        if not Servertype.objects.filter(pk=servertype).exists():
+            raise Http404('Servertype {} does not exist'.format(servertype))
+        server = Query().new_object(servertype)
 
     return _edit(request, server, True)
 
