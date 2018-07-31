@@ -242,20 +242,26 @@ def _condition_sql(attribute, template, related_vias):
 def _real_condition_sql(attribute, template, related_vias):
     model = ServerAttribute.get_model(attribute.type)
     assert model is not None
+
+    # If we come to this point, we must have the item for the entry existing
+    # in the related-vias dictionary.  Keep in mind that it also includes
+    # the directly attached servertype attribute combinations.  They would
+    # have None as the key of the inner dictionary.  If no servertype attribute
+    # combinations had been possible, the caller must have returned an empty
+    # result, before calling this module to get the SQL query.  No filter
+    # is optional in queries after all.
     related_vias = related_vias[attribute.attribute_id]
+    assert related_vias
 
     # We start with the condition for the attributes the server has on
     # its own.  Then, add the conditions for all possible relations.  They
     # are going to be OR'ed together.
     relation_conditions = []
-    if None in related_vias:
-        # The condition for directly attached attributes
-        relation_conditions.append((
-            'server.server_id = sub.server_id',
-            related_vias.pop(None),
-        ))
     for related_via_attribute, servertype_ids in related_vias.items():
-        if related_via_attribute.type == 'supernet':
+        if related_via_attribute is None:
+            # The condition for directly attached attributes
+            relation_condition = 'server.server_id = sub.server_id'
+        elif related_via_attribute.type == 'supernet':
             relation_condition = _exists_sql(Server, 'rel1', (
                 "rel1.servertype_id = '{0}'".format(
                     related_via_attribute.target_servertype_id
@@ -280,7 +286,6 @@ def _real_condition_sql(attribute, template, related_vias):
                 'rel1.value = sub.server_id',
             ))
         relation_conditions.append((relation_condition, servertype_ids))
-    assert relation_conditions
 
     if len(relation_conditions) == 1:
         mixed_relation_condition = relation_conditions[0][0]
