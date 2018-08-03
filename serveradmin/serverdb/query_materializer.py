@@ -55,7 +55,7 @@ class QueryMaterializer:
 
         join_results = self._get_join_results()
         return (
-            DatasetObject(self._get_attributes(s, join_results))
+            DatasetObject(self._get_attributes(s, join_results), s.server_id)
             for s in servers
         )
 

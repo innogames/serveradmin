@@ -72,10 +72,17 @@ class BaseQuery(object):
             if restrict is None:
                 return None
 
+            if not isinstance(restrict, list):
+                raise TypeError('Restrict must be a list')
+
+            if 'object_id' not in restrict:
+                restrict.append('object_id')
+
             return [
-                {k: _ensure_object_id(v) for k, v in i.items()} if
-                isinstance(i, dict) else i for i in restrict
-            ] + ['object_id']
+                i if not isinstance(i, dict) else
+                {k: _ensure_object_id(v) for k, v in i.items()}
+                for i in restrict
+            ]
 
         self.__restrict = _ensure_object_id(new_restrict)
 
@@ -260,7 +267,7 @@ class DatasetObject(dict):
     to cast multi attributes and to validate the values.
     """
 
-    def __init__(self, attributes=[]):
+    def __init__(self, attributes=[], object_id=None):
         # Loop through ourself afterwards would be more efficient, but
         # this would give the caller already initialised object in case
         # anything fails.
@@ -269,7 +276,7 @@ class DatasetObject(dict):
             if isinstance(value, (tuple, list, set, frozenset)):
                 attributes[attribute_id] = MultiAttr(value, self, attribute_id)
         super(DatasetObject, self).__init__(attributes)
-        self.object_id = self.get('object_id')
+        self.object_id = object_id
         self._deleted = False
         self.old_values = {}
 
@@ -320,7 +327,7 @@ class DatasetObject(dict):
         self._deleted = True
 
     def _serialize_changes(self):
-        changes = {'object_id': self['object_id']}
+        changes = {'object_id': self.object_id}
         for key, old_value in self.old_values.items():
             new_value = self[key]
 
@@ -547,8 +554,7 @@ def create(attributes):
 
 
 def _format_obj(result):
-    obj = DatasetObject([('object_id', result.pop('object_id'))])
-
+    obj = DatasetObject(object_id=result['object_id'])
     for attribute_id, value in list(result.items()):
         if isinstance(value, list):
             casted_value = MultiAttr(
