@@ -25,6 +25,11 @@ class QueryMaterializer:
         self._servers = servers
         self._joined_attributes = joined_attributes
         self._order_by_attributes = order_by_attributes
+        # XXX: Optimize this query out
+        self._servertype_lookup = {
+            servertype.servertype_id: servertype
+            for servertype in Servertype.objects.all()
+        }
 
         self._server_attributes = {}
         servers_by_type = {}
@@ -251,6 +256,7 @@ class QueryMaterializer:
         return 0, _sort_key(value)
 
     def _get_attributes(self, server, join_results):   # NOQA: C901
+        servertype = self._servertype_lookup[server.servertype_id]
         server_attributes = self._server_attributes[server]
         for attribute, value in server_attributes.items():
             if attribute not in self._joined_attributes:
@@ -259,10 +265,12 @@ class QueryMaterializer:
             if attribute.type == 'inet':
                 if value is None:
                     yield attribute.attribute_id, None
-                elif str(value.hostmask) in ['0.0.0.0', '::']:
-                    yield attribute.attribute_id, value.ip
                 else:
-                    yield attribute.attribute_id, value.network
+                    if servertype.ip_addr_type in ('host', 'loadbalancer'):
+                        yield attribute.attribute_id, value.ip
+                    else:
+                        assert servertype.ip_addr_type == 'network'
+                        yield attribute.attribute_id, value.network
             elif value is None:
                 yield attribute.attribute_id, None
             elif attribute in join_results:
