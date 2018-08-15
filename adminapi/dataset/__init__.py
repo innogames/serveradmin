@@ -72,6 +72,10 @@ class BaseQuery(object):
             if restrict is None:
                 return None
 
+            # Deprecated, needed for .restrict()
+            if isinstance(restrict, set):
+                restrict = list(restrict)
+
             if not isinstance(restrict, list):
                 raise TypeError('Restrict must be a list')
 
