@@ -72,13 +72,20 @@ class BaseQuery(object):
             if restrict is None:
                 return None
 
-            if not isinstance(restrict, (list, set)):
-                raise TypeError('Restrict must be a list or set')
+            # Deprecated, needed for .restrict()
+            if isinstance(restrict, set):
+                restrict = list(restrict)
+
+            if not isinstance(restrict, list):
+                raise TypeError('Restrict must be a list')
+
+            if 'object_id' not in restrict:
+                restrict.append('object_id')
 
             return [
                 i if not isinstance(i, dict) else
                 {k: _ensure_object_id(v) for k, v in i.items()}
-                for i in set(restrict) | {'object_id'}
+                for i in restrict
             ]
 
         self.__restrict = _ensure_object_id(new_restrict)
