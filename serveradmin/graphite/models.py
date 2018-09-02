@@ -156,18 +156,22 @@ class Collection(models.Model):
 
 class Numeric(models.Model):
     """Templates in the collections"""
-    collection = models.ForeignKey(Collection, limit_choices_to={
-        'overview': True,
-    })
+    collection = models.ForeignKey(
+        Collection, on_delete=models.CASCADE,
+        limit_choices_to={'overview': True},
+    )
     params = models.TextField(
         blank=True, help_text="Same as the params of the collections"
     )
     sort_order = models.FloatField(default=0)
-    attribute = models.ForeignKey(Attribute, limit_choices_to={
-        'multi': False,
-        'type': 'number',
-        'readonly': True,
-    })
+    attribute = models.ForeignKey(
+        Attribute, on_delete=models.CASCADE,
+        limit_choices_to={
+            'multi': False,
+            'type': 'number',
+            'readonly': True,
+        }
+    )
 
     class Meta:
         db_table = 'graphite_numeric'
@@ -180,13 +184,17 @@ class Numeric(models.Model):
 
 class Relation(models.Model):
     """Templates in the collections"""
-    collection = models.ForeignKey(Collection, limit_choices_to={
-        'overview': True,
-    })
+    collection = models.ForeignKey(
+        Collection, on_delete=models.CASCADE,
+        limit_choices_to={'overview': True}
+    )
     sort_order = models.FloatField(default=0)
-    attribute = models.ForeignKey(Attribute, limit_choices_to=models.Q(
-        type__in=['relation', 'reverse', 'supernet', 'domain']
-    ))
+    attribute = models.ForeignKey(
+        Attribute, on_delete=models.CASCADE,
+        limit_choices_to=models.Q(
+            type__in=['relation', 'reverse', 'supernet', 'domain']
+        )
+    )
 
     class Meta:
         db_table = 'graphite_relation'
@@ -199,7 +207,7 @@ class Relation(models.Model):
 
 class Template(models.Model):
     """Templates in the collections"""
-    collection = models.ForeignKey(Collection)
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
     name = models.CharField(max_length=255, validators=LOOKUP_ID_VALIDATORS)
     params = models.TextField(blank=True, help_text="""
         Same as the params of the collections.
@@ -263,7 +271,7 @@ class Variation(models.Model):
     """Variation to render the templates
     """
 
-    collection = models.ForeignKey(Collection)
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
     name = models.CharField(max_length=255, validators=LOOKUP_ID_VALIDATORS)
     params = models.TextField(blank=True, help_text="""
         Same as the params of the collections.
