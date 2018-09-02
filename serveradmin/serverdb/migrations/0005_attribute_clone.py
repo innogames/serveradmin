@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from django.db import migrations, models
+from django.db import migrations
 
 
 class Migration(migrations.Migration):
@@ -10,11 +10,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='attribute',
-            name='clone',
-            field=models.BooleanField(default=False),
-        ),
         migrations.RunSQL(
             'UPDATE attribute '
             'SET clone = true '
