@@ -29,7 +29,6 @@ MIDDLEWARE_CLASSES = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'serveradmin.api.middleware.ApiMiddleware',
 ]
 
 INSTALLED_APPS = [
