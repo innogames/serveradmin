@@ -10,11 +10,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Mark all previously defined attributes as clonable once.
         migrations.RunSQL(
             'UPDATE attribute '
             'SET clone = true '
             "WHERE type NOT IN ('reverse', 'supernet', 'domain')"
         ),
+        # Forbid attributes of relational types from beeing clonable as they
+        # can't be written to due to beeing drived from other attributes.
         migrations.RunSQL(
             'ALTER TABLE attribute '
             'ADD CONSTRAINT attribute_clone_check '
