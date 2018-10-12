@@ -1,7 +1,7 @@
 Python Remote API
 =================
 
-The adminapi provides a python module which can talk to the serveradmin via an
+The Adminapi provides a python module which can talk to the Serveradmin via an
 API. It provides functions for querying servers, modifying their attributes,
 triggering actions (e.g. committing nagios) etc.
 
@@ -20,12 +20,15 @@ password:
 * Providing a list with existing scripts which are using the API
 * Possibility to withdrawn an authentication token without changing every script.
 
-To authenticate your script you need to import the module and call the auth
-function before doing any API calls::
+To authenticate yourself you need to provide a file called .adminapi in the home
+folder of your user or set the SERVERADMIN_TOKEN environment variable.
 
-    import adminapi
+    # Use .adminapirc file in home folder
+    echo "auth_token=MLifIK9FMQTaFDneDneNg30pb" >> ~/.adminapirc
+    chmod 0600 ~/.adminapirc
 
-    adminapi.auth('yourScriptsAuthToken')
+    # Use environment variable (Useful for transient jobs such as Jenkins)
+    export SERVERADMIN_TOKEN=MLifIK9FMQTaFDneDneNg30pb
 
 Querying and modifying servers
 ------------------------------
@@ -45,7 +48,7 @@ webservers of Tribal Wars::
     hosts = Query({'servertype': 'vm', 'game_function': 'web'})
 
     for host in hosts:
-        print host['hostname']
+        print(host['hostname'])
 
 The Query class takes keyword arguments which contain the filter conditions.
 Each key is an attribute of the server while the value is the value that must
@@ -80,28 +83,28 @@ committed.  To commit them you must call ``commit()`` on the query.
 
 Here is an example which cancels all servers for Seven Lands::
 
-    hosts = Query({'servertype': 'hardware'})
+    hosts = Query({'servertype': 'hardware'}, [canceled])
     for host in hosts:
         hosts['canceled'] = True
     hosts.commit()
 
-Another example will print all attributes of the techerror server and check
-for the existence of the ``game_function`` attribute::
+Another example will print all attributes of VM objects and check for the
+existence of the ``function`` attribute::
 
-    techerror = Query({'hostname': 'techerror.support.ig.local'}).get()
-    for attr, value in techerror.items(): # Iterate like a dict!
-         print "{0}={1}".format(key, value)
+    vm = Query().new_object('vm')
+    for attr in vm.keys():
+         print(attr)
 
-    if 'game_function' in techerror:
-         print "Something is wrong!"
+    if 'function' not in techerror:
+         print('Something is wrong!')'
 
 Multi attributes are stored as instances of :class:`MultiAttr`, which is a
 subclass of set. Take a look at :class:`set` for the available methods. See the
 following example which iterates over all additional IPs and adds another one::
 
-    techerror = Query({'hostname': 'techerror.support.ig.local'}).get()
+    techerror = Query({'hostname': 'techerror.support.ig.local'}, ['additional_ips']).get()
     for ip in techerror['additional_ips']:
-         print ip
+         print(ip)
     techerror['additional_ips'].add('127.0.0.1')
 
 .. warning::
@@ -210,7 +213,5 @@ group object first. See the following example for getting a free IP::
     # Do authentication first as described in section "Authentication"
     from adminapi import api
 
-    ip = api.get('ip')
-    free_ip = ip.get_free('af03.ds.fr', reserve_ip=False)
-
-You will find a list of available API functions in the admin tool.
+    nagios = api.get('nagios')
+    nagios.commit('push', 'john.doe', project='techerror')
