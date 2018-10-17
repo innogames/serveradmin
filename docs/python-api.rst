@@ -92,8 +92,8 @@ Another example will print all attributes of VM objects and check for the
 existence of the ``function`` attribute::
 
     vm = Query().new_object('vm')
-    for attr in vm.keys():
-         print(attr)
+    for attr, val in vm.items():
+         print('{} => {}'.format(attr, val))
 
     if 'function' not in techerror:
          print('Something is wrong!')'
