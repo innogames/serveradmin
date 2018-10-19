@@ -18,7 +18,7 @@ before_script:
     - psql -c 'create database serveradmin owner travis;' -U postgres
     - cp serveradmin/settings.example.py serveradmin/settings.py
     - sed -i 's/\/var\/log/\/tmp/' serveradmin/settings.py
-    - ./manage.py migrate
+    - python -m serveradmin migrate
 script:
     # This will use Python's standard unit test discovery feature.
-    - python3 -Wall manage.py test
+    - python -Wall -m serveradmin test

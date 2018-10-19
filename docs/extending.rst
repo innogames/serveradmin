@@ -68,7 +68,7 @@ Now you can either create the schema with no data using migrate or import a
 dump from an existing data.  To create a new empty schema
 you can use::
 
-    python manage.py migrate
+    python -m serveradmin migrate
 
 If you want to work on the production data, you can dump it from the server,
 and restore on your database::
@@ -90,7 +90,7 @@ When editing the config, don't forget to remove the exception at the end.
 To check whether your setup was successful, you can run the integrated test
 webserver::
 
-   ./manage.py runserver
+   python -m serveradmin runserver
 
 and point your browser to http://localhost:8000/.
 
@@ -115,8 +115,8 @@ Install ``django-extensions`` and ``werkzeug`` using pip::
 and add ``'django_extensions'`` to your ``INSTALLED_APPS`` setting in the
 ``settings.py``.
 
-Now you can use ``./manage.py runserver_plus`` instead of ``./manage.py runserver``
-to start the local test webserver with the Werkzeug debugger.
+Now you can use ``python -m serveradmin runserver_plus`` to start the local
+test webserver with the Werkzeug debugger.
 
 See http://packages.python.org/django-extensions/ for details.
 
@@ -142,7 +142,7 @@ Just to have same names:
 
 project:
    Many applications together with settings, a global ``urls.py`` and the
-   ``manage.py`` form a project. The "serveradmin" is a project.
+   ``__main__.py`` form a project. The "serveradmin" is a project.
 
 application (or "app"):
    An application is basically a combination of several files for the same
@@ -251,9 +251,9 @@ We will create a small example application named "secinfo" (for "security
 information").  **Please don't commit this application, it is for learning
 purposes only!**
 
-We will use the ``manage.py`` to create our application::
+We will use ``python -m serveradmin`` to create our application::
 
-   ./manage.py startapp secinfo
+   python -m serveradmin startapp secinfo
 
 Now we have a directory named ``secinfo`` with some files inside it.  We will
 move it into the directory ``serveradmin``.
