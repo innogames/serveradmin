@@ -1,8 +1,0 @@
-django==1.11
-psycopg2
-django-extensions
-docutils
-Sphinx
-django-netfields>=0.7   # Extension to use network address fields on PostgreSQL
-django-markup-deprecated
-Pillow  # Required to generate sprites from Graphite
