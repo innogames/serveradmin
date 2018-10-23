@@ -1,5 +1,5 @@
 # The settings file
-/serveradmin/settings.py
+/serveradmin/local_settings.py
 
 # The additional modules
 #

@@ -82,10 +82,12 @@ Setting up Django
 
 We will copy the example settings to create our local development settings::
 
-   cp serveradmin/settings.example.py serveradmin/settings.py
-   vim serveradmin/settings.py
+   cp serveradmin/local_settings.py.example serveradmin/local_settings.py
+   vim serveradmin/local_settings.py
 
-When editing the config, don't forget to remove the exception at the end.
+Inside you need to at least set the ``SECRET_KEY = 'SET-RANDOM-SECRET-KEY'``.
+In order to use runserver you also need to set `DEBUG = True` and
+``ALLOWED_HOSTS = ['127.0.0.1', '::1', 'localhost']``.
 
 To check whether your setup was successful, you can run the integrated test
 webserver::
@@ -112,8 +114,8 @@ Install ``django-extensions`` and ``werkzeug`` using pip::
 
    pip install django-extensions werkzeug
 
-and add ``'django_extensions'`` to your ``INSTALLED_APPS`` setting in the
-``settings.py``.
+and add ``'django_extensions'`` to your ``EXTRA_INSTALLED_APPS`` setting in
+the ``local_settings.py``.
 
 Now you can use ``python -m serveradmin runserver_plus`` to start the local
 test webserver with the Werkzeug debugger.

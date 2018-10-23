@@ -1,0 +1,63 @@
+"""Serveradmin
+
+Copyright (c) 2018 InnoGames GmbH
+"""
+
+# # Make this unique, and don't share it with anybody.
+# SECRET_KEY = 'SET-RANDOM-SECRET-KEY'
+
+# # Enable debugging to see what's going on during development.
+# DEBUG = False
+# ALLOWED_HOSTS = ['127.0.0.1', '::1']
+
+# # On Unix systems, a value of None will cause Django to use the same
+# # timezone as the operating system. If running in a Windows environment this
+# # must be set to the same as your system time zone.
+# TIME_ZONE = 'Europe/Berlin'
+
+# # The default django logging config will send errors this way.
+# ADMINS = (
+#     ('Your Name', 'your_email@example.com'),
+# )
+# MANAGERS = ADMINS
+
+# # Log errors to sentry
+# SENTRY_DSN = ''
+
+# # See http://docs.djangoproject.com/en/dev/topics/logging for
+# # more details on how to customize your logging configuration.
+# LOG_LEVEL = 'DEBUG' if DEBUG else 'INFO'
+# LOGGING['loggers']['serveradmin'] = {'level': LOG_LEVEL}
+# LOGGING['loggers']['myapp'] = {'level': LOG_LEVEL}
+
+# # See https://docs.djangoproject.com/en/dev/ref/settings/#databases
+# # for more detauls on how to configure your database connection.
+# DATABASES = {
+# }
+
+# # Load additional middleware classes
+# EXTRA_MIDDLEWARE_CLASSES = []
+
+# # Load additional django apps
+# EXTRA_INSTALLED_APPS = []
+
+# # Load additional menu items
+# EXTRA_MENU_TEMPLATES = []
+
+# # How many objects are shown in servershell per page by default
+# OBJECTS_PER_PAGE = 25
+
+# # Graphite URL is required to generate graphic URL's.  Normal graphs are
+# # requested from Graphite on the browser. Small graphs on the overview page are
+# # requested and stored by the Serveradmin from the Graphite. Graphs are stored
+# # by the job called "gensprites" under directory graphite/static/graph_sprite.
+# # They are also merged into single images for every server to reduce the
+# # requests to the Serveradmin from the browser.
+# GRAPHITE_URL = 'https://graphite.example.com'
+# GRAPHITE_USER = 'graphite_user'
+# GRAPHITE_PASSWORD = 'graphite_password'
+# # User will be redirected to detailed system overview dashboard
+# GRAFANA_DASHBOARD = (
+#     'https://graphite.example.com/grafana'
+#     '/dashboard/db/system-overview'
+# )

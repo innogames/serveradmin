@@ -3,21 +3,14 @@
 Copyright (c) 2018 InnoGames GmbH
 """
 
-# Django settings for Serveradmin project
-
 import os
 
-DEBUG = True
-INTERNAL_IPS = ['127.0.0.1', '::1']
+DEBUG = False
 
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
-ADMINS = (
-    # ('Your Name', 'your_email@example.com'),
-)
-
-MANAGERS = ADMINS
-
+# Try to connect to a local postgres DB called serveradmin via user based
+# authentication by default.
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -29,20 +22,51 @@ DATABASES = {
     },
 }
 
-# Local time zone for this installation. Choices can be found here:
-# http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
-# although not all choices may be available on all operating systems.
-# On Unix systems, a value of None will cause Django to use the same
-# timezone as the operating system.
-# If running in a Windows environment this must be set to the same as your
-# system time zone.
-TIME_ZONE = 'Europe/Berlin'
+MIDDLEWARE_CLASSES = [
+    'django.middleware.common.CommonMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'serveradmin.api.middleware.ApiMiddleware',
+]
 
-# Language code for this installation. All choices can be found here:
-# http://www.i18nguy.com/unicode/language-identifiers.html
-LANGUAGE_CODE = 'en_DK'
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.messages',
+    'django.contrib.sessions',
+    'django.contrib.sites',
+    'django.contrib.staticfiles',
+    'markup_deprecated',
+    'netfields',
+    'serveradmin.access_control',
+    'serveradmin.api',
+    'serveradmin.apps',
+    'serveradmin.common',
+    'serveradmin.graphite',
+    'serveradmin.resources',
+    'serveradmin.serverdb',
+    'serveradmin.servershell',
+]
+
+MENU_TEMPLATES = [
+    'resources/menu.html',
+]
+
+ROOT_URLCONF = 'serveradmin.urls'
 
 SITE_ID = 1
+
+# Serveradmin itself doesn't provide a login UI as we use the innogames SSO
+# django app internally. Luckily django offers a login UI for admins here:
+LOGIN_URL = '/admin/login/'
+
+# The one local to rule them all with english UTF-8 encoding and collation
+# paired with 24 hour time and ISO 8601 date formatting.
+LANGUAGE_CODE = 'en_DK'
 
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
@@ -77,24 +101,6 @@ STATIC_ROOT = os.path.join(ROOT_DIR, '_static')
 # Example: "http://media.lawrence.com/static/"
 STATIC_URL = '/static/'
 
-# Additional locations of static files
-STATICFILES_DIRS = [
-    # Put strings here, like "/home/html/static" or "C:/www/django/static".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
-]
-
-# List of finder classes that know how to find static files in
-# various locations.
-STATICFILES_FINDERS = [
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-    # 'django.contrib.staticfiles.finders.DefaultStorageFinder',
-]
-
-# Make this unique, and don't share it with anybody.
-SECRET_KEY = 'SET-RANDOM-SECRET-KEY'
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -124,47 +130,8 @@ TEMPLATES = [
     },
 ]
 
-MENU_TEMPLATES = [
-    'resources/menu.html',
-]
-
-MIDDLEWARE_CLASSES = [
-    'django.middleware.common.CommonMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'serveradmin.api.middleware.ApiMiddleware',
-]
-
-ROOT_URLCONF = 'serveradmin.urls'
-
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'serveradmin.wsgi.application'
-
-INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.messages',
-    'django.contrib.sessions',
-    'django.contrib.sites',
-    'django.contrib.staticfiles',
-    'markup_deprecated',
-    'netfields',
-    'serveradmin.access_control',
-    'serveradmin.api',
-    'serveradmin.apps',
-    'serveradmin.common',
-    'serveradmin.graphite',
-    'serveradmin.resources',
-    'serveradmin.serverdb',
-    'serveradmin.servershell',
-]
-
-SESSION_ENGINE = 'django.contrib.sessions.backends.file'
-SESSION_FILE_PATH = '/run/serveradmin'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
@@ -212,15 +179,6 @@ LOGGING = {
 
 OBJECTS_PER_PAGE = 25
 
-# Graphite URL is required to generate graphic URL's.  Normal graphs are
-# requested from Graphite on the browser. Small graphs on the overview page are
-# requested and stored by the Serveradmin from the Graphite. Graphs are stored
-# by the job called "gensprites" under directory graphite/static/graph_sprite.
-# They are also merged into single images for every server to reduce the
-# requests to the Serveradmin from the browser.
-GRAPHITE_URL = 'https://graphite.innogames.de'
-GRAPHITE_USER = 'graphite_user'
-GRAPHITE_PASSWORD = 'graphite_password'
 GRAPHITE_SPRITE_WIDTH = 150
 GRAPHITE_SPRITE_HEIGHT = 100
 GRAPHITE_SPRITE_PARAMS = (
@@ -228,8 +186,12 @@ GRAPHITE_SPRITE_PARAMS = (
     'height=' + str(GRAPHITE_SPRITE_HEIGHT) + '&' +
     'graphOnly=true'
 )
-# User will be redirected to detailed system overview dashboard
-GRAFANA_DASHBOARD = (
-    'https://graphite.innogames.de/grafana'
-    '/dashboard/db/system-overview'
-)
+
+from serveradmin.local_settings import *  # NOQA: F401, F403
+
+if 'EXTRA_MIDDLEWARE_CLASSES' in locals():
+    MIDDLEWARE_CLASSES += EXTRA_MIDDLEWARE_CLASSES
+if 'EXTRA_INSTALLED_APPS' in locals():
+    INSTALLED_APPS += EXTRA_INSTALLED_APPS
+if 'EXTRA_MENU_TEMPLATES' in locals():
+    MENU_TEMPLATES += EXTRA_MENU_TEMPLATES
