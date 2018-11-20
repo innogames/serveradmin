@@ -114,8 +114,8 @@ Install ``django-extensions`` and ``werkzeug`` using pip::
 
    pip install django-extensions werkzeug
 
-and add ``'django_extensions'`` to your ``EXTRA_INSTALLED_APPS`` setting in
-the ``local_settings.py``.
+and add ``'django_extensions'`` to your ``INSTALLED_APPS`` setting in the
+``local_settings.py``.
 
 Now you can use ``python -m serveradmin runserver_plus`` to start the local
 test webserver with the Werkzeug debugger.

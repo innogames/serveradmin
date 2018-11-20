@@ -187,11 +187,29 @@ GRAPHITE_SPRITE_PARAMS = (
     'graphOnly=true'
 )
 
-from serveradmin.local_settings import *  # NOQA: F401, F403
+# Using exec certainly isn't an awesome solution but it's the best we've got.
+# The problem boils down to django configs being python files but python only
+# imports code from modules in its path.  One solution would be to generate a
+# symlink while installing serveradmin, but I don't think there is a way to
+# make this work with setuptools and sdist, bdist_wheel and bdist_deb, let
+# alone other package managers. Placing the symlink via config management also
+# isn't feasable as the symlink would be removed when upgrading the package
+# until config management has been run again.
+dir_path = os.path.dirname(os.path.realpath(__file__))
+for config_path in [
+    os.environ.get('SERVERADMIN_CONFIGURATION'),
+    dir_path + '/local_settings.py',
+    '/etc/serveradmin/settings.py',
+]:
+    if not config_path:
+        continue
 
-if 'EXTRA_MIDDLEWARE_CLASSES' in locals():
-    MIDDLEWARE_CLASSES += EXTRA_MIDDLEWARE_CLASSES
-if 'EXTRA_INSTALLED_APPS' in locals():
-    INSTALLED_APPS += EXTRA_INSTALLED_APPS
-if 'EXTRA_MENU_TEMPLATES' in locals():
-    MENU_TEMPLATES += EXTRA_MENU_TEMPLATES
+    try:
+        with open(config_path) as config:
+            code = compile(config.read(), config_path, 'exec')
+            exec(code)
+
+        print("Serveradmin config loaded from " + config_path)
+        break
+    except OSError:
+        print("Couldn't load serveradmin config from " + config_path)

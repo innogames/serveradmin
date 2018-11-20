@@ -36,13 +36,13 @@ Copyright (c) 2018 InnoGames GmbH
 # }
 
 # # Load additional middleware classes
-# EXTRA_MIDDLEWARE_CLASSES = []
+# MIDDLEWARE_CLASSES += []
 
 # # Load additional django apps
-# EXTRA_INSTALLED_APPS = []
+# INSTALLED_APPS += []
 
 # # Load additional menu items
-# EXTRA_MENU_TEMPLATES = []
+# MENU_TEMPLATES += []
 
 # # How many objects are shown in servershell per page by default
 # OBJECTS_PER_PAGE = 25
