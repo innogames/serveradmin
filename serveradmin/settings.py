@@ -133,47 +133,29 @@ TEMPLATES = [
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'serveradmin.wsgi.application'
 
-# A sample logging configuration. The only tangible logging
-# performed by this configuration is to send an email to
-# the site admins on every HTTP 500 error when DEBUG=False.
 # See http://docs.djangoproject.com/en/dev/topics/logging for
 # more details on how to customize your logging configuration.
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'filters': {
-        'require_debug_false': {
-            '()': 'django.utils.log.RequireDebugFalse',
-        },
-        'require_debug_true': {
-            '()': 'django.utils.log.RequireDebugTrue',
-        },
-    },
     'formatters': {
-        'verbose': {
+        'default': {
             'format': '%(levelname)s %(asctime)s [%(process)d]: %(message)s',
         }
     },
     'handlers': {
-        'logfile': {
-            'class': 'logging.FileHandler',
-            'filters': ['require_debug_false'],
-            'level': 'INFO',
-            'formatter': 'verbose',
-            'filename': '/var/log/serveradmin.log',
-        },
         'console': {
             'class': 'logging.StreamHandler',
-            'filters': ['require_debug_true'],
-            'level': 'DEBUG',
         },
     },
     'loggers': {
-        'serveradmin': {
-            'handlers': ['logfile', 'console'],
-            'level': 'DEBUG',
-            'propagate': True,
+        '': {
+            'level': 'WARNING',
+            'handlers': ['console'],
         },
+        'serveradmin': {
+            'level': 'INFO',
+        }
     },
 }
 
