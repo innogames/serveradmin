@@ -12,7 +12,7 @@ from django.core.exceptions import (
 )
 from django.contrib.auth.decorators import login_required
 from django.contrib.admindocs.utils import trim_docstring, parse_docstring
-from django.template.response import TemplateResponse
+from django.template.response import TemplateResponse, HttpResponse
 
 from adminapi.filters import FilterValueError, filter_from_obj
 from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
@@ -37,6 +37,15 @@ class StringEncoder(object):
 
     def dump(self, val, file):
         return file.write(val)
+
+
+def health_check(request):
+    """Check to determin if node is healthy
+
+    This view is used by testtool and therefore mustn't require authentication
+    to work. Unhealthy nodes will not be used to server requests.
+    """
+    return HttpResponse(status=242)
 
 
 @login_required

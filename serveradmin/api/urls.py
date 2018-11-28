@@ -6,6 +6,7 @@ Copyright (c) 2018 InnoGames GmbH
 from django.conf.urls import url
 
 from serveradmin.api.views import (
+    health_check,
     doc_functions,
     dataset_query,
     dataset_commit,
@@ -15,6 +16,7 @@ from serveradmin.api.views import (
 )
 
 urlpatterns = [
+    url('^health_check$', health_check),
     url('^functions$', doc_functions),
     url('^dataset/query$', dataset_query),
     url('^dataset/commit$', dataset_commit),
