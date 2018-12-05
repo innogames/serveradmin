@@ -16,7 +16,7 @@ from urllib.request import (
 )
 from urllib.error import HTTPError
 
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.db import transaction
 
@@ -29,11 +29,11 @@ from serveradmin.graphite.models import (
 from serveradmin.serverdb.models import ServerNumberAttribute
 
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     """Generate sprites from the overview graphics"""
     help = __doc__
 
-    def handle_noargs(self, **kwargs):
+    def handle(self, *args, **kwargs):
         """The entry point of the command"""
         sprite_params = settings.GRAPHITE_SPRITE_PARAMS
         sprite_dir = settings.MEDIA_ROOT + '/graph_sprite'
