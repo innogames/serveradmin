@@ -32,7 +32,7 @@ if __name__ == '__main__':
             ],
             'serveradmin.resources': ['templates/resources/*'],
             'serveradmin.serverdb': [
-                'static/*'
+                'static/*',
                 'templates/serverdb/*',
             ],
             'serveradmin.servershell': [
