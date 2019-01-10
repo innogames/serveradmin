@@ -84,7 +84,7 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
 
     with transaction.atomic():
         change_commit = ChangeCommit.objects.create(app=app, user=user)
-        changed_servers = _fetch_servers(set(c['object_id'] for c in changed))
+        changed_servers = _fetch_servers({c['object_id'] for c in changed})
         changed_objects = _materialize(changed_servers, joined_attributes)
 
         deleted_servers = _fetch_servers(deleted)
@@ -117,8 +117,8 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
 
 
 def _validate(attribute_lookup, changed, changed_objects):
-    servertypes = {s['servertype'] for s in changed_objects.values()}
-    servertype_attributes = _get_servertype_attributes(servertypes)
+    servertype_ids = {s['servertype'] for s in changed_objects.values()}
+    servertype_attributes = _get_servertype_attributes(servertype_ids)
 
     # Attributes must be always validated
     violations_attribs = _validate_attributes(
@@ -361,11 +361,11 @@ def _log_changes(commit, changed, created_objects, deleted_objects):
 
 
 def _fetch_servers(object_ids):
-    """ Fetch servers with row lock.
+    """Fetch servers with row lock
 
-    Returns mapping from object_id to a row in the Server table.  Raise an
-    error if an object in question (no longer) exists.  Lock the row of all
-    objects in question.
+    Returns a dict from object_id to an instance of the Server model.  Raise
+    an error if an object in question (no longer) exists.  Lock the row of all
+    instances in question.
     """
     servers = {
         s.server_id: s
@@ -381,7 +381,7 @@ def _fetch_servers(object_ids):
 
 
 def _materialize(servers, joined_attributes):
-    """ Get mapping from object_id to DatasetObject
+    """Get a dict from object_id to DatasetObject
 
     QueryMaterializer will get the current values of joined_attributes and
     resolve joins recursively.
@@ -392,11 +392,10 @@ def _materialize(servers, joined_attributes):
     }
 
 
-def _get_servertype_attributes(servertypes):
-    """ Get mapping from servertype names to dicts of attributes
-    """
+def _get_servertype_attributes(servertype_ids):
+    """Get a dict from servertype names to dicts of attributes"""
     servertype_attributes = dict()
-    for servertype_id in set(servertypes):
+    for servertype_id in set(servertype_ids):
         servertype_attributes[servertype_id] = dict()
         for sa in Servertype.objects.get(pk=servertype_id).attributes.all():
             servertype_attributes[servertype_id][sa.attribute_id] = sa
@@ -626,6 +625,7 @@ def _validate_real_attributes(servertype, real_attributes):     # NOQA: C901
         violations_attribs,
     )
 
+
 def _resolve_servertype_changes(changed, joined_attributes):
     """Expand servertype changes
 
@@ -641,7 +641,7 @@ def _resolve_servertype_changes(changed, joined_attributes):
 
     # No servertype changes, we're done here
     if not servertype_changes:
-        return changed
+        return
 
     # Forbid deleting the servertype attribute
     for change in servertype_changes:
@@ -653,14 +653,14 @@ def _resolve_servertype_changes(changed, joined_attributes):
             CommitError('Cannot delete servertype')
 
     # Get attributes of the new and old servertypes to check what changes
-    involved_servertypes = chain(*[
+    involved_servertype_ids = chain(*[
         [change['servertype']['old'], change['servertype']['new']]
         for change in servertype_changes
     ])
 
     try:
         servertype_attributes = _get_servertype_attributes(
-            servertypes=involved_servertypes
+            involved_servertype_ids
         )
     except Servertype.DoesNotExist:
         raise CommitError('Unknown servertype')
@@ -673,7 +673,7 @@ def _resolve_servertype_changes(changed, joined_attributes):
     # signal can take many seconds if a receiver misbehaves.
     with transaction.atomic():
         changed_servers = _fetch_servers(
-            set(c['object_id'] for c in servertype_changes)
+            {c['object_id'] for c in servertype_changes}
         )
         changed_objects = _materialize(changed_servers, joined_attributes)
 
@@ -708,8 +708,6 @@ def _resolve_servertype_changes(changed, joined_attributes):
     # to set a correct value once he opens an edit dialog for this object in
     # servershell.  I think that's good enough for now as changing servertypes
     # is an edgecase anyway.
-
-    return None
 
 
 def _insert_server(hostname, intern_ip, servertype, attributes):
