@@ -59,10 +59,6 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
     if not user:
         user = app.owner
 
-    pre_commit.send_robust(
-        commit_query, created=created, changed=changed, deleted=deleted
-    )
-
     entities = []
     if not user.is_superuser:
         entities.append(
@@ -80,6 +76,11 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
         for a
         in list(attribute_lookup.values()) + list(Attribute.specials.values())
     }
+
+    _resolve_servertype_changes(changed, joined_attributes)
+    pre_commit.send_robust(
+        commit_query, created=created, changed=changed, deleted=deleted
+    )
 
     with transaction.atomic():
         change_commit = ChangeCommit.objects.create(app=app, user=user)
@@ -116,7 +117,8 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
 
 
 def _validate(attribute_lookup, changed, changed_objects):
-    servertype_attributes = _get_servertype_attributes(changed_objects)
+    servertypes = {s['servertype'] for s in changed_objects.values()}
+    servertype_attributes = _get_servertype_attributes(servertypes)
 
     # Attributes must be always validated
     violations_attribs = _validate_attributes(
@@ -359,6 +361,12 @@ def _log_changes(commit, changed, created_objects, deleted_objects):
 
 
 def _fetch_servers(object_ids):
+    """ Fetch servers with row lock.
+
+    Returns mapping from object_id to a row in the Server table.  Raise an
+    error if an object in question (no longer) exists.  Lock the row of all
+    objects in question.
+    """
     servers = {
         s.server_id: s
         for s
@@ -373,15 +381,22 @@ def _fetch_servers(object_ids):
 
 
 def _materialize(servers, joined_attributes):
+    """ Get mapping from object_id to DatasetObject
+
+    QueryMaterializer will get the current values of joined_attributes and
+    resolve joins recursively.
+    """
     return {
         o['object_id']: o
         for o in QueryMaterializer(list(servers.values()), joined_attributes)
     }
 
 
-def _get_servertype_attributes(servers):
+def _get_servertype_attributes(servertypes):
+    """ Get mapping from servertype names to dicts of attributes
+    """
     servertype_attributes = dict()
-    for servertype_id in {s['servertype'] for s in servers.values()}:
+    for servertype_id in set(servertypes):
         servertype_attributes[servertype_id] = dict()
         for sa in Servertype.objects.get(pk=servertype_id).attributes.all():
             servertype_attributes[servertype_id][sa.attribute_id] = sa
@@ -397,11 +412,6 @@ def _validate_attributes(changes, servers, servertype_attributes):
         attributes = servertype_attributes[server['servertype']]
 
         for attribute_id, change in attribute_changes.items():
-            # If servertype is attempted to be changed, we immediately
-            # error out.
-            if attribute_id == 'servertype':
-                raise CommitValidationFailed('Cannot change servertype', [])
-
             # We have no more checks for the special attributes.
             if attribute_id in Attribute.specials:
                 continue
@@ -615,6 +625,91 @@ def _validate_real_attributes(servertype, real_attributes):     # NOQA: C901
         violations_required,
         violations_attribs,
     )
+
+def _resolve_servertype_changes(changed, joined_attributes):
+    """Expand servertype changes
+
+    Changing servertypes likely entails deleting attributes not available on
+    the target servertype.
+    """
+
+    # Filter for servertype changes
+    servertype_changes = [
+        change for change in changed
+        if 'servertype' in change.keys()
+    ]
+
+    # No servertype changes, we're done here
+    if not servertype_changes:
+        return changed
+
+    # Forbid deleting the servertype attribute
+    for change in servertype_changes:
+        if (
+            change['servertype']['action'] != 'update' or
+            'new' not in change['servertype'] or
+            not change['servertype']['new']
+        ):
+            CommitError('Cannot delete servertype')
+
+    # Get attributes of the new and old servertypes to check what changes
+    involved_servertypes = chain(*[
+        [change['servertype']['old'], change['servertype']['new']]
+        for change in servertype_changes
+    ])
+
+    try:
+        servertype_attributes = _get_servertype_attributes(
+            servertypes=involved_servertypes
+        )
+    except Servertype.DoesNotExist:
+        raise CommitError('Unknown servertype')
+
+    # The fetching and materializing of servers here is duplicating queries
+    # done in the commit_query transaction. We need to do this to resolve all
+    # the real attribute changes, resulting from a servertype change, before
+    # sending the pre_commit signal. Alternatively we could send the
+    # pre_commit signal inside the commit_query transaction but sending the
+    # signal can take many seconds if a receiver misbehaves.
+    with transaction.atomic():
+        changed_servers = _fetch_servers(
+            set(c['object_id'] for c in servertype_changes)
+        )
+        changed_objects = _materialize(changed_servers, joined_attributes)
+
+
+    # Mark all attributes, not available on the new servertype, for deletion.
+    for change in changed:
+        if change not in servertype_changes:
+            continue
+
+        old = set(servertype_attributes[change['servertype']['old']].keys())
+        new = set(servertype_attributes[change['servertype']['new']].keys())
+        for del_attr in old - new:
+            if del_attr in change:
+                raise CommitError(
+                    'Attribute value of {} needs to be deleted for servertype '
+                    'change, but was modified in this commit.'.format(del_attr)
+                )
+
+            changed_object = changed_objects[change['object_id']]
+            if changed_object[del_attr]:
+                change[del_attr] = {
+                    'action': 'update',
+                    'old': changed_object[del_attr],
+                    'new': None
+                }
+
+    # TODO: Handle attributes beeing required on the new servertype that are
+    # not available on the old servertype.  Changing servertypes means the
+    # available attributes change.  Adminapi and servershell are not equipped
+    # for this.  Hence we can not set values for these attributes in the same
+    # commit for now.  While this is not super clean, the user will be forced
+    # to set a correct value once he opens an edit dialog for this object in
+    # servershell.  I think that's good enough for now as changing servertypes
+    # is an edgecase anyway.
+
+    return None
 
 
 def _insert_server(hostname, intern_ip, servertype, attributes):
