@@ -37,7 +37,7 @@ def index(request):
         current_collection = collection
         break
     else:
-        raise HttpResponseBadRequest('No matching current collection')
+        return HttpResponseBadRequest('No matching current collection')
 
     template_info = {
         'search_term': term,
