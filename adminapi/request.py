@@ -9,9 +9,7 @@ import hmac
 from ssl import SSLError
 import time
 import json
-
-from adminapi.cmduser import get_auth_token
-from adminapi.filters import BaseFilter
+from datetime import datetime
 
 try:
     from urllib.error import HTTPError, URLError
@@ -20,6 +18,9 @@ try:
 except ImportError:
     from urllib import urlencode
     from urllib2 import urlopen, Request, HTTPError, URLError
+
+from adminapi.cmduser import get_auth_token
+from adminapi.filters import BaseFilter
 
 
 class Settings:
@@ -122,6 +123,8 @@ def _try_request(request, retry=False):
 def json_encode_extra(obj):
     if isinstance(obj, BaseFilter):
         return obj.serialize()
+    if isinstance(obj, datetime):
+        return obj.strftime('%Y-%m-%d %H:%M:%S')
     if isinstance(obj, set):
         return list(obj)
     return str(obj)

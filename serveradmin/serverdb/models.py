@@ -14,7 +14,7 @@ from netaddr import EUI
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
-from django.utils.timezone import now
+from django.utils.timezone import now, utc
 from django.contrib.auth.models import User
 
 import netfields
@@ -31,6 +31,7 @@ ATTRIBUTE_TYPES = {
     'inet': lambda x: ip_network(x) if '/' in str(x) else ip_address(x),
     'macaddr': EUI,
     'date': str,
+    'datetime': str,
     'supernet': str,
     'domain': str,
 }
@@ -423,6 +424,8 @@ class ServerAttribute(models.Model):
             return ServerMACAddressAttribute
         if attribute_type == 'date':
             return ServerDateAttribute
+        if attribute_type == 'datetime':
+            return ServerDateTimeAttribute
 
 
 class ServerStringAttribute(ServerAttribute):
@@ -598,6 +601,34 @@ class ServerDateAttribute(ServerAttribute):
         db_table = 'server_date_attribute'
         unique_together = [['server', 'attribute', 'value']]
         index_together = [['attribute', 'value']]
+
+
+class ServerDateTimeAttribute(ServerAttribute):
+    attribute = models.ForeignKey(
+        Attribute,
+        db_index=False,
+        on_delete=models.CASCADE,
+        limit_choices_to=dict(type='datetime'),
+    )
+    value = models.DateTimeField()
+
+    class Meta:
+        app_label = 'serverdb'
+        db_table = 'server_datetime_attribute'
+        unique_together = [['server', 'attribute', 'value']]
+        index_together = [['attribute', 'value']]
+
+    def save(self, *args, **kwargs):
+        # Our transport datetime format doesn't include a timezone.  Django
+        # will therefore create a python datetime instance without a timezone
+        # even though we use UTC by convention.  If local timezone usage is
+        # enabled in djangos config, it will also complain about the missing
+        # timezone in save() and then assume that object to be in the web
+        # servers local time and save it to the database with the web servers
+        # timezone.  That makes no sense here as this datetime is received from
+        # API clients.
+        self.value = self.value.replace(tzinfo=utc)
+        super().save(*args, **kwargs)
 
 
 class Change(models.Model):

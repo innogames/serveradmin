@@ -3,7 +3,7 @@
 Copyright (c) 2018 InnoGames GmbH
 """
 
-from datetime import date
+from datetime import date, datetime, timezone
 from re import compile as re_compile
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 
@@ -39,6 +39,7 @@ RE_IPV6ADDR = (
 )
 RE_MACADDR = r'([0-9a-f]{1,2}:){5}([0-9a-f]{1,2})'
 RE_DATE = r'[0-9]{1,4}-(0[0-9]|1[0-2])-([0-2][0-9]|3[0-1])'
+RE_DATETIME = RE_DATE + r' ([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]'
 STR_BASED_DATATYPES = [
     (IPv4Address, re_compile(r'\A' + RE_IPV4ADDR + r'\Z')),
     (IPv4Network, re_compile(r'\A' + RE_IPV4ADDR + r'\/' + RE_32 + r'\Z')),
@@ -46,6 +47,7 @@ STR_BASED_DATATYPES = [
     (IPv6Network, re_compile(r'\A' + RE_IPV6ADDR + r'\/' + RE_128 + r'\Z')),
     (EUI, re_compile(r'\A' + RE_MACADDR + r'\Z')),
     (date, re_compile(r'\A' + RE_DATE + r'\Z')),
+    (datetime, re_compile(r'\A' + RE_DATETIME + r'\Z')),
 ]
 
 
@@ -118,9 +120,14 @@ def str_to_datatype(value):
 def json_to_datatype(value):
     for datatype, regexp in STR_BASED_DATATYPES:
         if regexp.match(str(value)):
-            # date constructor is special.
+            # date constructors need a decode format
             if datatype is date:
-                return date(*(int(v) for v in value.split('-', 2)))
+                return datetime.strptime(value, "%Y-%m-%d").date()
+            if datatype is datetime:
+                parsed_datetime = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+                # Our datetimes are UTC by convention. More information at:
+                # serveradmin.serverdb.ServerDateTimeAttribute.save
+                return parsed_datetime.replace(tzinfo=timezone.utc)
             # EUI class represents MAC addresses in minus separated format
             # by default.  We want colon separated for for 2 reasons.
             # First, it is way more popular among the systems we care about.
