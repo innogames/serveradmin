@@ -29,14 +29,16 @@
         "pk": "game_world",
         "model": "serverdb.attribute",
         "fields": {
-            "type": "number"
+            "type": "number",
+            "regexp": "\\A(0|[1-9][0-9]*)\\Z"
         }
     },
     {
         "pk": "additional_ips",
         "model": "serverdb.attribute",
         "fields": {
-            "type": "integer"
+            "type": "integer",
+            "regexp": "\\A.*\\Z"
         }
     },
     {
@@ -44,7 +46,8 @@
         "model": "serverdb.attribute",
         "fields": {
             "multi": true,
-            "type": "string"
+            "type": "string",
+            "regexp": "\\A.*\\Z"
         }
     },
     {
