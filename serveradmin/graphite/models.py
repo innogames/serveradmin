@@ -49,9 +49,10 @@ class Collection(models.Model):
     overview = models.BooleanField(default=False, help_text="""
         Marks the collection to be shown on the overview page.  For
         the overview page, sprites will be generated and cached on
-        the server in advance to improve the loading time.  {0} will be
-        appended to generated URL's to get the images for overview.
-        """.format(settings.GRAPHITE_SPRITE_PARAMS))
+        the server in advance to improve the loading time.  A suffix
+        will be appended to the generated URLs to get the overview
+        images, as defined by the GRAPHITE_SPRITE_PARAMS setting.
+        """)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
