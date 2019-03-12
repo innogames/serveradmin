@@ -13,7 +13,7 @@ class Application(models.Model):
     name = models.CharField(max_length=80, unique=True)
     app_id = models.CharField(max_length=64, unique=True, editable=False)
     auth_token = models.CharField(max_length=64, unique=True, editable=False)
-    owner = models.ForeignKey(User)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
     location = models.CharField(max_length=150)
     disabled = models.BooleanField(default=False)
     superuser = models.BooleanField(default=False)

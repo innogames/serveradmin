@@ -49,9 +49,10 @@ class Collection(models.Model):
     overview = models.BooleanField(default=False, help_text="""
         Marks the collection to be shown on the overview page.  For
         the overview page, sprites will be generated and cached on
-        the server in advance to improve the loading time.  {0} will be
-        appended to generated URL's to get the images for overview.
-        """.format(settings.GRAPHITE_SPRITE_PARAMS))
+        the server in advance to improve the loading time.  A suffix
+        will be appended to the generated URLs to get the overview
+        images, as defined by the GRAPHITE_SPRITE_PARAMS setting.
+        """)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -156,18 +157,22 @@ class Collection(models.Model):
 
 class Numeric(models.Model):
     """Templates in the collections"""
-    collection = models.ForeignKey(Collection, limit_choices_to={
-        'overview': True,
-    })
+    collection = models.ForeignKey(
+        Collection, on_delete=models.CASCADE,
+        limit_choices_to={'overview': True},
+    )
     params = models.TextField(
         blank=True, help_text="Same as the params of the collections"
     )
     sort_order = models.FloatField(default=0)
-    attribute = models.ForeignKey(Attribute, limit_choices_to={
-        'multi': False,
-        'type': 'number',
-        'readonly': True,
-    })
+    attribute = models.ForeignKey(
+        Attribute, on_delete=models.CASCADE,
+        limit_choices_to={
+            'multi': False,
+            'type': 'number',
+            'readonly': True,
+        }
+    )
 
     class Meta:
         db_table = 'graphite_numeric'
@@ -180,13 +185,17 @@ class Numeric(models.Model):
 
 class Relation(models.Model):
     """Templates in the collections"""
-    collection = models.ForeignKey(Collection, limit_choices_to={
-        'overview': True,
-    })
+    collection = models.ForeignKey(
+        Collection, on_delete=models.CASCADE,
+        limit_choices_to={'overview': True}
+    )
     sort_order = models.FloatField(default=0)
-    attribute = models.ForeignKey(Attribute, limit_choices_to=models.Q(
-        type__in=['relation', 'reverse', 'supernet', 'domain']
-    ))
+    attribute = models.ForeignKey(
+        Attribute, on_delete=models.CASCADE,
+        limit_choices_to=models.Q(
+            type__in=['relation', 'reverse', 'supernet', 'domain']
+        )
+    )
 
     class Meta:
         db_table = 'graphite_relation'
@@ -199,7 +208,7 @@ class Relation(models.Model):
 
 class Template(models.Model):
     """Templates in the collections"""
-    collection = models.ForeignKey(Collection)
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
     name = models.CharField(max_length=255, validators=LOOKUP_ID_VALIDATORS)
     params = models.TextField(blank=True, help_text="""
         Same as the params of the collections.
@@ -263,7 +272,7 @@ class Variation(models.Model):
     """Variation to render the templates
     """
 
-    collection = models.ForeignKey(Collection)
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
     name = models.CharField(max_length=255, validators=LOOKUP_ID_VALIDATORS)
     params = models.TextField(blank=True, help_text="""
         Same as the params of the collections.

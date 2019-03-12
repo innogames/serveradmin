@@ -116,10 +116,11 @@ class Attribute(models.Model):
     help_link = models.CharField(max_length=255, blank=True, null=True)
     readonly = models.BooleanField(null=False, default=False)
     target_servertype = models.ForeignKey(
-        Servertype, db_index=False, null=True, blank=True
+        Servertype, on_delete=models.CASCADE,
+        db_index=False, null=True, blank=True
     )
     reversed_attribute = models.ForeignKey(
-        'self',
+        'self', on_delete=models.CASCADE,
         related_name='reversed_attribute_set',
         null=True,
         blank=True,
@@ -245,7 +246,7 @@ class ServertypeAttribute(models.Model):
         on_delete=models.CASCADE,
     )
     related_via_attribute = models.ForeignKey(
-        Attribute,
+        Attribute, on_delete=models.CASCADE,
         related_name='related_via_servertype_attributes',
         null=True,
         blank=True,
@@ -257,7 +258,7 @@ class ServertypeAttribute(models.Model):
         ),
     )
     consistent_via_attribute = models.ForeignKey(
-        Attribute,
+        Attribute, on_delete=models.CASCADE,
         related_name='consistent_via_servertype_attributes',
         null=True,
         blank=True,
