@@ -13,7 +13,7 @@ ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 # authentication by default.
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'serveradmin',
         'OPTIONS': {
             'connect_timeout': 1,
