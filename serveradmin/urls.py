@@ -21,7 +21,7 @@ admin.autodiscover()
 urlpatterns = [
     url(r'^$', lambda req: redirect('servershell_index'), name='home'),
     url(r'^logout', logout_then_login, name='logout'),
-    url(r'^admin/', include(admin.site.urls)),
+    url(r'^admin/', admin.site.urls),
 ]
 
 for app in settings.INSTALLED_APPS:
