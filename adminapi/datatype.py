@@ -3,7 +3,7 @@
 Copyright (c) 2018 InnoGames GmbH
 """
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from re import compile as re_compile
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 
@@ -39,7 +39,10 @@ RE_IPV6ADDR = (
 )
 RE_MACADDR = r'([0-9a-f]{1,2}:){5}([0-9a-f]{1,2})'
 RE_DATE = r'[0-9]{1,4}-(0[0-9]|1[0-2])-([0-2][0-9]|3[0-1])'
-RE_DATETIME = RE_DATE + r' ([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]'
+RE_DATETIME = RE_DATE + (
+    # e.g. ' 14:11:21+0100'
+    r' ([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\+|-)[0-9]{4}'
+)
 STR_BASED_DATATYPES = [
     (IPv4Address, re_compile(r'\A' + RE_IPV4ADDR + r'\Z')),
     (IPv4Network, re_compile(r'\A' + RE_IPV4ADDR + r'\/' + RE_32 + r'\Z')),
@@ -124,10 +127,7 @@ def json_to_datatype(value):
             if datatype is date:
                 return datetime.strptime(value, "%Y-%m-%d").date()
             if datatype is datetime:
-                parsed_datetime = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
-                # Our datetimes are UTC by convention. More information at:
-                # serveradmin.serverdb.ServerDateTimeAttribute.save
-                return parsed_datetime.replace(tzinfo=timezone.utc)
+                return datetime.strptime(value, "%Y-%m-%d %H:%M:%S%z")
             # EUI class represents MAC addresses in minus separated format
             # by default.  We want colon separated for for 2 reasons.
             # First, it is way more popular among the systems we care about.

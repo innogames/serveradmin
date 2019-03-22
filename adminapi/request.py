@@ -9,7 +9,7 @@ import hmac
 from ssl import SSLError
 import time
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 try:
     from urllib.error import HTTPError, URLError
@@ -124,7 +124,11 @@ def json_encode_extra(obj):
     if isinstance(obj, BaseFilter):
         return obj.serialize()
     if isinstance(obj, datetime):
-        return obj.strftime('%Y-%m-%d %H:%M:%S')
+        # Assume naive datetime objects passed in are in UTC.  This makes sense
+        # for python as even datetime.datetime.utcnow() returns naive datetimes
+        if obj.tzinfo is None:
+            obj = obj.replace(tzinfo=timezone.utc)
+        return obj.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M:%S%z')
     if isinstance(obj, set):
         return list(obj)
     return str(obj)

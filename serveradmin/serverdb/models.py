@@ -618,18 +618,6 @@ class ServerDateTimeAttribute(ServerAttribute):
         unique_together = [['server', 'attribute', 'value']]
         index_together = [['attribute', 'value']]
 
-    def save(self, *args, **kwargs):
-        # Our transport datetime format doesn't include a timezone.  Django
-        # will therefore create a python datetime instance without a timezone
-        # even though we use UTC by convention.  If local timezone usage is
-        # enabled in djangos config, it will also complain about the missing
-        # timezone in save() and then assume that object to be in the web
-        # servers local time and save it to the database with the web servers
-        # timezone.  That makes no sense here as this datetime is received from
-        # API clients.
-        self.value = self.value.replace(tzinfo=utc)
-        super().save(*args, **kwargs)
-
 
 class Change(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)
