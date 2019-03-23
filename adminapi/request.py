@@ -9,7 +9,6 @@ import hmac
 from ssl import SSLError
 import time
 import json
-from datetime import datetime, timezone
 
 try:
     from urllib.error import HTTPError, URLError
@@ -18,6 +17,32 @@ try:
 except ImportError:
     from urllib import urlencode
     from urllib2 import urlopen, Request, HTTPError, URLError
+
+try:
+    from datetime import datetime, tzinfo, timezone
+    # mypy is unhappy about utc beeing either of type UTC or timezone depending
+    # on python version. So we settle for the common parent tzinfo here.
+    utc = timezone.utc  # type: tzinfo
+except ImportError:
+    from datetime import datetime, tzinfo, timedelta
+
+    class UTC(tzinfo):
+        """UTC tzinfo implementation
+
+        datetime.timezone was implemented in python3.2, to stay python2
+        compatible we implement our own UTC timezone.
+        """
+
+        def tzname(self, dt):
+            return "UTC"
+
+        def utcoffset(self, dt):
+            return timedelta(0)
+
+        def dst(self, dt):
+            return timedelta(0)
+
+    utc = UTC()
 
 from adminapi.cmduser import get_auth_token
 from adminapi.filters import BaseFilter
@@ -127,8 +152,8 @@ def json_encode_extra(obj):
         # Assume naive datetime objects passed in are in UTC.  This makes sense
         # for python as even datetime.datetime.utcnow() returns naive datetimes
         if obj.tzinfo is None:
-            obj = obj.replace(tzinfo=timezone.utc)
-        return obj.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M:%S%z')
+            obj = obj.replace(tzinfo=utc)
+        return obj.astimezone(utc).strftime('%Y-%m-%d %H:%M:%S%z')
     if isinstance(obj, set):
         return list(obj)
     return str(obj)
