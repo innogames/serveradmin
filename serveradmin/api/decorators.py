@@ -6,10 +6,7 @@ Copyright (c) 2018 InnoGames GmbH
 from time import time
 from functools import update_wrapper
 from logging import getLogger
-try:
-    import simplejson as json
-except ImportError:
-    import json
+import json
 
 from django.core.exceptions import (
     ObjectDoesNotExist,

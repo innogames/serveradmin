@@ -8,6 +8,7 @@ from hashlib import sha1
 import hmac
 from ssl import SSLError
 import time
+import json
 
 from adminapi.cmduser import get_auth_token
 from adminapi.filters import BaseFilter
@@ -19,11 +20,6 @@ try:
 except ImportError:
     from urllib import urlencode
     from urllib2 import urlopen, Request, HTTPError, URLError
-
-try:
-    import simplejson as json
-except ImportError:
-    import json
 
 
 class Settings:
