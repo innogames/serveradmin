@@ -2,7 +2,6 @@
 
 Copyright (c) 2018 InnoGames GmbH
 """
-
 from datetime import date, datetime
 from re import compile as re_compile
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
@@ -127,7 +126,25 @@ def json_to_datatype(value):
             if datatype is date:
                 return datetime.strptime(value, "%Y-%m-%d").date()
             if datatype is datetime:
-                return datetime.strptime(value, "%Y-%m-%d %H:%M:%S%z")
+                try:
+                    return datetime.strptime(value, '%Y-%m-%d %H:%M:%S%z')
+                except ValueError:
+                    # XXX: %z is not supported pre python 3.2 due to missing
+                    # timezones in the stdlib.  Remove this hack alongside with
+                    # py2 suport.
+                    from re import search
+                    from adminapi.request import FakeTimezone
+                    m = search(r'^(.+)(\+|-)([0-9]{2})([0-9]{2})$', value)
+                    naive_datetime = datetime.strptime(
+                        m.group(1), '%Y-%m-%d %H:%M:%S'
+                    )
+                    fake_timezone = FakeTimezone(
+                        name='FAKE',
+                        hours=int(m.group(2) + m.group(3)),
+                        minutes=int(m.group(2) + m.group(4)),
+                    )
+                    return naive_datetime.replace(tzinfo=fake_timezone)
+
             # EUI class represents MAC addresses in minus separated format
             # by default.  We want colon separated for for 2 reasons.
             # First, it is way more popular among the systems we care about.

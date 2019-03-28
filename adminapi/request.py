@@ -26,23 +26,28 @@ try:
 except ImportError:
     from datetime import datetime, tzinfo, timedelta
 
-    class UTC(tzinfo):
+    class FakeTimezone(tzinfo):
         """UTC tzinfo implementation
 
         datetime.timezone was implemented in python3.2, to stay python2
-        compatible we implement our own UTC timezone.
+        compatible we implement our own hacky timezones.
         """
 
+        def __init__(self, name, hours=0, minutes=0):
+            self._name = name
+            self._utcoffset = timedelta(hours, minutes)
+
         def tzname(self, dt):
-            return "UTC"
+            return self._name
 
         def utcoffset(self, dt):
-            return timedelta(0)
+            return self._utcoffset
 
         def dst(self, dt):
             return timedelta(0)
 
-    utc = UTC()
+    utc = FakeTimezone(name='UTC')
+
 
 from adminapi.cmduser import get_auth_token
 from adminapi.filters import BaseFilter
