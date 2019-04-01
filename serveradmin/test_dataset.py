@@ -4,6 +4,7 @@ Copyright (c) 2018 InnoGames GmbH
 """
 
 from ipaddress import IPv4Address
+from datetime import datetime, timezone, tzinfo, timedelta
 from django.contrib.auth.models import User
 from django.test import TransactionTestCase
 
@@ -108,3 +109,37 @@ class TestCommit(TransactionTestCase):
 
     def test_commit_newer_data(self):
         pass
+
+
+class TestAttributeDatetime(TransactionTestCase):
+    fixtures = ['test_dataset.json']
+
+    def test_set_attribute(self):
+        """Try to set and retrieve a datetime attribute"""
+        dt = datetime.utcnow().replace(tzinfo=timezone.utc)
+        q = Query({'hostname': 'test0'}, ['last_edited'])
+        s = q.get()
+        s['last_edited'] = dt
+        q.commit(user=User.objects.first())
+
+        s = Query({'hostname': 'test0'}, ['last_edited']).get()
+        self.assertEqual(s['last_edited'], dt)
+
+    def test_utc_conversion(self):
+        """Ensure datetimes are converted to UTC
+
+        Users can pass datetimes in any timezone they want. Serveradmin will
+        transform them to UTC and only ever return them in UTC form.
+        """
+
+        class TZ(tzinfo):
+            def utcoffset(self, dt):
+                return timedelta(minutes=+3)
+
+        q = Query({'hostname': 'test0'}, ['last_edited'])
+        s = q.get()
+        s['last_edited'] = datetime(1970, 1, 1, 0, 3, 0).replace(tzinfo=TZ())
+        q.commit(user=User.objects.first())
+
+        s = Query({'hostname': 'test0'}, ['last_edited']).get()
+        self.assertEqual(str(s['last_edited']), '1970-01-01 00:00:00+00:00')

@@ -51,6 +51,14 @@
         }
     },
     {
+        "pk": "last_edited",
+        "model": "serverdb.attribute",
+        "fields": {
+            "type": "datetime",
+            "regexp": "\\A.*\\Z"
+        }
+    },
+    {
         "pk": "test0",
         "model": "serverdb.servertype",
         "fields": {
@@ -100,6 +108,15 @@
             "default_value": null,
             "servertype": "test0",
             "attribute": "database"
+        }
+    },
+    {
+        "pk": 5,
+        "model": "serverdb.servertypeattribute",
+        "fields": {
+            "default_value": null,
+            "servertype": "test0",
+            "attribute": "last_edited"
         }
     },
     {
