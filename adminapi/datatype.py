@@ -2,8 +2,7 @@
 
 Copyright (c) 2018 InnoGames GmbH
 """
-
-from datetime import date
+from datetime import date, datetime
 from re import compile as re_compile
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 
@@ -39,6 +38,10 @@ RE_IPV6ADDR = (
 )
 RE_MACADDR = r'([0-9a-f]{1,2}:){5}([0-9a-f]{1,2})'
 RE_DATE = r'[0-9]{1,4}-(0[0-9]|1[0-2])-([0-2][0-9]|3[0-1])'
+RE_DATETIME = RE_DATE + (
+    # e.g. ' 14:11:21+0100'
+    r' ([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\+|-)[0-9]{4}'
+)
 STR_BASED_DATATYPES = [
     (IPv4Address, re_compile(r'\A' + RE_IPV4ADDR + r'\Z')),
     (IPv4Network, re_compile(r'\A' + RE_IPV4ADDR + r'\/' + RE_32 + r'\Z')),
@@ -46,6 +49,7 @@ STR_BASED_DATATYPES = [
     (IPv6Network, re_compile(r'\A' + RE_IPV6ADDR + r'\/' + RE_128 + r'\Z')),
     (EUI, re_compile(r'\A' + RE_MACADDR + r'\Z')),
     (date, re_compile(r'\A' + RE_DATE + r'\Z')),
+    (datetime, re_compile(r'\A' + RE_DATETIME + r'\Z')),
 ]
 
 
@@ -118,9 +122,29 @@ def str_to_datatype(value):
 def json_to_datatype(value):
     for datatype, regexp in STR_BASED_DATATYPES:
         if regexp.match(str(value)):
-            # date constructor is special.
+            # date constructors need a decode format
             if datatype is date:
-                return date(*(int(v) for v in value.split('-', 2)))
+                return datetime.strptime(value, "%Y-%m-%d").date()
+            if datatype is datetime:
+                try:
+                    return datetime.strptime(value, '%Y-%m-%d %H:%M:%S%z')
+                except ValueError:
+                    # XXX: %z is not supported pre python 3.2 due to missing
+                    # timezones in the stdlib.  Remove this hack alongside with
+                    # py2 suport.
+                    from re import search
+                    from adminapi.request import FakeTimezone
+                    m = search(r'^(.+)(\+|-)([0-9]{2})([0-9]{2})$', value)
+                    naive_datetime = datetime.strptime(
+                        m.group(1), '%Y-%m-%d %H:%M:%S'
+                    )
+                    fake_timezone = FakeTimezone(
+                        name='FAKE',
+                        hours=int(m.group(2) + m.group(3)),
+                        minutes=int(m.group(2) + m.group(4)),
+                    )
+                    return naive_datetime.replace(tzinfo=fake_timezone)
+
             # EUI class represents MAC addresses in minus separated format
             # by default.  We want colon separated for for 2 reasons.
             # First, it is way more popular among the systems we care about.

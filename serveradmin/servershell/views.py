@@ -3,10 +3,7 @@
 Copyright (c) 2018 InnoGames GmbH
 """
 
-try:
-    import simplejson as json
-except ImportError:
-    import json
+import json
 from operator import attrgetter
 from itertools import islice
 

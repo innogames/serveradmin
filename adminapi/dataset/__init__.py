@@ -10,7 +10,7 @@ from types import GeneratorType
 
 from adminapi.datatype import validate_value, json_to_datatype
 from adminapi.filters import Any, BaseFilter, ContainedOnlyBy
-from adminapi.request import send_request
+from adminapi.request import send_request, json_encode_extra
 
 NEW_OBJECT_ENDPOINT = '/dataset/new_object'
 COMMIT_ENDPOINT = '/dataset/commit'
@@ -308,7 +308,10 @@ class DatasetObject(dict):
         if self._deleted:
             return 'deleted'
         for attribute_id, old_value in self.old_values.items():
-            if self[attribute_id] != old_value:
+            if (
+                json_encode_extra(self[attribute_id]) !=
+                json_encode_extra(old_value)
+            ):
                 return 'changed'
         return 'consistent'
 
@@ -335,7 +338,10 @@ class DatasetObject(dict):
         for key, old_value in self.old_values.items():
             new_value = self[key]
 
-            if old_value == new_value:
+            if (
+                json_encode_extra(old_value) ==
+                json_encode_extra(new_value)
+            ):
                 continue
 
             if isinstance(old_value, MultiAttr):

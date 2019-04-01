@@ -488,7 +488,7 @@ def _validate_commit(changes, servers):
                     newer.append((object_id, attr, server[attr]))
             elif action == 'update' or action == 'delete':
                 try:
-                    if str(server[attr]) != str(change['old']):
+                    if json_encode_extra(server[attr]) != str(change['old']):
                         newer.append((object_id, attr, server[attr]))
                 except KeyError:
                     newer.append((object_id, attr, None))
