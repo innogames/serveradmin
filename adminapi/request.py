@@ -9,6 +9,7 @@ import hmac
 from ssl import SSLError
 import time
 import json
+import base64
 
 try:
     from urllib.error import HTTPError, URLError
@@ -48,6 +49,7 @@ except ImportError:
 
     utc = FakeTimezone(name='UTC')
 
+from paramiko.agent import Agent
 
 from adminapi.cmduser import get_auth_token
 from adminapi.filters import BaseFilter
@@ -59,10 +61,19 @@ class Settings:
         'SERVERADMIN_BASE_URL',
         'https://serveradmin.innogames.de/api'
     )
-    auth_token = os.environ.get('SERVERADMIN_TOKEN')
+    auth_token = os.environ.get('SERVERADMIN_TOKEN') or get_auth_token()
     timeout = 60
     tries = 3
     sleep_interval = 5
+
+
+def calc_signed_security_token(agent_key, timestamp, data=None):
+    """Used for ssh key auth"""
+    security_token = calc_security_token(
+        agent_key.get_base64(), timestamp, data
+    )
+    sig = agent_key.sign_ssh_data(security_token.encode())
+    return base64.encodestring(sig).decode()
 
 
 def calc_security_token(auth_token, timestamp, data=None):
@@ -79,9 +90,6 @@ def calc_app_id(auth_token):
 
 
 def send_request(endpoint, get_params=None, post_params=None):
-    if not Settings.auth_token:
-        Settings.auth_token = get_auth_token()
-
     request = _build_request(
         endpoint, Settings.auth_token, get_params, post_params
     )
@@ -105,14 +113,30 @@ def _build_request(endpoint, auth_token, get_params, post_params):
         post_data = None
 
     timestamp = int(time.time())
-    app_id = calc_app_id(auth_token)
-    security_token = calc_security_token(auth_token, timestamp, post_data)
     headers = {
         'Content-Encoding': 'application/x-json',
         'X-Timestamp': str(timestamp),
-        'X-Application': app_id,
-        'X-SecurityToken': security_token,
     }
+
+    if auth_token:
+        headers['X-Application'] = calc_app_id(auth_token)
+        headers['X-SecurityToken'] = calc_security_token(
+            auth_token, timestamp, post_data
+        )
+    else:
+        try:
+            agent = Agent()
+        except Exception:
+            raise Exception('No auth token and ssh agent found')
+        headers['X-Signatures'] = json.dumps([
+            {
+                'application': calc_app_id(auth_key.get_base64()),
+                'signature': calc_signed_security_token(
+                    auth_key, timestamp, post_data
+                ),
+            } for auth_key in agent.get_keys()
+        ])
+
     url = Settings.base_url + endpoint
     if get_params:
         url += '?' + urlencode(get_params)

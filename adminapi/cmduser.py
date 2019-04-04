@@ -23,4 +23,3 @@ def get_auth_token():
                 key, value = key.strip(), value.strip()
                 if key == 'auth_token':
                     return value
-    raise Exception('No auth token found')

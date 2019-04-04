@@ -6,6 +6,7 @@ Copyright (c) 2018 InnoGames GmbH
 from time import time
 from functools import update_wrapper
 from logging import getLogger
+from base64 import b64decode
 import json
 
 from django.core.exceptions import (
@@ -17,6 +18,10 @@ from django.core.exceptions import (
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.crypto import constant_time_compare
+
+from paramiko import RSAKey, ECDSAKey, Ed25519Key
+from paramiko.message import Message
+from paramiko.ssh_exception import SSHException
 
 from adminapi.request import calc_security_token, json_encode_extra
 from adminapi.filters import FilterValueError
@@ -33,21 +38,14 @@ def api_view(view):
             request.scheme, request.path
         ))
 
-        try:
-            app_id = request.META['HTTP_X_APPLICATION']
-            token = request.META['HTTP_X_SECURITYTOKEN']
-            timestamp = int(request.META['HTTP_X_TIMESTAMP'])
-        except (KeyError, ValueError) as error:
-            raise SuspiciousOperation(error)
-
         now = time()
         body = request.body.decode('utf8') if request.body else None
+        signatures = request.META.get('HTTP_X_SIGNATURES')
+        app_id = request.META.get('HTTP_X_APPLICATION')
+        token = request.META.get('HTTP_X_SECURITYTOKEN')
+        timestamp = int(request.META['HTTP_X_TIMESTAMP'])
 
-        try:
-            app = Application.objects.get(app_id=app_id)
-        except Application.DoesNotExist as error:
-            raise PermissionDenied(error)
-        authenticate_app(app, token, timestamp, now, body)
+        app = authenticate_app(signatures, app_id, token, timestamp, now, body)
 
         body_json = json.loads(body) if body else None
         try:
@@ -77,19 +75,73 @@ def api_view(view):
     return update_wrapper(_wrapper, view)
 
 
-def authenticate_app(app, token, timestamp, now, body):
+def authenticate_app(signatures, app_id, token, timestamp, now, body):
     if timestamp + 300 < now:
         raise PermissionDenied('Expired security token')
 
-    real_token = calc_security_token(app.auth_token, timestamp, body)
-    if not constant_time_compare(real_token, token):
-        raise PermissionDenied('Invalid security token')
+    if signatures:
+        app = authenticate_app_ssh(signatures, timestamp, now, body)
+    elif app_id and token:
+        app = authenticate_app_psk(app_id, token, timestamp, now, body)
+    else:
+        raise SuspiciousOperation('Missing authentication')
 
     if app.owner is not None and not app.owner.is_active:
         raise PermissionDenied('Inactive user')
 
     if app.disabled:
         raise PermissionDenied('Disabled application')
+
+    return app
+
+
+def authenticate_app_psk(app_id, security_token, timestamp, now, body):
+    try:
+        app = Application.objects.get(app_id=app_id)
+    except Application.DoesNotExist as error:
+        raise PermissionDenied(error)
+
+    expected_proof = calc_security_token(app.auth_token, timestamp, body)
+    if not constant_time_compare(expected_proof, security_token):
+        raise PermissionDenied('Invalid security token')
+
+    return app
+
+
+def authenticate_app_ssh(signatures, timestamp, now, body):
+    sigs = {
+        sig['application']: sig['signature']
+        for sig in json.loads(signatures)
+    }
+    if len(sigs) > 20:
+        raise SuspiciousOperation('Too many signatures in one request')
+
+    try:
+        app = Application.objects.filter(app_id__in=sigs.keys()).get()
+    except (
+        Application.DoesNotExist,
+        Application.MultipleObjectsReturned,
+    ) as error:
+        raise PermissionDenied(error)
+
+    correct_proof = calc_security_token(app.auth_token, timestamp, body)
+    public_key = load_public_key(app.auth_token)
+    msg = Message(b64decode(sigs[app.app_id]))
+    if not public_key.verify_ssh_sig(correct_proof.encode(), msg):
+        raise PermissionDenied('Invalid signature')
+
+    return app
+
+
+def load_public_key(base64_public_key):
+    # I don't think there is a key type independent way of doing this
+    for key_class in (RSAKey, ECDSAKey, Ed25519Key):
+        try:
+            return key_class(data=b64decode(base64_public_key))
+        except SSHException:
+            continue
+
+    raise PermissionDenied('Loading public key failed')
 
 
 def api_function(group, name=None):
