@@ -110,14 +110,14 @@ def authenticate_app_psk(app_id, security_token, timestamp, now, body):
 
 def authenticate_app_ssh(signatures, timestamp, now, body):
     sigs = {
-        sig['application']: sig['signature']
+        sig['public_key']: sig['signature']
         for sig in json.loads(signatures)
     }
     if len(sigs) > 20:
         raise SuspiciousOperation('Too many signatures in one request')
 
     try:
-        app = Application.objects.filter(app_id__in=sigs.keys()).get()
+        app = Application.objects.filter(auth_token__in=sigs.keys()).get()
     except (
         Application.DoesNotExist,
         Application.MultipleObjectsReturned,
@@ -126,7 +126,7 @@ def authenticate_app_ssh(signatures, timestamp, now, body):
 
     correct_proof = calc_security_token(app.auth_token, timestamp, body)
     public_key = load_public_key(app.auth_token)
-    msg = Message(b64decode(sigs[app.app_id]))
+    msg = Message(b64decode(sigs[app.auth_token]))
     if not public_key.verify_ssh_sig(correct_proof.encode(), msg):
         raise PermissionDenied('Invalid signature')
 

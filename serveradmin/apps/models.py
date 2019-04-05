@@ -11,7 +11,7 @@ from serveradmin.common.utils import random_alnum_string
 
 class Application(models.Model):
     name = models.CharField(max_length=80, unique=True)
-    app_id = models.CharField(max_length=64, unique=True, editable=False)
+    app_id = models.CharField(max_length=64, null=True, editable=False)
     auth_token = models.CharField(max_length=1024, unique=True)
     auth_type = models.CharField(max_length=32, default='psk', choices=(
         ('psk', 'psk'), ('ssh', 'ssh')
@@ -28,9 +28,10 @@ class Application(models.Model):
 
 @receiver(pre_save, sender=Application)
 def set_auth_token(sender, instance, **kwargs):
-    if not instance.auth_token:
-        instance.auth_token = random_alnum_string(24)
-    instance.app_id = calc_app_id(instance.auth_token)
+    if instance.auth_type == 'psk':
+        if not instance.auth_token:
+            instance.auth_token = random_alnum_string(24)
+        instance.app_id = calc_app_id(instance.auth_token)
 
 
 @receiver(post_save, sender=User)

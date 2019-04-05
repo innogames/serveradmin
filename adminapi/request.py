@@ -130,7 +130,7 @@ def _build_request(endpoint, auth_token, get_params, post_params):
             raise Exception('No auth token and ssh agent found')
         headers['X-Signatures'] = json.dumps([
             {
-                'application': calc_app_id(auth_key.get_base64()),
+                'public_key': auth_key.get_base64(),
                 'signature': calc_signed_security_token(
                     auth_key, timestamp, post_data
                 ),
