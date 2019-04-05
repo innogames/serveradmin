@@ -1,6 +1,6 @@
 """Serveradmin - adminapi
 
-Copyright (c) 2018 InnoGames GmbH
+Copyright (c) 2019 InnoGames GmbH
 """
 
 import os
@@ -51,6 +51,7 @@ except ImportError:
 
 from adminapi.cmduser import get_auth_token
 from adminapi.filters import BaseFilter
+from adminapi.exceptions import ApiError
 
 
 class Settings:
@@ -62,15 +63,6 @@ class Settings:
     timeout = 60
     tries = 3
     sleep_interval = 5
-
-
-class APIError(Exception):
-    def __init__(self, *args, **kwargs):
-        if 'status_code' in kwargs:
-            self.status_code = kwargs.pop('status_code')
-        else:
-            self.status_code = 400
-        super(Exception, self).__init__(*args, **kwargs)
 
 
 def calc_security_token(auth_token, timestamp, data=None):
@@ -142,7 +134,7 @@ def _try_request(request, retry=False):
             if content_type == 'application/x-json':
                 payload = json.loads(error.read().decode())
                 message = payload['error']['message']
-                raise APIError(message, status_code=error.code)
+                raise ApiError(message, status_code=error.code)
         raise
     except (SSLError, URLError):
         if retry:

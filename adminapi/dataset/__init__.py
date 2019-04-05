@@ -1,6 +1,6 @@
 """Serveradmin - adminapi
 
-Copyright (c) 2018 InnoGames GmbH
+Copyright (c) 2019 InnoGames GmbH
 """
 
 from distutils.util import strtobool
@@ -11,15 +11,12 @@ from types import GeneratorType
 from adminapi.datatype import validate_value, json_to_datatype
 from adminapi.filters import Any, BaseFilter, ContainedOnlyBy
 from adminapi.request import send_request, json_encode_extra
+from adminapi.exceptions import DatasetError
 
 NEW_OBJECT_ENDPOINT = '/dataset/new_object'
 COMMIT_ENDPOINT = '/dataset/commit'
 QUERY_ENDPOINT = '/dataset/query'
 CREATE_ENDPOINT = '/dataset/create'
-
-
-class DatasetError(Exception):
-    pass
 
 
 class BaseQuery(object):

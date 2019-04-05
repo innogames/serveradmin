@@ -1,6 +1,6 @@
 """Serveradmin - adminapi
 
-Copyright (c) 2018 InnoGames GmbH
+Copyright (c) 2019 InnoGames GmbH
 """
 from datetime import date, datetime
 from re import compile as re_compile
@@ -11,6 +11,9 @@ try:
     from netaddr import mac_unix_expanded
 except ImportError:
     from netaddr import mac_unix as mac_unix_expanded
+
+from adminapi.exceptions import DatatypeError
+
 
 # We use a set of regular expressions to cast to datatypes.  This module
 # is not aware of the attributes types of the server, neither it tries
@@ -51,10 +54,6 @@ STR_BASED_DATATYPES = [
     (date, re_compile(r'\A' + RE_DATE + r'\Z')),
     (datetime, re_compile(r'\A' + RE_DATETIME + r'\Z')),
 ]
-
-
-class DatatypeError(Exception):
-    pass
 
 
 # TODO: Improve this using the datatype list
