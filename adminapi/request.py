@@ -67,19 +67,15 @@ class Settings:
     sleep_interval = 5
 
 
-def calc_signed_security_token(agent_key, timestamp, data=None):
+def calc_signature(agent_key, timestamp, data=None):
     """Used for ssh key auth"""
-    security_token = calc_security_token(
-        agent_key.get_base64(), timestamp, data
-    )
-    sig = agent_key.sign_ssh_data(security_token.encode())
+    message = str(timestamp) + (':' + data) if data else ''
+    sig = agent_key.sign_ssh_data(message.encode())
     return base64.encodestring(sig).decode()
 
 
 def calc_security_token(auth_token, timestamp, data=None):
-    message = str(timestamp)
-    if data:
-        message += ':' + data
+    message = str(timestamp) + (':' + data) if data else ''
     return hmac.new(
         auth_token.encode('utf8'), message.encode('utf8'), sha1
     ).hexdigest()
@@ -131,9 +127,7 @@ def _build_request(endpoint, auth_token, get_params, post_params):
         headers['X-Signatures'] = json.dumps([
             {
                 'public_key': auth_key.get_base64(),
-                'signature': calc_signed_security_token(
-                    auth_key, timestamp, post_data
-                ),
+                'signature': calc_signature(auth_key, timestamp, post_data),
             } for auth_key in agent.get_keys()
         ])
 

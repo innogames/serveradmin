@@ -124,10 +124,10 @@ def authenticate_app_ssh(signatures, timestamp, now, body):
     ) as error:
         raise PermissionDenied(error)
 
-    correct_proof = calc_security_token(app.auth_token, timestamp, body)
+    expected_message = str(timestamp) + (':' + body) if body else ''
     public_key = load_public_key(app.auth_token)
     msg = Message(b64decode(sigs[app.auth_token]))
-    if not public_key.verify_ssh_sig(correct_proof.encode(), msg):
+    if not public_key.verify_ssh_sig(expected_message.encode(), msg):
         raise PermissionDenied('Invalid signature')
 
     return app
