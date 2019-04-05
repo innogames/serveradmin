@@ -40,12 +40,15 @@ def api_view(view):
 
         now = time()
         body = request.body.decode('utf8') if request.body else None
+        public_keys = request.META.get('HTTP_X_PUBLICKEYS')
         signatures = request.META.get('HTTP_X_SIGNATURES')
         app_id = request.META.get('HTTP_X_APPLICATION')
         token = request.META.get('HTTP_X_SECURITYTOKEN')
         timestamp = int(request.META['HTTP_X_TIMESTAMP'])
 
-        app = authenticate_app(signatures, app_id, token, timestamp, now, body)
+        app = authenticate_app(
+            public_keys, signatures, app_id, token, timestamp, now, body
+        )
 
         body_json = json.loads(body) if body else None
         try:
@@ -75,12 +78,16 @@ def api_view(view):
     return update_wrapper(_wrapper, view)
 
 
-def authenticate_app(signatures, app_id, token, timestamp, now, body):
+def authenticate_app(
+    public_keys, signatures, app_id, token, timestamp, now, body
+):
     if timestamp + 300 < now:
         raise PermissionDenied('Expired security token')
 
-    if signatures:
-        app = authenticate_app_ssh(signatures, timestamp, now, body)
+    if public_keys and signatures:
+        app = authenticate_app_ssh(
+            public_keys, signatures, timestamp, now, body
+        )
     elif app_id and token:
         app = authenticate_app_psk(app_id, token, timestamp, now, body)
     else:
@@ -108,16 +115,16 @@ def authenticate_app_psk(app_id, security_token, timestamp, now, body):
     return app
 
 
-def authenticate_app_ssh(signatures, timestamp, now, body):
-    sigs = {
-        sig['public_key']: sig['signature']
-        for sig in json.loads(signatures)
-    }
-    if len(sigs) > 20:
+def authenticate_app_ssh(public_keys, signatures, timestamp, now, body):
+    key_signatures = dict(zip(public_keys.split(','), signatures.split(',')))
+
+    if len(key_signatures) > 20:
         raise SuspiciousOperation('Too many signatures in one request')
 
     try:
-        app = Application.objects.filter(auth_token__in=sigs.keys()).get()
+        app = Application.objects.filter(
+            auth_token__in=key_signatures.keys()
+        ).get()
     except (
         Application.DoesNotExist,
         Application.MultipleObjectsReturned,
@@ -126,7 +133,7 @@ def authenticate_app_ssh(signatures, timestamp, now, body):
 
     expected_message = str(timestamp) + (':' + body) if body else ''
     public_key = load_public_key(app.auth_token)
-    msg = Message(b64decode(sigs[app.auth_token]))
+    msg = Message(b64decode(key_signatures[app.auth_token]))
     if not public_key.verify_ssh_sig(expected_message.encode(), msg):
         raise PermissionDenied('Invalid signature')
 

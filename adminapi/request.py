@@ -9,7 +9,7 @@ import hmac
 from ssl import SSLError
 import time
 import json
-import base64
+from base64 import b64encode
 
 try:
     from urllib.error import HTTPError, URLError
@@ -71,7 +71,7 @@ def calc_signature(agent_key, timestamp, data=None):
     """Used for ssh key auth"""
     message = str(timestamp) + (':' + data) if data else ''
     sig = agent_key.sign_ssh_data(message.encode())
-    return base64.encodestring(sig).decode()
+    return b64encode(sig).decode()
 
 
 def calc_security_token(auth_token, timestamp, data=None):
@@ -124,12 +124,14 @@ def _build_request(endpoint, auth_token, get_params, post_params):
             agent = Agent()
         except Exception:
             raise Exception('No auth token and ssh agent found')
-        headers['X-Signatures'] = json.dumps([
-            {
-                'public_key': auth_key.get_base64(),
-                'signature': calc_signature(auth_key, timestamp, post_data),
-            } for auth_key in agent.get_keys()
-        ])
+
+        key_signatures = {
+            key.get_base64(): calc_signature(key, timestamp, post_data)
+            for key in agent.get_keys()
+        }
+
+        headers['X-PublicKeys'] = ','.join(key_signatures.keys())
+        headers['X-Signatures'] = ','.join(key_signatures.values())
 
     url = Settings.base_url + endpoint
     if get_params:
