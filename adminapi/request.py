@@ -50,10 +50,11 @@ except ImportError:
     utc = FakeTimezone(name='UTC')
 
 from paramiko.agent import Agent
+from paramiko.ssh_exception import SSHException
 
 from adminapi.cmduser import get_auth_token
 from adminapi.filters import BaseFilter
-from adminapi.exceptions import ApiError
+from adminapi.exceptions import ApiError, AuthenticationError
 
 
 class Settings:
@@ -122,12 +123,16 @@ def _build_request(endpoint, auth_token, get_params, post_params):
     else:
         try:
             agent = Agent()
-        except Exception:
-            raise Exception('No auth token and ssh agent found')
+            agent_keys = agent.get_keys()
+        except SSHException:
+            raise AuthenticationError('No token and ssh agent found')
+
+        if not agent_keys:
+            raise AuthenticationError('No token and ssh agent keys found')
 
         key_signatures = {
             key.get_base64(): calc_signature(key, timestamp, post_data)
-            for key in agent.get_keys()
+            for key in agent_keys
         }
 
         headers['X-PublicKeys'] = ','.join(key_signatures.keys())

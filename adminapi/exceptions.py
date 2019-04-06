@@ -19,6 +19,11 @@ class ApiError(AdminapiException):
         super(Exception, self).__init__(*args, **kwargs)
 
 
+class AuthenticationError(AdminapiException):
+    """No suitable authentication credentials available"""
+    pass
+
+
 class DatasetError(AdminapiException):
     """Something went wrong within a dataset instance"""
     pass
