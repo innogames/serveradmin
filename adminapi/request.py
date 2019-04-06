@@ -50,11 +50,27 @@ except ImportError:
     utc = FakeTimezone(name='UTC')
 
 from paramiko.agent import Agent
-from paramiko.ssh_exception import SSHException
+from paramiko import RSAKey, ECDSAKey, Ed25519Key
+from paramiko.message import Message
+from paramiko.ssh_exception import SSHException, PasswordRequiredException
 
 from adminapi.cmduser import get_auth_token
 from adminapi.filters import BaseFilter
 from adminapi.exceptions import ApiError, AuthenticationError
+
+
+def load_private_key_file(private_key_path):
+
+    # I don't think there is a key type independent way of doing this
+    for key_class in (RSAKey, ECDSAKey, Ed25519Key):
+        try:
+            return key_class.from_private_key_file(private_key_path)
+        except PasswordRequiredException as e:
+            raise AuthenticationError(e)
+        except SSHException:
+            continue
+
+    raise AuthenticationError('Loading private key failed')
 
 
 class Settings:
@@ -62,6 +78,8 @@ class Settings:
         'SERVERADMIN_BASE_URL',
         'https://serveradmin.innogames.de/api'
     )
+    auth_key_path = os.environ.get('SERVERADMIN_KEY_PATH')
+    auth_key = load_private_key_file(auth_key_path) if auth_key_path else None
     auth_token = os.environ.get('SERVERADMIN_TOKEN') or get_auth_token()
     timeout = 60
     tries = 3
@@ -72,6 +90,10 @@ def calc_signature(agent_key, timestamp, data=None):
     """Used for ssh key auth"""
     message = str(timestamp) + (':' + data) if data else ''
     sig = agent_key.sign_ssh_data(message.encode())
+    if isinstance(sig, Message):
+        # sign_ssh_data returns bytes for agent keys but a Message instance
+        # for keys loaded from a file. Fix the file loaded once:
+        sig = sig.asbytes()
     return b64encode(sig).decode()
 
 
@@ -87,9 +109,7 @@ def calc_app_id(auth_token):
 
 
 def send_request(endpoint, get_params=None, post_params=None):
-    request = _build_request(
-        endpoint, Settings.auth_token, get_params, post_params
-    )
+    request = _build_request(endpoint, get_params, post_params)
     for retry in reversed(range(Settings.tries)):
         response = _try_request(request, retry)
         if response:
@@ -103,7 +123,7 @@ def send_request(endpoint, get_params=None, post_params=None):
     return json.loads(response.read().decode())
 
 
-def _build_request(endpoint, auth_token, get_params, post_params):
+def _build_request(endpoint, get_params, post_params):
     if post_params:
         post_data = json.dumps(post_params, default=json_encode_extra)
     else:
@@ -115,10 +135,15 @@ def _build_request(endpoint, auth_token, get_params, post_params):
         'X-Timestamp': str(timestamp),
     }
 
-    if auth_token:
-        headers['X-Application'] = calc_app_id(auth_token)
+    if Settings.auth_key:
+        headers['X-PublicKeys'] = Settings.auth_key.get_base64()
+        headers['X-Signatures'] = calc_signature(
+            Settings.auth_key, timestamp, post_data
+        )
+    elif Settings.auth_token:
+        headers['X-Application'] = calc_app_id(Settings.auth_token)
         headers['X-SecurityToken'] = calc_security_token(
-            auth_token, timestamp, post_data
+            Settings.auth_token, timestamp, post_data
         )
     else:
         try:
