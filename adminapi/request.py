@@ -181,10 +181,11 @@ def _try_request(request, retry=False):
                 return None
         elif error.code >= 400:
             content_type = error.info()['Content-Type']
+            message = str(error)
             if content_type == 'application/x-json':
                 payload = json.loads(error.read().decode())
                 message = payload['error']['message']
-                raise ApiError(message, status_code=error.code)
+            raise ApiError(message, status_code=error.code)
         raise
     except (SSLError, URLError):
         if retry:
