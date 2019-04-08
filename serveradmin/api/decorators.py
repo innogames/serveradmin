@@ -19,13 +19,11 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.crypto import constant_time_compare
 
-from paramiko import RSAKey, ECDSAKey, Ed25519Key
 from paramiko.message import Message
-from paramiko.ssh_exception import SSHException
 
 from adminapi.request import calc_security_token, json_encode_extra
 from adminapi.filters import FilterValueError
-from serveradmin.apps.models import Application
+from serveradmin.apps.models import Application, PublicKey
 from serveradmin.api import AVAILABLE_API_FUNCTIONS
 
 logger = getLogger('serveradmin')
@@ -119,36 +117,26 @@ def authenticate_app_ssh(public_keys, signatures, timestamp, now, body):
     key_signatures = dict(zip(public_keys.split(','), signatures.split(',')))
 
     if len(key_signatures) > 20:
-        raise SuspiciousOperation('Too many signatures in one request')
+        raise SuspiciousOperation('Over 20 signatures in one request')
 
     try:
-        app = Application.objects.filter(
-            auth_token__in=key_signatures.keys()
+        public_key = PublicKey.objects.filter(
+            key_base64__in=key_signatures.keys()
         ).get()
     except (
-        Application.DoesNotExist,
-        Application.MultipleObjectsReturned,
+        PublicKey.DoesNotExist,
+        PublicKey.MultipleObjectsReturned,
     ) as error:
         raise PermissionDenied(error)
 
     expected_message = str(timestamp) + (':' + body) if body else ''
-    public_key = load_public_key(app.auth_token)
-    msg = Message(b64decode(key_signatures[app.auth_token]))
-    if not public_key.verify_ssh_sig(expected_message.encode(), msg):
+    if not public_key.load().verify_ssh_sig(
+        data=expected_message.encode(),
+        msg=Message(b64decode(key_signatures[public_key.key_base64]))
+    ):
         raise PermissionDenied('Invalid signature')
 
-    return app
-
-
-def load_public_key(base64_public_key):
-    # I don't think there is a key type independent way of doing this
-    for key_class in (RSAKey, ECDSAKey, Ed25519Key):
-        try:
-            return key_class(data=b64decode(base64_public_key))
-        except SSHException:
-            continue
-
-    raise PermissionDenied('Loading public key failed')
+    return public_key.application
 
 
 def api_function(group, name=None):

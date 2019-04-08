@@ -1,17 +1,29 @@
 from django.contrib import admin
 
-from serveradmin.apps.models import Application
+from serveradmin.apps.models import Application, PublicKey
+
+
+class PublicKeyInline(admin.TabularInline):
+    model = PublicKey
 
 
 class ApplicationAdmin(admin.ModelAdmin):
     list_display = [
         'name',
         'owner',
-        'location',
         'auth_token',
+        'get_public_keys',
         'superuser',
         'disabled',
     ]
+
+    inlines = [
+        PublicKeyInline
+    ]
+
+    def get_public_keys(self, obj):
+        return list(obj.public_keys.all())
+    get_public_keys.short_description = 'Public Keys'
 
     def has_delete_permission(self, request, obj=None):
         # We don't want the applications to be deleted but disabled.
