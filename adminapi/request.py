@@ -60,7 +60,13 @@ from adminapi.exceptions import ApiError, AuthenticationError
 
 
 def load_private_key_file(private_key_path):
+    """Try to load a private ssh key from disk
 
+    We support RSA, ECDSA and Ed25519 keys and return instances of:
+    * paramiko.rsakey.RSAKey
+    * paramiko.ecdsakey.ECDSAKey
+    * paramiko.ed25519key.Ed25519Key
+    """
     # I don't think there is a key type independent way of doing this
     for key_class in (RSAKey, ECDSAKey, Ed25519Key):
         try:
@@ -86,10 +92,23 @@ class Settings:
     sleep_interval = 5
 
 
-def calc_signature(agent_key, timestamp, data=None):
-    """Used for ssh key auth"""
+def calc_signature(private_key, timestamp, data=None):
+    """Create a proof that we posess the private key
+
+    Use paramikos sign_ssh_data to sign the request body together with a
+    timestamp. As we send the signature and the timestamp in each request,
+    serveradmin can use the public key to check if we have the private key.
+
+    The timestamp is used to prevent a MITM to replay this request over and
+    over again. Unfortunately an attacker will still be able to replay this
+    message for the grace period serveradmin requires the timestamp to be in.
+    we can't prevent this without asking serveradmin for a nonce before every
+    request.
+
+    Returns the signature as base64 encoded unicode, ready for transport.
+    """
     message = str(timestamp) + (':' + data) if data else ''
-    sig = agent_key.sign_ssh_data(message.encode())
+    sig = private_key.sign_ssh_data(message.encode())
     if isinstance(sig, Message):
         # sign_ssh_data returns bytes for agent keys but a Message instance
         # for keys loaded from a file. Fix the file loaded once:
@@ -124,6 +143,13 @@ def send_request(endpoint, get_params=None, post_params=None):
 
 
 def _build_request(endpoint, get_params, post_params):
+    """Wrap request data in an urllib Request instance
+
+    Aside from preparing the get and post data for transport, this function
+    authenticates the request using either an auth token or ssh keys.
+
+    Returns an urllib Request.
+    """
     if post_params:
         post_data = json.dumps(post_params, default=json_encode_extra)
     else:

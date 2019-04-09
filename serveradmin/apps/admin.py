@@ -4,6 +4,13 @@ from serveradmin.apps.models import Application, PublicKey
 
 
 class PublicKeyInline(admin.TabularInline):
+    """Inline Form for Public Keys
+
+    PublicKey are always bundled to an application. It makes little sense to
+    create them separately and then chose the application from a dropdown
+    inside the PublicKey form. This allows us to edit PublicKeys inside the
+    Applications admin form.
+    """
     model = PublicKey
 
 

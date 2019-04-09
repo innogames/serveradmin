@@ -69,16 +69,25 @@ class PublicKey(models.Model):
         return 'SHA256:' + b64encode(sha256(blob).digest()).decode()
 
     def save(self, *args, **kwargs):
+        """Call full_clean before save to ensure the key is loadable"""
         self.full_clean()
         return super().save(*args, **kwargs)
 
     def clean(self):
+        """Load the key and raise ValidationError if it's not possible"""
         try:
             self.load()
         except SSHException as error:
             raise ValidationError('Loading public key failed: ' + str(error))
 
     def load(self):
+        """Try to load the public key
+
+        We support RSA, ECDSA and Ed25519 keys and return instances of:
+        * paramiko.rsakey.RSAKey
+        * paramiko.ecdsakey.ECDSAKey
+        * paramiko.ed25519key.Ed25519Key
+        """
         # I don't think there is a key type independent way of doing this
         public_key_blob = b64decode(self.key_base64)
         if self.key_algorithm.startswith('ssh-ed25519'):
@@ -92,6 +101,7 @@ class PublicKey(models.Model):
 
     @classmethod
     def create(cls, application, public_key):
+        """Convenience method to create a PublicKey from the string form"""
         try:
             loaded_public_key = PublicBlob.from_string(public_key)
             instance = cls(

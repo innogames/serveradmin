@@ -79,6 +79,20 @@ def api_view(view):
 def authenticate_app(
     public_keys, signatures, app_id, token, timestamp, now, body
 ):
+    """Authenticate requests
+
+    Ensure this request isn't beeing replayed by making sure the timestamp
+    contained in the request is no older than 300 seconds or raise
+    PermissionDenied.
+
+    Hand over the real verification of auth token HMACs to authenticate_app_psk
+    or public key signatures to authenticate_app_ssh.
+
+    Ensure that the application and applications owner aren't deactivated or
+    raise PermissionDenied.
+
+    Return the app the user authenticated to
+    """
     if timestamp + 300 < now:
         raise PermissionDenied('Expired security token')
 
@@ -101,6 +115,16 @@ def authenticate_app(
 
 
 def authenticate_app_psk(app_id, security_token, timestamp, now, body):
+    """Authenticate request HMAC
+
+    Recreate the security token using the timestamp and body from the request.
+    Check if the client send the same security token.
+
+    If they don't match the client doesn't have the correct auth token and we
+    raise PermissionDenied.
+
+    Return the app the user authenticated to
+    """
     try:
         app = Application.objects.get(app_id=app_id)
     except Application.DoesNotExist as error:
@@ -114,6 +138,24 @@ def authenticate_app_psk(app_id, security_token, timestamp, now, body):
 
 
 def authenticate_app_ssh(public_keys, signatures, timestamp, now, body):
+    """Authenticate request signature
+
+    Look up if we have exactly one key of the public keys send with this
+    request in our database. Use this key to verify the signature send by the
+    client.
+
+    If the client sends more then 20 key signature pairs, we raise a
+    SuspiciousOperation to prevent DOS.
+
+    If the we find no or more then one matching public key in our database, we
+    raise a PermissionDenied. The different applications likely have different
+    permissions and we don't want to guess which to enforce if we get more then
+    one.
+
+    If the signature doesn't match, we raise a PermissionDenied.
+
+    Return the app the user authenticated to
+    """
     key_signatures = dict(zip(public_keys.split(','), signatures.split(',')))
 
     if len(key_signatures) > 20:
