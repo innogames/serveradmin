@@ -140,45 +140,68 @@ def authenticate_app_psk(app_id, security_token, timestamp, now, body):
 def authenticate_app_ssh(public_keys, signatures, timestamp, now, body):
     """Authenticate request signature
 
-    Look up if we have exactly one key of the public keys send with this
-    request in our database. Use this key to verify the signature send by the
-    client.
-
     If the client sends more then 20 key signature pairs, we raise a
     SuspiciousOperation to prevent DOS.
 
-    If the we find no or more then one matching public key in our database, we
-    raise a PermissionDenied. The different applications likely have different
-    permissions and we don't want to guess which to enforce if we get more then
-    one.
+    Look up all of the public keys send with this request in our database.
+    Verify the signature send by the client for those public keys we know
+    about. Raise PermissionDenied for invalid signatures.
 
-    If the signature doesn't match, we raise a PermissionDenied.
+    If we find no public key in our database, we raise a PermissionDenied.
+
+    If we find multiple valid signatures using public keys belonging to
+    different applications, we raise PermissionDenied. The different
+    applications likely have different permissions and we don't want to guess
+    which to enforce.
 
     Return the app the user authenticated to
     """
-    key_signatures = dict(zip(public_keys.split(','), signatures.split(',')))
 
+    def verify_signature(public_key, signature):
+        """Verify a single signature
+
+        Raise PermissionDenied if the signature is invalid
+
+        Return the public key on success
+        """
+        expected_message = str(timestamp) + (':' + body) if body else ''
+        if not public_key.load().verify_ssh_sig(
+            data=expected_message.encode(),
+            msg=Message(b64decode(signature))
+        ):
+            raise PermissionDenied('Invalid signature')
+
+        return public_key
+
+    key_signatures = dict(zip(public_keys.split(','), signatures.split(',')))
     if len(key_signatures) > 20:
         raise SuspiciousOperation('Over 20 signatures in one request')
 
-    try:
-        public_key = PublicKey.objects.filter(
+    verified_keys = {
+        verify_signature(public_key, key_signatures[public_key.key_base64])
+        for public_key in PublicKey.objects.filter(
             key_base64__in=key_signatures.keys()
-        ).get()
-    except (
-        PublicKey.DoesNotExist,
-        PublicKey.MultipleObjectsReturned,
-    ) as error:
-        raise PermissionDenied(error)
+        )
+    }
 
-    expected_message = str(timestamp) + (':' + body) if body else ''
-    if not public_key.load().verify_ssh_sig(
-        data=expected_message.encode(),
-        msg=Message(b64decode(key_signatures[public_key.key_base64]))
-    ):
-        raise PermissionDenied('Invalid signature')
+    if not verified_keys:
+        raise PermissionDenied('No known public key found')
 
-    return public_key.application
+    applications = {key.application for key in verified_keys}
+    if len(applications) > 1:
+        raise PermissionDenied(
+            'Valid signatures for more than one application received: ' +
+            ', '.join([str(key) for key in verified_keys]) +
+            '. It is unclear which ACLs to enforce, giving up.'
+        )
+
+    application = applications.pop()
+    if not application:
+        # This can never happen as the PublicKey.application is not nullable,
+        # this is only a safety net in case this field gets changed.
+        raise SuspiciousOperation('We did not end up with an application')
+
+    return application
 
 
 def api_function(group, name=None):

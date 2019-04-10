@@ -60,11 +60,11 @@ The order of prevalence is:
 * ~/.adminapirc if present
 * ssh-agent if present
 
-Note that we try to authenticate with all keys in the agent. If multiple keys
-match you will get a permission denied. This is because the associated apps
-likely have different permissions and we don't want to guess which to enforce.
-Trying to authenticate with more than 20 keys will also be denied to prevent a
-DOS.
+Note that we try to authenticate with all keys in the agent. If multiple keys,
+belonging to different applications, match you will get a permission denied.
+This is because the associated apps likely have different permissions and we
+don't want to guess which to enforce. Trying to authenticate with more than 20
+keys will also be denied to prevent a DOS.
 
 Querying and modifying servers
 ------------------------------
