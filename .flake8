@@ -1,3 +1,6 @@
 [flake8]
 max-complexity = 10
-ignore = 
+# After a PEP8 change W503 was superseded by the opposing W504. Before it was
+# correct to break after a binary operator, now before. We stick to the old
+# style for now.
+ignore = W504
