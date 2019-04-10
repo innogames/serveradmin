@@ -28,6 +28,11 @@ from serveradmin.api import AVAILABLE_API_FUNCTIONS
 
 logger = getLogger('serveradmin')
 
+# Acceptable offset between what the clients believes the time was when it made
+# the request and the time on the serveradmin server when the request is beeing
+# handled.  Chosen by a fair dice role.
+TIMESTAMP_GRACE_PERIOD = 16
+
 
 def api_view(view):
     @csrf_exempt
@@ -82,8 +87,8 @@ def authenticate_app(
     """Authenticate requests
 
     Ensure this request isn't beeing replayed by making sure the timestamp
-    contained in the request is no older than 300 seconds or raise
-    PermissionDenied.
+    contained in the request is no more than TIMESTAMP_GRACE_PERIOD seconds
+    removed from the current server time or raise PermissionDenied.
 
     Hand over the real verification of auth token HMACs to authenticate_app_psk
     or public key signatures to authenticate_app_ssh.
@@ -93,8 +98,14 @@ def authenticate_app(
 
     Return the app the user authenticated to
     """
-    if timestamp + 300 < now:
-        raise PermissionDenied('Expired security token')
+    if (
+        timestamp + TIMESTAMP_GRACE_PERIOD < now or
+        timestamp - TIMESTAMP_GRACE_PERIOD > now
+    ):
+        raise PermissionDenied(
+            'Request expired, header timestamp off by {} seconds'
+            .format(now - timestamp)
+        )
 
     if public_keys and signatures:
         app = authenticate_app_ssh(
