@@ -1,6 +1,6 @@
 """Serveradmin - adminapi
 
-Copyright (c) 2018 InnoGames GmbH
+Copyright (c) 2019 InnoGames GmbH
 """
 
 import os
@@ -9,6 +9,7 @@ import hmac
 from ssl import SSLError
 import time
 import json
+from base64 import b64encode
 
 try:
     from urllib.error import HTTPError, URLError
@@ -48,9 +49,34 @@ except ImportError:
 
     utc = FakeTimezone(name='UTC')
 
+from paramiko.agent import Agent
+from paramiko import RSAKey, ECDSAKey, Ed25519Key
+from paramiko.message import Message
+from paramiko.ssh_exception import SSHException, PasswordRequiredException
 
 from adminapi.cmduser import get_auth_token
 from adminapi.filters import BaseFilter
+from adminapi.exceptions import ApiError, AuthenticationError
+
+
+def load_private_key_file(private_key_path):
+    """Try to load a private ssh key from disk
+
+    We support RSA, ECDSA and Ed25519 keys and return instances of:
+    * paramiko.rsakey.RSAKey
+    * paramiko.ecdsakey.ECDSAKey
+    * paramiko.ed25519key.Ed25519Key
+    """
+    # I don't think there is a key type independent way of doing this
+    for key_class in (RSAKey, ECDSAKey, Ed25519Key):
+        try:
+            return key_class.from_private_key_file(private_key_path)
+        except PasswordRequiredException as e:
+            raise AuthenticationError(e)
+        except SSHException:
+            continue
+
+    raise AuthenticationError('Loading private key failed')
 
 
 class Settings:
@@ -58,25 +84,40 @@ class Settings:
         'SERVERADMIN_BASE_URL',
         'https://serveradmin.innogames.de/api'
     )
-    auth_token = os.environ.get('SERVERADMIN_TOKEN')
+    auth_key_path = os.environ.get('SERVERADMIN_KEY_PATH')
+    auth_key = load_private_key_file(auth_key_path) if auth_key_path else None
+    auth_token = os.environ.get('SERVERADMIN_TOKEN') or get_auth_token()
     timeout = 60
     tries = 3
     sleep_interval = 5
 
 
-class APIError(Exception):
-    def __init__(self, *args, **kwargs):
-        if 'status_code' in kwargs:
-            self.status_code = kwargs.pop('status_code')
-        else:
-            self.status_code = 400
-        super(Exception, self).__init__(*args, **kwargs)
+def calc_signature(private_key, timestamp, data=None):
+    """Create a proof that we posess the private key
+
+    Use paramikos sign_ssh_data to sign the request body together with a
+    timestamp. As we send the signature and the timestamp in each request,
+    serveradmin can use the public key to check if we have the private key.
+
+    The timestamp is used to prevent a MITM to replay this request over and
+    over again. Unfortunately an attacker will still be able to replay this
+    message for the grace period serveradmin requires the timestamp to be in.
+    we can't prevent this without asking serveradmin for a nonce before every
+    request.
+
+    Returns the signature as base64 encoded unicode, ready for transport.
+    """
+    message = str(timestamp) + (':' + data) if data else ''
+    sig = private_key.sign_ssh_data(message.encode())
+    if isinstance(sig, Message):
+        # sign_ssh_data returns bytes for agent keys but a Message instance
+        # for keys loaded from a file. Fix the file loaded once:
+        sig = sig.asbytes()
+    return b64encode(sig).decode()
 
 
 def calc_security_token(auth_token, timestamp, data=None):
-    message = str(timestamp)
-    if data:
-        message += ':' + data
+    message = str(timestamp) + (':' + data) if data else ''
     return hmac.new(
         auth_token.encode('utf8'), message.encode('utf8'), sha1
     ).hexdigest()
@@ -87,12 +128,7 @@ def calc_app_id(auth_token):
 
 
 def send_request(endpoint, get_params=None, post_params=None):
-    if not Settings.auth_token:
-        Settings.auth_token = get_auth_token()
-
-    request = _build_request(
-        endpoint, Settings.auth_token, get_params, post_params
-    )
+    request = _build_request(endpoint, get_params, post_params)
     for retry in reversed(range(Settings.tries)):
         response = _try_request(request, retry)
         if response:
@@ -106,21 +142,53 @@ def send_request(endpoint, get_params=None, post_params=None):
     return json.loads(response.read().decode())
 
 
-def _build_request(endpoint, auth_token, get_params, post_params):
+def _build_request(endpoint, get_params, post_params):
+    """Wrap request data in an urllib Request instance
+
+    Aside from preparing the get and post data for transport, this function
+    authenticates the request using either an auth token or ssh keys.
+
+    Returns an urllib Request.
+    """
     if post_params:
         post_data = json.dumps(post_params, default=json_encode_extra)
     else:
         post_data = None
 
     timestamp = int(time.time())
-    app_id = calc_app_id(auth_token)
-    security_token = calc_security_token(auth_token, timestamp, post_data)
     headers = {
         'Content-Encoding': 'application/x-json',
         'X-Timestamp': str(timestamp),
-        'X-Application': app_id,
-        'X-SecurityToken': security_token,
     }
+
+    if Settings.auth_key:
+        headers['X-PublicKeys'] = Settings.auth_key.get_base64()
+        headers['X-Signatures'] = calc_signature(
+            Settings.auth_key, timestamp, post_data
+        )
+    elif Settings.auth_token:
+        headers['X-Application'] = calc_app_id(Settings.auth_token)
+        headers['X-SecurityToken'] = calc_security_token(
+            Settings.auth_token, timestamp, post_data
+        )
+    else:
+        try:
+            agent = Agent()
+            agent_keys = agent.get_keys()
+        except SSHException:
+            raise AuthenticationError('No token and ssh agent found')
+
+        if not agent_keys:
+            raise AuthenticationError('No token and ssh agent keys found')
+
+        key_signatures = {
+            key.get_base64(): calc_signature(key, timestamp, post_data)
+            for key in agent_keys
+        }
+
+        headers['X-PublicKeys'] = ','.join(key_signatures.keys())
+        headers['X-Signatures'] = ','.join(key_signatures.values())
+
     url = Settings.base_url + endpoint
     if get_params:
         url += '?' + urlencode(get_params)
@@ -139,10 +207,11 @@ def _try_request(request, retry=False):
                 return None
         elif error.code >= 400:
             content_type = error.info()['Content-Type']
+            message = str(error)
             if content_type == 'application/x-json':
                 payload = json.loads(error.read().decode())
                 message = payload['error']['message']
-                raise APIError(message, status_code=error.code)
+            raise ApiError(message, status_code=error.code)
         raise
     except (SSLError, URLError):
         if retry:

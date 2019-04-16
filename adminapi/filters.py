@@ -1,21 +1,17 @@
 """Serveradmin - adminapi
 
-Copyright (c) 2018 InnoGames GmbH
+Copyright (c) 2019 InnoGames GmbH
 """
 
 from re import compile as re_compile, error as re_error
 
-from adminapi.datatype import STR_BASED_DATATYPES, DatatypeError
+from adminapi.datatype import STR_BASED_DATATYPES
+from adminapi.exceptions import FilterValueError
 
 try:
     STR_DATATYPES = (str, unicode)
 except NameError:
     STR_DATATYPES = (str,)
-
-
-# XXX: Sub-class ValueError for backwards compatibility
-class FilterValueError(DatatypeError, ValueError):
-    pass
 
 
 class BaseFilter(object):

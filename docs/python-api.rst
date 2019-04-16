@@ -12,23 +12,59 @@ Authentication
 --------------
 
 Every script that uses the module must authorize itself before using the API.
-You need to generate an authentication token for your script in the web
+You need to generate a so called application for every script in the admin
 interface of the serveradmin. This has several benefits over using a generic
 password:
 
 * Logging changes that were done by a specific script
 * Providing a list with existing scripts which are using the API
-* Possibility to withdrawn an authentication token without changing every script.
+* Possibility to revoke an authentication token without changing every script
 
-To authenticate yourself you need to provide a file called .adminapi in the home
-folder of your user or set the SERVERADMIN_TOKEN environment variable.
+The API allows authentication of an application either via public-key
+cryptography (ssh-keys) or pre shared keys (passwords). Using the new
+public-key style authentication has even more benefits:
+
+* An application can have multiple public keys, making it easier to change them
+* Adminapi can sign requests via keys in your local or forwarded ssh-agent
+* Keys in the ssh-agent can be password protected on disk and decrypted only
+  inside the agent. Adminapi never even sees the private part of the key
+* Serveradmin only knows the public part of the key, while an admin can read
+  all pre shared keys from serveradmin and use them to impersonate others.
+
+To authenticate yourself via an ssh key you have to add the public part to an
+application in serveradmin. You can then either add the private key to your
+ssh-agent or export the SERVERADMIN_KEY_PATH environment variable to the path
+of the private key::
+
+    # Use ssh-agent
+    ssh-add ~/.ssh/id_ed25519
+
+    # Use environment vairable
+    export SERVERADMIN_KEY_PATH=~/.ssh/id_ed25519
+
+To authenticate yourself via a pre shared key you need to set the
+SERVERADMIN_TOKEN environment variable or create a file called .adminapi in the
+home folder of your user::
+
+    # Use environment variable (Useful for transient jobs such as Jenkins)
+    export SERVERADMIN_TOKEN=MLifIK9FMQTaFDneDneNg30pb
 
     # Use .adminapirc file in home folder
     echo "auth_token=MLifIK9FMQTaFDneDneNg30pb" >> ~/.adminapirc
     chmod 0600 ~/.adminapirc
 
-    # Use environment variable (Useful for transient jobs such as Jenkins)
-    export SERVERADMIN_TOKEN=MLifIK9FMQTaFDneDneNg30pb
+The order of prevalence is:
+
+* SERVERADMIN_KEY_PATH if set
+* SERVERADMIN_TOKEN if set
+* ~/.adminapirc if present
+* ssh-agent if present
+
+Note that we try to authenticate with all keys in the agent. If multiple keys,
+belonging to different applications, match you will get a permission denied.
+This is because the associated apps likely have different permissions and we
+don't want to guess which to enforce. Trying to authenticate with more than 20
+keys will also be denied to prevent a DOS.
 
 Querying and modifying servers
 ------------------------------

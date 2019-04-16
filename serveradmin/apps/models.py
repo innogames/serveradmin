@@ -1,9 +1,15 @@
 from __future__ import division
+from base64 import b64encode, b64decode
+from hashlib import sha256
 
 from django.db import models
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+
+from paramiko import PublicBlob, Ed25519Key, ECDSAKey, RSAKey
+from paramiko.ssh_exception import SSHException
 
 from adminapi.request import calc_app_id
 from serveradmin.common.utils import random_alnum_string
@@ -45,3 +51,66 @@ def set_disabled(sender, instance, **kwargs):
     """
     if not instance.is_active:
         Application.objects.filter(owner=instance).update(disabled=True)
+
+
+class PublicKey(models.Model):
+    application = models.ForeignKey(
+        Application, related_name="public_keys", on_delete=models.CASCADE
+    )
+    key_algorithm = models.CharField(max_length=80)
+    key_base64 = models.CharField(primary_key=True, max_length=1024)
+    key_comment = models.CharField(max_length=80, blank=True)
+
+    def __str__(self):
+        if not (self.key_algorithm and self.key_base64):
+            return self.key_comment
+        # This format is used by ssh-add -l
+        blob = self.load().asbytes()
+        return 'SHA256:' + b64encode(sha256(blob).digest()).decode()
+
+    def save(self, *args, **kwargs):
+        """Call full_clean before save to ensure the key is loadable"""
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def clean(self):
+        """Load the key and raise ValidationError if it's not possible"""
+        try:
+            self.load()
+        except SSHException as error:
+            raise ValidationError('Loading public key failed: ' + str(error))
+
+    def load(self):
+        """Try to load the public key
+
+        We support RSA, ECDSA and Ed25519 keys and return instances of:
+        * paramiko.rsakey.RSAKey
+        * paramiko.ecdsakey.ECDSAKey
+        * paramiko.ed25519key.Ed25519Key
+        """
+        # I don't think there is a key type independent way of doing this
+        public_key_blob = b64decode(self.key_base64)
+        if self.key_algorithm.startswith('ssh-ed25519'):
+            return Ed25519Key(data=public_key_blob)
+        elif self.key_algorithm.startswith('ecdsa-'):
+            return ECDSAKey(data=public_key_blob)
+        elif self.key_algorithm.startswith('ssh-rsa'):
+            return RSAKey(data=public_key_blob)
+
+        raise SSHException('Key is not RSA, ECDSA or Ed25519')
+
+    @classmethod
+    def create(cls, application, public_key):
+        """Convenience method to create a PublicKey from the string form"""
+        try:
+            loaded_public_key = PublicBlob.from_string(public_key)
+            instance = cls(
+                application=application,
+                key_algorithm=loaded_public_key.key_type,
+                key_base64=b64encode(loaded_public_key.key_blob).decode(),
+                key_comment=loaded_public_key.comment,
+            )
+        except SSHException:
+            raise ValidationError('Loading public key failed')
+
+        return instance

@@ -1,15 +1,12 @@
 """Serveradmin - adminapi
 
-Copyright (c) 2018 InnoGames GmbH
+Copyright (c) 2019 InnoGames GmbH
 """
 
 from adminapi.request import send_request
+from adminapi.exceptions import ApiError
 
 API_CALL_ENDPOINT = '/call'
-
-
-class ApiError(Exception):
-    pass
 
 
 class FunctionGroup(object):
@@ -28,7 +25,7 @@ class FunctionGroup(object):
             result = send_request(API_CALL_ENDPOINT, post_params=call)
 
             if result['status'] == 'error':
-                raise ApiError(result['message'])
+                raise ApiError(result['message'], status_code=None)
 
             return result['retval']
 
