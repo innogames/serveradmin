@@ -8,8 +8,20 @@ from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 
-from paramiko import PublicBlob, Ed25519Key, ECDSAKey, RSAKey
 from paramiko.ssh_exception import SSHException
+from paramiko import RSAKey, ECDSAKey
+try:
+    from paramiko import Ed25519Key
+except ImportError:
+    # Ed25519Key requires paramiko >= 2.2
+    pass
+
+try:
+    from paramiko import PublicBlob
+except ImportError:
+    # PublicBlob requires paramiko >= 2.3
+    pass
+
 
 from adminapi.request import calc_app_id
 from serveradmin.common.utils import random_alnum_string
@@ -86,12 +98,15 @@ class PublicKey(models.Model):
         We support RSA, ECDSA and Ed25519 keys and return instances of:
         * paramiko.rsakey.RSAKey
         * paramiko.ecdsakey.ECDSAKey
-        * paramiko.ed25519key.Ed25519Key
+        * paramiko.ed25519key.Ed25519Key (requires paramiko >= 2.2)
         """
         # I don't think there is a key type independent way of doing this
         public_key_blob = b64decode(self.key_base64)
         if self.key_algorithm.startswith('ssh-ed25519'):
-            return Ed25519Key(data=public_key_blob)
+            try:
+                return Ed25519Key(data=public_key_blob)
+            except NameError:
+                raise ValidationError('Paramiko too old to load ed25519 keys')
         elif self.key_algorithm.startswith('ecdsa-'):
             return ECDSAKey(data=public_key_blob)
         elif self.key_algorithm.startswith('ssh-rsa'):
@@ -112,5 +127,17 @@ class PublicKey(models.Model):
             )
         except SSHException:
             raise ValidationError('Loading public key failed')
+        except NameError:
+            # XXX: Sketchy fallback for paramiko versions older than 2.3.
+            # Remove this once we are on debian buster.
+            public_key_parts = public_key.split()
+            instance = cls(
+                application=application,
+                key_algorithm=public_key_parts[0],
+                key_base64=public_key_parts[1],
+                key_comment=(
+                    public_key_parts[2] if len(public_key_parts) == 3 else ''
+                ),
+            )
 
         return instance

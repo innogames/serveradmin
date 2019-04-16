@@ -36,11 +36,14 @@ application in serveradmin. You can then either add the private key to your
 ssh-agent or export the SERVERADMIN_KEY_PATH environment variable to the path
 of the private key::
 
-    # Use ssh-agent
-    ssh-add ~/.ssh/id_ed25519
+    # Use ssh-agent, passwords protected keys are supported
+    ssh-add ~/.ssh/id_rsa
 
-    # Use environment vairable
-    export SERVERADMIN_KEY_PATH=~/.ssh/id_ed25519
+    # Use environment vairable, passwords protected keys are _not_ supported
+    export SERVERADMIN_KEY_PATH=~/.ssh/id_rsa
+
+Note that for ed25519 key support both adminapi and serveradmin must have
+paramiko 2.2 or newer installed.
 
 To authenticate yourself via a pre shared key you need to set the
 SERVERADMIN_TOKEN environment variable or create a file called .adminapi in the
