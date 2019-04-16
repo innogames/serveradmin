@@ -50,9 +50,15 @@ except ImportError:
     utc = FakeTimezone(name='UTC')
 
 from paramiko.agent import Agent
-from paramiko import RSAKey, ECDSAKey, Ed25519Key
 from paramiko.message import Message
 from paramiko.ssh_exception import SSHException, PasswordRequiredException
+try:
+    from paramiko import RSAKey, ECDSAKey, Ed25519Key
+    key_classes = (RSAKey, ECDSAKey, Ed25519Key)
+except ImportError:
+    # Ed25519Key requires paramiko >= 2.2
+    from paramiko import RSAKey, ECDSAKey
+    key_classes = (RSAKey, ECDSAKey)
 
 from adminapi.cmduser import get_auth_token
 from adminapi.filters import BaseFilter
@@ -65,10 +71,10 @@ def load_private_key_file(private_key_path):
     We support RSA, ECDSA and Ed25519 keys and return instances of:
     * paramiko.rsakey.RSAKey
     * paramiko.ecdsakey.ECDSAKey
-    * paramiko.ed25519key.Ed25519Key
+    * paramiko.ed25519key.Ed25519Key (requires paramiko >= 2.2)
     """
     # I don't think there is a key type independent way of doing this
-    for key_class in (RSAKey, ECDSAKey, Ed25519Key):
+    for key_class in key_classes:
         try:
             return key_class.from_private_key_file(private_key_path)
         except PasswordRequiredException as e:
