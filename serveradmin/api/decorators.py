@@ -21,7 +21,11 @@ from django.utils.crypto import constant_time_compare
 
 from paramiko.message import Message
 
-from adminapi.request import calc_security_token, json_encode_extra
+from adminapi.request import (
+    calc_message,
+    calc_security_token,
+    json_encode_extra,
+)
 from adminapi.filters import FilterValueError
 from serveradmin.apps.models import Application, PublicKey
 from serveradmin.api import AVAILABLE_API_FUNCTIONS
@@ -175,7 +179,7 @@ def authenticate_app_ssh(public_keys, signatures, timestamp, now, body):
 
         Return the public key on success
         """
-        expected_message = str(timestamp) + (':' + body) if body else ''
+        expected_message = calc_message(timestamp, body)
         if not public_key.load().verify_ssh_sig(
             data=expected_message.encode(),
             msg=Message(b64decode(signature))
