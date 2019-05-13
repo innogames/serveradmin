@@ -98,6 +98,10 @@ class Settings:
     sleep_interval = 5
 
 
+def calc_message(timestamp, data=None):
+    return str(timestamp) + (':' + data) if data else str(timestamp)
+
+
 def calc_signature(private_key, timestamp, data=None):
     """Create a proof that we posess the private key
 
@@ -113,7 +117,7 @@ def calc_signature(private_key, timestamp, data=None):
 
     Returns the signature as base64 encoded unicode, ready for transport.
     """
-    message = str(timestamp) + (':' + data) if data else str(timestamp)
+    message = calc_message(timestamp, data)
     sig = private_key.sign_ssh_data(message.encode())
     if isinstance(sig, Message):
         # sign_ssh_data returns bytes for agent keys but a Message instance
@@ -123,7 +127,7 @@ def calc_signature(private_key, timestamp, data=None):
 
 
 def calc_security_token(auth_token, timestamp, data=None):
-    message = str(timestamp) + (':' + data) if data else str(timestamp)
+    message = calc_message(timestamp, data)
     return hmac.new(
         auth_token.encode('utf8'), message.encode('utf8'), sha1
     ).hexdigest()
