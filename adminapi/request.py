@@ -62,7 +62,11 @@ except ImportError:
 
 from adminapi.cmduser import get_auth_token
 from adminapi.filters import BaseFilter
-from adminapi.exceptions import ApiError, AuthenticationError
+from adminapi.exceptions import (
+    ApiError,
+    AuthenticationError,
+    ConfigurationError,
+)
 
 
 def load_private_key_file(private_key_path):
@@ -86,10 +90,7 @@ def load_private_key_file(private_key_path):
 
 
 class Settings:
-    base_url = os.environ.get(
-        'SERVERADMIN_BASE_URL',
-        'https://serveradmin.innogames.de/api'
-    )
+    base_url = os.environ.get('SERVERADMIN_BASE_URL')
     auth_key_path = os.environ.get('SERVERADMIN_KEY_PATH')
     auth_key = load_private_key_file(auth_key_path) if auth_key_path else None
     auth_token = os.environ.get('SERVERADMIN_TOKEN') or get_auth_token()
@@ -198,6 +199,11 @@ def _build_request(endpoint, get_params, post_params):
 
         headers['X-PublicKeys'] = ','.join(key_signatures.keys())
         headers['X-Signatures'] = ','.join(key_signatures.values())
+
+    if not Settings.base_url:
+        raise ConfigurationError(
+            'Environment variable SERVERADMIN_BASE_URL not set'
+        )
 
     url = Settings.base_url + endpoint
     if get_params:
