@@ -70,7 +70,7 @@ class PublicKey(models.Model):
         Application, related_name="public_keys", on_delete=models.CASCADE
     )
     key_algorithm = models.CharField(max_length=80)
-    key_base64 = models.CharField(primary_key=True, max_length=1024)
+    key_base64 = models.CharField(primary_key=True, max_length=2048)
     key_comment = models.CharField(max_length=80, blank=True)
 
     def __str__(self):
