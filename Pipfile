@@ -22,11 +22,6 @@ Django = "~=1.10.0"
 django-netfields = "*"
 # Required to generate sprites from Graphite
 Pillow = "*"
-# Used to list loaded api addons at /api/functions
-# TODO: Drop this dependency
-django-markup-deprecated = "*"
-# TODO: What is this for?
-docutils = "*"
 
 # Serveradmin extras:
 paramiko = "*"
