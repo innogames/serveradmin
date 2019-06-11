@@ -8,7 +8,7 @@ from collections import OrderedDict
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import HttpResponseBadRequest
 from django.template.response import TemplateResponse
 from django.views.decorators.csrf import ensure_csrf_cookie

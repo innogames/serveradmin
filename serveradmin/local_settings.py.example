@@ -36,7 +36,7 @@ Copyright (c) 2018 InnoGames GmbH
 # }
 
 # # Load additional middleware classes
-# MIDDLEWARE_CLASSES += []
+# MIDDLEWARE += []
 
 # # Load additional django apps
 # INSTALLED_APPS += []

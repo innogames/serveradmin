@@ -3,7 +3,7 @@
 Copyright (c) 2018 InnoGames GmbH
 """
 
-from importlib import import_module
+from importlib.util import find_spec
 
 from django.conf import settings
 from django.conf.urls import include, url
@@ -21,14 +21,13 @@ admin.autodiscover()
 urlpatterns = [
     url(r'^$', lambda req: redirect('servershell_index'), name='home'),
     url(r'^logout', logout_then_login, name='logout'),
-    url(r'^admin/', include(admin.site.urls)),
+    url(r'^admin/', admin.site.urls),
 ]
 
 for app in settings.INSTALLED_APPS:
-    try:
-        module = import_module(app + '.urls')
-    except ImportError:
-        continue
+    module_spec = find_spec(app + '.urls')
+    if module_spec is not None:
+        module = module_spec.loader.load_module()
 
     if app.startswith('serveradmin.') or app.startswith('serveradmin_'):
         urlpatterns.append(url(
