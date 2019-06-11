@@ -39,7 +39,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.staticfiles',
-    'markup_deprecated',
     'netfields',
     'serveradmin.access_control',
     'serveradmin.api',

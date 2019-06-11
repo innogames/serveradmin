@@ -41,10 +41,9 @@ change directory to the source code after activating the virtual environment.
 Installing dependencies
 -----------------------
 
-Most dependencies can be installed by using the ``serveradmin/requirements.txt``
-file with pip::
+All dependencies can be installed by using the ``Pipfile`` with pipenv::
 
-   pip install -r serveradmin/requirements.txt
+   pipenv install
 
 
 Setting up the Database

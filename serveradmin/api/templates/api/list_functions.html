@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% load markup %}
 {% block title %}API functions{% endblock %}
 
 {% block content %}
@@ -10,7 +9,9 @@
 {% for function in group.function_list %}
 <h4>{{ function.description }}</h4>
 {% if function.docstring %}
-{{ function.docstring|restructuredtext }}
+<pre>
+{{ function.docstring }}
+</pre>
 {% endif %}
 {% endfor %}
 {% endfor %}
