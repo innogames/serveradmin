@@ -1,5 +1,5 @@
-.. image:: https://travis-ci.org/innogames/serveradmin.svg?branch=master
-    :target: https://travis-ci.org/innogames/serveradmin
+.. image:: https://travis-ci.com/innogames/serveradmin.svg?branch=master
+    :target: https://travis-ci.com/innogames/serveradmin
 
 Serveradmin
 ===========
