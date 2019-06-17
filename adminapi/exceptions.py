@@ -9,6 +9,10 @@ class AdminapiException(Exception):
     pass
 
 
+class ConfigurationError(AdminapiException):
+    """Missing or invalid configuration"""
+
+
 class ApiError(AdminapiException):
     """An API request wasn't successful"""
     def __init__(self, *args, **kwargs):
