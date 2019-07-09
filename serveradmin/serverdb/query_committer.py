@@ -1,9 +1,10 @@
 """Serveradmin - Query Committer
 
-Copyright (c) 2018 InnoGames GmbH
+Copyright (c) 2019 InnoGames GmbH
 """
 
 import json
+import logging
 from itertools import chain
 
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -30,6 +31,8 @@ from serveradmin.serverdb.query_materializer import (
 
 pre_commit = Signal()
 post_commit = Signal()
+
+logger = logging.getLogger(__name__)
 
 
 class CommitError(ValidationError):
@@ -63,16 +66,6 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
         commit_query, created=created, changed=changed, deleted=deleted
     )
 
-    entities = []
-    if not user.is_superuser:
-        entities.append(
-            ('user', user, list(user.access_control_groups.all()))
-        )
-    if app and not app.superuser:
-        entities.append(
-            ('application', app, list(app.access_control_groups.all()))
-        )
-
     # TODO: Find out which attributes we actually need
     attribute_lookup = {a.pk: a for a in Attribute.objects.all()}
     joined_attributes = {
@@ -100,7 +93,7 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
         changed_objects = _materialize(changed_servers, joined_attributes)
 
         _access_control(
-            entities, created_objects, changed_objects, deleted_objects
+            user, app, created_objects, changed_objects, deleted_objects
         )
         _log_changes(change_commit, changed, created_objects, deleted_objects)
 
@@ -292,43 +285,125 @@ def _upsert_attributes(attribute_lookup, changed, changed_servers):
 
 
 def _access_control(
-    entities, created_objects, changed_objects, deleted_objects
+    user, app, created_objects, changed_objects, deleted_objects
 ):
-    for server in chain(
+    """Enforce serveradmin ACLs
+
+    For servershell commits, ensure the user is allowed to make the requested
+    changes.  For adminapi commits, ensure both the user and its app are
+    allowed to make the requested changes.
+
+    Serveradmin ACLs are additive.  This means not all ACL must allow all the
+    changes a user is trying to make, but a single ACL is enough.
+
+    Note: Different ACLs may be be used to permit different parts of a commit.
+    The commit is checked per object changed in the commit.  As a result at
+    least all changes to a single object within a commit must be permissible
+    via a single ACL.
+
+    Note: when a user tries to make a change that is not permissible by any of
+    its ACLs, the error message can become rather complex, listing all the
+    reasons all the users ACLs were not applicable.
+
+    Raises PermissionDenied if a change is not permissible.
+    Returns None on success.
+    """
+
+    entities = []
+    if not user.is_superuser:
+        entities.append(
+            ('user', user, list(user.access_control_groups.all()))
+        )
+    if app and not app.superuser:
+        entities.append(
+            ('application', app, list(app.access_control_groups.all()))
+        )
+
+    # Check all objects touched by this commit
+    for obj in chain(
         created_objects.values(),
         changed_objects.values(),
         deleted_objects.values(),
     ):
+        # Check both the user and, if applicable, the users app
+        # If either doesn't have the necessary rights, abort the commit
         for entity_class, entity_name, groups in entities:
-            if not any(
-                _can_access_server(changed_objects, server, g) for g in groups
-            ):
-                raise PermissionDenied(
-                    'Insufficient access rights to server "{}" for {} "{}"'
-                    .format(server['hostname'], entity_class, entity_name)
+            acl_violations = {
+                acl: _acl_violations(changed_objects, obj, acl)
+                for acl in groups
+            }
+
+            # If all ACLs resulted in violations, none of them allowed the edit
+            # Build a verbose error message and abort the commit
+            if all(acl_violations.values()):
+                msg = (
+                    'Insufficient access rights to object "{}" for {} "{}": '
+                    .format(obj['hostname'], entity_class, entity_name)
                 )
+                for acl, violations in acl_violations.items():
+                    msg += ' '.join(violations)
+
+                logger.debug(msg)
+                raise PermissionDenied(msg)
 
 
-def _can_access_server(changed_objects, new_object, acl):
-    if not all(
-        f.matches(new_object.get(a))
-        for a, f in acl.get_filters().items()
-    ):
-        return False
+def _acl_violations(changed_objects, obj, acl):
+    """Check if ACL allows all the changes to obj
 
-    if new_object['object_id'] in changed_objects:
-        old_object = changed_objects[new_object['object_id']]
+    An ACL can fail to validate in two ways.  Every ACL has a filter describing
+    which objects it is applicable to.  If the object doesn't match this filter
+    the ACL is violated.  Secondly ACLs include a whitelist of attributes that
+    may be changed.  If another attribute is changed, the ACL is violated.
+
+    Just because we return ACL violations here doesn't mean the user isn't
+    allowed to make a change.  Another ACL might allow it later on.
+
+    For more context read the _access_control() doc string.
+
+    Returns a list of human readable ACL violations on failure.
+    Returns None on success.
+    """
+
+    violations = []
+
+    # Check wether the object matches all the attribute filters of the ACL
+    for attribute_id, attribute_filter in acl.get_filters().items():
+        if not attribute_filter.matches(obj.get(attribute_id)):
+            violations.append(
+                'Object is not covered by ACL "{}", Attribute "{}" '
+                'does not match the filter "{}".'.format(
+                    acl, attribute_id, attribute_filter,
+                )
+            )
+
+    # If this ACL is not applicable to this object, we can bail out right away
+    if violations:
+        return violations
+
+    # For existing objects we only check attributes which were changed
+    # For new objects we only check attributes different to their default
+    if obj['object_id'] in changed_objects:
+        old_object = changed_objects[obj['object_id']]
     else:
-        old_object = get_default_attribute_values(new_object['servertype'])
+        old_object = get_default_attribute_values(obj['servertype'])
 
+    # List of attributes that this ACL allows to be modified
     attribute_ids = {a.pk for a in acl.attributes.all()}
-    if not all(
-        a in attribute_ids or v == old_object[a]
-        for a, v in new_object.items()
-    ):
-        return False
 
-    return True
+    # Check wether all changed attributes are on this ACLs attribute whitelist
+    for attribute_id, attribute_value in obj.items():
+        if not(
+            attribute_id in attribute_ids or
+            attribute_value == old_object[attribute_id]
+        ):
+            violations.append(
+                'Change is not covered by ACL "{}", Attribute "{}" was '
+                'modified despite not beeing whitelisted.'.format(
+                    acl, attribute_id,
+                )
+            )
+
+    return violations or None
 
 
 def _log_changes(commit, changed, created_objects, deleted_objects):
