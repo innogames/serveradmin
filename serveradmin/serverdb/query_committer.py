@@ -77,11 +77,11 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
     with transaction.atomic():
         change_commit = ChangeCommit.objects.create(app=app, user=user)
         changed_servers = _fetch_servers(set(c['object_id'] for c in changed))
-        changed_objects = _materialize(changed_servers, joined_attributes)
+        unchanged_objects = _materialize(changed_servers, joined_attributes)
 
         deleted_servers = _fetch_servers(deleted)
         deleted_objects = _materialize(deleted_servers, joined_attributes)
-        _validate(attribute_lookup, changed, changed_objects)
+        _validate(attribute_lookup, changed, unchanged_objects)
 
         # Changes should be applied in order to prevent integrity errors.
         _delete_attributes(attribute_lookup, changed, changed_servers, deleted)
@@ -93,8 +93,10 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
         changed_objects = _materialize(changed_servers, joined_attributes)
 
         _access_control(
-            user, app, created_objects, changed_objects, deleted_objects
+            user, app, unchanged_objects,
+            created_objects, changed_objects, deleted_objects
         )
+
         _log_changes(change_commit, changed, created_objects, deleted_objects)
 
     post_commit.send_robust(
@@ -285,7 +287,8 @@ def _upsert_attributes(attribute_lookup, changed, changed_servers):
 
 
 def _access_control(
-    user, app, created_objects, changed_objects, deleted_objects
+    user, app, unchanged_objects,
+    created_objects, changed_objects, deleted_objects,
 ):
     """Enforce serveradmin ACLs
 
@@ -329,7 +332,7 @@ def _access_control(
         # If either doesn't have the necessary rights, abort the commit
         for entity_class, entity_name, groups in entities:
             acl_violations = {
-                acl: _acl_violations(changed_objects, obj, acl)
+                acl: _acl_violations(unchanged_objects, obj, acl)
                 for acl in groups
             }
 
@@ -392,9 +395,9 @@ def _acl_violations(changed_objects, obj, acl):
 
     # Check wether all changed attributes are on this ACLs attribute whitelist
     for attribute_id, attribute_value in obj.items():
-        if not(
-            attribute_id in attribute_ids or
-            attribute_value == old_object[attribute_id]
+        if (
+            attribute_id not in attribute_ids and
+            attribute_value != old_object[attribute_id]
         ):
             violations.append(
                 'Change is not covered by ACL "{}", Attribute "{}" was '
