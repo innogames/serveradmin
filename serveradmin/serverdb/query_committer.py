@@ -387,8 +387,8 @@ def _acl_violations(changed_objects, obj, acl):
     else:
         old_object = get_default_attribute_values(obj['servertype'])
 
-    # List of attributes that this ACL allows to be modified
-    attribute_ids = {a.pk for a in acl.attributes.all()}
+    # Gather attribute ids this ACL allows changing
+    attribute_ids = acl.get_permissible_attribute_ids()
 
     # Check wether all changed attributes are on this ACLs attribute whitelist
     for attribute_id, attribute_value in obj.items():
