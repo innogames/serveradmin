@@ -34,10 +34,13 @@ from (
         v.content::text
     from public.server
     cross join (values
-        ('SOA', 'dnspub-af.innogames.de. hostmaster.innogames.de.'),
-        ('NS', 'dnspub-af.innogames.de'),
-        ('NS', 'dnspub-aw.innogames.de'),
-        ('NS', 'dnspub-vn.innogames.de')
+        ('SOA', 'dns-internal-af-1.ndco.ig.local. hostmaster.innogames.de.'),
+        ('NS', 'dns-internal-af-1.ndco.ig.local'),
+        ('NS', 'dns-internal-af-2.ndco.ig.local'),
+        ('NS', 'dns-internal-aw-1.ndco.ig.local'),
+        ('NS', 'dns-internal-aw-2.ndco.ig.local'),
+        ('NS', 'dns-internal-vn-1.ndco.ig.local'),
+        ('NS', 'dns-internal-vn-2.ndco.ig.local')
     ) as v(type, content)
     where server.servertype_id = 'provider_domain'
 union all
