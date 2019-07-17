@@ -62,9 +62,18 @@ def api_view(view):
             status_code = 200
             return_value = view(request, app, body_json)
         except (
-            FilterValueError, ObjectDoesNotExist, ValidationError
+            FilterValueError,
+            ValidationError,
+            PermissionDenied,
+            ObjectDoesNotExist,
         ) as error:
-            status_code = 404 if isinstance(error, ObjectDoesNotExist) else 400
+            if isinstance(error, (FilterValueError, ValidationError)):
+                status_code = 400
+            if isinstance(error, PermissionDenied):
+                status_code = 403
+            if isinstance(error, ObjectDoesNotExist):
+                status_code = 404
+
             return_value = {
                 'error': {
                     'message': str(error),
