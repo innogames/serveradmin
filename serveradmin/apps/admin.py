@@ -22,6 +22,7 @@ class ApplicationAdmin(admin.ModelAdmin):
         'get_public_keys',
         'superuser',
         'disabled',
+        'last_login',
     ]
 
     inlines = [
