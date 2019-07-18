@@ -3,7 +3,7 @@
 Copyright (c) 2018 InnoGames GmbH
 """
 
-from time import time
+from datetime import datetime, timedelta
 from functools import update_wrapper
 from logging import getLogger
 from base64 import b64decode
@@ -18,6 +18,7 @@ from django.core.exceptions import (
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.crypto import constant_time_compare
+from django.utils import timezone, dateformat
 
 from paramiko.message import Message
 
@@ -35,7 +36,7 @@ logger = getLogger('serveradmin')
 # Acceptable offset between what the clients believes the time was when it made
 # the request and the time on the serveradmin server when the request is beeing
 # handled.  Chosen by a fair dice role.
-TIMESTAMP_GRACE_PERIOD = 16
+TIMESTAMP_GRACE_PERIOD = timedelta(seconds=16)
 
 
 def api_view(view):
@@ -45,16 +46,18 @@ def api_view(view):
             request.scheme, request.path
         ))
 
-        now = time()
+        now = timezone.now()
         body = request.body.decode('utf8') if request.body else None
         public_keys = request.META.get('HTTP_X_PUBLICKEYS')
         signatures = request.META.get('HTTP_X_SIGNATURES')
         app_id = request.META.get('HTTP_X_APPLICATION')
         token = request.META.get('HTTP_X_SECURITYTOKEN')
-        timestamp = int(request.META['HTTP_X_TIMESTAMP'])
+        then = datetime.utcfromtimestamp(
+            int(request.META['HTTP_X_TIMESTAMP'])
+        ).replace(tzinfo=timezone.utc)
 
         app = authenticate_app(
-            public_keys, signatures, app_id, token, timestamp, now, body
+            public_keys, signatures, app_id, token, then, now, body
         )
 
         body_json = json.loads(body) if body else None
@@ -83,7 +86,9 @@ def api_view(view):
         logger.info('api: Call: ' + (', '.join([
             'Method: {}'.format(view.__name__),
             'Application: {}'.format(app),
-            'Time elapsed: {:.3f}s'.format(time() - now),
+            'Time elapsed: {:.3f}s'.format(
+                (timezone.now() - now).total_seconds()
+            ),
         ])))
         return HttpResponse(
             json.dumps(return_value, default=json_encode_extra),
@@ -95,7 +100,7 @@ def api_view(view):
 
 
 def authenticate_app(
-    public_keys, signatures, app_id, token, timestamp, now, body
+    public_keys, signatures, app_id, token, then, now, body
 ):
     """Authenticate requests
 
@@ -112,20 +117,19 @@ def authenticate_app(
     Return the app the user authenticated to
     """
     if (
-        timestamp + TIMESTAMP_GRACE_PERIOD < now or
-        timestamp - TIMESTAMP_GRACE_PERIOD > now
+        then + TIMESTAMP_GRACE_PERIOD < now or
+        then - TIMESTAMP_GRACE_PERIOD > now
     ):
         raise PermissionDenied(
-            'Request expired, header timestamp off by {} seconds'
-            .format(now - timestamp)
+            'Request expired, header timestamp off by {:0.0f} seconds'
+            .format((now - then).total_seconds())
         )
 
+    timestamp = dateformat.format(then, u'U')
     if public_keys and signatures:
-        app = authenticate_app_ssh(
-            public_keys, signatures, timestamp, now, body
-        )
+        app = authenticate_app_ssh(public_keys, signatures, timestamp, body)
     elif app_id and token:
-        app = authenticate_app_psk(app_id, token, timestamp, now, body)
+        app = authenticate_app_psk(app_id, token, timestamp, body)
     else:
         raise SuspiciousOperation('Missing authentication')
 
@@ -135,10 +139,17 @@ def authenticate_app(
     if app.disabled:
         raise PermissionDenied('Disabled application')
 
+    # Note when this app was last used. We don't update this information more
+    # than once every minute. Some apps authenticate thousand of times per
+    # minute, that would be a lot of useless commits.
+    if not app.last_login or (now - app.last_login) > timedelta(minutes=1):
+        app.last_login = now
+        app.save()
+
     return app
 
 
-def authenticate_app_psk(app_id, security_token, timestamp, now, body):
+def authenticate_app_psk(app_id, security_token, timestamp, body):
     """Authenticate request HMAC
 
     Recreate the security token using the timestamp and body from the request.
@@ -161,7 +172,7 @@ def authenticate_app_psk(app_id, security_token, timestamp, now, body):
     return app
 
 
-def authenticate_app_ssh(public_keys, signatures, timestamp, now, body):
+def authenticate_app_ssh(public_keys, signatures, timestamp, body):
     """Authenticate request signature
 
     If the client sends more then 20 key signature pairs, we raise a

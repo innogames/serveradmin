@@ -3,7 +3,7 @@
 Copyright (c) 2018 InnoGames GmbH
 """
 
-from django.db.models import Model, BooleanField, CharField, ManyToManyField
+from django.db import models
 from django.contrib.auth.models import User
 
 from adminapi.parse import parse_query
@@ -11,22 +11,22 @@ from serveradmin.apps.models import Application
 from serveradmin.serverdb.models import Attribute
 
 
-class AccessControlGroup(Model):
-    name = CharField(max_length=80, unique=True)
-    query = CharField(max_length=1000)
-    members = ManyToManyField(
+class AccessControlGroup(models.Model):
+    name = models.CharField(max_length=80, unique=True)
+    query = models.CharField(max_length=1000)
+    members = models.ManyToManyField(
         User,
         blank=True,
         limit_choices_to={'is_superuser': False, 'is_active': True},
         related_name='access_control_groups',
     )
-    applications = ManyToManyField(
+    applications = models.ManyToManyField(
         Application,
         blank=True,
         limit_choices_to={'disabled': False, 'superuser': False},
         related_name='access_control_groups',
     )
-    is_whitelist = BooleanField(
+    is_whitelist = models.BooleanField(
         null=False,
         default=True,
         help_text=(
@@ -34,7 +34,7 @@ class AccessControlGroup(Model):
             "otherwise it is treated as a blacklist."
         ),
     )
-    attributes = ManyToManyField(
+    attributes = models.ManyToManyField(
         Attribute,
         blank=True,
         related_name='access_control_groups',

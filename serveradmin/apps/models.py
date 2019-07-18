@@ -34,6 +34,7 @@ class Application(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     location = models.CharField(max_length=150)
     disabled = models.BooleanField(default=False)
+    last_login = models.DateTimeField(null=True, default=None, editable=False)
     superuser = models.BooleanField(default=False)
     allowed_methods = models.TextField(blank=True)
 
