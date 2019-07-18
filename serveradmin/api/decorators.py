@@ -139,6 +139,13 @@ def authenticate_app(
     if app.disabled:
         raise PermissionDenied('Disabled application')
 
+    # Note when this app was last used. We don't update this information more
+    # than once every minute. Some apps authenticate thousand of times per
+    # minute, that would be a lot of useless commits.
+    if not app.last_login or (now - app.last_login) > timedelta(minutes=1):
+        app.last_login = now
+        app.save()
+
     return app
 
 
