@@ -121,11 +121,9 @@ def authenticate_app(
         )
 
     if public_keys and signatures:
-        app = authenticate_app_ssh(
-            public_keys, signatures, timestamp, now, body
-        )
+        app = authenticate_app_ssh(public_keys, signatures, timestamp, body)
     elif app_id and token:
-        app = authenticate_app_psk(app_id, token, timestamp, now, body)
+        app = authenticate_app_psk(app_id, token, timestamp, body)
     else:
         raise SuspiciousOperation('Missing authentication')
 
@@ -138,7 +136,7 @@ def authenticate_app(
     return app
 
 
-def authenticate_app_psk(app_id, security_token, timestamp, now, body):
+def authenticate_app_psk(app_id, security_token, timestamp, body):
     """Authenticate request HMAC
 
     Recreate the security token using the timestamp and body from the request.
@@ -161,7 +159,7 @@ def authenticate_app_psk(app_id, security_token, timestamp, now, body):
     return app
 
 
-def authenticate_app_ssh(public_keys, signatures, timestamp, now, body):
+def authenticate_app_ssh(public_keys, signatures, timestamp, body):
     """Authenticate request signature
 
     If the client sends more then 20 key signature pairs, we raise a
