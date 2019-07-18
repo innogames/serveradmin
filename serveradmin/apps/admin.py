@@ -15,6 +15,11 @@ class PublicKeyInline(admin.TabularInline):
 
 
 class ApplicationAdmin(admin.ModelAdmin):
+    readonly_fields = [
+        'auth_token',
+        'last_login',
+    ]
+
     list_display = [
         'name',
         'owner',
