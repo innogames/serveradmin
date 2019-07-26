@@ -1,6 +1,6 @@
 """Serveradmin - Remote HTTP API
 
-Copyright (c) 2018 InnoGames GmbH
+Copyright (c) 2019 InnoGames GmbH
 """
 
 from django.conf.urls import url

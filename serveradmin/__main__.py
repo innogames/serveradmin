@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Serveradmin - Django Application Management
 
-Copyright (c) 2018 InnoGames GmbH
+Copyright (c) 2019 InnoGames GmbH
 """
 
 import os

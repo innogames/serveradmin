@@ -1,6 +1,6 @@
 """Serveradmin - Query Materializer
 
-Copyright (c) 2018 InnoGames GmbH
+Copyright (c) 2019 InnoGames GmbH
 """
 # XXX: This module is pretty complicated even though the functions are not
 # on their own.  They store a lot of stuff on the object.  It is probably

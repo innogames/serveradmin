@@ -1,5 +1,5 @@
 """Serveradmin - Servershell
 
-Copyright (c) 2018 InnoGames GmbH
+Copyright (c) 2019 InnoGames GmbH
 """
 

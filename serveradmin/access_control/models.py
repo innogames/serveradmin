@@ -1,6 +1,6 @@
 """Serveradmin - Access Control for Users and Applications
 
-Copyright (c) 2018 InnoGames GmbH
+Copyright (c) 2019 InnoGames GmbH
 """
 
 from django.db import models

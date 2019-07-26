@@ -1,7 +1,8 @@
 """Serveradmin - Remote HTTP API
 
-Copyright (c) 2018 InnoGames GmbH
+Copyright (c) 2019 InnoGames GmbH
 """
+
 
 def build_function_description(fn):
     code = fn.__code__

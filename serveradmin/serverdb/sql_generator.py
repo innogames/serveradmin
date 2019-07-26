@@ -1,6 +1,6 @@
 """Serveradmin - SQL Generator
 
-Copyright (c) 2018 InnoGames GmbH
+Copyright (c) 2019 InnoGames GmbH
 """
 # XXX: It is terrible to generate SQL this way.  We should make this use
 # parameterized queries at least.

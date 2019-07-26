@@ -1,6 +1,6 @@
 """Serveradmin - adminapi
 
-Copyright (c) 2018 InnoGames GmbH
+Copyright (c) 2019 InnoGames GmbH
 """
 
 from adminapi.datatype import DatatypeError, str_to_datatype

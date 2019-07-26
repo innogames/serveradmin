@@ -1,7 +1,6 @@
 """Serveradmin - Query Executer
 
-
-Copyright (c) 2018 InnoGames GmbH
+Copyright (c) 2019 InnoGames GmbH
 """
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
