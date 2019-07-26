@@ -1,6 +1,6 @@
 """Serveradmin - Graphite Integration
 
-Copyright (c) 2018 InnoGames GmbH
+Copyright (c) 2019 InnoGames GmbH
 """
 
 import json
@@ -27,6 +27,7 @@ from serveradmin.graphite.models import (
     AttributeFormatter,
 )
 from serveradmin.serverdb.models import ServerNumberAttribute
+from adminapi import filters
 
 
 class Command(BaseCommand):
@@ -46,7 +47,11 @@ class Command(BaseCommand):
             if not isdir(collection_dir):
                 mkdir(collection_dir)
 
-            for server in Query({GRAPHITE_ATTRIBUTE_ID: collection.name}):
+            for server in Query(
+                {
+                    GRAPHITE_ATTRIBUTE_ID: collection.name,
+                    'state': filters.Not('retired'),
+                }):
                 graph_table = collection.graph_table(server, sprite_params)
                 if graph_table:
                     self.generate_sprite(collection_dir, graph_table, server)
@@ -82,8 +87,10 @@ class Command(BaseCommand):
                 value = response_json[0]['datapoints'][0][0]
             except IndexError:
                 print(
-                    "Warning: Graphite response couldn't be parsed: {0}"
-                    .format(response)
+                    (
+                        "Warning: Graphite response '{}' for collection {}/{}"
+                        " on server {} couldn't be parsed"
+                    ).format(response, collection, numeric, server['hostname'])
                 )
                 continue
 

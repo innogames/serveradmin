@@ -1,6 +1,6 @@
 """Serveradmin - Graphite Integration
 
-Copyright (c) 2018 InnoGames GmbH
+Copyright (c) 2019 InnoGames GmbH
 """
 
 import json
@@ -209,7 +209,7 @@ class Relation(models.Model):
 class Template(models.Model):
     """Templates in the collections"""
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
-    name = models.CharField(max_length=255, validators=LOOKUP_ID_VALIDATORS)
+    name = models.CharField(max_length=255)
     params = models.TextField(blank=True, help_text="""
         Same as the params of the collections.
         """)
@@ -273,7 +273,7 @@ class Variation(models.Model):
     """
 
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
-    name = models.CharField(max_length=255, validators=LOOKUP_ID_VALIDATORS)
+    name = models.CharField(max_length=255)
     params = models.TextField(blank=True, help_text="""
         Same as the params of the collections.
         """)
