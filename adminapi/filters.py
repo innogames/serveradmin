@@ -8,11 +8,6 @@ from re import compile as re_compile, error as re_error
 from adminapi.datatype import STR_BASED_DATATYPES
 from adminapi.exceptions import FilterValueError
 
-try:
-    STR_DATATYPES = (str, unicode)
-except NameError:
-    STR_DATATYPES = (str,)
-
 
 class BaseFilter(object):
     def __init__(self, value):
@@ -22,7 +17,7 @@ class BaseFilter(object):
             pass
         elif isinstance(value, tuple(s[0] for s in STR_BASED_DATATYPES)):
             pass
-        elif isinstance(value, STR_DATATYPES):
+        elif isinstance(value, str):
             for char in '\'"':
                 if char in value:
                     raise FilterValueError(

@@ -5,15 +5,11 @@ Copyright (c) 2019 InnoGames GmbH
 
 from django import template
 
-try:
-    from urllib.parse import parse_qsl
-    from urllib.parse import urlencode
-except ImportError:
-    from urlparse import parse_qsl
-    from urllib import urlencode
-
+from urllib.parse import parse_qsl
+from urllib.parse import urlencode
 
 register = template.Library()
+
 
 @register.inclusion_tag('pagination.html', takes_context=True)
 def pagination(context, page, pagination_id=None):

@@ -238,7 +238,7 @@ def api_call(request, app, data):
             raise SuspiciousOperation('Invalid API call')
 
         allowed_methods = app.allowed_methods.splitlines()
-        method_name = u'{0}.{1}'.format(data['group'], data['name'])
+        method_name = '{0}.{1}'.format(data['group'], data['name'])
         if not app.superuser and method_name not in allowed_methods:
             raise PermissionDenied(
                 'Method {0} not allowed'.format(method_name)

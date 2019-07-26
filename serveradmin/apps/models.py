@@ -1,4 +1,3 @@
-from __future__ import division
 from base64 import b64encode, b64decode
 from hashlib import sha256
 
