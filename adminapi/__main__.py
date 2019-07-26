@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """Adminapi
 
 Copyright (c) 2018 InnoGames GmbH

@@ -3,8 +3,6 @@
 Copyright (c) 2018 InnoGames GmbH
 """
 
-from __future__ import print_function
-
 import adminapi                                 # NOQA F401
 from adminapi import api                        # NOQA F401
 from adminapi.dataset import Query, create      # NOQA F401

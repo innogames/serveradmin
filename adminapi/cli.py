@@ -3,8 +3,6 @@
 Copyright (c) 2018 InnoGames GmbH
 """
 
-from __future__ import print_function
-
 from argparse import ArgumentParser, ArgumentTypeError
 
 from adminapi.dataset import Query
