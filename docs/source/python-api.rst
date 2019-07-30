@@ -137,9 +137,10 @@ existence of the ``function`` attribute::
     if 'function' not in techerror:
          print('Something is wrong!')'
 
-Multi attributes are stored as instances of :class:`MultiAttr`, which is a
-subclass of set. Take a look at :class:`set` for the available methods. See the
-following example which iterates over all additional IPs and adds another one::
+Multi attributes are stored as instances of :class:`adminapi.dataset.MultiAttr`,
+which is a subclass of set. Take a look at :class:`set` for the available
+methods. See the following example which iterates over all additional IPs and
+adds another one::
 
     techerror = Query({'hostname': 'techerror.support.ig.local'}, ['additional_ips']).get()
     for ip in techerror['additional_ips']:

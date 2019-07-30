@@ -12,7 +12,7 @@ python:
 install:
     - pip install pipenv
     - pipenv lock
-    - pipenv install
+    - pipenv install --dev
 before_script:
     - psql --version
     - psql -U postgres -c 'SELECT version();'
@@ -23,3 +23,6 @@ before_script:
 script:
     # This will use Python's standard unit test discovery feature.
     - python -Wall -m serveradmin test
+    # Build sphinx docs, error on warning
+    - cd docs
+    - SPHINXOPTS='-W' make html
