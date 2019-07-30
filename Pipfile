@@ -29,6 +29,9 @@ jinja2 = "*"
 pexpect = "*"
 
 [dev-packages]
+# Used to build the sphinx docs
+sphinx = "*"
+sphinx-rtd-theme = "*"
 # Provides runserver_plus and other gadgets
 django-extensions = "*"
 # Required for runserver_plus to work
