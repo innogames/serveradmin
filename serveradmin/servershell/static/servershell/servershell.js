@@ -43,7 +43,7 @@ function refresh_servers(callback) {
         }
 
         $('#shell_understood').text(data['understood']);
-        regenerate_link();
+
         return callback();
     });
 }
@@ -378,6 +378,8 @@ function render_server_table() {
     for (var i = 0; i < shown_attributes.length; i++) {
         $('#shell_attributes input[value="' + shown_attributes[i] + '"]').prop('checked', true);
     }
+    regenerate_link();
+
     build_server_table(search['servers'], shown_attributes, offset);
 }
 
@@ -1120,8 +1122,6 @@ $(function() {
         } else {
             render_server_table();
         }
-
-        regenerate_link();
     });
 
     $('#shell_attributes li').each(function() {
