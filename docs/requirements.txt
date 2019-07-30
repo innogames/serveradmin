@@ -1,0 +1,5 @@
+# Remove this once rtd merged Pipfile support:
+# https://github.com/readthedocs/readthedocs.org/pull/4783
+paramiko
+netaddr
+Sphinx==2.1.2
