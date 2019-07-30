@@ -1,5 +1,10 @@
 .. image:: https://travis-ci.com/innogames/serveradmin.svg?branch=master
     :target: https://travis-ci.com/innogames/serveradmin
+    :alt: Continuous Integration Status
+
+.. image:: https://readthedocs.org/projects/serveradmin/badge/?version=latest
+    :target: https://serveradmin.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
 
 Serveradmin
 ===========
