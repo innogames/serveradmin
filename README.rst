@@ -10,12 +10,11 @@ Serveradmin
 ===========
 
 Serveradmin is central server database management system of InnoGames.  It
-has HTTP web interface and HTTP JSON API.  The documentation is available
-under `docs/ <docs>`_ including installation instructions.
+has a HTTP web interface and a HTTP JSON API.  Check out `the documentation
+<https://serveradmin.readthedocs.io/en/latest/>`_  or watch `this FOSDEM 19
+talk <https://archive.org/details/youtube-nWuisFTIgME>`_ for a deepdive how
+InnoGames works with serveradmin.
 
-Python 3.4+ is required to run the server.  Required Python modules are listed
-in the `Pipfile <Pipfile>`_.  The client still supports Python 2.7 in addition
-to Python 3.4+.
 
 License
 -------
