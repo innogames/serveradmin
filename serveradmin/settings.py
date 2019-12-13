@@ -99,6 +99,10 @@ STATIC_ROOT = os.path.join(ROOT_DIR, '_static')
 # Example: "http://media.lawrence.com/static/"
 STATIC_URL = '/static/'
 
+# Filename for the logo image file
+# This file should reside in the STATIC_ROOT defined above
+LOGO_FILENAME = 'logo_innogames_bigbulb_120.png'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
