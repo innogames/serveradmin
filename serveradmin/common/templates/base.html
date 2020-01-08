@@ -8,36 +8,58 @@
           content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="{{ STATIC_URL }}/css/bootstrap.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.css">
     {% block additional_styles %}{% endblock %}
 
     <title>{% block title %}{% endblock %} &middot; Serveradmin</title>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
-  <a class="navbar-brand" href="#"><img src="{{ STATIC_URL }}/logo_innogames_bigbulb_120.png" width="30" height="23" alt=""></a>
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
-  <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
-    <div class="navbar-nav">
-        <a class="nav-item nav-link" href="https://serveradmin.readthedocs.io/en/latest/">Documentation</a>
-        {% for template in MENU_TEMPLATES %}
-            {% include template %}
-        {% endfor %}
-        {% if user.is_staff %}
-            <a class="nav-item nav-link" href="{% url 'admin:index' %}">Django Admin</a>
-        {% endif %}
-        <a class="nav-item nav-link" href="{% url 'logout' %}">Logout</a>
+    <!-- Brand -->
+    <a class="navbar-brand" href="#"><img src="{{ STATIC_URL }}logo_innogames_bigbulb_120.png" width="30" height="23" alt=""></a>
+
+    <!-- Toggler/collapsibe Button -->
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsibleNavbar">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Navbar links -->
+    <div class="collapse navbar-collapse" id="collapsibleNavbar">
+        <ul class="navbar-nav">
+            <li class="nav-item"><a class="nav-link" href="https://serveradmin.readthedocs.io/en/latest/">Documentation</a></li>
+            {% for template in MENU_TEMPLATES %}
+                <li class="nav-item">{% include template %}</li>
+            {% endfor %}
+            {% if user.is_staff %}
+                <li class="nav-item"><a class="nav-link" href="{% url 'admin:index' %}">Django Admin</a></li>
+            {% endif %}
+            <li class="nav-item"><a class="nav-link" href="{% url 'logout' %}">Logout</a></li>
+        </ul>
     </div>
-  </div>
+
+    <div id="spinner" class="spinner-border text-success" style="display: none;" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
 </nav>
+<div id="content">
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    <div class="container-fluid" style="margin-top: 1rem;">
+        {% block content %}{% endblock content %}
+    </div>
+</div>
 
 <!-- Optional JavaScript -->
 <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-<script src="{{ STATIC_URL }}/js/jquery-3.4.1.slim.min.js"></script>
-<script src="{{ STATIC_URL }}/js/popper.min.js"></script>
-<script src="{{ STATIC_URL }}/js/bootstrap.js"></script>
+<script src="{{ STATIC_URL }}js/jquery-3.4.1.slim.min.js"></script>
+<script src="{{ STATIC_URL }}js/popper.min.js"></script>
+<script src="{{ STATIC_URL }}js/bootstrap.js"></script>
+<script src="{{ STATIC_URL }}js/serveradmin.js"></script>
 {% block additional_scripts %}{% endblock %}
 </body>
 </html>
