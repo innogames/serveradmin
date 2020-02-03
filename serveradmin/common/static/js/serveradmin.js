@@ -7,11 +7,11 @@ $(document).ready(function() {
     // everywhere when ever we need it for example when doing long running
     // ajax requests for the servershell search.
     spinner = {
-        "enable": function () {
+        enable: function () {
             $('#spinner').show();
         },
-        "disabled": function () {
+        disabled: function () {
             $('#spinner').hide();
-        }
+        },
     }
 });

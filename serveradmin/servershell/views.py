@@ -37,26 +37,34 @@ NUM_SERVERS_DEFAULT = 100
 
 @login_required
 def index(request):
+    shown_attributes = sorted(
+        request.GET.getlist('attr', []) + list(Attribute.specials.keys()))
+
     attributes = list(Attribute.objects.all())
     attributes.extend(Attribute.specials.values())
-    attribute_groups = {}
+    attributes_json = list()
     for attribute in attributes:
-        attribute_groups.setdefault(attribute.group, []).append(attribute)
-    for attributes in attribute_groups.values():
-        attributes.sort(key=attrgetter('attribute_id'))
-    attribute_groups = sorted(attribute_groups.items(), key=lambda x: x[0])
+        attributes_json.append({
+            'attribute_id': attribute.attribute_id,
+            'type': attribute.type,
+            'multi': attribute.multi,
+            'hovertext': attribute.hovertext,
+            'help_link': attribute.help_link,
+            'group': attribute.group,
+            'checked': attribute.attribute_id in shown_attributes,
+        })
+    attributes_json.sort(key=lambda attr: attr['group'])
 
     return TemplateResponse(request, 'servershell/index.html', {
-        'checked_attributes': set(request.GET.get('attrs', '').split(',')),
-        'attribute_groups': attribute_groups,
-        'search_term': request.GET.get(
-            'term', request.session.get('term', '')
-        ),
+        'term': request.GET.get('term', request.session.get('term', '')),
+        'shown_attributes': shown_attributes,
+        'attributes': attributes_json,
+        'offset': 0,
+        'limit': 25,
         'per_page': request.session.get('per_page', NUM_SERVERS_DEFAULT),
-        'command_history': json.dumps(
-            request.session.get('command_history', [])
-        ),
-        'filters': [(f.__name__, f.__doc__) for f in filter_classes],
+        'order_by': 'hostname',
+        'command_history': json.dumps(request.session.get('command_history', [])),
+        'filters': sorted([(f.__name__, f.__doc__) for f in filter_classes]),
     })
 
 
@@ -80,7 +88,7 @@ def autocomplete(request):
 @login_required
 def get_results(request):
     term = request.GET.get('term', '')
-    shown_attributes = request.GET.get('shown_attributes').split(',')
+    shown_attributes = request.GET.getlist('shown_attributes[]')
 
     # We need servertypes to return the attribute properties.
     if 'servertype' not in shown_attributes:

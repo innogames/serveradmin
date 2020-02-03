@@ -1,0 +1,51 @@
+:root {
+    --component-border: #67a13a;
+    --component-background: #e8ece4;
+    --table-even: var(--component-background);
+    --table-odd: #dce3d5;
+    --table-hover: var(--component-border);
+    --font: #536f49;
+}
+
+.btn-link, .btn-link:hover, .btn-link:focus, a, h1, h2, h3, h4, h5, h6 {
+    color: var(--font);
+    text-decoration: none;
+}
+
+body * {
+    font-size: 0.8rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.component * {
+    background-color: var(--component-background);
+    border: 1px sold var(--component-border);
+}
+
+table tbody tr:nth-child(even) {
+    background-color: var(--table-even);
+}
+
+table tr:nth-child(even) td.disabled {
+    background-color: #bbbbbb;
+}
+
+table tbody tr:nth-child(odd) {
+    background-color: var(--table-odd);
+}
+
+table tr:nth-child(odd) td.disabled {
+    background-color: #cccccc;
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--table-hover);
+}
+
+.table-flex {
+    width: auto;
+}

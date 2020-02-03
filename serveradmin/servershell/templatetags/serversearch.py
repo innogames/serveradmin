@@ -41,3 +41,8 @@ def serversearch_js(search_id):
         'search_id': search_id,
         'STATIC_URL': settings.STATIC_URL,
     }
+
+
+@register.filter
+def json(value):
+    return dumps(value)
