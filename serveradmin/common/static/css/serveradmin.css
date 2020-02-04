@@ -21,6 +21,11 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: bold;
 }
 
+.alert span {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
 .component * {
     background-color: var(--component-background);
     border: 1px sold var(--component-border);

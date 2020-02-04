@@ -24,3 +24,21 @@ def dict_get(value, arg):
 @register.simple_tag
 def gethostname():
     return socket.gethostname()
+
+
+@register.filter
+def bootstrap_alert(level_tag):
+    """Get Twitter Bootstrap alert CSS class for Django message level
+
+    :param level_tag: Django message.level_tag attribute
+    :return: boostrap CSS class e.g. alert-primary
+    """
+
+    django_bootstrap = {
+        'debug': 'primary',
+        'info': 'info',
+        'success': 'success',
+        'warning': 'warning',
+        'error': 'danger',
+    }
+    return 'alert-' + django_bootstrap[level_tag]
