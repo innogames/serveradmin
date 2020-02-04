@@ -32,7 +32,7 @@ from serveradmin.serverdb.models import (
 from serveradmin.serverdb.query_committer import commit_query
 
 MAX_DISTINGUISHED_VALUES = 50
-NUM_SERVERS_DEFAULT = 100
+NUM_SERVERS_DEFAULT = 25
 
 
 @login_required
@@ -60,7 +60,7 @@ def index(request):
         'shown_attributes': shown_attributes,
         'attributes': attributes_json,
         'offset': 0,
-        'limit': 25,
+        'limit': NUM_SERVERS_DEFAULT,
         'per_page': request.session.get('per_page', NUM_SERVERS_DEFAULT),
         'order_by': 'hostname',
         'command_history': json.dumps(request.session.get('command_history', [])),
