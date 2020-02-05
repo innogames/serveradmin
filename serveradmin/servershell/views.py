@@ -4,22 +4,21 @@ Copyright (c) 2019 InnoGames GmbH
 """
 
 import json
-from operator import attrgetter
 from itertools import islice
 
-from django.http import HttpResponse, HttpResponseRedirect, Http404
-from django.template.response import TemplateResponse
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import (
     ObjectDoesNotExist, PermissionDenied, ValidationError
 )
-from django.urls import reverse
-from django.contrib import messages
+from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import get_object_or_404
+from django.template.response import TemplateResponse
+from django.urls import reverse
 from django.utils.html import mark_safe, escape as escape_html
 
 from adminapi.datatype import DatatypeError
-from adminapi.filters import Any, ContainedOnlyBy, StartsWith, filter_classes
+from adminapi.filters import Any, ContainedOnlyBy, filter_classes
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
 from serveradmin.dataset import Query
@@ -28,11 +27,14 @@ from serveradmin.serverdb.models import (
     Attribute,
     ServertypeAttribute,
     ServerStringAttribute,
-)
+    Server)
 from serveradmin.serverdb.query_committer import commit_query
+from serveradmin.servershell.helper.autocomplete import \
+    attribute_value_startswith, attribute_startswith
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 25
+AUTOCOMPLETE_LIMIT = 20
 
 
 @login_required
@@ -70,14 +72,27 @@ def index(request):
 
 @login_required
 def autocomplete(request):
-    autocomplete_list = []
+    autocomplete_list = list()
     if 'hostname' in request.GET:
         hostname = request.GET['hostname']
         try:
-            query = Query({'hostname': StartsWith(hostname)}, ['hostname'])
-            autocomplete_list += islice((h['hostname'] for h in query), 100)
+            query = Server.objects.filter(hostname__startswith=hostname).only(
+                'hostname').order_by('hostname')
+            autocomplete_list = [server.hostname for server in
+                                 query[:AUTOCOMPLETE_LIMIT]]
         except (DatatypeError, ValidationError):
-            pass    # If there is no valid query, just don't auto-complete
+            pass  # If there is no valid query, just don't auto-complete
+
+    if 'attribute' in request.GET:
+        attribute_id = request.GET.get('attribute', '')
+
+        if 'value' in request.GET:
+            value = request.GET.get('value', '')
+            autocomplete_list = attribute_value_startswith(attribute_id, value,
+                                                           AUTOCOMPLETE_LIMIT)
+        else:
+            autocomplete_list = attribute_startswith(attribute_id,
+                                                     AUTOCOMPLETE_LIMIT)
 
     return HttpResponse(
         json.dumps({'autocomplete': autocomplete_list}),

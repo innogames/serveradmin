@@ -20,9 +20,9 @@ if __name__ == '__main__':
             'serveradmin.apps': ['templates/apps/*'],
             'serveradmin.common': [
                 'static/*',
-                'static/common/*',
-                'static/flot/*',
-                'static/images/*',
+                'static/css/*',
+                'static/icons/*',
+                'static/js/*',
                 'templates/*',
                 'templates/igrestlogin/*',
             ],
@@ -37,8 +37,13 @@ if __name__ == '__main__':
             ],
             'serveradmin.servershell': [
                 'static/*',
-                'static/servershell/*',
+                'static/css/*',
+                'static/js/*',
+                'static/js/servershell/*',
+                'static/js/servershell/autocomplete/*',
                 'templates/servershell/*',
+                'templates/servershell/index/*',
+                'templates/servershell/index/modals/*',
             ],
         },
         entry_points={

@@ -14,7 +14,7 @@
         <div class="col-sm-8">
             <form method="post" action="{% url 'servershell_results' %}" id="search_form">
                 {% csrf_token %}
-                <input class="form-control form-control-sm" type="text" id="term" data-servershell-property-bind="term" />
+                <input class="form-control form-control-sm" type="text" id="term" data-servershell-property-bind="term" data-servershell-autocomplete-url="{% url 'servershell_autocomplete' %}" />
             </form>
         </div>
         <img src="{{ STATIC_URL }}icons/question.svg" width="25px" height="25px" alt="How to search" data-toggle="modal" data-target="#modal-help-search"/>
@@ -104,12 +104,13 @@
 {% endblock %}
 
 {% block additional_scripts %}
-    <script src="{{ STATIC_URL }}js/jquery-ui.min.js"></script>
-    <script src="{{ STATIC_URL }}js/servershell.js"></script>
-    <script src="{{ STATIC_URL }}js/servershell/attributes.js"></script>
-    <script src="{{ STATIC_URL }}js/servershell/search.js"></script>
-    <script src="{{ STATIC_URL }}js/servershell/result.js"></script>
-    <script>
+    <script async="async" src="{{ STATIC_URL }}js/jquery-ui.min.js"></script>
+    <script async="async" src="{{ STATIC_URL }}js/servershell.js"></script>
+    <script async="async" src="{{ STATIC_URL }}js/servershell/attributes.js"></script>
+    <script async="async" src="{{ STATIC_URL }}js/servershell/search.js"></script>
+    <script async="async" src="{{ STATIC_URL }}js/servershell/result.js"></script>
+    <script async="async" src="{{ STATIC_URL }}js/servershell/autocomplete/search.js"></script>
+    <script async="async">
         $(document).ready(function() {
             // Initialize servershell object properties with initial values
             // from backend. This allows us setting defaults from backend.
@@ -121,6 +122,7 @@
             servershell.limit = {{ limit }};
             servershell.per_page = {{ per_page }};
             servershell.order_by = "{{ order_by }}";
+            servershell.filters = {% autoescape off %}{{ filters|json }}{% endautoescape %}
             // Changing this property triggers a search ...
             servershell.shown_attributes = {% autoescape off %}{{ shown_attributes|json }}{% endautoescape %};
         });
