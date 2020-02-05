@@ -9,7 +9,7 @@ let submit_search = function() {
     spinner.enable();
 
     let data = {
-        term: servershell.term,
+        term: servershell.term.trimRight(),
         shown_attributes: servershell.shown_attributes,
         offset: servershell.offset,
         limit: servershell.limit,
