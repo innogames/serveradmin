@@ -102,7 +102,7 @@ $(document).ready(function () {
                 $.ajax(url, settings);
             }
 
-            spinner.disabled();
+            spinner.disable();
 
             response(choices);
         },

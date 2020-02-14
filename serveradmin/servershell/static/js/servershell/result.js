@@ -35,7 +35,7 @@ let update_result = function() {
     let info = `Results (${servershell.num_servers} servers, page ${servershell.page()}/${servershell.pages()})`;
     $('div.result_info').html(info);
 
-    spinner.disabled();
+    spinner.disable();
 };
 
 $(document).ready(function() {

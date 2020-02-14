@@ -37,7 +37,7 @@ let submit_search = function() {
         console.debug(`Query result status is: "${data.status}" with data:`);
         console.debug(data);
 
-        spinner.disabled();
+        spinner.disable();
     });
 };
 

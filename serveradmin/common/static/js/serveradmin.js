@@ -10,7 +10,7 @@ $(document).ready(function() {
         enable: function () {
             $('#spinner').show();
         },
-        disabled: function () {
+        disable: function () {
             $('#spinner').hide();
         },
     }
