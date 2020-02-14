@@ -65,7 +65,8 @@ def index(request):
         'limit': NUM_SERVERS_DEFAULT,
         'per_page': request.session.get('per_page', NUM_SERVERS_DEFAULT),
         'order_by': 'hostname',
-        'command_history': json.dumps(request.session.get('command_history', [])),
+        'command_history': json.dumps(
+            request.session.get('command_history', [])),
         'filters': sorted([(f.__name__, f.__doc__) for f in filter_classes]),
     })
 
@@ -141,10 +142,10 @@ def get_results(request):
     for servertype_id in servertype_ids:
         editable_attributes[servertype_id] = list(Attribute.specials)
     for sa in ServertypeAttribute.objects.filter(
-        servertype_id__in=servertype_ids,
-        attribute_id__in=shown_attributes,
-        related_via_attribute_id__isnull=True,
-        attribute__readonly=False,
+            servertype_id__in=servertype_ids,
+            attribute_id__in=shown_attributes,
+            related_via_attribute_id__isnull=True,
+            attribute__readonly=False,
     ):
         editable_attributes[sa.servertype_id].append(sa.attribute_id)
 
@@ -188,7 +189,7 @@ def edit(request):
     return _edit(request, server, True)
 
 
-def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
+def _edit(request, server, edit_mode=False, template='edit'):  # NOQA: C901
     invalid_attrs = set()
     if edit_mode and request.POST:
         attribute_lookup = {a.pk: a for a in Attribute.objects.filter(
@@ -259,8 +260,8 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
     fields_set = set()
     for key, value in server.items():
         if (
-            key == 'object_id' or
-            key == 'intern_ip' and servertype.ip_addr_type == 'null'
+                key == 'object_id' or
+                key == 'intern_ip' and servertype.ip_addr_type == 'null'
         ):
             continue
 
@@ -276,8 +277,8 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
             'type': attribute.type,
             'multi': attribute.multi,
             'required': (
-                servertype_attribute and servertype_attribute.required or
-                key in Attribute.specials.keys()
+                    servertype_attribute and servertype_attribute.required or
+                    key in Attribute.specials.keys()
             ),
             'regexp_display': _prepare_regexp_html(attribute.regexp),
             'regexp': (
@@ -286,7 +287,7 @@ def _edit(request, server, edit_mode=False, template='edit'):   # NOQA: C901
                 attribute.regexp.replace('\\A', '^').replace('\\Z', '$')
             ),
             'default': (
-                servertype_attribute and servertype_attribute.default_value
+                    servertype_attribute and servertype_attribute.default_value
             ),
             'readonly': attribute.readonly,
             'error': key in invalid_attrs,
@@ -369,7 +370,7 @@ def clone_object(request):
             {'hostname': request.GET.get('hostname')},
             list(Attribute.specials) + list(
                 Attribute.objects.filter(clone=True)
-                .values_list('attribute_id', flat=True)
+                    .values_list('attribute_id', flat=True)
             ),
         ).get()
     except ValidationError:
