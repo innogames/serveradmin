@@ -118,5 +118,12 @@ $(document).ready(function () {
             setTimeout(ac, 50);
         }
     });
+
+    $('#disable-autocompletion').on('click', function() {
+        if (this.checked)
+            $('#term').autocomplete('disable');
+        else
+            $('#term').autocomplete('enable');
+    });
 });
 

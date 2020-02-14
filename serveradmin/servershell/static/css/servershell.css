@@ -23,6 +23,10 @@
     padding-right: 5px;
 }
 
+#search-options .card-body {
+    padding: 0.5rem;
+}
+
 #attributes-row {
     position: absolute;
     top: 12rem;
