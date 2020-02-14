@@ -122,13 +122,13 @@
 {% endblock %}
 
 {% block additional_scripts %}
-    <script async="async" src="{{ STATIC_URL }}js/jquery-ui.min.js"></script>
-    <script async="async" src="{{ STATIC_URL }}js/servershell.js"></script>
-    <script async="async" src="{{ STATIC_URL }}js/servershell/attributes.js"></script>
-    <script async="async" src="{{ STATIC_URL }}js/servershell/search.js"></script>
-    <script async="async" src="{{ STATIC_URL }}js/servershell/result.js"></script>
-    <script async="async" src="{{ STATIC_URL }}js/servershell/autocomplete/search.js"></script>
-    <script async="async">
+    <script src="{{ STATIC_URL }}js/jquery-ui.min.js"></script>
+    <script src="{{ STATIC_URL }}js/servershell.js"></script>
+    <script src="{{ STATIC_URL }}js/servershell/attributes.js"></script>
+    <script src="{{ STATIC_URL }}js/servershell/search.js"></script>
+    <script src="{{ STATIC_URL }}js/servershell/result.js"></script>
+    <script src="{{ STATIC_URL }}js/servershell/autocomplete/search.js"></script>
+    <script>
         $(document).ready(function() {
             // Initialize servershell object properties with initial values
             // from backend. This allows us setting defaults from backend.
