@@ -1,7 +1,3 @@
-.form-group label {
-    font-weight: bold;
-}
-
 .form-group {
     margin-bottom: 0;
 }
@@ -12,6 +8,19 @@
 
 .results-info:last-of-type {
     margin-bottom: 1rem;
+}
+
+.input-controls img {
+    width: 29px;
+    height: 29px;
+}
+
+.input-controls > div:last-of-type {
+    padding-left: 0;
+}
+
+.input-controls > div:nth-child(2) {
+    padding-right: 5px;
 }
 
 #attributes-row {

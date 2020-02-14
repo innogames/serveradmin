@@ -12,12 +12,27 @@
     text-decoration: none;
 }
 
-body * {
-    font-size: 0.8rem;
+html, body {
+    font-size: 0.9rem;
+}
+
+.list-group-item label {
+    position: relative;
+    bottom: 3px;
+}
+
+.form-group label {
+    font-weight: bold;
+}
+
+.form-check label {
+    position: relative;
+    top: 2px;
+    padding-left: 2px;
+    font-weight: normal;
 }
 
 h1, h2, h3, h4, h5, h6 {
-    font-size: 1rem;
     font-weight: bold;
 }
 
