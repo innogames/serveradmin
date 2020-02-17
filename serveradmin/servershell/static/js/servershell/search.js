@@ -5,7 +5,7 @@
  * and submit the query to the Serveradmin backend. On success extract the
  * result to the corresponding servershell properties.
  */
-let submit_search = function() {
+servershell.submit_search = function() {
     spinner.enable();
 
     let data = {
@@ -34,6 +34,12 @@ let submit_search = function() {
         servershell.status = data.status;
         servershell.understood = data.understood;
 
+        // If the search term changes and we exceed the available pages with
+        // our current settings then go to page 1
+        if (servershell.pages() > servershell.page()) {
+            servershell.offset = 0;
+        }
+
         console.debug(`Query result status is: "${data.status}" with data:`);
         console.debug(data);
 
@@ -51,7 +57,7 @@ $(document).ready(function() {
 
     // Update servershell object properties when input element value change
     $('[data-servershell-property-bind]').on('change', function(event) {
-        // @TODO Avoid triggering the sync twice
+        // @TODO This will trigger above sync event once again - try to avoid.
         let property = $(event.target).data('servershell-property-bind');
         servershell[property] = event.target.value;
     });
@@ -61,7 +67,7 @@ $(document).ready(function() {
     // Submit form with Ajax and prevent normal submission
     $('#search_form').submit(function(event) {
         event.preventDefault();
-        submit_search();
+        servershell.submit_search();
     });
 
     // Reload search if anything relevant changes ...
@@ -71,6 +77,6 @@ $(document).ready(function() {
         'servershell_property_splice_shown_attributes',
     ];
     $(document).on(events.join(' '), function() {
-        submit_search();
+        servershell.submit_search();
     });
 });

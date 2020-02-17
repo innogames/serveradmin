@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% load serversearch %}
-{% block title %}Servershell{% endblock %}
+{% block title %}
+    Servershell
+{% endblock %}
 
 {% block additional_styles %}
     <link rel="stylesheet" href="{{ STATIC_URL }}css/servershell.css">
@@ -66,9 +68,9 @@
                 <div class="card">
                     <div class="card-header">
                         <b>Attributes</b>
-                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#accordion-attributes-body"></button>
+                        <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#accordion-attributes-body"></button>
                     </div>
-                    <div id="accordion-attributes-body" class="collapse show component" data-parent="#accordion-attributes">
+                    <div id="accordion-attributes-body" class="component collapse" data-parent="#accordion-attributes">
                         <div id="attributes" class="card-body">
                             {% regroup attributes by group as group_list %}
                             {% for group in group_list %}
@@ -99,7 +101,7 @@
                 <div class="result_info">
                     <!-- Managed by Servershell Results -->
                 </div>
-                <table id="result_table" class="table table-bordered table-hover table-sm table-borderless table-striped table-flex">
+                <table id="result_table" class="table table-bordered table-hover table-sm table-borderless table-striped table-responsive-lg table-flex">
                     <thead>
                         <tr>
                             <!-- Managed by Servershell Results -->
@@ -115,34 +117,48 @@
     </div>
 
     <!-- The help for the modals in the Servershell -->
-    {% include "servershell/index/modals/help_search.html" %}
-    {% include "servershell/index/modals/help_command.html" %}
+    {% include "servershell/modals/help_search.html" %}
+    {% include "servershell/modals/help_command.html" %}
     <!-- The modals for editing and other commands -->
-    {% include "servershell/index/modals/export.html" %}
+    {# We can probably make one general modal template out of these #}
+    {% include "servershell/modals/export.html" %}
 {% endblock %}
 
 {% block additional_scripts %}
-    <script src="{{ STATIC_URL }}js/jquery-ui.min.js"></script>
-    <script src="{{ STATIC_URL }}js/servershell.js"></script>
-    <script src="{{ STATIC_URL }}js/servershell/attributes.js"></script>
-    <script src="{{ STATIC_URL }}js/servershell/search.js"></script>
-    <script src="{{ STATIC_URL }}js/servershell/result.js"></script>
-    <script src="{{ STATIC_URL }}js/servershell/autocomplete/search.js"></script>
-    <script>
-        $(document).ready(function() {
-            // Initialize servershell object properties with initial values
-            // from backend. This allows us setting defaults from backend.
-            servershell.term = "{{ term }}";
-            servershell.command = "";
-            servershell.understood = "";
-            servershell.attributes = {% autoescape off %}{{ attributes|json }}{% endautoescape %}
-            servershell.offset = {{ offset }};
-            servershell.limit = {{ limit }};
-            servershell.per_page = {{ per_page }};
-            servershell.order_by = "{{ order_by }}";
-            servershell.filters = {% autoescape off %}{{ filters|json }}{% endautoescape %}
-            // Changing this property triggers a search ...
-            servershell.shown_attributes = {% autoescape off %}{{ shown_attributes|json }}{% endautoescape %};
-        });
-    </script>
+<script src="{{ STATIC_URL }}js/jquery-ui.min.js"></script>
+<script src="{{ STATIC_URL }}js/servershell.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/attributes.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/search.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/result.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/command.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/choose_ip_address.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/autocomplete/search.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/autocomplete/command.js"></script>
+<script>
+    $(document).ready(function() {
+        // Initialize servershell object properties with initial values
+        // from backend. This allows us setting defaults from backend.
+        servershell.term = "{{ term }}";
+        servershell.command = "";
+        servershell.understood = "";
+        servershell.attributes = {% autoescape off %}{{ attributes|json }}{% endautoescape %}
+        servershell.offset = {{ offset }};
+        servershell.limit = {{ limit }};
+        servershell.per_page = {{ per_page }};
+        servershell.order_by = "{{ order_by }}";
+        servershell.filters = {% autoescape off %}{{ filters|json }}{% endautoescape %}
+        // Changing this property triggers a search ...
+        servershell.shown_attributes = {% autoescape off %}{{ shown_attributes|json }}{% endautoescape %};
+        servershell.to_commit = [];
+
+        // We define the URLs once here so that we can render them with
+        // template engine from the backend and can access them everywhere
+        servershell.urls = {
+            choose_ip_address: "{% url 'servershell_choose_ip_addr' %}",
+            inspect: "{% url 'servershell_inspect' %}",
+            edit: "{% url 'servershell_edit' %}",
+            graphite: "{% url 'graphite_graph_table' %}",
+        }
+    });
+</script>
 {% endblock %}

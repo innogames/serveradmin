@@ -1,65 +1,102 @@
-{% extends base_template %}
+{% extends "base.html" %}
 
-{% block title %}Attributes{% endblock %}
+{% block title %}
+    Edit {% if object_id %}{{ object_id }}{% else %}New Object{% endif %}
+{% endblock %}
 
 {% block content %}
-{% if is_ajax %}
-<p><a href="{{ link }}">
-    <img src="{{ STATIC_URL }}link.png" alt="Link to this page"
-        title="Link to this page" />
-</a></p>
-{% elif object_id %}
-<h2>Object {{ object_id }}</h2>
-{% else %}
-<h2>New Object</h2>
-{% endif %}
-
 <form method="post" action="{% url 'servershell_edit' %}{% if object_id %}?object_id={{ object_id }}{% endif %}">
-{% csrf_token %}
-<table class="border_table" style="width:100%; table-layout:fixed;">
-<tr>
-    <th style="width:14em;">Attribute</th>
-    <th>Value</th>
-    <th style="width:6em;">Type</th>
-    <th style="width:10em;">Regexp</th>
-</tr>
-{% for field in fields %}
-<tr>
-    <td>{{ field.key }}{% if field.required %}*{% endif %}</td>
-    <td>
-    {% if field.multi %}
-    <textarea rows="3" cols="40" name="attr_{{ field.key }}"
-              {% if field.readonly %} disabled="disabled"{% endif %}
-              {% if field.error %} style="border:2px solid #d00"{% endif %}
-              {% if field.regexp %}pattern="{{ field.regexp }}"{% endif %}
-              {% if field.required %} required {% endif %}>
-{% for val in field.value %}{{ val }}
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
+            {% if object_id %}
+                <h3>
+                    Object {{ object_id }}
+                    <small class="text-muted">(Use bottom button for saving)</small>
+                </h3>
+            {% else %}
+                <h3>
+                    New Object
+                    <small class="text-muted">(Use bottom button for saving)</small>
+                </h3>
+            {% endif %}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
+            <table class="table table-bordered table-sm table-borderless table-striped table-flex">
+                <thead>
+                    <tr>
+                        <th>Attribute</th>
+                        <th>Value</th>
+                        <th>Type</th>
+                        <th>Regexp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for field in fields %}
+                    <tr>
+                        <td>
+                            {{ field.key }}{% if field.required %}*{% endif %}
+                        </td>
+                        <td>
+                            {% if field.multi %}
+                                <textarea class="edit_value"
+                                        rows="3"
+                                        cols="70"
+                                        name="attr_{{ field.key }}"
+                                        {% if field.readonly %} disabled="disabled"{% endif %}
+                                        {% if field.required %} required {% endif %}
+                                        {% if field.regexp %}data-pattern="{{ field.regexp }}"{% endif %}
+                                >{% for value in field.value %}{{ value}}
 {% endfor %}</textarea>
-    <br />Multiple values, one value per row.
-    {% else %}
-    <input type="text" name="attr_{{ field.key }}"
-           value="{% if field.type == 'boolean' %}{{ field.value|lower }}{% elif field.value != None %}{{ field.value }}{% endif %}"
-           size="30"
-           {% if field.readonly %}disabled="disabled" {% endif %}
-           {% if field.error %} style="border:2px solid #d00;"{% endif %}
-           {% if field.regexp %}pattern="{{ field.regexp }}"{% endif %}
-           {% if field.required %} required {% endif %}/>
-    {% if field.key == 'intern_ip' %}
-    <a href="javascript:choose_ip_addr($('input[name=\'attr_intern_ip\']'));">Choose IP Address</a>
-    {% endif %}
-    {% endif %}
-    </td>
-    <td>{{ field.type }}</td>
-    <td>{% if field.regexp %}{{ field.regexp_display }}{% endif %}</td>
-</tr>
-{% endfor %}
-</table>
-<p><input type="submit" value="Save" /></p>
-<script type="text/javascript">
-//<![CDATA[
-var servershell_choose_ip_addr_url = "{% url 'servershell_choose_ip_addr' %}";
-//]]>
-</script>
-<script type="text/javascript" src="{{ STATIC_URL }}js/choose_ip_addr.js"></script>
+                            {% else %}
+                        <input class="edit_value"
+                               type="text"
+                               name="attr_{{ field.key }}"
+                               value="{% if field.type == 'boolean' %}{{ field.value|lower }}{% elif field.value != None %}{{ field.value }}{% endif %}"
+                               size="70"
+                               {% if field.readonly %}disabled="disabled" {% endif %}
+                               {% if field.regexp %}data-pattern="{{ field.regexp }}"{% endif %}
+                               {% if field.required %} required {% endif %}
+                               {% if field.key == 'intern_ip' %}readonly onclick="servershell.choose_ip_address();"{% endif %}/>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ field.type }}
+                        </td>
+                        <td>
+                            {% if field.regexp %}
+                                {{ field.regexp_display }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
+            <input class="btn btn-success" type="submit" value="Save" />
+        </div>
+    </div>
 </form>
+
+{% include "servershell/modals/choose_ip_address.html" %}
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ STATIC_URL }}js/jquery-ui.min.js"></script>
+<script src="{{ STATIC_URL }}js/servershell.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/edit.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/choose_ip_address.js"></script>
+<script>
+servershell.urls = {
+    choose_ip_address: "{% url 'servershell_choose_ip_addr' %}",
+};
+</script>
 {% endblock %}

@@ -13,7 +13,6 @@ from serveradmin.servershell.views import (
     edit,
     inspect,
     commit,
-    get_values,
     new_object,
     clone_object,
     choose_ip_addr,
@@ -29,7 +28,6 @@ urlpatterns = [
     url(r'^edit$', edit, name='servershell_edit'),
     url(r'^inspect$', inspect, name='servershell_inspect'),
     url(r'^commit$', commit, name='servershell_commit'),
-    url(r'^values$', get_values, name='servershell_values'),
     url(r'^new$', new_object, name='servershell_new'),
     url(r'^clone$', clone_object, name='servershell_clone'),
     url(

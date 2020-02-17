@@ -27,7 +27,9 @@ if __name__ == '__main__':
                 'templates/igrestlogin/*',
             ],
             'serveradmin.graphite': [
-                'static/graphite/*',
+                'static/*',
+                'static/css/*',
+                'static/js/*',
                 'templates/graphite/*',
             ],
             'serveradmin.resources': ['templates/resources/*'],
@@ -42,8 +44,7 @@ if __name__ == '__main__':
                 'static/js/servershell/*',
                 'static/js/servershell/autocomplete/*',
                 'templates/servershell/*',
-                'templates/servershell/index/*',
-                'templates/servershell/index/modals/*',
+                'templates/servershell/modals/*',
             ],
         },
         entry_points={

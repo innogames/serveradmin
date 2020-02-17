@@ -10,7 +10,7 @@ from urllib.request import (
 )
 
 from django.http import (
-    Http404, HttpResponse, HttpResponseBadRequest, HttpResponseServerError
+    HttpResponse, HttpResponseBadRequest, HttpResponseServerError
 )
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
@@ -18,6 +18,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 
 from adminapi.dataset import DatasetError, MultiAttr
+from adminapi.filters import Any
 from serveradmin.graphite.models import (
     GRAPHITE_ATTRIBUTE_ID,
     Collection,
@@ -30,19 +31,16 @@ from serveradmin.dataset import Query
 @ensure_csrf_cookie
 def graph_table(request):
     """Graph table page"""
-    hostnames = [h for h in request.GET.getlist('hostname') if h]
-    if len(hostnames) == 0:
-        return HttpResponseBadRequest('No hostname provided')
+    hostnames = [h for h in request.GET.getlist('hostname', []) if h]
+    object_ids = [o for o in request.GET.getlist('object_id', []) if o]
+    if len(hostnames) == 0 and len(object_ids) == 0:
+        return HttpResponseBadRequest('No hostname or object_id provided')
 
     # For convenience we will cache the servers in a dictionary.
-    servers = {}
-    for hostname in hostnames:
-        try:
-            # We need all attributes, because they can be used as variables
-            # inside the graph params.
-            servers[hostname] = Query({'hostname': hostname}, None).get()
-        except DatasetError:
-            raise Http404
+    servers = {s['hostname']: s for s in
+               Query({'hostname': Any(*hostnames)}, None)}
+    servers.update({s['hostname']: s for s in
+                    Query({'object_id': Any(*object_ids)}, None)})
 
     # Find the collections which are related with all of the hostnames.
     # If there are two collections with same match, use only the one which
@@ -51,7 +49,7 @@ def graph_table(request):
     for collection in Collection.objects.order_by('overview', 'sort_order'):
         if any(collection.name == c.name for c in collections):
             continue
-        for hostname in hostnames:
+        for hostname in servers.keys():
             if GRAPHITE_ATTRIBUTE_ID not in servers[hostname]:
                 break   # The server hasn't got this attribute at all.
             value = servers[hostname][GRAPHITE_ATTRIBUTE_ID]
@@ -66,12 +64,12 @@ def graph_table(request):
     for collection in collections:
         for template in collection.template_set.all():
             descriptions += (
-                [(template.name, template.description)] * len(hostnames)
+                [(template.name, template.description)] * len(servers.keys())
             )
 
     # Prepare the graph tables for all hosts
     graph_tables = []
-    for hostname in hostnames:
+    for hostname in servers.keys():
         graph_table = []
         if request.GET.get('action') == 'Submit':
             custom_params = request.GET.urlencode()
@@ -88,7 +86,7 @@ def graph_table(request):
     grafana_link_params = '?'
     if len(hostname) > 1:
         # Add hostname to the titles
-        for order, hostname in enumerate(hostnames):
+        for order, hostname in enumerate(servers.keys()):
             graph_tables[order] = [
                 (k + ' on ' + hostname, v) for k, v in graph_tables[order]
             ]
@@ -102,7 +100,7 @@ def graph_table(request):
             graph_table += list(combined_tables)
 
     return TemplateResponse(request, 'graphite/graph_table.html', {
-        'hostnames': hostnames,
+        'hostnames': servers.keys(),
         'descriptions': descriptions,
         'graph_table': graph_table,
         'is_ajax': request.is_ajax(),

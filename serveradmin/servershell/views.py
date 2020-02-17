@@ -1,6 +1,6 @@
 """Serveradmin - Servershell
 
-Copyright (c) 2019 InnoGames GmbH
+Copyright (c) 2020 InnoGames GmbH
 """
 
 import json
@@ -12,7 +12,6 @@ from django.core.exceptions import (
     ObjectDoesNotExist, PermissionDenied, ValidationError
 )
 from django.http import HttpResponse, HttpResponseRedirect, Http404
-from django.shortcuts import get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.html import mark_safe, escape as escape_html
@@ -26,7 +25,6 @@ from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
     ServertypeAttribute,
-    ServerStringAttribute,
     Server)
 from serveradmin.serverdb.query_committer import commit_query
 from serveradmin.servershell.helper.autocomplete import \
@@ -291,11 +289,13 @@ def _edit(request, server, edit_mode=False, template='edit'):  # NOQA: C901
             ),
             'readonly': attribute.readonly,
             'error': key in invalid_attrs,
+            'hovertext': attribute.hovertext,
         })
 
     fields.sort(key=lambda k: (not k['required'], k['key']))
     return TemplateResponse(request, 'servershell/{}.html'.format(template), {
         'object_id': server.object_id,
+        'hostname': server['hostname'],
         'fields': fields,
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
@@ -336,23 +336,6 @@ def commit(request):
 
 
 @login_required
-def get_values(request):
-    attribute = get_object_or_404(
-        Attribute, attribute_id=request.GET['attribute']
-    )
-    queryset = ServerStringAttribute.objects.filter(attribute=attribute)
-    value_queryset = queryset.values('value').distinct().order_by('value')
-
-    return TemplateResponse(request, 'servershell/values.html', {
-        'attribute': attribute,
-        'values': (
-            v['value'] for v in value_queryset[:MAX_DISTINGUISHED_VALUES]
-        ),
-        'num_values': MAX_DISTINGUISHED_VALUES
-    })
-
-
-@login_required
 def new_object(request):
     try:
         servertype = request.GET.get('servertype')
@@ -386,15 +369,12 @@ def clone_object(request):
 @login_required
 def choose_ip_addr(request):
     if 'network' not in request.GET:
-        servers = list(Query(
-            {'servertype': 'route_network'},
-            ['hostname', 'intern_ip'],
-            ['hostname'],
-        ))
+        servers = list(
+            Query({'servertype': 'route_network'}, ['hostname', 'intern_ip'],
+                  ['hostname']))
 
-        return TemplateResponse(request, 'servershell/choose_ip_addr.html', {
-            'servers': servers
-        })
+        return TemplateResponse(request, 'servershell/choose_ip_addr.html',
+                                {'servers': servers})
 
     network = request.GET['network']
     servers = list(Query(
@@ -410,15 +390,13 @@ def choose_ip_addr(request):
     ))
 
     if servers:
-        return TemplateResponse(request, 'servershell/choose_ip_addr.html', {
-            'servers': servers
-        })
+        return TemplateResponse(request, 'servershell/choose_ip_addr.html',
+                                {'servers': servers})
 
     network_query = Query({'intern_ip': network}, ['intern_ip'])
 
     return TemplateResponse(request, 'servershell/choose_ip_addr.html', {
-        'ip_addrs': islice(network_query.get_free_ip_addrs(), 1000)
-    })
+        'ip_addrs': islice(network_query.get_free_ip_addrs(), 1000)})
 
 
 @login_required
