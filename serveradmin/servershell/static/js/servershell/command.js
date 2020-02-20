@@ -156,6 +156,16 @@ servershell.commands = {
         let url = servershell.urls.new + `?servertype=${servertype_id}`;
         window.open(url, '_self');
     },
+    clone: function() {
+        let selected = servershell.get_selected()
+        if (selected.length !== 1) {
+            servershell.alert('Select exactly one server to clone!', 'danger', true);
+            return;
+        }
+
+        let url = servershell.urls.clone + `?object_id=${selected[0]}`;
+        window.open(url, '_self');
+    },
     setattr: function(arguments) {
         let attr_value = arguments.split('=');
 

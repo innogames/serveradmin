@@ -354,14 +354,15 @@ def new_object(request):
 def clone_object(request):
     try:
         old_object = Query(
-            {'hostname': request.GET.get('hostname')},
+            {'object_id': request.GET.get('object_id')},
             list(Attribute.specials) + list(
                 Attribute.objects.filter(clone=True)
                     .values_list('attribute_id', flat=True)
             ),
         ).get()
-    except ValidationError:
-        raise Http404
+    except ValidationError as e:
+        messages.error(request, e.message)
+        return redirect('servershell_index')
 
     new_object = Query().new_object(old_object['servertype'])
     for attribute_id, value in old_object.items():
