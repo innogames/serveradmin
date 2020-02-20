@@ -21,6 +21,11 @@ servershell.commands = {
         }
     },
     goto: function(page) {
+        if (isNaN(page)) {
+            servershell.alert(`Argument ${page} is not a number!`, 'danger', true);
+            return;
+        }
+
         if (page > 0 && page <= servershell.pages()) {
             servershell.offset = servershell.limit * (page - 1);
             servershell.submit_search();
@@ -30,8 +35,14 @@ servershell.commands = {
         }
     },
     perpage: function(limit) {
+        if (isNaN(limit)) {
+            servershell.alert(`Argument ${limit} is not a number!`, 'danger', true);
+            return;
+        }
+
         if (limit > 100)
             servershell.alert('Please try to avoid big queries if possible', 'warning', true);
+
         servershell.limit = Math.abs(limit);
         servershell.submit_search();
     },
@@ -74,10 +85,11 @@ servershell.commands = {
 
         servershell.servers.forEach(function(server) {
             attr_names.forEach(function(attr_name) {
+                // @TODO Fix multiline attributes
                 if (server.hasOwnProperty(attr_name)) {
                     to_export += server[attr_name];
                 }
-                to_export += '\t'
+                to_export += ','
             });
             to_export += '\n';
         });
@@ -140,6 +152,10 @@ servershell.commands = {
             window.open(url, '_blank');
         });
     },
+    new: function(servertype_id) {
+        let url = servershell.urls.new + `?servertype=${servertype_id}`;
+        window.open(url, '_self');
+    },
     setattr: function(arguments) {
         let attr_value = arguments.split('=');
 
@@ -172,16 +188,18 @@ $(document).ready(function() {
    $('#command_form').submit(function(event) {
         event.preventDefault();
 
-        let cmd = servershell.command.split(' ');
+        let args = servershell.command.split(' ', 2);
+        let cmd = args[0];
 
         // User specified a one, more or a range of servers to select
-        if (cmd[0].match(/^([0-9]+(,|-)?([0-9]+)?)+$/)) {
-            servershell.commands.select(servershell.command);
+        if (args.length === 1 && cmd.match(/^([0-9]+(,|-)?([0-9]+)?)+$/)) {
+            servershell.commands.select(cmd);
             return;
         }
 
-        if (Object.keys(servershell.commands).indexOf(cmd[0])) {
-            servershell.commands[cmd[0]](...cmd.slice(1));
+        if (Object.keys(servershell.commands).indexOf(cmd)) {
+            let params = args[1];
+            servershell.commands[cmd](params);
         }
    })
 });

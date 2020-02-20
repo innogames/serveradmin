@@ -12,6 +12,7 @@ from django.core.exceptions import (
     ObjectDoesNotExist, PermissionDenied, ValidationError
 )
 from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.html import mark_safe, escape as escape_html
@@ -337,11 +338,14 @@ def commit(request):
 
 @login_required
 def new_object(request):
+    servertype = request.GET.get('servertype')
+
     try:
-        servertype = request.GET.get('servertype')
         new_object = Query().new_object(servertype)
     except Servertype.DoesNotExist:
-        raise Http404
+        messages.error(request,
+                       'The servertype {} does not exist!'.format(servertype))
+        return redirect('servershell_index')
 
     return _edit(request, new_object)
 
