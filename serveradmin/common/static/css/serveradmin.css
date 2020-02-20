@@ -62,10 +62,33 @@ table tr:nth-child(odd) td.disabled {
     background-color: #cccccc;
 }
 
+table ul {
+    margin-bottom: 0;
+}
+
 .table-hover tbody tr:hover {
     background-color: var(--table-hover);
 }
 
 .table-flex {
     width: auto;
+}
+
+.controls .form-group {
+    margin-bottom: 0;
+    margin-left: 0.5rem;
+}
+
+.controls .buttons {
+    margin-top: 1rem;
+}
+
+.controls .buttons .btn {
+    width: 5rem;
+    margin-right: 0.1rem;
+}
+
+.controls {
+    background-color: var(--component-background);
+    padding: 1rem;
 }

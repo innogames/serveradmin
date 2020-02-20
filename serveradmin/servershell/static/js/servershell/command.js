@@ -127,6 +127,7 @@ servershell.commands = {
         let query_string = selected.map(o => `object_id=${o}`).join('&');
         let url = servershell.urls.graphite + '?' + query_string;
         window.open(url, '_blank');
+        servershell.alert('Graph results opened in a new tab ...', 'success', true);
     },
     inspect: function() {
         let selected = servershell.get_selected();
@@ -138,6 +139,7 @@ servershell.commands = {
         selected.forEach(function(object_id) {
            let url = servershell.urls.inspect + `?object_id=${object_id}`;
            window.open(url, '_blank');
+           servershell.alert(`Server ${object_id} opened in a new tab ...`, 'success', true);
         });
     },
     edit: function() {
@@ -150,6 +152,7 @@ servershell.commands = {
         selected.forEach(function(object_id) {
             let url = servershell.urls.edit + `?object_id=${object_id}`;
             window.open(url, '_blank');
+            servershell.alert(`Server ${object_id} opened in a new tab ...`, 'success', true);
         });
     },
     new: function(servertype_id) {
@@ -165,6 +168,10 @@ servershell.commands = {
 
         let url = servershell.urls.clone + `?object_id=${selected[0]}`;
         window.open(url, '_self');
+    },
+    changes: function() {
+        window.open(servershell.urls.changes, '_blank');
+        servershell.alert(`Changes opened in a new tab ...`, 'success', true);
     },
     setattr: function(arguments) {
         let attr_value = arguments.split('=');

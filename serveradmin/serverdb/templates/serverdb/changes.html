@@ -1,78 +1,169 @@
 {% extends "base.html" %}
 
+{% load changes %}
+
 {% block title %}Changes{% endblock %}
 
 {% block content %}
-<h2>Changes</h2>
-<table>
-    <tr>
-        <th>Change on</th>
-        <th>User/App</th>
-        <th>Deleted</th>
-		<th>Added</th>
-        <th>Changed</th>
-    </tr>
-{% for commit in commits %}
-    <tr class="{% cycle 'row_a' 'row_b' %}">
-        <td>{{ commit.change_on|date }}</td>
-        <td>
-		{% if commit.app %}
-        {{ commit.app }}
-        {% elif commit.user %}
-        {{ commit.user.get_full_name }}
-        {% else %}
-		Internal code
-        {% endif %}
-        </td>
-        
-        <td>
-        {% if commit.changedelete_set.count %}
-        {% for change_del in commit.changedelete_set.all %}
-        <ul class="nolist">
-            <li><a href="{% url 'serverdb_history' %}?server_id={{ change_del.server_id }}&amp;commit={{ commit.id }}"
-            >{{ change_del.server_id }}</li>
-        {% endfor %}
-        </ul>
-        {% endif %}
-        </td>
-		
-        <td>
-		{% if commit.changeadd_set.count %}
-        <ul class="nolist">
-        {% for change_add in commit.changeadd_set.all %}
-            <li><a href="{% url 'serverdb_history' %}?server_id={{ change_add.server_id }}&amp;commit={{ commit.id }}"
-            >{{ change_add.server_id }}</li>
-        {% endfor %}
-        </ul>
-		{% endif %}
-        </td>
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
+            <h3>
+                Changes
+                <small class="text-muted">(1 commit per row)</small>
+            </h3>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8 controls">
+            <p style="white-space: pre-wrap">
+                You can use the following inputs to filter for changes. the From and Until input accept a human eadable time expression such as a year ago,
+                yesterday etc. and normal ones such as 13:14. The readonly inputs on the right show you what the backend has understood when parsing your string.
 
-        <td>
-		{% if commit.changeupdate_set.count %}
-        <ul class="nolist">
-        {% for change_update in commit.changeupdate_set.all %}
-            <li><a href="{% url 'serverdb_history' %}?server_id={{ change_update.server_id }}&amp;commit={{ commit.id }}"
-            >{{ change_update.server_id }}</li>
-        {% endfor %}
-        </ul>
-        {% endif %}
-        </td>
-    </tr>
-{% endfor %}
-</table>
-
-<div class="pagination">
-    Page:
-    <span class="step-links">
-        {% if commits.has_previous %}
-            <a href="?page={{ commits.previous_page_number }}">&laquo;</a>
-        {% endif %}
-        <span class="current">
-            {{ commits.number }}/{{ commits.paginator.num_pages }}
-        </span>
-        {% if commits.has_next %}
-            <a href="?page={{ commits.next_page_number }}">&raquo;</a>
-        {% endif %}
-    </span>
-</div>
+                Please mind that the queries can be rather expensive and take some time as we have to parse the whole history so please try to keep the filter as precise as possible.
+            </p>
+            <form method="post" action="{% url 'serverdb_changes' %}" onsubmit="spinner.enable();">
+                {% csrf_token %}
+                <div class="form-group row input-controls">
+                    <label for="from" class="col-sm-1 col-form-label">From:</label>
+                    <div class="col-md-4">
+                        <input name="from" id="from" type="text" value="{% if from %}{{ from }}{% endif %}" class="form-control form-control-sm" placeholder="Human readable time like for example 7 days ago" />
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" readonly="readonly" class="form-control form-control-sm" value="{{ from_understood|default:"-" }}" />
+                    </div>
+                </div>
+                <div class="form-group row input-controls">
+                    <label for="until" class="col-sm-1 col-form-label">Until:</label>
+                    <div class="col-md-4">
+                        <input name="until" id="until" type="text" value="{% if until %}{{ until }}{% endif %}" class="form-control form-control-sm" placeholder="Human readable time like for example 7 days ago" />
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" readonly="readonly" class="form-control form-control-sm" value="{{ until_understood|default:"-" }}" />
+                    </div>
+                </div>
+                <div class="form-group row input-controls">
+                    <label for="hostname" class="col-sm-1 col-form-label">Hostname:</label>
+                    <div class="col-md-4">
+                        <input name="hostname" id="hostname" type="text" value="{% if hostname %}{{ hostname }}{% endif %}" class="form-control form-control-sm" placeholder="yy1w1.ox.ig.local" />
+                    </div>
+                </div>
+                <div class="form-group row input-controls">
+                    <label for="object_id" class="col-sm-1 col-form-label">Object ID:</label>
+                    <div class="col-md-4">
+                        <input id="object_id" type="text" value="{% if object_id %}{{ object_id }}{% endif %}" class="form-control form-control-sm" placeholder="466880" />
+                    </div>
+                </div>
+                <div class="form-group row input-controls">
+                    <label for="application" class="col-sm-1 col-form-label">User/App:</label>
+                    <div class="col-md-4">
+                        <input name="application" id="application" type="text" value="{% if application %}{{ application }}{% endif %}" class="form-control form-control-sm dropdown-toggle" data-toggle="dropdown" placeholder="daniel.kroeger" />
+                        <div class="dropdown-menu">
+                            {% for app in applications %}
+                            <a class="dropdown-item">{{ app }}</a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row input-controls buttons">
+                    <input class="btn btn-success" name="action" type="submit" value="Apply" />
+                </div>
+            </form>
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
+            <table class="table table-sm table-striped table-bordered table-borderless table-hover">
+                <thead>
+                <tr>
+                    <th>Change Date</th>
+                    <th>Time passed since</th>
+                    <th>User/App</th>
+                    <th>Deleted</th>
+                    <th>Added</th>
+                    <th>Changed</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for commit in commits %}
+                    <tr>
+                        <td>{{ commit.change_on|date:"r" }}</td>
+                        <td>{{ commit.change_on|timesince }}</td>
+                        <td>{% spaceless %}
+                            {% if commit.app %}
+                                {{ commit.app }}
+                            {% elif commit.user %}
+                                {{ commit.user.username }}
+                            {% else %}
+                                Internal Code
+                            {% endif %}
+                        {% endspaceless %}</td>
+                        <td>{% spaceless %}
+                            {% if commit.changedelete_set.count == 1 %}
+                                {% for change_del in commit.changedelete_set.all %}
+                                    <a href="{% url 'serverdb_history' %}?server_id={{ change_del.server_id }}&commit={{ commit.id }}">{{ change_del.server_id }}</a>
+                                {% endfor %}
+                            {% elif commit.changedelete_set.count > 1 %}
+                                <a href="#change-delete-{{ forloop.counter }}" data-toggle="collapse">view/hide all</a>
+                                <ul id="change-delete-{{ forloop.counter }}" class="collapse">
+                                {% for change_del in commit.changedelete_set.all %}
+                                    <li><a href="{% url 'serverdb_history' %}?server_id={{ change_del.server_id }}&commit={{ commit.id }}">{{ change_del.server_id }}</a></li>
+                                {% endfor %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        {% endspaceless %}</td>
+                        <td>{% spaceless %}
+                            {% if commit.changeadd_set.count == 1 %}
+                                {% for change_add in commit.changeadd_set.all %}
+                                    <a href="{% url 'serverdb_history' %}?server_id={{ change_add.server_id }}&commit={{ commit.id }}">{{ change_add.server_id|hostname }}</a>
+                                {% endfor %}
+                            {% elif commit.changeadd_set.count > 1 %}
+                                <a href="#change-add-{{ forloop.counter }}" data-toggle="collapse">view/hide all</a>
+                                <ul id="change-add-{{ forloop.counter }}" class="collapse">
+                                {% for change_add in commit.changeadd_set.all %}
+                                    <li><a href="{% url 'serverdb_history' %}?server_id={{ change_add.server_id }}&commit={{ commit.id }}">{{ change_add.server_id|hostname }}</a></li>
+                                {% endfor %}
+                                </ul>
+                            {% else %}
+                                -
+                            {% endif %}
+                        {% endspaceless %}</td>
+                        <td>{% spaceless %}
+                            {% if commit.changeupdate_set.count == 1 %}
+                                {% for change_update in commit.changeupdate_set.all %}
+                                    <a href="{% url 'serverdb_history' %}?server_id={{ change_update.server_id }}&commit={{ commit.id }}">{{ change_update.server_id|hostname }}</a>
+                                {% endfor %}
+                            {% elif commit.changeupdate_set.count > 1 %}
+                                <a href="#change-update-{{ forloop.counter }}" data-toggle="collapse">view/hide all</a>
+                                <ul id="change-update-{{ forloop.counter }}" class="collapse">
+                                {% for change_update in commit.changeupdate_set.all %}
+                                    <li><a href="{% url 'serverdb_history' %}?server_id={{ change_update.server_id }}&commit={{ commit.id }}">{{ change_update.server_id|hostname }}</a></li>
+                                {% endfor %}
+                                 </ul>
+                            {% else %}
+                                -
+                            {% endif %}
+                        {% endspaceless %}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
+            {% if commits.has_previous %}
+                <a class="btn btn-success btn-sm" href="?page={{ commits.previous_page_number }}">prev</a>
+            {% endif %}
+            {% if commits.has_next %}
+                <a class="btn btn-success btn-sm"" href="?page={{ commits.next_page_number }}">next</a>
+            {% endif %}
+            page {{ commits.number }} of {{ commits.paginator.num_pages }}
+        </div>
+    </div>
 {% endblock content %}

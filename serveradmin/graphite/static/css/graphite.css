@@ -1,22 +1,3 @@
-.form-group {
-    margin-bottom: 0;
-    margin-left: 0.5rem;
-}
-
-.buttons {
-    margin-top: 1rem;
-}
-
-.buttons .btn {
-    width: 5rem;
-    margin-right: 0.1rem;
-}
-
-#graphite-controls {
-    background-color: var(--component-background);
-    padding: 1rem;
-}
-
 #graphs-row {
     position: absolute;
     top: 8rem;

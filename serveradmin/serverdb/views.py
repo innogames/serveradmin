@@ -2,13 +2,15 @@
 
 Copyright (c) 2019 InnoGames GmbH
 """
-
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.http import Http404
-from django.template.response import TemplateResponse
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect
+import dateparser
+from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import Q
+from django.http import Http404
+from django.shortcuts import get_object_or_404, redirect
+from django.template.response import TemplateResponse
 from django.urls import reverse
 
 from serveradmin.serverdb.models import (
@@ -16,22 +18,56 @@ from serveradmin.serverdb.models import (
     ChangeAdd,
     ChangeUpdate,
     ChangeDelete,
-)
+    Server)
 from serveradmin.serverdb.query_committer import CommitError, commit_query
 
 
 @login_required
 def changes(request):
-    commits = ChangeCommit.objects.order_by('-change_on').prefetch_related()
-    paginator = Paginator(commits, 100)
+    context = dict()
+    column_filter = dict()
+    q_filter = list()
+    t_from = request.POST.get('from')
+    t_until = request.POST.get('until')
+    hostname = request.POST.get('hostname')
+    object_id = request.POST.get('object_id') if not hostname else Server.objects.get(hostname=hostname).server_id
+    application = request.POST.get('application')
+    date_settings = {'TIMEZONE': settings.TIME_ZONE}
+
+    if t_from:
+        column_filter['change_on__gt'] = dateparser.parse(t_from, settings=date_settings)
+        context['from_understood'] = column_filter['change_on__gt']
+    if t_until:
+        column_filter['change_on__lt'] = dateparser.parse(t_until, settings=date_settings)
+        context['until_understood'] = column_filter['change_on__lt']
+    if object_id:
+        q_filter.append((
+            Q(changeupdate__server_id=object_id) |
+            Q(changedelete__server_id=object_id) |
+            Q(changeadd__server_id=object_id)
+        ))
+    if application:
+        q_filter.append((
+            Q(app__name=application) | Q(user__username=application)
+        ))
+
+    commits = ChangeCommit.objects.filter(*q_filter, **column_filter).order_by('-change_on')
+    paginator = Paginator(commits, 20)
+
     try:
         page = paginator.page(request.GET.get('page', 1))
     except (PageNotAnInteger, EmptyPage):
         page = paginator.page(1)
 
-    return TemplateResponse(request, 'serverdb/changes.html', {
-        'commits': page
+    context.update({
+        'commits': page,
+        'from': t_from,
+        'until': t_until,
+        'hostname': hostname,
+        'object_id': object_id,
+        'application': application,
     })
+    return TemplateResponse(request, 'serverdb/changes.html', context)
 
 
 @login_required
