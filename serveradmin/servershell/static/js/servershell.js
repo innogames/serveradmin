@@ -187,22 +187,3 @@ servershell.page = function() {
 servershell.pages = function() {
     return Math.ceil(servershell.num_servers / servershell.limit);
 };
-
-servershell.save_change = function(object_id, attribute_id, new_value) {
-    let server = servershell.servers.find(s => s.object_id === object_id);
-    let attribute = servershell.attributes.find(a => a.attribute_id === attribute_id);
-
-    if (server && attribute) {
-        let change = {};
-        change[object_id] = {};
-        change[object_id][attribute_id] = {};
-        change[object_id][attribute_id]["action"] = "update";
-        change[object_id][attribute_id]["new"] = new_value;
-        change[object_id][attribute_id]["old"] = server[attribute_id];
-
-        // @TODO: What about changes applied multiple times ...
-        servershell.to_commit.find(c => c.has)
-
-        servershell.to_commit.push(change);
-    }
-};

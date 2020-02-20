@@ -75,20 +75,11 @@ servershell.set_selected = function(object_ids) {
     });
 };
 
-servershell.edit_row = function(object_id, attribute, new_value) {
-    let row = $(`#result_table tr[data-oid=${object_id}]`);
-    if (row.length) {
-        let column = row.find(`td[data-attr=${attribute}]`);
-        if (column.length) {
-            let old_value = column.data('value');
-            column.html(`<del>${old_value}</del>&nbsp;<span class="new">${new_value}</span>`);
-        }
-    }
-};
-
 $(document).ready(function() {
     // Update result table as soon as we have new data ...
     $(document).on('servershell_property_set_servers', function() {
+        let selected = servershell.get_selected();
         servershell.update_result();
+        servershell.set_selected(selected);
     });
 });
