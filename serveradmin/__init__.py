@@ -1,6 +1,6 @@
 """Serveradmin
 
-Copyright (c) 2019 InnoGames GmbH
+Copyright (c) 2020 InnoGames GmbH
 """
 
-VERSION = (1, 7, 0)
+VERSION = (1, 7, 1)
