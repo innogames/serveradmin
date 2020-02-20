@@ -10,6 +10,14 @@
 {% endblock %}
 
 {% block content %}
+    <!-- Servershell JS alerts -->
+    <div id="js-alert" class="alert alert-dismissible fade show" role="alert" style="display: none;">
+        <strong id="js-alert-message"></strong>
+        <button type="button" class="close" onclick="$('#jjs-alert').toggle();" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+
     <!-- The Servershell Search -->
     <div class="form-group row input-controls">
         <label for="term" class="col-sm-1 col-form-label">Search:</label>

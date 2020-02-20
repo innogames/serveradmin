@@ -9,12 +9,13 @@ servershell.submit_search = function() {
     spinner.enable();
 
     let data = {
-        term: servershell.term.trimRight(),
+        term: servershell.term.trimRight(), // Avoid error on trailing spaces
         shown_attributes: servershell.shown_attributes,
         offset: servershell.offset,
         limit: servershell.limit,
         order_by: servershell.order_by,
         async: false,
+        timeout: 5000, // Query should not take longer then 5 seconds
     };
 
     let url = $('#search_form').get(0).action;
@@ -43,7 +44,14 @@ servershell.submit_search = function() {
         console.debug(`Query result status is: "${data.status}" with data:`);
         console.debug(data);
 
+        // We will use this on other components to react on changes ...
+        $(document).trigger('servershell_search_finished');
+
         spinner.disable();
+    }).fail(function () {
+        spinner.disable();
+
+        servershell.alert('Query failed! Please try again. If the error persists please contact a Sysadmin!');
     });
 };
 
@@ -57,7 +65,6 @@ $(document).ready(function() {
 
     // Update servershell object properties when input element value change
     $('[data-servershell-property-bind]').on('change', function(event) {
-        // @TODO This will trigger above sync event once again - try to avoid.
         let property = $(event.target).data('servershell-property-bind');
         servershell[property] = event.target.value;
     });

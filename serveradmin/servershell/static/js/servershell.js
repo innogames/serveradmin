@@ -77,18 +77,10 @@ const property_handler = {
         // types and can be an array of method names for non primitive ones
         // such as array. When ever a certain method is used a event will be
         // triggered. The standard events set and get will always be triggered.
-        //
-        // @TODO check what events we really need
         {'term': null},
         {'command': null},
         {'understood': null},
         {'shown_attributes': ['push', 'splice']},
-        {'attributes': ['push']},
-        {'offset': null},
-        {'limit': null},
-        {'per_page': null},
-        {'order_by': null},
-        {'servers': null},
     ],
     _trigger_events: function(action, property, property_of) {
         let set_or_get = this._config.filter(function(value) {
@@ -186,4 +178,46 @@ servershell.page = function() {
  */
 servershell.pages = function() {
     return Math.ceil(servershell.num_servers / servershell.limit);
+};
+
+/**
+ * Show message using bootstrap alerts
+ *
+ * This is for javascript showing errors such as invalid commands where we
+ * don't have the backend. If the error is coming from the backend please
+ * using Django messages mechanism. It will generate bootstrap alert as well.
+ *
+ * @param text message to show (can be html)
+ * @param level either primary,secondary,success,danger,warning,info,light,dark
+ * @param auto_dismiss true to auto dismiss after 2 seconds
+ */
+servershell.alert = function(text, level, auto_dismiss=false) {
+    let levels = [
+        'primary',
+        'secondary',
+        'success',
+        'danger',
+        'warning',
+        'info',
+        'light',
+        'dark'
+    ];
+
+    if (levels.indexOf(level) === -1)
+        return;
+
+    let box = $('#js-alert');
+    let message = $('#js-alert-message');
+    levels.forEach(function(level) {
+        if (box.hasClass(`alert-${level}`))
+            box.removeClass(`alert-${level}`);
+    });
+    box.addClass(`alert-${level}`);
+    message.html(text);
+    box.toggle();
+
+    if (auto_dismiss)
+        setTimeout(function() {
+            box.toggle();
+        }, 1500);
 };

@@ -77,7 +77,8 @@ servershell.set_selected = function(object_ids) {
 
 $(document).ready(function() {
     // Update result table as soon as we have new data ...
-    $(document).on('servershell_property_set_servers', function() {
+    $(document).on('servershell_search_finished', function() {
+        // Keep selection on reload of search ...
         let selected = servershell.get_selected();
         servershell.update_result();
         servershell.set_selected(selected);

@@ -7,11 +7,17 @@ servershell.commands = {
             servershell.offset += servershell.limit;
             servershell.submit_search();
         }
+        else {
+            servershell.alert('No more pages!', 'secondary', true);
+        }
     },
     prev: function() {
         if (servershell.page() > 1) {
             servershell.offset -= servershell.limit;
             servershell.submit_search();
+        }
+        else {
+            servershell.alert('No previous pages!', 'secondary', true);
         }
     },
     goto: function(page) {
@@ -19,8 +25,13 @@ servershell.commands = {
             servershell.offset = servershell.limit * (page - 1);
             servershell.submit_search();
         }
+        else {
+            servershell.alert(`No such page ${page}!`, 'secondary', true);
+        }
     },
     perpage: function(limit) {
+        if (limit > 100)
+            servershell.alert('Please try to avoid big queries if possible', 'warning', true);
         servershell.limit = Math.abs(limit);
         servershell.submit_search();
     },
@@ -41,6 +52,9 @@ servershell.commands = {
                     servershell.shown_attributes.push(name);
                 }
             }
+            else {
+                servershell.alert(`Attribute ${name} does not exist!`, 'danger', true);
+            }
         });
     },
     orderby: function(name) {
@@ -49,6 +63,9 @@ servershell.commands = {
                 servershell.commands.attr(name);
             }
             servershell.order_by = name;
+        }
+        else {
+            servershell.alert(`Attribute ${name} does not exist!`, 'danger', true);
         }
     },
     export: function(names) {
@@ -90,8 +107,10 @@ servershell.commands = {
     },
     graph: function() {
         let selected = servershell.get_selected();
-        if (selected.length === 0)
+        if (selected.length === 0) {
+            servershell.alert('Select at least one server!', 'danger', true);
             return;
+        }
 
         let query_string = selected.map(o => `object_id=${o}`).join('&');
         let url = servershell.urls.graphite + '?' + query_string;
@@ -99,8 +118,10 @@ servershell.commands = {
     },
     inspect: function() {
         let selected = servershell.get_selected();
-        if (selected.length === 0)
+        if (selected.length === 0) {
+            servershell.alert('Select at least one server!', 'danger', true);
             return;
+        }
 
         selected.forEach(function(object_id) {
            let url = servershell.urls.inspect + `?object_id=${object_id}`;
@@ -109,8 +130,10 @@ servershell.commands = {
     },
     edit: function() {
         let selected = servershell.get_selected();
-        if (selected.length === 0)
+        if (selected.length === 0) {
+            servershell.alert('Select at least one server!', 'danger', true);
             return;
+        }
 
         selected.forEach(function(object_id) {
             let url = servershell.urls.edit + `?object_id=${object_id}`;
@@ -120,15 +143,19 @@ servershell.commands = {
     setattr: function(arguments) {
         let attr_value = arguments.split('=');
 
-        if (attr_value.length !== 2)
+        if (attr_value.length !== 2) {
+            servershell.alert('Wrong syntax! Use setattr attribute_id=value', 'danger', true);
             return;
+        }
 
         let attribute_id = attr_value[0];
         let new_value = attr_value[1];
 
         // Check if attribute exists or typo
-        if (!servershell.attributes.find(a => a.attribute_id === attribute_id))
+        if (!servershell.attributes.find(a => a.attribute_id === attribute_id)) {
+            servershell.alert(`Attribute ${attribute_id} does not exist!`, true);
             return;
+        }
 
         // If attribute is not visible make it visible first
         if (!servershell.shown_attributes.find(a => a === attribute_id))
