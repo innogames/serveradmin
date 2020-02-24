@@ -50,8 +50,7 @@ servershell.submit_search = function() {
         spinner.disable();
     }).fail(function () {
         spinner.disable();
-
-        servershell.alert('Query failed! Please try again. If the error persists please contact a Sysadmin!');
+        servershell.alert('Failed to submit Query - Check network or contact developer!', false);
     });
 };
 

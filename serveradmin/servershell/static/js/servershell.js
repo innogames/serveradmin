@@ -72,21 +72,18 @@
 const property_handler = {
     // Extend or adjust the configuration of observed properties according to
     // your needs ...
-    _config: [
+    _config: {
         // Key is the name of the property. Value is null for primitive data
         // types and can be an array of method names for non primitive ones
         // such as array. When ever a certain method is used a event will be
         // triggered. The standard events set and get will always be triggered.
-        {'term': null},
-        {'command': null},
-        {'understood': null},
-        {'shown_attributes': ['push', 'splice']},
-    ],
+        term: null,
+        command: null,
+        understood: null,
+        shown_attributes: ['push', 'splice'],
+    },
     _trigger_events: function(action, property, property_of) {
-        let set_or_get = this._config.filter(function(value) {
-            return value.hasOwnProperty(property);
-        });
-        if (set_or_get.length) {
+        if (Object.keys(this._config).includes(property)) {
             let data = {
                 'property': property
             };
@@ -102,10 +99,11 @@ const property_handler = {
             return;
         }
 
-        let other_method = this._config.filter(function(value) {
-            return value.hasOwnProperty(property_of) && value[property_of] && value[property_of].indexOf(property) > -1;
-        });
-        if (other_method.length) {
+        if (
+            Object.keys(this._config).includes(property_of) &&
+            this._config[property_of] &&
+            this._config[property_of].includes(property)
+        ) {
             let data = {
                 'property': property_of,
                 'method': property,
@@ -129,8 +127,8 @@ const property_handler = {
         return true;
     },
     get: function(object, property) {
-        // typeof null is object so we have to check if it is not null ...
-        if (object[property] && typeof object[property] === 'object') {
+        // Observer configured properties
+        if (Object.keys(this._config).includes(property) &&  object[property] && typeof object[property] === 'object') {
             object[property]._property_of = property;
             return new Proxy(object[property], property_handler);
         }
@@ -191,7 +189,7 @@ servershell.pages = function() {
  * @param level either primary,secondary,success,danger,warning,info,light,dark
  * @param auto_dismiss true to auto dismiss after 2 seconds
  */
-servershell.alert = function(text, level, auto_dismiss=false) {
+servershell.alert = function(text, level, auto_dismiss=true) {
     let levels = [
         'primary',
         'secondary',
@@ -203,21 +201,44 @@ servershell.alert = function(text, level, auto_dismiss=false) {
         'dark'
     ];
 
-    if (levels.indexOf(level) === -1)
+    if (!levels.includes(level))
         return;
 
     let box = $('#js-alert');
-    let message = $('#js-alert-message');
-    levels.forEach(function(level) {
-        if (box.hasClass(`alert-${level}`))
-            box.removeClass(`alert-${level}`);
-    });
+    levels.forEach(level => box.removeClass(`alert-${level}`));
     box.addClass(`alert-${level}`);
+
+    let message = $('#js-alert-message');
     message.html(text);
+
     box.toggle();
 
-    if (auto_dismiss)
-        setTimeout(function() {
+    if (auto_dismiss) {
+        setTimeout(function () {
             box.toggle();
         }, 1500);
+    }
+};
+
+/**
+ * Get server object
+ *
+ * Get server object by object_id if in server list.
+ *
+ * @param object_id
+ */
+servershell.get_server = function(object_id) {
+   return servershell.servers.find(server => server.object_id === object_id);
+};
+
+/**
+ * Get attribute object
+ *
+ * Get attribute object by attribute_id if in attribute list.
+ *
+ * @param attribute_id
+ * @returns {*}
+ */
+servershell.get_attribute = function(attribute_id) {
+    return servershell.attributes.find(attribute => attribute.attribute_id === attribute_id);
 };

@@ -39,7 +39,7 @@ AUTOCOMPLETE_LIMIT = 20
 @login_required
 def index(request):
     shown_attributes = sorted(
-        request.GET.getlist('attr', []) + list(Attribute.specials.keys()))
+        request.GET.getlist('attr', ['state']) + list(Attribute.specials.keys()))
 
     attributes = list(Attribute.objects.all())
     attributes.extend(Attribute.specials.values())

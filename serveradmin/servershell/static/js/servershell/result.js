@@ -21,10 +21,14 @@ servershell.update_result = function() {
     body.empty(); // reset html
     servershell.servers.forEach(function(object, number) {
         let row = $(`<tr data-oid="${object.object_id}"></tr>`);
+
+        if (object.hasOwnProperty('state'))
+            row.addClass(`state-${object.state}`);
+
         row.append(`<td><input type="checkbox" name="server" value="${object.object_id}"/></td>`);
         row.append(`<td>${number + 1 + servershell.offset}</td>`);
         servershell.shown_attributes.forEach(function (attribute) {
-            if (object.hasOwnProperty(attribute) && object[attribute] !== undefined) {
+            if (object.hasOwnProperty(attribute) && object[attribute] !== null) {
                 let column = `<td data-attr="${attribute}" data-value="${object[attribute]}">`;
                 column += object[attribute];
                 column += '</td>';
@@ -82,5 +86,9 @@ $(document).ready(function() {
         let selected = servershell.get_selected();
         servershell.update_result();
         servershell.set_selected(selected);
+    });
+
+    $(document).on('', function() {
+
     });
 });

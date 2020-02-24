@@ -5,15 +5,16 @@
 {% endblock %}
 
 {% block additional_styles %}
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/states.css">
     <link rel="stylesheet" href="{{ STATIC_URL }}css/servershell.css">
     <link rel="stylesheet" href="{{ STATIC_URL }}css/jquery-ui.min.css">
 {% endblock %}
 
 {% block content %}
     <!-- Servershell JS alerts -->
-    <div id="js-alert" class="alert alert-dismissible fade show" role="alert" style="display: none;">
+    <div id="js-alert" class="alert" style="display: none;">
         <strong id="js-alert-message"></strong>
-        <button type="button" class="close" onclick="$('#jjs-alert').toggle();" aria-label="Close">
+        <button type="button" class="close" onclick="$('#js-alert').toggle();">
             <span aria-hidden="true">&times;</span>
         </button>
     </div>
@@ -157,7 +158,7 @@
         servershell.filters = {% autoescape off %}{{ filters|json }}{% endautoescape %}
         // Changing this property triggers a search ...
         servershell.shown_attributes = {% autoescape off %}{{ shown_attributes|json }}{% endautoescape %};
-        servershell.to_commit = [];
+        servershell.to_commit = {'deleted': [], 'changes': {}};
 
         // We define the URLs once here so that we can render them with
         // template engine from the backend and can access them everywhere
@@ -169,6 +170,7 @@
             new: "{% url 'servershell_new' %}",
             clone: "{% url 'servershell_clone' %}",
             changes: "{% url 'serverdb_changes' %}",
+            commit: "{% url 'servershell_commit' %}",
         }
     });
 </script>

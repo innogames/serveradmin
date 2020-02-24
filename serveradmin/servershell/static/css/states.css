@@ -1,0 +1,21 @@
+/* https://www.materialpalette.com/colors - A100 */
+
+tr.state-online_reserved {
+    background-color: #ffff8d  !important; /* yellow */
+}
+
+tr.state-deploy_online {
+    background-color: #ea80fc !important; /* purple */
+}
+
+tr.state-deploy_offline {
+    background-color: #82b1ff !important; /* blue */
+}
+
+tr.state-maintenance {
+    background-color: #ffd180 !important; /* orange */
+}
+
+tr.state-retired {
+    background-color: #ff8a80 !important; /* red */
+}
