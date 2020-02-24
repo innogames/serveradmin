@@ -170,7 +170,16 @@ servershell.commands = {
         window.open(url, '_self');
     },
     changes: function() {
-        window.open(servershell.urls.changes, '_blank');
+        let url;
+        let selection = servershell.get_selected();
+        if (selection.length) {
+            url = servershell.urls.changes + `?object_id=${selection[0]}`;
+        }
+        else {
+            url = servershell.urls.change;
+        }
+
+        window.open(url, '_blank');
         servershell.alert(`Changes opened in a new tab ...`, 'success', true);
     },
     setattr: function(arguments) {

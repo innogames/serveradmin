@@ -2,10 +2,13 @@
 
 Copyright (c) 2019 InnoGames GmbH
 """
+
 import dateparser
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
 from django.http import Http404
@@ -27,12 +30,17 @@ def changes(request):
     context = dict()
     column_filter = dict()
     q_filter = list()
-    t_from = request.POST.get('from')
-    t_until = request.POST.get('until')
-    hostname = request.POST.get('hostname')
-    object_id = request.POST.get('object_id') if not hostname else Server.objects.get(hostname=hostname).server_id
-    application = request.POST.get('application')
+    t_from = request.GET.get('from', '1 year ago')
+    t_until = request.GET.get('until')
+    hostname = request.GET.get('hostname')
+    application = request.GET.get('application')
     date_settings = {'TIMEZONE': settings.TIME_ZONE}
+
+    try:
+        object_id = request.GET.get('object_id') if not hostname else Server.objects.get(hostname=hostname).server_id
+    except ObjectDoesNotExist:
+        messages.error(request, 'Server does not exist')
+        return TemplateResponse(request, 'serverdb/changes.html', {})
 
     if t_from:
         column_filter['change_on__gt'] = dateparser.parse(t_from, settings=date_settings)

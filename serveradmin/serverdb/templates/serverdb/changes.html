@@ -23,8 +23,7 @@
 
                 Please mind that the queries can be rather expensive and take some time as we have to parse the whole history so please try to keep the filter as precise as possible.
             </p>
-            <form method="post" action="{% url 'serverdb_changes' %}" onsubmit="spinner.enable();">
-                {% csrf_token %}
+            <form id="changes-form" method="get" action="{% url 'serverdb_changes' %}" onsubmit="spinner.enable();">
                 <div class="form-group row input-controls">
                     <label for="from" class="col-sm-1 col-form-label">From:</label>
                     <div class="col-md-4">
@@ -52,7 +51,7 @@
                 <div class="form-group row input-controls">
                     <label for="object_id" class="col-sm-1 col-form-label">Object ID:</label>
                     <div class="col-md-4">
-                        <input id="object_id" type="text" value="{% if object_id %}{{ object_id }}{% endif %}" class="form-control form-control-sm" placeholder="466880" />
+                        <input id="object_id" name="object_id" type="text" value="{% if object_id %}{{ object_id }}{% endif %}" class="form-control form-control-sm" placeholder="466880" />
                     </div>
                 </div>
                 <div class="form-group row input-controls">
@@ -67,7 +66,8 @@
                     </div>
                 </div>
                 <div class="form-group row input-controls buttons">
-                    <input class="btn btn-success" name="action" type="submit" value="Apply" />
+                    <input type="hidden" id="page" name="page" value="{{ commits.number }}" />
+                    <button class="btn btn-success" type="submit">Apply</button>
                 </div>
             </form>
         </div>
@@ -158,10 +158,10 @@
         <div class="col-md-2"></div>
         <div class="col-md-8">
             {% if commits.has_previous %}
-                <a class="btn btn-success btn-sm" href="?page={{ commits.previous_page_number }}">prev</a>
+                <a class="btn btn-success btn-sm" href="#" onclick="$('#page').val({{ commits.previous_page_number }}); $('#changes-form').submit();">prev</a>
             {% endif %}
             {% if commits.has_next %}
-                <a class="btn btn-success btn-sm"" href="?page={{ commits.next_page_number }}">next</a>
+                <a class="btn btn-success btn-sm" href="#" onclick="$('#page').val({{ commits.next_page_number }}); $('#changes-form').submit();">next</a>
             {% endif %}
             page {{ commits.number }} of {{ commits.paginator.num_pages }}
         </div>
