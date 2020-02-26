@@ -36,6 +36,12 @@
  *
  * That's all you need to know to understand how it works without greater
  * detail.
+ *
+ * Convention:
+ *
+ * Use methods attached to servershell object within other scripts or pages
+ * but not the normal the other ones. They are supposed to represent internal
+ * functions and may change their behaviour.
  */
 
 /**
@@ -227,7 +233,7 @@ servershell.alert = function(text, level, auto_dismiss=true) {
  *
  * @param object_id
  */
-servershell.get_server = function(object_id) {
+servershell.get_object = function(object_id) {
    return servershell.servers.find(server => server.object_id === object_id);
 };
 

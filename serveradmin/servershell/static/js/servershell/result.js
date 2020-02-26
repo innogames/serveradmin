@@ -3,7 +3,7 @@
  *
  * Update table header and body html whenever the result has changes.
  */
-servershell.update_result = function() {
+update_result = function() {
     spinner.enable();
 
     let table = $('#result_table');
@@ -84,7 +84,7 @@ $(document).ready(function() {
     $(document).on('servershell_search_finished', function() {
         // Keep selection on reload of search ...
         let selected = servershell.get_selected();
-        servershell.update_result();
+        update_result();
         servershell.set_selected(selected);
     });
 

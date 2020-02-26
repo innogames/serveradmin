@@ -17,7 +17,7 @@
 update_attribute = function(object_id, attribute_id, new_value, multi_action = 'add') {
     let attribute = servershell.get_attribute(attribute_id);
     let changes = servershell.to_commit.changes;
-    let server = servershell.get_server(object_id);
+    let server = servershell.get_object(object_id);
 
     if (!changes.hasOwnProperty(object_id))
         changes[object_id] = {};
@@ -77,7 +77,7 @@ update_attribute = function(object_id, attribute_id, new_value, multi_action = '
 delete_attribute = function(object_id, attribute_id) {
     let change;
     let attribute = servershell.get_attribute(attribute_id);
-    let old_value = servershell.get_server(object_id)[attribute_id];
+    let old_value = servershell.get_object(object_id)[attribute_id];
 
     if (attribute.multi) {
         change = {
