@@ -31,15 +31,25 @@ update_attribute = function(object_id, attribute_id, new_value, multi_action = '
 
     let change = changes[object_id][attribute_id];
     if (attribute.multi) {
+        let new_value_add;
+        let new_value_remove;
+
         // For multi attributes we want to merge changes of previous commands
         if (multi_action === 'add') {
-            change['add'] = new_value;
-            change['remove'] = 'remove' in change ? change['remove'] : [];
+            // Don't add values which are already in last commit ...
+            new_value_add = new_value.filter(v => !server[attribute_id].includes(v));
+            // Don't remove values which should not be added but keep the rest ...
+            new_value_remove = 'remove' in change ? change.remove.filter(v => !new_value.includes(v)) : [];
         }
         else {
-            change['add'] = 'add' in change ? change['add'] : [];
-            change['remove'] = new_value;
+            // Don't remove values which are not present in last commit ...
+            new_value_remove = new_value.filter(v => server[attribute_id].includes(v));
+            // Don't add values which should be removed but keep the rest ...
+            new_value_add = 'add' in change ? change.add.filter(v => !new_value.includes(v)) : [];
         }
+
+        change['add'] = new_value_add.sort();
+        change['remove'] = new_value_remove.sort();
     }
     else {
         change['new'] = new_value;
@@ -48,7 +58,11 @@ update_attribute = function(object_id, attribute_id, new_value, multi_action = '
 
     // If the sum of changes change nothing do nothing ...
     if (attribute.multi) {
-        if (change['add'] === change['remove'])
+        let attr_changes = server[attribute_id];
+        let final_changes = server[attribute_id]
+            .filter(v => !change['remove'].includes(v))
+            .concat(change['add'].filter(v => !server[attribute_id].includes(v)));
+        if (attr_changes.every(v => final_changes.includes(v)) && final_changes.every(v => attr_changes.includes(v)))
             delete changes[object_id][attribute_id];
     } else {
         if (change['new'] === change['old'])
@@ -58,7 +72,8 @@ update_attribute = function(object_id, attribute_id, new_value, multi_action = '
     // If there are no changes for the object remove it from to_commit to
     // avoid possible request to backend ...
     if (Object.keys(changes[object_id]).length === 0) {
-            delete changes[object_id]
+            delete changes[object_id];
+            servershell.to_commit.changes = changes;
     } else {
         changes[object_id][attribute_id] = change;
         servershell.to_commit.changes = changes;
@@ -83,7 +98,7 @@ delete_attribute = function(object_id, attribute_id) {
         change = {
             'action': 'multi',
             'add': [],
-            'remove': old_value,
+            'remove': old_value.sort(),
         };
     }
     else {
@@ -114,7 +129,7 @@ delete_attribute = function(object_id, attribute_id) {
  */
 function validate_selected(min=1, max=-1) {
     let selected = servershell.get_selected().length;
-    if ((min === -1 || selected < min) || (max === -1 || selected.length > max)) {
+    if ((min !== -1 && selected < min) || (max !== -1 && selected.length > max)) {
         servershell.alert(`Select at least ${min} and at most ${max} objects`, 'warning');
         return false;
     }
@@ -307,8 +322,10 @@ servershell.commands = {
 
         servershell.get_selected().forEach(function(object_id) {
             // Avoid duplicate deletion ...
-            if (!servershell.to_commit.deleted.includes(object_id))
+            if (!servershell.to_commit.deleted.includes(object_id)) {
                 servershell.to_commit.deleted.push(object_id);
+                servershell.update_result();
+            }
         });
     },
     setattr: function(attribute_value_string) {
@@ -333,11 +350,17 @@ servershell.commands = {
 
             // Wait for attribute to be available in servers property ...
             $(document).one('servershell_search_finished', function() {
-                servershell.get_selected().forEach(o => update_attribute(o, attribute_id, new_value));
+                // Try not to set new values for objects which do not have the attribute ...
+                let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
+                editable.forEach(o => update_attribute(o, attribute_id, new_value));
+                servershell.update_result();
             });
         }
         else {
-            servershell.get_selected().forEach(o => update_attribute(o, attribute_id, new_value));
+            // Try not to set new values for objects which do not have the attribute ...
+            let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
+            editable.forEach(o => update_attribute(o, attribute_id, new_value));
+            servershell.update_result();
         }
     },
     multiadd: function(attribute_values_string) {
@@ -363,11 +386,17 @@ servershell.commands = {
 
             // Wait for attribute to be available in servers property ...
             $(document).one('servershell_search_finished', function() {
-                servershell.get_selected().forEach(o => update_attribute(o, attribute_id, new_values));
+                // Try not to set new values for objects which do not have the attribute ...
+                let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
+                editable.forEach(o => update_attribute(o, attribute_id, new_values));
+                servershell.update_result();
             });
         }
         else {
-            servershell.get_selected().forEach(o => update_attribute(o, attribute_id, new_values));
+            // Try not to set new values for objects which do not have the attribute ...
+            let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
+            editable.forEach(o => update_attribute(o, attribute_id, new_values));
+            servershell.update_result();
         }
     },
     multidel: function(attribute_values_string) {
@@ -393,11 +422,17 @@ servershell.commands = {
 
             // Wait for attribute to be available in servers property ...
             $(document).one('servershell_search_finished', function() {
-                servershell.get_selected().forEach(o => update_attribute(o, attribute_id, new_values, 'del'));
+                // Try not to set new values for objects which do not have the attribute ...
+                let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
+                editable.forEach(o => update_attribute(o, attribute_id, new_values, 'del'));
+                servershell.update_result();
             });
         }
         else {
-            servershell.get_selected().forEach(o => update_attribute(o, attribute_id, new_values, 'del'));
+            // Try not to set new values for objects which do not have the attribute ...
+            let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
+            editable.forEach(o => update_attribute(o, attribute_id, new_values, 'del'));
+            servershell.update_result();
         }
     },
     delattr: function(attribute_id) {
@@ -414,11 +449,17 @@ servershell.commands = {
             servershell.shown_attributes.push(attribute_id);
 
             $(document).one('servershell_search_finished', function() {
-                servershell.get_selected().forEach(o => delete_attribute(o, attribute_id));
+                // Try not to set new values for objects which do not have the attribute ...
+                let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
+                editable.forEach(o => delete_attribute(o, attribute_id));
+                servershell.update_result();
             });
         }
         else {
-            servershell.get_selected().forEach(o => delete_attribute(o, attribute_id));
+            // Try not to set new values for objects which do not have the attribute ...
+            let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
+            editable.forEach(o => delete_attribute(o, attribute_id));
+            servershell.update_result();
         }
     },
     commit: function() {
@@ -435,7 +476,7 @@ servershell.commands = {
                 } else {
                     servershell.alert('Data successfully committed!', 'success');
                     servershell.submit_search();
-                    servershell.to_commit = {'deleted': [], 'changes': {}};
+                    servershell.to_commit = {deleted: [], changes: {}};
                 }
             },
             complete: function() {
@@ -450,20 +491,20 @@ $(document).ready(function() {
    $('#command_form').submit(function(event) {
         event.preventDefault();
 
-        let args = servershell.command.split(' ', 2);
-        let cmd = args[0];
-
-        // User specified a one, more or a range of servers to select
-        if (args.length === 1 && cmd.match(/^([0-9]+(,|-)?([0-9]+)?)+$/)) {
-            servershell.commands.select(cmd);
-            servershell.command = '';
+        let command = servershell.command.split(' ', 1).pop();
+        let params = servershell.command.substring(command.length).trim();
+        if (Object.keys(servershell.commands).includes(command)) {
+            servershell.commands[command](params);
+        }
+        else if (servershell.command.match(/^([0-9]+(,|-|\s)?([0-9]+)?)+$/)) {
+            // User specified a one, more or a range of servers to select
+            servershell.commands.select(servershell.command);
+        }
+        else {
+            servershell.alert(`Unknown command ${command}!`, 'warning');
             return;
         }
 
-        if (Object.keys(servershell.commands).indexOf(cmd)) {
-            let params = args[1];
-            servershell.commands[cmd](params);
-            servershell.command = '';
-        }
+        servershell.command = '';
    })
 });

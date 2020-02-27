@@ -73,10 +73,14 @@
     margin-bottom: 0;
 }
 
-del {
-    color: red;
+.delete {
+    background-color: #d50000 !important;
 }
 
-span.new {
-    color: green;
+del {
+    color: #d50000;
+}
+
+u {
+    color: #536f49;
 }

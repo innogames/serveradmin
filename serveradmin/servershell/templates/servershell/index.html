@@ -158,7 +158,7 @@
         servershell.filters = {% autoescape off %}{{ filters|json }}{% endautoescape %}
         // Changing this property triggers a search ...
         servershell.shown_attributes = {% autoescape off %}{{ shown_attributes|json }}{% endautoescape %};
-        servershell.to_commit = {'deleted': [], 'changes': {}};
+        servershell.to_commit = {deleted: [], changes: {}};
 
         // We define the URLs once here so that we can render them with
         // template engine from the backend and can access them everywhere
