@@ -93,7 +93,7 @@ get_row_html = function(object, number) {
             let object_id = object.object_id;
             let server = servershell.get_object(object_id);
             let attribute = servershell.get_attribute(attribute_id);
-            let column = $(`<td data-attr="${attribute_id}" data-value="${object[attribute_id]}"></td>`);
+            let cell = $(`<td data-attr="${attribute_id}" data-value="${object[attribute_id]}"></td>`);
 
             let change = object_id in changes && attribute_id in changes[object_id] ? changes[object_id][attribute_id] : null;
             if (change) {
@@ -102,18 +102,20 @@ get_row_html = function(object, number) {
                     let to_delete = change.remove.join(', ');
                     let current_value = server[attribute_id].filter(v => !to_delete.includes(v)).join(', ');
 
-                    column.html(`${current_value} <del>${to_delete}</del> <u>${to_add}</u>`)
+                    cell.html(`${current_value} <del>${to_delete}</del> <u>${to_add}</u>`)
                 } else {
-                    column.html(`<del>${change.old}</del>&nbsp;<u>${change.new}</u>`);
+                    cell.html(`<del>${change.old}</del>&nbsp;<u>${change.new}</u>`);
                 }
             }
             else {
                 if (attribute.multi)
-                    column.html(object[attribute_id].join(', '));
+                    cell.html(object[attribute_id].join(', '));
                 else
-                    column.html(object[attribute_id]);
+                    cell.html(object[attribute_id]);
             }
-            row.append(column);
+
+            register_inline_editing(cell);
+            row.append(cell);
         }
         else {
             row.append(`<td class="disabled"></td>`);
@@ -121,6 +123,82 @@ get_row_html = function(object, number) {
     });
 
     return row;
+};
+
+/**
+ * Make row editable by double click
+ *
+ * This will add the inline edit functionality which allows us to double
+ * click a cell manipulate it in a input or textarea and save it. This
+ * is the same as the multiadd, multidell, setattr commands.
+ *
+ * @param cell jQuery td element
+ */
+register_inline_editing = function(cell) {
+    cell.dblclick(function (event) {
+        let cell = $(event.target);
+        let row = cell.parent();
+        let object_id = row.data('oid');
+        let object = servershell.get_object(object_id);
+        let attribute_id = cell.data('attr');
+        let attribute = servershell.get_attribute(attribute_id);
+
+        // Select row for convenience ...
+        if (!servershell.get_selected().includes(object_id))
+            row.children('td:first').children('input').click();
+
+        let current_value;
+        let changes = servershell.to_commit.changes;
+        if (object_id in changes && attribute_id in changes[object_id]) {
+            if (attribute.multi) {
+                current_value = object[attribute_id].filter(v => !changes[object_id][attribute_id].remove.includes(v));
+                current_value = current_value.concat(changes[object_id][attribute_id].add);
+            } else {
+                current_value = changes[object_id][attribute_id].new;
+            }
+        } else {
+            current_value = servershell.get_object(object_id)[attribute_id];
+        }
+
+        let content;
+        if (attribute.multi)
+            content = $(`<textarea rows="5" cols="30">${current_value.join('\n')}</textarea>`);
+        else
+            content = $(`<input type="text" value="${current_value}" />`);
+
+        content.data('oid', object_id);
+        content.data('aid', attribute_id);
+        content.data('multi', attribute.multi);
+
+        let button = $('<button class="btn btn-success btn-sm">save</button>');
+        button.click(function (event) {
+            let value;
+            let edit = $(event.target).prev();
+            let multi = edit.data('multi');
+
+            if (multi)
+                value = edit.val().split('\n').map(v => v.trim()).filter(v => v !== '');
+            else
+                value = edit.val().trim();
+
+            let object_id = edit.data('oid');
+            let attribute_id = edit.data('aid');
+            if (multi) {
+                let current_value = servershell.get_object(object_id)[attribute_id];
+                let to_add = value.filter(v => !current_value.includes(v));
+                let to_remove = current_value.filter(v => !value.includes(v));
+                update_attribute(object_id, attribute_id, to_add);
+                update_attribute(object_id, attribute_id, to_remove, 'remove');
+            }
+            else {
+                update_attribute(object_id, attribute_id, value);
+            }
+
+            servershell.update_result();
+        });
+        cell.html(content);
+        cell.append(button);
+    });
 };
 
 $(document).ready(function() {

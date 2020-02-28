@@ -89,7 +89,7 @@ update_attribute = function(object_id, attribute_id, new_value, multi_action = '
  * @param object_id e.g. 12345
  * @param attribute_id e.g. state or responsible_admin
  */
-delete_attribute = function(object_id, attribute_id) {
+servershell.delete_attribute = function(object_id, attribute_id) {
     let change;
     let attribute = servershell.get_attribute(attribute_id);
     let old_value = servershell.get_object(object_id)[attribute_id];
