@@ -501,7 +501,10 @@ $(document).ready(function() {
             servershell.commands.select(servershell.command);
         }
         else {
-            servershell.alert(`Unknown command ${command}!`, 'warning');
+            // User had a nervous finger lets ignore this
+            if (command !== '')
+                servershell.alert(`Unknown command ${command}!`, 'warning');
+
             return;
         }
 
