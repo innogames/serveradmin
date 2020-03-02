@@ -105,3 +105,9 @@ del {
 u {
     color: var(--add);
 }
+
+.ui-state-active,.ui-widget-content .ui-state-active,.ui-widget-header .ui-state-active,a.ui-button:active,.ui-button:active,.ui-button.ui-state-active:hover {
+    border: none !important;
+    background: var(--background-primary) !important;
+    color: #212529 !important;
+}
