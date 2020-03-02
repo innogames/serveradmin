@@ -38,9 +38,20 @@ AUTOCOMPLETE_LIMIT = 20
 
 @login_required
 def index(request):
-    specials = list(Attribute.specials.keys())
-    specials.remove('object_id')
-    shown_attributes = request.GET.getlist('attr', ['state'] + specials)
+    # If user clicks a link with shown attributes configured take that one
+    shown_attributes = request.GET.getlist('shown_attributes[]')
+    if not shown_attributes:
+        if 'shown_attributes' in request.session:
+            # The preferred settings of the user
+            shown_attributes = request.session['shown_attributes']
+        else:
+            # Our default selection if the user visits the first time
+            shown_attributes = list(Attribute.specials.keys())
+            shown_attributes.remove('object_id')
+            shown_attributes.append('state')
+            shown_attributes.sort()
+
+    request.session['shown_attributes'] = shown_attributes
 
     attributes = list(Attribute.objects.all())
     attributes.extend(Attribute.specials.values())
@@ -73,41 +84,38 @@ def index(request):
 @login_required
 def autocomplete(request):
     autocomplete_list = list()
-    if 'hostname' in request.GET:
-        hostname = request.GET['hostname']
+    hostname = request.GET.get('hostname')
+    attribute_id = request.GET.get('attribute')
+    attribute_val = request.GET.get('value')
+
+    if hostname:
         try:
             query = Server.objects.filter(hostname__startswith=hostname).only(
                 'hostname').order_by('hostname')
             autocomplete_list = [server.hostname for server in
                                  query[:AUTOCOMPLETE_LIMIT]]
         except (DatatypeError, ValidationError):
-            pass  # If there is no valid query, just don't auto-complete
+            # If there is no valid query, just don't auto-complete
+            pass
 
-    if 'attribute' in request.GET:
-        attribute_id = request.GET.get('attribute', '')
-
-        if 'value' in request.GET:
-            value = request.GET.get('value', '')
-            autocomplete_list = attribute_value_startswith(attribute_id, value,
+    if attribute_id:
+        if attribute_val:
+            autocomplete_list = attribute_value_startswith(attribute_id,
+                                                           attribute_val,
                                                            AUTOCOMPLETE_LIMIT)
         else:
             autocomplete_list = attribute_startswith(attribute_id,
                                                      AUTOCOMPLETE_LIMIT)
 
-    return HttpResponse(
-        json.dumps({'autocomplete': autocomplete_list}),
-        content_type='application/x-json',
-    )
+    return HttpResponse(json.dumps({'autocomplete': autocomplete_list}),
+                        content_type='application/x-json')
 
 
 @login_required
 def get_results(request):
     term = request.GET.get('term', '')
-    shown_attributes = request.GET.getlist('shown_attributes[]')
-
-    # We need servertypes to return the attribute properties.
-    if 'servertype' not in shown_attributes:
-        shown_attributes.append('servertype')
+    shown_attributes = request.GET.getlist('shown_attributes[]',
+                                           request.session['shown_attributes'])
 
     try:
         offset = int(request.GET.get('offset', '0'))
@@ -122,7 +130,15 @@ def get_results(request):
         order_by = None
 
     try:
-        query = Query(parse_query(term), shown_attributes, order_by)
+
+        # Query manipulates shown_attributes by adding object_id we want to
+        # keep the original value to save settings ...
+        query = Query(parse_query(term),
+                      shown_attributes.copy().append('servertype'), order_by)
+
+        # TODO: Using len is terribly slow for large datasets because it has
+        #  to query all objects but we cannot use count which is available on
+        #  Django QuerySet
         num_servers = len(query)
     except (DatatypeError, ObjectDoesNotExist, ValidationError) as error:
         return HttpResponse(json.dumps({
@@ -132,8 +148,10 @@ def get_results(request):
 
     servers = list(islice(query, offset, offset + limit))
 
+    # Save settings across requests and tabs
     request.session['term'] = term
     request.session['per_page'] = limit
+    request.session['shown_attributes'] = shown_attributes
 
     # Add information about available, editable attributes on servertypes
     servertype_ids = {s['servertype'] for s in servers}
@@ -407,11 +425,13 @@ def choose_ip_addr(request):
 @login_required
 def store_command(request):
     command = request.POST.get('command')
+
     if command:
         command_history = request.session.setdefault('command_history', [])
         if command not in command_history:
             command_history.append(command)
             request.session.modified = True
+
     return HttpResponse('{"status": "OK"}', content_type='application/x-json')
 
 

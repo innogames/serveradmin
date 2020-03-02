@@ -26,7 +26,7 @@ servershell.submit_search = function() {
         // Update property used by bookmark link of search
         servershell.href = '?' + $.param({
             'term': servershell.term,
-            'attrs': servershell.shown_attributes
+            'shown_attributes': servershell.shown_attributes
         });
 
         servershell.editable_attributes = data.editable_attributes;
