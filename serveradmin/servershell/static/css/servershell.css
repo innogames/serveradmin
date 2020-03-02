@@ -72,15 +72,3 @@
 #accordion-attributes .card-body .list-group-item label {
     margin-bottom: 0;
 }
-
-.delete {
-    background-color: #d50000 !important;
-}
-
-del {
-    color: #d50000;
-}
-
-u {
-    color: #536f49;
-}

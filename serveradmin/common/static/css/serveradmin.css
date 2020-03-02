@@ -1,14 +1,15 @@
 :root {
-    --component-border: #67a13a;
-    --component-background: #e8ece4;
-    --table-even: var(--component-background);
-    --table-odd: #dce3d5;
-    --table-hover: var(--component-border);
-    --font: #536f49;
+    --primary: #67a13a;
+    --background-primary: #e8ece4;
+    --background-secondary: #dce3d5;
+    --disabled-primary: #cccccc;
+    --disabled-secondary: #bbbbbb;
+    --add: #008800;
+    --remove: #CC0000;
 }
 
 .btn-link, .btn-link:hover, .btn-link:focus, a, h1, h2, h3, h4, h5, h6 {
-    color: var(--font);
+    color: var(--primary);
     text-decoration: none;
 }
 
@@ -42,24 +43,23 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .component * {
-    background-color: var(--component-background);
-    border: 1px sold var(--component-border);
+    background-color: var(--background-primary);
 }
 
 table tbody tr:nth-child(even) {
-    background-color: var(--table-even);
+    background-color: var(--background-primary);
 }
 
 table tr:nth-child(even) td.disabled {
-    background-color: #bbbbbb;
+    background-color: var(--disabled-primary);
 }
 
 table tbody tr:nth-child(odd) {
-    background-color: var(--table-odd);
+    background-color: var(--background-secondary);
 }
 
 table tr:nth-child(odd) td.disabled {
-    background-color: #cccccc;
+    background-color: var(--disabled-secondary);
 }
 
 table ul {
@@ -67,7 +67,7 @@ table ul {
 }
 
 .table-hover tbody tr:hover {
-    background-color: var(--table-hover);
+    background-color: var(--primary);
 }
 
 .table-flex {
@@ -89,6 +89,19 @@ table ul {
 }
 
 .controls {
-    background-color: var(--component-background);
+    background-color: var(--background-primary);
     padding: 1rem;
+}
+
+.delete {
+    background-color: var(--remove) !important;
+    color: #ffffff !important;
+}
+
+del {
+    color: var(--remove);
+}
+
+u {
+    color: var(--add);
 }
