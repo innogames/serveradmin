@@ -17,6 +17,7 @@ $(document).ready(function () {
     $('#term').autocomplete({
         delay: 300, // Wait n ms before starting to auto complete to avoid needles requests to backend
         minLength: 0,
+        autoFocus: true,
         source: function (request, response) {
             let limit = 20;
             let choices = [];

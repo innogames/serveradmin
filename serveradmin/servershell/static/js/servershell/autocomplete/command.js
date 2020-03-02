@@ -21,6 +21,7 @@ $(document).ready(function() {
    $('#command').autocomplete({
        delay: 100,
        minLength: 0,
+       autoFocus: true,
        source: function(request, response) {
            let choices = [];
            let arguments = request.term.split(' ', 2).map(v => v.trim());
