@@ -38,8 +38,9 @@ AUTOCOMPLETE_LIMIT = 20
 
 @login_required
 def index(request):
-    shown_attributes = sorted(
-        request.GET.getlist('attr', ['state']) + list(Attribute.specials.keys()))
+    specials = list(Attribute.specials.keys())
+    specials.remove('object_id')
+    shown_attributes = request.GET.getlist('attr', ['state'] + specials)
 
     attributes = list(Attribute.objects.all())
     attributes.extend(Attribute.specials.values())
@@ -52,7 +53,6 @@ def index(request):
             'hovertext': attribute.hovertext,
             'help_link': attribute.help_link,
             'group': attribute.group,
-            'checked': attribute.attribute_id in shown_attributes,
         })
     attributes_json.sort(key=lambda attr: attr['group'])
 
