@@ -222,7 +222,7 @@ servershell.alert = function(text, level, auto_dismiss=true) {
     if (auto_dismiss) {
         setTimeout(function () {
             box.toggle();
-        }, 1500);
+        }, 5000);
     }
 };
 
