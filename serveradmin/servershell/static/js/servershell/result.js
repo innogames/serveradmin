@@ -83,7 +83,7 @@ get_row_html = function(object, number) {
         row.addClass(`state-${object.state}`);
 
     // Standard columns which should always be present
-    row.append(`<td><input type="checkbox" name="server" value="${object.object_id}"/></td>`);
+    row.append(`<td><input tabindex="3" type="checkbox" name="server" value="${object.object_id}"/></td>`);
     row.append(`<td>${number + 1 + servershell.offset}</td>`);
 
     let changes = servershell.to_commit.changes;
