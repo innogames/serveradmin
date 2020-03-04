@@ -136,6 +136,11 @@ get_row_html = function(object, number) {
  */
 register_inline_editing = function(cell) {
     cell.dblclick(function (event) {
+        // Are there pevious inline edits to close ?
+        let previous = $('#inline-edit-save');
+        if (previous.length)
+            previous.click();
+
         let cell = $(event.target);
         let row = cell.parent();
         let object_id = row.data('oid');
@@ -162,15 +167,15 @@ register_inline_editing = function(cell) {
 
         let content;
         if (attribute.multi)
-            content = $(`<textarea rows="5" cols="30">${current_value.join('\n')}</textarea>`);
+            content = $(`<textarea id="inline-edit" rows="5" cols="30">${current_value.join('\n')}</textarea>`);
         else
-            content = $(`<input type="text" value="${current_value}" />`);
+            content = $(`<input id="inline-edit" type="text" value="${current_value}" />`);
 
         content.data('oid', object_id);
         content.data('aid', attribute_id);
         content.data('multi', attribute.multi);
 
-        let button = $('<button class="btn btn-success btn-sm">save</button>');
+        let button = $('<button id="inline-edit-save" class="btn btn-success btn-sm">save</button>');
         button.click(function (event) {
             let value;
             let edit = $(event.target).prev();
@@ -196,8 +201,27 @@ register_inline_editing = function(cell) {
 
             servershell.update_result();
         });
+
+        // Hit save button on enter or shift + enter if multi attribute
+        $(document).keypress(function(event) {
+            if (event.which === 13) {
+                let save = $('#inline-edit-save');
+                if (save.length) {
+                    let type = save.prev().get(0).type;
+                    if (type === 'textarea' && event.shiftKey || type === 'text') {
+                        event.preventDefault();
+                        save.click();
+                    }
+                }
+            }
+        });
+
         cell.html(content);
         cell.append(button);
+
+        // Focus element and place cursor at the end of the text
+        content.focus();
+        content.get(0).setSelectionRange(-1, -1);
     });
 };
 
