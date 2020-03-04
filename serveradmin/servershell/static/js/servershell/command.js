@@ -139,7 +139,7 @@ function validate_selected(min=1, max=-1) {
 
 servershell.commands = {
     search: function() {
-        $('#search').focus()
+        $('#term').focus();
     },
     next: function() {
         if (servershell.page() < servershell.pages()) {
