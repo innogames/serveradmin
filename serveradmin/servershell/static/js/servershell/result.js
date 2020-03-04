@@ -88,12 +88,11 @@ get_row_html = function(object, number) {
 
     let changes = servershell.to_commit.changes;
     servershell.shown_attributes.forEach(function (attribute_id) {
-        // Not all objects (servertypes) have all attributes e.g. a loadbalancer has no hypervisor
-        if (object.hasOwnProperty(attribute_id) && object[attribute_id] !== null) {
+        if (is_editable(object.object_id, attribute_id)) {
             let object_id = object.object_id;
             let server = servershell.get_object(object_id);
             let attribute = servershell.get_attribute(attribute_id);
-            let cell = $(`<td data-attr="${attribute_id}" data-value="${object[attribute_id]}"></td>`);
+            let cell = $(`<td data-attr="${attribute_id}" data-value="${object[attribute_id] === null ? '' : object[attribute_id]}"></td>`);
 
             let change = object_id in changes && attribute_id in changes[object_id] ? changes[object_id][attribute_id] : null;
             if (change) {
@@ -103,8 +102,9 @@ get_row_html = function(object, number) {
                     let current_value = server[attribute_id].filter(v => !to_delete.includes(v)).join(', ');
 
                     cell.html(`${current_value} <del>${to_delete}</del> <u>${to_add}</u>`)
-                } else {
-                    cell.html(`<del>${change.old}</del>&nbsp;<u>${change.new === undefined ? '': change.new}</u>`);
+                }
+                else {
+                    cell.html(`<del>${change.old === null ? '' : change.old}</del>&nbsp;<u>${change.new === undefined ? '': change.new}</u>`);
                 }
             }
             else {
@@ -123,6 +123,18 @@ get_row_html = function(object, number) {
     });
 
     return row;
+};
+
+/**
+ * Check if attribute is editable
+ *
+ * @param object_id
+ * @param attribute_id
+ * @returns {boolean|boolean}
+ */
+is_editable = function(object_id, attribute_id) {
+    let object = servershell.get_object(object_id);
+    return attribute_id in object && servershell.editable_attributes[object.servertype].includes(attribute_id);
 };
 
 /**
@@ -169,7 +181,7 @@ register_inline_editing = function(cell) {
         if (attribute.multi)
             content = $(`<textarea id="inline-edit" rows="5" cols="30">${current_value.join('\n')}</textarea>`);
         else
-            content = $(`<input id="inline-edit" type="text" value="${current_value}" />`);
+            content = $(`<input id="inline-edit" type="text" value="${current_value === null ? '' : current_value}" />`);
 
         content.data('oid', object_id);
         content.data('aid', attribute_id);
@@ -190,17 +202,17 @@ register_inline_editing = function(cell) {
             let attribute_id = edit.data('aid');
 
             if (value === '') {
-                delete_attribute(object_id, attribute_id)
+                servershell.delete_attribute(object_id, attribute_id)
             }
             else {
                 if (multi) {
                     let current_value = servershell.get_object(object_id)[attribute_id];
                     let to_add = value.filter(v => !current_value.includes(v));
                     let to_remove = current_value.filter(v => !value.includes(v));
-                    update_attribute(object_id, attribute_id, to_add);
-                    update_attribute(object_id, attribute_id, to_remove, 'remove');
+                    servershell.update_attribute(object_id, attribute_id, to_add);
+                    servershell.update_attribute(object_id, attribute_id, to_remove, 'remove');
                 } else {
-                    update_attribute(object_id, attribute_id, value);
+                    servershell.update_attribute(object_id, attribute_id, value);
                 }
             }
 

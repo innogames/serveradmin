@@ -14,7 +14,7 @@
  * @param new_value e.g. maintenance or ['john.doe', 'doe.john']
  * @param multi_action add or delete (only relevant for multi attribute)
  */
-update_attribute = function(object_id, attribute_id, new_value, multi_action = 'add') {
+servershell.update_attribute = function(object_id, attribute_id, new_value, multi_action = 'add') {
     let attribute = servershell.get_attribute(attribute_id);
     let changes = servershell.to_commit.changes;
     let server = servershell.get_object(object_id);
@@ -89,7 +89,7 @@ update_attribute = function(object_id, attribute_id, new_value, multi_action = '
  * @param object_id e.g. 12345
  * @param attribute_id e.g. state or responsible_admin
  */
-delete_attribute = function(object_id, attribute_id) {
+servershell.delete_attribute = function(object_id, attribute_id) {
     let change;
     let attribute = servershell.get_attribute(attribute_id);
     let old_value = servershell.get_object(object_id)[attribute_id];
@@ -352,14 +352,14 @@ servershell.commands = {
             $(document).one('servershell_search_finished', function() {
                 // Try not to set new values for objects which do not have the attribute ...
                 let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
-                editable.forEach(o => update_attribute(o, attribute_id, new_value));
+                editable.forEach(o => servershell.update_attribute(o, attribute_id, new_value));
                 servershell.update_result();
             });
         }
         else {
             // Try not to set new values for objects which do not have the attribute ...
             let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
-            editable.forEach(o => update_attribute(o, attribute_id, new_value));
+            editable.forEach(o => servershell.update_attribute(o, attribute_id, new_value));
             servershell.update_result();
         }
     },
@@ -388,14 +388,14 @@ servershell.commands = {
             $(document).one('servershell_search_finished', function() {
                 // Try not to set new values for objects which do not have the attribute ...
                 let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
-                editable.forEach(o => update_attribute(o, attribute_id, new_values));
+                editable.forEach(o => servershell.update_attribute(o, attribute_id, new_values));
                 servershell.update_result();
             });
         }
         else {
             // Try not to set new values for objects which do not have the attribute ...
             let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
-            editable.forEach(o => update_attribute(o, attribute_id, new_values));
+            editable.forEach(o => servershell.update_attribute(o, attribute_id, new_values));
             servershell.update_result();
         }
     },
@@ -424,14 +424,14 @@ servershell.commands = {
             $(document).one('servershell_search_finished', function() {
                 // Try not to set new values for objects which do not have the attribute ...
                 let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
-                editable.forEach(o => update_attribute(o, attribute_id, new_values, 'del'));
+                editable.forEach(o => servershell.update_attribute(o, attribute_id, new_values, 'del'));
                 servershell.update_result();
             });
         }
         else {
             // Try not to set new values for objects which do not have the attribute ...
             let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
-            editable.forEach(o => update_attribute(o, attribute_id, new_values, 'del'));
+            editable.forEach(o => servershell.update_attribute(o, attribute_id, new_values, 'del'));
             servershell.update_result();
         }
     },
@@ -451,14 +451,14 @@ servershell.commands = {
             $(document).one('servershell_search_finished', function() {
                 // Try not to set new values for objects which do not have the attribute ...
                 let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
-                editable.forEach(o => delete_attribute(o, attribute_id));
+                editable.forEach(o => servershell.delete_attribute(o, attribute_id));
                 servershell.update_result();
             });
         }
         else {
             // Try not to set new values for objects which do not have the attribute ...
             let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
-            editable.forEach(o => delete_attribute(o, attribute_id));
+            editable.forEach(o => servershell.delete_attribute(o, attribute_id));
             servershell.update_result();
         }
     },
