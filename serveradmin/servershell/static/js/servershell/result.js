@@ -104,7 +104,7 @@ get_row_html = function(object, number) {
 
                     cell.html(`${current_value} <del>${to_delete}</del> <u>${to_add}</u>`)
                 } else {
-                    cell.html(`<del>${change.old}</del>&nbsp;<u>${change.new}</u>`);
+                    cell.html(`<del>${change.old}</del>&nbsp;<u>${change.new === undefined ? '': change.new}</u>`);
                 }
             }
             else {
@@ -188,15 +188,20 @@ register_inline_editing = function(cell) {
 
             let object_id = edit.data('oid');
             let attribute_id = edit.data('aid');
-            if (multi) {
-                let current_value = servershell.get_object(object_id)[attribute_id];
-                let to_add = value.filter(v => !current_value.includes(v));
-                let to_remove = current_value.filter(v => !value.includes(v));
-                update_attribute(object_id, attribute_id, to_add);
-                update_attribute(object_id, attribute_id, to_remove, 'remove');
+
+            if (value === '') {
+                delete_attribute(object_id, attribute_id)
             }
             else {
-                update_attribute(object_id, attribute_id, value);
+                if (multi) {
+                    let current_value = servershell.get_object(object_id)[attribute_id];
+                    let to_add = value.filter(v => !current_value.includes(v));
+                    let to_remove = current_value.filter(v => !value.includes(v));
+                    update_attribute(object_id, attribute_id, to_add);
+                    update_attribute(object_id, attribute_id, to_remove, 'remove');
+                } else {
+                    update_attribute(object_id, attribute_id, value);
+                }
             }
 
             servershell.update_result();
