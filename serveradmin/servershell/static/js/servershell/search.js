@@ -50,7 +50,7 @@ servershell.submit_search = function() {
         spinner.disable();
     }).fail(function () {
         spinner.disable();
-        servershell.alert('Failed to submit Query - Check network or contact developer!', false);
+        servershell.alert('Either Serveradmin is offline, cannot process your request or did not respond in 5 seconds!', 'danger', false);
     });
 };
 
