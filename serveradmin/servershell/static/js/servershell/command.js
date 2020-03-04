@@ -194,7 +194,7 @@ servershell.commands = {
         let to_remove = attribute_ids.filter(a => shown_attributes.find(b => b === a) !== undefined);
         let to_add = attribute_ids.filter(a => shown_attributes.find(b => b === a) === undefined);
         shown_attributes = shown_attributes.filter(a => !to_remove.includes(a));
-        shown_attributes.splice(-1, 0, ...to_add);
+        shown_attributes.splice(shown_attributes.length, 0, ...to_add);
 
         // Now trigger reload with all changes at once
         servershell.shown_attributes = shown_attributes;
@@ -222,7 +222,7 @@ servershell.commands = {
 
         // Add not yet visible attributes ...
         let to_add = attribute_ids.filter(a => servershell.shown_attributes.find(b => b === a) === undefined);
-        servershell.shown_attributes.splice(-1, 0, ...to_add);
+        servershell.shown_attributes.splice(servershell.shown_attributes.length, 0, ...to_add);
 
         $(document).one('servershell_search_finished', function() {
             let to_export = '';
