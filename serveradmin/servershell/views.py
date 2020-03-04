@@ -133,8 +133,10 @@ def get_results(request):
 
         # Query manipulates shown_attributes by adding object_id we want to
         # keep the original value to save settings ...
-        query = Query(parse_query(term),
-                      shown_attributes.copy().append('servertype'), order_by)
+        restrict = shown_attributes.copy()
+        if 'servertype' not in restrict:
+            restrict.append('servertype')
+        query = Query(parse_query(term), restrict, order_by)
 
         # TODO: Using len is terribly slow for large datasets because it has
         #  to query all objects but we cannot use count which is available on
