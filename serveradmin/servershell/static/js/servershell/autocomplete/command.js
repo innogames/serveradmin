@@ -28,7 +28,7 @@ $(document).ready(function() {
 
            if (arguments.length === 1) {
                let command = arguments.pop();
-               Object.keys(servershell.commands).forEach(function(name) {
+               Object.keys(servershell.commands).sort().forEach(function(name) {
                    if (name !== command && name.startsWith(command)) {
                        choices.push({
                            'label': name,
