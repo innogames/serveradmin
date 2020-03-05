@@ -131,7 +131,7 @@ get_row_html = function(object, number) {
  *
  * @param object_id
  * @param attribute_id
- * @returns {boolean|boolean}
+ * @returns boolean
  */
 is_editable = function(object_id, attribute_id) {
     let object = servershell.get_object(object_id);
@@ -143,16 +143,16 @@ is_editable = function(object_id, attribute_id) {
  *
  * This will add the inline edit functionality which allows us to double
  * click a cell manipulate it in a input or textarea and save it. This
- * is the same as the multiadd, multidell, setattr commands.
+ * is the same as the multiadd, multidel, setattr commands.
  *
  * @param cell jQuery td element
  */
 register_inline_editing = function(cell) {
     cell.dblclick(function (event) {
-        // Are there pevious inline edits to close ?
+        // Do not open another inline edit unless previous is finished
         let previous = $('#inline-edit-save');
         if (previous.length)
-            previous.click();
+            return;
 
         let cell = $(event.target).closest('td');
         let row = cell.parent();
