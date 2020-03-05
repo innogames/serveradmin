@@ -95,7 +95,7 @@ $(document).ready(function () {
                         data.autocomplete.forEach(function (host) {
                             choices.push({
                                 'label': `Host: ${host}`,
-                                'value': _build_value(request.term, host, '',),
+                                'value': host,
                             });
                         });
                     },
