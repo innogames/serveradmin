@@ -19,6 +19,9 @@ servershell.update_attribute = function(object_id, attribute_id, new_value, mult
     let changes = servershell.to_commit.changes;
     let server = servershell.get_object(object_id);
 
+    // Case number attributes into integer
+    new_value = attribute.type === 'number' ? Number.parseInt(new_value) : new_value;
+
     if (!changes.hasOwnProperty(object_id))
         changes[object_id] = {};
 
