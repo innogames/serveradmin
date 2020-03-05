@@ -53,12 +53,15 @@ $(document).ready(function() {
                    })
                }
                if (command === 'perpage') {
-                   [5, 10, 15, 20, 25, 50, 100].forEach(function (perpage) {
-                       choices.push({
-                           'label': perpage,
-                           'value': `${command} ${perpage}`,
-                       })
-                   });
+                   let user_input = values.pop();
+                   if (user_input === '') {
+                       [5, 10, 15, 20, 25, 50, 100].forEach(function (perpage) {
+                           choices.push({
+                               'label': perpage,
+                               'value': `${command} ${perpage}`,
+                           })
+                       });
+                   }
                }
                if (command === 'attr' || command === 'export') {
                    let search_string = values.pop();
