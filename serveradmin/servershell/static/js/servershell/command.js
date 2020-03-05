@@ -218,13 +218,18 @@ servershell.commands = {
         }
     },
     export: function(attribute_ids) {
-        attribute_ids = attribute_ids.split(',').map(a => a.trim());
+        if (!validate_selected())
+            return;
+
+        attribute_ids = attribute_ids.split(',').map(a => a.trim()).filter(a => a !== '');
         let unknown = attribute_ids.filter(a => servershell.attributes.find(b => b.attribute_id === a) === undefined);
 
-        if (unknown.length > 0) {
-            servershell.alert(`The attribute(s) ${unknown.join(', ')} doe not exist!`, 'warning');
-            return;
-        }
+        if (unknown.length > 0)
+            return servershell.alert(`The attribute(s) ${unknown.join(', ')} doe not exist!`, 'warning');
+
+        // If not attribute are given add hostname
+        if (attribute_ids.length === 0)
+            attribute_ids = ['hostname']
 
         // Add not yet visible attributes ...
         let to_add = attribute_ids.filter(a => servershell.shown_attributes.find(b => b === a) === undefined);
@@ -232,6 +237,8 @@ servershell.commands = {
 
         $(document).one('servershell_search_finished', function() {
             let to_export = '';
+            let selected = servershell.get_selected();
+            let servers = servershell.servers.filter(s => selected.includes(s.object_id));
             servershell.servers.forEach(function(object) {
                 attribute_ids.forEach(function(attribute_id) {
                     if (object.hasOwnProperty(attribute_id)) {
