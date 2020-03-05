@@ -86,6 +86,7 @@ const property_handler = {
         term: null,
         command: null,
         understood: null,
+        retries: null,
         shown_attributes: ['push', 'splice'],
     },
     _trigger_events: function(action, property, property_of) {
@@ -193,9 +194,9 @@ servershell.pages = function() {
  *
  * @param text message to show (can be html)
  * @param level either primary,secondary,success,danger,warning,info,light,dark
- * @param auto_dismiss true to auto dismiss after 2 seconds
+ * @param auto_dismiss seconds to wait before disappear (0 never)
  */
-servershell.alert = function(text, level, auto_dismiss=true) {
+servershell.alert = function(text, level, auto_dismiss=5) {
     let levels = [
         'primary',
         'secondary',
@@ -219,10 +220,10 @@ servershell.alert = function(text, level, auto_dismiss=true) {
 
     box.toggle();
 
-    if (auto_dismiss) {
+    if (auto_dismiss > 0) {
         setTimeout(function () {
             box.toggle();
-        }, 5000);
+        }, auto_dismiss * 1000);
     }
 };
 
@@ -246,5 +247,6 @@ servershell.get_object = function(object_id) {
  * @returns {*}
  */
 servershell.get_attribute = function(attribute_id) {
-    return servershell.attributes.find(attribute => attribute.attribute_id === attribute_id);
+    return servershell.attributes.find(
+        attribute => attribute.attribute_id === attribute_id);
 };

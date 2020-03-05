@@ -479,11 +479,11 @@ servershell.commands = {
                     servershell.to_commit = {deleted: [], changes: {}};
                 }
             },
-            complete: function() {
-                spinner.disable();
-            }
         };
-        $.post(settings);
+        $.post(settings).fail(function() {
+            servershell.alert('Commit request failed retrying in 5 seconds!', 'danger');
+            setTimeout(servershell.commands.commit, 5000);
+        });
     }
 };
 
