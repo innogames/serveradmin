@@ -36,6 +36,14 @@
                             Disable Autocomplete
                         </label>
                     </div>
+                    <hr>
+                    Keyboard Shortcuts:
+                    <ul>
+                        <li><code>TAB</code> Switch to next input field (search, command, first entry in result table)</li>
+                        <li><code>SHIFT + TAB</code> Switch to previous input field.</li>
+                        <li><code>ESC</code> Remove focus from input field</li>
+                        <li><code>ESC (Autocomplete)</code> Exit auto complete and keep current value</li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -148,6 +156,7 @@
         // Initialize servershell object properties with initial values
         // from backend. This allows us setting defaults from backend.
         servershell.term = "{{ term }}";
+        servershell._term = "{{ term }}";
         servershell.command = "";
         servershell.understood = "";
         servershell.attributes = {% autoescape off %}{{ attributes|json }}{% endautoescape %}

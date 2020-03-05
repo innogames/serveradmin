@@ -49,6 +49,9 @@ servershell.submit_search = function() {
 
         spinner.disable();
 
+        // Indicator that we have successfully reloaded ...
+        servershell._term = servershell.term;
+
         // Focus command input after successful search ...
         $('#command').focus();
     }).fail(function () {
@@ -87,5 +90,11 @@ $(document).ready(function() {
     ];
     $(document).on(events.join(' '), function() {
         servershell.submit_search();
+    });
+
+    // If user tabs to command field but search term has changed reload
+    $(document).keyup(function (event) {
+        if ($('#command').is(':focus') && event.which === 9 && servershell.term !== servershell._term)
+            servershell.submit_search();
     });
 });
