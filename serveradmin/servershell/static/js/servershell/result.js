@@ -24,7 +24,7 @@ servershell.update_result = function() {
     // Restore previous selection
     servershell.set_selected(selected);
 
-    let info = `Results (${servershell.num_servers} servers, page ${servershell.page()}/${servershell.pages()})`;
+    let info = `Results (${servershell.num_servers} servers, page ${servershell.page()}/${servershell.pages()}, ${servershell.limit} per page)`;
     $('div.result_info').html(info);
 
     // Select first element if there is only one.

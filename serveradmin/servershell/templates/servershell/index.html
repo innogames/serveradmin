@@ -162,7 +162,6 @@
         servershell.attributes = {% autoescape off %}{{ attributes|json }}{% endautoescape %}
         servershell.offset = {{ offset }};
         servershell.limit = {{ limit }};
-        servershell.per_page = {{ per_page }};
         servershell.order_by = "{{ order_by }}";
         servershell.filters = {% autoescape off %}{{ filters|json }}{% endautoescape %}
         // Changing this property triggers a search ...

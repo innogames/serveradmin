@@ -73,7 +73,6 @@ def index(request):
         'attributes': attributes_json,
         'offset': 0,
         'limit': request.session.get('limit', NUM_SERVERS_DEFAULT),
-        'per_page': request.session.get('per_page', NUM_SERVERS_DEFAULT),
         'order_by': 'hostname',
         'command_history': json.dumps(
             request.session.get('command_history', [])),
