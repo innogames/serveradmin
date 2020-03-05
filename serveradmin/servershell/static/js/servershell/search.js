@@ -48,6 +48,9 @@ servershell.submit_search = function() {
         $(document).trigger('servershell_search_finished');
 
         spinner.disable();
+
+        // Focus command input after successful search ...
+        $('#command').focus();
     }).fail(function () {
         servershell.alert('Search request failed retrying in 5 seconds!', 'danger');
         setTimeout(servershell.submit_search, 5000);
