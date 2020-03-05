@@ -122,7 +122,7 @@ get_row_html = function(object, number) {
             row.append(cell);
         }
         else {
-            let value = attribute_id in object ? object[attribute_id] : '';
+            let value = attribute_id in object && object[attribute_id] !== null ? object[attribute_id] : '';
             row.append(`<td class="disabled">${value}</td>`);
         }
     });
