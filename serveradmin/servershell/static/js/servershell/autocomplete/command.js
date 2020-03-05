@@ -71,7 +71,7 @@ $(document).ready(function() {
                        })
                    });
                }
-               if (command === 'orderby' || command === 'delattr') {
+               if (command === 'orderby' || command === 'delattr' || command === 'history') {
                    let search_string = values.shift();
                    let attribute_ids = get_attribute_ids(search_string);
                    attribute_ids.slice(0, 25).forEach(function(attribute_id) {
