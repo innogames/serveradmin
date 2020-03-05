@@ -133,7 +133,10 @@ servershell.delete_attribute = function(object_id, attribute_id) {
 function validate_selected(min=1, max=-1) {
     let selected = servershell.get_selected().length;
     if ((min !== -1 && selected < min) || (max !== -1 && selected.length > max)) {
-        servershell.alert(`Select at least ${min} and at most ${max} objects`, 'warning');
+        if (max === -1)
+            servershell.alert(`You must select at least ${min} object(s)`, 'warning');
+        else
+            servershell.alert(`Select at least ${min} and at most ${max} objects`, 'warning');
         return false;
     }
 
