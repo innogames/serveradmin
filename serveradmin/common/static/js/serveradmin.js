@@ -10,9 +10,20 @@ $(document).ready(function() {
     spinner = {
         enable: function () {
             $('#spinner').show();
+            $('#spinner-counter').show();
+
+            let update_spinner = function() {
+                let element = $('#spinner-counter-time');
+                element.html(Number.parseInt(element.html()) + 1);
+                setTimeout(update_spinner, 1);
+            };
+            setTimeout(update_spinner, 1);
         },
         disable: function () {
             $('#spinner').hide();
+            $('#spinner-counter').hide();
+            $('#spinner-counter-time').html(0);
+            $('#spinner-counter-unit').html('ms');
         },
     }
 });
