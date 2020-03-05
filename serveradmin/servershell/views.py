@@ -72,7 +72,7 @@ def index(request):
         'shown_attributes': shown_attributes,
         'attributes': attributes_json,
         'offset': 0,
-        'limit': NUM_SERVERS_DEFAULT,
+        'limit': request.session.get('limit', NUM_SERVERS_DEFAULT),
         'per_page': request.session.get('per_page', NUM_SERVERS_DEFAULT),
         'order_by': 'hostname',
         'command_history': json.dumps(
@@ -152,7 +152,7 @@ def get_results(request):
 
     # Save settings across requests and tabs
     request.session['term'] = term
-    request.session['per_page'] = limit
+    request.session['limit'] = limit
     request.session['shown_attributes'] = shown_attributes
 
     # Add information about available, editable attributes on servertypes
