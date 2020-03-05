@@ -465,6 +465,16 @@ servershell.commands = {
             servershell.update_result();
         }
     },
+    history: function() {
+        if (!validate_selected(1, 1))
+            return;
+
+        let object_id = servershell.get_selected()[0];
+        let url = servershell.urls.history + `?object_id=${object_id}`;
+        window.open(url, '_blank');
+
+        servershell.alert(`History for ${object_id} opened in a new tab`, 'success');
+    },
     commit: function() {
         spinner.enable();
 
