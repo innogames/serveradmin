@@ -27,6 +27,10 @@ servershell.update_result = function() {
     let info = `Results (${servershell.num_servers} servers, page ${servershell.page()}/${servershell.pages()})`;
     $('div.result_info').html(info);
 
+    // Select first element if there is only one.
+    if (servershell.servers.length === 1)
+        $('#result_table input[name=server]').click();
+
     spinner.disable();
 };
 
