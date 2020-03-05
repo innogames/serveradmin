@@ -153,7 +153,7 @@ register_inline_editing = function(cell) {
         if (previous.length)
             previous.click();
 
-        let cell = $(event.target);
+        let cell = $(event.target).closest('td');
         let row = cell.parent();
         let object_id = row.data('oid');
         let object = servershell.get_object(object_id);
