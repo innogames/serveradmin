@@ -157,9 +157,13 @@ def get_results(request):
 
     # Add information about available, editable attributes on servertypes
     servertype_ids = {s['servertype'] for s in servers}
+
+    default_editable = list(Attribute.specials)
+    default_editable.remove('object_id')
+
     editable_attributes = dict()
     for servertype_id in servertype_ids:
-        editable_attributes[servertype_id] = list(Attribute.specials)
+        editable_attributes[servertype_id] = default_editable.copy()
     for sa in ServertypeAttribute.objects.filter(
             servertype_id__in=servertype_ids,
             attribute_id__in=shown_attributes,
