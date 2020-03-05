@@ -82,14 +82,23 @@ def changes(request):
 def history(request):
     object_id = request.GET.get('object_id')
     commit_id = request.GET.get('commit_id')
-    attribute_ids = request.GET.getlist('attribute_ids')
+    search_string = request.GET.get('search_string')
 
     if not object_id:
         raise Http404
 
-    adds = ChangeAdd.objects.filter(server_id=object_id).select_related()
-    updates = ChangeUpdate.objects.filter(server_id=object_id).select_related()
+    adds = ChangeAdd.objects.filter(server_id=object_id)
+    updates = ChangeUpdate.objects.filter(server_id=object_id)
     deletes = ChangeDelete.objects.filter(server_id=object_id).select_related()
+
+    # @TODO Transform to PostgreSQL JSON and put a index here
+    if search_string:
+        adds = adds.filter(attributes_json__contains=search_string)
+        updates = updates.filter(updates_json__contains=search_string)
+        deletes = deletes.filter(attributes_json__contains=search_string)
+
+    adds = adds.select_related()
+    updates = updates.select_related()
 
     if commit_id:
         adds = adds.filter(commit__pk=commit_id)
@@ -118,7 +127,8 @@ def history(request):
         'name': server.get if server.exists() else object_id,
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
-        'link': request.get_full_path()
+        'link': request.get_full_path(),
+        'search_string': search_string,
     })
 
 
