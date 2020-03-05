@@ -7,7 +7,7 @@ $(document).ready(function() {
                 a => a.attribute_id.substring(0, a.attribute_id.length - 1).startsWith(search_string) && a.type !== 'reverse');
 
        if (already_selected)
-           attribute_ids = attribute_ids.filter(a => !already_selected.includes(a));
+           attribute_ids = attribute_ids.filter(a => !already_selected.includes(a.attribute_id));
 
        if (exclude_multi)
            attribute_ids = attribute_ids.filter(a => a.multi === false);
@@ -101,4 +101,15 @@ $(document).ready(function() {
            response(choices);
        }
    })
+});
+
+$(document).on('autocompleteselect', function(event, ui) {
+    if (ui.item.value.endsWith(' ')) {
+        let ac = function() {
+            $('#command').autocomplete('search')
+        };
+        // When triggering autocomplete right away nothing happens, with
+        // a small delay it works fine.
+        setTimeout(ac, 50);
+    }
 });

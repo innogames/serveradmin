@@ -187,7 +187,7 @@ servershell.commands = {
         servershell.submit_search();
     },
     attr: function(attribute_ids) {
-        attribute_ids = attribute_ids.split(',').map(a => a.trim());
+        attribute_ids = attribute_ids.split(',').map(a => a.trim()).filter(a => a !== '');
         let unknown = attribute_ids.filter(a => servershell.attributes.find(b => b.attribute_id === a) === undefined);
 
         if (unknown.length > 0) {
