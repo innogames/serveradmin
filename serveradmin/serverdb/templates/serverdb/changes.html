@@ -104,13 +104,13 @@
                         <td>{% spaceless %}
                             {% if commit.changedelete_set.count == 1 %}
                                 {% for change_del in commit.changedelete_set.all %}
-                                    <a target="_blank" href="{% url 'serverdb_history' %}?server_id={{ change_del.server_id }}&commit={{ commit.id }}">{{ change_del.server_id }}</a>
+                                    <a target="_blank" href="{% url 'serverdb_history' %}?object_id={{ change_del.server_id }}&commit={{ commit.id }}">{{ change_del.server_id }}</a>
                                 {% endfor %}
                             {% elif commit.changedelete_set.count > 1 %}
                                 <a href="#change-delete-{{ forloop.counter }}" data-toggle="collapse">view/hide all</a>
                                 <ul id="change-delete-{{ forloop.counter }}" class="collapse">
                                 {% for change_del in commit.changedelete_set.all %}
-                                    <li><a target="_blank" href="{% url 'serverdb_history' %}?server_id={{ change_del.server_id }}&commit={{ commit.id }}">{{ change_del.server_id }}</a></li>
+                                    <li><a target="_blank" href="{% url 'serverdb_history' %}?object_id={{ change_del.server_id }}&commit={{ commit.id }}">{{ change_del.server_id }}</a></li>
                                 {% endfor %}
                             {% else %}
                                 -
@@ -119,13 +119,13 @@
                         <td>{% spaceless %}
                             {% if commit.changeadd_set.count == 1 %}
                                 {% for change_add in commit.changeadd_set.all %}
-                                    <a target="_blank" href="{% url 'serverdb_history' %}?server_id={{ change_add.server_id }}&commit={{ commit.id }}">{{ change_add.server_id|hostname }}</a>
+                                    <a target="_blank" href="{% url 'serverdb_history' %}?object_id={{ change_add.server_id }}&commit={{ commit.id }}">{{ change_add.server_id|hostname }}</a>
                                 {% endfor %}
                             {% elif commit.changeadd_set.count > 1 %}
                                 <a href="#change-add-{{ forloop.counter }}" data-toggle="collapse">view/hide all</a>
                                 <ul id="change-add-{{ forloop.counter }}" class="collapse">
                                 {% for change_add in commit.changeadd_set.all %}
-                                    <li><a target="_blank" href="{% url 'serverdb_history' %}?server_id={{ change_add.server_id }}&commit={{ commit.id }}">{{ change_add.server_id|hostname }}</a></li>
+                                    <li><a target="_blank" href="{% url 'serverdb_history' %}?object_id={{ change_add.server_id }}&commit={{ commit.id }}">{{ change_add.server_id|hostname }}</a></li>
                                 {% endfor %}
                                 </ul>
                             {% else %}
@@ -135,13 +135,13 @@
                         <td>{% spaceless %}
                             {% if commit.changeupdate_set.count == 1 %}
                                 {% for change_update in commit.changeupdate_set.all %}
-                                    <a target="_blank" href="{% url 'serverdb_history' %}?server_id={{ change_update.server_id }}&commit={{ commit.id }}">{{ change_update.server_id|hostname }}</a>
+                                    <a target="_blank" href="{% url 'serverdb_history' %}?object_id={{ change_update.server_id }}&commit={{ commit.id }}">{{ change_update.server_id|hostname }}</a>
                                 {% endfor %}
                             {% elif commit.changeupdate_set.count > 1 %}
                                 <a href="#change-update-{{ forloop.counter }}" data-toggle="collapse">view/hide all</a>
                                 <ul id="change-update-{{ forloop.counter }}" class="collapse">
                                 {% for change_update in commit.changeupdate_set.all %}
-                                    <li><a target="_blank" href="{% url 'serverdb_history' %}?server_id={{ change_update.server_id }}&commit={{ commit.id }}">{{ change_update.server_id|hostname }}</a></li>
+                                    <li><a target="_blank" href="{% url 'serverdb_history' %}?object_id={{ change_update.server_id }}&commit={{ commit.id }}">{{ change_update.server_id|hostname }}</a></li>
                                 {% endfor %}
                                  </ul>
                             {% else %}

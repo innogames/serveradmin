@@ -21,7 +21,7 @@ from serveradmin.serverdb.models import (
     ChangeAdd,
     ChangeUpdate,
     ChangeDelete,
-    Server)
+    Server, ServertypeAttribute)
 from serveradmin.serverdb.query_committer import CommitError, commit_query
 
 
@@ -80,18 +80,16 @@ def changes(request):
 
 @login_required
 def history(request):
-    server_id = request.GET.get('server_id')
-    if not server_id:
+    object_id = request.GET.get('object_id')
+    commit_id = request.GET.get('commit_id')
+    attribute_ids = request.GET.getlist('attribute_ids')
+
+    if not object_id:
         raise Http404
 
-    try:
-        commit_id = int(request.GET['commit'])
-    except (KeyError, ValueError):
-        commit_id = None
-
-    adds = ChangeAdd.objects.filter(server_id=server_id).select_related()
-    updates = ChangeUpdate.objects.filter(server_id=server_id).select_related()
-    deletes = ChangeDelete.objects.filter(server_id=server_id).select_related()
+    adds = ChangeAdd.objects.filter(server_id=object_id).select_related()
+    updates = ChangeUpdate.objects.filter(server_id=object_id).select_related()
+    deletes = ChangeDelete.objects.filter(server_id=object_id).select_related()
 
     if commit_id:
         adds = adds.filter(commit__pk=commit_id)
@@ -112,10 +110,12 @@ def history(request):
         else:
             commit.commit_by = 'unknown'
 
+    server = Server.objects.filter(server_id=object_id)
     return TemplateResponse(request, 'serverdb/history.html', {
         'change_list': change_list,
         'commit_id': commit_id,
-        'server_id': server_id,
+        'object_id': object_id,
+        'name': server.get if server.exists() else object_id,
         'is_ajax': request.is_ajax(),
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
         'link': request.get_full_path()
@@ -123,22 +123,29 @@ def history(request):
 
 
 @login_required
-def restore_deleted(request, change_commit):
+def restore_deleted(request, change_commit_id):
+    object_id = request.POST.get('object_id')
     deleted = get_object_or_404(
         ChangeDelete,
-        server_id=request.POST.get('server_id'),
-        commit__pk=change_commit,
+        server_id=object_id,
+        commit__pk=change_commit_id,
     )
 
     server_obj = deleted.attributes
+
+    # Remove consistent_via_attribute values they are implicit
+    consistent_attribute_ids = ServertypeAttribute.objects.filter(
+        servertype_id=server_obj['servertype']).exclude(
+        consistent_via_attribute_id=None)
+    for attribute in consistent_attribute_ids:
+        server_obj.pop(attribute.attribute_id)
+
     try:
-        commit_query([server_obj], user=request.user)
+        commit = commit_query([server_obj], user=request.user)
+        object_id = str(commit.created[0]['object_id'])
     except CommitError as error:
         messages.error(request, str(error))
     else:
-        messages.success(request, 'Server restored.')
+        messages.success(request, 'Restored object with new id ' + object_id)
 
-    return redirect(
-        reverse('serverdb_history') +
-        '?server_id=' + str(server_obj['object_id'])
-    )
+    return redirect(reverse('serverdb_history') + '?object_id=' + object_id)
