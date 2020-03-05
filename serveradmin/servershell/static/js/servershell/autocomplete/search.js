@@ -109,7 +109,7 @@ $(document).ready(function () {
         },
     });
 
-    $(document).on('autocompleteselect', function(event, ui) {
+    $('#term').on('autocompleteselect', function(event, ui) {
         if (ui.item.value.endsWith('=')) {
             let ac = function() {
                 $('#term').autocomplete('search')
@@ -125,6 +125,10 @@ $(document).ready(function () {
             $('#term').autocomplete('disable');
         else
             $('#term').autocomplete('enable');
+    });
+
+    $('#term').on('autocompleteclose', function () {
+        $('#term').focus();
     });
 });
 

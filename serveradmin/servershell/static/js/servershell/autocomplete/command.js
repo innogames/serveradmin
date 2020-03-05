@@ -103,7 +103,7 @@ $(document).ready(function() {
    })
 });
 
-$(document).on('autocompleteselect', function(event, ui) {
+$('#command').on('autocompleteselect', function(event, ui) {
     if (ui.item.value.endsWith(' ')) {
         let ac = function() {
             $('#command').autocomplete('search')
@@ -112,4 +112,8 @@ $(document).on('autocompleteselect', function(event, ui) {
         // a small delay it works fine.
         setTimeout(ac, 50);
     }
+});
+
+$('#command').on('autocompleteclose', function () {
+    $('#command').focus();
 });
