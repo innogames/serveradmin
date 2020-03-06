@@ -1,22 +1,21 @@
 $(document).ready(function() {
-    $('.content .edit_value').each(function(index, element) {
-        $(element).on('keyup', function() {
-            let values;
+    $(document).keyup(function(event) {
+        let input = $(event.target);
 
-            if (this.type === 'textarea') {
-                values = this.value.split('\n');
-            }
-            else {
-                values = [this.value];
-            }
+        if (input.data('pattern')) {
+            let values = [];
 
-            let input = $(this);
+            if (input[0].type === 'text')
+                values = [input[0].value];
+            if (input[0].type === 'textarea')
+                values = input[0].value.split('\n');
+
             values.forEach(function(value) {
                 if (!value.match(input.data('pattern')))
                     input.css('background-color', 'rgba(255, 0, 0, 0.21);');
                 else
                     input.css('background-color', '');
             });
-        });
-    });
+        }
+    })
 });
