@@ -16,7 +16,7 @@ from serveradmin.servershell.views import (
     new_object,
     clone_object,
     choose_ip_addr,
-    store_command,
+    settings,
 )
 
 
@@ -35,5 +35,5 @@ urlpatterns = [
         choose_ip_addr,
         name='servershell_choose_ip_addr',
     ),
-    url(r'^store_command$', store_command, name='servershell_store_command'),
+    url(r'^settings$', settings, name='servershell_save_settings'),
 ]

@@ -97,4 +97,16 @@ $(document).ready(function() {
         if ($('#command').is(':focus') && event.which === 9 && servershell.term !== servershell._term)
             servershell.submit_search();
     });
+
+    // Save search settings
+    $('#search-options input[type=checkbox]').change(function() {
+        spinner.enable();
+
+        $.getJSON(servershell.urls.settings, {
+            'autocomplete': $('#autocomplete')[0].checked,
+            'autoselect': $('#autoselect')[0].checked,
+            'complete': spinner.disable,
+            'timeout': 5000,
+        });
+    });
 });

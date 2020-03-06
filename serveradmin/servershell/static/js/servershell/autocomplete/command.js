@@ -171,4 +171,7 @@ $(document).ready(function() {
     command_input.on('autocompleteclose', function () {
         $('#command').focus();
     });
+
+    command_input.autocomplete($('#autoselect')[0].checked ? 'enable' : 'disable');
+    command_input.autocomplete('option', 'autoFocus', $('#autocomplete')[0].checked);
 });

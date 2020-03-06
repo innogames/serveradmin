@@ -4,6 +4,7 @@ Copyright (c) 2020 InnoGames GmbH
 """
 
 import json
+from distutils.util import strtobool
 from itertools import islice
 
 from django.contrib import messages
@@ -11,7 +12,8 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import (
     ObjectDoesNotExist, PermissionDenied, ValidationError
 )
-from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.http import HttpResponse, HttpResponseRedirect, Http404, \
+    JsonResponse
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
@@ -82,6 +84,8 @@ def index(request):
         'command_history': json.dumps(
             request.session.get('command_history', [])),
         'filters': sorted([(f.__name__, f.__doc__) for f in filter_classes]),
+        'autocomplete': request.session.get('autocomplete', True),
+        'autoselect': request.session.get('autoselect', True),
     })
 
 
@@ -433,16 +437,20 @@ def choose_ip_addr(request):
 
 
 @login_required
-def store_command(request):
-    command = request.POST.get('command')
+def settings(request):
+    """Save search settings
 
-    if command:
-        command_history = request.session.setdefault('command_history', [])
-        if command not in command_history:
-            command_history.append(command)
-            request.session.modified = True
+    Save settings of the Servershell to session.
 
-    return HttpResponse('{"status": "OK"}', content_type='application/x-json')
+    :param request:
+    :return:
+    """
+    request.session['autocomplete'] = bool(strtobool(
+        request.GET.get('autocomplete', 'true')))
+    request.session['autoselect'] = bool(strtobool(
+        request.GET.get('autoselect', 'true')))
+
+    return JsonResponse({'status': 'ok'})
 
 
 def _prepare_regexp_html(regexp):

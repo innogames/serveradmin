@@ -14,7 +14,8 @@ $(document).ready(function () {
         return result;
     };
 
-    $('#term').autocomplete({
+    let term_input = $('#term');
+    term_input.autocomplete({
         delay: 300, // Wait n ms before starting to auto complete to avoid needles requests to backend
         minLength: 0,
         autoFocus: true,
@@ -109,7 +110,7 @@ $(document).ready(function () {
         },
     });
 
-    $('#term').on('autocompleteselect', function(event, ui) {
+    term_input.on('autocompleteselect', function(event, ui) {
         if (ui.item.value.endsWith('=')) {
             let ac = function() {
                 $('#term').autocomplete('search')
@@ -120,15 +121,11 @@ $(document).ready(function () {
         }
     });
 
-    $('#disable-autocompletion').on('click', function() {
-        if (this.checked)
-            $('#term').autocomplete('disable');
-        else
-            $('#term').autocomplete('enable');
-    });
-
-    $('#term').on('autocompleteclose', function () {
+    term_input.on('autocompleteclose', function () {
         $('#term').focus();
     });
+
+    term_input.autocomplete($('#autoselect')[0].checked ? 'enable' : 'disable');
+    term_input.autocomplete('option', 'autoFocus', $('#autocomplete')[0].checked);
 });
 

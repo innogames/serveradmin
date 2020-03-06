@@ -25,19 +25,34 @@
         <div class="col-sm-8">
             <form method="post" action="{% url 'servershell_results' %}" id="search_form">
                 {% csrf_token %}
-                <input tabindex="1" class="form-control form-control-sm" type="text" id="term" data-servershell-property-bind="term" data-servershell-autocomplete-url="{% url 'servershell_autocomplete' %}" />
+                <input tabindex="1" class="form-control form-control-sm autocomplete" type="text" id="term" data-servershell-property-bind="term" data-servershell-autocomplete-url="{% url 'servershell_autocomplete' %}" />
+            </form>
+        </div>
+        <div class="col-sm-3">
+            <img src="{{ STATIC_URL }}icons/question.svg" alt="How to search" data-toggle="modal" data-target="#modal-help-search"/>
+            <button id="search-options-button" class="btn btn-sm btn-light" data-toggle="collapse" data-target="#search-options">Shortcuts & Options</button>
+        </div>
+    </div>
+    <div class="form-group row input-controls">
+        <label for="command" class="col-sm-1 col-form-label">Command:</label>
+        <div class="col-sm-8">
+            <form method="post" id="command_form">
+                <input tabindex="2" class="form-control form-control-sm autocomplete" type="text" size="60"  id="command" data-servershell-property-bind="command" />
             </form>
             <!-- Advanced search options (hidden by default) -->
             <div class="collapse" id="search-options">
                 <div class="card card-body">
+                    <b>Your settings are saved in your session</b>
                     <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="disable-autocompletion">
-                        <label class="form-check-label" for="disable-autocompletion">
-                            Toggle auto completion
-                        </label>
+                        <input type="checkbox" class="form-check-input" id="autocomplete" {% if autocomplete %}checked="checked"{% endif %} onchange="this.checked ? $('.autocomplete').autocomplete('enable') : $('.autocomplete').autocomplete('disable');">
+                        <label class="form-check-label" for="autocomplete">Toggle auto completion</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="autoselect" {% if autoselect %}checked="checked{% endif %}" onchange="$('.autocomplete').autocomplete('option', 'autoFocus', this.checked);">
+                        <label class="form-check-label" for="autoselect">Toggle select first entry of auto completion</label>
                     </div>
                     <hr>
-                    Keyboard Shortcuts:
+                    <b>Keyboard Shortcuts</b>
                     <ul>
                         <li><kbd>TAB</kbd> Goto next input</li>
                         <li><kbd>SHIFT + TAB</kbd> Goto previous input</li>
@@ -49,18 +64,6 @@
                     </ul>
                 </div>
             </div>
-        </div>
-        <div class="col-sm-3">
-            <img src="{{ STATIC_URL }}icons/question.svg" alt="How to search" data-toggle="modal" data-target="#modal-help-search"/>
-            <button id="search-options-button" class="btn btn-sm btn-light" data-toggle="collapse" data-target="#search-options">Shortcuts & Options</button>
-        </div>
-    </div>
-    <div class="form-group row input-controls">
-        <label for="command" class="col-sm-1 col-form-label">Command:</label>
-        <div class="col-sm-8">
-            <form method="post" id="command_form">
-                <input tabindex="2" class="form-control form-control-sm" type="text" size="60"  id="command" data-servershell-property-bind="command" />
-            </form>
         </div>
         <div class="col-sm-3">
             <img src="{{ STATIC_URL }}icons/question.svg" alt="Show supported commands" data-toggle="modal" data-target="#modal-help-commands"/>
@@ -195,6 +198,7 @@
             changes: "{% url 'serverdb_changes' %}",
             commit: "{% url 'servershell_commit' %}",
             history: "{% url 'serverdb_history' %}",
+            settings: "{% url 'servershell_save_settings' %}",
         }
     });
 </script>
