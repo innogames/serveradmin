@@ -58,8 +58,11 @@ $(document).ready(function() {
                         command === '' ||
                         (name !== command && name.startsWith(command))
                     ) {
+                        let desc = $(`#cmd-${name} td:nth-of-type(3)`).text();
+                        desc = desc === undefined ? '' : desc;
+
                         choices.push({
-                            'label': name,
+                            'label': `${name}: ${desc}`,
                             'value': `${name} `,
                         });
                     }
