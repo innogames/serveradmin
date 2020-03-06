@@ -505,6 +505,7 @@ servershell.commands = {
                     servershell.submit_search();
                     servershell.to_commit = {deleted: [], changes: {}};
                 }
+                spinner.disable();
             },
         };
         $.post(settings).fail(function() {
