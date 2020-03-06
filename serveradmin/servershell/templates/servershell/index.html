@@ -33,23 +33,26 @@
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input" id="disable-autocompletion">
                         <label class="form-check-label" for="disable-autocompletion">
-                            Disable Autocomplete
+                            Toggle auto completion
                         </label>
                     </div>
                     <hr>
                     Keyboard Shortcuts:
                     <ul>
-                        <li><kbd>TAB</kbd> Switch to next input field (search, command, first entry in result table)</li>
-                        <li><kbd>SHIFT + TAB</kbd> Switch to previous input field.</li>
-                        <li><kbd>ESC</kbd> Remove focus from input field</li>
-                        <li><kbd>ESC</kbd> Exit auto complete and keep current value</li>
+                        <li><kbd>TAB</kbd> Goto next input</li>
+                        <li><kbd>SHIFT + TAB</kbd> Goto previous input</li>
+                        <li><kbd>ESC</kbd> Close focus from input</li>
+                        <li><kbd>ESC</kbd> Close auto completion</li>
+                        <li><kbd>CTRL + &#8592;</kbd> Jump a word backward</li>
+                        <li><kbd>CTRL + &#8594;</kbd> Jump a word forward</li>
+                        <li><kbd>ACL + BACKSPACE</kbd> Delete one word (reverse)</li>
                     </ul>
                 </div>
             </div>
         </div>
         <div class="col-sm-3">
             <img src="{{ STATIC_URL }}icons/question.svg" alt="How to search" data-toggle="modal" data-target="#modal-help-search"/>
-            <button id="search-options-button" class="btn btn-sm btn-light" data-toggle="collapse" data-target="#search-options">Options</button>
+            <button id="search-options-button" class="btn btn-sm btn-light" data-toggle="collapse" data-target="#search-options">Shortcuts & Options</button>
         </div>
     </div>
     <div class="form-group row input-controls">
