@@ -21,6 +21,7 @@ servershell.update_attribute = function(object_id, attribute_id, new_value, mult
 
     // Case number attributes into integer
     new_value = attribute.type === 'number' ? Number.parseInt(new_value) : new_value;
+    new_value = attribute.type === 'boolean' ? !!new_value : new_value;
 
     if (!changes.hasOwnProperty(object_id))
         changes[object_id] = {};
