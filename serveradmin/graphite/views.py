@@ -68,8 +68,8 @@ def graph_table(request):
             assert isinstance(value, MultiAttr)
             if not any(collection.name == v for v in value):
                 break   # The server hasn't got this attribute value.
-        else:
-            collections.append(collection)
+            else:
+                collections.append(collection)
 
     # Prepare the graph descriptions
     descriptions = []
@@ -81,9 +81,8 @@ def graph_table(request):
 
     # Prepare the graph tables for all hosts
     graph_tables = []
-    graph_table = []
     for hostname in servers.keys():
-        graph_table.clear()
+        graph_table = []
         if request.GET.get('action') == 'Submit':
             custom_params = request.GET.urlencode()
             for collection in collections:
@@ -103,7 +102,7 @@ def graph_table(request):
                                    graph_tables[order]]
 
         # Combine them
-        graph_table.clear()
+        graph_table = []
         for combined_tables in zip(*graph_tables):
             graph_table += list(combined_tables)
 
