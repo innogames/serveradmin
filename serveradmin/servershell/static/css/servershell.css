@@ -72,3 +72,7 @@
 #accordion-attributes .card-body .list-group-item label {
     margin-bottom: 0;
 }
+
+#accordion-attributes .attribute-indicator b {
+    color: var(--primary);
+}
