@@ -184,10 +184,15 @@ register_inline_editing = function(cell) {
 
         let content;
         if (attribute.multi)
-            content = $(`<textarea id="inline-edit" rows="5" cols="30">${current_value.join('\n')}</textarea>`);
+            content = $(`<textarea rows="5" cols="30">${current_value.join('\n')}</textarea>`);
         else
-            content = $(`<input id="inline-edit" type="text" value="${current_value === null ? '' : current_value}" />`);
+            content = $(`<input type="text" value="${current_value === null ? '' : current_value}" />`);
 
+        // Provide on-the-fly validation
+        if ('regex' in attribute && attribute.regex !== null)
+            content.data('pattern', attribute.regex);
+
+        content.attr('id', 'inline-edit');
         content.data('oid', object_id);
         content.data('aid', attribute_id);
         content.data('multi', attribute.multi);
@@ -240,6 +245,7 @@ register_inline_editing = function(cell) {
 
         cell.html(content);
         cell.append(button);
+        cell.append(`<div><b>${attribute.regex}</b></div>`);
 
         // Focus element and place cursor at the end of the text
         content.focus();

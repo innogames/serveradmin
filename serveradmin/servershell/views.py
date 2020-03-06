@@ -64,6 +64,11 @@ def index(request):
             'hovertext': attribute.hovertext,
             'help_link': attribute.help_link,
             'group': attribute.group,
+            'regex': (
+                # XXX: HTML5 input patterns do not support these
+                None if not attribute.regexp else
+                attribute.regexp.replace('\\A', '^').replace('\\Z', '$')
+            ),
         })
     attributes_json.sort(key=lambda attr: attr['group'])
 
@@ -267,7 +272,7 @@ def _edit(request, server, edit_mode=False, template='edit'):  # NOQA: C901
                 return HttpResponseRedirect(url)
 
         if invalid_attrs:
-            messages.error(request, 'Attributes contain invalid values')
+            messages.error(request, 'Attributes contains invalid values')
 
     servertype = Servertype.objects.get(pk=server['servertype'])
     attribute_lookup = {a.pk: a for a in Attribute.objects.filter(
