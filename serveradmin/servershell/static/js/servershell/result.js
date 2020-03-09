@@ -1,29 +1,33 @@
 /**
- * Update Table HTML with latest results
+ * Generate HTML for result table
  *
- * Update table header and body html whenever the result has changes.
+ * Generates and updates the HTML for the result table based on the servershell
+ * properties.
  */
 servershell.update_result = function() {
     spinner.enable();
 
     let table = $('#result_table');
+
+    // Memorize currently selected objects to restore
     let selected = servershell.get_selected();
 
+    // Recreate table header
     let header = table.find('thead tr');
-    header.empty(''); // reset html ...
+    header.empty();
     header.append('<th scope="col"></th>');
     header.append('<th scope="col">#</th>');
-    servershell.shown_attributes.forEach(function(attribute) {
-        header.append(`<th scope="col">${attribute}</th>`);
-    });
+    servershell.shown_attributes.forEach((attribute, index) => header.append(`<th scope="col">${attribute}</th>`));
 
+    // Recreate table body
     let body = table.find('tbody');
-    body.empty(); // reset html
-    servershell.servers.forEach((object, number) => body.append(get_row_html(object, number)));
+    body.empty();
+    servershell.servers.forEach((object, index) => body.append(get_row_html(object, index + 1)));
 
-    // Restore previous selection
+    // Restore previous selected objects
     servershell.set_selected(selected);
 
+    // Update result information on top and bottom showing page etc.
     let info = `Results (${servershell.num_servers} servers, page ${servershell.page()}/${servershell.pages()}, ${servershell.limit} per page)`;
     $('div.result_info').html(info);
 
@@ -35,12 +39,82 @@ servershell.update_result = function() {
 };
 
 /**
- * Get selected rows in result table
+ * Get HTML for table row
  *
- * Returns a list of object_ids from the currently selected rows in the result
- * table.
+ * Returns the HTML for the result table body row based on the object and row
+ * number.
  *
- * @returns {jQuery}
+ * @param object
+ * @param number
+ * @returns {jQuery|HTMLElement}
+ */
+get_row_html = function(object, number) {
+    let row = $('<tr></tr>');
+    row.data('oid', object.object_id);
+
+    // Mark row as deleted. Make sure this wins over other colors
+    // such as the state otherwise the user will not see objects marked for
+    // deletion.
+    if (servershell.to_commit.deleted.includes(object.object_id))
+        row.addClass('delete');
+    else if (object.hasOwnProperty('state'))
+        row.addClass(`state-${object.state}`);
+
+    // Standard columns which should always be present
+    row.append(`<td><input tabindex="3" type="checkbox" name="server" value="${object.object_id}"/></td>`);
+    row.append(`<td>${number + servershell.offset}</td>`);
+
+    let changes = servershell.to_commit.changes;
+    servershell.shown_attributes.forEach(function(attribute_id) {
+        if (is_editable(object.object_id, attribute_id)) {
+            let cell = $('<td></td>');
+            cell.data('aid', attribute_id);
+
+            // Some helper variables
+            let object_id = object.object_id;
+            let attribute = servershell.get_attribute(attribute_id);
+
+            // Changes in to_commit we have to display
+            let change;
+            if (object_id in changes && attribute_id in changes[object_id])
+                change = changes[object_id][attribute_id];
+
+            if (change) {
+                if (attribute.multi) {
+                    let to_add = change.add.join(', ');
+                    let to_delete = change.remove.join(', ');
+                    let value = object[attribute_id].filter(v => !to_delete.includes(v)).join(', ');
+
+                    cell.html(`${value} <del>${to_delete}</del> <u>${to_add}</u>`)
+                }
+                else {
+                    let to_delete = change.old === null ? '' : change.old;
+                    let new_value = change.new === undefined ? '': change.new;
+                    cell.html(`<del>${to_delete}</del>&nbsp;<u>${new_value}</u>`);
+                }
+            }
+            else {
+                cell.html(get_string(object_id, attribute_id));
+            }
+
+            register_inline_editing(cell);
+            row.append(cell);
+        }
+        else {
+            let value = get_string(object.object_id, attribute_id);
+            row.append(`<td class="disabled">${value}</td>`);
+        }
+    });
+
+    return row;
+};
+
+/**
+ * Get selected objects
+ *
+ * Get a list of selected object ids based on the HTML checkboxes.
+ *
+ * @returns Array
  */
 servershell.get_selected = function() {
     return $.map($('#result_table input[name=server]:checked'), function(element) {
@@ -49,9 +123,9 @@ servershell.get_selected = function() {
 };
 
 /**
- * Set selected rows in result table
+ * Set selected objects
  *
- * Mark the rows with the given object_id in result table as selected.
+ * Tick the checkbox in the result table HTML for the given object ids.
  *
  * @param object_ids
  */
@@ -65,72 +139,6 @@ servershell.set_selected = function(object_ids) {
 };
 
 /**
- * Get row HTML
- *
- * Returns the row HTML for the given object which includes all necessary
- * CSS styles and changes made visible.
- *
- * @param object
- * @param number
- * @returns {jQuery|HTMLElement}
- */
-get_row_html = function(object, number) {
-    let row = $(`<tr data-oid="${object.object_id}"></tr>`);
-
-    // Mark row as deleted (red) if it is about to get deleted with the next
-    // commit. Otherwise color it depending on its state (see state.css).
-    // It is important that delete wins here otherwise the user would not be
-    // able to see which objects get deleted.
-    if (servershell.to_commit.deleted.includes(object.object_id))
-        row.addClass('delete');
-    else if (object.hasOwnProperty('state'))
-        row.addClass(`state-${object.state}`);
-
-    // Standard columns which should always be present
-    row.append(`<td><input tabindex="3" type="checkbox" name="server" value="${object.object_id}"/></td>`);
-    row.append(`<td>${number + 1 + servershell.offset}</td>`);
-
-    let changes = servershell.to_commit.changes;
-    servershell.shown_attributes.forEach(function (attribute_id) {
-        if (is_editable(object.object_id, attribute_id)) {
-            let object_id = object.object_id;
-            let server = servershell.get_object(object_id);
-            let attribute = servershell.get_attribute(attribute_id);
-            let cell = $(`<td data-attr="${attribute_id}" data-value="${object[attribute_id] === null ? '' : object[attribute_id]}"></td>`);
-
-            let change = object_id in changes && attribute_id in changes[object_id] ? changes[object_id][attribute_id] : null;
-            if (change) {
-                if (attribute.multi) {
-                    let to_add = change.add.join(', ');
-                    let to_delete = change.remove.join(', ');
-                    let current_value = server[attribute_id].filter(v => !to_delete.includes(v)).join(', ');
-
-                    cell.html(`${current_value} <del>${to_delete}</del> <u>${to_add}</u>`)
-                }
-                else {
-                    cell.html(`<del>${change.old === null ? '' : change.old}</del>&nbsp;<u>${change.new === undefined ? '': change.new}</u>`);
-                }
-            }
-            else {
-                if (attribute.multi)
-                    cell.html(object[attribute_id].join(', '));
-                else
-                    cell.html(object[attribute_id]);
-            }
-
-            register_inline_editing(cell);
-            row.append(cell);
-        }
-        else {
-            let value = attribute_id in object && object[attribute_id] !== null ? object[attribute_id] : '';
-            row.append(`<td class="disabled">${value}</td>`);
-        }
-    });
-
-    return row;
-};
-
-/**
  * Check if attribute is editable
  *
  * @param object_id
@@ -140,6 +148,21 @@ get_row_html = function(object, number) {
 is_editable = function(object_id, attribute_id) {
     let object = servershell.get_object(object_id);
     return attribute_id in object && servershell.editable_attributes[object.servertype].includes(attribute_id);
+};
+
+/**
+ * Get attribute value as string
+ *
+ * @param object_id
+ * @param attribute_id
+ * @returns {*}
+ */
+get_string = function(object_id, attribute_id) {
+    let object = servershell.get_object(object_id);
+    if (attribute_id in object && object[attribute_id] !== null)
+        return object[attribute_id].toString();
+
+    return '';
 };
 
 /**
@@ -162,10 +185,10 @@ register_inline_editing = function(cell) {
         let row = cell.parent();
         let object_id = row.data('oid');
         let object = servershell.get_object(object_id);
-        let attribute_id = cell.data('attr');
+        let attribute_id = cell.data('aid');
         let attribute = servershell.get_attribute(attribute_id);
 
-        // Select row for convenience ...
+        // Select row for convenience
         if (!servershell.get_selected().includes(object_id))
             row.children('td:first').children('input').click();
 
@@ -210,6 +233,11 @@ register_inline_editing = function(cell) {
 
             let object_id = edit.data('oid');
             let attribute_id = edit.data('aid');
+            let attribute = servershell.get_attribute(attribute_id);
+
+            // When the user types 'false' use empty string so that it casts to false
+            if (attribute.type === 'boolean' && value === 'false')
+                value = '';
 
             if (value === '') {
                 servershell.delete_attribute(object_id, attribute_id)
@@ -219,9 +247,11 @@ register_inline_editing = function(cell) {
                     let current_value = servershell.get_object(object_id)[attribute_id];
                     let to_add = value.filter(v => !current_value.includes(v));
                     let to_remove = current_value.filter(v => !value.includes(v));
+
                     servershell.update_attribute(object_id, attribute_id, to_add);
                     servershell.update_attribute(object_id, attribute_id, to_remove, 'remove');
-                } else {
+                }
+                else {
                     servershell.update_attribute(object_id, attribute_id, value);
                 }
             }

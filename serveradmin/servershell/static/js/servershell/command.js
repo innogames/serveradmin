@@ -19,7 +19,7 @@ servershell.update_attribute = function(object_id, attribute_id, new_value, mult
     let changes = servershell.to_commit.changes;
     let server = servershell.get_object(object_id);
 
-    // Case number attributes into integer
+    // Cast new values to corresponding data type
     new_value = attribute.type === 'number' ? Number.parseInt(new_value) : new_value;
     new_value = attribute.type === 'boolean' ? !!new_value : new_value;
 
