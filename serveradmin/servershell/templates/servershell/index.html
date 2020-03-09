@@ -45,11 +45,11 @@
                     <b>Your settings are saved in your session</b>
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input" id="autocomplete" {% if autocomplete %}checked="checked"{% endif %} onchange="this.checked ? $('.autocomplete').autocomplete('enable') : $('.autocomplete').autocomplete('disable');">
-                        <label class="form-check-label" for="autocomplete">Toggle auto completion</label>
+                        <label class="form-check-label" for="autocomplete">Autocomplete for Search & Command</label>
                     </div>
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input" id="autoselect" {% if autoselect %}checked="checked{% endif %}" onchange="$('.autocomplete').autocomplete('option', 'autoFocus', this.checked);">
-                        <label class="form-check-label" for="autoselect">Toggle select first entry of auto completion</label>
+                        <label class="form-check-label" for="autoselect">Automatically select 1st element from autocomplete</label>
                     </div>
                     <hr>
                     <b>Keyboard Shortcuts</b>
