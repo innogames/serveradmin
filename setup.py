@@ -23,6 +23,7 @@ if __name__ == '__main__':
                 'static/css/*',
                 'static/icons/*',
                 'static/js/*',
+                'static/plugins/*',
                 'templates/*',
                 'templates/igrestlogin/*',
             ],
