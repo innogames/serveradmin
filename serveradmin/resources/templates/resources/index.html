@@ -95,8 +95,8 @@
 {% endif %} {# else of if not error #}
 {% endblock content %}
 
-{% block additional_body %}
-<script type="text/javascript" src="{{ STATIC_URL }}graphite/js/graphite.js"></script>
+{% block additional_scripts %}
+<script type="text/javascript" src="{{ STATIC_URL }}js/graphite.js"></script>
 <script type="text/javascript">
 var monitor_graph_popup_url = '{% url 'resources_graph_popup' %}';
 $(function() {
