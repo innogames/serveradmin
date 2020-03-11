@@ -1,0 +1,113 @@
+:root {
+    --primary: #67a13a;
+    --background-primary: #e8ece4;
+    --background-secondary: #dce3d5;
+    --disabled-primary: #cccccc;
+    --disabled-secondary: #bbbbbb;
+    --add: #008800;
+    --remove: #CC0000;
+}
+
+.btn-link, .btn-link:hover, .btn-link:focus, a, h1, h2, h3, h4, h5, h6 {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+html, body {
+    font-size: 0.9rem;
+}
+
+.list-group-item label {
+    position: relative;
+    bottom: 3px;
+}
+
+.form-group label {
+    font-weight: bold;
+}
+
+.form-check label {
+    position: relative;
+    top: 2px;
+    padding-left: 2px;
+    font-weight: normal;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: bold;
+}
+
+.alert span {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.component * {
+    background-color: var(--background-primary);
+}
+
+table tbody tr:nth-child(even) {
+    background-color: var(--background-primary);
+}
+
+table tr:nth-child(even) td.disabled {
+    background-color: var(--disabled-primary);
+}
+
+table tbody tr:nth-child(odd) {
+    background-color: var(--background-secondary);
+}
+
+table tr:nth-child(odd) td.disabled {
+    background-color: var(--disabled-secondary);
+}
+
+table ul {
+    margin-bottom: 0;
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--primary);
+}
+
+.table-flex {
+    width: auto;
+}
+
+.controls .form-group {
+    margin-bottom: 0;
+    margin-left: 0.5rem;
+}
+
+.controls .buttons {
+    margin-top: 1rem;
+}
+
+.controls .buttons .btn {
+    width: 5rem;
+    margin-right: 0.1rem;
+}
+
+.controls {
+    background-color: var(--background-primary);
+    padding: 1rem;
+}
+
+.delete {
+    background-color: var(--remove) !important;
+    color: #ffffff !important;
+}
+
+del {
+    color: var(--remove);
+}
+
+u {
+    color: var(--add);
+}
+
+.ui-state-active,.ui-widget-content .ui-state-active,.ui-widget-header .ui-state-active,a.ui-button:active,.ui-button:active,.ui-button.ui-state-active:hover {
+    border: none !important;
+    background: var(--background-primary) !important;
+    color: #212529 !important;
+}

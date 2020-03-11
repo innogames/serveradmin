@@ -23,6 +23,8 @@ django-netfields = "*"
 # Required to generate sprites from Graphite
 Pillow = "*"
 
+dateparser = "*"
+
 # Serveradmin extras:
 paramiko = "*"
 jinja2 = "*"

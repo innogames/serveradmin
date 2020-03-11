@@ -1,330 +1,205 @@
 {% extends "base.html" %}
 {% load serversearch %}
-{% block title %}Servershell{% endblock %}
-
-{% block content %}
-<h2>Servershell</h2>
-
-<table class="valign-middle">
-<tr>
-    <th>Search: </th>
-    <td>
-        <form method="post" action="" id="shell_search_form">
-            {% csrf_token %}
-            <input type="text" size="60"  id="shell_search" value="{{ search_term }}" />
-        </form>
-    </td>
-    <td>
-        <img src="{{ STATIC_URL }}help.png" id="shell_search_help_icon"
-             alt="Help" class="help_icon" />
-    </td>
-</tr>
-<tr id="shell_command_container">
-    <th>Command: </th>
-    <td>
-        <form method="post" action="javascript:return false;" id="shell_command_form">
-            <input type="text" size="60"  id="shell_command" />
-        </form>
-    </td>
-    <td>
-        <img src="{{ STATIC_URL }}help.png" id="shell_command_help_icon"
-             alt="Help" class="help_icon" />
-    </td>
-</tr>
-<tr id="shell_understood_container">
-    <th>Understood: </th>
-    <td id="shell_understood"></td>
-    <td>
-        <a href="?term=" id="shell_search_link">
-            <img src="{{ STATIC_URL }}link.png" alt="Link to this search"
-                 title="Link to this search" />
-        </a>
-    </td>
-</tr>
-</table>
-
-<div id="shell_servers"></div>
-<div id="shell_attributes">
-    <h3>Attributes <span id="shell_attributes_toggle">(hide)</span></h3>
-	<div id="shell_attributes_content">
-    {% for attr_group, attribute_list in attribute_groups %}
-    <h4>{{ attr_group }}</h4>
-    <ul>
-    {% for attr in attribute_list %}
-    <li data-attr="{{ attr.attribute_id }}" data-attr-type="{{ attr.type }}" data-attr-multi="{{ attr.multi }}" >
-        <label>
-                <input type="checkbox" name="attr" value="{{ attr.attribute_id }}" {% if attr.attribute_id in checked_attributes %}checked="checked" {% endif %}/>
-            {{ attr }}
-        </label>
-{% if attr.hovertext %}
-		<a class="attr-tooltip" href="{{ attr.help_link }}" title="{{ attr.hovertext }}">?</a>
-{% endif %}
-        </li>
-    {% endfor %}
-    </ul>
-    {% endfor %}
-	</div>
-</div>
-
-<div id="shell_search_help" title="Search help">
-<h3>Queries</h3>
-<p>Queries contain several attribute conditions which are implicitly ANDed.
-The conditions have the form <code>attr_name=filter_or_value</code>, for
-example <code>os=squeeze</code> (with a value) or <code>os=any(lenny squeeze)</code>
-(with the "any" filter). Attribute conditions are separated by spaces.</p>
-
-<p>Filters start with a name followed by a "(", followed by arguments
-and finally followed by ")". It's like function calls in most programming
-languages. The arguments are <i>separated by space, not comma</i></p>
-
-<p>Values are automatically casted according to the type of the attribute.
-This means <code>intern_ip=between(10.16.1.3 10.16.1.17)</code> doesn't do
-string comparison, but comparison based on IP semantics. Also
-you don't need quotes around strings, unless your string contains spaces
-or other quotes.</p>
-
-<p>There is also a shortcut for hostname searches. Instead of using
-attribute condition you just have to type the hostname. If your hostname
-contains parts of a regular expression (for example ".*", "[", "]")
-it will be interpreted as regular expression.</p>
-
-<h3>Examples</h3>
-<p>Find Grepolis servers of Germany and France: <br />
-<code>project=grepo game_market=any(de fr)</code></p>
-
-<p>Find Tribal Wars webservers in Germany for worlds 20-30: <br />
-<code>project=staemme game_function=web game_world=between(20 30)</code>
-
-<p>Find Tribal Wars servers for worlds 10-20 and 60-70: <br />
-<code>project=staemme game_world=or(between(10 20) between(60 70))</code></p>
-
-<p>Hostname matches ".*\.tr": <br />
-<code>hostname=Regexp(.*\.tr)</code> <i>or just</i> <code>.*\.tr</code></p>
-
-<h3>Available filters</h3>
-<table>
-    <tr>
-        <th>Name</th>
-        <th>Description</th>
-    </tr>
-    {% for name, description in filters %}
-    <tr>
-        <td>{{ name }}</td>
-        <td>{{ description }}</td>
-    </tr>
-    {% endfor %}
-</table>
-
-</div>
-
-<div id="shell_command_help" title="Command help">
-<h3>Available commands</h3>
-<p>
-    The commands which operates on selected server would take the first
-    server on the list, if no servers are selected.
-</p>
-
-<table>
-    <tr>
-        <th>Command</th>
-        <th>Arguments</th>
-        <th>Description</th>
-    </tr>
-    <tr>
-        <td>search</td>
-        <td><span class="noargs">none</span></td>
-        <td>Focus on the search field</td>
-    </tr>
-    <tr>
-        <td>next</td>
-        <td><span class="noargs">none</span></td>
-        <td>Go to the next page</td>
-    </tr>
-    <tr>
-        <td>prev</td>
-        <td><span class="noargs">none</span></td>
-        <td>Go to the previous page</td>
-    </tr>
-    <tr>
-        <td>goto</td>
-        <td>page_number</td>
-        <td>Go to specified page.</td>
-    </tr>
-    <tr>
-        <td>perpage</td>
-        <td>number</td>
-        <td>
-            Show <i>number</i> hosts per page
-            <p>
-                Example: "<code>perpage 50</code>"
-            </p>
-        </td>
-    </tr>
-    <tr>
-        <td>attr</td>
-        <td>attr_name[&nbsp;...]</td>
-        <td>
-            Show one or more attribute(s) in the server table
-            <p>
-                If it is already shown, it will be hidden.
-                Example: "<code>attr os game_function</code>"
-            </p>
-        </td>
-    </tr>
-    <tr>
-        <td>orderby</td>
-        <td>attr_name[&nbsp;asc|desc]</td>
-        <td>
-            Order the result by given attribute
-            <p>
-                This can be either ascending
-                (asc) or descanding (desc). Multi attributes will be ordered in a
-                special way: If no filtering is used, it orders by the minimum
-                value on ascending and maximum on descending. If filtering is used,
-                it takes the minimum/maximum value <em>which matches the filter</em>.
-                Example: "<code>orderby game_market asc</code>".
-            </p>
-        </td>
-    </tr>
-    <tr>
-        <td>export</td>
-        <td><span class="noargs">none</span></td>
-        <td>Export servers as list of hostnames</td>
-    </tr>
-    <tr>
-        <td>selectall</td>
-        <td><span class="noargs">none</span></td>
-        <td>Select all servers on this page</td>
-    </tr>
-    <tr>
-        <td>unselectall</td>
-        <td><span class="noargs">none</span></td>
-        <td>Unselect all servers on this page</td>
-    </tr>
-    <tr>
-        <td><i>(empty)</i></td>
-        <td><i>from</i>[-<i>to</i>[, <i>from</i>[-<i>to</i>]]]</td>
-        <td>
-            Select a several servers using a range
-            </p>
-                Examples:
-                <ul>
-                    <li>1: Select first server</li>
-                    <li>1,3,5: Select server 1, 3 and 5</li>
-                    <li>1,3,6-9: Select server 1, 3, 6, 7, 8 and 9</li>
-                </ul>
-            </p>
-        </td>
-    </tr>
-    <tr>
-        <td>graph</td>
-        <td><span class="noargs">none</span></td>
-        <td>Show available graphs for selected hosts</td>
-    </tr>
-    <tr>
-        <td>inspect</td>
-        <td><span class="noargs">none</span></td>
-        <td>List all attributes of the selected servers</td>
-    </tr>
-    <tr>
-        <td>edit</td>
-        <td><span class="noargs">none</span></td>
-        <td>Edit all attributes of the selected servers</td>
-    </tr>
-    <tr>
-        <td>setattr</td>
-        <td>attr_name=attr_value</td>
-        <td>
-            Set an attribute on a server
-            <p>
-                Example: "setattr os=wheezy"
-            </p>
-        </td>
-    </tr>
-    <tr>
-        <td>delattr</td>
-        <td>attr_name</td>
-        <td>Delete an attribute from a server</td>
-    </tr>
-    <tr>
-        <td>multiadd</td>
-        <td>attr_name=value1[,value2[,...]]</td>
-        <td>
-            Add values to an multi attribute
-            <p>
-                Example: "multiadd webserver=nginx,apache"
-            </p>
-        </td>
-    </tr>
-    <tr>
-        <td>multidel</td>
-        <td>attr_name=value1[,value2[,...]</td>
-        <td>Delete values from a multi attribute</td>
-    </tr>
-    <tr>
-        <td>delete</td>
-        <td><span class="noargs">none</span></td>
-        <td>Mark all selected servers for deletion (commit to apply)</td>
-    </tr>
-    <tr>
-        <td>commit</td>
-        <td><span class="noargs">none</span></td>
-        <td>Commit all pending changes</td>
-    </tr>
-    <tr>
-        <td>new</td>
-        <td><span class="noargs">none</span>
-        <td>Create a new server</td>
-    </tr>
-    <tr>
-        <td>clone</td>
-        <td><span class="noargs">none</span>
-        <td>Clone the selected server</td>
-    </tr>
-    <tr>
-        <td>changes</td>
-        <td><span class="noargs">none</span>
-        <td>Show changes to server database</td>
-    </tr>
-    <tr>
-        <td>history</td>
-        <td><span class="noargs">none</span>
-        <td>Show history of selected hosts</td>
-    </tr>
-</table>
-</div>
-
-
+{% block title %}
+    Servershell
 {% endblock %}
 
-{% block additional_body %}
-{% serversearch_js 'shell_search' %}
-<script type="text/javascript">
-//<![CDATA[
-var shell_history = {
-    'commands': {{ command_history|safe }}
-};
-shell_history['index'] = shell_history['commands'].length;
-var shell_results_url = "{% url 'servershell_results' %}";
-var shell_export_url = "{% url 'servershell_export' %}";
-var shell_inspect_url = "{% url 'servershell_inspect' %}";
-var shell_edit_url = "{% url 'servershell_edit' %}";
-var shell_commit_url = "{% url 'servershell_commit' %}";
-var shell_values_url = "{% url 'servershell_values' %}";
-var shell_new_url = "{% url 'servershell_new' %}";
-var shell_clone_url = "{% url 'servershell_clone' %}";
-var shell_graph_url = "{% url 'graphite_graph_table' %}";
-var shell_changes_url = "{% url 'serverdb_changes' %}";
-var shell_store_command_url = "{% url 'servershell_store_command' %}";
-var serverdb_history_url = "{% url 'serverdb_history' %}";
-//]]>
-</script>
-<script type="text/javascript" src="{{ STATIC_URL }}servershell/common.js"></script>
-<script type="text/javascript" src="{{ STATIC_URL }}servershell/servershell.js"></script>
-<script type="text/javascript" src="{{ STATIC_URL }}flot/jquery.flot.min.js"></script>
-<script type="text/javascript">
-//<![CDATA[
-search['per_page'] = {{ per_page }};
-//]]>
+{% block additional_styles %}
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/states.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/servershell.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/jquery-ui.min.css">
+{% endblock %}
+
+{% block content %}
+    <!-- Servershell JS alerts -->
+    <div id="js-alert" class="alert" style="display: none;">
+        <strong id="js-alert-message"></strong>
+        <button type="button" class="close" onclick="$('#js-alert').toggle();">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+
+    <!-- The Servershell Search -->
+    <div class="form-group row input-controls">
+        <label for="term" class="col-sm-1 col-form-label">Search:</label>
+        <div class="col-sm-8">
+            <form method="post" action="{% url 'servershell_results' %}" id="search_form">
+                {% csrf_token %}
+                <input tabindex="1" class="form-control form-control-sm autocomplete" type="text" id="term" data-servershell-property-bind="term" data-servershell-autocomplete-url="{% url 'servershell_autocomplete' %}" />
+            </form>
+        </div>
+        <div class="col-sm-3">
+            <img src="{{ STATIC_URL }}icons/question.svg" alt="How to search" data-toggle="modal" data-target="#modal-help-search"/>
+            <button id="search-options-button" class="btn btn-sm btn-light" data-toggle="collapse" data-target="#search-options">Shortcuts & Options</button>
+        </div>
+    </div>
+    <div class="form-group row input-controls">
+        <label for="command" class="col-sm-1 col-form-label">Command:</label>
+        <div class="col-sm-8">
+            <form method="post" id="command_form">
+                <input tabindex="2" class="form-control form-control-sm autocomplete" type="text" size="60"  id="command" data-servershell-property-bind="command" />
+            </form>
+            <!-- Advanced search options (hidden by default) -->
+            <div class="collapse" id="search-options">
+                <div class="card card-body">
+                    <b>Your settings are saved in your session</b>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="autocomplete" {% if autocomplete %}checked="checked"{% endif %} onchange="this.checked ? $('.autocomplete').autocomplete('enable') : $('.autocomplete').autocomplete('disable');">
+                        <label class="form-check-label" for="autocomplete">Autocomplete for Search & Command</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="autoselect" {% if autoselect %}checked="checked{% endif %}" onchange="$('.autocomplete').autocomplete('option', 'autoFocus', this.checked);">
+                        <label class="form-check-label" for="autoselect">Automatically select 1st element from autocomplete</label>
+                    </div>
+                    <hr>
+                    <b>Keyboard Shortcuts</b>
+                    <ul>
+                        <li><kbd>TAB</kbd> Goto next input</li>
+                        <li><kbd>SHIFT + TAB</kbd> Goto previous input</li>
+                        <li><kbd>ESC</kbd> Close focus from input</li>
+                        <li><kbd>ESC</kbd> Close auto completion</li>
+                        <li><kbd>CTRL + &#8592;</kbd> Jump a word backward</li>
+                        <li><kbd>CTRL + &#8594;</kbd> Jump a word forward</li>
+                        <li><kbd>ALT + BACKSPACE</kbd> Delete one word (reverse)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <img src="{{ STATIC_URL }}icons/question.svg" alt="Show supported commands" data-toggle="modal" data-target="#modal-help-commands"/>
+        </div>
+    </div>
+    <div class="form-group row input-controls">
+        <label for="understood" class="col-sm-1 col-form-label">Understood:</label>
+        <div class="col-sm-8">
+            <input class="form-control form-control-sm" type="text" readonly="readonly" id="understood" data-servershell-property-bind="understood" />
+        </div>
+        <div class="col-sm-3">
+            <a id="search_link" onclick="window.location.href=servershell.href;">
+                <img src="{{ STATIC_URL }}icons/bookmark.svg" alt="Open current search in new tab"/>
+            </a>
+        </div>
+    </div>
+
+    <hr/>
+
+    <!-- The Servershell Attributes Selection -->
+    {# Do not move! CSS relative to top row #}
+    <div id="attributes-row">
+        <div id="attributes-container">
+            <div class="accordion" id="accordion-attributes">
+                <div class="card">
+                    <div class="card-header">
+                        <b>Attributes</b>
+                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#accordion-attributes-body"></button>
+                    </div>
+                    <div id="accordion-attributes-body" class="component show" data-parent="#accordion-attributes">
+                        <div id="attributes" class="card-body">
+                            <b>Legend:</b><br>
+                            <span class="attribute-indicator">
+                                <b>R</b> Relation<br>
+                                <b>Я</b> Reverse<br>
+                                <b>S</b> String<br>
+                                <b>B</b> Boolean<br>
+                                <b>N</b> Number<br>
+                            </span>
+                            {% regroup attributes by group as group_list %}
+                            {% for group in group_list %}
+                                <ul class="list-group list-group-flush">
+                                    <b>{{ group.grouper }}</b>
+                                    {% for attribute in group.list %}
+                                        <li class="list-group-item">
+                                            <span class="attribute-indicator">
+                                                {% if attribute.type == 'reverse' %}<b>Я</b>{% elif attribute.type == 'relation' %}<b>R</b>{% else %}<b>{{ attribute.type|first|upper }}</b>{% endif %}
+                                            </span>
+                                            <input type="checkbox" id="{{ attribute.attribute_id }}" data-servershell-attribute="{{ attribute.attribute_id }}" />
+                                            <label for="{{ attribute.attribute_id }}">{{ attribute.attribute_id }}</label>
+                                            {% if attribute.hovertext %}
+                                                <a class="attr-tooltip" href="{{ attribute.help_link }}" title="{{ attribute.hovertext }}">?</a>
+                                            {% endif %}
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- The Servershell Results -->
+    <div class="row">
+        <div class="col-md-12">
+            <div id="result_div">
+                <div class="result_info">
+                    <!-- Managed by Servershell Results -->
+                </div>
+                <table id="result_table" class="table table-sm table-borderless table-striped table-responsive">
+                    <thead>
+                        <tr>
+                            <!-- Managed by Servershell Results -->
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div class="result_info">
+                    <!-- Managed by Servershell Results -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- The help for the modals in the Servershell -->
+    {% include "servershell/modals/help_search.html" %}
+    {% include "servershell/modals/help_command.html" %}
+    <!-- The modals for editing and other commands -->
+    {# We can probably make one general modal template out of these #}
+    {% include "servershell/modals/export.html" %}
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{ STATIC_URL }}js/jquery-ui.min.js"></script>
+<script src="{{ STATIC_URL }}js/servershell.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/attributes.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/search.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/result.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/command.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/validate.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/choose_ip_address.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/autocomplete/search.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/autocomplete/command.js"></script>
+<script>
+    $(document).ready(function() {
+        // Initialize servershell object properties with initial values
+        // from backend. This allows us setting defaults from backend.
+        servershell.term = "{{ term }}";
+        servershell._term = "{{ term }}";
+        servershell.command = "";
+        servershell.understood = "";
+        servershell.attributes = {% autoescape off %}{{ attributes|json }}{% endautoescape %}
+        servershell.offset = {{ offset }};
+        servershell.limit = {{ limit }};
+        servershell.order_by = "{{ order_by }}";
+        servershell.filters = {% autoescape off %}{{ filters|json }}{% endautoescape %}
+        // Changing this property triggers a search ...
+        servershell.shown_attributes = {% autoescape off %}{{ shown_attributes|json }}{% endautoescape %};
+        servershell.to_commit = {deleted: [], changes: {}};
+
+        // We define the URLs once here so that we can render them with
+        // template engine from the backend and can access them everywhere
+        servershell.urls = {
+            choose_ip_address: "{% url 'servershell_choose_ip_addr' %}",
+            inspect: "{% url 'servershell_inspect' %}",
+            edit: "{% url 'servershell_edit' %}",
+            graphite: "{% url 'graphite_graph_table' %}",
+            new: "{% url 'servershell_new' %}",
+            clone: "{% url 'servershell_clone' %}",
+            changes: "{% url 'serverdb_changes' %}",
+            commit: "{% url 'servershell_commit' %}",
+            history: "{% url 'serverdb_history' %}",
+            settings: "{% url 'servershell_save_settings' %}",
+        }
+    });
 </script>
 {% endblock %}

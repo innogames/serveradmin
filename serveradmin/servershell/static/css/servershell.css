@@ -1,0 +1,78 @@
+.form-group {
+    margin-bottom: 0;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.results-info:last-of-type {
+    margin-bottom: 1rem;
+}
+
+.input-controls img {
+    width: 29px;
+    height: 29px;
+}
+
+.input-controls > div:last-of-type {
+    padding-left: 0;
+}
+
+.input-controls > div:nth-child(2) {
+    padding-right: 5px;
+}
+
+#search-options .card-body {
+    padding: 0.5rem;
+}
+
+#attributes-row {
+    position: absolute;
+    top: 12.3rem;
+    right: 1rem;
+    min-width: 14rem;
+    z-index: 1;
+}
+
+#accordion-attributes {
+    margin-bottom: 1rem;
+}
+
+#accordion-attributes .card-header {
+    padding: 0.1rem 0.5rem 0 0.5rem;
+}
+
+#accordion-attributes .card-header button {
+    padding: 0 0 0.1rem 0;
+}
+
+#accordion-attributes .card-header button:before {
+    content: "(hide)";
+}
+
+#accordion-attributes .card-header button.collapsed:before {
+    content: "(show)";
+}
+
+#accordion-attributes .card-body {
+    padding-top: 0;
+    padding-bottom: 0.5rem;
+}
+
+#accordion-attributes .card-body .list-group {
+    padding-top: 0.5rem;
+}
+
+#accordion-attributes .card-body .list-group-item {
+    padding: 0 0 0 0;
+    border: none;
+}
+
+#accordion-attributes .card-body .list-group-item label {
+    margin-bottom: 0;
+}
+
+#accordion-attributes .attribute-indicator b {
+    color: var(--primary);
+}

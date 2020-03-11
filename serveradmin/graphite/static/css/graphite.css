@@ -1,0 +1,45 @@
+#graphs-row {
+    position: absolute;
+    top: 8rem;
+    right: 23rem;
+    min-width: 20rem;
+    z-index: 1;
+}
+
+#accordion-graphs {
+    margin-bottom: 1rem;
+}
+
+#accordion-graphs .card-header {
+    padding: 0.1rem 0.5rem 0 0.5rem;
+}
+
+#accordion-graphs .card-header button {
+    padding: 0 0 0.1rem 0;
+}
+
+#accordion-graphs .card-header button:before {
+    content: "(hide)";
+}
+
+#accordion-graphs .card-header button.collapsed:before {
+    content: "(show)";
+}
+
+#accordion-graphs .card-body {
+    padding-top: 0;
+    padding-bottom: 0.5rem;
+}
+
+#accordion-graphs .card-body .list-group {
+    padding-top: 0.5rem;
+}
+
+#accordion-graphs .card-body .list-group-item {
+    padding: 0 0 0 0;
+    border: none;
+}
+
+#accordion-graphs .card-body .list-group-item label {
+    margin-bottom: 0;
+}

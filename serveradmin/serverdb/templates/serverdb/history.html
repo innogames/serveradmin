@@ -1,90 +1,109 @@
-{% extends base_template %}
+{% extends "base.html" %}
 
-{% block title %}History for #{{ server_id }}{% endblock %}
+{% block title %}History for {{ name }}{% endblock %}
 
 {% block content %}
-{% if not is_ajax %}
-<h2>History for #{{ server_id }}</h2>
-{% endif %}
-
-{% if is_ajax %}
-<p><a href="{{ link }}">
-    <img src="{{ STATIC_URL }}link.png" alt="Link to this page" 
-		title="Link to this page" />
-</a></p>
-{% endif %}
-
-{% for type, change in change_list %}
-
-{% if type == 'add' %}
-<h3>Added server on {{ change.commit.change_on|date:"DATETIME_FORMAT" }}
-by {{ change.commit.commit_by }}</h3>
-<table>
-{% for key, value in change.attributes.items %}
-    <tr>
-        <th>{{ key }}:</th>
-        <td>{{ value }}</td>
-    </tr>
-{% endfor %}
-</table>
-
-<form method="post" action="{% url 'serverdb_restore_deleted' change.commit.id %}">
-{% csrf_token %}
-<input type="hidden" name="server_id" value="{{ change.server_id }}" />
-<p><input type="submit" value="Restore this server" /></p>
-</form>
-{% elif type == 'update' %}
-<h3>Changed attributes on {{ change.commit.change_on|date:"DATETIME_FORMAT" }}
-by {{ change.commit.commit_by }}</h3>
-<table>
-    <tr>
-        <th>Attribute</th>
-        <th>Old/Removed</th>
-        <th>New/Added</th>
-    </tr>
-{% for key, value in change.updates.items %}
-{% if key != 'object_id' %}
-    <tr>
-        <td>{{ key }}</td>
-    {% if value.action == 'multi' %}
-        <td>
-        {% if value.remove %}
-        <ul>
-        {% for val in value.remove %}
-            <li>{{ val }}</li>
+<div class="row">
+    <div class="col-md-3"></div>
+    <div class="col-md-6">
+        <h3>History for {{ name }}</h3>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-3"></div>
+    <div class="col-md-6 controls">
+        <form id="changes-form" method="get" action="{% url 'serverdb_history' %}" onsubmit="spinner.enable();">
+            <div class="form-group row input-controls">
+                <label for="search_string" class="col-sm-1 col-form-label">Contains:</label>
+                <div class="col-md-4">
+                    <input name="search_string" id="search_string" type="text" value="{% if search_string %}{{ search_string }}{% endif %}" class="form-control form-control-sm" placeholder="Filter for ..." />
+                </div>
+            </div>
+            <div class="form-group row input-controls buttons">
+                <input type="hidden" id="object_id" name="object_id" value="{{ object_id }}"/>
+                <input type="hidden" id="page" name="page" value="{{ changes.number }}" />
+                <button class="btn btn-success" type="submit">Apply</button>
+            </div>
+        </form>
+    </div>
+</div>
+<hr/>
+<div class="row">
+    <div class="col-md-3"></div>
+    <div class="col-md-6">
+        {% for type, change in change_list %}
+            {% if type == 'add' %}
+                <strong>Added {{ change.commit.change_on|date:"r" }} ({{ change.commit.change_on|timesince }}) by {{ change.commit.user }}</strong>
+                <table class="table table-sm table-striped table-bordered table-borderless">
+                    <tbody>
+                        {% for key, value in change.attributes.items %}
+                        <tr>
+                            <th>{{ key }}:</th>
+                            <td>{{ value }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% elif type == 'update' %}
+                <strong>Changed {{ change.commit.change_on|date:"r" }} ({{ change.commit.change_on|timesince }}) by {{ change.commit.user }}</strong>
+                <table class="table table-sm table-striped table-bordered table-borderless">
+                    <thead>
+                        <tr>
+                            <th>Attribute</th>
+                            <th>Old/Removed</th>
+                            <th>New/Added</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for key, value in change.updates.items %}
+                        {% if key != 'object_id' %}
+                            <tr>
+                                <td>{{ key }}</td>
+                                {% if value.action == 'multi' %}
+                                <td>
+                                    {% if value.remove %}
+                                        <ul>
+                                        {% for val in value.remove %}
+                                            <li>{{ val }}</li>
+                                        {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <i>nothing removed</i>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if value.add %}
+                                    <ul>
+                                    {% for val in value.add %}
+                                        <li>{{ val }}</li>
+                                    {% endfor %}
+                                    </ul>
+                                    {% else %}
+                                        <i>nothing added</i>
+                                    {% endif %}
+                                </td>
+                                {% else %}
+                                    <td>{{ value.old }}</td>
+                                    <td>{{ value.new }}</td>
+                                {% endif %}
+                            </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% elif type == 'delete' %}
+                <strong>Deleted {{ change.commit.change_on|date:"r" }} ({{ change.commit.change_on|timesince }}) by {{ change.commit.user }}</strong>
+                <form method="post" action="{% url 'serverdb_restore_deleted' change.commit.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="object_id" value="{{ change.server_id }}" />
+                    <input class="btn btn-sm btn-danger" type="submit" value="Restore this server" />
+                </form>
+            {% endif %}
         {% endfor %}
-        </ul>
-        {% else %}
-        <i>nothing removed</i>
+        {% if commit_id %}
+            <a href="{% url 'serverdb_history' %}?object_id={{ object_id }}">Show complete history</a>
         {% endif %}
-        </td>
-        <td>
-        {% if value.add %}
-        <ul>
-        {% for val in value.add %}
-            <li>{{ val }}</li>
-        {% endfor %}
-        </ul>
-        {% else %}
-        <i>nothing added</i>
-        {% endif %}
-        </td>
-    {% else %}
-        <td>{{ value.old }}</td>
-        <td>{{ value.new }}</td>
-    {% endif %}
-    </tr>
-{% endif %}
-{% endfor %}
-</table>
-{% elif type == 'delete' %}
-<h3>Deleted server on {{ change.commit.change_on|date:"DATETIME_FORMAT" }}
-by {{ change.commit.commit_by }}</h3>
-{% endif %}
-{% endfor %}
-
-{% if commit_id %}
-<p><a href="{% url 'serverdb_history' %}?server_id={{ server_id }}">Show complete history</a></p>
-{% endif %}
+    </div>
+</div>
 
 {% endblock %}

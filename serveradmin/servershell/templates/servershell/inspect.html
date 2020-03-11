@@ -1,48 +1,69 @@
-{% extends base_template %}
+{% extends "base.html" %}
 
-{% block title %}Attributes of object {{ object_id }}{% endblock %}
+{% block title %}
+    Inspect {{ object_id }}
+{% endblock %}
 
 {% block content %}
-{% if is_ajax %}
-<p><a href="{{ link }}">
-    <img src="{{ STATIC_URL }}link.png" alt="Link to this page"
-        title="Link to this page" />
-</a></p>
-{% else %}
-<h2>Object {{ object_id }}</h2>
-{% endif %}
-
-<table class="border_table" style="width:100%; table-layout:fixed;">
-<tr>
-    <th style="width:15em;">Attribute</th>
-    <th>Value</th>
-</tr>
-{% for field in fields %}
-<tr>
-    <td>{{ field.key }}</td>
-    <td>
-    {% if field.multi %}
-    {% if field.value %}
-    <ul class="multi_attr_list">
-    {% for val in field.value %}
-        <li>{{ val }}</li>
-    {% endfor %}
-    </ul>
-    {% else %}
-    <i>Empty set</i>
-    {% endif %}
-    {% else %}
-    {% if field.value|length > 100 %}
-    <div style="overflow:auto;">{{ field.value }}</div>
-    {% elif field.type == 'boolean' %}
-    {{ field.value|lower }}
-    {% elif field.value != None %}
-    {{ field.value }}
-    {% endif %}
-    {% endif %}
-    </td>
-</tr>
-{% endfor %}
-</table>
-<p><a href="{% url 'servershell_edit' %}?object_id={{ object_id }}">Edit</a></p>
+<div>
+<div class="row">
+    <div class="col-md-2"></div>
+    <div class="col-md-8">
+        <h3>
+            Inspect {{ object_id }}
+            <small class="text-muted">(Use bottom button for editing)</small>
+        </h3>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-2"></div>
+    <div class="col-md-8">
+        <table class="table table-bordered table-sm table-borderless table-striped table-flex">
+            <thead>
+                <tr>
+                    <th>Attribute</th>
+                    <th>Value</th>
+                    <th>Type</th>
+                    <th>Regexp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for field in fields %}
+                <tr>
+                    <td>{{ field.key }}</td>
+                    <td>
+                        {% if not field.value %}
+                            Empty
+                        {% else %}
+                            {% if field.multi %}
+                                <ul>
+                                    {% for val in field.value %}
+                                        <li>{{ val }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                {{ field.value }}
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    <td>{{ field.type }}</td>
+                    <td>
+                        {% if field.regexp %}
+                            {{ field.regexp_display }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-2"></div>
+    <div class="col-md-8">
+        <a class="btn btn-success" href="{% url 'servershell_edit' %}?object_id={{ object_id }}">Edit</a>
+        <a href="{% url 'servershell_index' %}" class="btn btn-success">Goto Servershell</a>
+    </div>
+</div>
+</div>
 {% endblock %}

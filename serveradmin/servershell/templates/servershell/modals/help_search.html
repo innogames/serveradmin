@@ -1,0 +1,88 @@
+<div class="modal fade" id="modal-help-search" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Search Syntax</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <h3>Queries</h3>
+                <p>
+                    Queries contain several attribute conditions which are
+                    implicitly ANDed. The conditions have the form
+                    <code>attr_name=filter_or_value</code>, for example
+                    <code>os=squeeze</code> (with a value) or
+                    <code>os=any(lenny squeeze)</code> (with the "any" filter).
+                    Attribute conditions are separated by spaces.
+                </p>
+                <p>
+                    Filters start with a name followed by a "(", followed by
+                    arguments and finally followed by ")". It's like function
+                    calls in most programming languages. The arguments are
+                    <i>separated by space, not comma</i>
+                </p>
+                <p>
+                    Values are automatically casted according to the type of
+                    the attribute. This means
+                    <code>intern_ip=between(10.16.1.3 10.16.1.17)</code>
+                    doesn't do string comparison, but comparison based on IP
+                    semantics. Also you don't need quotes around strings,
+                    unless your string contains spaces or other quotes.
+                </p>
+                <p>
+                    There is also a shortcut for hostname searches. Instead of
+                    using attribute condition you just have to type the
+                    hostname. If your hostname contains parts of a regular
+                    expression (for example ".*", "[", "]") it will be
+                    interpreted as regular expression.
+                </p>
+
+                <h3>Examples</h3>
+                <p>
+                    Find Grepolis servers of Germany and France: <br/>
+                    <code>project=grepo game_market=any(de fr)</code>
+                </p>
+                <p>
+                    Find Tribal Wars webservers in Germany for worlds 20-30:
+                    <br/><code>project=staemme game_function=web
+                    game_world=between(20 30)</code>
+                </p>
+                <p>
+                    Find Tribal Wars servers for worlds 10-20 and 60-70: <br/>
+                    <code>project=staemme game_world=or(between(10 20)
+                        between(60 70))</code>
+                </p>
+                <p>
+                    Hostname matches ".*\.tr": <br/>
+                    <code>hostname=Regexp(.*\.tr)</code> <i>or just</i>
+                    <code>.*\.tr</code>
+                </p>
+
+                <h3>Available filters</h3>
+                <table class="table table-sm table-borderless table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for name, description in filters %}
+                        <tr>
+                            <td>{{ name }}</td>
+                            <td>{{ description }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+

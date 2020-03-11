@@ -1,23 +1,29 @@
-{% if servers %}
-<table>
-	<tr>
-		<th>Name</th>
-		<th>Network</th>
-	</tr>
-{% for server in servers %}
-	<tr>
-		<td>{{ server.hostname }}</td>
-		<td><span class="network_select">{{ server.intern_ip }}</span></td>
-	</td>
-{% endfor %}
-</table>
-
-{% elif ip_addrs %}
-<ul>
-{% for ip_addr in ip_addrs %}
-<li><span class="ip_addr_select">{{ ip_addr }}</span></li>
-{% endfor %}
-</ul>
-{% else %}
-<p>No free IP addresses are available.</p>
-{% endif %}
+{# Only used in modals #}
+<div class="content">
+    {% if servers %}
+        <table class="table table-bordered table-sm table-borderless table-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Network</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for server in servers %}
+                <tr onclick="servershell.choose_ip_address('{{ server.intern_ip }}')">
+                    <td>{{ server.hostname }}</td>
+                    <td>{{ server.intern_ip }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% elif ip_addrs %}
+        <ul>
+            {% for ip_addr in ip_addrs %}
+                <li onclick="$('input[name=attr_intern_ip]').val('{{ ip_addr }}'); $(this).closest('.modal').modal('hide');">{{ ip_addr }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No free IP addresses are available.</p>
+    {% endif %}
+</div>

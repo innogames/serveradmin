@@ -51,6 +51,7 @@ INSTALLED_APPS = [
 ]
 
 MENU_TEMPLATES = [
+    'servershell/menu.html',
     'resources/menu.html',
 ]
 
