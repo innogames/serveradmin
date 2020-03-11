@@ -111,3 +111,18 @@ u {
     background: var(--background-primary) !important;
     color: #212529 !important;
 }
+
+/* Not all browser support appearance attribute yet */
+.custom-select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+a[aria-expanded=true]:before {
+    content: "Hide";
+}
+
+a[aria-expanded=false]:before {
+    content: "Show";
+}

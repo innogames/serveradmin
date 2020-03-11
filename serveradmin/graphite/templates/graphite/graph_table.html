@@ -121,9 +121,3 @@
     </div>
 </div>
 {% endblock %}
-
-{% block additional_body %}
-    {% if not is_ajax %}
-        <script type="text/javascript" src="{{ STATIC_URL }}js/graphite.js"></script>
-    {% endif %}
-{% endblock %}

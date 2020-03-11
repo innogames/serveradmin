@@ -11,6 +11,7 @@ from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.http import HttpResponseBadRequest
 from django.template.response import TemplateResponse
+from django.utils.text import slugify
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 from adminapi.datatype import DatatypeError
@@ -49,60 +50,52 @@ def index(request):
     hostnames = []
     matched_hostnames = []
     if term:
-        try:
-            query_args = parse_query(term)
-            host_query = Query(query_args, ['hostname', 'hypervisor'])
-            for host in host_query:
-                matched_hostnames.append(host['hostname'])
-                if host.get('hypervisor'):
-                    hostnames.append(host['hypervisor'])
-                else:
-                    # If it's not guest, it might be a server, so we add it
-                    hostnames.append(host['hostname'])
-            understood = repr(host_query)
-            request.session['term'] = term
+        query_args = parse_query(term)
+        host_query = Query(query_args, ['hostname', 'hypervisor'])
+        for host in host_query:
+            matched_hostnames.append(host['hostname'])
+            if host.get('hypervisor'):
+                hostnames.append(host['hypervisor'])
+            else:
+                # If it's not guest, it might be a server, so we add it
+                hostnames.append(host['hostname'])
 
-            if len(hostnames) == 0:
-                template_info.update({
-                    'understood': understood,
-                })
-                return TemplateResponse(
-                    request, 'resources/index.html', template_info
-                )
-        except (DatatypeError, ValidationError) as error:
-            template_info.update({
-                'error': str(error)
-            })
-            return TemplateResponse(
-                request, 'resources/index.html', template_info
-            )
+        understood = repr(host_query)
+        request.session['term'] = term
     else:
         understood = repr(Query({}))
 
     variations = list(current_collection.variation_set.all())
     columns = []
+    columns_selected = request.GET.getlist(
+        'columns', request.session.get('resources_columns', []))
+    request.session['resources_columns'] = columns_selected
     attribute_ids = ['hostname', 'servertype']
     graph_index = 0
     sprite_width = settings.GRAPHITE_SPRITE_WIDTH
     for template in current_collection.template_set.all():
         for variation in variations:
+            name = str(template) + ' ' + str(variation)
             columns.append({
-                'name': str(template) + ' ' + str(variation),
+                'name': name,
                 'type': 'graph',
                 'graph_index': graph_index,
                 'sprite_offset': graph_index * sprite_width,
+                'visible': slugify(name) in columns_selected,
             })
             graph_index += 1
     for numeric in current_collection.numeric_set.all():
         columns.append({
             'name': str(numeric),
             'type': 'numeric',
+            'visible': slugify(numeric) in columns_selected,
         })
         attribute_ids.append(numeric.attribute_id)
     for relation in current_collection.relation_set.all():
         columns.append({
             'name': str(relation),
             'type': 'relation',
+            'visible': slugify(relation) in columns_selected,
         })
         attribute_ids.append(relation.attribute_id)
 
@@ -110,8 +103,8 @@ def index(request):
     filters = {GRAPHITE_ATTRIBUTE_ID: collection.name}
     if len(hostnames) > 0:
         filters['hostname'] = Any(*hostnames)
-    for server in Query(filters, attribute_ids):
-        hosts[server['hostname']] = dict(server)
+        for server in Query(filters, attribute_ids):
+            hosts[server['hostname']] = dict(server)
 
     sprite_url = settings.MEDIA_URL + 'graph_sprite/' + collection.name
     template_info.update({
