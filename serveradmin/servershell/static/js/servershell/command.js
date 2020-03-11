@@ -207,7 +207,7 @@ servershell.commands = {
         servershell.shown_attributes = shown_attributes;
     },
     orderby: function(attribute_id) {
-        if (servershell.attributes.find(a => attribute_id === attribute_id)) {
+        if (!servershell.attributes.find(a => a.attribute_id === attribute_id)) {
             servershell.alert(`Attribute ${name} does not exist!`, 'warning');
             return;
         }
