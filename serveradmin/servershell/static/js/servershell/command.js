@@ -369,14 +369,20 @@ servershell.commands = {
             $(document).one('servershell_search_finished', function() {
                 // Try not to set new values for objects which do not have the attribute ...
                 let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
-                editable.forEach(o => servershell.update_attribute(o, attribute_id, new_value));
+                if (new_value === '')
+                    editable.forEach(o => servershell.delete_attribute(o, attribute_id));
+                else
+                    editable.forEach(o => servershell.update_attribute(o, attribute_id, new_value));
                 servershell.update_result();
             });
         }
         else {
             // Try not to set new values for objects which do not have the attribute ...
             let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
-            editable.forEach(o => servershell.update_attribute(o, attribute_id, new_value));
+            if (new_value === '')
+                editable.forEach(o => servershell.delete_attribute(o, attribute_id));
+            else
+                editable.forEach(o => servershell.update_attribute(o, attribute_id, new_value));
             servershell.update_result();
         }
     },
