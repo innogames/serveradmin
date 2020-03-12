@@ -6,6 +6,10 @@
  * result to the corresponding servershell properties.
  */
 servershell.submit_search = function() {
+    // Prevent somebody hitting enter like crazy
+    if (servershell._ajax !== null)
+        return servershell.alert('Pending request, cancel it or wait for it to finish!', 'danger');
+
     spinner.enable();
 
     let data = {
@@ -15,14 +19,14 @@ servershell.submit_search = function() {
         limit: servershell.limit,
         order_by: servershell.order_by,
         async: false,
-        timeout: 5000, // Query should not take longer then 5 seconds
+        timeout: 5000,
     };
 
     let url = $('#search_form').get(0).action;
     console.debug(`Submitting query to URL "${url}" with data:`);
     console.debug(data);
 
-    $.getJSON(url, data, function(data) {
+    servershell._ajax = $.getJSON(url, data, function(data) {
         // Update property used by bookmark link of search
         servershell.href = '?' + $.param({
             'term': servershell.term,
@@ -47,17 +51,17 @@ servershell.submit_search = function() {
         // We will use this on other components to react on changes ...
         $(document).trigger('servershell_search_finished');
 
-        spinner.disable();
-
         // Indicator that we have successfully reloaded ...
         servershell._term = servershell.term;
 
         // Focus command input after successful search ...
         $('#command').focus();
-    }).fail(function () {
-        servershell.alert('Search request failed retrying in 5 seconds!', 'danger');
-        setTimeout(servershell.submit_search, 5000);
-    });
+    }).always(function() {
+        spinner.disable();
+
+        // Reset running ajax call variable
+        servershell._ajax = null;
+    })
 };
 
 $(document).ready(function() {
@@ -90,12 +94,6 @@ $(document).ready(function() {
     ];
     $(document).on(events.join(' '), function() {
         servershell.submit_search();
-    });
-
-    // If user tabs to command field but search term has changed reload
-    $(document).keyup(function (event) {
-        if ($('#command').is(':focus') && event.which === 9 && servershell.term !== servershell._term)
-            servershell.submit_search();
     });
 
     // Save search settings

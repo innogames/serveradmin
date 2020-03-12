@@ -516,7 +516,17 @@ servershell.commands = {
             servershell.alert('Commit request failed retrying in 5 seconds!', 'danger');
             setTimeout(servershell.commands.commit, 5000);
         });
-    }
+    },
+    cancel: function() {
+        if (servershell._ajax !== null) {
+            servershell._ajax.fail = function() {};
+            servershell._ajax.abort();
+            servershell.alert('Pending request cancelled', 'success');
+        }
+        else {
+            servershell.alert('No running request to cancel', 'warning');
+        }
+    },
 };
 
 $(document).ready(function() {

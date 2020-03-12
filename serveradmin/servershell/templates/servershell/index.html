@@ -171,6 +171,9 @@
 <script src="{{ STATIC_URL }}js/servershell/autocomplete/command.js"></script>
 <script>
     $(document).ready(function() {
+        // We want to allow the user to abort some queries such as search
+        servershell._ajax = null;
+
         // Initialize servershell object properties with initial values
         // from backend. This allows us setting defaults from backend.
         servershell.term = "{{ term }}";
@@ -199,7 +202,7 @@
             commit: "{% url 'servershell_commit' %}",
             history: "{% url 'serverdb_history' %}",
             settings: "{% url 'servershell_save_settings' %}",
-        }
+        };
     });
 </script>
 {% endblock %}
