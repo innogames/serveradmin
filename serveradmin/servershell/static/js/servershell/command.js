@@ -359,7 +359,7 @@ servershell.commands = {
         }
 
         // User wants to type false but mean '' (empty string) which casts to false
-        new_value = attribute.type === 'boolean' && new_value === 'false' ? '' : new_value;
+        new_value = attribute.type === 'boolean' && (new_value === 'false' || new_value === '0') ? '' : new_value;
 
         // Attribute not visible yet ...
         if (!servershell.shown_attributes.includes(attribute_id)) {

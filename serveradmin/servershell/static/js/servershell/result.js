@@ -203,7 +203,10 @@ register_inline_editing = function(cell) {
                 current_value = object[attribute_id].filter(v => !changes[object_id][attribute_id].remove.includes(v));
                 current_value = current_value.concat(changes[object_id][attribute_id].add);
             } else {
-                current_value = changes[object_id][attribute_id].new;
+                if (changes[object_id][attribute_id].action === 'delete')
+                    current_value = '';
+                else
+                    current_value = changes[object_id][attribute_id].new;
             }
         } else {
             current_value = servershell.get_object(object_id)[attribute_id];
@@ -240,7 +243,7 @@ register_inline_editing = function(cell) {
             let attribute = servershell.get_attribute(attribute_id);
 
             // When the user types 'false' use empty string so that it casts to false
-            if (attribute.type === 'boolean' && value === 'false')
+            if (attribute.type === 'boolean' && (value === 'false' || value === '0'))
                 value = '';
 
             if (value === '') {
