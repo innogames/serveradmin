@@ -41,7 +41,7 @@ $(document).ready(function() {
     let command_input = $('#command');
 
     command_input.autocomplete({
-        delay: 100,
+        delay: 10,
         minLength: 0,
         autoFocus: true,
         source: function(request, response) {
