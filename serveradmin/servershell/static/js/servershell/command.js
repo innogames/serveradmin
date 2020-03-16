@@ -66,11 +66,14 @@ servershell.update_attribute = function(object_id, attribute_id, new_value, mult
         let final_changes = server[attribute_id]
             .filter(v => !change['remove'].includes(v))
             .concat(change['add'].filter(v => !server[attribute_id].includes(v)));
-        if (attr_changes.every(v => final_changes.includes(v)) && final_changes.every(v => attr_changes.includes(v)))
+        if (attr_changes.every(v => final_changes.includes(v)) && final_changes.every(v => attr_changes.includes(v))) {
             delete changes[object_id][attribute_id];
+        }
     } else {
-        if (change['new'] === change['old'])
+        if (change['new'] === change['old']) {
             delete changes[object_id][attribute_id];
+            change = null;
+        }
     }
 
     // If there are no changes for the object remove it from to_commit to
@@ -78,8 +81,11 @@ servershell.update_attribute = function(object_id, attribute_id, new_value, mult
     if (Object.keys(changes[object_id]).length === 0) {
             delete changes[object_id];
             servershell.to_commit.changes = changes;
-    } else {
-        changes[object_id][attribute_id] = change;
+    }
+    else {
+        if (change !== null) {
+            changes[object_id][attribute_id] = change;
+        }
         servershell.to_commit.changes = changes;
     }
 };
