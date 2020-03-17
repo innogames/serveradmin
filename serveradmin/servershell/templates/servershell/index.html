@@ -102,6 +102,7 @@
                                 <b>S</b> String<br>
                                 <b>B</b> Boolean<br>
                                 <b>N</b> Number<br>
+                                <b>[]</b> Multi Attribute<br>
                             </span>
                             {% regroup attributes by group as group_list %}
                             {% for group in group_list %}
@@ -110,7 +111,7 @@
                                     {% for attribute in group.list %}
                                         <li class="list-group-item">
                                             <span class="attribute-indicator">
-                                                {% if attribute.type == 'reverse' %}<b>Я</b>{% elif attribute.type == 'relation' %}<b>R</b>{% else %}<b>{{ attribute.type|first|upper }}</b>{% endif %}
+                                                <b>{% if attribute.multi %}[{% endif %}{% if attribute.type == 'reverse' %}Я{% elif attribute.type == 'relation' %}R{% else %}{{ attribute.type|first|upper }}{% endif %}{% if attribute.multi %}]{% endif %}</b>
                                             </span>
                                             <input type="checkbox" id="{{ attribute.attribute_id }}" data-servershell-attribute="{{ attribute.attribute_id }}" />
                                             <label for="{{ attribute.attribute_id }}">{{ attribute.attribute_id }}</label>

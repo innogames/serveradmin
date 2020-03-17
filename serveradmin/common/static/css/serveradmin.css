@@ -17,11 +17,6 @@ html, body {
     font-size: 0.9rem;
 }
 
-.list-group-item label {
-    position: relative;
-    bottom: 3px;
-}
-
 .form-group label {
     font-weight: bold;
 }
