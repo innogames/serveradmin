@@ -166,8 +166,10 @@ def get_results(request):
     # Add information about available, editable attributes on servertypes
     servertype_ids = {s['servertype'] for s in servers}
 
+    # We do not support editing of all attributes
     default_editable = list(Attribute.specials)
     default_editable.remove('object_id')
+    default_editable.remove('servertype')
 
     editable_attributes = dict()
     for servertype_id in servertype_ids:
