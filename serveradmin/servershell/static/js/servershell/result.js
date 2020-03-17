@@ -282,7 +282,7 @@ register_inline_editing = function(cell) {
 
         cell.html(content);
         cell.append(button);
-        cell.append(`<div><b>${attribute.regex}</b></div>`);
+        cell.append(`<div><b>${attribute.regex !== null ? attribute.regex : 'No Regexp'}</b></div>`);
 
         // Focus element and place cursor at the end of the text
         content.focus();
