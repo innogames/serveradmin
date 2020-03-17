@@ -21,3 +21,8 @@ servershell.choose_ip_address = function(intern_ip) {
         spinner.disable();
     });
 };
+
+let submit_ip_address = function(new_value) {
+    $('input[name="attr_intern_ip"]').val(new_value);
+    $('.modal').modal('hide');
+};
