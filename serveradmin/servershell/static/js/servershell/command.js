@@ -15,45 +15,78 @@
  * @param multi_action add or delete (only relevant for multi attribute)
  */
 servershell.update_attribute = function(object_id, attribute_id, new_value, multi_action = 'add') {
+    // Just shorthands to increase readability
     let attribute = servershell.get_attribute(attribute_id);
     let changes = servershell.to_commit.changes;
     let server = servershell.get_object(object_id);
 
-    // Cast new values to corresponding data type
+    // Cast new values to corresponding data type if wanted
     new_value = attribute.type === 'number' ? Number.parseInt(new_value) : new_value;
     new_value = attribute.type === 'boolean' ? !!new_value : new_value;
 
-    if (!changes.hasOwnProperty(object_id))
+    // No change for this object about to commit yet
+    if (!changes.hasOwnProperty(object_id)) {
         changes[object_id] = {};
-
-    if (!changes[object_id].hasOwnProperty(attribute_id)) {
-        if (attribute.multi)
-            changes[object_id][attribute_id] = {'action': 'multi'};
-        else
-            changes[object_id][attribute_id] = {'action': 'update'};
     }
 
-    let change = changes[object_id][attribute_id];
-    if (attribute.multi) {
-        let new_value_add;
-        let new_value_remove;
-
-        // For multi attributes we want to merge changes of previous commands
-        if (multi_action === 'add') {
-            // Don't add values which are already in last commit ...
-            new_value_add = new_value.filter(v => !server[attribute_id].includes(v));
-            // Don't remove values which should not be added but keep the rest ...
-            new_value_remove = 'remove' in change ? change.remove.filter(v => !new_value.includes(v)) : [];
+    // No change for this attribute on the object to commit yet
+    if (!changes[object_id].hasOwnProperty(attribute_id)) {
+        // Set empty (multi) or old (single) default values
+        //
+        // We also want to check if previous changes not committed yet are
+        // making this changes obsolete. This is why we set empty or old
+        // default values here, check the total changes then and if there are
+        // none it total remove them. This might not be as efficient as
+        // aborting directly but is easier to understand and more readable.
+        if (attribute.multi) {
+            changes[object_id][attribute_id] = {
+                'action': 'multi',
+                'add': [],
+                'remove': [],
+            };
         }
         else {
-            // Don't remove values which are not present in last commit ...
-            new_value_remove = new_value.filter(v => server[attribute_id].includes(v));
-            // Don't add values which should be removed but keep the rest ...
-            new_value_add = 'add' in change ? change.add.filter(v => !new_value.includes(v)) : [];
+            changes[object_id][attribute_id] = {
+                'action': 'update',
+                'new': server[attribute_id],
+                'old': server[attribute_id],
+            };
+        }
+    }
+
+    // Just a shorthand to not always type the full access path
+    let change = changes[object_id][attribute_id];
+
+    if (attribute.multi) {
+        let to_add;
+        let to_remove;
+
+        // Don't add or remove empty values
+        new_value = new_value.filter(v => v.trim() !== '');
+
+        // Merge changes from previous commands not committed yet
+        if (multi_action === 'add') {
+            // Don't remove values anymore which should be added now
+            to_remove = change['remove'].filter(v => !new_value.includes(v));
+
+            // Don't add values already present in last applied commit
+            new_value = new_value.filter(v => !server[attribute_id].includes(v));
+
+            // Don't add values that should already be added but sum the
+            // changes from before that should be added
+            to_add = [...new Set(new_value.concat(change['add']))];
+        }
+        else {
+            // Don't add values anymore that should get removed now or are not
+            // present yet
+            to_add = change['add'].filter(v => !new_value.includes(v));
+
+            // Don't remove values we can not remove because they are not present
+            to_remove = new_value.filter(v => server[attribute_id].includes(v));
         }
 
-        change['add'] = new_value_add.sort();
-        change['remove'] = new_value_remove.sort();
+        change['add'] = to_add.sort();
+        change['remove'] = to_remove.sort();
     }
     else {
         change['new'] = new_value;
