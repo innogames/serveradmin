@@ -106,6 +106,12 @@ $(document).ready(function () {
 
             spinner.disable();
 
+            // Don't auto complete if the user has already entered everything
+            if (choices.length === 1 && choices[0]['value'] === request.term) {
+                response([]);
+                return;
+            }
+
             response(choices);
         },
     });
