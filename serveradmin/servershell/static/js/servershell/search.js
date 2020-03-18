@@ -28,6 +28,10 @@ servershell.submit_search = function() {
     console.debug(data);
 
     servershell._ajax = $.getJSON(url, data, function(data) {
+        if ('message' in data) {
+            return servershell.alert(data.message, 'danger');
+        }
+
         // Update property used by bookmark link of search
         servershell.href = '?' + $.param({
             'term': servershell.term,
