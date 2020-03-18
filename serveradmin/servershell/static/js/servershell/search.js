@@ -15,6 +15,7 @@ servershell.submit_search = function() {
     let data = {
         term: servershell.term.trimRight(), // Avoid error on trailing spaces
         shown_attributes: servershell.shown_attributes,
+        deep_link: servershell.deep_link,
         offset: servershell.offset,
         limit: servershell.limit,
         order_by: servershell.order_by,
@@ -30,7 +31,8 @@ servershell.submit_search = function() {
         // Update property used by bookmark link of search
         servershell.href = '?' + $.param({
             'term': servershell.term,
-            'shown_attributes': servershell.shown_attributes
+            'shown_attributes': servershell.shown_attributes,
+            'deep_link': true,
         });
 
         servershell.editable_attributes = data.editable_attributes;
@@ -98,13 +100,11 @@ $(document).ready(function() {
 
     // Save search settings
     $('#search-options input[type=checkbox]').change(function() {
-        spinner.enable();
-
         $.getJSON(servershell.urls.settings, {
             'autocomplete': $('#autocomplete')[0].checked,
             'autoselect': $('#autoselect')[0].checked,
-            'complete': spinner.disable,
+            'save_attributes': $('#save_attributes')[0].checked,
             'timeout': 5000,
-        });
+        })
     });
 });

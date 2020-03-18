@@ -30,31 +30,22 @@ from serveradmin.serverdb.models import (
     ServertypeAttribute,
     Server)
 from serveradmin.serverdb.query_committer import commit_query
+from serveradmin.servershell.helper import get_default_shown_attributes
 from serveradmin.servershell.helper.autocomplete import \
     attribute_value_startswith, attribute_startswith
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 25
 AUTOCOMPLETE_LIMIT = 20
+SEARCH_SETTINGS = {
+    'autocomplete': True,
+    'autoselect': True,
+    'save_attributes': False,
+}
 
 
 @login_required
 def index(request):
-    # If user clicks a link with shown attributes configured take that one
-    shown_attributes = request.GET.getlist('shown_attributes[]')
-    if not shown_attributes:
-        if 'shown_attributes' in request.session:
-            # The preferred settings of the user
-            shown_attributes = request.session['shown_attributes']
-        else:
-            # Our default selection if the user visits the first time
-            shown_attributes = list(Attribute.specials.keys())
-            shown_attributes.remove('object_id')
-            shown_attributes.append('state')
-            shown_attributes.sort()
-
-    request.session['shown_attributes'] = shown_attributes
-
     attributes = list(Attribute.objects.all())
     attributes.extend(Attribute.specials.values())
     attributes_json = list()
@@ -74,18 +65,29 @@ def index(request):
         })
     attributes_json.sort(key=lambda attr: attr['group'])
 
+    # Load user search settings or set default values
+    search_settings = dict()
+    for setting, default in SEARCH_SETTINGS.items():
+        search_settings[setting] = request.session.setdefault(setting, default)
+
+    shown_attributes = request.GET.getlist('shown_attributes[]')
+    if not shown_attributes:
+        if search_settings['save_attributes']:
+            shown_attributes = request.session.setdefault(
+                'shown_attributes', get_default_shown_attributes())
+        else:
+            shown_attributes = get_default_shown_attributes()
+
     return TemplateResponse(request, 'servershell/index.html', {
         'term': request.GET.get('term', request.session.get('term', '')),
         'shown_attributes': shown_attributes,
+        'deep_link': bool(strtobool(request.GET.get('deep_link', 'false'))),
         'attributes': attributes_json,
         'offset': 0,
         'limit': request.session.get('limit', NUM_SERVERS_DEFAULT),
         'order_by': 'hostname',
-        'command_history': json.dumps(
-            request.session.get('command_history', [])),
         'filters': sorted([(f.__name__, f.__doc__) for f in filter_classes]),
-        'autocomplete': request.session.get('autocomplete', True),
-        'autoselect': request.session.get('autoselect', True),
+        'search_settings': search_settings,
     })
 
 
@@ -122,12 +124,16 @@ def autocomplete(request):
 @login_required
 def get_results(request):
     term = request.GET.get('term', '')
-    shown_attributes = request.GET.getlist('shown_attributes[]',
-                                           request.session['shown_attributes'])
+    shown_attributes = request.GET.getlist('shown_attributes[]')
+    deep_link = bool(strtobool(request.GET.get('deep_link', 'false')))
+
+    if request.session.get('save_attributes') and not deep_link:
+        request.session['shown_attributes'] = shown_attributes
 
     try:
         offset = int(request.GET.get('offset', '0'))
         limit = int(request.GET.get('limit', '0'))
+        request.session['limit'] = limit
     except ValueError:
         offset = 0
         limit = NUM_SERVERS_DEFAULT
@@ -138,7 +144,6 @@ def get_results(request):
         order_by = None
 
     try:
-
         # Query manipulates shown_attributes by adding object_id we want to
         # keep the original value to save settings ...
         restrict = shown_attributes.copy()
@@ -157,11 +162,6 @@ def get_results(request):
         }))
 
     servers = list(islice(query, offset, offset + limit))
-
-    # Save settings across requests and tabs
-    request.session['term'] = term
-    request.session['limit'] = limit
-    request.session['shown_attributes'] = shown_attributes
 
     # Add information about available, editable attributes on servertypes
     servertype_ids = {s['servertype'] for s in servers}
@@ -440,17 +440,16 @@ def choose_ip_addr(request):
 
 @login_required
 def settings(request):
-    """Save search settings
+    """Synchronize search settings
 
-    Save settings of the Servershell to session.
+    Save desired search settings to user session
 
     :param request:
     :return:
     """
-    request.session['autocomplete'] = bool(strtobool(
-        request.GET.get('autocomplete', 'true')))
-    request.session['autoselect'] = bool(strtobool(
-        request.GET.get('autoselect', 'true')))
+
+    for setting in SEARCH_SETTINGS.keys():
+        request.session[setting] = bool(strtobool(request.GET.get(setting)))
 
     return JsonResponse({'status': 'ok'})
 
