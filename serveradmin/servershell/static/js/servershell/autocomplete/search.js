@@ -110,22 +110,7 @@ $(document).ready(function () {
         },
     });
 
-    term_input.on('autocompleteselect', function(event, ui) {
-        if (ui.item.value.endsWith('=')) {
-            let ac = function() {
-                $('#term').autocomplete('search')
-            };
-            // When triggering autocomplete right away nothing happens, with
-            // a small delay it works fine.
-            setTimeout(ac, 50);
-        }
-    });
-
-    term_input.on('autocompleteclose', function () {
-        $('#term').focus();
-    });
-
-    term_input.autocomplete($('#autoselect')[0].checked ? 'enable' : 'disable');
-    term_input.autocomplete('option', 'autoFocus', $('#autocomplete')[0].checked);
+    term_input.autocomplete($('#autocomplete')[0].checked ? 'enable' : 'disable');
+    term_input.autocomplete('option', 'autoFocus', $('#autoselect')[0].checked);
 });
 

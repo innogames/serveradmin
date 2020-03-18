@@ -156,22 +156,6 @@ $(document).ready(function() {
         }
     });
 
-    command_input.on('autocompleteselect', function(event, ui) {
-        let value = ui.item.value;
-        if (value === '' || value.endsWith(' ')) {
-            let ac = function() {
-                $('#command').autocomplete('search')
-            };
-            // When triggering autocomplete right away nothing happens, with
-            // a small delay it works fine.
-            setTimeout(ac, 50);
-        }
-    });
-
-    command_input.on('autocompleteclose', function () {
-        $('#command').focus();
-    });
-
-    command_input.autocomplete($('#autoselect')[0].checked ? 'enable' : 'disable');
-    command_input.autocomplete('option', 'autoFocus', $('#autocomplete')[0].checked);
+    command_input.autocomplete($('#autocomplete')[0].checked ? 'enable' : 'disable');
+    command_input.autocomplete('option', 'autoFocus', $('#autoselect')[0].checked);
 });
