@@ -10,7 +10,7 @@
 
 {% block content %}
 <form method="get" action="{% url 'resources_index' %}">
-    <div id="filterCollapse" class="show">
+    <div id="filterCollapse" class="collapse">
         <div class="row">
             <div class="col-md-12 controls">
                 <div class="form-group row input-controls">
@@ -36,6 +36,12 @@
                         <input class="form-control form-control-sm" id="understood" type="text" readonly value="{{ understood }}" />
                     </div>
                 </div>
+                <div class="form-group row input-controls">
+                    <label for="per_page" class="col-sm-1 col-form-label">Per Page:</label>
+                    <div class="col-md-4">
+                        <input class="form-control form-control-sm" id="per_page" type="number" value="{{ per_page }}" />
+                    </div>
+                </div>
             </div>
         </div>
         <div class="row controls">
@@ -58,8 +64,8 @@
     </div>
     <div class="row controls">
         <div class="col-md-12">
-            <a id="filter" class="btn btn-secondary" data-toggle="collapse" href="#filterCollapse" aria-expanded="true"></a>
-            <button type="submit" class="btn btn-success">Apply</button>
+            <b>Settings:&nbsp;</b><a id="filter" class="btn btn-sm btn-secondary collapsed" data-toggle="collapse" href="#filterCollapse" aria-expanded="false"></a>
+            <button type="submit" class="btn btn-sm btn-success">Apply</button>
         </div>
     </div>
 </form>
@@ -100,6 +106,27 @@
                 </tr>
             </tbody>
         </table>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="pagination">
+            <span class="step-links">
+                {% if hosts.has_previous %}
+                    <a href="?page=1">&laquo; first</a>
+                    <a href="?page={{ hosts.previous_page_number }}">previous</a>
+                {% endif %}
+
+                <span class="current">
+                    Page {{ hosts.number }} of {{ hosts.paginator.num_pages }}.
+                </span>
+
+                {% if hosts.has_next %}
+                    <a href="?page={{ hosts.next_page_number }}">next</a>
+                    <a href="?page={{ hosts.paginator.num_pages }}">last &raquo;</a>
+                {% endif %}
+            </span>
+        </div>
     </div>
 </div>
 {% endblock %}

@@ -8,6 +8,7 @@ from collections import OrderedDict
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.urls import reverse
 from django.http import HttpResponseBadRequest
 from django.template.response import TemplateResponse
@@ -51,6 +52,9 @@ def index(request):
     matched_hostnames = []
     if term:
         query_args = parse_query(term)
+        # @TODO: This is the slowest part here unfortunately the Query object
+        # does not support pagination yet so there is nothing to speed this
+        # up right now.
         host_query = Query(query_args, ['hostname', 'hypervisor'])
         for host in host_query:
             matched_hostnames.append(host['hostname'])
@@ -106,10 +110,16 @@ def index(request):
         for server in Query(filters, attribute_ids):
             hosts[server['hostname']] = dict(server)
 
+    page = int(request.GET.get('page', 1))
+    per_page = int(request.GET.get('per_page', 8))
+    hosts_pager = Paginator(list(hosts.values()), per_page)
+
     sprite_url = settings.MEDIA_URL + 'graph_sprite/' + collection.name
     template_info.update({
         'columns': columns,
-        'hosts': hosts.values(),
+        'hosts': hosts_pager.page(1),
+        'page': page,
+        'per_page': per_page,
         'matched_hostnames': matched_hostnames,
         'understood': understood,
         'error': None,
