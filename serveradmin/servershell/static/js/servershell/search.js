@@ -47,7 +47,7 @@ servershell.submit_search = function() {
 
         // If the search term changes and we exceed the available pages with
         // our current settings then go to page 1
-        if (servershell.pages() > servershell.page()) {
+        if (servershell.page() > servershell.pages()) {
             servershell.offset = 0;
         }
 
