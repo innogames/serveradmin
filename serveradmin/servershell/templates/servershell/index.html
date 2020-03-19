@@ -48,6 +48,10 @@
                         <label class="form-check-label" for="autocomplete">Autocomplete for Search & Command</label>
                     </div>
                     <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="autocomplete_values" {% if search_settings.autocomplete_values %}checked="checked{% endif %}">
+                        <label class="form-check-label" for="autocomplete_values">Autocomplete search attribute values (May be slow and override your input with autoselect enabled)</label>
+                    </div>
+                    <div class="form-check">
                         <input type="checkbox" class="form-check-input" id="autoselect" {% if search_settings.autoselect %}checked="checked{% endif %}" onchange="$('.autocomplete').autocomplete('option', 'autoFocus', this.checked);">
                         <label class="form-check-label" for="autoselect">Automatically select 1st element from autocomplete</label>
                     </div>
@@ -209,6 +213,8 @@
             history: "{% url 'serverdb_history' %}",
             settings: "{% url 'servershell_save_settings' %}",
         };
+
+        servershell.search_settings = {% autoescape off %}{{ search_settings|json }}{% endautoescape %};
     });
 </script>
 {% endblock %}

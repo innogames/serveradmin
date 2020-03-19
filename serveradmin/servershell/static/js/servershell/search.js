@@ -106,9 +106,12 @@ $(document).ready(function() {
     $('#search-options input[type=checkbox]').change(function() {
         $.getJSON(servershell.urls.settings, {
             'autocomplete': $('#autocomplete')[0].checked,
+            'autocomplete_values': $('#autocomplete_values')[0].checked,
             'autoselect': $('#autoselect')[0].checked,
             'save_attributes': $('#save_attributes')[0].checked,
             'timeout': 5000,
+        }).done(function (data) {
+            servershell.search_settings = data;
         })
     });
 });

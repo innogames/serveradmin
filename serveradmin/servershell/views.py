@@ -39,6 +39,7 @@ NUM_SERVERS_DEFAULT = 25
 AUTOCOMPLETE_LIMIT = 20
 SEARCH_SETTINGS = {
     'autocomplete': True,
+    'autocomplete_values': False,
     'autoselect': True,
     'save_attributes': False,
 }
@@ -451,7 +452,8 @@ def settings(request):
     for setting in SEARCH_SETTINGS.keys():
         request.session[setting] = bool(strtobool(request.GET.get(setting)))
 
-    return JsonResponse({'status': 'ok'})
+    return JsonResponse(
+        {key: request.session.get(key) for key in SEARCH_SETTINGS})
 
 
 def _prepare_regexp_html(regexp):
