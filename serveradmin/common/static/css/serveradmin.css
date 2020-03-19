@@ -121,3 +121,7 @@ a[aria-expanded=true]:before {
 a[aria-expanded=false]:before {
     content: "Show";
 }
+
+#spinner {
+    animation-play-state: paused;
+}

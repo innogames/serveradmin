@@ -14,6 +14,11 @@ $(document).ready(function() {
         _counter: $('#spinner-counter'),
         _value: $('#spinner-counter-value'),
         _toggle_css: function() {
+            if (this._spinner.css('display') === 'none') {
+                this._spinner.show();
+                this._counter.show();
+            }
+
             if (this._spinner.hasClass('text-success')) {
                 this._spinner.removeClass('text-success');
                 this._spinner.addClass('text-secondary');
