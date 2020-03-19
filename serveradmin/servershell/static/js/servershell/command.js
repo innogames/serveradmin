@@ -356,15 +356,13 @@ servershell.commands = {
         window.open(url, '_self');
     },
     changes: function() {
-        if (!validate_selected())
-            return;
-
         let url;
         let selection = servershell.get_selected();
-        if (selection.length > 0)
+        if (selection.length > 0) {
             url = servershell.urls.changes + `?object_id=${selection[0]}`;
-        else
-            url = servershell.urls.change;
+        } else {
+            url = servershell.urls.changes;
+        }
 
         window.open(url, '_blank');
         servershell.alert('Opened changes in new browser tab.', 'info');
