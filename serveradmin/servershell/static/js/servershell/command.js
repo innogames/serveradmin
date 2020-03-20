@@ -561,14 +561,14 @@ servershell.commands = {
         });
     },
     cancel: function() {
-        if (servershell._ajax !== null) {
-            servershell._ajax.fail = function() {};
-            servershell._ajax.abort();
-            servershell.alert('Pending request cancelled', 'success');
-        }
-        else {
+        if (servershell._ajax === null) {
             servershell.alert('No running request to cancel', 'warning');
+            return;
         }
+        
+        servershell._ajax.fail = function() {};
+        servershell._ajax.abort();
+        servershell.alert('Pending request cancelled', 'success');
     },
 };
 
