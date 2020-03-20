@@ -7,8 +7,9 @@
  */
 servershell.submit_search = function() {
     // Prevent somebody hitting enter like crazy
-    if (servershell._ajax !== null)
+    if (servershell._ajax !== null) {
         return servershell.alert('Pending request, cancel it or wait for it to finish!', 'danger');
+    }
 
     spinner.enable();
 
