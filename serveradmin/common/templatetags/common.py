@@ -48,7 +48,7 @@ def bootstrap_alert(level_tag):
 def group(items, number_of_groups):
     """Group items into number of groups
 
-    Takes a countable items and divides it into the desired number of items.
+    Takes a countable items and divides it into the desired number of groups.
 
     :param number_of_groups:
     :return:
