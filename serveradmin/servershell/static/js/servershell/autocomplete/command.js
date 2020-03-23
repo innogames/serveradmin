@@ -41,7 +41,7 @@ $(document).ready(function() {
     let command_input = $('#command');
 
     command_input.autocomplete({
-        delay: 100,
+        delay: 10,
         minLength: 0,
         autoFocus: true,
         source: function(request, response) {
@@ -152,26 +152,16 @@ $(document).ready(function() {
                 }
             }
 
+            // Don't auto complete if the user has already entered everything
+            if (choices.length === 1 && choices[0]['value'] === request.term) {
+                response([]);
+                return;
+            }
+
             response(choices);
         }
     });
 
-    command_input.on('autocompleteselect', function(event, ui) {
-        let value = ui.item.value;
-        if (value === '' || value.endsWith(' ')) {
-            let ac = function() {
-                $('#command').autocomplete('search')
-            };
-            // When triggering autocomplete right away nothing happens, with
-            // a small delay it works fine.
-            setTimeout(ac, 50);
-        }
-    });
-
-    command_input.on('autocompleteclose', function () {
-        $('#command').focus();
-    });
-
-    command_input.autocomplete($('#autoselect')[0].checked ? 'enable' : 'disable');
-    command_input.autocomplete('option', 'autoFocus', $('#autocomplete')[0].checked);
+    command_input.autocomplete($('#autocomplete')[0].checked ? 'enable' : 'disable');
+    command_input.autocomplete('option', 'autoFocus', $('#autoselect')[0].checked);
 });

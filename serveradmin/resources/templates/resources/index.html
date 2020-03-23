@@ -1,134 +1,160 @@
 {% extends "base.html" %}
-{% load common %}
-{% load serversearch %}
 
-{% block title %}Hardware Resources{% endblock %}
+{% load common %}
+
+{% block title %}Resources{% endblock %}
+
+{% block additional_styles %}
+<link rel="stylesheet" href="{{ STATIC_URL }}css/resources.css">
+{% endblock %}
 
 {% block content %}
-<h2>Hardware Resources</h2>
-
 <form method="get" action="{% url 'resources_index' %}">
-<table class="valign-middle">
-<tr>
-    <th>Graph collection</th>
-    <td>
-    <select id="collection_short" name="current_collection">
-    <option value="">- all -</option>
-    {% for collection in collections %}
-        <option value="{{ collection.id }}" {% if collection.id == current_collection %}selected{% endif %}>{{ collection.name }}</option>
-    {% endfor %}
-    </select>
-    </td>
-</tr>
-<tr>
-    <th>Search</th>
-    <td>
-        <input type="text" size="60"  id="monitor_search" name="term"
-            value="{{ search_term }}" />
-        <input type="submit" value="Go" />
-    </td>
-    <td rowspan="2" style="width:4em;">
-    </td>
-    <td rowspan="2" style="vertical-align:top;">
-    <table class="valign-middle">
-
-    </table>
-    </td>
-</tr>
-<tr>
-    <th>Understood</th>
-    {% if error %}
-    <td><span class="error">{{ error }}</span></td>
-    {% else %}
-    <td>{{ understood }}</td>
-    {% endif %}
-</tr>
-</table>
+    <div id="filterCollapse" class="collapse">
+        <div class="row">
+            <div class="col-md-12 controls">
+                <div class="form-group row input-controls">
+                    <label for="collection" class="col-sm-1 col-form-label">Graph Collection:</label>
+                    <div class="col-md-4">
+                        <select id="collection" name="current_collection" class="custom-select custom-select-sm">
+                            <option value="">- all -</option>
+                            {% for collection in collections %}
+                                <option value="{{ collection.id }}" {% if collection.id == current_collection %}selected{% endif %}>{{ collection.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group row input-controls">
+                    <label for="term" class="col-sm-1 col-form-label">Search:</label>
+                    <div class="col-md-4">
+                        <input class="form-control form-control-sm" id="term" name="term" type="text" value="{{ search_term }}" />
+                    </div>
+                </div>
+                <div class="form-group row input-controls">
+                    <label for="understood" class="col-sm-1 col-form-label">Understood:</label>
+                    <div class="col-md-4">
+                        <input class="form-control form-control-sm" id="understood" type="text" readonly value="{{ understood }}" />
+                    </div>
+                </div>
+                <div class="form-group row input-controls">
+                    <label for="per_page" class="col-sm-1 col-form-label">Per Page:</label>
+                    <div class="col-md-4">
+                        <input class="form-control form-control-sm" id="per_page" type="number" value="{{ per_page }}" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row controls">
+            <div class="col-md-12"><b>Attributes:</b></div>
+        </div>
+        <div class="row controls">
+            {% for group in columns|group:4 %}
+            <div class="col-md-2">
+                <ul>
+                {% for column in group %}
+                    <li>
+                        <input id="{{ column.name|slugify }}" name="columns" value="{{ column.name|slugify }}" type="checkbox" {% if column.visible %}checked="checked"{% endif %}>
+                        <label for="{{ column.name|slugify }}">{{ column.name }}</label>
+                    </li>
+                {%  endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="row controls">
+        <div class="col-md-12">
+            <b>Settings:&nbsp;</b><a id="filter" class="btn btn-sm btn-secondary collapsed" data-toggle="collapse" href="#filterCollapse" aria-expanded="false"></a>
+            <button type="submit" class="btn btn-sm btn-success">Apply</button>
+        </div>
+    </div>
 </form>
+<hr>
+<div class="row">
+    <div class="col-md-12">
+        <table class="table table-sm table-borderless table-striped table-responsive">
+            <thead>
+                <tr>
+                    <th>Hostname</th>
+                    {% for column in columns %}
+                        {% if column.visible %}
+                            <th>{{ column.name }}</th>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for obj in hosts %}
+                <tr>
+                    <td>{{ obj.hostname }}</td>
+                    {% for column in columns %}
+                        {% if column.visible %}
+                        <td>
+                            {% if column.type == 'numeric' %}
+                                {{ obj|dict_get:column.name }}
+                            {% elif column.type == 'relation' %}
+                                {% for rel in obj|dict_get:column.name %}
+                                    <a href="{% url 'graphite_graph_table' %}?hostname={{ rel }}" {% if rel in matched_hostnames %}style="color:#d00;"{% endif %}>{{ rel }}</a>
+                                {% endfor %}
+                            {% else %}
+                                <a class="graph_sprite" style="background:url({{ STATIC_URL }}empty.png) -{{ column.sprite_offset }}px 0;" data-hostname="{{ obj.hostname }}" data-graph="{{ column.graph_index }}" data-image="{{ sprite_url }}/{{ obj.hostname }}.png"></a>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="pagination">
+            <span class="step-links">
+                {% if hosts.has_previous %}
+                    <a href="?page=1">&laquo; first</a>
+                    <a href="?page={{ hosts.previous_page_number }}">previous</a>
+                {% endif %}
 
-{% if not error %}
-<h3>Results</h3>
-{% endif %}
+                <span class="current">
+                    Page {{ hosts.number }} of {{ hosts.paginator.num_pages }}.
+                </span>
 
-{% if not hosts %}
-<p>No servers matching your search query.</p>
-{% elif not error %}
-<table border="1">
-    <tr>
-        <th>Hardware host</th>
-{% for column in columns %}
-        <th>{{ column.name }}</th>
-{% endfor %}
-    </tr>
-{% for obj in hosts %}
-    <tr>
-        <td>
-            <p>
-                <a href="{% url 'graphite_graph_table' %}?hostname={{ obj.hostname }}"
-                   >{{ obj.hostname }}</a>
-            </p>
-
-            <p class="graph_servertype">({{ obj.servertype }})</p>
-        </td>
-{% for column in columns %}
-        <td>
-{% if column.type == 'numeric' %}
-            {{ obj|dict_get:column.name }}
-{% elif column.type == 'relation' %}
-{% for rel in obj|dict_get:column.name %}
-            <a href="{% url 'graphite_graph_table' %}?hostname={{ rel }}"
-               {% if rel in matched_hostnames %}style="color:#d00;"{% endif %}
-               >{{ rel }}</a>
-{% endfor %}
-{% else %}
-            <a class="graph_sprite"
-               style="background:url({{ STATIC_URL }}empty.png) -{{ column.sprite_offset }}px 0;"
-               data-hostname="{{ obj.hostname }}"
-               data-graph="{{ column.graph_index }}"
-               data-image="{{ sprite_url }}/{{ obj.hostname }}.png"></a>
-{% endif %}
-        </td>
-{% endfor %}
-    </tr>
-{% endfor %}
-</table>
-{% endif %} {# else of if not error #}
-{% endblock content %}
-
+                {% if hosts.has_next %}
+                    <a href="?page={{ hosts.next_page_number }}">next</a>
+                    <a href="?page={{ hosts.paginator.num_pages }}">last &raquo;</a>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+</div>
+{% endblock %}
 {% block additional_scripts %}
 <script type="text/javascript" src="{{ STATIC_URL }}js/graphite.js"></script>
 <script type="text/javascript">
-var monitor_graph_popup_url = '{% url 'resources_graph_popup' %}';
-$(function() {
-    $('.graph_sprite').click(open_graph_popup);
-    function update_sprites() {
-        var threshold = 300;
-        var sprites = $('.graph_sprite[data-image!=""]')
-        for(var i = 0; i < sprites.length; i++) {
-            var sprite = $(sprites[i]);
-            var pos = sprite.offset().top - threshold;
-            var height = $(window).scrollTop() + $(window).height();
-            if (pos <= height) {
-                var image = 'url(' + sprite.attr('data-image') + ')';
-                sprite.css('background-image', image);
-                sprite.attr('data-image', '');
-            } else {
-                break;
+    $(document).ready(function() {
+        let update_sprites = function() {
+            let threshold = 300;
+            let sprites = $('.graph_sprite[data-image!=""]');
+
+            for(let i = 0; i < sprites.length; i++) {
+                let sprite = $(sprites[i]);
+                let pos = sprite.offset().top - threshold;
+                let height = $(window).scrollTop() + $(window).height();
+
+                if (pos <= height) {
+                    let image = 'url(' + sprite.attr('data-image') + ')';
+                    sprite.css('background-image', image);
+                    sprite.attr('data-image', '');
+                }
+                else {
+                    break;
+                }
             }
-        }
-    }
-    function insert_search() {
-        var search_input = '';
-        var stype = $('#servertype_short').val();
-        if (stype) {
-            search_input += 'servertype=' + stype + ' ';
-        }
-        $('#monitor_search').val(search_input).focus();
-    }
-    $('#servertype_short').change(insert_search);
-    $(window).on('scroll', update_sprites);
-    update_sprites();
-});
+        };
+        $(window).on('scroll', update_sprites);
+        update_sprites();
+    });
 </script>
-{% serversearch_js 'monitor_search' %}
 {% endblock %}

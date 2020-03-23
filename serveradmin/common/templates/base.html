@@ -40,10 +40,10 @@
         </ul>
     </div>
 
-    <span id="spinner-counter" class="text-success" style="display: none">
-        <span id="spinner-counter-time">0</span> <span id="spinner-counter-unit">ms</span> &nbsp;
+    <span id="spinner-counter" class="text-secondary" style="display: none;">
+        <span id="spinner-counter-value">0</span> ms&nbsp;
     </span>
-    <div id="spinner" class="spinner-border text-success" style="display: none;" role="status">
+    <div id="spinner" class="spinner-border text-secondary" role="status" style="display: none;">
         <span class="sr-only">Loading...</span>
     </div>
 </nav>
@@ -52,7 +52,7 @@
     {% if messages %}
         {% for message in messages %}
             <div class="alert {{ message.level_tag|bootstrap_alert }} alert-dismissible fade show" role="alert">
-                <strong>{{ message }} {{ message.level_tag }}</strong>
+                <strong>{{ message }}</strong>
                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -75,4 +75,3 @@
 {% block additional_scripts %}{% endblock %}
 </body>
 </html>
-

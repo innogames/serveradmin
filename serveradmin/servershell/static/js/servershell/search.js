@@ -6,27 +6,38 @@
  * result to the corresponding servershell properties.
  */
 servershell.submit_search = function() {
+    // Prevent somebody hitting enter like crazy
+    if (servershell._ajax !== null) {
+        return servershell.alert('Pending request, cancel it or wait for it to finish!', 'danger');
+    }
+
     spinner.enable();
 
     let data = {
         term: servershell.term.trimRight(), // Avoid error on trailing spaces
         shown_attributes: servershell.shown_attributes,
+        deep_link: servershell.deep_link,
         offset: servershell.offset,
         limit: servershell.limit,
         order_by: servershell.order_by,
         async: false,
-        timeout: 5000, // Query should not take longer then 5 seconds
+        timeout: 5000,
     };
 
     let url = $('#search_form').get(0).action;
     console.debug(`Submitting query to URL "${url}" with data:`);
     console.debug(data);
 
-    $.getJSON(url, data, function(data) {
+    servershell._ajax = $.getJSON(url, data, function(data) {
+        if ('message' in data) {
+            return servershell.alert(data.message, 'danger');
+        }
+
         // Update property used by bookmark link of search
         servershell.href = '?' + $.param({
             'term': servershell.term,
-            'shown_attributes': servershell.shown_attributes
+            'shown_attributes': servershell.shown_attributes,
+            'deep_link': true,
         });
 
         servershell.editable_attributes = data.editable_attributes;
@@ -37,7 +48,7 @@ servershell.submit_search = function() {
 
         // If the search term changes and we exceed the available pages with
         // our current settings then go to page 1
-        if (servershell.pages() > servershell.page()) {
+        if (servershell.page() > servershell.pages()) {
             servershell.offset = 0;
         }
 
@@ -47,17 +58,17 @@ servershell.submit_search = function() {
         // We will use this on other components to react on changes ...
         $(document).trigger('servershell_search_finished');
 
-        spinner.disable();
-
         // Indicator that we have successfully reloaded ...
         servershell._term = servershell.term;
 
         // Focus command input after successful search ...
         $('#command').focus();
-    }).fail(function () {
-        servershell.alert('Search request failed retrying in 5 seconds!', 'danger');
-        setTimeout(servershell.submit_search, 5000);
-    });
+    }).always(function() {
+        spinner.disable();
+
+        // Reset running ajax call variable
+        servershell._ajax = null;
+    })
 };
 
 $(document).ready(function() {
@@ -92,21 +103,16 @@ $(document).ready(function() {
         servershell.submit_search();
     });
 
-    // If user tabs to command field but search term has changed reload
-    $(document).keyup(function (event) {
-        if ($('#command').is(':focus') && event.which === 9 && servershell.term !== servershell._term)
-            servershell.submit_search();
-    });
-
     // Save search settings
     $('#search-options input[type=checkbox]').change(function() {
-        spinner.enable();
-
         $.getJSON(servershell.urls.settings, {
             'autocomplete': $('#autocomplete')[0].checked,
+            'autocomplete_values': $('#autocomplete_values')[0].checked,
             'autoselect': $('#autoselect')[0].checked,
-            'complete': spinner.disable,
+            'save_attributes': $('#save_attributes')[0].checked,
             'timeout': 5000,
-        });
+        }).done(function (data) {
+            servershell.search_settings = data;
+        })
     });
 });

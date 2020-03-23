@@ -33,7 +33,12 @@ if __name__ == '__main__':
                 'static/js/*',
                 'templates/graphite/*',
             ],
-            'serveradmin.resources': ['templates/resources/*'],
+            'serveradmin.resources': [
+                'static/*',
+                'static/css/*',
+                'static/js/*',
+                'templates/resources/*',
+            ],
             'serveradmin.serverdb': [
                 'static/*',
                 'templates/serverdb/*',

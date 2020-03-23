@@ -42,3 +42,25 @@ def bootstrap_alert(level_tag):
         'error': 'danger',
     }
     return 'alert-' + django_bootstrap[level_tag]
+
+
+@register.filter
+def group(items, number_of_groups):
+    """Group items into number of groups
+
+    Takes a countable items and divides it into the desired number of groups.
+
+    :param items:
+    :param number_of_groups:
+    :return:
+    """
+
+    if not items:
+        return []
+
+    groups = list()
+    step = round(len(items) / number_of_groups)
+    for counter in range(0, len(items), step):
+        groups.extend([items[counter:counter + step]])
+
+    return groups

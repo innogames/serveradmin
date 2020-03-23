@@ -16,7 +16,7 @@ $(document).ready(function () {
 
     let term_input = $('#term');
     term_input.autocomplete({
-        delay: 300, // Wait n ms before starting to auto complete to avoid needles requests to backend
+        delay: 50, // Wait n ms before starting to auto complete to avoid needles requests to backend
         minLength: 0,
         autoFocus: true,
         source: function (request, response) {
@@ -35,22 +35,24 @@ $(document).ready(function () {
                 let last_attribute = match[1];
                 let last_value = match[2] === undefined ? '' : match[2];
 
-                let settings = {
-                    'data': {
-                        'attribute': last_attribute,
-                        'value': last_value,
-                    },
-                    'async': false,
-                    'success': function (data) {
-                        data.autocomplete.forEach(function (attr_value) {
-                            choices.push({
-                                'label': `AttrVal: ${attr_value}`,
-                                'value': _build_value(request.term, cur_term, last_attribute, attr_value),
+                if (servershell.search_settings.autocomplete_values) {
+                    let settings = {
+                        'data': {
+                            'attribute': last_attribute,
+                            'value': last_value,
+                        },
+                        'async': false,
+                        'success': function (data) {
+                            data.autocomplete.forEach(function (attr_value) {
+                                choices.push({
+                                    'label': `AttrVal: ${attr_value}`,
+                                    'value': _build_value(request.term, cur_term, last_attribute, attr_value),
+                                });
                             });
-                        });
-                    }
-                };
-                $.ajax(url, settings);
+                        }
+                    };
+                    $.ajax(url, settings);
+                }
 
                 // Add filter to autocomplete ...
                 // @TODO: Add autocomplete for nested filter values
@@ -106,26 +108,17 @@ $(document).ready(function () {
 
             spinner.disable();
 
+            // Don't auto complete if the user has already entered everything
+            if (choices.length === 1 && choices[0]['value'] === request.term) {
+                response([]);
+                return;
+            }
+
             response(choices);
         },
     });
 
-    term_input.on('autocompleteselect', function(event, ui) {
-        if (ui.item.value.endsWith('=')) {
-            let ac = function() {
-                $('#term').autocomplete('search')
-            };
-            // When triggering autocomplete right away nothing happens, with
-            // a small delay it works fine.
-            setTimeout(ac, 50);
-        }
-    });
-
-    term_input.on('autocompleteclose', function () {
-        $('#term').focus();
-    });
-
-    term_input.autocomplete($('#autoselect')[0].checked ? 'enable' : 'disable');
-    term_input.autocomplete('option', 'autoFocus', $('#autocomplete')[0].checked);
+    term_input.autocomplete($('#autocomplete')[0].checked ? 'enable' : 'disable');
+    term_input.autocomplete('option', 'autoFocus', $('#autoselect')[0].checked);
 });
 

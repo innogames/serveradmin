@@ -12,7 +12,7 @@
 <div class="row">
     <div class="col-md-3"></div>
     <div class="col-md-6 controls">
-        <form id="changes-form" method="get" action="{% url 'serverdb_history' %}" onsubmit="spinner.enable();">
+        <form id="changes-form" method="get" action="{% url 'serverdb_history' %}">
             <div class="form-group row input-controls">
                 <label for="search_string" class="col-sm-1 col-form-label">Contains:</label>
                 <div class="col-md-4">
@@ -29,81 +29,94 @@
 </div>
 <hr/>
 <div class="row">
-    <div class="col-md-3"></div>
-    <div class="col-md-6">
-        {% for type, change in change_list %}
-            {% if type == 'add' %}
-                <strong>Added {{ change.commit.change_on|date:"r" }} ({{ change.commit.change_on|timesince }}) by {{ change.commit.user }}</strong>
-                <table class="table table-sm table-striped table-bordered table-borderless">
-                    <tbody>
+    <div class="col-md-1"></div>
+    <div class="col-md-9">
+        <table class="table table-sm table-striped table-bordered table-borderless">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Time Since</th>
+                    <th>Author</th>
+                    <th>Attribute</th>
+                    <th>New/Added</th>
+                    <th>Old/Removed</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for type, change in change_list %}
+                    {% if type == 'add' %}
                         {% for key, value in change.attributes.items %}
-                        <tr>
-                            <th>{{ key }}:</th>
-                            <td>{{ value }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% elif type == 'update' %}
-                <strong>Changed {{ change.commit.change_on|date:"r" }} ({{ change.commit.change_on|timesince }}) by {{ change.commit.user }}</strong>
-                <table class="table table-sm table-striped table-bordered table-borderless">
-                    <thead>
-                        <tr>
-                            <th>Attribute</th>
-                            <th>Old/Removed</th>
-                            <th>New/Added</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for key, value in change.updates.items %}
-                        {% if key != 'object_id' %}
                             <tr>
-                                <td>{{ key }}</td>
-                                {% if value.action == 'multi' %}
+                                <td>{{ change.commit.change_on|date:"r" }}</td>
+                                <td>{{ change.commit.change_on|timesince }}</td>
+                                <td>{{ change.commit.user }}</td>
+                                <td>{{ key }}:</td>
                                 <td>
-                                    {% if value.remove %}
+                                    {% if value is list %}
                                         <ul>
-                                        {% for val in value.remove %}
-                                            <li>{{ val }}</li>
-                                        {% endfor %}
+                                            {% for val in value %}
+                                            <li>{{ value }}</li>
+                                            {% endfor %}
                                         </ul>
                                     {% else %}
-                                        <i>nothing removed</i>
+                                        {{ value }}
                                     {% endif %}
                                 </td>
-                                <td>
-                                    {% if value.add %}
-                                    <ul>
-                                    {% for val in value.add %}
-                                        <li>{{ val }}</li>
-                                    {% endfor %}
-                                    </ul>
-                                    {% else %}
-                                        <i>nothing added</i>
-                                    {% endif %}
-                                </td>
-                                {% else %}
-                                    <td>{{ value.old }}</td>
-                                    <td>{{ value.new }}</td>
-                                {% endif %}
+                                <td>-</td>
                             </tr>
-                        {% endif %}
                         {% endfor %}
-                    </tbody>
-                </table>
-            {% elif type == 'delete' %}
-                <strong>Deleted {{ change.commit.change_on|date:"r" }} ({{ change.commit.change_on|timesince }}) by {{ change.commit.user }}</strong>
-                <form method="post" action="{% url 'serverdb_restore_deleted' change.commit.id %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="object_id" value="{{ change.server_id }}" />
-                    <input class="btn btn-sm btn-danger" type="submit" value="Restore this server" />
-                </form>
-            {% endif %}
-        {% endfor %}
+                    {% elif type == 'update' %}
+                        {% for key, value in change.updates.items %}
+                            {% if key != 'object_id' %}
+                                <tr>
+                                    <td>{{ change.commit.change_on|date:"r" }}</td>
+                                    <td>{{ change.commit.change_on|timesince }}</td>
+                                    <td>{{ change.commit.user }}</td>
+                                    <td>{{ key }}</td>
+                                    {% if value.action == 'multi' %}
+                                        {% if value.add %}
+                                            <td>
+                                                <ul>
+                                                    {% for val in value.add %}
+                                                    <li>{{ val }}</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </td>
+                                        {% else %}
+                                            <td></td>
+                                        {% endif %}
+                                        {% if value.remove %}
+                                            <td>
+                                                <ul>
+                                                    {% for val in value.remove %}
+                                                    <li>{{ val }}</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </td>
+                                        {% else %}
+                                            <td></td>
+                                        {% endif %}
+                                    {% else %}
+                                        <td>{{ value.new }}</td>
+                                        <td>{{ value.old }}</td>
+                                    {% endif %}
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    {% elif type == 'delete' %}
+                        <form method="post" action="{% url 'serverdb_restore_deleted' change.commit.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="object_id" value="{{ change.server_id }}" />
+                            <input class="btn btn-sm btn-danger" type="submit" value="Restore this server" />
+                        </form>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
         {% if commit_id %}
             <a href="{% url 'serverdb_history' %}?object_id={{ object_id }}">Show complete history</a>
         {% endif %}
     </div>
 </div>
-
 {% endblock %}
+

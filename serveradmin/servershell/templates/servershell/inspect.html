@@ -32,18 +32,14 @@
                 <tr>
                     <td>{{ field.key }}</td>
                     <td>
-                        {% if not field.value %}
-                            Empty
+                        {% if field.multi %}
+                            <ul>
+                                {% for val in field.value %}
+                                    <li>{{ val }}</li>
+                                {% endfor %}
+                            </ul>
                         {% else %}
-                            {% if field.multi %}
-                                <ul>
-                                    {% for val in field.value %}
-                                        <li>{{ val }}</li>
-                                    {% endfor %}
-                                </ul>
-                            {% else %}
-                                {{ field.value }}
-                            {% endif %}
+                            {{ field.value }}
                         {% endif %}
                     </td>
                     <td>{{ field.type }}</td>

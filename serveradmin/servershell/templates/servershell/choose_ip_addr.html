@@ -1,5 +1,13 @@
 {# Only used in modals #}
 <div class="content">
+    <div class="form-row align-items-center">
+        <div class="col-auto">
+            <input type="text" class="form-control mb-2" id="ip_address" placeholder="Enter manually ...">
+        </div>
+        <div class="col-auto">
+            <button type="button" class="btn btn-success mb-2" onclick="submit_ip_address($('#ip_address').val());">Submit</button>
+        </div>
+    </div>
     {% if servers %}
         <table class="table table-bordered table-sm table-borderless table-striped">
             <thead>

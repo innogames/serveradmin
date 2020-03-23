@@ -42,14 +42,22 @@
             <!-- Advanced search options (hidden by default) -->
             <div class="collapse" id="search-options">
                 <div class="card card-body">
-                    <b>Your settings are saved in your session</b>
+                    <b>Your search settings are bound to your user and persistent.</b>
                     <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="autocomplete" {% if autocomplete %}checked="checked"{% endif %} onchange="this.checked ? $('.autocomplete').autocomplete('enable') : $('.autocomplete').autocomplete('disable');">
+                        <input type="checkbox" class="form-check-input" id="autocomplete" {% if search_settings.autocomplete %}checked="checked"{% endif %} onchange="this.checked ? $('.autocomplete').autocomplete('enable') : $('.autocomplete').autocomplete('disable');">
                         <label class="form-check-label" for="autocomplete">Autocomplete for Search & Command</label>
                     </div>
                     <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="autoselect" {% if autoselect %}checked="checked{% endif %}" onchange="$('.autocomplete').autocomplete('option', 'autoFocus', this.checked);">
+                        <input type="checkbox" class="form-check-input" id="autocomplete_values" {% if search_settings.autocomplete_values %}checked="checked{% endif %}">
+                        <label class="form-check-label" for="autocomplete_values">Autocomplete search attribute values (May be slow and override your input with autoselect enabled)</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="autoselect" {% if search_settings.autoselect %}checked="checked{% endif %}" onchange="$('.autocomplete').autocomplete('option', 'autoFocus', this.checked);">
                         <label class="form-check-label" for="autoselect">Automatically select 1st element from autocomplete</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="save_attributes" {% if search_settings.save_attributes %}checked="checked{% endif %}">
+                        <label class="form-check-label" for="save_attributes">Save selection of shown attributes for future searches</label>
                     </div>
                     <hr>
                     <b>Keyboard Shortcuts</b>
@@ -102,6 +110,7 @@
                                 <b>S</b> String<br>
                                 <b>B</b> Boolean<br>
                                 <b>N</b> Number<br>
+                                <b>[]</b> Multi Attribute<br>
                             </span>
                             {% regroup attributes by group as group_list %}
                             {% for group in group_list %}
@@ -110,7 +119,7 @@
                                     {% for attribute in group.list %}
                                         <li class="list-group-item">
                                             <span class="attribute-indicator">
-                                                {% if attribute.type == 'reverse' %}<b>Я</b>{% elif attribute.type == 'relation' %}<b>R</b>{% else %}<b>{{ attribute.type|first|upper }}</b>{% endif %}
+                                                <b>{% if attribute.multi %}[{% endif %}{% if attribute.type == 'reverse' %}Я{% elif attribute.type == 'relation' %}R{% else %}{{ attribute.type|first|upper }}{% endif %}{% if attribute.multi %}]{% endif %}</b>
                                             </span>
                                             <input type="checkbox" id="{{ attribute.attribute_id }}" data-servershell-attribute="{{ attribute.attribute_id }}" />
                                             <label for="{{ attribute.attribute_id }}">{{ attribute.attribute_id }}</label>
@@ -171,17 +180,21 @@
 <script src="{{ STATIC_URL }}js/servershell/autocomplete/command.js"></script>
 <script>
     $(document).ready(function() {
+        // We want to allow the user to abort some queries such as search
+        servershell._ajax = null;
+
         // Initialize servershell object properties with initial values
         // from backend. This allows us setting defaults from backend.
         servershell.term = "{{ term }}";
         servershell._term = "{{ term }}";
         servershell.command = "";
         servershell.understood = "";
-        servershell.attributes = {% autoescape off %}{{ attributes|json }}{% endautoescape %}
+        servershell.attributes = {% autoescape off %}{{ attributes|json }}{% endautoescape %};
         servershell.offset = {{ offset }};
         servershell.limit = {{ limit }};
         servershell.order_by = "{{ order_by }}";
-        servershell.filters = {% autoescape off %}{{ filters|json }}{% endautoescape %}
+        servershell.filters = {% autoescape off %}{{ filters|json }}{% endautoescape %};
+        servershell.deep_link = {% autoescape off %}{{ deep_link|json }}{% endautoescape %};
         // Changing this property triggers a search ...
         servershell.shown_attributes = {% autoescape off %}{{ shown_attributes|json }}{% endautoescape %};
         servershell.to_commit = {deleted: [], changes: {}};
@@ -199,7 +212,9 @@
             commit: "{% url 'servershell_commit' %}",
             history: "{% url 'serverdb_history' %}",
             settings: "{% url 'servershell_save_settings' %}",
-        }
+        };
+
+        servershell.search_settings = {% autoescape off %}{{ search_settings|json }}{% endautoescape %};
     });
 </script>
 {% endblock %}

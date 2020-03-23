@@ -69,10 +69,20 @@
     border: none;
 }
 
+#accordion-attributes .card-body .list-group-item input {
+    position: relative;
+    top: 0.1rem;
+}
+
 #accordion-attributes .card-body .list-group-item label {
     margin-bottom: 0;
 }
 
 #accordion-attributes .attribute-indicator b {
     color: var(--primary);
+}
+
+.attribute-indicator {
+    min-width: 1.5rem;
+    display: inline-block;
 }
