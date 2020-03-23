@@ -203,10 +203,11 @@ register_inline_editing = function(cell) {
                 current_value = object[attribute_id].filter(v => !changes[object_id][attribute_id].remove.includes(v));
                 current_value = current_value.concat(changes[object_id][attribute_id].add);
             } else {
-                if (changes[object_id][attribute_id].action === 'delete')
+                if (changes[object_id][attribute_id].action === 'delete') {
                     current_value = '';
-                else
+                } else {
                     current_value = changes[object_id][attribute_id].new;
+                }
             }
         } else {
             current_value = servershell.get_object(object_id)[attribute_id];
