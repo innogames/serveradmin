@@ -50,7 +50,7 @@ def group(items, number_of_groups):
 
     Takes a countable items and divides it into the desired number of groups.
 
-:param items:
+    :param items:
     :param number_of_groups:
     :return:
     """
