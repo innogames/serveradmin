@@ -22,7 +22,7 @@ Django = "~=1.10.0"
 django-netfields = "*"
 # Required to generate sprites from Graphite
 Pillow = "*"
-
+# Required to parse human readable string like "a day ago" to a datetime
 dateparser = "*"
 
 # Serveradmin extras:
