@@ -16,8 +16,7 @@ $(document).ready(function () {
 
     let term_input = $('#term');
     term_input.autocomplete({
-        delay: 50, // Wait n ms before starting to auto complete to avoid needles requests to backend
-        minLength: 0,
+        delay: 150, // Wait n ms before starting to auto complete to avoid needles requests to backend
         autoFocus: true,
         source: function (request, response) {
             let limit = 20;
