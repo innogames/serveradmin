@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-<form method="get" action="{% url 'resources_index' %}">
+<form id="resources-form" method="get" action="{% url 'resources_index' %}">
     <div id="filterCollapse" class="collapse">
         <div class="row">
             <div class="col-md-12 controls">
@@ -40,6 +40,7 @@
                     <label for="per_page" class="col-sm-1 col-form-label">Per Page:</label>
                     <div class="col-md-4">
                         <input class="form-control form-control-sm" id="per_page" type="number" value="{{ per_page }}" />
+                        <input type="hidden" id="page" name="page" value="1" />
                     </div>
                 </div>
             </div>
@@ -113,17 +114,15 @@
         <div class="pagination">
             <span class="step-links">
                 {% if hosts.has_previous %}
-                    <a href="?page=1">&laquo; first</a>
-                    <a href="?page={{ hosts.previous_page_number }}">previous</a>
+                    <a href="#" onclick="$('#page').val($(this).data('page')); $('#resources-form').submit();" data-page="1">&laquo; first</a>
+                    <a href="#" onclick="$('#page').val($(this).data('page')); $('#resources-form').submit();" data-page="{{ hosts.previous_page_number }}">previous</a>
                 {% endif %}
-
                 <span class="current">
                     Page {{ hosts.number }} of {{ hosts.paginator.num_pages }}.
                 </span>
-
                 {% if hosts.has_next %}
-                    <a href="?page={{ hosts.next_page_number }}">next</a>
-                    <a href="?page={{ hosts.paginator.num_pages }}">last &raquo;</a>
+                    <a href="#" onclick="$('#page').val($(this).data('page')); $('#resources-form').submit();" data-page="{{ hosts.next_page_number }}">next</a>
+                    <a href="#" onclick="$('#page').val($(this).data('page')); $('#resources-form').submit();" data-page="{{ hosts.paginator.num_pages }}">last &raquo;</a>
                 {% endif %}
             </span>
         </div>

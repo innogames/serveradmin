@@ -30,8 +30,7 @@ def index(request):
     term = request.GET.get('term', request.session.get('term', ''))
     collections = list(Collection.objects.filter(overview=True))
 
-    # If a graph collection was specified, use it.  Otherwise use the first
-    # one.
+    # If a graph collection was specified, use it. Otherwise use the first one
     for collection in collections:
         if request.GET.get('current_collection'):
             if str(collection.id) != request.GET['current_collection']:
@@ -111,13 +110,15 @@ def index(request):
             hosts[server['hostname']] = dict(server)
 
     page = int(request.GET.get('page', 1))
-    per_page = int(request.GET.get('per_page', 8))
+    per_page = int(request.GET.get(
+        'per_page', request.session.get('resources_per_page', 8)))
+    request.session['resources_per_page'] = per_page
     hosts_pager = Paginator(list(hosts.values()), per_page)
 
     sprite_url = settings.MEDIA_URL + 'graph_sprite/' + collection.name
     template_info.update({
         'columns': columns,
-        'hosts': hosts_pager.page(1),
+        'hosts': hosts_pager.page(page),
         'page': page,
         'per_page': per_page,
         'matched_hostnames': matched_hostnames,
