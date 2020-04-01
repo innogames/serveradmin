@@ -162,7 +162,7 @@ def get_results(request):
             'message': str(error)
         }))
 
-    # Query successful term must be valid we can save it.
+    # Query successful term must be valid here, so we can save it safely now.
     request.session['term'] = term
 
     servers = list(islice(query, offset, offset + limit))
