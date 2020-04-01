@@ -162,6 +162,9 @@ def get_results(request):
             'message': str(error)
         }))
 
+    # Query successful term must be valid we can save it.
+    request.session['term'] = term
+
     servers = list(islice(query, offset, offset + limit))
 
     # Add information about available, editable attributes on servertypes
