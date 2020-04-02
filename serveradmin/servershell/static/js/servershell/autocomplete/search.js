@@ -39,8 +39,7 @@ $(document).ready(function () {
         let filters = [];
         if (to_complete) {
             return servershell.filters.filter(filter => filter[0].startsWith(to_complete));
-        }
-        else {
+        } else {
             return servershell.filters;
         }
     };
@@ -146,4 +145,3 @@ $(document).ready(function () {
     autocomplete_search_input.autocomplete($('#autocomplete')[0].checked ? 'enable' : 'disable');
     autocomplete_search_input.autocomplete('option', 'autoFocus', $('#autoselect')[0].checked);
 });
-
