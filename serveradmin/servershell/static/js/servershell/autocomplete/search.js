@@ -14,86 +14,110 @@ $(document).ready(function () {
         return result;
     };
 
-    let term_input = $('#term');
-    term_input.autocomplete({
-        delay: 50, // Wait n ms before starting to auto complete to avoid needles requests to backend
-        minLength: 0,
+    let _is_attribute_value = function(to_complete) {
+        /**
+         * Check if attribute value
+         *
+         * Check if to_complete is attribute value like for example a=b and
+         * if yes return attribute and value otherwise false.
+         *
+         * @type {Array|Boolean}
+         */
+        let match = to_complete.match(/([a-z_]+)=([\S]+)?/);
+
+        if (!match) {
+            return false;
+        }
+
+        let attribute = match[1];
+        let value = match[2] === undefined ? '' : match[2];
+
+        return [attribute, value];
+    };
+
+    let _complete_filter = function(to_complete) {
+        let filters = [];
+        if (to_complete) {
+            return servershell.filters.filter(filter => filter[0].startsWith(to_complete));
+        } else {
+            return servershell.filters;
+        }
+    };
+
+    let autocomplete_search_input = $('#term');
+    let autocomplete_search_url = autocomplete_search_input.data('servershell-autocomplete-url');
+    autocomplete_search_input.autocomplete({
+        delay: 250, // Wait n ms before starting to auto complete to avoid needles requests to backend
         autoFocus: true,
         source: function (request, response) {
-            let limit = 20;
-            let choices = [];
-            let url = $('#term').data('servershell-autocomplete-url');
-
             spinner.enable();
 
-            // project=onyx function=db, always focus on last part of query
-            let cur_term = request.term.split(' ').pop();
+            let limit = 20;
+            let choices = [];
 
-            // Autocomplete values of attributes e.g. function=<autocomplete>
-            let match = cur_term.match(/([a-z_]+)=([\S]+)?/);
-            if (match) {
-                let last_attribute = match[1];
-                let last_value = match[2] === undefined ? '' : match[2];
+            // Example input: "project=foo fun". Always focus on the last part
+            // of the term.
+            let to_complete = request.term.split(' ').pop();
 
+            let attribute_value = _is_attribute_value(to_complete);
+            if (attribute_value !== false) {
+                let attribute = attribute_value[0];
+                let value = attribute_value[1];
+
+                // Add filter functions matching
+                _complete_filter(value).forEach(function (filter) {
+                    let filter_name = filter[0];
+                    let new_term = _build_value(request.term, to_complete, attribute, filter_name);
+
+                    choices.push({
+                        'label': `Filter: ${filter[0]}`,
+                        'value': new_term + '(',
+                    });
+                });
+
+                // Autocomplete attribute value if wanted
+                // @TODO support nested values e.g. "project=Any(Reg("
                 if (servershell.search_settings.autocomplete_values) {
+                    // Add attribute values matching
                     let settings = {
-                        'data': {
-                            'attribute': last_attribute,
-                            'value': last_value,
-                        },
                         'async': false,
+                        'data': {
+                            'attribute': attribute,
+                            'value': value,
+                        },
                         'success': function (data) {
-                            data.autocomplete.forEach(function (attr_value) {
+                            data.autocomplete.forEach(function(match) {
                                 choices.push({
-                                    'label': `AttrVal: ${attr_value}`,
-                                    'value': _build_value(request.term, cur_term, last_attribute, attr_value),
+                                    'label': `AttrVal: ${match}`,
+                                    'value': _build_value(request.term, to_complete, attribute, match),
                                 });
                             });
                         }
                     };
-                    $.ajax(url, settings);
+                    $.ajax(autocomplete_search_url, settings);
                 }
-
-                // Add filter to autocomplete ...
-                // @TODO: Add autocomplete for nested filter values
-                let filters;
-                if (last_value) {
-                    filters = servershell.filters.filter(filter => filter[0].startsWith(last_value));
-                } else {
-                    filters = servershell.filters;
-                }
-                filters.forEach(function (filter) {
-                    choices.push({
-                        'label': `Filter: ${filter[0]}`,
-                        'value': _build_value(request.term, cur_term, last_attribute, filter[0]) + '(',
-                    });
-                });
             }
 
-            // Attributes available
+            // Autocomplete attributes
             let attributes = servershell.attributes.filter(
-                attr => attr.attribute_id.startsWith(cur_term) && attr.type !== 'reverse'
+                attr => attr.attribute_id.startsWith(to_complete) && attr.type !== 'reverse'
             );
-            attributes.slice(0, limit).forEach(function (attribute) {
+            attributes.slice(0, limit).forEach(function(attr) {
                 choices.push({
-                    'label': `Attr: ${attribute.attribute_id}`,
-                    'value': _build_value(request.term, cur_term, attribute.attribute_id) + '='
+                    'label': `Attr: ${attr.attribute_id}`,
+                    'value': _build_value(request.term, to_complete, attr.attribute_id) + '='
                 })
             });
 
-            // Autocomplete hostnames for plain server search without
-            // key=value filters.
-            // This is the exception where we don't want to show autocomplete
-            // if nothing has been entered.
+            // Suggest hostnames if only a part of a hostname has been entered
             if (
                 request.term.length &&
                 request.term.split(' ').length === 1 &&
                 request.term.indexOf('=') === -1
             ) {
-                // Servershell Host results from backend
                 let settings = {
-                    'data': {'hostname': cur_term},
                     'async': false,
+                    'data': {'hostname': to_complete},
                     'success': function (data) {
                         data.autocomplete.forEach(function (host) {
                             choices.push({
@@ -103,7 +127,7 @@ $(document).ready(function () {
                         });
                     },
                 };
-                $.ajax(url, settings);
+                $.ajax(autocomplete_search_url, settings);
             }
 
             spinner.disable();
@@ -118,7 +142,6 @@ $(document).ready(function () {
         },
     });
 
-    term_input.autocomplete($('#autocomplete')[0].checked ? 'enable' : 'disable');
-    term_input.autocomplete('option', 'autoFocus', $('#autoselect')[0].checked);
+    autocomplete_search_input.autocomplete($('#autocomplete')[0].checked ? 'enable' : 'disable');
+    autocomplete_search_input.autocomplete('option', 'autoFocus', $('#autoselect')[0].checked);
 });
-
