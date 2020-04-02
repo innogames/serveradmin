@@ -108,13 +108,21 @@ def index(request):
         for server in Query(filters, attribute_ids):
             hosts[server['hostname']] = dict(server)
 
-    page = int(request.GET.get('page', 1))
+    page = abs(int(request.GET.get('page', 1)))
     per_page = int(request.GET.get(
         'per_page', request.session.get('resources_per_page', 8)))
+
+    # Save settings in session
     request.session['resources_per_page'] = per_page
 
     try:
-        hosts_pager = Paginator(list(hosts.values()), per_page).page(page)
+        hosts_pager = Paginator(list(hosts.values()), per_page)
+
+        # Term or data in DB has changed
+        if page > hosts_pager.num_pages:
+            page = 1
+
+        hosts_pager = hosts_pager.page(page)
     except (PageNotAnInteger, EmptyPage):
         raise SuspiciousOperation('{} is not a valid!'.format(page))
 
