@@ -25,14 +25,14 @@ $(document).ready(function () {
          */
         let match = to_complete.match(/([a-z_]+)=([\S]+)?/);
 
-        if (match) {
-            let attribute = match[1];
-            let value = match[2] === undefined ? '' : match[2];
-
-            return [attribute, value];
+        if (!match) {
+            return false;
         }
 
-        return false;
+        let attribute = match[1];
+        let value = match[2] === undefined ? '' : match[2];
+
+        return [attribute, value];
     };
 
     let _complete_filter = function(to_complete) {
@@ -100,12 +100,12 @@ $(document).ready(function () {
 
             // Autocomplete attributes
             let attributes = servershell.attributes.filter(
-                attribute => attribute.attribute_id.startsWith(to_complete) && attribute.type !== 'reverse'
+                attr => attr.attribute_id.startsWith(to_complete) && attr.type !== 'reverse'
             );
-            attributes.slice(0, limit).forEach(function(attribute) {
+            attributes.slice(0, limit).forEach(function(attr) {
                 choices.push({
-                    'label': `Attr: ${attribute.attribute_id}`,
-                    'value': _build_value(request.term, to_complete, attribute.attribute_id) + '='
+                    'label': `Attr: ${attr.attribute_id}`,
+                    'value': _build_value(request.term, to_complete, attr.attribute_id) + '='
                 })
             });
 
