@@ -7,15 +7,14 @@ from collections import OrderedDict
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ValidationError, SuspiciousOperation
+from django.core.exceptions import SuspiciousOperation
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.urls import reverse
 from django.http import HttpResponseBadRequest
 from django.template.response import TemplateResponse
+from django.urls import reverse
 from django.utils.text import slugify
 from django.views.decorators.csrf import ensure_csrf_cookie
 
-from adminapi.datatype import DatatypeError
 from adminapi.filters import Any
 from adminapi.parse import parse_query
 from serveradmin.dataset import Query
