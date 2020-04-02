@@ -100,12 +100,12 @@ $(document).ready(function () {
 
             // Autocomplete attributes
             let attributes = servershell.attributes.filter(
-                a => a.attribute_id.startsWith(to_complete) && a.type !== 'reverse'
+                attribute => attribute.attribute_id.startsWith(to_complete) && attribute.type !== 'reverse'
             );
-            attributes.slice(0, limit).forEach(function(a) {
+            attributes.slice(0, limit).forEach(function(attribute) {
                 choices.push({
-                    'label': `Attr: ${a.attribute_id}`,
-                    'value': _build_value(request.term, to_complete, a.attribute_id) + '='
+                    'label': `Attr: ${attribute.attribute_id}`,
+                    'value': _build_value(request.term, to_complete, attribute.attribute_id) + '='
                 })
             });
 
