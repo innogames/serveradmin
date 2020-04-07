@@ -134,10 +134,10 @@ def authenticate_app(
         raise SuspiciousOperation('Missing authentication')
 
     if app.owner is not None and not app.owner.is_active:
-        raise PermissionDenied('Inactive user')
+        raise PermissionDenied('Inactive user {}'.format(app.owner.id))
 
     if app.disabled:
-        raise PermissionDenied('Disabled application')
+        raise PermissionDenied('Disabled application {}'.format(app.id))
 
     # Note when this app was last used. We don't update this information more
     # than once every minute. Some apps authenticate thousand of times per
