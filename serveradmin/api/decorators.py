@@ -55,41 +55,48 @@ def api_view(view):
         then = datetime.utcfromtimestamp(
             int(request.META['HTTP_X_TIMESTAMP'])
         ).replace(tzinfo=timezone.utc)
-
-        app = authenticate_app(
-            public_keys, signatures, app_id, token, then, now, body
-        )
-
         body_json = json.loads(body) if body else None
+        status_code = 200
+
         try:
-            status_code = 200
+            app = authenticate_app(
+                public_keys, signatures, app_id, token, then, now, body
+            )
             return_value = view(request, app, body_json)
+
+            logger.info('api: Call: ' + (', '.join([
+                'Method: {}'.format(view.__name__),
+                'Application: {}'.format(app),
+                'Time elapsed: {:.3f}s'.format(
+                    (timezone.now() - now).total_seconds()
+                ),
+            ])))
         except (
             FilterValueError,
             ValidationError,
             PermissionDenied,
             ObjectDoesNotExist,
         ) as error:
+            reason = ''
+
             if isinstance(error, (FilterValueError, ValidationError)):
                 status_code = 400
+                reason = 'Bad Request'
             if isinstance(error, PermissionDenied):
                 status_code = 403
+                reason = 'Forbidden'
             if isinstance(error, ObjectDoesNotExist):
                 status_code = 404
+                reason = 'Not Found'
 
+            message = '{}: {}'.format(reason, str(error))
+            logger.error('api: {}'.format(message))
             return_value = {
                 'error': {
-                    'message': str(error),
+                    'message': message,
                 }
             }
 
-        logger.info('api: Call: ' + (', '.join([
-            'Method: {}'.format(view.__name__),
-            'Application: {}'.format(app),
-            'Time elapsed: {:.3f}s'.format(
-                (timezone.now() - now).total_seconds()
-            ),
-        ])))
         return HttpResponse(
             json.dumps(return_value, default=json_encode_extra),
             content_type='application/x-json',
