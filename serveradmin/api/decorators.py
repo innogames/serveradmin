@@ -76,10 +76,14 @@ def api_view(view):
             ValidationError,
             PermissionDenied,
             ObjectDoesNotExist,
+            SuspiciousOperation,
         ) as error:
             reason = ''
 
-            if isinstance(error, (FilterValueError, ValidationError)):
+            if isinstance(
+                error,
+                (FilterValueError, ValidationError, SuspiciousOperation)
+            ):
                 status_code = 400
                 reason = 'Bad Request'
             if isinstance(error, PermissionDenied):
