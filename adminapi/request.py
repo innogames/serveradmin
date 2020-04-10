@@ -106,8 +106,8 @@ def calc_app_id(auth_token):
 
 
 def send_request(endpoint, get_params=None, post_params=None):
-    request = _build_request(endpoint, get_params, post_params)
     for retry in reversed(range(Settings.tries)):
+        request = _build_request(endpoint, get_params, post_params)
         response = _try_request(request, retry)
         if response:
             break
