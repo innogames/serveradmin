@@ -19,6 +19,9 @@ from urllib.request import urlopen, Request
 from paramiko.agent import Agent
 from paramiko.message import Message
 from paramiko.ssh_exception import SSHException, PasswordRequiredException
+
+from serveradmin import VERSION
+
 try:
     from paramiko import RSAKey, ECDSAKey, Ed25519Key
     key_classes = (RSAKey, ECDSAKey, Ed25519Key)
@@ -137,6 +140,7 @@ def _build_request(endpoint, get_params, post_params):
     headers = {
         'Content-Encoding': 'application/x-json',
         'X-Timestamp': str(timestamp),
+        'X-API-Version': '.'.join(str(v) for v in VERSION),
     }
 
     if Settings.auth_key:
