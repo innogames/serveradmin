@@ -1,4 +1,25 @@
 /**
+ * Transform value into matching type
+ *
+ * We get user input always as string. This method transforms values for
+ * number, boolean etc. attributes in the matching type
+ *
+ * @param value
+ * @param attribute
+ * @returns {*}
+ */
+servershell.transform_value = function(value, attribute) {
+    if (attribute.type === 'number') {
+        return attribute.multi ? value.map(v => Number.parseInt(v)) : Number.parseInt(value);
+    }
+    else if (attribute.type === 'boolean') {
+        return attribute.multi ? value.map(v => !!v) : !!value;
+    }
+
+    return value;
+}
+
+/**
  * Update (multi) attribute values
  *
  * Adds or removes values for the given object no matter if it is a multi
@@ -21,8 +42,7 @@ servershell.update_attribute = function(object_id, attribute_id, new_value, mult
     let server = servershell.get_object(object_id);
 
     // Cast new values to corresponding data type if wanted
-    new_value = attribute.type === 'number' ? Number.parseInt(new_value) : new_value;
-    new_value = attribute.type === 'boolean' ? !!new_value : new_value;
+    new_value = servershell.transform_value(new_value, attribute);
 
     // No change for this object about to commit yet
     if (!changes.hasOwnProperty(object_id)) {
@@ -62,7 +82,9 @@ servershell.update_attribute = function(object_id, attribute_id, new_value, mult
         let to_remove;
 
         // Don't add or remove empty values
-        new_value = new_value.filter(v => v.trim() !== '');
+        new_value = new_value.filter(function(v) {
+            return (v + '').trim() !== '';
+        });
 
         // Merge changes from previous commands not committed yet
         if (multi_action === 'add') {

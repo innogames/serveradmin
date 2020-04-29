@@ -244,14 +244,17 @@ register_inline_editing = function(cell) {
             let attribute = servershell.get_attribute(attribute_id);
 
             // When the user types 'false' use empty string so that it casts to false
-            if (attribute.type === 'boolean' && (value === 'false' || value === '0'))
+            if (attribute.type === 'boolean' && (value === 'false' || value === '0')) {
                 value = '';
+            }
 
             if (value === '') {
                 servershell.delete_attribute(object_id, attribute_id)
             }
             else {
                 if (multi) {
+                    value = servershell.transform_value(value, attribute);
+
                     let current_value = servershell.get_object(object_id)[attribute_id];
                     let to_add = value.filter(v => !current_value.includes(v));
                     let to_remove = current_value.filter(v => !value.includes(v));
