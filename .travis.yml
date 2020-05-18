@@ -22,7 +22,7 @@ before_script:
     - python -m serveradmin migrate
 script:
     # This will use Python's standard unit test discovery feature.
-    - python -Wall -m serveradmin test
+    - python -Wall -m serveradmin test --noinput
     # Build sphinx docs, error on warning
     - cd docs
     - SPHINXOPTS='-W' make html
