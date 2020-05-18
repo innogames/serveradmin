@@ -13,5 +13,6 @@ def get_default_shown_attributes():
         default_visible=True).only('attribute_id').order_by(
         'attribute_id').distinct('attribute_id')
     shown_attributes.extend([attr.attribute_id for attr in default_attributes])
+    shown_attributes.sort()
 
     return shown_attributes
