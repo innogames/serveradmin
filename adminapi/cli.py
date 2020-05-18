@@ -2,14 +2,14 @@
 
 Copyright (c) 2019 InnoGames GmbH
 """
-
+import sys
 from argparse import ArgumentParser, ArgumentTypeError
 
 from adminapi.dataset import Query
 from adminapi.parse import parse_query
 
 
-def parse_args():
+def parse_args(args):
     multi_note = ' (can be specified multiple times)'
     parser = ArgumentParser('adminapi')
     parser.add_argument('query', nargs='+')
@@ -45,11 +45,11 @@ def parse_args():
         help='Attributes with values to update' + multi_note,
     )
 
-    return parser.parse_args()
+    return parser.parse_args(args)
 
 
 def main():
-    args = parse_args()
+    args = parse_args(sys.argv[1:])
 
     attribute_ids_to_print = args.attr if args.attr else ['hostname']
     attribute_ids_to_fetch = list(attribute_ids_to_print)
