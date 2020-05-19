@@ -1,10 +1,11 @@
 """Serveradmin
 
-Copyright (c) 2019 InnoGames GmbH
+Copyright (c) 2020 InnoGames GmbH
 """
 
 from importlib.util import find_spec
 
+from django.apps import apps
 from django.conf import settings
 from django.conf.urls import include, url
 from django.conf.urls.static import static
@@ -24,16 +25,17 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
 ]
 
-for app in settings.INSTALLED_APPS:
-    module_spec = find_spec(app + '.urls')
+for app in apps.get_app_configs():
+    name = app.name
+    module_spec = find_spec(name + '.urls')
     if module_spec is not None:
         module = module_spec.loader.load_module()
 
-    if app.startswith('serveradmin.') or app.startswith('serveradmin_'):
+    if name.startswith('serveradmin.') or name.startswith('serveradmin_'):
         urlpatterns.append(url(
-            r'^{}/'.format(app[(len('serveradmin') + 1):]), include(module)
+            r'^{}/'.format(name[(len('serveradmin') + 1):]), include(module)
         ))
-    elif app == 'igrestlogin':
+    elif name == 'igrestlogin':
         urlpatterns.append(url(r'^loginapi/', include(module)))
 
 if settings.DEBUG:
