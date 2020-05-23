@@ -3,4 +3,4 @@
 Copyright (c) 2020 InnoGames GmbH
 """
 
-VERSION = (1, 8, 5)
+VERSION = (1, 8, 6)
