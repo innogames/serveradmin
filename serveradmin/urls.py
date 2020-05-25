@@ -28,13 +28,14 @@ urlpatterns = [
 for app in apps.get_app_configs():
     name = app.name
     module_spec = find_spec(name + '.urls')
-    if module_spec is not None:
-        module = module_spec.loader.load_module()
+    if module_spec is None:
+        continue
+
+    module = module_spec.loader.load_module()
 
     if name.startswith('serveradmin.') or name.startswith('serveradmin_'):
-        urlpatterns.append(url(
-            r'^{}/'.format(name[(len('serveradmin') + 1):]), include(module)
-        ))
+        url_path = name[(len('serveradmin') + 1):]
+        urlpatterns.append(url(r'^{}/'.format(url_path), include(module)))
     elif name == 'igrestlogin':
         urlpatterns.append(url(r'^loginapi/', include(module)))
 
