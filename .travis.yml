@@ -1,4 +1,4 @@
-dist: trusty
+dist: bionic
 sudo: false
 services:
     - postgresql
@@ -6,10 +6,12 @@ addons:
     postgresql: "9.6"
 language: python
 python:
-    - "3.4"
-    - "3.5"
+    - "3.5" # Required for Debian Stretch support
     - "3.6"
+    - "3.7"
+    # - "3.8" Django 1.10 does not support 3.8 we need to upgrade it first
 install:
+    - pip install --upgrade pip
     - pip install pipenv
     - pipenv lock
     - pipenv install --dev
