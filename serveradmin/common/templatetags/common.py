@@ -47,6 +47,11 @@ def group(items, number_of_groups):
 
     groups = list()
     step = round(len(items) / number_of_groups)
+
+    # When the amount of columns is zero show at least one
+    if step == 0:
+        step = 1
+
     for counter in range(0, len(items), step):
         groups.extend([items[counter:counter + step]])
 
