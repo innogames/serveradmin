@@ -7,7 +7,6 @@ from django.urls import path
 
 from serveradmin.api.views import (
     health_check,
-    doc_functions,
     dataset_query,
     dataset_commit,
     dataset_new_object,
@@ -17,7 +16,6 @@ from serveradmin.api.views import (
 
 urlpatterns = [
     path('health_check', health_check),
-    path('functions', doc_functions),  # @TODO Not used anymore remove
     path('dataset/query', dataset_query),
     path('dataset/commit', dataset_commit),
     path('dataset/new_object', dataset_new_object),

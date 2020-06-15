@@ -48,33 +48,6 @@ def health_check(request):
     return HttpResponse(status=242)
 
 
-@login_required
-def doc_functions(request):
-    group_list = []
-    for group_name, functions in AVAILABLE_API_FUNCTIONS.items():
-        function_list = []
-        for name, function in functions.items():
-            heading, body, metadata = parse_docstring(function.__doc__)
-            body = trim_docstring(body)
-            function_list.append({
-                'name': name,
-                'description': build_function_description(function),
-                'docstring': trim_docstring(
-                    '{0}\n\n{1}'.format(heading, body)
-                ),
-            })
-        function_list.sort(key=itemgetter('name'))
-
-        group_list.append({
-            'name': group_name,
-            'function_list': function_list
-        })
-    group_list.sort(key=itemgetter('name'))
-    return TemplateResponse(request, 'api/list_functions.html', {
-        'group_list': group_list
-    })
-
-
 @api_view
 def dataset_query(request, app, data):
     try:
