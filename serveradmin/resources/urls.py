@@ -1,13 +1,13 @@
 """Serveradmin - Graphite Integration
 
-Copyright (c) 2019 InnoGames GmbH
+Copyright (c) 2020 InnoGames GmbH
 """
 
-from django.conf.urls import url
+from django.urls import path
 
 from serveradmin.resources.views import index, graph_popup
 
 urlpatterns = [
-    url(r'^$', index, name='resources_index'),
-    url(r'^graph_popup$', graph_popup, name='resources_graph_popup'),
+    path('', index, name='resources_index'),
+    path('graph_popup', graph_popup, name='resources_graph_popup'),
 ]
