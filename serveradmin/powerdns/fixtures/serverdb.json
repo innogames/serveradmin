@@ -1,0 +1,646 @@
+[
+    {
+        "model": "serverdb.servertype",
+        "pk": "domain",
+        "fields": {
+            "description": "DNS Domain",
+            "ip_addr_type": "null"
+        }
+    },
+    {
+        "model": "serverdb.servertype",
+        "pk": "lb_pool",
+        "fields": {
+            "description": "Loadbalancer",
+            "ip_addr_type": "null"
+        }
+    },
+    {
+        "model": "serverdb.servertype",
+        "pk": "record",
+        "fields": {
+            "description": "DNS records",
+            "ip_addr_type": "null"
+        }
+    },
+    {
+        "model": "serverdb.servertype",
+        "pk": "vm",
+        "fields": {
+            "description": "Virtual Machine",
+            "ip_addr_type": "host"
+        }
+    },
+    {
+        "model": "serverdb.attribute",
+        "pk": "domain",
+        "fields": {
+            "type": "relation",
+            "multi": false,
+            "hovertext": "Domain of this record",
+            "group": "DNS",
+            "help_link": null,
+            "readonly": false,
+            "target_servertype": "domain",
+            "reversed_attribute": null,
+            "clone": false,
+            "regexp": "\\A.+\\Z"
+        }
+    },
+    {
+        "model": "serverdb.attribute",
+        "pk": "domain_records",
+        "fields": {
+            "type": "reverse",
+            "multi": true,
+            "hovertext": "Records of this domain",
+            "group": "DNS",
+            "help_link": null,
+            "readonly": true,
+            "target_servertype": null,
+            "reversed_attribute": "domain",
+            "clone": false,
+            "regexp": "\\A(\\*\\.)?([a-z0-9]+(\\.|-+))*[a-z0-9]+\\Z"
+        }
+    },
+    {
+        "model": "serverdb.attribute",
+        "pk": "ipv4_address",
+        "fields": {
+            "type": "inet",
+            "multi": false,
+            "hovertext": "",
+            "group": "base",
+            "help_link": null,
+            "readonly": false,
+            "target_servertype": null,
+            "reversed_attribute": null,
+            "clone": false,
+            "regexp": "\\A(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\Z"
+        }
+    },
+    {
+        "model": "serverdb.attribute",
+        "pk": "ipv6_address",
+        "fields": {
+            "type": "inet",
+            "multi": false,
+            "hovertext": "IPv6 address",
+            "group": "base",
+            "help_link": null,
+            "readonly": false,
+            "target_servertype": null,
+            "reversed_attribute": null,
+            "clone": false,
+            "regexp": "\\A(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}\\Z"
+        }
+    },
+    {
+        "model": "serverdb.attribute",
+        "pk": "lb_pool",
+        "fields": {
+            "type": "relation",
+            "multi": true,
+            "hovertext": "LB-Pool for this VM",
+            "group": "loadbalancing",
+            "help_link": null,
+            "readonly": false,
+            "target_servertype": "lb_pool",
+            "reversed_attribute": null,
+            "clone": false,
+            "regexp": "\\A(\\*\\.)?([a-z0-9]+(\\.|-+))*[a-z0-9]+\\Z"
+        }
+    },
+    {
+        "model": "serverdb.attribute",
+        "pk": "lb_pool_nodes",
+        "fields": {
+            "type": "reverse",
+            "multi": true,
+            "hovertext": "Nodes attached to this LB-Pool",
+            "group": "loadbalancing",
+            "help_link": null,
+            "readonly": true,
+            "target_servertype": null,
+            "reversed_attribute": "lb_pool",
+            "clone": false,
+            "regexp": "\\A(\\*\\.)?([a-z0-9]+(\\.|-+))*[a-z0-9]+\\Z"
+        }
+    },
+    {
+        "model": "serverdb.attribute",
+        "pk": "ns",
+        "fields": {
+            "type": "string",
+            "multi": true,
+            "hovertext": "NS record values",
+            "group": "DNS",
+            "help_link": null,
+            "readonly": false,
+            "target_servertype": null,
+            "reversed_attribute": null,
+            "clone": false,
+            "regexp": "\\A([a-z0-9]+(-[a-z0-9]+)*\\.)+[a-z]{2,}\\Z"
+        }
+    },
+    {
+        "model": "serverdb.attribute",
+        "pk": "record_objects",
+        "fields": {
+            "type": "reverse",
+            "multi": true,
+            "hovertext": "Objects using this record",
+            "group": "DNS",
+            "help_link": null,
+            "readonly": true,
+            "target_servertype": null,
+            "reversed_attribute": "records",
+            "clone": false,
+            "regexp": "\\A(\\*\\.)?([a-z0-9]+(\\.|-+))*[a-z0-9]+\\Z"
+        }
+    },
+    {
+        "model": "serverdb.attribute",
+        "pk": "records",
+        "fields": {
+            "type": "relation",
+            "multi": true,
+            "hovertext": "DNS records for this host",
+            "group": "DNS",
+            "help_link": null,
+            "readonly": false,
+            "target_servertype": "record",
+            "reversed_attribute": null,
+            "clone": false,
+            "regexp": "\\A.+\\Z"
+        }
+    },
+    {
+        "model": "serverdb.attribute",
+        "pk": "soa",
+        "fields": {
+            "type": "string",
+            "multi": false,
+            "hovertext": "Start of Authority value for domains",
+            "group": "DNS",
+            "help_link": "https://en.wikipedia.org/wiki/SOA_record",
+            "readonly": false,
+            "target_servertype": null,
+            "reversed_attribute": null,
+            "clone": false,
+            "regexp": "\\A.+\\Z"
+        }
+    },
+    {
+        "model": "serverdb.attribute",
+        "pk": "sshfp",
+        "fields": {
+            "type": "string",
+            "multi": true,
+            "hovertext": "DNS SSHFP",
+            "group": "DNS",
+            "help_link": null,
+            "readonly": false,
+            "target_servertype": null,
+            "reversed_attribute": null,
+            "clone": false,
+            "regexp": "\\A[0-4]\\s[0-2]\\s[0-9a-z]+\\Z"
+        }
+    },
+    {
+        "model": "serverdb.attribute",
+        "pk": "ttl",
+        "fields": {
+            "type": "number",
+            "multi": false,
+            "hovertext": "Time to live value for records",
+            "group": "DNS",
+            "help_link": null,
+            "readonly": false,
+            "target_servertype": null,
+            "reversed_attribute": null,
+            "clone": false,
+            "regexp": "\\A[0-9]+\\Z"
+        }
+    },
+    {
+        "model": "serverdb.attribute",
+        "pk": "txt",
+        "fields": {
+            "type": "string",
+            "multi": true,
+            "hovertext": "DNS txt record(s)",
+            "group": "DNS",
+            "help_link": null,
+            "readonly": false,
+            "target_servertype": null,
+            "reversed_attribute": null,
+            "clone": true,
+            "regexp": "\\A.*\\Z"
+        }
+    },
+    {
+        "model": "serverdb.attribute",
+        "pk": "type",
+        "fields": {
+            "type": "string",
+            "multi": false,
+            "hovertext": "PowerDNS domain type either MASTER or NATIVE.",
+            "group": "DNS",
+            "help_link": null,
+            "readonly": false,
+            "target_servertype": null,
+            "reversed_attribute": null,
+            "clone": false,
+            "regexp": "\\A(MASTER|NATIVE)\\Z"
+        }
+    },
+    {
+        "model": "serverdb.servertypeattribute",
+        "pk": 1,
+        "fields": {
+            "servertype": "domain",
+            "attribute": "soa",
+            "related_via_attribute": null,
+            "consistent_via_attribute": null,
+            "required": true,
+            "default_value": "localhost admin@example.com 1 900 3600 900 300",
+            "default_visible": false
+        }
+    },
+    {
+        "model": "serverdb.servertypeattribute",
+        "pk": 2,
+        "fields": {
+            "servertype": "domain",
+            "attribute": "ns",
+            "related_via_attribute": null,
+            "consistent_via_attribute": null,
+            "required": true,
+            "default_value": "pdns1.example.com",
+            "default_visible": false
+        }
+    },
+    {
+        "model": "serverdb.servertypeattribute",
+        "pk": 3,
+        "fields": {
+            "servertype": "record",
+            "attribute": "domain",
+            "related_via_attribute": null,
+            "consistent_via_attribute": null,
+            "required": true,
+            "default_value": null,
+            "default_visible": false
+        }
+    },
+    {
+        "model": "serverdb.servertypeattribute",
+        "pk": 4,
+        "fields": {
+            "servertype": "record",
+            "attribute": "ttl",
+            "related_via_attribute": null,
+            "consistent_via_attribute": null,
+            "required": true,
+            "default_value": "3600",
+            "default_visible": false
+        }
+    },
+    {
+        "model": "serverdb.servertypeattribute",
+        "pk": 9,
+        "fields": {
+            "servertype": "vm",
+            "attribute": "records",
+            "related_via_attribute": null,
+            "consistent_via_attribute": null,
+            "required": false,
+            "default_value": null,
+            "default_visible": false
+        }
+    },
+    {
+        "model": "serverdb.servertypeattribute",
+        "pk": 10,
+        "fields": {
+            "servertype": "domain",
+            "attribute": "type",
+            "related_via_attribute": null,
+            "consistent_via_attribute": null,
+            "required": true,
+            "default_value": "NATIVE",
+            "default_visible": false
+        }
+    },
+    {
+        "model": "serverdb.servertypeattribute",
+        "pk": 23,
+        "fields": {
+            "servertype": "lb_pool",
+            "attribute": "records",
+            "related_via_attribute": null,
+            "consistent_via_attribute": null,
+            "required": false,
+            "default_value": null,
+            "default_visible": false
+        }
+    },
+    {
+        "model": "serverdb.servertypeattribute",
+        "pk": 24,
+        "fields": {
+            "servertype": "vm",
+            "attribute": "lb_pool",
+            "related_via_attribute": null,
+            "consistent_via_attribute": null,
+            "required": false,
+            "default_value": null,
+            "default_visible": false
+        }
+    },
+    {
+        "model": "serverdb.servertypeattribute",
+        "pk": 26,
+        "fields": {
+            "servertype": "lb_pool",
+            "attribute": "lb_pool_nodes",
+            "related_via_attribute": null,
+            "consistent_via_attribute": null,
+            "required": false,
+            "default_value": null,
+            "default_visible": false
+        }
+    },
+    {
+        "model": "serverdb.servertypeattribute",
+        "pk": 27,
+        "fields": {
+            "servertype": "domain",
+            "attribute": "domain_records",
+            "related_via_attribute": null,
+            "consistent_via_attribute": null,
+            "required": false,
+            "default_value": null,
+            "default_visible": false
+        }
+    },
+    {
+        "model": "serverdb.servertypeattribute",
+        "pk": 28,
+        "fields": {
+            "servertype": "record",
+            "attribute": "record_objects",
+            "related_via_attribute": null,
+            "consistent_via_attribute": null,
+            "required": false,
+            "default_value": null,
+            "default_visible": false
+        }
+    },
+    {
+        "model": "serverdb.servertypeattribute",
+        "pk": 29,
+        "fields": {
+            "servertype": "record",
+            "attribute": "txt",
+            "related_via_attribute": null,
+            "consistent_via_attribute": null,
+            "required": false,
+            "default_value": null,
+            "default_visible": false
+        }
+    },
+    {
+        "model": "serverdb.servertypeattribute",
+        "pk": 30,
+        "fields": {
+            "servertype": "vm",
+            "attribute": "sshfp",
+            "related_via_attribute": null,
+            "consistent_via_attribute": null,
+            "required": false,
+            "default_value": null,
+            "default_visible": false
+        }
+    },
+    {
+        "model": "serverdb.servertypeattribute",
+        "pk": 31,
+        "fields": {
+            "servertype": "vm",
+            "attribute": "ipv6_address",
+            "related_via_attribute": null,
+            "consistent_via_attribute": null,
+            "required": false,
+            "default_value": null,
+            "default_visible": false
+        }
+    },
+    {
+        "model": "serverdb.servertypeattribute",
+        "pk": 32,
+        "fields": {
+            "servertype": "lb_pool",
+            "attribute": "ipv6_address",
+            "related_via_attribute": null,
+            "consistent_via_attribute": null,
+            "required": false,
+            "default_value": null,
+            "default_visible": false
+        }
+    },
+    {
+        "model": "serverdb.servertypeattribute",
+        "pk": 34,
+        "fields": {
+            "servertype": "lb_pool",
+            "attribute": "ipv4_address",
+            "related_via_attribute": null,
+            "consistent_via_attribute": null,
+            "required": false,
+            "default_value": null,
+            "default_visible": false
+        }
+    },
+    {
+        "model": "serverdb.server",
+        "pk": 107,
+        "fields": {
+            "hostname": "example.com",
+            "intern_ip": null,
+            "servertype": "domain"
+        }
+    },
+    {
+        "model": "serverdb.server",
+        "pk": 108,
+        "fields": {
+            "hostname": "www.example.com",
+            "intern_ip": null,
+            "servertype": "record"
+        }
+    },
+    {
+        "model": "serverdb.server",
+        "pk": 109,
+        "fields": {
+            "hostname": "w3.example.com",
+            "intern_ip": null,
+            "servertype": "record"
+        }
+    },
+    {
+        "model": "serverdb.server",
+        "pk": 110,
+        "fields": {
+            "hostname": "webserver-1.project.local",
+            "intern_ip": "10.0.0.1/32",
+            "servertype": "vm"
+        }
+    },
+    {
+        "model": "serverdb.server",
+        "pk": 111,
+        "fields": {
+            "hostname": "webserver-2.project.local",
+            "intern_ip": "10.0.0.2/32",
+            "servertype": "vm"
+        }
+    },
+    {
+        "model": "serverdb.server",
+        "pk": 112,
+        "fields": {
+            "hostname": "weblb.project.net",
+            "intern_ip": null,
+            "servertype": "lb_pool"
+        }
+    },
+    {
+        "model": "serverdb.server",
+        "pk": 114,
+        "fields": {
+            "hostname": "webserver-public.project.net",
+            "intern_ip": "212.53.139.2/32",
+            "servertype": "vm"
+        }
+    },
+    {
+        "model": "serverdb.serverstringattribute",
+        "pk": 160,
+        "fields": {
+            "server": 107,
+            "attribute": "ns",
+            "value": "pdns1.example.com"
+        }
+    },
+    {
+        "model": "serverdb.serverstringattribute",
+        "pk": 161,
+        "fields": {
+            "server": 107,
+            "attribute": "ns",
+            "value": "pdns2.example.com"
+        }
+    },
+    {
+        "model": "serverdb.serverstringattribute",
+        "pk": 162,
+        "fields": {
+            "server": 107,
+            "attribute": "soa",
+            "value": "localhost admin@example.com 1 900 3600 900 300"
+        }
+    },
+    {
+        "model": "serverdb.serverstringattribute",
+        "pk": 163,
+        "fields": {
+            "server": 107,
+            "attribute": "type",
+            "value": "NATIVE"
+        }
+    },
+    {
+        "model": "serverdb.serverrelationattribute",
+        "pk": 88,
+        "fields": {
+            "server": 108,
+            "attribute": "domain",
+            "value": 107
+        }
+    },
+    {
+        "model": "serverdb.serverrelationattribute",
+        "pk": 89,
+        "fields": {
+            "server": 109,
+            "attribute": "domain",
+            "value": 107
+        }
+    },
+    {
+        "model": "serverdb.serverrelationattribute",
+        "pk": 90,
+        "fields": {
+            "server": 110,
+            "attribute": "lb_pool",
+            "value": 112
+        }
+    },
+    {
+        "model": "serverdb.serverrelationattribute",
+        "pk": 91,
+        "fields": {
+            "server": 111,
+            "attribute": "lb_pool",
+            "value": 112
+        }
+    },
+    {
+        "model": "serverdb.serverrelationattribute",
+        "pk": 92,
+        "fields": {
+            "server": 112,
+            "attribute": "records",
+            "value": 109
+        }
+    },
+    {
+        "model": "serverdb.serverrelationattribute",
+        "pk": 93,
+        "fields": {
+            "server": 112,
+            "attribute": "records",
+            "value": 108
+        }
+    },
+    {
+        "model": "serverdb.serverrelationattribute",
+        "pk": 94,
+        "fields": {
+            "server": 114,
+            "attribute": "records",
+            "value": 109
+        }
+    },
+    {
+        "model": "serverdb.servernumberattribute",
+        "pk": 39,
+        "fields": {
+            "server": 108,
+            "attribute": "ttl",
+            "value": "3600"
+        }
+    },
+    {
+        "model": "serverdb.servernumberattribute",
+        "pk": 40,
+        "fields": {
+            "server": 109,
+            "attribute": "ttl",
+            "value": "3600"
+        }
+    }
+]
