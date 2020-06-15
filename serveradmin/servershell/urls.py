@@ -9,7 +9,6 @@ from serveradmin.servershell.views import (
     index,
     autocomplete,
     get_results,
-    export,
     edit,
     inspect,
     commit,
@@ -24,7 +23,6 @@ urlpatterns = [
     path('', index, name='servershell_index'),
     path('autocomplete', autocomplete, name='servershell_autocomplete'),
     path('results', get_results, name='servershell_results'),
-    path('export', export, name='servershell_export'), # TODO remove
     path('edit', edit, name='servershell_edit'),
     path('inspect', inspect, name='servershell_inspect'),
     path('commit', commit, name='servershell_commit'),
