@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Domains{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-2"></div>
+    <div class="col-md-8">
+        <div class="alert alert-warning">
+            This page is solely for viewing the tables used by Power DNS.
+            For changing the content you must setup mapping as described in
+            the documentation and use the <a href="{% url 'servershell_index' %}">Servershell</a> page!
+        </div>
+        <h6>Domains</h6>
+        <table class="table table-bordered table-sm">
+            <thead>
+                <tr>
+                    <th>id</th>
+                    <th>name</th>
+                    <th>type</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for domain in domain_list %}
+                <tr>
+                    <td>{{ domain.id }}</td>
+                    <td>{{ domain.name }}</td>
+                    <td>{{ domain.type }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

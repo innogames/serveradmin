@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Records{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-2"></div>
+    <div class="col-md-8">
+        <div class="alert alert-warning">
+            This page is solely for viewing the tables used by Power DNS.
+            For changing the content you must setup mapping as described in
+            the documentation and use the <a href="{% url 'servershell_index' %}">Servershell</a> page!
+        </div>
+        <h6>Records</h6>
+        <table class="table table-bordered table-sm">
+            <thead>
+                <tr>
+                    <th>id</th>
+                    <th>domain</th>
+                    <th>name</th>
+                    <th>type</th>
+                    <th>content</th>
+                    <th>ttl</th>
+                    <th>change date</th>
+                    <th>disabled</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in record_list %}
+                <tr>
+                    <td>{{ record.id }}</td>
+                    <td>{{ record.domain.name }}</td>
+                    <td>{{ record.name }}</td>
+                    <td>{{ record.type }}</td>
+                    <td>{{ record.content }}</td>
+                    <td>{{ record.ttl }}</td>
+                    <td>{{ record.change_date }}</td>
+                    <td>{{ record.disabled }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
