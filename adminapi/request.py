@@ -6,6 +6,8 @@ Copyright (c) 2019 InnoGames GmbH
 import os
 from hashlib import sha1
 import hmac
+from http.client import IncompleteRead
+from socket import timeout
 from ssl import SSLError
 import time
 import json
@@ -200,7 +202,7 @@ def _try_request(request, retry=False):
                 message = payload['error']['message']
             raise ApiError(message, status_code=error.code)
         raise
-    except (SSLError, URLError):
+    except (SSLError, URLError, timeout, IncompleteRead):
         if retry:
             return None
         raise
