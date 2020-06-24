@@ -22,7 +22,7 @@ from paramiko.agent import Agent
 from paramiko.message import Message
 from paramiko.ssh_exception import SSHException, PasswordRequiredException
 
-from serveradmin import VERSION
+from adminapi import VERSION
 
 try:
     from paramiko import RSAKey, ECDSAKey, Ed25519Key

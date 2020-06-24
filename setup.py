@@ -5,7 +5,7 @@ Copyright (c) 2019 InnoGames GmbH
 """
 
 from setuptools import setup, find_packages
-from serveradmin import VERSION as SERVERADMIN_VERSION
+from adminapi import VERSION as SERVERADMIN_VERSION
 
 
 if __name__ == '__main__':
