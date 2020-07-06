@@ -1,13 +1,12 @@
 """Serveradmin - Remote HTTP API
 
-Copyright (c) 2019 InnoGames GmbH
+Copyright (c) 2020 InnoGames GmbH
 """
 
-from django.conf.urls import url
+from django.urls import path
 
 from serveradmin.api.views import (
     health_check,
-    doc_functions,
     dataset_query,
     dataset_commit,
     dataset_new_object,
@@ -16,11 +15,10 @@ from serveradmin.api.views import (
 )
 
 urlpatterns = [
-    url('^health_check$', health_check),
-    url('^functions$', doc_functions),
-    url('^dataset/query$', dataset_query),
-    url('^dataset/commit$', dataset_commit),
-    url('^dataset/new_object$', dataset_new_object),
-    url('^dataset/create$', dataset_create),
-    url('^call$', api_call),
+    path('health_check', health_check),
+    path('dataset/query', dataset_query),
+    path('dataset/commit', dataset_commit),
+    path('dataset/new_object', dataset_new_object),
+    path('dataset/create', dataset_create),
+    path('call', api_call),
 ]

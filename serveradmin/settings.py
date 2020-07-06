@@ -65,7 +65,7 @@ LOGIN_URL = '/admin/login/'
 
 # The one local to rule them all with english UTF-8 encoding and collation
 # paired with 24 hour time and ISO 8601 date formatting.
-LANGUAGE_CODE = 'en_DK'
+LANGUAGE_CODE = 'en-dk'
 
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.

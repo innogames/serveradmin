@@ -196,18 +196,6 @@ def get_results(request):
 
 
 @login_required
-def export(request):
-    term = request.GET.get('term', '')
-    try:
-        query = Query(parse_query(term), ['hostname'])
-    except (DatatypeError, ObjectDoesNotExist, ValidationError) as error:
-        return HttpResponse(str(error), status=400)
-
-    hostnames = ' '.join(server['hostname'] for server in query)
-    return HttpResponse(hostnames, content_type='text/plain')
-
-
-@login_required
 def inspect(request):
     server = Query({'object_id': request.GET['object_id']}, None).get()
     return _edit(request, server, template='inspect')
