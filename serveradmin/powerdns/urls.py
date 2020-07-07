@@ -1,8 +1,8 @@
-from django.conf.urls import url
+from django.urls import path
 
 from serveradmin.powerdns.views import DomainList, RecordList
 
 urlpatterns = [
-    url(r'^domains$', DomainList.as_view(), name='powerdns_domains'),
-    url(r'^records$', RecordList.as_view(), name='powerdns_records'),
+    path('domains', DomainList.as_view(), name='powerdns_domains'),
+    path('records', RecordList.as_view(), name='powerdns_records'),
 ]
