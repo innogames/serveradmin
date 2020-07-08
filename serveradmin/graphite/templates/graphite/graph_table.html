@@ -87,7 +87,7 @@
             <tr>
                 {% for column_name, graph in graph_column %}
                 <td>
-                    <img class="graph" src="{% url 'graphite_graph' %}/render?{{ graph }}"  alt="{{ name }} {{ column_name }}" />
+                    <img class="graph" src="{% url 'graphite_graph' %}?{{ graph }}"  alt="{{ name }} {{ column_name }}" />
                 </td>
                 {% endfor %}
             </tr>
