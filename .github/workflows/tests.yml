@@ -48,18 +48,22 @@ jobs:
           pipenv lock --python ${{ matrix.python }}
           pipenv install --dev --python ${{ matrix.python }}
           echo "DATABASES = {
-              'default': {
-                  'ENGINE': 'django.db.backends.postgresql',
-                  'HOST': '127.0.0.1',
-                  'PORT': '${{ job.services.postgres.ports[5432]  }}',
-                  'NAME': 'serveradmin',
-                  'USER': 'serveradmin',
-                  'PASSWORD': 'serveradmin',
-                  'OPTIONS': {
-                      'connect_timeout': 1,
-                      'client_encoding': 'UTF8',
-                  },
+            'default': {
+              'ENGINE': 'django.db.backends.postgresql',
+              'NAME': 'serveradmin',
+              'OPTIONS': {
+                'connect_timeout': 1,
+                'client_encoding': 'UTF8',
               },
+            },
+            'powerdns': {
+              'ENGINE': 'django.db.backends.postgresql',
+              'NAME': 'powerdns',
+              'OPTIONS': {
+                'connect_timeout': 1,
+                'client_encoding': 'UTF8',
+              },
+            },
           }
           SECRET_KEY = 'TEST'
           LOGGING = {}" > serveradmin/local_settings.py
