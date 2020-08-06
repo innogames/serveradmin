@@ -4,6 +4,7 @@ Copyright (c) 2019 InnoGames GmbH
 """
 
 import json
+from datetime import datetime
 from os import mkdir
 from os.path import isdir
 import time
@@ -36,6 +37,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         """The entry point of the command"""
+
+        start = time.time()
+
         sprite_params = settings.GRAPHITE_SPRITE_PARAMS
         sprite_dir = settings.MEDIA_ROOT + '/graph_sprite'
         if not isdir(sprite_dir):
@@ -43,6 +47,8 @@ class Command(BaseCommand):
 
         # We will make sure to generate a single sprite for a single hostname.
         for collection in Collection.objects.filter(overview=True):
+            collection_start = time.time()
+
             collection_dir = sprite_dir + '/' + collection.name
             if not isdir(collection_dir):
                 mkdir(collection_dir)
@@ -56,6 +62,14 @@ class Command(BaseCommand):
                 if graph_table:
                     self.generate_sprite(collection_dir, graph_table, server)
                 self.cache_numerics(collection, server)
+
+            collection_duration = time.time() - collection_start
+            print('[{}] Collection {} finished after {} seconds'.format(
+                datetime.now(), collection.name, collection_duration))
+
+        duration = time.time() - start
+        print('[{}] Finished after {} seconds'.format(datetime.now(),
+                                                      duration))
 
     def generate_sprite(self, collection_dir, graph_table, server):
         """Generate sprites for the given server using the given collection"""
