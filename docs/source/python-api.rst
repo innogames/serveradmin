@@ -122,7 +122,7 @@ committed.  To commit them you must call ``commit()`` on the query.
 
 Here is an example which cancels all servers for Seven Lands::
 
-    hosts = Query({'servertype': 'hardware'}, [canceled])
+    hosts = Query({'servertype': 'hardware'}, ['canceled'])
     for host in hosts:
         hosts['canceled'] = True
     hosts.commit()
