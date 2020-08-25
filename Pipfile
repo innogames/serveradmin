@@ -42,6 +42,7 @@ Werkzeug = "*"
 pex = "*"
 # Pex complains without requests
 requests = "*"
+setuptools = "*"
 
 [requires]
 python_version = "3.7"
