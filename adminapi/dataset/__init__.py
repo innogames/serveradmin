@@ -541,11 +541,6 @@ def _handle_exception(result):
     raise exception_class(result['message'])
 
 
-# XXX: Deprecated, use Query() instead
-def query(**kwargs):
-    return Query(kwargs, None)
-
-
 def _format_obj(result):
     obj = DatasetObject(object_id=result['object_id'])
     for attribute_id, value in list(result.items()):
