@@ -3,21 +3,16 @@
 Copyright (c) 2019 InnoGames GmbH
 """
 
-from operator import itemgetter
-
 from django.core.exceptions import (
     SuspiciousOperation,
     PermissionDenied,
     ValidationError,
 )
-from django.contrib.auth.decorators import login_required
-from django.contrib.admindocs.utils import trim_docstring, parse_docstring
-from django.template.response import TemplateResponse, HttpResponse
+from django.template.response import HttpResponse
 
 from adminapi.filters import FilterValueError, filter_from_obj
 from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
 from serveradmin.api.decorators import api_view
-from serveradmin.api.utils import build_function_description
 from serveradmin.serverdb.query_committer import commit_query
 from serveradmin.serverdb.query_executer import execute_query
 from serveradmin.serverdb.query_materializer import (
@@ -176,32 +171,6 @@ def _validate_commit_deleted(deleted):
         raise SuspiciousOperation(
             'Invalid commit deleted "{}"'.format(deleted)
         )
-
-
-# XXX: Deprecated
-@api_view
-def dataset_create(request, app, data):
-    required = [
-        'attributes',
-    ]
-    if not all(key in data for key in required):
-        raise SuspiciousOperation('Invalid create request')
-    if not isinstance(data['attributes'], dict):
-        raise SuspiciousOperation('Attributes must be a dictionary')
-
-    try:
-        commit_obj = commit_query([data['attributes']], app=app)
-    except ValidationError as error:
-        return {
-            'status': 'error',
-            'type': error.__class__.__name__,
-            'message': str(error),
-        }
-
-    return {
-        'status': 'success',
-        'result': commit_obj.created,
-    }
 
 
 @api_view
