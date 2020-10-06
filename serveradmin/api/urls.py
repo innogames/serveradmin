@@ -10,7 +10,6 @@ from serveradmin.api.views import (
     dataset_query,
     dataset_commit,
     dataset_new_object,
-    dataset_create,
     api_call,
 )
 
@@ -19,6 +18,5 @@ urlpatterns = [
     path('dataset/query', dataset_query),
     path('dataset/commit', dataset_commit),
     path('dataset/new_object', dataset_new_object),
-    path('dataset/create', dataset_create),
     path('call', api_call),
 ]

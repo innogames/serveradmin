@@ -16,7 +16,6 @@ from adminapi.exceptions import DatasetError
 NEW_OBJECT_ENDPOINT = '/dataset/new_object'
 COMMIT_ENDPOINT = '/dataset/commit'
 QUERY_ENDPOINT = '/dataset/query'
-CREATE_ENDPOINT = '/dataset/create'
 
 
 class BaseQuery(object):
@@ -545,19 +544,6 @@ def _handle_exception(result):
 # XXX: Deprecated, use Query() instead
 def query(**kwargs):
     return Query(kwargs, None)
-
-
-# XXX: Deprecated, use Query().new_object() instead
-def create(attributes):
-    request = {
-        'attributes': attributes,
-    }
-
-    response = send_request(CREATE_ENDPOINT, post_params=request)
-    if response['status'] == 'error':
-        _handle_exception(response)
-
-    return _format_obj(response['result'][0])
 
 
 def _format_obj(result):
