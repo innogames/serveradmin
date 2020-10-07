@@ -77,18 +77,6 @@ class BaseFilter(object):
         return None
 
 
-class ExactMatch(BaseFilter):
-    """Deprecated"""
-
-    # TODO Remove
-    @classmethod
-    def from_obj(cls, obj):
-        if 'value' in obj:
-            return cls(obj['value'])
-
-        raise FilterValueError('Invalid object for ExactMatch')
-
-
 class Regexp(BaseFilter):
     """Match the attribute against a regular expression"""
 
@@ -101,14 +89,6 @@ class Regexp(BaseFilter):
 
     def matches(self, value):
         return bool(self._regexp_obj.search(str(value)))
-
-    # TODO Remove
-    @classmethod
-    def from_obj(cls, obj):
-        if 'regexp' in obj:
-            return cls(obj['regexp'])
-
-        raise FilterValueError('Invalid object for Regexp')
 
 
 class GreaterThanOrEquals(BaseFilter):
@@ -137,38 +117,6 @@ class LessThan(LessThanOrEquals):
 
     def matches(self, value):
         return self.value < value
-
-
-class Comparison(BaseFilter):
-    """Deprecated, use (Greater|Less)Than[OrEquals]() instead"""
-
-    def __init__(self, comparator, value):
-        if comparator not in ('<', '>', '<=', '>='):
-            raise FilterValueError('Invalid operator: ' + comparator)
-        self.comparator = comparator
-        self.value = value
-
-    def __repr__(self):
-        return 'Comparison({0!r}, {1!r})'.format(self.comparator, self.value)
-
-    def serialize(self):
-        return {type(self).__name__: [self.comparator, self.value]}
-
-    @classmethod
-    def deserialize_value(cls, value):
-        if not isinstance(value, list) or len(value) != 2:
-            raise FilterValueError(
-                'Invalid value for {}()'.format(cls.__name__)
-            )
-        return cls(value[0], value[1])
-
-    # TODO Remove
-    @classmethod
-    def from_obj(cls, obj):
-        if 'comparator' in obj and 'value' in obj:
-            return cls(obj['comparator'], obj['value'])
-
-        raise FilterValueError('Invalid object for Comparison')
 
 
 class Any(BaseFilter):
@@ -206,28 +154,6 @@ class Any(BaseFilter):
             return False
         return None
 
-    # TODO Remove
-    @classmethod
-    def from_obj(cls, obj):
-        if 'values' in obj and isinstance(obj['values'], list):
-            return cls(*obj['values'])
-        raise FilterValueError('Invalid object for Any')
-
-
-class Or(Any):
-    """Deprecated, use Any() instead"""
-
-    # TODO Remove
-    @classmethod
-    def from_obj(cls, obj):
-        if 'filters' in obj and isinstance(obj['filters'], list):
-            if not obj['filters']:
-                raise FilterValueError('Empty filters for And/Or')
-
-            return cls(*[filter_from_obj(f) for f in obj['filters']])
-
-        raise FilterValueError('Invalid object for {0}'.format(cls.__name__))
-
 
 class All(Any):
     """Check if an attribute satisfies all of the conditions"""
@@ -237,11 +163,6 @@ class All(Any):
         if not self.values:
             return True
         return None
-
-
-class And(All, Or):
-    """Deprecated, use All() instead"""
-    pass
 
 
 class Not(BaseFilter):
@@ -269,32 +190,12 @@ class Not(BaseFilter):
             return not value_destiny
         return None
 
-    # TODO Remove
-    @classmethod
-    def from_obj(cls, obj):
-        if 'filter' in obj:
-            return cls(filter_from_obj(obj['filter']))
-
-        raise FilterValueError('Invalid object for Not')
-
 
 class Overlaps(BaseFilter):
     """Check if the attribute is overlapping"""
 
     def matches(self, value):
         return value in self.value or self.value in value
-
-
-class Overlap(Overlaps):
-    """Deprecated, use Overlaps() instead"""
-
-    # TODO Remove
-    @classmethod
-    def from_obj(cls, obj):
-        if 'networks' in obj and isinstance(obj['networks'], (tuple, list)):
-            return cls(*obj['networks'])
-
-        raise FilterValueError('Invalid object for {0}'.format(cls))
 
 
 class Contains(Overlaps):
@@ -311,28 +212,11 @@ class StartsWith(Contains):
         return str(value).startswith(self.value)
 
 
-class Startswith(StartsWith):
-    """Deprecated, use StartsWith() instead"""
-
-    # TODO Remove
-    @classmethod
-    def from_obj(cls, obj):
-        if 'value' in obj:
-            return cls(obj['value'])
-
-        raise FilterValueError('Invalid object for Startswith')
-
-
 class ContainedBy(Overlaps):
     """Check if the attribute is contained by the given value"""
 
     def matches(self, value):
         return value in self.value
-
-
-class InsideNetwork(ContainedBy, Overlap):
-    """Deprecated, use ContainedBy() instead"""
-    pass
 
 
 class ContainedOnlyBy(Overlaps):
@@ -365,21 +249,6 @@ class Empty(BaseFilter):
 
     def matches(self, value):
         return value is None
-
-    # TODO Remove
-    @classmethod
-    def from_obj(cls, obj):
-        return cls()
-
-
-# TODO Remove
-def filter_from_obj(obj):
-    if isinstance(obj, dict) and 'name' in obj:
-        for filter_class in filter_classes:
-            if hasattr(filter_class, 'from_obj'):
-                if filter_class.__name__.lower() == obj['name']:
-                    return filter_class.from_obj(obj)
-    return BaseFilter.deserialize(obj)
 
 
 # Collect all classes that are subclass of BaseFilter (exclusive)

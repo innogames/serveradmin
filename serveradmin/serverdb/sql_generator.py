@@ -11,7 +11,6 @@ from adminapi.filters import (
     All,
     Any,
     BaseFilter,
-    Comparison,
     Contains,
     ContainedBy,
     ContainedOnlyBy,
@@ -72,16 +71,17 @@ def _get_sql_condition(attribute, filt, related_vias):
                 'Boolean attribute "{}" cannot be used with {}() filter'
                 .format(attribute, type(filt).__name__)
             )
+            if not isinstance(filt.value, bool):
+                raise FilterValueError(
+                    'Boolean attribute "{}" cannot be checked against {}'
+                    .format(attribute, type(filt.value).__name__)
+                )
 
-        # TODO: Better return errors for mismatching datatypes than casting
-        negate = not filt.value or filt.value == 'false'
+        negate = not filt.value
+
     elif isinstance(filt, Regexp):
         template = '{0}::text ~ E' + _raw_sql_escape(filt.value)
-    elif isinstance(filt, (
-        Comparison,
-        GreaterThanOrEquals,
-        LessThanOrEquals,
-    )):
+    elif isinstance(filt, (GreaterThanOrEquals, LessThanOrEquals)):
         template = _basic_comparison_filter_template(attribute, filt)
     elif isinstance(filt, Overlaps):
         template = _containment_filter_template(attribute, filt)
@@ -155,14 +155,12 @@ def _logical_filter_sql_condition(attribute, filt, related_vias):
 
 
 def _basic_comparison_filter_template(attribute, filt):
-    if isinstance(filt, Comparison):
-        operator = filt.comparator
-    elif isinstance(filt, GreaterThan):
+    if isinstance(filt, GreaterThan):
         operator = '>'
-    elif isinstance(filt, GreaterThanOrEquals):
-        operator = '>='
     elif isinstance(filt, LessThan):
         operator = '<'
+    elif isinstance(filt, GreaterThanOrEquals):
+        operator = '>='
     else:
         operator = '<='
 
