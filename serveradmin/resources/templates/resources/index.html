@@ -87,7 +87,9 @@
             <tbody>
                 {% for obj in hosts %}
                 <tr>
-                    <td>{{ obj.hostname }}</td>
+                    <td>
+                        <a href="{% url 'graphite_graph_table' %}?hostname={{ obj.hostname }}">{{ obj.hostname }}</a>
+                    </td>
                     {% for column in columns %}
                         {% if column.visible %}
                         <td>
