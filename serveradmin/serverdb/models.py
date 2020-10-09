@@ -305,7 +305,7 @@ class Server(models.Model):
 
     server_id = models.AutoField(primary_key=True)
     hostname = models.CharField(
-        max_length=64, unique=True, validators=HOSTNAME_VALIDATORS
+        max_length=254, unique=True, validators=HOSTNAME_VALIDATORS
     )
     intern_ip = netfields.InetAddressField(null=True, blank=True)
     servertype = models.ForeignKey(Servertype, on_delete=models.PROTECT)
