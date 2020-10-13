@@ -191,7 +191,7 @@ class QueryMaterializer:
                 elif source.intern_ip not in network:
                     continue
             # Check for a new target
-            if target is None:
+            if target is None and source.intern_ip:
                 try:
                     target = source.get_supernet(attribute.target_servertype)
                 except Server.DoesNotExist:
