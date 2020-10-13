@@ -206,17 +206,15 @@ def _delete_servers(changed, deleted, deleted_servers):
 def _create_servers(attribute_lookup, created):
     created_servers = {}
     for attributes in created:
-        if 'hostname' not in attributes:
+        if not attributes.get('hostname'):
             raise CommitError('"hostname" attribute is required.')
         hostname = attributes['hostname']
 
-        if 'servertype' not in attributes:
+        if not attributes.get('servertype'):
             raise CommitError('"servertype" attribute is required.')
         servertype = _get_servertype(attributes)
 
-        if 'intern_ip' not in attributes:
-            raise CommitError('"intern_ip" attribute is required.')
-        intern_ip = attributes['intern_ip']
+        intern_ip = attributes.get('intern_ip')
 
         attributes = dict(_get_real_attributes(attributes, attribute_lookup))
         _validate_real_attributes(servertype, attributes)
