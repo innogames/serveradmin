@@ -5,6 +5,10 @@ Copyright (c) 2019 InnoGames GmbH
 
 from django.contrib import admin
 
+from serveradmin.serverdb.forms import (
+    ServertypeAttributeAdminForm,
+    ServertypeAdminForm,
+)
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
@@ -17,10 +21,12 @@ from serveradmin.serverdb.models import (
 
 
 class ServertypeAttributeInline(admin.TabularInline):
+    form = ServertypeAttributeAdminForm
     model = ServertypeAttribute
 
 
 class ServertypeAdmin(admin.ModelAdmin):
+    form = ServertypeAdminForm
     inlines = (
         ServertypeAttributeInline,
     )
