@@ -26,8 +26,8 @@ class ServertypeAdminForm(forms.ModelForm):
 class ServertypeAttributeAdminForm(forms.ModelForm):
     def clean(self):
         supernet_and_required = (
-            self.instance.attribute.type == 'supernet' and
-            self.instance.servertype.ip_addr_type == 'null' and
+            self.cleaned_data['attribute'].type == 'supernet' and
+            self.cleaned_data['servertype'].ip_addr_type == 'null' and
             self.cleaned_data.get('required') is True
         )
         if supernet_and_required:
@@ -37,7 +37,7 @@ class ServertypeAttributeAdminForm(forms.ModelForm):
                 ),
                 code='invalid',
                 params={
-                    'attribute': self.instance.attribute.attribute_id,
-                    'type': self.instance.attribute.type,
+                    'attribute': self.cleaned_data['attribute'].attribute_id,
+                    'type': self.cleaned_data['attribute'].type,
                 })
         super().clean()
