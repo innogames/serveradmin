@@ -698,7 +698,7 @@ def _insert_server(hostname, intern_ip, servertype, attributes):
     if Server.objects.filter(hostname=hostname).exists():
         raise CommitError('Server with that hostname already exists')
 
-    server = Server.objects.create(
+    server = Server(
         hostname=hostname,
         intern_ip=intern_ip,
         servertype=servertype,
