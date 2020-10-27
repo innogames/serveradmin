@@ -379,12 +379,16 @@ def new_object(request):
 @login_required
 def clone_object(request):
     try:
+        cloned_attributes = list(Attribute.specials)
+        # intern_ip is usually unique (except for loadbalancers) therefore it
+        # makes sense to not clone it.
+        cloned_attributes.remove('intern_ip')
+        cloned_attributes.extend(
+            list(Attribute.objects.filter(clone=True).values_list(
+                'attribute_id', flat=True)))
+
         old_object = Query(
-            {'object_id': request.GET.get('object_id')},
-            list(Attribute.specials) + list(
-                Attribute.objects.filter(clone=True)
-                    .values_list('attribute_id', flat=True)
-            ),
+            {'object_id': request.GET.get('object_id')}, cloned_attributes
         ).get()
     except ValidationError as e:
         messages.error(request, e.message)
