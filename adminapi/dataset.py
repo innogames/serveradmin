@@ -8,10 +8,11 @@ from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 from itertools import chain
 from types import GeneratorType
 
+from adminapi import api
 from adminapi.datatype import validate_value, json_to_datatype
 from adminapi.filters import Any, BaseFilter, ContainedOnlyBy
 from adminapi.request import send_request, json_encode_extra
-from adminapi.exceptions import DatasetError
+from adminapi.exceptions import DatasetError, AdminapiException
 
 NEW_OBJECT_ENDPOINT = '/dataset/new_object'
 COMMIT_ENDPOINT = '/dataset/commit'
@@ -229,6 +230,32 @@ class BaseQuery(object):
                 else:
                     if host not in used_hosts:
                         yield host
+
+    def get_free_ip_addr(self, lock=True):
+        """Get one free IP address from network
+
+        This will give you exactly one free IP address for the queried network
+        and lock it to avoid somebody else using it. If you do not care you
+        can set lock to false but may need to handle the CommitError with the
+        duplicate IP on your own.
+
+        :param lock: Lock free IP address for 60 seconds
+
+        :return:
+        """
+
+        if not lock:
+            try:
+                return next(self.get_network_ip_addrs())
+            except StopIteration:
+                raise AdminapiException('No free IPs left!')
+
+        lock_api = api.get('api')
+        for free_ip in self.get_free_ip_addrs():
+            if lock_api.lock(free_ip) is True:
+                return free_ip
+
+        raise AdminapiException('No free IPs left!')
 
 
 class Query(BaseQuery):
