@@ -23,7 +23,7 @@ def lock(identifier, seconds=60):
     # Use hash sum because this has a constant length
     hash_sum = hashlib.sha1(str(identifier).encode()).hexdigest()
 
-    # Remove expired logs first
+    # Remove expired locks first
     Lock.objects.filter(until__lt=timezone.now()).delete()
 
     in_use = Lock.objects.filter(hashsum=hash_sum).only('until')
@@ -34,4 +34,3 @@ def lock(identifier, seconds=60):
     Lock.objects.create(hashsum=hash_sum, duration=seconds, until=until)
 
     return True
-
