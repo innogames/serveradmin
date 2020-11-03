@@ -1,4 +1,3 @@
-import hashlib
 from datetime import timedelta
 
 from django.utils import timezone
@@ -20,17 +19,16 @@ def lock(identifier, seconds=60):
     :return: True on success or seconds left if already in use
     """
 
-    # Use hash sum because this has a constant length
-    hash_sum = hashlib.sha1(str(identifier).encode()).hexdigest()
-
     # Remove expired locks first
     Lock.objects.filter(until__lt=timezone.now()).delete()
 
-    in_use = Lock.objects.filter(hashsum=hash_sum).only('until')
-    if in_use.exists():
-        return (in_use.get().until - timezone.now()).seconds
+    # Use hash sum because this has a constant length
+    hash_sum = Lock.get_hash_sum(identifier)
+    obj, created = Lock.objects.get_or_create(hash_sum=hash_sum, defaults={
+        'duration': seconds,
+        'until': timezone.now() + timedelta(seconds=seconds)})
 
-    until = timezone.now() + timedelta(seconds=seconds)
-    Lock.objects.create(hashsum=hash_sum, duration=seconds, until=until)
+    if created:
+        return True
 
-    return True
+    return (obj.until - timezone.now()).seconds
