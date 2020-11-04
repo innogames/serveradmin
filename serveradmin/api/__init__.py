@@ -1,3 +1,5 @@
+default_app_config = 'serveradmin.api.apps.ApiConfig'
+
 """Serveradmin - Remote HTTP API
 
 Copyright (c) 2019 InnoGames GmbH
