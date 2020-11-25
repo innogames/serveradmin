@@ -9,7 +9,7 @@ from itertools import chain
 from types import GeneratorType
 
 from adminapi import api
-from adminapi.datatype import validate_value, json_to_datatype
+from adminapi.datatype import validate_value, json_to_datatype, str_to_datatype
 from adminapi.filters import Any, BaseFilter, ContainedOnlyBy
 from adminapi.request import send_request, json_encode_extra
 from adminapi.exceptions import DatasetError, AdminapiException
@@ -417,6 +417,14 @@ class DatasetObject(dict):
                 self.old_values[key] = old_value
 
     def __setitem__(self, key, value):
+        if type(value) is str:
+            # We don't know the data type of the attribute here.
+            #
+            # If the attribute value is a string we try to match it against
+            # our known data types (True = 1, 0, true, false) etc. and convert
+            # it. If nothing matches we assume it is a string.
+            value = str_to_datatype(value)
+
         if isinstance(self[key], MultiAttr):
             value = MultiAttr(value, self, key)
         elif isinstance(value, GeneratorType):
