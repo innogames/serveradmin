@@ -215,6 +215,7 @@ def edit(request):
 
 
 def _edit(request, server, edit_mode=False, template='edit'):  # NOQA: C901
+    # @TODO work with ServerAttribute models here and use Django forms
     invalid_attrs = set()
     if edit_mode and request.POST:
         attribute_lookup = {a.pk: a for a in Attribute.objects.filter(

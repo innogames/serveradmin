@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% load servershell %}
+
 {% block title %}
     Inspect {{ object_id }}
 {% endblock %}
@@ -32,14 +34,14 @@
                 <tr>
                     <td>{{ field.key }}</td>
                     <td>
-                        {% if field.multi %}
+                        {% if field.multi and field.value != None %}
                             <ul>
                                 {% for val in field.value %}
-                                    <li>{{ val }}</li>
+                                    <li>{{ val|value_to_str:field.type }}</li>
                                 {% endfor %}
                             </ul>
                         {% else %}
-                            {{ field.value }}
+                            {% if field.value != None %}{{ field.value|value_to_str:field.type }}{% endif %}
                         {% endif %}
                     </td>
                     <td>{{ field.type }}</td>
