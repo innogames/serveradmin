@@ -39,11 +39,21 @@ def value_to_str(value, field_type) -> str:
     :return:
     """
 
-    if field_type == 'datetime':
+    # somewhere, in general more global, could be for now also just inside this function
+    def conversion_datetime(value):
         if value.tzinfo is None:
             value.replace(tzinfo=timezone.utc)
         return value.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M:%S%z')
-    elif field_type == 'boolean':
-        return str(value).lower()
+        
+    conversions = {
+        'datetime': conversion_datetime,
+        'boolean': lambda v: str(v).lower()
+    }
+
+    conv = conversions.get(field_type)
+    if conv is None:
+        return str(value)
+        
+    return conv(value)
 
     return str(value)
