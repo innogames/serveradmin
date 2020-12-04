@@ -1,10 +1,13 @@
 """Serveradmin
 
-Copyright (c) 2019 InnoGames GmbH
+Copyright (c) 2020 InnoGames GmbH
 """
-
-import re
+import functools
 import os
+import re
+import time
+import logging
+
 from base64 import b64encode
 
 _hostname_re = re.compile(
@@ -28,3 +31,18 @@ def random_alnum_string(length):
         random_str = b64encode(random_bytes, b'??').decode().replace('?', '')
         if len(random_str) >= length:
             return random_str[:length]
+
+
+def profile(func):
+    @functools.wraps(func)
+    def wrapper_profile(*args, **kwargs):
+        start = time.perf_counter()
+        value = func(*args, **kwargs)
+        end = time.perf_counter()
+
+        duration = end - start
+        msg = '%s processed in %s seconds' % (func.__name__, duration)
+        logging.getLogger('profile').info(msg)
+
+        return value
+    return wrapper_profile
