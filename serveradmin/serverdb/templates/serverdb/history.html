@@ -36,7 +36,8 @@
                 <tr>
                     <th>Date</th>
                     <th>Time Since</th>
-                    <th>Author</th>
+                    <th>App</th>
+                    <th>Owner</th>
                     <th>Attribute</th>
                     <th>New/Added</th>
                     <th>Old/Removed</th>
@@ -49,6 +50,7 @@
                             <tr>
                                 <td>{{ change.commit.change_on|date:"r" }}</td>
                                 <td>{{ change.commit.change_on|timesince }}</td>
+                                <td>{{ change.commit.app|default:"Servershell" }}</td>
                                 <td>{{ change.commit.user }}</td>
                                 <td>{{ key }}:</td>
                                 <td>
@@ -71,6 +73,7 @@
                                 <tr>
                                     <td>{{ change.commit.change_on|date:"r" }}</td>
                                     <td>{{ change.commit.change_on|timesince }}</td>
+                                    <td>{{ change.commit.app|default:"Servershell" }}</td>
                                     <td>{{ change.commit.user }}</td>
                                     <td>{{ key }}</td>
                                     {% if value.action == 'multi' %}
