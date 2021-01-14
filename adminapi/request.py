@@ -75,6 +75,16 @@ def calc_message(timestamp, data=None):
     return str(timestamp) + (':' + data) if data else str(timestamp)
 
 
+def signable(key):
+    """Checks if key is able to sign the message
+    """
+    try:
+        key.sign_ssh_data(b'')
+        return True
+    except SSHException:
+        return False
+
+
 def calc_signature(private_key, timestamp, data=None):
     """Create a proof that we posess the private key
 
@@ -158,7 +168,7 @@ def _build_request(endpoint, get_params, post_params):
     else:
         try:
             agent = Agent()
-            agent_keys = agent.get_keys()
+            agent_keys = filter(signable, agent.get_keys())
         except SSHException:
             raise AuthenticationError('No token and ssh agent found')
 
