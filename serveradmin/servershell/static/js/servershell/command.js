@@ -20,129 +20,82 @@ servershell.transform_value = function(value, attribute) {
 }
 
 /**
- * Update (multi) attribute values
+ * Get changes staged for commit
  *
- * Adds or removes values for the given object no matter if it is a multi
- * attribute or a normal single value attribute. It will detect if multi
- * changes nullify each other (mostly) and remove the changes to commit
- * no changes to backend.
+ * Returns the changes staged to commit for the given object and attribute
+ * or false if there are none yet.
  *
- * This method does NOT validate anything in any way. You must have checked
- * if the object, attribute and values before hand.
+ * @param object serveradmin object
+ * @param attribute serveradmin attribute
+ * @returns {boolean|*}
+ */
+servershell.get_changes = function(object, attribute) {
+    let changes = servershell.to_commit.changes;
+
+    if (!changes.hasOwnProperty(object.object_id))
+        return false;
+
+    if (!changes[object.object_id].hasOwnProperty(attribute.attribute_id))
+        return false;
+
+    return changes[object.object_id][attribute.attribute_id];
+}
+
+/**
+ * Stage changes to commit for attributes
+ *
+ * Discard already staged changes to object and attribute and apply new
+ * stages to commit.
  *
  * @param object_id e.g. 123456
  * @param attribute_id  e.g. state or responsible_admin
- * @param new_value e.g. maintenance or ['john.doe', 'doe.john']
- * @param multi_action add or delete (only relevant for multi attribute)
+ * @param value e.g. maintenance
  */
-servershell.update_attribute = function(object_id, attribute_id, new_value, multi_action = 'add') {
+servershell.update_attribute = function(object_id, attribute_id, value) {
     // Just shorthands to increase readability
-    let attribute = servershell.get_attribute(attribute_id);
     let changes = servershell.to_commit.changes;
-    let server = servershell.get_object(object_id);
+    let object = servershell.get_object(object_id);
+    let attribute = servershell.get_attribute(attribute_id);
 
-    // Cast new values to corresponding data type if wanted
-    new_value = servershell.transform_value(new_value, attribute);
+    value = servershell.transform_value(value, attribute)
 
     // No change for this object about to commit yet
     if (!changes.hasOwnProperty(object_id)) {
         changes[object_id] = {};
     }
 
-    // No change for this attribute on the object to commit yet
-    if (!changes[object_id].hasOwnProperty(attribute_id)) {
-        // Set empty (multi) or old (single) default values
-        //
-        // We also want to check if previous changes not committed yet are
-        // making this changes obsolete. This is why we set empty or old
-        // default values here, check the total changes then and if there are
-        // none it total remove them. This might not be as efficient as
-        // aborting directly but is easier to understand and more readable.
-        if (attribute.multi) {
-            changes[object_id][attribute_id] = {
-                'action': 'multi',
-                'add': [],
-                'remove': [],
-            };
-        }
-        else {
-            changes[object_id][attribute_id] = {
-                'action': 'update',
-                'new': server[attribute_id],
-                'old': server[attribute_id],
-            };
-        }
-    }
-
-    // Just a shorthand to not always type the full access path
-    let change = changes[object_id][attribute_id];
-
     if (attribute.multi) {
-        let to_add;
-        let to_remove;
+        // Get changes to current (saved) state
+        let to_add = value.filter(v => !object[attribute_id].includes(v));
+        let to_remove = object[attribute_id].filter(v => !value.includes(v));
 
-        // Don't add or remove empty values
-        new_value = new_value.filter(function(v) {
-            return (v + '').trim() !== '';
-        });
-
-        // Merge changes from previous commands not committed yet
-        if (multi_action === 'add') {
-            // Don't remove values anymore which should be added now
-            to_remove = change['remove'].filter(v => !new_value.includes(v));
-
-            // Don't add values already present in last applied commit
-            new_value = new_value.filter(v => !server[attribute_id].includes(v));
-
-            // Don't add values that should already be added but sum the
-            // changes from before that should be added
-            to_add = [...new Set(new_value.concat(change['add']))];
-        }
-        else {
-            // Don't add values anymore that should get removed now or are not
-            // present yet
-            to_add = change['add'].filter(v => !new_value.includes(v));
-
-            // Don't remove values we can not remove because they are not present
-            to_remove = new_value.filter(v => server[attribute_id].includes(v));
+        changes[object_id][attribute_id] = {
+            'action': 'multi',
+            'add': to_add,
+            'remove': to_remove,
         }
 
-        change['add'] = to_add.sort();
-        change['remove'] = to_remove.sort();
+        if (to_add.length === 0 && to_remove.length === 0)
+            delete changes[object_id][attribute_id];
     }
     else {
-        change['new'] = new_value;
-        change['old'] = server[attribute_id];
+        changes[object_id][attribute_id] = {
+            'action': 'update',
+            'new': value,
+            'old': object[attribute_id],
+        }
+
+        // Just a shorthand to not always type the full access path
+        let attr_change = changes[object_id][attribute_id];
+        if (attr_change['new'] === attr_change['old'])
+            delete changes[object_id][attribute_id];
     }
 
-    // If the sum of changes change nothing do nothing ...
-    if (attribute.multi) {
-        let attr_changes = server[attribute_id];
-        let final_changes = server[attribute_id]
-            .filter(v => !change['remove'].includes(v))
-            .concat(change['add'].filter(v => !server[attribute_id].includes(v)));
-        if (attr_changes.every(v => final_changes.includes(v)) && final_changes.every(v => attr_changes.includes(v))) {
-            delete changes[object_id][attribute_id];
-        }
-    } else {
-        if (change['new'] === change['old']) {
-            delete changes[object_id][attribute_id];
-            change = null;
-        }
-    }
+    // No changes (anymore) for this object ...
+    if (Object.keys(changes[object_id]).length === 0)
+        delete changes[object_id];
 
-    // If there are no changes for the object remove it from to_commit to
-    // avoid possible request to backend ...
-    if (Object.keys(changes[object_id]).length === 0) {
-            delete changes[object_id];
-            servershell.to_commit.changes = changes;
-    }
-    else {
-        if (change !== null) {
-            changes[object_id][attribute_id] = change;
-        }
-        servershell.to_commit.changes = changes;
-    }
+    servershell.changes = changes;
 };
 
 /**
@@ -450,7 +403,7 @@ servershell.commands = {
             return;
 
         [attribute_id, values] = attribute_values_string.split('=', 2).map(a => a.trim());
-        let new_values = values.split(',').map(v => v.trim());
+        let to_add = values.split(',').map(v => v.trim()).concat();
         let attribute = servershell.get_attribute(attribute_id);
         if (!attribute) {
             servershell.alert(`Attribute ${attribute_id} does not exist`, 'warning');
@@ -462,23 +415,38 @@ servershell.commands = {
             return;
         }
 
+        let merge_changes = function() {
+            let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
+            editable.forEach(function(object_id) {
+                let object = servershell.get_object(object_id);
+                let current_values = object[attribute_id];
+                let changes = servershell.get_changes(object, attribute);
+
+                let new_values = [];
+                if (changes !== false) {
+                    new_values = current_values.filter(v => !changes.remove.includes(v));
+                    new_values = new_values.concat(changes.add);
+                }
+
+                new_values = new_values.concat(to_add);
+
+                // Remove duplicate entries
+                new_values = [...new Set(new_values)];
+
+                servershell.update_attribute(object_id, attribute_id, new_values);
+            });
+            servershell.update_result();
+        }
+
         // Attribute not visible yet ...
         if (!servershell.shown_attributes.includes(attribute_id)) {
             servershell.shown_attributes.push(attribute_id);
 
             // Wait for attribute to be available in servers property ...
-            $(document).one('servershell_search_finished', function() {
-                // Try not to set new values for objects which do not have the attribute ...
-                let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
-                editable.forEach(o => servershell.update_attribute(o, attribute_id, new_values));
-                servershell.update_result();
-            });
+            $(document).one('servershell_search_finished', merge_changes);
         }
         else {
-            // Try not to set new values for objects which do not have the attribute ...
-            let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
-            editable.forEach(o => servershell.update_attribute(o, attribute_id, new_values));
-            servershell.update_result();
+           merge_changes();
         }
     },
     multidel: function(attribute_values_string) {
@@ -486,7 +454,7 @@ servershell.commands = {
             return;
 
         [attribute_id, values] = attribute_values_string.split('=', 2).map(a => a.trim());
-        let new_values = values.split(',').map(v => v.trim());
+        let to_remove = values.split(',').map(v => v.trim());
         let attribute = servershell.get_attribute(attribute_id);
         if (!attribute) {
             servershell.alert(`Attribute ${attribute_id} does not exist`, 'warning');
@@ -498,23 +466,38 @@ servershell.commands = {
             return;
         }
 
+        let merge_changes = function() {
+            let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
+            editable.forEach(function(object_id) {
+                let object = servershell.get_object(object_id);
+                let current_values = object[attribute_id];
+                let changes = servershell.get_changes(object, attribute);
+
+                let new_values = [];
+                if (changes !== false) {
+                    new_values = current_values.filter(v => !changes.remove.includes(v));
+                    new_values = new_values.concat(changes.add);
+                }
+
+                new_values = new_values.filter(v => !to_remove.includes(v));
+
+                // Remove duplicate entries
+                new_values = [...new Set(new_values)];
+
+                servershell.update_attribute(object_id, attribute_id, new_values);
+            });
+            servershell.update_result();
+        }
+
         // Attribute not visible yet ...
         if (!servershell.shown_attributes.includes(attribute_id)) {
             servershell.shown_attributes.push(attribute_id);
 
             // Wait for attribute to be available in servers property ...
-            $(document).one('servershell_search_finished', function() {
-                // Try not to set new values for objects which do not have the attribute ...
-                let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
-                editable.forEach(o => servershell.update_attribute(o, attribute_id, new_values, 'del'));
-                servershell.update_result();
-            });
+            $(document).one('servershell_search_finished', merge_changes);
         }
         else {
-            // Try not to set new values for objects which do not have the attribute ...
-            let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
-            editable.forEach(o => servershell.update_attribute(o, attribute_id, new_values, 'del'));
-            servershell.update_result();
+           merge_changes();
         }
     },
     delattr: function(attribute_id) {
