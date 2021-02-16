@@ -57,7 +57,7 @@ servershell.update_attribute = function(object_id, attribute_id, value) {
     let object = servershell.get_object(object_id);
     let attribute = servershell.get_attribute(attribute_id);
 
-    value = servershell.transform_value(value, attribute)
+    value = servershell.transform_value(value, attribute);
 
     // No change for this object about to commit yet
     if (!changes.hasOwnProperty(object_id)) {
