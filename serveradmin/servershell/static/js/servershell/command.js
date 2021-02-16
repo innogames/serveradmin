@@ -74,9 +74,7 @@ servershell.update_attribute = function(object_id, attribute_id, value) {
 
         // It might be that there is nothing more to change for this attribute
         if (to_add.length === 0 && to_remove.length === 0) {
-            if (changes[object_id].hasOwnProperty(attribute_id)) {
-                delete changes[object_id][attribute_id];
-            }
+            delete changes[object_id][attribute_id];
         }
         else {
             // This will override previous staged - see above
@@ -90,9 +88,7 @@ servershell.update_attribute = function(object_id, attribute_id, value) {
     else {
         let current_value = object[attribute_id];
         if (value === current_value) {
-            if (changes[object_id].hasOwnProperty(attribute_id)) {
-                delete changes[object_id][attribute_id];
-            }
+            delete changes[object_id][attribute_id];
         }
         else {
             changes[object_id][attribute_id] = {
@@ -430,18 +426,19 @@ servershell.commands = {
             let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
             editable.forEach(function(object_id) {
                 let object = servershell.get_object(object_id);
-                let current_values = object[attribute_id];
-                let changes = servershell.get_changes(object, attribute);
+                let values = object[attribute_id];
 
-                let new_values = [];
+                // Merge previous changes with current ones
+                let changes = servershell.get_changes(object, attribute);
                 if (changes !== false) {
-                    new_values = current_values.filter(v => !changes.remove.includes(v));
-                    new_values = new_values.concat(changes.add);
+                    values = values.filter(v => !changes['remove'].includes(v));
+                    values = values.concat(changes['add']);
                 }
 
-                new_values = new_values.concat(to_add);
+                // Now add values which should be added
+                values = values.concat(to_add);
 
-                servershell.update_attribute(object_id, attribute_id, new_values);
+                servershell.update_attribute(object_id, attribute_id, values);
             });
             servershell.update_result();
         }
@@ -478,18 +475,19 @@ servershell.commands = {
             let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
             editable.forEach(function(object_id) {
                 let object = servershell.get_object(object_id);
-                let current_values = object[attribute_id];
-                let changes = servershell.get_changes(object, attribute);
+                let values = object[attribute_id];
 
-                let new_values = [];
+                // Merge previous changes with current ones
+                let changes = servershell.get_changes(object, attribute);
                 if (changes !== false) {
-                    new_values = current_values.filter(v => !changes.remove.includes(v));
-                    new_values = new_values.concat(changes.add);
+                    values = values.filter(v => !changes['remove'].includes(v));
+                    values = values.concat(changes['add']);
                 }
 
-                new_values = new_values.filter(v => !to_remove.includes(v));
+                // Now add values which should be added
+                values = values.filter(v => !to_remove.includes(v));
 
-                servershell.update_attribute(object_id, attribute_id, new_values);
+                servershell.update_attribute(object_id, attribute_id, values);
             });
             servershell.update_result();
         }
