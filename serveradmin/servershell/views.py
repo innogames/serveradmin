@@ -13,7 +13,7 @@ from django.core.exceptions import (
     ObjectDoesNotExist, PermissionDenied, ValidationError
 )
 from django.http import HttpResponse, HttpResponseRedirect, Http404, \
-    JsonResponse
+    JsonResponse, HttpResponseBadRequest, HttpResponseNotAllowed
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
@@ -197,6 +197,12 @@ def get_results(request):
 
 @login_required
 def inspect(request):
+    if request.method != 'GET':
+        return HttpResponseNotAllowed(['GET'])
+
+    if 'object_id' not in request.GET.keys():
+        return HttpResponseBadRequest('object_id parameter is mandatory')
+
     server = Query({'object_id': request.GET['object_id']}, None).get()
     return _edit(request, server, template='inspect')
 
