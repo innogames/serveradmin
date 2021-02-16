@@ -65,35 +65,45 @@ servershell.update_attribute = function(object_id, attribute_id, value) {
     }
 
     if (attribute.multi) {
-        // Get changes to current (saved) state
+        // Determine changes to add and remove for to_commit.
         let to_add = value.filter(v => !object[attribute_id].includes(v));
         let to_remove = object[attribute_id].filter(v => !value.includes(v));
 
-        changes[object_id][attribute_id] = {
-            'action': 'multi',
-            'add': to_add,
-            'remove': to_remove,
+        // It might be that there is nothing more to change for this attribute
+        if (to_add.length === 0 && to_remove.length === 0) {
+            if (changes[object_id].hasOwnProperty(attribute_id)) {
+                delete changes[object_id][attribute_id];
+            }
         }
-
-        if (to_add.length === 0 && to_remove.length === 0)
-            delete changes[object_id][attribute_id];
+        else {
+            // This will override previous staged - see above
+            changes[object_id][attribute_id] = {
+                'action': 'multi',
+                'add': to_add,
+                'remove': to_remove,
+            }
+        }
     }
     else {
-        changes[object_id][attribute_id] = {
-            'action': 'update',
-            'new': value,
-            'old': object[attribute_id],
+        let current_value = object[attribute_id];
+        if (value === current_value) {
+            if (changes[object_id].hasOwnProperty(attribute_id)) {
+                delete changes[object_id][attribute_id];
+            }
         }
-
-        // Just a shorthand to not always type the full access path
-        let attr_change = changes[object_id][attribute_id];
-        if (attr_change['new'] === attr_change['old'])
-            delete changes[object_id][attribute_id];
+        else {
+            changes[object_id][attribute_id] = {
+                'action': 'update',
+                'new': value,
+                'old': current_value,
+            }
+        }
     }
 
-    // No changes (anymore) for this object ...
-    if (Object.keys(changes[object_id]).length === 0)
+    // Nothing to commit (anymore) for this object ?
+    if (Object.keys(changes[object_id]).length === 0) {
         delete changes[object_id];
+    }
 };
 
 /**
