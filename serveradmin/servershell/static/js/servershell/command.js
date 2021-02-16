@@ -94,8 +94,6 @@ servershell.update_attribute = function(object_id, attribute_id, value) {
     // No changes (anymore) for this object ...
     if (Object.keys(changes[object_id]).length === 0)
         delete changes[object_id];
-
-    servershell.changes = changes;
 };
 
 /**
