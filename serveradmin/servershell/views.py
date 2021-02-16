@@ -13,11 +13,12 @@ from django.core.exceptions import (
     ObjectDoesNotExist, PermissionDenied, ValidationError
 )
 from django.http import HttpResponse, HttpResponseRedirect, Http404, \
-    JsonResponse, HttpResponseBadRequest, HttpResponseNotAllowed
+    JsonResponse, HttpResponseBadRequest, HttpResponseNotFound
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.html import mark_safe, escape as escape_html
+from django.views.decorators.http import require_http_methods
 
 from adminapi.datatype import DatatypeError
 from adminapi.filters import Any, ContainedOnlyBy, filter_classes
@@ -196,15 +197,20 @@ def get_results(request):
 
 
 @login_required
+@require_http_methods(['GET'])
 def inspect(request):
-    if request.method != 'GET':
-        return HttpResponseNotAllowed(['GET'])
+    if 'object_id' in request.GET:
+        query = Query({'object_id': request.GET['object_id']}, None)
+    elif 'hostname' in request.GET:
+        query = Query({'hostname': request.GET['hostname']}, None)
+    else:
+        return HttpResponseBadRequest(
+            'object_id or hostname parameter is mandatory')
 
-    if 'object_id' not in request.GET.keys():
-        return HttpResponseBadRequest('object_id parameter is mandatory')
+    if not query:
+        return HttpResponseNotFound('No such object exists')
 
-    server = Query({'object_id': request.GET['object_id']}, None).get()
-    return _edit(request, server, template='inspect')
+    return _edit(request, query.get(), template='inspect')
 
 
 @login_required
