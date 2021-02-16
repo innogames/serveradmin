@@ -116,6 +116,7 @@ servershell.update_attribute = function(object_id, attribute_id, value) {
  */
 servershell.delete_attribute = function(object_id, attribute_id) {
     let change;
+    let changes = servershell.to_commit.changes;
     let attribute = servershell.get_attribute(attribute_id);
     let old_value = servershell.get_object(object_id)[attribute_id];
 
@@ -133,13 +134,13 @@ servershell.delete_attribute = function(object_id, attribute_id) {
         };
     }
 
-    if (!servershell.to_commit.changes.hasOwnProperty(object_id))
-        servershell.to_commit.changes[object_id] = {};
+    if (!changes.hasOwnProperty(object_id))
+        changes[object_id] = {};
 
-    if (!servershell.to_commit.changes[object_id].hasOwnProperty(attribute_id))
-        servershell.to_commit.changes[object_id][attribute_id] = {};
+    if (!changes[object_id].hasOwnProperty(attribute_id))
+        changes[object_id][attribute_id] = {};
 
-    servershell.to_commit.changes[object_id][attribute_id] = change;
+    changes[object_id][attribute_id] = change;
 };
 
 /**
