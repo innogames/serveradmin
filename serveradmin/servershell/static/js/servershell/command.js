@@ -65,6 +65,9 @@ servershell.update_attribute = function(object_id, attribute_id, value) {
     }
 
     if (attribute.multi) {
+        // Remove duplicates in case user entered the same value twice
+        value = [...new Set(value)];
+
         // Determine changes to add and remove for to_commit.
         let to_add = value.filter(v => !object[attribute_id].includes(v));
         let to_remove = object[attribute_id].filter(v => !value.includes(v));
@@ -438,9 +441,6 @@ servershell.commands = {
 
                 new_values = new_values.concat(to_add);
 
-                // Remove duplicate entries
-                new_values = [...new Set(new_values)];
-
                 servershell.update_attribute(object_id, attribute_id, new_values);
             });
             servershell.update_result();
@@ -488,9 +488,6 @@ servershell.commands = {
                 }
 
                 new_values = new_values.filter(v => !to_remove.includes(v));
-
-                // Remove duplicate entries
-                new_values = [...new Set(new_values)];
 
                 servershell.update_attribute(object_id, attribute_id, new_values);
             });
