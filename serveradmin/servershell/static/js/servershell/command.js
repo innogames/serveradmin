@@ -32,11 +32,13 @@ servershell.transform_value = function(value, attribute) {
 servershell.get_changes = function(object, attribute) {
     let changes = servershell.to_commit.changes;
 
-    if (!changes.hasOwnProperty(object.object_id))
+    if (!changes.hasOwnProperty(object.object_id)) {
         return false;
+    }
 
-    if (!changes[object.object_id].hasOwnProperty(attribute.attribute_id))
+    if (!changes[object.object_id].hasOwnProperty(attribute.attribute_id)) {
         return false;
+    }
 
     return changes[object.object_id][attribute.attribute_id];
 }
@@ -134,11 +136,13 @@ servershell.delete_attribute = function(object_id, attribute_id) {
         };
     }
 
-    if (!changes.hasOwnProperty(object_id))
+    if (!changes.hasOwnProperty(object_id)) {
         changes[object_id] = {};
+    }
 
-    if (!changes[object_id].hasOwnProperty(attribute_id))
+    if (!changes[object_id].hasOwnProperty(attribute_id)) {
         changes[object_id][attribute_id] = {};
+    }
 
     changes[object_id][attribute_id] = change;
 };
@@ -156,10 +160,12 @@ servershell.delete_attribute = function(object_id, attribute_id) {
 function validate_selected(min=1, max=-1) {
     let selected = servershell.get_selected().length;
     if ((min !== -1 && selected < min) || (max !== -1 && selected.length > max)) {
-        if (max === -1)
+        if (max === -1) {
             servershell.alert(`You must select at least ${min} object(s)`, 'warning');
-        else
+        }
+        else {
             servershell.alert(`Select at least ${min} and at most ${max} objects`, 'warning');
+        }
         return false;
     }
 
@@ -203,8 +209,9 @@ servershell.commands = {
             return;
         }
 
-        if (limit > 100)
+        if (limit > 100) {
             servershell.alert('Do you really need to view that many objects at once ?', 'warning');
+        }
 
         servershell.limit = Math.abs(limit);
         servershell.submit_search();
@@ -241,18 +248,21 @@ servershell.commands = {
         }
     },
     export: function(attribute_ids) {
-        if (!validate_selected())
+        if (!validate_selected()) {
             return;
+        }
 
         attribute_ids = attribute_ids.split(',').map(a => a.trim()).filter(a => a !== '');
         let unknown = attribute_ids.filter(a => servershell.attributes.find(b => b.attribute_id === a) === undefined);
 
-        if (unknown.length > 0)
+        if (unknown.length > 0) {
             return servershell.alert(`The attribute(s) ${unknown.join(', ')} doe not exist!`, 'warning');
+        }
 
         // If not attribute are given add hostname
-        if (attribute_ids.length === 0)
+        if (attribute_ids.length === 0) {
             attribute_ids = ['hostname']
+        }
 
         // Add not yet visible attributes ...
         let to_add = attribute_ids.filter(a => servershell.shown_attributes.find(b => b === a) === undefined);
@@ -266,10 +276,12 @@ servershell.commands = {
                 attribute_ids.forEach(function(attribute_id) {
                     if (object.hasOwnProperty(attribute_id)) {
                         let attribute = servershell.get_attribute(attribute_id);
-                        if (attribute.multi)
+                        if (attribute.multi) {
                             to_export += object[attribute_id].join(',');
-                        else
+                        }
+                        else {
                             to_export += object[attribute_id];
+                        }
                     }
                     to_export += ';'
                 });
@@ -296,8 +308,9 @@ servershell.commands = {
         })
     },
     graph: function() {
-        if (!validate_selected())
+        if (!validate_selected()) {
             return;
+        }
 
         let query_string = servershell.get_selected().map(o => `object_id=${o}`).join('&');
         let url = servershell.urls.graphite + '?' + query_string;
@@ -306,8 +319,9 @@ servershell.commands = {
         servershell.alert('Opened graph results in new browser tab.', 'info');
     },
     inspect: function() {
-        if (!validate_selected())
+        if (!validate_selected()) {
             return;
+        }
 
         servershell.get_selected().forEach(function(object_id) {
            let url = servershell.urls.inspect + `?object_id=${object_id}`;
@@ -317,8 +331,9 @@ servershell.commands = {
         });
     },
     edit: function() {
-        if (!validate_selected())
+        if (!validate_selected()) {
             return;
+        }
 
         servershell.get_selected().forEach(function(object_id) {
             let url = servershell.urls.edit + `?object_id=${object_id}`;
@@ -332,8 +347,9 @@ servershell.commands = {
         window.open(url, '_self');
     },
     clone: function() {
-        if (!validate_selected(1, 1))
+        if (!validate_selected(1, 1)) {
             return;
+        }
 
         let url = servershell.urls.clone + `?object_id=${servershell.get_selected()[0]}`;
         window.open(url, '_self');
@@ -343,7 +359,8 @@ servershell.commands = {
         let selection = servershell.get_selected();
         if (selection.length > 0) {
             url = servershell.urls.changes + `?object_id=${selection[0]}`;
-        } else {
+        }
+        else {
             url = servershell.urls.changes;
         }
 
@@ -351,8 +368,9 @@ servershell.commands = {
         servershell.alert('Opened changes in new browser tab.', 'info');
     },
     delete: function() {
-        if (!validate_selected())
+        if (!validate_selected()) {
             return;
+        }
 
         servershell.get_selected().forEach(function(object_id) {
             // Avoid duplicate deletion ...
@@ -363,8 +381,9 @@ servershell.commands = {
         });
     },
     setattr: function(attribute_value_string) {
-        if (!validate_selected())
+        if (!validate_selected()) {
             return;
+        }
 
         let [attribute_id, new_value] = attribute_value_string.split('=', 2).map(a => a.trim());
         let attribute = servershell.get_attribute(attribute_id);
@@ -389,26 +408,31 @@ servershell.commands = {
             $(document).one('servershell_search_finished', function() {
                 // Try not to set new values for objects which do not have the attribute ...
                 let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
-                if (new_value === '')
+                if (new_value === '') {
                     editable.forEach(o => servershell.delete_attribute(o, attribute_id));
-                else
+                }
+                else {
                     editable.forEach(o => servershell.update_attribute(o, attribute_id, new_value));
+                }
                 servershell.update_result();
             });
         }
         else {
             // Try not to set new values for objects which do not have the attribute ...
             let editable = servershell.get_selected().filter(object_id => attribute_id in servershell.get_object(object_id));
-            if (new_value === '')
+            if (new_value === '') {
                 editable.forEach(o => servershell.delete_attribute(o, attribute_id));
-            else
+            }
+            else {
                 editable.forEach(o => servershell.update_attribute(o, attribute_id, new_value));
+            }
             servershell.update_result();
         }
     },
     multiadd: function(attribute_values_string) {
-        if (!validate_selected())
+        if (!validate_selected()) {
             return;
+        }
 
         [attribute_id, values] = attribute_values_string.split('=', 2).map(a => a.trim());
         let to_add = values.split(',').map(v => v.trim());
@@ -456,8 +480,9 @@ servershell.commands = {
         }
     },
     multidel: function(attribute_values_string) {
-        if (!validate_selected())
+        if (!validate_selected()) {
             return;
+        }
 
         [attribute_id, values] = attribute_values_string.split('=', 2).map(a => a.trim());
         let to_remove = values.split(',').map(v => v.trim());
@@ -505,8 +530,9 @@ servershell.commands = {
         }
     },
     delattr: function(attribute_id) {
-        if (!validate_selected())
+        if (!validate_selected()) {
             return;
+        }
 
         let attribute = servershell.get_attribute(attribute_id);
         if (!attribute) {
@@ -532,14 +558,16 @@ servershell.commands = {
         }
     },
     history: function(attribute_id) {
-        if (!validate_selected(1, 1))
+        if (!validate_selected(1, 1)) {
             return;
+        }
 
         let object_id = servershell.get_selected()[0];
         let url = servershell.urls.history + `?object_id=${object_id}`;
 
-        if (attribute_id)
+        if (attribute_id) {
             url += `&search_string=${attribute_id}`;
+        }
 
         window.open(url, '_blank');
 
@@ -556,7 +584,8 @@ servershell.commands = {
             success: function (response) {
                 if (response.status === 'error') {
                     servershell.alert(response.message, 'danger', false);
-                } else {
+                }
+                else {
                     servershell.alert('Data successfully committed!', 'success');
                     servershell.submit_search();
                     servershell.to_commit = {deleted: [], changes: {}};
