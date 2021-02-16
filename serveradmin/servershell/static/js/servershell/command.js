@@ -403,7 +403,7 @@ servershell.commands = {
             return;
 
         [attribute_id, values] = attribute_values_string.split('=', 2).map(a => a.trim());
-        let to_add = values.split(',').map(v => v.trim()).concat();
+        let to_add = values.split(',').map(v => v.trim());
         let attribute = servershell.get_attribute(attribute_id);
         if (!attribute) {
             servershell.alert(`Attribute ${attribute_id} does not exist`, 'warning');
