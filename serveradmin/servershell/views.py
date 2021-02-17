@@ -1,6 +1,6 @@
 """Serveradmin - Servershell
 
-Copyright (c) 2020 InnoGames GmbH
+Copyright (c) 2021 InnoGames GmbH
 """
 
 import json
@@ -10,10 +10,18 @@ from itertools import islice
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import (
-    ObjectDoesNotExist, PermissionDenied, ValidationError
+    ObjectDoesNotExist,
+    PermissionDenied,
+    ValidationError
 )
-from django.http import HttpResponse, HttpResponseRedirect, Http404, \
-    JsonResponse, HttpResponseBadRequest, HttpResponseNotFound
+from django.http import (
+    HttpResponse,
+    HttpResponseRedirect,
+    Http404,
+    JsonResponse,
+    HttpResponseBadRequest,
+    HttpResponseNotFound
+)
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
@@ -24,16 +32,20 @@ from adminapi.datatype import DatatypeError
 from adminapi.filters import Any, ContainedOnlyBy, filter_classes
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
+
 from serveradmin.dataset import Query
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
     ServertypeAttribute,
-    Server)
+    Server
+)
 from serveradmin.serverdb.query_committer import commit_query
 from serveradmin.servershell.helper import get_default_shown_attributes
-from serveradmin.servershell.helper.autocomplete import \
-    attribute_value_startswith, attribute_startswith
+from serveradmin.servershell.helper.autocomplete import (
+    attribute_value_startswith,
+    attribute_startswith
+)
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 25
