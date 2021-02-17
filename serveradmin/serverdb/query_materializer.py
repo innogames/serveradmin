@@ -136,7 +136,10 @@ class QueryMaterializer:
                 for sa in ServerRelationAttribute.objects.filter(
                     value_id__in=self._server_attributes.keys(),
                     attribute_id__in=reversed_attributes.keys(),
-                ).select_related('server'):
+                ).select_related('server').defer(
+                    'server__intern_ip',
+                    'server__servertype',
+                ):
                     self._add_attribute_value(
                         sa.value,
                         reversed_attributes[sa.attribute_id],
@@ -147,7 +150,10 @@ class QueryMaterializer:
                 for sa in ServerAttribute.get_model(key).objects.filter(
                     server__in=self._server_attributes.keys(),
                     attribute__in=attributes,
-                ).select_related('server'):
+                ).select_related('server').defer(
+                    'server__intern_ip',
+                    'server__servertype',
+                ):
                     self._add_attribute_value(
                         sa.server,
                         attribute_lookup[sa.attribute_id],
@@ -221,7 +227,10 @@ class QueryMaterializer:
         for sa in ServerAttribute.get_model(attribute.type).objects.filter(
             server__hostname__in=servers_by_related.keys(),
             attribute=attribute,
-        ).select_related('server'):
+        ).select_related('server').defer(
+            'server__intern_ip',
+            'server__servertype',
+        ):
             for target in servers_by_related[sa.server]:
                 self._add_attribute_value(target, attribute, sa.get_value())
 
