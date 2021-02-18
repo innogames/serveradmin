@@ -1,6 +1,6 @@
 """Serveradmin - Servershell
 
-Copyright (c) 2020 InnoGames GmbH
+Copyright (c) 2021 InnoGames GmbH
 """
 
 import json
@@ -10,29 +10,42 @@ from itertools import islice
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import (
-    ObjectDoesNotExist, PermissionDenied, ValidationError
+    ObjectDoesNotExist,
+    PermissionDenied,
+    ValidationError
 )
-from django.http import HttpResponse, HttpResponseRedirect, Http404, \
-    JsonResponse
+from django.http import (
+    HttpResponse,
+    HttpResponseRedirect,
+    Http404,
+    JsonResponse,
+    HttpResponseBadRequest,
+    HttpResponseNotFound
+)
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.html import mark_safe, escape as escape_html
+from django.views.decorators.http import require_http_methods
 
 from adminapi.datatype import DatatypeError
 from adminapi.filters import Any, ContainedOnlyBy, filter_classes
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
+
 from serveradmin.dataset import Query
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
     ServertypeAttribute,
-    Server)
+    Server
+)
 from serveradmin.serverdb.query_committer import commit_query
 from serveradmin.servershell.helper import get_default_shown_attributes
-from serveradmin.servershell.helper.autocomplete import \
-    attribute_value_startswith, attribute_startswith
+from serveradmin.servershell.helper.autocomplete import (
+    attribute_value_startswith,
+    attribute_startswith
+)
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 25
@@ -196,9 +209,20 @@ def get_results(request):
 
 
 @login_required
+@require_http_methods(['GET'])
 def inspect(request):
-    server = Query({'object_id': request.GET['object_id']}, None).get()
-    return _edit(request, server, template='inspect')
+    if 'object_id' in request.GET:
+        query = Query({'object_id': request.GET['object_id']}, None)
+    elif 'hostname' in request.GET:
+        query = Query({'hostname': request.GET['hostname']}, None)
+    else:
+        return HttpResponseBadRequest(
+            'object_id or hostname parameter is mandatory')
+
+    if not query:
+        return HttpResponseNotFound('No such object exists')
+
+    return _edit(request, query.get(), template='inspect')
 
 
 @login_required
