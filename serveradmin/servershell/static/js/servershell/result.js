@@ -252,19 +252,7 @@ register_inline_editing = function(cell) {
                 servershell.delete_attribute(object_id, attribute_id)
             }
             else {
-                if (multi) {
-                    value = servershell.transform_value(value, attribute);
-
-                    let current_value = servershell.get_object(object_id)[attribute_id];
-                    let to_add = value.filter(v => !current_value.includes(v));
-                    let to_remove = current_value.filter(v => !value.includes(v));
-
-                    servershell.update_attribute(object_id, attribute_id, to_add);
-                    servershell.update_attribute(object_id, attribute_id, to_remove, 'remove');
-                }
-                else {
-                    servershell.update_attribute(object_id, attribute_id, value);
-                }
+                servershell.update_attribute(object_id, attribute_id, value);
             }
 
             servershell.update_result();
