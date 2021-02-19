@@ -4,25 +4,25 @@ Copyright (c) 2019 InnoGames GmbH
 """
 
 import dateparser
-
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db.models import Prefetch, Q
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
 
 from serveradmin.serverdb.models import (
-    ChangeCommit,
     ChangeAdd,
-    ChangeUpdate,
+    ChangeCommit,
     ChangeDelete,
-    Server, ServertypeAttribute)
+    ChangeUpdate,
+    Server,
+    ServertypeAttribute,
+)
 from serveradmin.serverdb.query_committer import CommitError, commit_query
 
 
