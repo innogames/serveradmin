@@ -614,6 +614,16 @@ $(document).ready(function() {
    $('#command_form').submit(function(event) {
         event.preventDefault();
 
+        // Workaround:
+        //
+        // The input change event is not fired or somehow interrupted in
+        // Safari, Epihany and other like browsers, they all have in common to
+        // have "AppleWebKit/605.1.15" in the user agent.
+        //
+        // We just trigger the event manually here to make it work for those.
+        // This will fire it twice for other browser but that does not harm.
+        $('#command').change();
+
         let command = servershell.command.split(' ', 1).pop();
         let params = servershell.command.substring(command.length).trim();
         if (Object.keys(servershell.commands).includes(command)) {
