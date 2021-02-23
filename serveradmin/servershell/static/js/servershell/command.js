@@ -641,6 +641,7 @@ $(document).ready(function() {
             return;
         }
 
+        // Reset command input on success
         servershell.command = '';
    })
 });
