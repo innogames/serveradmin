@@ -635,8 +635,9 @@ $(document).ready(function() {
         }
         else {
             // User had a nervous finger lets ignore this
-            if (command !== '')
+            if (command !== '') {
                 servershell.alert(`Unknown command ${command}!`, 'warning');
+            }
 
             return;
         }
