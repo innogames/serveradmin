@@ -1,0 +1,75 @@
+name: Tests
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  tests:
+    name: Test code
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python:
+          - "3.5" # Required for Debian Stretch support
+          - "3.6"
+          - "3.7"
+          - "3.8"
+
+    services:
+      postgres:
+        image: 'postgres:11'
+        env:
+          POSTGRES_USER: serveradmin
+          POSTGRES_PASSWORD: serveradmin
+          POSTGRES_DB: serveradmin
+        ports:
+          - 5432/tcp
+        options: >-
+                  --health-cmd pg_isready
+                  --health-interval 10s
+                  --health-timeout 5s
+                  --health-retries 5
+
+    steps:
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Prepare
+        run: |
+          pip install --upgrade pip
+          pip install pipenv
+          pipenv lock --python ${{ matrix.python }}
+          pipenv install --dev --python ${{ matrix.python }}
+          echo "DATABASES = {
+              'default': {
+                  'ENGINE': 'django.db.backends.postgresql',
+                  'HOST': '127.0.0.1',
+                  'PORT': '${{ job.services.postgres.ports[5432]  }}',
+                  'NAME': 'serveradmin',
+                  'USER': 'serveradmin',
+                  'PASSWORD': 'serveradmin',
+                  'OPTIONS': {
+                      'connect_timeout': 1,
+                      'client_encoding': 'UTF8',
+                  },
+              },
+          }
+          SECRET_KEY = 'TEST'
+          LOGGING = {}" > serveradmin/local_settings.py
+          cat serveradmin/local_settings.py
+          pipenv run python -m serveradmin migrate
+      - name: Tests
+        run: |
+          # This will use Python's standard unit test discovery feature.
+          pipenv run python -m unittest discover adminapi -v
+          pipenv run python -Wall -m serveradmin test --noinput --parallel
+          # Build sphinx docs, error on warning
+          cd docs
+          SPHINXOPTS='-W' pipenv run make html
