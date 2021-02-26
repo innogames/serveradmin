@@ -100,7 +100,7 @@ class QueryMaterializer:
             sa = ServertypeAttribute.objects.filter(
                 servertype_id=sa.servertype_id,
                 attribute_id=related_via_attribute_id,
-            ).select_related('attribute').get()
+            ).prefetch_related('attribute').get()
             self._select_servertype_attribute(sa.attribute, sa)
 
     def _initialize_attributes(self, servers_by_type):
@@ -136,7 +136,10 @@ class QueryMaterializer:
                 for sa in ServerRelationAttribute.objects.filter(
                     value_id__in=self._server_attributes.keys(),
                     attribute_id__in=reversed_attributes.keys(),
-                ).select_related('server'):
+                ).prefetch_related('server').defer(
+                    'server__intern_ip',
+                    'server__servertype',
+                ):
                     self._add_attribute_value(
                         sa.value,
                         reversed_attributes[sa.attribute_id],
@@ -147,7 +150,10 @@ class QueryMaterializer:
                 for sa in ServerAttribute.get_model(key).objects.filter(
                     server__in=self._server_attributes.keys(),
                     attribute__in=attributes,
-                ).select_related('server'):
+                ).prefetch_related('server').defer(
+                    'server__intern_ip',
+                    'server__servertype',
+                ):
                     self._add_attribute_value(
                         sa.server,
                         attribute_lookup[sa.attribute_id],
@@ -221,7 +227,10 @@ class QueryMaterializer:
         for sa in ServerAttribute.get_model(attribute.type).objects.filter(
             server__hostname__in=servers_by_related.keys(),
             attribute=attribute,
-        ).select_related('server'):
+        ).prefetch_related('server').defer(
+            'server__intern_ip',
+            'server__servertype',
+        ):
             for target in servers_by_related[sa.server]:
                 self._add_attribute_value(target, attribute, sa.get_value())
 

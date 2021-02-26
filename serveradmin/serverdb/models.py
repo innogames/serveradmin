@@ -463,7 +463,7 @@ class ServerStringAttribute(ServerAttribute):
 class ServerRelationAttributeManager(models.Manager):
     def get_queryset(self):
         manager = super(ServerRelationAttributeManager, self)
-        return manager.get_queryset().select_related('value')
+        return manager.get_queryset().prefetch_related('value')
 
 
 class ServerRelationAttribute(ServerAttribute):

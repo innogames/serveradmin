@@ -4,12 +4,11 @@ Copyright (c) 2019 InnoGames GmbH
 """
 
 import dateparser
-
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
@@ -17,11 +16,13 @@ from django.template.response import TemplateResponse
 from django.urls import reverse
 
 from serveradmin.serverdb.models import (
-    ChangeCommit,
     ChangeAdd,
-    ChangeUpdate,
+    ChangeCommit,
     ChangeDelete,
-    Server, ServertypeAttribute)
+    ChangeUpdate,
+    Server,
+    ServertypeAttribute,
+)
 from serveradmin.serverdb.query_committer import CommitError, commit_query
 
 
@@ -37,16 +38,25 @@ def changes(request):
     date_settings = {'TIMEZONE': settings.TIME_ZONE}
 
     try:
-        object_id = request.GET.get('object_id') if not hostname else Server.objects.get(hostname=hostname).server_id
+        if hostname:
+            object_id = Server.objects.get(hostname=hostname).server_id
+        else:
+            object_id = request.GET.get('object_id')
     except ObjectDoesNotExist:
         messages.error(request, 'Server does not exist')
         return TemplateResponse(request, 'serverdb/changes.html', {})
 
     if t_from:
-        column_filter['change_on__gt'] = dateparser.parse(t_from, settings=date_settings)
+        column_filter['change_on__gt'] = dateparser.parse(
+            t_from,
+            settings=date_settings,
+        )
         context['from_understood'] = column_filter['change_on__gt']
     if t_until:
-        column_filter['change_on__lt'] = dateparser.parse(t_until, settings=date_settings)
+        column_filter['change_on__lt'] = dateparser.parse(
+            t_until,
+            settings=date_settings,
+        )
         context['until_understood'] = column_filter['change_on__lt']
     if object_id:
         q_filter.append((
@@ -59,7 +69,10 @@ def changes(request):
             Q(app__name=application) | Q(user__username=application)
         ))
 
-    commits = ChangeCommit.objects.filter(*q_filter, **column_filter).order_by('-change_on')
+    commits = ChangeCommit.objects.filter(
+        *q_filter,
+        **column_filter,
+    ).order_by('-change_on')
     paginator = Paginator(commits, 20)
 
     try:
@@ -87,9 +100,13 @@ def history(request):
     if not object_id:
         raise Http404
 
-    adds = ChangeAdd.objects.filter(server_id=object_id)
-    updates = ChangeUpdate.objects.filter(server_id=object_id)
-    deletes = ChangeDelete.objects.filter(server_id=object_id).select_related()
+    # TODO: Change data model so that server_id is moved to ChangeCommit.
+    #       To me this would make most sense. If that is not possible (why?!)
+    #       write a proper (custom) query that performs.
+    where = {'server_id': object_id}
+    adds = ChangeAdd.objects.filter(**where)
+    updates = ChangeUpdate.objects.filter(**where)
+    deletes = ChangeDelete.objects.filter(**where)
 
     # @TODO Transform to PostgreSQL JSON and put a index here
     if search_string:
@@ -97,27 +114,20 @@ def history(request):
         updates = updates.filter(updates_json__contains=search_string)
         deletes = deletes.filter(attributes_json__contains=search_string)
 
-    adds = adds.select_related()
-    updates = updates.select_related()
-
     if commit_id:
         adds = adds.filter(commit__pk=commit_id)
         updates = updates.filter(commit__pk=commit_id)
         deletes = deletes.filter(commit__pk=commit_id)
 
+    related = ('commit__app', 'commit__user')
+    adds = adds.select_related(*related)
+    updates = updates.select_related(*related)
+    deletes = deletes.select_related(*related)
+
     change_list = ([('add', obj) for obj in adds] +
                    [('update', obj) for obj in updates] +
                    [('delete', obj) for obj in deletes])
     change_list.sort(key=lambda entry: entry[1].commit.change_on, reverse=True)
-
-    for change in change_list:
-        commit = change[1].commit
-        if commit.user:
-            commit.commit_by = commit.user.get_full_name()
-        elif commit.app:
-            commit.commit_by = commit.app.name
-        else:
-            commit.commit_by = 'unknown'
 
     server = Server.objects.filter(server_id=object_id)
     return TemplateResponse(request, 'serverdb/history.html', {

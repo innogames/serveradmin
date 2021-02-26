@@ -258,6 +258,6 @@ def _get_servers(filters, attribute_lookup, related_vias):
     # easy: get and execute the raw SQL query.
     sql_query = get_server_query(attribute_filters, related_vias)
     try:
-        return list(Server.objects.raw(sql_query))
+        return list(Server.objects.defer('intern_ip').raw(sql_query))
     except DataError as error:
         raise ValidationError(error)
