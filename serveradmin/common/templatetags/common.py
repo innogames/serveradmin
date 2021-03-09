@@ -1,9 +1,11 @@
 """Serveradmin
 
-Copyright (c) 2020 InnoGames GmbH
+Copyright (c) 2021 InnoGames GmbH
 """
 
 from django import template
+
+from adminapi import VERSION
 
 register = template.Library()
 
@@ -56,3 +58,9 @@ def group(items, number_of_groups):
         groups.extend([items[counter:counter + step]])
 
     return groups
+
+
+@register.simple_tag()
+def get_version():
+    """Get current Serveradmin version"""
+    return 'v' + '.'.join([str(v) for v in VERSION])
