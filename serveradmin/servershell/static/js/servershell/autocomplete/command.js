@@ -142,7 +142,7 @@ $(document).ready(function() {
                     let search_string = values.split(' ').shift();
                     if (!search_string.includes('=')) {
                         let attribute_ids = get_attribute_ids(
-                            search_string, values,
+                            search_string, [],
                             command === 'setattr',
                             command === 'multiadd' || command === 'multidel',
                             true,
