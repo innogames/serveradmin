@@ -11,8 +11,6 @@ servershell.submit_search = function() {
         return servershell.alert('Pending request, cancel it or wait for it to finish!', 'danger');
     }
 
-    spinner.enable();
-
     let data = {
         term: servershell.term.trimRight(), // Avoid error on trailing spaces
         shown_attributes: servershell.shown_attributes,
@@ -28,6 +26,7 @@ servershell.submit_search = function() {
     console.debug(`Submitting query to URL "${url}" with data:`);
     console.debug(data);
 
+    spinner.enable();
     servershell._ajax = $.getJSON(url, data, function(data) {
         if ('message' in data) {
             return servershell.alert(data.message, 'danger');
