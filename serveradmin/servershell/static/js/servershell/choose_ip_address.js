@@ -17,7 +17,7 @@ servershell.choose_ip_address = function(intern_ip) {
 
         $('#modal_choose_ip_address .modal-body').html(html);
         $(modal).modal('show');
-
+    }).always(function() {
         spinner.disable();
     });
 };

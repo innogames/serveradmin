@@ -575,7 +575,6 @@ servershell.commands = {
     },
     commit: function() {
         spinner.enable();
-
         let settings = {
             type: 'POST',
             url: servershell.urls.commit,
@@ -590,12 +589,13 @@ servershell.commands = {
                     servershell.submit_search();
                     servershell.to_commit = {deleted: [], changes: {}};
                 }
-                spinner.disable();
             },
         };
         $.post(settings).fail(function() {
             servershell.alert('Commit request failed retrying in 5 seconds!', 'danger');
             setTimeout(servershell.commands.commit, 5000);
+        }).always(function() {
+            spinner.disable();
         });
     },
     cancel: function() {

@@ -9,40 +9,30 @@ $(document).ready(function() {
     // everywhere when ever we need it for example when doing long running
     // ajax requests for the servershell search.
     window.spinner = {
-        _running: 0,
+        _startedAt: 0,
         _spinner: $('#spinner'),
-        _toggle_css: function() {
-            if (this._spinner.css('display') === 'none') {
-                this._spinner.show();
-            }
-
-            if (this._spinner.hasClass('text-success')) {
-                this._spinner.removeClass('text-success');
-                this._spinner.addClass('text-secondary');
-
-                this._spinner.css('animation-play-state', 'paused');
-            }
-            else {
-                this._spinner.removeClass('text-secondary');
-                this._spinner.addClass('text-success');
-
-                this._spinner.css('animation-play-state', 'running');
-            }
-        },
         enable: function () {
-            this._running++;
-            if (this._running > 1) {
-                return;
-            }
+            console.debug('spinner enabled');
+            this._startedAt = Date.now();
 
-            this._toggle_css();
+            this._spinner.removeClass('text-secondary');
+            this._spinner.addClass('text-success');
+            this._spinner.css('animation-play-state', 'running');
         },
         disable: function () {
-            this._running--;
+            console.debug('spinner disabled');
 
-            if (this._running === 0) {
-                this._toggle_css();
+            let elapsed = Date.now() - this._startedAt;
+            if (elapsed > 1000) {
+                $('#spinner-timer-value').html(`${elapsed / 1000} s`);
             }
+            else {
+                $('#spinner-timer-value').html(`${elapsed} ms`);
+            }
+
+            this._spinner.css('animation-play-state', 'paused');
+            this._spinner.removeClass('text-success');
+            this._spinner.addClass('text-secondary');
         },
 
     }

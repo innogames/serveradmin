@@ -5,8 +5,6 @@
  * properties.
  */
 servershell.update_result = function() {
-    spinner.enable();
-
     let table = $('#result_table');
 
     // Memorize currently selected objects to restore
@@ -34,8 +32,6 @@ servershell.update_result = function() {
     // Select first element if there is only one.
     if (servershell.servers.length === 1)
         $('#result_table input[name=server]').each((index, element) => element.checked = true);
-
-    spinner.disable();
 };
 
 /**

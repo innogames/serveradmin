@@ -50,8 +50,6 @@ $(document).ready(function () {
         delay: 250, // Wait n ms before starting to auto complete to avoid needles requests to backend
         autoFocus: true,
         source: function (request, response) {
-            spinner.enable();
-
             let limit = 20;
             let choices = [];
 
@@ -129,8 +127,6 @@ $(document).ready(function () {
                 };
                 $.ajax(autocomplete_search_url, settings);
             }
-
-            spinner.disable();
 
             // Don't auto complete if the user has already entered everything
             if (choices.length === 1 && choices[0]['value'] === request.term) {
