@@ -7,7 +7,8 @@
  */
 $(document).ready(function () {
     let _build_value = function (full_term, cur_term, attribute, value) {
-        let result = full_term.replace(cur_term, '') + attribute;
+        let cur_term_index = full_term.lastIndexOf(cur_term);
+        let result = full_term.substring(0, cur_term_index) + attribute;
         if (value) {
             result += `=${value}`;
         }
