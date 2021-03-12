@@ -46,9 +46,7 @@ $(document).ready(function() {
     let command_input = $('#command');
 
     command_input.autocomplete({
-        delay: 10,
         minLength: 0,
-        autoFocus: true,
         source: function(request, response) {
             let choices = [];
             let arguments = request.term.split(' ');
@@ -169,4 +167,5 @@ $(document).ready(function() {
 
     command_input.autocomplete($('#autocomplete')[0].checked ? 'enable' : 'disable');
     command_input.autocomplete('option', 'autoFocus', $('#autoselect')[0].checked);
+    command_input.autocomplete('option', 'delay', $('#autocomplete_delay_commands')[0].value);
 });
