@@ -48,8 +48,6 @@ $(document).ready(function () {
     let autocomplete_search_input = $('#term');
     let autocomplete_search_url = autocomplete_search_input.data('servershell-autocomplete-url');
     autocomplete_search_input.autocomplete({
-        delay: 250, // Wait n ms before starting to auto complete to avoid needles requests to backend
-        autoFocus: true,
         source: function (request, response) {
             let limit = 20;
             let choices = [];
@@ -141,4 +139,5 @@ $(document).ready(function () {
 
     autocomplete_search_input.autocomplete($('#autocomplete')[0].checked ? 'enable' : 'disable');
     autocomplete_search_input.autocomplete('option', 'autoFocus', $('#autoselect')[0].checked);
+    autocomplete_search_input.autocomplete('option', 'delay', $('#autocomplete_delay_search')[0].value);
 });
