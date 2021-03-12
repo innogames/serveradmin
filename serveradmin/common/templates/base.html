@@ -1,4 +1,5 @@
 {% load common %}
+{% load compress %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -9,10 +10,12 @@
 
     <link rel="shortcut icon" type="image/x-icon" href="{{ STATIC_URL }}favicon.ico">
 
+    {% compress css %}
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.css">
     <link rel="stylesheet" href="{{ STATIC_URL }}css/serveradmin.css">
     {% block additional_styles %}{% endblock %}
+    {% endcompress %}
 
     <title>{% block title %}{% endblock %} &middot; Serveradmin</title>
 </head>
@@ -67,6 +70,7 @@
     </div>
 </div>
 
+{% compress js %}
 <!-- Optional JavaScript -->
 <!-- jQuery first, then Popper.js, then Bootstrap JS -->
 <script src="{{ STATIC_URL }}js/jquery-3.4.1.min.js"></script>
@@ -76,5 +80,6 @@
 <script src="{{ STATIC_URL }}js/serveradmin.js"></script>
 <script src="{{ STATIC_URL }}js/plugins/terminal_keyboard.js"></script>
 {% block additional_scripts %}{% endblock %}
+{% endcompress %}
 </body>
 </html>
