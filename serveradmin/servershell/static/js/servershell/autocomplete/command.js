@@ -20,20 +20,25 @@ $(document).ready(function() {
 
         // TODO: Iterate only once over attributes and evaluate all filter
 
-        if (search_for)
+        if (search_for) {
             attrs = attrs.filter(a => a.attribute_id.startsWith(search_for));
+        }
 
-        if (exclude_reverse)
+        if (exclude_reverse) {
             attrs = attrs.filter(a => a.type !== 'reverse');
+        }
 
-       if (exclude)
+       if (exclude) {
            attrs = attrs.filter(a => !exclude.includes(a.attribute_id));
+       }
 
-       if (exclude_multi)
+       if (exclude_multi) {
            attrs = attrs.filter(a => a.multi === false);
+       }
 
-       if (exclude_single)
+       if (exclude_single) {
            attrs = attrs.filter(a => a.multi === true);
+       }
 
        return attrs.map(a => a.attribute_id).sort();
     };
@@ -137,7 +142,7 @@ $(document).ready(function() {
                     let search_string = values.split(' ').shift();
                     if (!search_string.includes('=')) {
                         let attribute_ids = get_attribute_ids(
-                            search_string, values,
+                            search_string, [],
                             command === 'setattr',
                             command === 'multiadd' || command === 'multidel',
                             true,
