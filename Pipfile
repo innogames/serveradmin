@@ -47,6 +47,8 @@ requests = "*"
 setuptools = "*"
 # Generate fake data for tests
 faker = "*"
+# Manipulate time while testing
+freezegun = "*"
 
 [requires]
 python_version = "3.7"
