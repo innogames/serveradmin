@@ -25,6 +25,8 @@ Pillow = "*"
 # Required to parse human readable string like "a day ago" to a datetime
 dateparser = "*"
 
+django_compressor = ">=2.4"
+
 # Serveradmin extras:
 paramiko = "*"
 jinja2 = "*"
