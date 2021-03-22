@@ -59,6 +59,14 @@
                         <input type="checkbox" class="form-check-input" id="save_attributes" {% if search_settings.save_attributes %}checked="checked{% endif %}">
                         <label class="form-check-label" for="save_attributes">Save selection of shown attributes for future searches</label>
                     </div>
+                    <div class="form-check">
+                        <input type="number" class="form-input" id="autocomplete_delay_search" value="{{ search_settings.autocomplete_delay_search }}" min="50" onchange="$('#term').autocomplete('option', 'delay', this.value);">
+                        <label class="form-input-label" for="autocomplete_delay_search">Delay in milliseconds before auto completion for searches kicks in.</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="number" class="form-input" id="autocomplete_delay_commands" value="{{ search_settings.autocomplete_delay_commands }}" onchange="$('#command').autocomplete('option', 'delay', this.value);">
+                        <label class="form-input-label" for="autocomplete_delay_commands">Delay in milliseconds before auto completion for commands kicks in.</label>
+                    </div>
                     <hr>
                     <b>Keyboard Shortcuts</b>
                     <ul>

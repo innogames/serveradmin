@@ -86,3 +86,17 @@
     min-width: 1.5rem;
     display: inline-block;
 }
+
+.form-input {
+    height: 20px;
+    width: 52px;
+    left: -18px;
+    margin-top: 3px;
+    position: relative;
+}
+
+.form-input-label {
+    position: relative;
+    left: -17px;
+    margin-bottom: 0;
+}
