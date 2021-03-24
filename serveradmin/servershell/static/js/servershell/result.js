@@ -84,24 +84,40 @@ get_row_html = function(object, number) {
                     let to_delete = change.remove.join(', ');
                     let value = object[attribute_id].filter(v => !to_delete.includes(v)).join(', ');
 
-                    cell.html(`${value} <del>${to_delete}</del> <u>${to_add}</u>`)
+                    cell.text(value);
+
+                    let del = $('<del></del>');
+                    del.text(to_delete);
+                    cell.append(del);
+
+                    let add = $('<u></u>');
+                    add.text(to_add);
+                    cell.append(add);
                 }
                 else {
                     let to_delete = change.old === null ? '' : change.old;
                     let new_value = change.new === undefined ? '': change.new;
-                    cell.html(`<del>${to_delete}</del>&nbsp;<u>${new_value}</u>`);
+
+                    let del = $('<del></del>');
+                    del.text(to_delete);
+                    cell.append(del);
+
+                    let current = $('<u></u>');
+                    current.text(new_value);
+                    cell.append(current);
                 }
             }
             else {
-                cell.html(get_string(object_id, attribute_id));
+                cell.text(get_string(object_id, attribute_id));
             }
 
             register_inline_editing(cell);
             row.append(cell);
         }
         else {
-            let value = get_string(object.object_id, attribute_id);
-            row.append(`<td class="disabled">${value}</td>`);
+            let cell = $('<td class="disabled"></td>');
+            cell.text(get_string(object.object_id, attribute_id));
+            row.append(cell);
         }
     });
 
