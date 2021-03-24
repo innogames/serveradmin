@@ -323,8 +323,9 @@ class Server(models.Model):
             intern_ip__net_contains_or_equals=self.intern_ip,
         )
 
-    def clean(self, *args, **kwargs):
-        super(Server, self).clean(*args, **kwargs)
+    def clean(self):
+        super(Server, self).clean()
+
         if self.servertype.ip_addr_type == 'null':
             if self.intern_ip is not None:
                 raise ValidationError('IP address must be null.')
