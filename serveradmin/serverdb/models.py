@@ -1,6 +1,6 @@
 """Serveradmin - Core Models
 
-Copyright (c) 2019 InnoGames GmbH
+Copyright (c) 2021 InnoGames GmbH
 """
 
 import re
