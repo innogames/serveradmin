@@ -14,7 +14,7 @@ from netaddr import EUI
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
-from django.utils.timezone import now, utc
+from django.utils.timezone import now
 from django.contrib.auth.models import User
 
 import netfields
