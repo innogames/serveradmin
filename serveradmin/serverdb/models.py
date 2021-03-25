@@ -36,12 +36,12 @@ ATTRIBUTE_TYPES = {
     'domain': str,
 }
 
-IP_ADDR_TYPES = (
-    'null',
-    'host',
-    'loadbalancer',
-    'network',
-)
+IP_ADDR_TYPES = [
+    ('null', 'null (intern_ip must not be used)'),
+    ('host', 'host (intern_ip must be a host /32,/128 and unique)'),
+    ('loadbalancer', 'loadbalancer (intern_ip must be a host /32,/128)'),
+    ('network', 'network (intern_ip must be a network and not overlap)'),
+]
 
 LOOKUP_ID_VALIDATORS = [
     RegexValidator(r'\A[a-z][a-z0-9_]+\Z', 'Invalid id'),
@@ -78,7 +78,7 @@ class Servertype(models.Model):
     description = models.CharField(max_length=1024)
     ip_addr_type = models.CharField(
         max_length=32,
-        choices=get_choices(IP_ADDR_TYPES),
+        choices=IP_ADDR_TYPES,
     )
 
     class Meta:
