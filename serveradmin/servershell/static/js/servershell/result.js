@@ -46,7 +46,7 @@ servershell.update_result = function() {
  * @returns {jQuery|HTMLElement}
  */
 get_row_html = function(object, number) {
-    let row = $('<tr></tr>');
+    let row = $('<tr>');
     row.data('oid', object.object_id);
 
     // Mark row as deleted. Make sure this wins over other colors
@@ -65,7 +65,7 @@ get_row_html = function(object, number) {
     let changes = servershell.to_commit.changes;
     servershell.shown_attributes.forEach(function(attribute_id) {
         if (is_editable(object.object_id, attribute_id)) {
-            let cell = $('<td></td>');
+            let cell = $('<td>');
             cell.data('aid', attribute_id);
 
             // Some helper variables
@@ -86,11 +86,11 @@ get_row_html = function(object, number) {
 
                     cell.text(value);
 
-                    let del = $('<del></del>');
+                    let del = $('<del>');
                     del.text(to_delete);
                     cell.append(del);
 
-                    let add = $('<u></u>');
+                    let add = $('<u>');
                     add.text(to_add);
                     cell.append(add);
                 }
@@ -98,11 +98,11 @@ get_row_html = function(object, number) {
                     let to_delete = change.old === null ? '' : change.old;
                     let new_value = change.new === undefined ? '': change.new;
 
-                    let del = $('<del></del>');
+                    let del = $('<del>');
                     del.text(to_delete);
                     cell.append(del);
 
-                    let current = $('<u></u>');
+                    let current = $('<u>');
                     current.text(new_value);
                     cell.append(current);
                 }
@@ -115,7 +115,7 @@ get_row_html = function(object, number) {
             row.append(cell);
         }
         else {
-            let cell = $('<td class="disabled"></td>');
+            let cell = $('<td class="disabled">');
             cell.text(get_string(object.object_id, attribute_id));
             row.append(cell);
         }
