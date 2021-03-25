@@ -30,8 +30,9 @@ servershell.update_result = function() {
     $('div.result_info').html(info);
 
     // Select first element if there is only one.
-    if (servershell.servers.length === 1)
+    if (servershell.servers.length === 1) {
         $('#result_table input[name=server]').each((index, element) => element.checked = true);
+    }
 };
 
 /**
@@ -45,16 +46,17 @@ servershell.update_result = function() {
  * @returns {jQuery|HTMLElement}
  */
 get_row_html = function(object, number) {
-    let row = $('<tr></tr>');
+    let row = $('<tr>');
     row.data('oid', object.object_id);
 
     // Mark row as deleted. Make sure this wins over other colors
     // such as the state otherwise the user will not see objects marked for
     // deletion.
-    if (servershell.to_commit.deleted.includes(object.object_id))
+    if (servershell.to_commit.deleted.includes(object.object_id)) {
         row.addClass('delete');
-    else if (object.hasOwnProperty('state'))
+    } else if (object.hasOwnProperty('state')) {
         row.addClass(`state-${object.state}`);
+    }
 
     // Standard columns which should always be present
     row.append(`<td><input tabindex="3" type="checkbox" name="server" value="${object.object_id}"/></td>`);
@@ -63,7 +65,7 @@ get_row_html = function(object, number) {
     let changes = servershell.to_commit.changes;
     servershell.shown_attributes.forEach(function(attribute_id) {
         if (is_editable(object.object_id, attribute_id)) {
-            let cell = $('<td></td>');
+            let cell = $('<td>');
             cell.data('aid', attribute_id);
 
             // Some helper variables
@@ -72,8 +74,9 @@ get_row_html = function(object, number) {
 
             // Changes in to_commit we have to display
             let change;
-            if (object_id in changes && attribute_id in changes[object_id])
+            if (object_id in changes && attribute_id in changes[object_id]) {
                 change = changes[object_id][attribute_id];
+            }
 
             if (change) {
                 if (attribute.multi) {
@@ -81,24 +84,40 @@ get_row_html = function(object, number) {
                     let to_delete = change.remove.join(', ');
                     let value = object[attribute_id].filter(v => !to_delete.includes(v)).join(', ');
 
-                    cell.html(`${value} <del>${to_delete}</del> <u>${to_add}</u>`)
+                    cell.text(value);
+
+                    let del = $('<del>');
+                    del.text(to_delete);
+                    cell.append(del);
+
+                    let add = $('<u>');
+                    add.text(to_add);
+                    cell.append(add);
                 }
                 else {
                     let to_delete = change.old === null ? '' : change.old;
                     let new_value = change.new === undefined ? '': change.new;
-                    cell.html(`<del>${to_delete}</del>&nbsp;<u>${new_value}</u>`);
+
+                    let del = $('<del>');
+                    del.text(to_delete);
+                    cell.append(del);
+
+                    let current = $('<u>');
+                    current.text(new_value);
+                    cell.append(current);
                 }
             }
             else {
-                cell.html(get_string(object_id, attribute_id));
+                cell.text(get_string(object_id, attribute_id));
             }
 
             register_inline_editing(cell);
             row.append(cell);
         }
         else {
-            let value = get_string(object.object_id, attribute_id);
-            row.append(`<td class="disabled">${value}</td>`);
+            let cell = $('<td class="disabled">');
+            cell.text(get_string(object.object_id, attribute_id));
+            row.append(cell);
         }
     });
 
@@ -129,8 +148,9 @@ servershell.set_selected = function(object_ids) {
     let checkboxes = $('#result_table input[name=server]');
     object_ids.forEach(function(object_id) {
         let checkbox = checkboxes.filter(`input[value=${object_id}]`);
-        if (checkbox.length)
+        if (checkbox.length) {
             checkbox[0].checked = true;
+        }
     });
 };
 
@@ -156,10 +176,11 @@ is_editable = function(object_id, attribute_id) {
 get_string = function(object_id, attribute_id) {
     let object = servershell.get_object(object_id);
     if (attribute_id in object && object[attribute_id] !== null) {
-        if (servershell.get_attribute(attribute_id).multi)
+        if (servershell.get_attribute(attribute_id).multi) {
             return object[attribute_id].join(', ');
-        else
+        } else {
             return object[attribute_id].toString();
+        }
     }
 
     return '';
@@ -178,8 +199,9 @@ register_inline_editing = function(cell) {
     cell.dblclick(function (event) {
         // Do not open another inline edit unless previous is finished
         let previous = $('#inline-edit-save');
-        if (previous.length)
+        if (previous.length) {
             return;
+        }
 
         let cell = $(event.target).closest('td');
         let row = cell.parent();
@@ -189,8 +211,9 @@ register_inline_editing = function(cell) {
         let attribute = servershell.get_attribute(attribute_id);
 
         // Select row for convenience
-        if (!servershell.get_selected().includes(object_id))
+        if (!servershell.get_selected().includes(object_id)) {
             row.children('td:first').children('input').click();
+        }
 
         let current_value;
         let changes = servershell.to_commit.changes;
@@ -210,14 +233,16 @@ register_inline_editing = function(cell) {
         }
 
         let content;
-        if (attribute.multi)
+        if (attribute.multi) {
             content = $(`<textarea rows="5" cols="30">${current_value.join('\n')}</textarea>`);
-        else
+        } else {
             content = $(`<input type="text" value="${current_value === null ? '' : current_value}" />`);
+        }
 
         // Provide on-the-fly validation
-        if ('regex' in attribute && attribute.regex !== null)
+        if ('regex' in attribute && attribute.regex !== null) {
             content.data('pattern', attribute.regex);
+        }
 
         content.attr('id', 'inline-edit');
         content.data('oid', object_id);
@@ -230,10 +255,11 @@ register_inline_editing = function(cell) {
             let edit = $(event.target).prev();
             let multi = edit.data('multi');
 
-            if (multi)
+            if (multi) {
                 value = edit.val().split('\n').map(v => v.trim()).filter(v => v !== '');
-            else
+            } else {
                 value = edit.val().trim();
+            }
 
             let object_id = edit.data('oid');
             let attribute_id = edit.data('aid');
