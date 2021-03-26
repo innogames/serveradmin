@@ -489,7 +489,6 @@ def _validate_attributes(changes, servers, servertype_attributes):
                 attributes[attribute_id].related_via_attribute
             ):
                 violations.append((object_id, attribute_id))
-                violations.append((object_id, attribute_id))
 
     return violations
 
