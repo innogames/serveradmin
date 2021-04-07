@@ -24,10 +24,10 @@ $(document).ready(function() {
 
             let elapsed = Date.now() - this._startedAt;
             if (elapsed > 1000) {
-                $('#spinner-timer-value').html(`${elapsed / 1000} s`);
+                $('#spinner-timer-value').text(`${elapsed / 1000} s`);
             }
             else {
-                $('#spinner-timer-value').html(`${elapsed} ms`);
+                $('#spinner-timer-value').text(`${elapsed} ms`);
             }
 
             this._spinner.css('animation-play-state', 'paused');
