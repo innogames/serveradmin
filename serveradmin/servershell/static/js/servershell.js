@@ -216,7 +216,7 @@ servershell.alert = function(text, level, auto_dismiss=5) {
     box.addClass(`alert-${level}`);
 
     let message = $('#js-alert-message');
-    message.html(text);
+    message.text(text);
 
     box.toggle();
 
