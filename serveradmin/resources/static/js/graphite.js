@@ -4,8 +4,8 @@ function reload_graph(image)
     // it is generated based on time.  Graphite would return an error,
     // if we wouldn't remove it.  We don't need it on the browser anyway,
     // after first successful authentication.
-    var src_split = image.attr('src').split('?');
-    var params = src_split[1].split('&').filter(function(param) {
+    let src_split = image.attr('src').split('?');
+    let params = src_split[1].split('&').filter(function (param) {
         return param.split('=')[0] != '__auth_token';
     }).join('&');
 
@@ -23,15 +23,15 @@ function attach_graph_reload()
 
 function open_graph_popup()
 {
-    var handle = $(this);
-    var params = {
+    let handle = $(this);
+    let params = {
         'hostname': handle.attr('data-hostname'),
         'graph': handle.attr('data-graph')
-    }
-    var title = params['graph'] + ' on ' + params['hostname'];
-    var query_str = '?' + $.param(params);
+    };
+    let title = params['graph'] + ' on ' + params['hostname'];
+    let query_str = '?' + $.param(params);
     $.get(monitor_graph_popup_url + query_str, function(data) {
-        var image = $(data).find('.graph');
+        let image = $(data).find('.graph');
         image.on('load', function() {
             image.off('load');
             reload_graph(image);
@@ -46,7 +46,7 @@ function open_graph_popup()
 
 function attach_show_graph_description() {
     $('img.graph_desc_icon').off('click').click(function(){
-        var graph_name = $(this).attr('data-graphname');
+        let graph_name = $(this).attr('data-graphname');
         $('#graph_desc_' + graph_name).dialog({
             'width': '30em',
             'graph_name': graph_name
