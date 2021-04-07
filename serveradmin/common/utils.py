@@ -41,7 +41,7 @@ def profile(func):
         end = time.perf_counter()
 
         duration = end - start
-        msg = '%s processed in %s seconds' % (func.__name__, duration)
+        msg = '%s processed in %s ms' % (func.__name__, int(duration * 1000))
         logging.getLogger('profile').info(msg)
 
         return value
