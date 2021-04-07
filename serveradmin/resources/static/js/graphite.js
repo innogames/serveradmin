@@ -21,29 +21,6 @@ function attach_graph_reload()
     });
 }
 
-function open_graph_popup()
-{
-    let handle = $(this);
-    let params = {
-        'hostname': handle.attr('data-hostname'),
-        'graph': handle.attr('data-graph')
-    };
-    let title = params['graph'] + ' on ' + params['hostname'];
-    let query_str = '?' + $.param(params);
-    $.get(monitor_graph_popup_url + query_str, function(data) {
-        let image = $(data).find('.graph');
-        image.on('load', function() {
-            image.off('load');
-            reload_graph(image);
-        });
-        $('<div title="' + title + '"></div>').append(data).dialog({
-            'width': 550
-        });
-        attach_graph_reload();
-    });
-}
-
-
 function attach_show_graph_description() {
     $('img.graph_desc_icon').off('click').click(function(){
         let graph_name = $(this).attr('data-graphname');
