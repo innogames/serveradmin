@@ -15,7 +15,7 @@ servershell.update_result = function() {
     header.empty();
     header.append('<th scope="col"></th>');
     header.append('<th scope="col">#</th>');
-    servershell.shown_attributes.forEach((attribute, index) => header.append(`<th scope="col">${attribute}</th>`));
+    servershell.shown_attributes.forEach((attribute, index) => header.append($('<th scope="col">').text(attribute)));
 
     // Recreate table body
     let body = table.find('tbody');
@@ -27,7 +27,7 @@ servershell.update_result = function() {
 
     // Update result information on top and bottom showing page etc.
     let info = `Results (${servershell.num_servers} servers, page ${servershell.page()}/${servershell.pages()}, ${servershell.limit} per page)`;
-    $('div.result_info').html(info);
+    $('div.result_info').text(info);
 
     // Select first element if there is only one.
     if (servershell.servers.length === 1) {
@@ -59,8 +59,8 @@ get_row_html = function(object, number) {
     }
 
     // Standard columns which should always be present
-    row.append(`<td><input tabindex="3" type="checkbox" name="server" value="${object.object_id}"/></td>`);
-    row.append(`<td>${number + servershell.offset}</td>`);
+    row.append($('<td>').append($('<input tabindex="3" type="checkbox" name="server"/>').val(object.object_id)));
+    row.append($('<td>').text(number + servershell.offset));
 
     let changes = servershell.to_commit.changes;
     servershell.shown_attributes.forEach(function(attribute_id) {
@@ -234,9 +234,9 @@ register_inline_editing = function(cell) {
 
         let content;
         if (attribute.multi) {
-            content = $(`<textarea rows="5" cols="30">${current_value.join('\n')}</textarea>`);
+            content = $('<textarea rows="5" cols="30">').text(current_value.join('\n'));
         } else {
-            content = $(`<input type="text" value="${current_value === null ? '' : current_value}" />`);
+            content = $('<input type="text" />').val(current_value === null ? '' : current_value);
         }
 
         // Provide on-the-fly validation
@@ -296,7 +296,7 @@ register_inline_editing = function(cell) {
 
         cell.html(content);
         cell.append(button);
-        cell.append(`<div><b>${attribute.regex !== null ? attribute.regex : 'No Regexp'}</b></div>`);
+        cell.append($('<div>').append($('<b>').text(attribute.regex !== null ? attribute.regex : 'No Regexp')));
 
         // Focus element and place cursor at the end of the text
         content.focus();
