@@ -192,7 +192,7 @@ servershell.pages = function() {
  * don't have the backend. If the error is coming from the backend please
  * using Django messages mechanism. It will generate bootstrap alert as well.
  *
- * @param text message to show (can be html)
+ * @param text message to show
  * @param level either primary,secondary,success,danger,warning,info,light,dark
  * @param auto_dismiss seconds to wait before disappear (0 never)
  */
@@ -216,7 +216,7 @@ servershell.alert = function(text, level, auto_dismiss=5) {
     box.addClass(`alert-${level}`);
 
     let message = $('#js-alert-message');
-    message.html(text);
+    message.text(text);
 
     box.toggle();
 
