@@ -38,10 +38,10 @@ ATTRIBUTE_TYPES = {
 }
 
 IP_ADDR_TYPES = [
-    ('null', 'null (intern_ip must be empty and inet attributes not be used)'),
-    ('host', 'host (intern_ip must be a host /32,/128 and unique)'),
-    ('loadbalancer', 'loadbalancer (intern_ip must be a host /32,/128)'),
-    ('network', 'network (intern_ip must be a network and not overlap)'),
+    ('null', 'null: intern_ip must be empty, no inet attributes'),
+    ('host', 'host: intern_ip and inet must be an ip address and unique across all objects'),
+    ('loadbalancer', 'loadbalancer: intern_ip and inet must be an ip address'),
+    ('network', 'network: intern_ip and inet must be an ip network, not overlapping with same servertype'),
 ]
 
 LOOKUP_ID_VALIDATORS = [
