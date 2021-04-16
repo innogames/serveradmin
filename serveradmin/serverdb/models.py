@@ -436,43 +436,6 @@ class Server(models.Model):
                 is_network(self.intern_ip)
                 network_overlaps(self.intern_ip, self.servertype.servertype_id)
 
-    def _validate_host_intern_ip(self):
-        if self.intern_ip.max_prefixlen != self.netmask_len():
-            raise ValidationError(
-                'Netmask length must be {0}.'
-                .format(self.intern_ip.max_prefixlen)
-            )
-
-        # Check for other server with overlapping addresses
-        for server in Server.objects.filter(
-            intern_ip__net_overlaps=self.intern_ip
-        ).exclude(server_id=self.server_id):
-            if server.servertype.ip_addr_type == 'host':
-                raise ValidationError(
-                    'IP address already taken by the host "{0}".'
-                    .format(server.hostname)
-                )
-
-    def _validate_network_intern_ip(self):
-        try:
-            ip_network(str(self.intern_ip))
-        except ValueError as error:
-            raise ValidationError(str(error))
-
-        # Check for other server with overlapping addresses
-        for server in Server.objects.filter(
-            intern_ip__net_overlaps=self.intern_ip
-        ).exclude(server_id=self.server_id):
-            if self.servertype == server.servertype:
-                raise ValidationError(
-                    'IP address overlaps with "{0}" in the same '
-                    'servertype.'
-                    .format(server.hostname)
-                )
-
-    def netmask_len(self):
-        return self.intern_ip.network.prefixlen
-
     def get_attributes(self, attribute):
         model = ServerAttribute.get_model(attribute.type)
         return model.objects.filter(server=self, attribute=attribute)
