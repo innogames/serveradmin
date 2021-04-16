@@ -5,22 +5,23 @@ Copyright (c) 2021 InnoGames GmbH
 
 import re
 import json
+import netfields
 
-from distutils.util import strtobool
-from ipaddress import ip_address, ip_network
-
+from typing import Union
 from netaddr import EUI
+from distutils.util import strtobool
+from ipaddress import ip_address, ip_network, IPv4Interface, IPv6Interface
 
-from django.db import models
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
+from django.db import models
 from django.utils.timezone import now
-from django.contrib.auth.models import User
-
-import netfields
+from django.utils.translation import gettext as _
 
 from adminapi.datatype import STR_BASED_DATATYPES
 from serveradmin.apps.models import Application
+
 
 ATTRIBUTE_TYPES = {
     'string': str,
@@ -37,7 +38,7 @@ ATTRIBUTE_TYPES = {
 }
 
 IP_ADDR_TYPES = [
-    ('null', 'null (intern_ip must not be used)'),
+    ('null', 'null (intern_ip must be empty and inet attributes not be used)'),
     ('host', 'host (intern_ip must be a host /32,/128 and unique)'),
     ('loadbalancer', 'loadbalancer (intern_ip must be a host /32,/128)'),
     ('network', 'network (intern_ip must be a network and not overlap)'),
@@ -66,6 +67,91 @@ def get_choices(types):
     # but we don't need it.  We are zipping the tuple to itself
     # to use the same names.
     return zip(*([types] * 2))
+
+
+# TODO: Make validators out of the methods is_ip_address, is_unique and
+#       is_network and attach them to the model fields validators.
+def is_ip_address(ip_interface: Union[IPv4Interface, IPv6Interface]) -> None:
+    """Validate if IPv4/IPv6 address
+
+    Raises a ValidationError if the ip_address is not an IPv4 or IPv6Address
+
+    :param ip_interface:
+    :return:
+    """
+    prefix_length = ip_interface.network.prefixlen
+    max_prefix_length = ip_interface.network.max_prefixlen
+
+    if prefix_length != max_prefix_length:
+        raise ValidationError(
+            'Netmask length must be {0}'.format(max_prefix_length))
+
+
+def is_unique_ip(ip_interface: Union[IPv4Interface, IPv6Interface]) -> None:
+    """Validate if IPv4/IPv6 address is unique
+
+    Raises a ValidationError if intern_ip or any other attribute of type inet
+    with this ip_address already exists.
+
+    :param ip_interface:
+    :return:
+    """
+
+    # We avoid querying the duplicate hosts here and giving the user
+    # detailed information because checking with exists is cheaper than
+    # querying the server and this is a validation and should be fast.
+    has_duplicates = (
+        Server.objects.filter(intern_ip=ip_interface).exclude(
+            servertype__ip_addr_type='network').exists() or
+        ServerInetAttribute.objects.filter(value=ip_interface).exclude(
+            server__servertype__ip_addr_type='network').exists())
+    if has_duplicates:
+        raise ValidationError(
+            'An object with {0} already exists'.format(str(ip_interface)))
+
+
+def is_network(ip_interface: Union[IPv4Interface, IPv6Interface]) -> None:
+    """Validate if IPv4/IPv6 interface is a network
+
+    Raise ValidationError if the given ip_interface is not a valid ip network.
+    Mind that e.g. 192.168.0.1 or 192.168.0.1/32 are valid ip networks.
+
+    :param ip_interface:
+    :return:
+    """
+
+    try:
+        ip_network(ip_interface)
+    except ValueError as error:
+        raise ValidationError(str(error))
+
+
+def network_overlaps(
+        ip_interface: Union[IPv4Interface, IPv6Interface],
+        servertype_id: str,
+) -> None:
+    """Validate if network overlaps with other objects of the servertype_id
+
+    Raises a ValidationError if the ip network overlaps with any other existing
+    objects network of the given servertype.
+
+    :param ip_interface:
+    :param servertype_id:
+    :return:
+    """
+
+    overlaps = (
+        Server.objects.filter(
+            servertype=servertype_id,
+            intern_ip__net_overlaps=ip_interface).exists() or
+        ServerInetAttribute.objects.filter(
+            server__servertype=servertype_id,
+            value__net_overlaps=ip_interface).exists()
+    )
+    if overlaps:
+        raise ValidationError(
+            '{0} overlaps with network of another object'.format(
+                str(ip_interface)))
 
 
 class Servertype(models.Model):
@@ -326,17 +412,26 @@ class Server(models.Model):
     def clean(self):
         super(Server, self).clean()
 
-        if self.servertype.ip_addr_type == 'null':
+        ip_addr_type = self.servertype.ip_addr_type
+        if ip_addr_type == 'null':
             if self.intern_ip is not None:
-                raise ValidationError('IP address must be null.')
+                raise ValidationError(
+                    _('intern_ip must be null'), code='invalid value')
         else:
+            # This is special to intern_ip for inet attributes this is covered
+            # by making them required.
             if self.intern_ip is None:
-                raise ValidationError('IP address must not be null.')
+                raise ValidationError(
+                    _('intern_ip must not be null'), code='missing value')
 
-            if self.servertype.ip_addr_type == 'network':
-                self._validate_network_intern_ip()
-            else:
-                self._validate_host_intern_ip()
+            if ip_addr_type == 'host':
+                is_ip_address(self.intern_ip)
+                is_unique_ip(self.intern_ip)
+            elif ip_addr_type == 'loadbalancer':
+                is_ip_address(self.intern_ip)
+            elif ip_addr_type == 'network':
+                is_network(self.intern_ip)
+                network_overlaps(self.intern_ip, self.servertype.servertype_id)
 
     def _validate_host_intern_ip(self):
         if self.intern_ip.max_prefixlen != self.netmask_len():
@@ -570,6 +665,28 @@ class ServerInetAttribute(ServerAttribute):
         db_table = 'server_inet_attribute'
         unique_together = [['server', 'attribute', 'value']]
         index_together = [['attribute', 'value']]
+
+    def clean(self):
+        super(ServerAttribute, self).clean()
+
+        # Get the ip_addr_type of the servertype
+        ip_addr_type = self.server.servertype.ip_addr_type
+
+        if ip_addr_type == 'null':
+            # A Servertype with ip_addr_type "null" and attributes of type
+            # inet must be denied per configuration. This is just a safety net
+            # in case e.g. somebody creates them programmatically.
+            raise ValidationError(
+                _('%(attribute_id)s must be null'), code='invalid value',
+                params={'attribute_id': self.attribute_id})
+        elif ip_addr_type == 'host':
+            is_ip_address(self.value)
+            is_unique_ip(self.value)
+        elif ip_addr_type == 'loadbalancer':
+            is_ip_address(self.value)
+        elif ip_addr_type == 'network':
+            is_network(self.value)
+            network_overlaps(self.value, self.server.servertype_id)
 
 
 class ServerMACAddressAttribute(ServerAttribute):
