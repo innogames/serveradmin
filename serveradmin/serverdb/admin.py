@@ -31,6 +31,12 @@ class ServertypeAdmin(admin.ModelAdmin):
         ServertypeAttributeInline,
     )
 
+    def get_exclude(self, request, obj=None):
+        # Because of the great complexity when changing servertypes of existing
+        # objects and the little use-cases we have we just deny it for now.
+        if obj:
+            return ['ip_addr_type']
+
 
 class ServerRelationAttributeInline(admin.TabularInline):
     model = ServerRelationAttribute
