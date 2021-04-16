@@ -40,4 +40,16 @@ class ServertypeAttributeAdminForm(forms.ModelForm):
                     'attribute': self.cleaned_data['attribute'].attribute_id,
                     'type': self.cleaned_data['attribute'].type,
                 })
+
+        # It makes no sense to add inet attributes to hosts of ip_addr_type
+        # null because they would have to be empty anyways.
+        inet_attribute = (
+                self.cleaned_data['attribute'].type == 'inet' and
+                self.cleaned_data['servertype'].ip_addr_type == 'null'
+        )
+        if inet_attribute:
+            raise ValidationError(_(
+                'Adding an attribute of type inet with ip_addr_type: null is'
+                ' not possible!'), code='invalid')
+
         super().clean()
