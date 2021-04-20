@@ -45,6 +45,8 @@ pex = "*"
 # Pex complains without requests
 requests = "*"
 setuptools = "*"
+# Generate fake data for tests
+faker = "*"
 
 [requires]
 python_version = "3.7"
