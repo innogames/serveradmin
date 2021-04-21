@@ -10,7 +10,8 @@ import netfields
 from typing import Union
 from netaddr import EUI
 from distutils.util import strtobool
-from ipaddress import ip_address, ip_network, IPv4Interface, IPv6Interface
+from ipaddress import ip_address, ip_network, IPv4Interface, IPv6Interface, \
+    ip_interface
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -29,7 +30,7 @@ ATTRIBUTE_TYPES = {
     'relation': str,
     'reverse': str,
     'number': lambda x: float(x) if '.' in str(x) else int(x),
-    'inet': lambda x: ip_network(x) if '/' in str(x) else ip_address(x),
+    'inet': lambda x: inet_to_python(x),
     'macaddr': EUI,
     'date': str,
     'datetime': str,
@@ -122,6 +123,21 @@ def is_network(ip_interface: Union[IPv4Interface, IPv6Interface]) -> None:
 
     try:
         ip_network(ip_interface)
+    except ValueError as error:
+        raise ValidationError(str(error))
+
+
+def inet_to_python(obj: object) -> Union[IPv4Interface, IPv6Interface]:
+    """Transform object to Python IPv4/IPv6Interface
+
+    :param obj:
+    :return:
+    """
+
+    # TODO: When refactoring the validation this can be a to_python method
+    #       of the inet field.
+    try:
+        return ip_interface(obj)
     except ValueError as error:
         raise ValidationError(str(error))
 
@@ -427,6 +443,9 @@ class Server(models.Model):
             # TODO: This logic is duplicated to the ServerInetAttribute clean
             #       method but can be removed when we remove the special
             #       intern_ip.
+            if type(self.intern_ip) not in [IPv4Interface, IPv6Interface]:
+                self.intern_ip = inet_to_python(self.intern_ip)
+
             if ip_addr_type == 'host':
                 is_ip_address(self.intern_ip)
                 is_unique_ip(self.intern_ip)
@@ -634,6 +653,9 @@ class ServerInetAttribute(ServerAttribute):
 
     def clean(self):
         super(ServerAttribute, self).clean()
+
+        if type(self.value) not in [IPv4Interface, IPv6Interface]:
+            self.value = inet_to_python(self.value)
 
         # Get the ip_addr_type of the servertype
         ip_addr_type = self.server.servertype.ip_addr_type
