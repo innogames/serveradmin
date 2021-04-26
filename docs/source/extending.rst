@@ -106,6 +106,23 @@ If you see a login prompt, use the following user account:
 If not, consult your local Django expert ;)
 
 
+Testing your changes
+--------------------
+
+We have some tests which are executed when making a PR that you can already
+run locally to check if your changes are breaking anything existing. They are
+far from comprehensive at the time of writing this but can safe you some
+manual testing.
+
+You can execute the tests with the following commands
+
+    # Tests for the commandline interface: adminapi
+    pipenv run python -m unittest discover adminapi -v
+
+    # Tests for the backend code
+    pipenv run python -Wall -m serveradmin test --noinput --parallel
+
+
 Bonus: Setting up a cool debugger
 ---------------------------------
 
