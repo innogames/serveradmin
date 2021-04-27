@@ -424,6 +424,9 @@ class Server(models.Model):
                 raise ValidationError(
                     _('intern_ip must not be null'), code='missing value')
 
+            # TODO: This logic is duplicated to the ServerInetAttribute clean
+            #       method but can be removed when we remove the special
+            #       intern_ip.
             if ip_addr_type == 'host':
                 is_ip_address(self.intern_ip)
                 is_unique_ip(self.intern_ip)
