@@ -81,6 +81,25 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
 
         deleted_servers = _fetch_servers(deleted)
         deleted_objects = _materialize(deleted_servers, joined_attributes)
+        # TODO: Refactor validation
+        #
+        # This methods calls a set of functions to validate if changes to
+        # objects are valid. Additionally there is some extra validation in
+        # in _create_servers. Parts of this validation is shared and currently
+        # missing in the _create_servers validation (e.g. setting values for
+        # read-only attributes).
+        #
+        # We should refactor and fix this. Maybe we can use the standard forms
+        # API here by implementing some custom validators and building forms
+        # for the servertypes on-the-fly as described here:
+        #
+        #   - https://docs.djangoproject.com/en/2.2/ref/forms/validation/
+        #
+        # This would allow us to work with Django board tools and all it's
+        # features. Less pain because we always work around or even clash
+        # with the Django work flow and last but least allow us to use the
+        # same logic/code for the Servershell (edit, new) page and the Query
+        # engine (Web API) which currently does not use forms at all.
         _validate(attribute_lookup, changed, unchanged_objects)
 
         # Changes should be applied in order to prevent integrity errors.

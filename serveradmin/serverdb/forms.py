@@ -1,43 +1,35 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from django.utils.translation import gettext as _
+
+from serveradmin.serverdb.models import ServertypeAttribute
 
 
 class ServertypeAdminForm(forms.ModelForm):
-    def clean(self):
-        if self.cleaned_data.get('ip_addr_type') == 'null':
-            supernet_and_required = self.instance.attributes.filter(
-                required=True,
-                attribute__type='supernet'
-            ).only('attriute_id').values_list('attribute_id', flat=True)
-            if supernet_and_required.exists():
-                raise ValidationError(_(
-                        'ip_addr_type for Servertype must not be "null" '
-                        'if any attribute of type supernet is required '
-                        'but %(attrs)s is/are!'
-                    ),
-                    code='invalid',
-                    params={
-                        'attrs': ','.join(supernet_and_required)
-                    })
-        super().clean()
+    pass
 
 
 class ServertypeAttributeAdminForm(forms.ModelForm):
+    class Meta:
+        model = ServertypeAttribute
+        fields = [
+            'attribute',
+            'related_via_attribute',
+            'consistent_via_attribute',
+            'required',
+            'default_value',
+            'default_visible',
+        ]
+
     def clean(self):
-        supernet_and_required = (
-            self.cleaned_data['attribute'].type == 'supernet' and
-            self.cleaned_data['servertype'].ip_addr_type == 'null' and
-            self.cleaned_data.get('required') is True
+        # It makes no sense to add inet or supernet attributes to hosts of
+        # ip_addr_type null because they would have to be empty anyways.
+        inet_attribute = (
+            self.cleaned_data['attribute'].type in ('inet', 'supernet') and
+            self.instance.servertype.ip_addr_type == 'null'
         )
-        if supernet_and_required:
-            raise ValidationError(_(
-                    'Attributes of type %(type)s can not be required if '
-                    'ip_addr_type of Servertype is null!'
-                ),
-                code='invalid',
-                params={
-                    'attribute': self.cleaned_data['attribute'].attribute_id,
-                    'type': self.cleaned_data['attribute'].type,
-                })
+        if inet_attribute:
+            raise ValidationError(
+                'Adding an attribute of type inet or supernet when '
+                'ip_addr_type is null is not possible!')
+
         super().clean()
