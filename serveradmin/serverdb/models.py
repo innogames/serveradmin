@@ -8,6 +8,8 @@ import json
 import netfields
 
 from typing import Union
+
+from django.db.models import Q
 from netaddr import EUI
 from distutils.util import strtobool
 from ipaddress import ip_address, ip_network, IPv4Interface, IPv6Interface, \
@@ -88,7 +90,8 @@ def is_ip_address(ip_interface: Union[IPv4Interface, IPv6Interface]) -> None:
             'Netmask length must be {0}'.format(max_prefix_length))
 
 
-def is_unique_ip(ip_interface: Union[IPv4Interface, IPv6Interface]) -> None:
+def is_unique_ip(ip_interface: Union[IPv4Interface, IPv6Interface],
+                 object_id: int) -> None:
     """Validate if IPv4/IPv6 address is unique
 
     Raises a ValidationError if intern_ip or any other attribute of type inet
@@ -103,7 +106,9 @@ def is_unique_ip(ip_interface: Union[IPv4Interface, IPv6Interface]) -> None:
     # querying the server and this is a validation and should be fast.
     has_duplicates = (
         Server.objects.filter(intern_ip=ip_interface).exclude(
-            servertype__ip_addr_type='network').exists() or
+            Q(servertype__ip_addr_type='network') |
+            Q(server_id=object_id)
+        ).exists() or
         ServerInetAttribute.objects.filter(value=ip_interface).exclude(
             server__servertype__ip_addr_type='network').exists())
     if has_duplicates:
@@ -142,10 +147,8 @@ def inet_to_python(obj: object) -> Union[IPv4Interface, IPv6Interface]:
         raise ValidationError(str(error))
 
 
-def network_overlaps(
-        ip_interface: Union[IPv4Interface, IPv6Interface],
-        servertype_id: str,
-) -> None:
+def network_overlaps(ip_interface: Union[IPv4Interface, IPv6Interface],
+                     servertype_id: str, object_id: int) -> None:
     """Validate if network overlaps with other objects of the servertype_id
 
     Raises a ValidationError if the ip network overlaps with any other existing
@@ -153,13 +156,17 @@ def network_overlaps(
 
     :param ip_interface:
     :param servertype_id:
+    :param object_id:
     :return:
     """
 
     overlaps = (
         Server.objects.filter(
             servertype=servertype_id,
-            intern_ip__net_overlaps=ip_interface).exists() or
+            intern_ip__net_overlaps=ip_interface
+        ).exclude(
+            server_id=object_id
+        ).exists() or
         ServerInetAttribute.objects.filter(
             server__servertype=servertype_id,
             value__net_overlaps=ip_interface).exists()
@@ -448,12 +455,13 @@ class Server(models.Model):
 
             if ip_addr_type == 'host':
                 is_ip_address(self.intern_ip)
-                is_unique_ip(self.intern_ip)
+                is_unique_ip(self.intern_ip, self.server_id)
             elif ip_addr_type == 'loadbalancer':
                 is_ip_address(self.intern_ip)
             elif ip_addr_type == 'network':
                 is_network(self.intern_ip)
-                network_overlaps(self.intern_ip, self.servertype.servertype_id)
+                network_overlaps(self.intern_ip, self.servertype.servertype_id,
+                                 self.server_id)
 
     def get_attributes(self, attribute):
         model = ServerAttribute.get_model(attribute.type)
@@ -669,12 +677,13 @@ class ServerInetAttribute(ServerAttribute):
                 params={'attribute_id': self.attribute_id})
         elif ip_addr_type == 'host':
             is_ip_address(self.value)
-            is_unique_ip(self.value)
+            is_unique_ip(self.value, self.server.server_id)
         elif ip_addr_type == 'loadbalancer':
             is_ip_address(self.value)
         elif ip_addr_type == 'network':
             is_network(self.value)
-            network_overlaps(self.value, self.server.servertype_id)
+            network_overlaps(self.value, self.server.servertype_id,
+                             self.server.server_id)
 
 
 class ServerMACAddressAttribute(ServerAttribute):
