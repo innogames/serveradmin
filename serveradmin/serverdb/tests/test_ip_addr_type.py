@@ -119,6 +119,15 @@ class TestIpAddrTypeHostForInternIp(TestIpAddrType):
         with self.assertRaises(ValidationError):
             duplicate.commit(user=User.objects.first())
 
+    def test_change_server_hostname(self):
+        server = self._get_server('host')
+        server['intern_ip'] = '10.0.0.1/32'
+        server.commit(user=User.objects.first())
+
+        to_rename = Query({'hostname': server['hostname']}, ['hostname'])
+        to_rename.update(hostname=self.faker.hostname())
+        self.assertIsNone(to_rename.commit(user=User.objects.first()))
+
 
 class TestIpAddrTypeHostForInetAttributes(TestIpAddrType):
     """Most important tests for ip_addr_type host and inet attributes"""
@@ -210,6 +219,16 @@ class TestIpAddrTypeHostForInetAttributes(TestIpAddrType):
         with self.assertRaises(ValidationError):
             duplicate.commit(user=User.objects.first())
 
+    def test_change_server_hostname(self):
+        server = self._get_server('host')
+        server['intern_ip'] = '10.0.0.1/32'
+        server['ip_config'] = '10.0.0.2/32'
+        server.commit(user=User.objects.first())
+
+        to_rename = Query({'hostname': server['hostname']}, ['hostname'])
+        to_rename.update(hostname=self.faker.hostname())
+        self.assertIsNone(to_rename.commit(user=User.objects.first()))
+
 
 class TestIpAddrTypeLoadbalancerForInternIp(TestIpAddrType):
     """Most important tests for ip_addr_type loadbalancer and intern_ip"""
@@ -238,6 +257,15 @@ class TestIpAddrTypeLoadbalancerForInternIp(TestIpAddrType):
         second = self._get_server('loadbalancer')
         second['intern_ip'] = '10.0.0.1/32'
         self.assertIsNone(second.commit(user=User.objects.first()))
+
+    def test_change_server_hostname(self):
+        server = self._get_server('loadbalancer')
+        server['intern_ip'] = '10.0.0.1/32'
+        server.commit(user=User.objects.first())
+
+        to_rename = Query({'hostname': server['hostname']}, ['hostname'])
+        to_rename.update(hostname=self.faker.hostname())
+        self.assertIsNone(to_rename.commit(user=User.objects.first()))
 
 
 class TestIpAddrTypeLoadbalancerForInetAttributes(TestIpAddrType):
@@ -295,6 +323,16 @@ class TestIpAddrTypeLoadbalancerForInetAttributes(TestIpAddrType):
         duplicate['intern_ip'] = '10.0.0.3/32'
         duplicate['ip_config_new'] = '10.0.0.2/32'
         self.assertIsNone(duplicate.commit(user=User.objects.first()))
+
+    def test_change_server_hostname(self):
+        server = self._get_server('loadbalancer')
+        server['intern_ip'] = '10.0.0.1/32'
+        server['ip_config'] = '10.0.0.2/32'
+        server.commit(user=User.objects.first())
+
+        to_rename = Query({'hostname': server['hostname']}, ['hostname'])
+        to_rename.update(hostname=self.faker.hostname())
+        self.assertIsNone(to_rename.commit(user=User.objects.first()))
 
 
 class TestIpAddrTypeNetworkForInternIp(TestIpAddrType):
@@ -358,6 +396,16 @@ class TestIpAddrTypeNetworkForInternIp(TestIpAddrType):
         overlaps = self._get_server('other_network')
         overlaps['intern_ip'] = '10.0.0.0/28'
         self.assertIsNone(overlaps.commit(user=User.objects.first()))
+
+    def test_change_server_hostname(self):
+        server = self._get_server('network')
+        server['intern_ip'] = '10.0.0.0/30'
+        server.commit(user=User.objects.first())
+
+        to_rename = Query({'hostname': server['hostname']}, ['hostname'])
+        to_rename.update(hostname=self.faker.hostname())
+        self.assertIsNone(to_rename.commit(user=User.objects.first()))
+
 
 
 class TestIpAddrTypeNetworkForInetAttributes(TestIpAddrType):
@@ -453,3 +501,13 @@ class TestIpAddrTypeNetworkForInetAttributes(TestIpAddrType):
         duplicate['ip_config_new'] = '10.0.1.0/30'
         with self.assertRaises(ValidationError):
             duplicate.commit(user=User.objects.first())
+
+    def test_change_server_hostname(self):
+        server = self._get_server('network')
+        server['intern_ip'] = '10.0.0.0/30'
+        server['ip_config'] = '10.0.1.0/30'
+        server.commit(user=User.objects.first())
+
+        to_rename = Query({'hostname': server['hostname']}, ['hostname'])
+        to_rename.update(hostname=self.faker.hostname())
+        self.assertIsNone(to_rename.commit(user=User.objects.first()))
