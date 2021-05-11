@@ -16,7 +16,7 @@ from serveradmin.serverdb.models import (
     ServertypeAttribute,
     Server,
     ServerAttribute,
-    ServerRelationAttribute,
+    ServerRelationAttribute, inet_to_python,
 )
 
 
@@ -276,10 +276,11 @@ class QueryMaterializer:
                     yield attribute.attribute_id, None
                 else:
                     if servertype.ip_addr_type in ('host', 'loadbalancer'):
-                        yield attribute.attribute_id, value.ip
+                        yield attribute.attribute_id, inet_to_python(value.ip)
                     else:
                         assert servertype.ip_addr_type == 'network'
-                        yield attribute.attribute_id, value.network
+                        yield attribute.attribute_id, inet_to_python(
+                            value.network)
             elif value is None:
                 yield attribute.attribute_id, None
             elif attribute in join_results:
