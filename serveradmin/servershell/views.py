@@ -245,9 +245,13 @@ def _edit(request, server, edit_mode=False, template='edit'):  # NOQA: C901
     invalid_attrs = set()
     if edit_mode and request.POST:
         attribute_lookup = {a.pk: a for a in Attribute.objects.filter(
-            attribute_id__in=(k[len('attr_'):] for k in request.POST.keys())
-        )}
+            attribute_id__in=(k[len('attr_'):] for k in request.POST.keys()))}
         attribute_lookup.update(Attribute.specials)
+
+        # Get current values to be able to submit only changes
+        current = Query({'object_id': server['object_id']},
+                        list(attribute_lookup.keys())).get()
+
         for key, value in request.POST.items():
             if not key.startswith('attr_'):
                 continue
@@ -269,7 +273,9 @@ def _edit(request, server, edit_mode=False, template='edit'):  # NOQA: C901
                 except ValidationError:
                     invalid_attrs.add(attribute_id)
 
-            server[attribute_id] = value
+            # Submit only changes
+            if current[attribute_id] != value:
+                server[attribute_id] = value
 
         if not invalid_attrs:
             if server.object_id:
