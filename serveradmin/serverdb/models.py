@@ -12,8 +12,7 @@ from typing import Union
 from django.db.models import Q
 from netaddr import EUI
 from distutils.util import strtobool
-from ipaddress import ip_address, ip_network, IPv4Interface, IPv6Interface, \
-    ip_interface
+from ipaddress import ip_network, IPv4Interface, IPv6Interface, ip_interface
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
