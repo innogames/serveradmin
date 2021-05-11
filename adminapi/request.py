@@ -66,7 +66,7 @@ class Settings:
     auth_key_path = os.environ.get('SERVERADMIN_KEY_PATH')
     auth_key = load_private_key_file(auth_key_path) if auth_key_path else None
     auth_token = os.environ.get('SERVERADMIN_TOKEN') or get_auth_token()
-    timeout = 60
+    timeout = 60.0
     tries = 3
     sleep_interval = 5
 
