@@ -5,6 +5,7 @@ Copyright (c) 2021 InnoGames GmbH
 
 import json
 from distutils.util import strtobool
+from ipaddress import IPv6Address, IPv4Address, ip_interface
 from itertools import islice
 
 from django.contrib import messages
@@ -273,6 +274,10 @@ def _edit(request, server, edit_mode=False, template='edit'):  # NOQA: C901
                 except ValidationError:
                     invalid_attrs.add(attribute_id)
 
+            # TODO: Remove when PR135 is merged
+            if type(current[attribute_id]) in (IPv4Address, IPv6Address):
+                current[attribute_id] = ip_interface(current[attribute_id])
+
             # Submit only changes
             if current[attribute_id] != value:
                 server[attribute_id] = value
@@ -281,26 +286,37 @@ def _edit(request, server, edit_mode=False, template='edit'):  # NOQA: C901
             if server.object_id:
                 action = 'edited'
                 created = []
-                changed = [server._serialize_changes()]
+
+                changes = server._serialize_changes()
+                if len(changes.keys()) > 1:
+                    changed = [changes]
+                else:
+                    # Only object_id has been passed and we do not support
+                    # changing it (yet).
+                    changed = []
             else:
                 action = 'created'
                 created = [server]
                 changed = []
 
-            try:
-                commit_obj = commit_query(created, changed, user=request.user)
-            except (PermissionDenied, ValidationError) as err:
-                messages.error(request, str(err))
+            if not created and not changed:
+                messages.info(request, str('Nothing has changed.'))
             else:
-                messages.success(request, 'Server successfully ' + action)
-                if action == 'created':
-                    server = commit_obj.created[0]
+                try:
+                    commit_obj = commit_query(created, changed,
+                                              user=request.user)
+                except (PermissionDenied, ValidationError) as err:
+                    messages.error(request, str(err))
+                else:
+                    messages.success(request, 'Server successfully ' + action)
+                    if action == 'created':
+                        server = commit_obj.created[0]
 
-                url = '{0}?object_id={1}'.format(
-                    reverse('servershell_inspect'),
-                    server.object_id,
-                )
-                return HttpResponseRedirect(url)
+                    url = '{0}?object_id={1}'.format(
+                        reverse('servershell_inspect'),
+                        server.object_id,
+                    )
+                    return HttpResponseRedirect(url)
 
         if invalid_attrs:
             messages.error(request, 'Attributes contains invalid values')
