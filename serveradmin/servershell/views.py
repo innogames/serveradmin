@@ -282,7 +282,7 @@ def _edit(request, server, edit_mode=False, template='edit'):  # NOQA: C901
                 continue
 
             if current:
-                # TODO: Remove when PR135 is merged
+                # TODO: Remove when PR153 is merged
                 if type(current[attribute_id]) in (IPv4Address, IPv6Address):
                     current[attribute_id] = ip_interface(current[attribute_id])
 
