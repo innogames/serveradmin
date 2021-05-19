@@ -250,8 +250,10 @@ def _edit(request, server, edit_mode=False, template='edit'):  # NOQA: C901
         attribute_lookup.update(Attribute.specials)
 
         # Get current values to be able to submit only changes
-        current = Query({'object_id': server['object_id']},
-                        list(attribute_lookup.keys())).get()
+        current = None
+        if server['object_id']:
+            current = Query({'object_id': server['object_id']},
+                            list(attribute_lookup.keys())).get()
 
         for key, value in request.POST.items():
             if not key.startswith('attr_'):
@@ -274,12 +276,20 @@ def _edit(request, server, edit_mode=False, template='edit'):  # NOQA: C901
                 except ValidationError:
                     invalid_attrs.add(attribute_id)
 
-            # TODO: Remove when PR135 is merged
-            if type(current[attribute_id]) in (IPv4Address, IPv6Address):
-                current[attribute_id] = ip_interface(current[attribute_id])
+            if attribute_id not in server.keys():
+                messages.error(request,
+                               'Unknown attribute {}'.format(attribute_id))
+                continue
 
-            # Submit only changes
-            if current[attribute_id] != value:
+            if current:
+                # TODO: Remove when PR153 is merged
+                if type(current[attribute_id]) in (IPv4Address, IPv6Address):
+                    current[attribute_id] = ip_interface(current[attribute_id])
+
+                # Submit only changes
+                if current[attribute_id] != value:
+                    server[attribute_id] = value
+            else:
                 server[attribute_id] = value
 
         if not invalid_attrs:
