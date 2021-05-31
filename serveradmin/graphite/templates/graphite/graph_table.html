@@ -61,6 +61,19 @@
                 <input class="btn btn-success" name="action" type="submit" value="Add" />
             </div>
         </form>
+        {%  if grafana_links %}
+        <hr>
+            <p class="text-secondary">
+                <img src="{{ STATIC_URL }}/icons/alert-circle.svg" alt="Bootstrap" width="32" height="32">
+                Note that the linked Grafana dashboard might not support all servertypes.
+            </p>
+            {% for hostname, href in grafana_links %}
+                <a target="_blank" href="{{ href }}" class="btn btn-sm btn-primary" rel="noopener noreferrer">
+                    <img src="{{ STATIC_URL }}/icons/grafana.png" width="32px" height="32px"/>
+                    {{ hostname }}
+                </a>
+            {% endfor %}
+        {% endif %}
     </div>
 </div>
 <hr>

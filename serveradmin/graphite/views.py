@@ -2,7 +2,7 @@
 
 Copyright (c) 2019 InnoGames GmbH
 """
-
+from urllib.parse import urlencode
 from urllib.request import (
     HTTPBasicAuthHandler,
     HTTPPasswordMgrWithDefaultRealm,
@@ -24,6 +24,7 @@ from serveradmin.dataset import Query
 from serveradmin.graphite.models import (
     GRAPHITE_ATTRIBUTE_ID,
     Collection,
+    format_attribute_value,
 )
 
 
@@ -106,10 +107,23 @@ def graph_table(request):
         for combined_tables in zip(*graph_tables):
             graph_table += list(combined_tables)
 
+    # One can optionally specify a Grafana dashboard which has a parameter
+    # called SERVER that receives a coded hostname as alternative to the
+    # builtin graphs.
+    grafana_links = []
+    if hasattr(settings, 'GRAFANA_DASHBOARD'):
+        def _get_grafana_link(hostname):
+            return settings.GRAFANA_DASHBOARD + '?' + urlencode(
+                {'var-SERVER': format_attribute_value(hostname)})
+
+        for hostname in servers.keys():
+            grafana_links.append((hostname, _get_grafana_link(hostname)))
+
     return TemplateResponse(request, 'graphite/graph_table.html', {
         'hostnames': servers.keys(),
         'descriptions': descriptions,
         'graph_table': graph_table,
+        'grafana_links': grafana_links,
         'link': request.get_full_path(),
         'from': request.GET.get('from', '-24h'),
         'until': request.GET.get('until', 'now'),
