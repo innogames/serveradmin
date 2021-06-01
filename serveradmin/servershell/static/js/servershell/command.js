@@ -272,7 +272,7 @@ servershell.commands = {
             let to_export = '';
             let selected = servershell.get_selected();
             let servers = servershell.servers.filter(s => selected.includes(s.object_id));
-            servershell.servers.forEach(function(object) {
+            servers.forEach(function(object) {
                 attribute_ids.forEach(function(attribute_id) {
                     if (object.hasOwnProperty(attribute_id)) {
                         let attribute = servershell.get_attribute(attribute_id);
