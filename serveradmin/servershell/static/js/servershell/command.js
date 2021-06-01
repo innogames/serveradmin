@@ -256,10 +256,10 @@ servershell.commands = {
         let unknown = attribute_ids.filter(a => servershell.attributes.find(b => b.attribute_id === a) === undefined);
 
         if (unknown.length > 0) {
-            return servershell.alert(`The attribute(s) ${unknown.join(', ')} doe not exist!`, 'warning');
+            return servershell.alert(`The attribute(s) ${unknown.join(', ')} does not exist!`, 'warning');
         }
 
-        // If not attribute are given add hostname
+        // If no attributes are given add hostname as default
         if (attribute_ids.length === 0) {
             attribute_ids = ['hostname']
         }
@@ -272,7 +272,7 @@ servershell.commands = {
             let to_export = '';
             let selected = servershell.get_selected();
             let servers = servershell.servers.filter(s => selected.includes(s.object_id));
-            servershell.servers.forEach(function(object) {
+            servers.forEach(function(object) {
                 attribute_ids.forEach(function(attribute_id) {
                     if (object.hasOwnProperty(attribute_id)) {
                         let attribute = servershell.get_attribute(attribute_id);
