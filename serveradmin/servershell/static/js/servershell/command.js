@@ -256,10 +256,10 @@ servershell.commands = {
         let unknown = attribute_ids.filter(a => servershell.attributes.find(b => b.attribute_id === a) === undefined);
 
         if (unknown.length > 0) {
-            return servershell.alert(`The attribute(s) ${unknown.join(', ')} doe not exist!`, 'warning');
+            return servershell.alert(`The attribute(s) ${unknown.join(', ')} does not exist!`, 'warning');
         }
 
-        // If not attribute are given add hostname
+        // If no attributes are given add hostname as default
         if (attribute_ids.length === 0) {
             attribute_ids = ['hostname']
         }
