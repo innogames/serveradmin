@@ -193,8 +193,8 @@
 
         // Initialize servershell object properties with initial values
         // from backend. This allows us setting defaults from backend.
-        servershell.term = "{{ term }}";
-        servershell._term = "{{ term }}";
+        servershell.term = "{{ term|escapejs }}";
+        servershell._term = "{{ term|escapejs }}";
         servershell.command = "";
         servershell.understood = "";
         servershell.attributes = {% autoescape off %}{{ attributes|json }}{% endautoescape %};
