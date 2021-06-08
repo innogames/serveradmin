@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Serveradmin and adminapi setup
 
-Copyright (c) 2019 InnoGames GmbH
+Copyright (c) 2021 InnoGames GmbH
 """
 
 from setuptools import setup, find_packages
