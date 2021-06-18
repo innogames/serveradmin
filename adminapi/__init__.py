@@ -3,4 +3,4 @@
 Copyright (c) 2021 InnoGames GmbH
 """
 
-VERSION = (3, 7, 0)
+VERSION = (3, 7, 1)
