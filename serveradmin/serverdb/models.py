@@ -168,7 +168,10 @@ def network_overlaps(ip_interface: Union[IPv4Interface, IPv6Interface],
         ).exists() or
         ServerInetAttribute.objects.filter(
             server__servertype=servertype_id,
-            value__net_overlaps=ip_interface).exists()
+            value__net_overlaps=ip_interface
+        ).exclude(
+            server_id=object_id
+        ).exists()
     )
     if overlaps:
         raise ValidationError(
