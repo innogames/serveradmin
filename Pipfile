@@ -17,7 +17,7 @@ gunicorn = "*"
 # Debian stretch version
 Django = "~=2.2"
 # postgres lib used by django
-"psycopg2-binary" = "*"
+psycopg2-binary = "<2.9"
 # Django support for network address fields on PostgreSQL
 django-netfields = "*"
 # Required to generate sprites from Graphite
