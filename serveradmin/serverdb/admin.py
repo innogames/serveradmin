@@ -31,11 +31,16 @@ class ServertypeAdmin(admin.ModelAdmin):
         ServertypeAttributeInline,
     )
 
-    def get_exclude(self, request, obj=None):
-        # Because of the great complexity when changing servertypes of existing
-        # objects and the little use-cases we have we just deny it for now.
+    def get_readonly_fields(self, request, obj=None):
+        fields = super().get_readonly_fields(request, obj)
+
         if obj:
-            return ['ip_addr_type']
+            # Because of the complexity when changing servertypes of existing
+            # objects and the little use-cases we have right now we don't
+            # support it.
+            fields = fields + tuple(['ip_addr_type'])
+
+        return fields
 
 
 class ServerRelationAttributeInline(admin.TabularInline):
