@@ -1,0 +1,60 @@
+# Copyright © 2021, InnoGames GmbH
+# Query for all hosts from serveradmin API
+# This file should be put to the directory in ${FPATH},
+#   Arch Linux, Fedora: /usr/share/zsh/site-functions
+#   Debian: /usr/share/zsh/vendor-functions
+#
+# Configuration:
+# _SERVERADMIN_HOSTS_ENABLED: if the completion should be enabled
+# _SERVERADMIN_HOSTS_QUERY: customize hosts list, string
+# _SERVERADMIN_HOSTS_TIMEOUT: customize serveradmin query timeout, integer, seconds
+# _SERVERADMIN_HOSTS_UPDATE: invalidate cache interval, integer, minutes
+# _SERVERADMIN_HOSTS_ZSTYLE: change autocompletion behavior for hosts, bool
+function _serveradmin_hosts() {
+  # Not enable if adminapi is not found
+  command -v adminapi 1>/dev/null || return
+  local _query=${_SERVERADMIN_HOSTS_QUERY:-'intern_ip=not(empty())'}
+  local _hosts_cache="${HOME}/.ssh/serveradmin_hosts_cache"
+  local _tmp="${_hosts_cache}.tmp"
+  local _lock="${_hosts_cache}.lock"
+  local _invalidate_minutes=${_SERVERADMIN_HOSTS_UPDATE:-1}
+  local _timeout="${_SERVERADMIN_HOSTS_TIMEOUT:-8}s"
+  if [ "${_hosts_cache}"(Nmm-${_invalidate_minutes}) ]; then
+    # File exists and newer then $_invalidate_minutes minutes
+    # Use "<" as zsh internal `cat` for not invoking extra process
+    < "${_hosts_cache}"
+    return
+  fi
+
+  if [ -f "${_hosts_cache}" ]; then
+    # File exists and older then $_invalidate_minutes minutes
+    # First return list, then update it in background
+    < "${_hosts_cache}"
+    if   flock -n "${_lock}" true && [ -s "${_tmp}" ]; then
+      # If lockfile not locked and new temp cache already exists and not empty
+      mv "${_tmp}" "${_hosts_cache}"
+    elif flock -n "${_lock}" true; then
+      # It shouldn't hang forever in case of problems with serveradmin
+      flock -n "${_lock}" timeout $_timeout \
+        adminapi $_query 2>/dev/null > "${_tmp}" &
+    fi
+    return
+  fi
+
+  # If file doesn't exists, then waiting for getting fresh
+  timeout $_timeout adminapi $_query 2>/dev/null | tee "${_hosts_cache}"
+}
+
+[ "${_SERVERADMIN_HOSTS_ENABLED}" ] && \
+  zstyle -e ':completion:*:hosts' hosts 'reply=(
+    $(_serveradmin_hosts)
+    # Taken as-is from my-oh-my-zsh, getting hosts from standart sources
+    ${=${${(f)"$(cat {/etc/ssh_,~/.ssh/known_}hosts(|2)(N) 2>/dev/null)"}%%[#| ]*}//,/ }
+    ${=${(f)"$(cat /etc/hosts(|)(N) <<(ypcat hosts 2>/dev/null))"}%%\#*}
+    ${=${${${${(@M)${(f)"$(cat ~/.ssh/config 2>/dev/null)"}:#Host *}#Host }:#*\**}:#*\?*}}
+  )'
+
+[ "${_SERVERADMIN_HOSTS_ZSTYLE}" ] && \
+  zstyle ':completion:*:hosts' menu select yes=long interactive=long
+
+# vi: filetype=zsh
