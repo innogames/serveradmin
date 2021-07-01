@@ -38,7 +38,7 @@ class ServertypeAdmin(admin.ModelAdmin):
             # Because of the complexity when changing servertypes of existing
             # objects and the little use-cases we have right now we don't
             # support it.
-            fields = fields + tuple(['ip_addr_type'])
+            fields += ('ip_addr_type',)
 
         return fields
 
