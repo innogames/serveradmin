@@ -59,7 +59,20 @@ class ServerAdmin(admin.ModelAdmin):
     )
 
 
+class AttributeAdmin(admin.ModelAdmin):
+    def get_readonly_fields(self, request, obj=None):
+        fields = super().get_readonly_fields(request, obj)
+
+        # Because of the complexity when changing attribute types of existing
+        # objects and the little use-cases we have right now we don't
+        # support it.
+        if obj:
+            fields += ('type',)
+
+        return fields
+
+
 admin.site.register(Servertype, ServertypeAdmin)
-admin.site.register(Attribute)
+admin.site.register(Attribute, AttributeAdmin)
 admin.site.register(Server, ServerAdmin)
 admin.site.register(ChangeDelete)
