@@ -123,13 +123,15 @@ $(document).ready(function() {
                     command === 'delbookmark'
                 ) {
                     Object.keys(localStorage).forEach(function(key) {
-                        if (key.startsWith('bookmark.')) {
-                            const name = key.substr(9);
-                            choices.push({
-                                'label': `Bookmark: ${name}`,
-                                'value': `${command} ${name}`,
-                            });
+                        if (!key.startsWith('bookmark.')) {
+                            return;
                         }
+                        
+                        const name = key.substr(9);
+                        choices.push({
+                            'label': `Bookmark: ${name}`,
+                            'value': `${command} ${name}`,
+                        });
                     });
                 }
                 if (
