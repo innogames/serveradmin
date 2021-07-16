@@ -39,6 +39,10 @@ servershell.submit_search = function() {
             'deep_link': true,
         });
 
+        // Replace the URL with the requested one from the Ajax request to
+        // avoid loosing the selection of attributes when using multiple tabs.
+        window.history.pushState(null, null, servershell.href);
+
         servershell.editable_attributes = data.editable_attributes;
         servershell.num_servers = data.num_servers;
         servershell.servers = data.servers;
