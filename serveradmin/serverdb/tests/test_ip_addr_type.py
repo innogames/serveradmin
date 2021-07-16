@@ -4,6 +4,7 @@ Copyright (c) 2021 InnoGames GmbH
 """
 
 import logging
+from ipaddress import IPv4Network
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -376,6 +377,16 @@ class TestIpAddrTypeNetworkForInternIp(TestIpAddrType):
         with self.assertRaises(ValidationError):
             overlaps.commit(user=User.objects.first())
 
+    def test_change_server_network_overlaps(self):
+        first = self._get_server('network')
+        first['intern_ip'] = '10.0.0.0/30'
+        first['ip_config'] = '10.0.1.0/30'
+        first.commit(user=User.objects.first())
+
+        host = Query({'hostname': first['hostname']}, ['intern_ip'])
+        host.update(intern_ip=IPv4Network('10.0.0.0/28'))
+        self.assertIsNone(host.commit(user=User.objects.first()))
+
     def test_server_network_overlaps_inet(self):
         first = self._get_server('network')
         first['intern_ip'] = '10.0.0.0/30'
@@ -405,7 +416,6 @@ class TestIpAddrTypeNetworkForInternIp(TestIpAddrType):
         to_rename = Query({'hostname': server['hostname']}, ['hostname'])
         to_rename.update(hostname=self.faker.hostname())
         self.assertIsNone(to_rename.commit(user=User.objects.first()))
-
 
 
 class TestIpAddrTypeNetworkForInetAttributes(TestIpAddrType):
@@ -454,6 +464,16 @@ class TestIpAddrTypeNetworkForInetAttributes(TestIpAddrType):
         overlaps['ip_config'] = '10.0.1.0/28'
         with self.assertRaises(ValidationError):
             overlaps.commit(user=User.objects.first())
+
+    def test_change_server_network_overlaps(self):
+        first = self._get_server('network')
+        first['intern_ip'] = '10.0.0.0/30'
+        first['ip_config'] = '10.0.1.0/30'
+        first.commit(user=User.objects.first())
+
+        host = Query({'hostname': first['hostname']}, ['ip_config'])
+        host.update(ip_config=IPv4Network('10.0.1.0/28'))
+        self.assertIsNone(host.commit(user=User.objects.first()))
 
     def test_server_network_overlaps_intern_ip(self):
         first = self._get_server('network')
