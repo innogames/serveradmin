@@ -118,6 +118,23 @@ $(document).ready(function() {
                     });
                 }
                 if (
+                    command === 'bookmark' ||
+                    command === 'loadbookmark' ||
+                    command === 'delbookmark'
+                ) {
+                    Object.keys(localStorage).forEach(function(key) {
+                        if (!key.startsWith('bookmark.')) {
+                            return;
+                        }
+                        
+                        const name = key.substr(9);
+                        choices.push({
+                            'label': `Bookmark: ${name}`,
+                            'value': `${command} ${name}`,
+                        });
+                    });
+                }
+                if (
                     command === 'orderby' ||
                     command === 'delattr' ||
                     command === 'history'

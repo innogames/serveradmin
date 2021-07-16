@@ -235,6 +235,31 @@ servershell.commands = {
         // Now trigger reload with all changes at once
         servershell.shown_attributes = shown_attributes;
     },
+    bookmark: function(name) {
+        if (!name) {
+            servershell.alert('Missing name for bookmark', 'warning');
+            return;
+        }
+
+        localStorage.setItem('bookmark.' + name, servershell.shown_attributes);
+        servershell.alert(`Bookmark ${name} saved.`, 'success');
+    },
+    delbookmark: function(name) {
+        if (!name) {
+            servershell.alert('Missing name for bookmark', 'warning');
+            return;
+        }
+
+        localStorage.removeItem('bookmark.' + name);
+        servershell.alert(`Bookmark ${name} deleted.`, 'success');
+    },
+    loadbookmark: function(name) {
+        let attribute_ids = localStorage.getItem('bookmark.' + name);
+        if (attribute_ids) {
+            servershell.shown_attributes = attribute_ids.split(',');
+            servershell.alert(`Bookmark ${name} loaded.`, 'success');
+        }
+    },
     orderby: function(attribute_id) {
         if (!servershell.attributes.find(a => a.attribute_id === attribute_id)) {
             servershell.alert(`Attribute ${name} does not exist!`, 'warning');
