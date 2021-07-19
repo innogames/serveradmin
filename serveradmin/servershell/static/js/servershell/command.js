@@ -329,7 +329,7 @@ servershell.commands = {
             let start = parseInt(range[0]);
             let stop = parseInt(range.length === 1 ? range[0] : range[1]);
             let checkboxes = $('#result_table input[name=server]');
-            checkboxes.slice(start - 1, stop).click();
+            checkboxes.slice(start - 1 - servershell.offset, stop - servershell.offset).click();
         })
     },
     graph: function() {
