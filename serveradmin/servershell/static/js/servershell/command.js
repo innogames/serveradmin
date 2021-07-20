@@ -17,7 +17,7 @@ servershell.transform_value = function(value, attribute) {
     }
 
     return value;
-}
+};
 
 /**
  * Get changes staged for commit
@@ -41,7 +41,7 @@ servershell.get_changes = function(object, attribute) {
     }
 
     return changes[object.object_id][attribute.attribute_id];
-}
+};
 
 /**
  * Stage changes to commit for attributes
@@ -329,7 +329,7 @@ servershell.commands = {
             let start = parseInt(range[0]);
             let stop = parseInt(range.length === 1 ? range[0] : range[1]);
             let checkboxes = $('#result_table input[name=server]');
-            checkboxes.slice(start - 1, stop).click();
+            checkboxes.slice(start - 1 - servershell.offset, stop - servershell.offset).click();
         })
     },
     graph: function() {
@@ -491,7 +491,7 @@ servershell.commands = {
                 servershell.update_attribute(object_id, attribute_id, values);
             });
             servershell.update_result();
-        }
+        };
 
         // Attribute not visible yet ...
         if (!servershell.shown_attributes.includes(attribute_id)) {
@@ -541,7 +541,7 @@ servershell.commands = {
                 servershell.update_attribute(object_id, attribute_id, values);
             });
             servershell.update_result();
-        }
+        };
 
         // Attribute not visible yet ...
         if (!servershell.shown_attributes.includes(attribute_id)) {
