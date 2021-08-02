@@ -109,9 +109,7 @@ def index(request):
 
 @login_required
 def autocomplete(request):
-    autocomplete_list = list()
     hostname = request.GET.get('hostname')
-    attribute_id = request.GET.get('attribute')
 
     if hostname:
         try:
@@ -121,11 +119,9 @@ def autocomplete(request):
                                  query[:AUTOCOMPLETE_LIMIT]]
         except (DatatypeError, ValidationError):
             # If there is no valid query, just don't auto-complete
-            pass
-
-    if attribute_id:
-        autocomplete_list = attribute_startswith(attribute_id,
-                                                 AUTOCOMPLETE_LIMIT)
+            autocomplete_list = list()
+    else:
+        autocomplete_list = list()
 
     return HttpResponse(json.dumps({'autocomplete': autocomplete_list}),
                         content_type='application/x-json')
