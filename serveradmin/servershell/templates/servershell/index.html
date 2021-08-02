@@ -23,7 +23,7 @@
     <div class="form-group row input-controls">
         <label for="term" class="col-sm-1 col-form-label">Search:</label>
         <div class="col-sm-8">
-            <form method="post" action="{% url 'servershell_results' %}" id="search_form">
+            <form method="post" action="{% url 'servershell_results' %}" id="search_form" autocomplete="off">
                 {% csrf_token %}
                 <input tabindex="1" class="form-control form-control-sm autocomplete" type="text" id="term" data-servershell-property-bind="term" data-servershell-autocomplete-url="{% url 'servershell_autocomplete' %}" />
             </form>
@@ -36,7 +36,7 @@
     <div class="form-group row input-controls">
         <label for="command" class="col-sm-1 col-form-label">Command:</label>
         <div class="col-sm-8">
-            <form method="post" id="command_form">
+            <form method="post" id="command_form" autocomplete="off">
                 <input tabindex="2" class="form-control form-control-sm autocomplete" type="text" size="60"  id="command" data-servershell-property-bind="command" />
             </form>
             <!-- Advanced search options (hidden by default) -->

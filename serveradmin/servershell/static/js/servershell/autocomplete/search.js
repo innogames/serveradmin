@@ -37,7 +37,6 @@ $(document).ready(function () {
     };
 
     let _complete_filter = function(to_complete) {
-        let filters = [];
         if (to_complete) {
             return servershell.filters.filter(filter => filter[0].startsWith(to_complete));
         } else {
