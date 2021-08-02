@@ -110,7 +110,6 @@ $(document).ready(function() {
     $('#search-options input').change(function() {
         $.getJSON(servershell.urls.settings, {
             'autocomplete': $('#autocomplete')[0].checked,
-            'autocomplete_values': $('#autocomplete_values')[0].checked,
             'autocomplete_delay_search': $('#autocomplete_delay_search').val(),
             'autocomplete_delay_commands': $('#autocomplete_delay_commands').val(),
             'autoselect': $('#autoselect')[0].checked,

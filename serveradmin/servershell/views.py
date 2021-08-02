@@ -53,7 +53,6 @@ NUM_SERVERS_DEFAULT = 25
 AUTOCOMPLETE_LIMIT = 20
 SEARCH_SETTINGS = {
     'autocomplete': True,
-    'autocomplete_values': False,
     'autocomplete_delay_search': 250,
     'autocomplete_delay_commands': 10,
     'autoselect': True,
@@ -113,7 +112,6 @@ def autocomplete(request):
     autocomplete_list = list()
     hostname = request.GET.get('hostname')
     attribute_id = request.GET.get('attribute')
-    attribute_val = request.GET.get('value')
 
     if hostname:
         try:
@@ -126,13 +124,8 @@ def autocomplete(request):
             pass
 
     if attribute_id:
-        if attribute_val:
-            autocomplete_list = attribute_value_startswith(attribute_id,
-                                                           attribute_val,
-                                                           AUTOCOMPLETE_LIMIT)
-        else:
-            autocomplete_list = attribute_startswith(attribute_id,
-                                                     AUTOCOMPLETE_LIMIT)
+        autocomplete_list = attribute_startswith(attribute_id,
+                                                 AUTOCOMPLETE_LIMIT)
 
     return HttpResponse(json.dumps({'autocomplete': autocomplete_list}),
                         content_type='application/x-json')

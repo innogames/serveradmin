@@ -70,28 +70,6 @@ $(document).ready(function () {
                         'value': new_term + '(',
                     });
                 });
-
-                // Autocomplete attribute value if wanted
-                // @TODO support nested values e.g. "project=Any(Reg("
-                if (servershell.search_settings.autocomplete_values) {
-                    // Add attribute values matching
-                    let settings = {
-                        'async': false,
-                        'data': {
-                            'attribute': attribute,
-                            'value': value,
-                        },
-                        'success': function (data) {
-                            data.autocomplete.forEach(function(match) {
-                                choices.push({
-                                    'label': `AttrVal: ${match}`,
-                                    'value': _build_value(request.term, to_complete, attribute, match),
-                                });
-                            });
-                        }
-                    };
-                    $.ajax(autocomplete_search_url, settings);
-                }
             }
 
             // Autocomplete attributes
