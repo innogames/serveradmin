@@ -27,7 +27,7 @@ servershell.update_result = function() {
 
     // Update result information on top and bottom showing page etc.
     let info = `Results (${servershell.num_servers} servers, page ${servershell.page()}/${servershell.pages()}, ${servershell.limit} per page)`;
-    $('div.result_info').text(info);
+    $('span.result_info').text(info);
 
     // Select first element if there is only one.
     if (servershell.servers.length === 1) {
