@@ -214,6 +214,7 @@ servershell.commands = {
         }
 
         servershell.limit = Math.abs(limit);
+        servershell.offset = 0;
         servershell.submit_search();
     },
     attr: function(attribute_ids) {
