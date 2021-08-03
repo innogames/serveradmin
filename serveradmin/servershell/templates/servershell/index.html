@@ -12,9 +12,9 @@
 
 {% block content %}
     <!-- Servershell JS alerts -->
-    <div id="js-alert" class="alert" style="display: none;">
-        <strong id="js-alert-message"></strong>
-        <button type="button" class="close" onclick="$('#js-alert').toggle();">
+    <div class="alert" style="display: none;">
+        <strong class="alert-text"></strong>
+        <button type="button" class="close" onclick="$(this).parent('div.alert').remove();">
             <span aria-hidden="true">&times;</span>
         </button>
     </div>

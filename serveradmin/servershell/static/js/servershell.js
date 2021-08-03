@@ -208,21 +208,21 @@ servershell.alert = function(text, level, auto_dismiss=5) {
         'dark'
     ];
 
-    if (!levels.includes(level))
+    if (!levels.includes(level)) {
         return;
+    }
 
-    let box = $('#js-alert');
-    levels.forEach(level => box.removeClass(`alert-${level}`));
-    box.addClass(`alert-${level}`);
+    let template = $('.alert').first();
 
-    let message = $('#js-alert-message');
-    message.text(text);
-
-    box.toggle();
+    let new_alert = template.clone();
+    new_alert.addClass(`alert-${level}`);
+    new_alert.children('.alert-text').text(text);
+    template.after(new_alert);
+    new_alert.toggle();
 
     if (auto_dismiss > 0) {
-        setTimeout(function () {
-            box.css('display', 'none');
+        setTimeout(function() {
+            $(new_alert).remove();
         }, auto_dismiss * 1000);
     }
 };
