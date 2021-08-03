@@ -212,17 +212,19 @@ servershell.alert = function(text, level, auto_dismiss=5) {
         return;
     }
 
-    let template = $('.alert').first();
+    let template = $('#alert-template');
 
-    let new_alert = template.clone();
-    new_alert.addClass(`alert-${level}`);
-    new_alert.children('.alert-text').text(text);
-    template.after(new_alert);
-    new_alert.toggle();
+    let alert = template.clone();
+    alert.removeAttr('id');
+    alert.addClass(`alert-${level}`);
+    alert.children('.alert-text').text(text);
+
+    $('#alerts').append(alert);
+    alert.toggle();
 
     if (auto_dismiss > 0) {
         setTimeout(function() {
-            $(new_alert).remove();
+            $(alert).remove();
         }, auto_dismiss * 1000);
     }
 };
