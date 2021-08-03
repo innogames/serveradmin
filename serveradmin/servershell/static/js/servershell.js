@@ -219,7 +219,7 @@ servershell.alert = function(text, level, auto_dismiss=5) {
     alert.addClass(`alert-${level}`);
     alert.children('.alert-text').text(text);
 
-    $('#alerts').append(alert);
+    $('#alerts').prepend(alert);
     alert.toggle();
 
     if (auto_dismiss > 0) {
