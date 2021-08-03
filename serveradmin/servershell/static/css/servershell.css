@@ -100,3 +100,9 @@
     left: -17px;
     margin-bottom: 0;
 }
+
+#alerts {
+    z-index: 100;
+    position: absolute;
+    width: 98%;
+}
