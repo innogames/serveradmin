@@ -143,7 +143,10 @@ class BaseQuery(object):
     def get(self):
         results = self._get_results()
         if len(results) != 1:
-            raise DatasetError('get() requires exactly 1 matched object')
+            raise DatasetError(
+                'get() requires exactly 1 matched object, {} found'.format(
+                    len(results)
+                ))
         return results[0]
 
     # XXX: Deprecated
