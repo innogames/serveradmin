@@ -79,7 +79,7 @@ def signable(key):
     """Checks if key is able to sign the message
     """
     try:
-        key.sign_ssh_data(b'')
+        key.sign_ssh_data(b'InnoGames')
         return True
     except SSHException:
         return False
