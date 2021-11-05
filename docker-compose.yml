@@ -3,11 +3,11 @@ version: "3.9"
 services:
   db:
     tty: true
-    image: "postgres"
+    image: "postgres:${POSTGRES_VERSION}"
     environment:
-      - POSTGRES_DB=serveradmin
-      - POSTGRES_USER=serveradmin
-      - POSTGRES_PASSWORD=serveradmin
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - ".docker/db/postgres.conf:/etc/postgresql/postgres.conf:ro"
     ports:
