@@ -21,6 +21,6 @@ services:
       - ".:/code"
     ports:
       - "8000:8000"
-    command: ""
+    command: "./run.sh"
     depends_on:
       - db
