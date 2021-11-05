@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  db:
+    tty: true
+    image: "postgres"
+    environment:
+      - POSTGRES_DB=serveradmin
+      - POSTGRES_USER=serveradmin
+      - POSTGRES_PASSWORD=serveradmin
+    volumes:
+      - ".docker/db/postgres.conf:/etc/postgresql/postgres.conf:ro"
+    ports:
+      - "5432:5432"
+    command: "-c config_file=/etc/postgresql/postgres.conf"
+
+  web:
+    tty: true
+    build: .docker/web
+    volumes:
+      - ".:/code"
+    ports:
+      - "8000:8000"
+    command: ""
+    depends_on:
+      - db
