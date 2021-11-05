@@ -72,4 +72,4 @@ jobs:
           pipenv run python -Wall -m serveradmin test --noinput --parallel
           # Build sphinx docs, error on warning
           cd docs
-          SPHINXOPTS='-W' pipenv run make html
+          SPHINXBUILD='pipenv run sphinx-build' SPHINXOPTS='-W' make html
