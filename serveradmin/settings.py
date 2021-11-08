@@ -13,7 +13,7 @@ ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 # Take environment variables from .env file
 environ.Env.read_env(os.path.join(ROOT_DIR, '.env'))
 
-SECRET_KEY = env('SECRET_KEY')
+SECRET_KEY = env('SECRET_KEY', default=None)
 
 DEBUG = env('DEBUG', default=False)
 
@@ -22,10 +22,10 @@ DEBUG = env('DEBUG', default=False)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': env('POSTGRES_DB'),
-        'USER': env('POSTGRES_USER'),
-        'PASSWORD': env('POSTGRES_PASSWORD'),
-        'HOST': env('POSTGRES_HOST'),
+        'NAME': env('POSTGRES_DB', default=None),
+        'USER': env('POSTGRES_USER', default=None),
+        'PASSWORD': env('POSTGRES_PASSWORD', default=None),
+        'HOST': env('POSTGRES_HOST', default=None),
         'PORT': env('POSTGRES_PORT', default=5432),
         'OPTIONS': {
             'connect_timeout': 1,
