@@ -8,6 +8,7 @@ pipenv run python -m serveradmin migrate
 
 # Requires Django >= 3.x
 # pipenv run python -m serveradmin createsuper --no-input
+pipenv run python -m serveradmin createdefaultuser
 
 echo -e "
 \033[0;37m
