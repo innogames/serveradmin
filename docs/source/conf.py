@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'Serveradmin'
-copyright = '2019, InnoGames GmbH'
+copyright = '2021, InnoGames GmbH'
 author = 'InnoGames GmbH'
 
 
