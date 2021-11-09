@@ -10,6 +10,9 @@ pipenv run python -m serveradmin migrate
 # pipenv run python -m serveradmin createsuper --no-input
 pipenv run python -m serveradmin createdefaultuser
 
+# Create default application
+pipenv run python -m serveradmin createapp --non-interactive
+
 echo -e "
 \033[0;37m
 ********************************************************************************
