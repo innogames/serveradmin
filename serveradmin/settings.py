@@ -17,6 +17,8 @@ SECRET_KEY = env('SECRET_KEY', default=None)
 
 DEBUG = env('DEBUG', default=False)
 
+ALLOWED_HOSTS = env('ALLOWED_HOSTS', default=[])
+
 # Try to connect to a local postgres DB called serveradmin via user based
 # authentication by default.
 DATABASES = {
