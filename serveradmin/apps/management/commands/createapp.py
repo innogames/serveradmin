@@ -29,7 +29,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if options['non_interactive']:
             owner = environ.get('SERVERADMIN_TOKEN_OWNER')
-            token = environ.get('SERVERADMIN_TOKEN', default='')
+            token = environ.get('SERVERADMIN_TOKEN', default='').strip()
             superuser = bool(
                 environ.get('SERVERADMIN_TOKEN_SUPERUSER', default=False))
         else:
@@ -37,7 +37,8 @@ class Command(BaseCommand):
                 owner = options['owner']
             else:
                 owner = input('Username of application owner (must exist!): ')
-            token = input('Token (empty for secure auto generated one): ')
+            token = input(
+                'Token (empty for secure auto generated one): ').strip()
             superuser = options['superuser']
 
         user = User.objects.filter(username=owner)
@@ -55,6 +56,6 @@ class Command(BaseCommand):
         app.name = f'default app for {owner}'
         app.owner = user.get()
         app.superuser = superuser
-        if token != '':
+        if not token:
             app.auth_token = token
         app.save()
