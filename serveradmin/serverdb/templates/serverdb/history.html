@@ -19,6 +19,12 @@
                     <input name="search_string" id="search_string" type="text" value="{% if search_string %}{{ search_string }}{% endif %}" class="form-control form-control-sm" placeholder="Filter for ..." />
                 </div>
             </div>
+            <div class="form-group row input-controls">
+                <label for="exclude_string" class="col-sm-1 col-form-label">Excludes:</label>
+                <div class="col-md-4">
+                    <input name="exclude_string" id="exclude_string" type="text" value="{% if exclude_string %}{{ exclude_string }}{% endif %}" class="form-control form-control-sm" placeholder="Exclude ..." />
+                </div>
+            </div>
             <div class="form-group row input-controls buttons">
                 <input type="hidden" id="object_id" name="object_id" value="{{ object_id }}"/>
                 <input type="hidden" id="page" name="page" value="{{ changes.number }}" />
