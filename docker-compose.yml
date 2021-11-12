@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  db:
+    tty: true
+    image: "postgres:${POSTGRES_VERSION}"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - ".docker/db/postgres.conf:/etc/postgresql/postgres.conf:ro"
+    ports:
+      - "5432:5432"
+    command: "-c config_file=/etc/postgresql/postgres.conf"
+
+  web:
+    tty: true
+    build: .docker/web
+    volumes:
+      - ".:/code"
+    ports:
+      - "8000:8000"
+    command: "./run.sh"
+    depends_on:
+      - db

@@ -3,18 +3,32 @@
 Copyright (c) 2019 InnoGames GmbH
 """
 
+import environ
 import os
 
-DEBUG = False
+env = environ.Env()
 
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
+
+# Take environment variables from .env file
+environ.Env.read_env(os.path.join(ROOT_DIR, '.env'))
+
+SECRET_KEY = env('SECRET_KEY', default=None)
+
+DEBUG = env('DEBUG', default=False)
+
+ALLOWED_HOSTS = env('ALLOWED_HOSTS', default=[])
 
 # Try to connect to a local postgres DB called serveradmin via user based
 # authentication by default.
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'serveradmin',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': env('POSTGRES_DB', default=None),
+        'USER': env('POSTGRES_USER', default=None),
+        'PASSWORD': env('POSTGRES_PASSWORD', default=None),
+        'HOST': env('POSTGRES_HOST', default=None),
+        'PORT': env('POSTGRES_PORT', default=5432),
         'OPTIONS': {
             'connect_timeout': 1,
             'client_encoding': 'UTF8',

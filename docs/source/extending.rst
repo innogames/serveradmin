@@ -5,105 +5,53 @@ Serveradmin is a Django application.  General knowledge about running
 Django applications would be useful.
 
 
-Creating the virtual environment
---------------------------------
+Running Serveradmin
+-------------------
 
-We will first create a virtual python environment which will isolate our Python
-packages.  This way you can - for example - use different Django versions for
-different projects.
+We provide a docker-compose setup that gives you a local development instance
+with 2 commands.
 
-Install the debian package ``virtualenvwrapper``::
+First make sure you have docker-compose installed as described
+`here <https://docs.docker.com/compose/install/>`_.
 
-   aptitude install virtualenvwrapper
+Then run these two commands::
 
-Open a new shell, it will initialize some stuff for the first time.  Now you
-can create your virtual environment by typing::
+    cp .env.dist .env
+    docker-compose up
 
-   mkvirtualenv serveradmin
+The default values in .env.dist are sufficient however feel free to adjust
+them to your needs.
 
-It will create a folder ``~/.virtualenvs/serveradmin`` with some files for
-the environment. You will now see ``(serveradmin)`` in front of your shell
-prompt -- this means that you are currently inside the virtual environment
-``serveradmin``.
+You can access the web service to execute Django commands and run scripts::
 
-Every time you want to activate the environment, just type::
+    docker-compose exec web
 
-   workon serveradmin
+    # Example: Run Django management commands
+    pipenv run python -m serveradmin -h
 
-For the rest of the instructions we assume that your are inside the serveradmin
-virtual environment.
-
-Bonus: You can set up hooks for your virtual environment by editing the files
-in ``~/.virtualenvs/serveradmin/bin``.  Using the ``postactivate`` hook you can
-change directory to the source code after activating the virtual environment.
+    # Example: Use the Python Remote API
+    pipenv run python -m adminapi "hostname=example.com"
 
 
-Installing dependencies
------------------------
+**Tip**
 
-All dependencies can be installed by using the ``Pipfile`` with pipenv::
-
-   pipenv install
-
-
-Setting up the Database
------------------------
-Make sure you use at least the same release of postgresql like serveradmin
-You would need a PostgreSQL database to run the application.  PostgreSQL
-usually comes by owned by the "postgres" user and the "ident" authentication
-enabled.  This means that users on the local system can connect to the server
-with their usernames.  You can switch to the "postgres" user and create
-a superuser matching your system username to avoid dealing with authentication
-again::
-
-   sudo su postgres
-   createuser -s myusername
-
-You would also need a database for the application::
-
-    createdb serveradmin
-
-Now you can either create the schema with no data using migrate or import a
-dump from an existing data.  To create a new empty schema
-you can use::
-
-    python -m serveradmin migrate
-
-If you want to work on the production data, you can dump it from the server,
-and restore on your database::
-
-    pg_dump --no-owner --no-privileges serveradmin > serveradmin.sql
-    psql -1 serveradmin < serveradmin.sql
+You may still want to have a virtual environment for Serveradmin on your
+host machines and run pipenv install -D to have all modules available for your
+IDEs auto completion etc.
 
 
-Setting up Django
------------------
+Database Dump
+-------------
 
-We will copy the example settings to create our local development settings::
+If you have a running instance of Serveradmin which is reachable via SSH you
+can update the PRODUCTION_DB variable in .env to your database host and run
+dump.sh from your **host** machine::
 
-   cp serveradmin/local_settings.py.example serveradmin/local_settings.py
-   vim serveradmin/local_settings.py
+    # .env
+    PRODUCTION_DB=your-serveradmin-db-host.example.com
 
-Inside you need to at least set the ``SECRET_KEY = 'SET-RANDOM-SECRET-KEY'``.
-In order to use runserver you also need to set `DEBUG = True` and
-``ALLOWED_HOSTS = ['127.0.0.1', '::1', 'localhost']``.
-
-To check whether your setup was successful, you can run the integrated test
-webserver::
-
-   python -m serveradmin runserver
-
-and point your browser to http://localhost:8000/.
-
-If you see a login prompt, use the following user account:
-
-   username:
-      admin
-
-   password:
-      foobar
-
-If not, consult your local Django expert ;)
+    # Execute on host
+    ./dump.sh
 
 
 Testing your changes
@@ -128,7 +76,7 @@ Bonus: Setting up a cool debugger
 
 Install ``django-extensions`` and ``werkzeug`` using pip::
 
-   pip install django-extensions werkzeug
+    pip install django-extensions werkzeug
 
 and add ``'django_extensions'`` to your ``INSTALLED_APPS`` setting in the
 ``local_settings.py``.

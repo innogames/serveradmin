@@ -47,6 +47,8 @@ requests = "*"
 setuptools = "*"
 # Generate fake data for tests
 faker = "*"
+# Use Twelve-factor methodology to configure environment variables
+django-environ = "*"
 
 [requires]
 python_version = "3.7"
