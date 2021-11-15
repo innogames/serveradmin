@@ -104,5 +104,7 @@
 #alerts {
     z-index: 100;
     position: absolute;
-    width: 98%;
+    width: 25%;
+    right: 0;
+    top: 1%;
 }
