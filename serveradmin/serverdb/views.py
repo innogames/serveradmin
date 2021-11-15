@@ -96,6 +96,7 @@ def history(request):
     object_id = request.GET.get('object_id')
     commit_id = request.GET.get('commit_id')
     search_string = request.GET.get('search_string')
+    exclude_string = request.GET.get('exclude_string')
 
     if not object_id:
         raise Http404
@@ -113,6 +114,11 @@ def history(request):
         adds = adds.filter(attributes_json__contains=search_string)
         updates = updates.filter(updates_json__contains=search_string)
         deletes = deletes.filter(attributes_json__contains=search_string)
+
+    if exclude_string:
+        adds = adds.exclude(attributes_json__contains=exclude_string)
+        updates = updates.exclude(updates_json__contains=exclude_string)
+        deletes = deletes.exclude(attributes_json__contains=exclude_string)
 
     if commit_id:
         adds = adds.filter(commit__pk=commit_id)
@@ -139,6 +145,7 @@ def history(request):
         'base_template': 'empty.html' if request.is_ajax() else 'base.html',
         'link': request.get_full_path(),
         'search_string': search_string,
+        'exclude_string': exclude_string,
     })
 
 
