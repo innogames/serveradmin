@@ -14,14 +14,14 @@ jobs:
     strategy:
       matrix:
         python:
-          - "3.6"
           - "3.7"
           - "3.8"
           - "3.9"
+          - "3.10"
 
     services:
       postgres:
-        image: 'postgres:13'
+        image: 'postgres:14'
         env:
           POSTGRES_USER: serveradmin
           POSTGRES_PASSWORD: serveradmin
