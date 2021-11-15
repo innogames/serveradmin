@@ -216,6 +216,7 @@ servershell.alert = function(text, level, auto_dismiss=5) {
 
     let alert = template.clone();
     alert.removeAttr('id');
+    alert.addClass('dismissible');
     alert.addClass(`alert-${level}`);
     alert.children('.alert-text').text(text);
 
