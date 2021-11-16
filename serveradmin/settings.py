@@ -23,7 +23,7 @@ ALLOWED_HOSTS = env('ALLOWED_HOSTS', default=[])
 # authentication by default.
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': env('POSTGRES_DB', default=None),
         'USER': env('POSTGRES_USER', default=None),
         'PASSWORD': env('POSTGRES_PASSWORD', default=None),
