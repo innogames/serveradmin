@@ -24,3 +24,16 @@ services:
     command: "./run.sh"
     depends_on:
       - db
+
+  pdns-db:
+    tty: true
+    image: "postgres:${POSTGRES_VERSION}"
+    environment:
+      - POSTGRES_DB=${POSTGRES_PDNS_DB}
+      - POSTGRES_USER=${POSTGRES_PDNS_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PDNS_PASSWORD}
+    volumes:
+      - ".docker/db/postgres.conf:/etc/postgresql/postgres.conf:ro"
+    ports:
+      - "6432:5432"
+    command: "-c config_file=/etc/postgresql/postgres.conf"
