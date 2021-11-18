@@ -24,6 +24,7 @@ services:
     command: "./run.sh"
     depends_on:
       - db
+      - pdns-db
 
   pdns-db:
     tty: true
