@@ -73,3 +73,7 @@ __pycache__/
 
 # Virtual Environment
 /venv/
+
+# Nix-related
+/.envrc
+/default.nix
