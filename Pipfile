@@ -15,7 +15,7 @@ netaddr = "*"
 # WSGI server
 gunicorn = "*"
 # Debian stretch version
-Django = "~=2.2"
+Django = "~=3.2"
 # postgres lib used by django
 psycopg2-binary = "<2.9"
 # Django support for network address fields on PostgreSQL
