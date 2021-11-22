@@ -24,3 +24,33 @@ services:
     command: "./run.sh"
     depends_on:
       - db
+      - pdns-db
+
+  pdns-db:
+    tty: true
+    image: "postgres:${POSTGRES_VERSION}"
+    environment:
+      - POSTGRES_DB=${POSTGRES_PDNS_DB}
+      - POSTGRES_USER=${POSTGRES_PDNS_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PDNS_PASSWORD}
+    volumes:
+      - ".docker/pdns-db/postgres.conf:/etc/postgresql/postgres.conf:ro"
+      - ".docker/pdns-db/pdns-schema.sh:/docker-entrypoint-initdb.d/pdns-schema.sh:ro"
+    ports:
+      - "6432:5432"
+    command: "-c config_file=/etc/postgresql/postgres.conf"
+
+  pdns-auth:
+    tty: true
+    build: .docker/pdns-auth
+    environment:
+      - GPGSQL_HOST=${POSTGRES_PDNS_HOST}
+      - GPGSQL_PORT=5432
+      - GPGSQL_DBNAME=${POSTGRES_PDNS_DB}
+      - GPGSQL_USER=${POSTGRES_PDNS_USER}
+      - GPGSQL_PASSWORD=${POSTGRES_PDNS_PASSWORD}
+    ports:
+      - "1053:53"
+      - "1053:53/udp"
+    depends_on:
+      - pdns-db

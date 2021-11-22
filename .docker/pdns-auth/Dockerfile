@@ -1,0 +1,11 @@
+FROM powerdns/pdns-auth-46:latest
+
+ARG GPGSQL_HOST
+ARG GPGSQL_PORT
+ARG GPGSQL_DBNAME
+ARG GPGSQL_USER
+ARG GPGSQL_PASSWORD
+
+COPY entrypoint.sh ~/
+
+ENTRYPOINT ["~/entrypoint.sh"]
