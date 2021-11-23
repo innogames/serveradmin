@@ -19,11 +19,17 @@ DEBUG = env('DEBUG', default=False)
 
 ALLOWED_HOSTS = env('ALLOWED_HOSTS', default=[])
 
+# Default model used for the implicit generate primary key when no attribute
+# of a model as primary_key = True.
+#
+# See https://docs.djangoproject.com/en/3.2/releases/3.2/#customizing-type-of-auto-created-primary-keys
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 # Try to connect to a local postgres DB called serveradmin via user based
 # authentication by default.
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': env('POSTGRES_DB', default=None),
         'USER': env('POSTGRES_USER', default=None),
         'PASSWORD': env('POSTGRES_PASSWORD', default=None),
