@@ -28,6 +28,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 # Try to connect to a local postgres DB called serveradmin via user based
 # authentication by default.
 DATABASES = {
+    # Serveradmin database connection
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': env('POSTGRES_DB', default=None),
@@ -37,6 +38,18 @@ DATABASES = {
         'PORT': env('POSTGRES_PORT', default=5432),
         'OPTIONS': {
             'connect_timeout': 1,
+            'client_encoding': 'UTF8',
+        },
+    },
+    # Optional PowerDNS database connection
+    'pdns': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('POSTGRES_PDNS_DB', default=None),
+        'USER': env('POSTGRES_PDNS_USER', default=None),
+        'PASSWORD': env('POSTGRES_PDNS_PASSWORD', default=None),
+        'HOST': env('POSTGRES_PDNS_HOST', default=None),
+        'PORT': env('POSTGRES_PDNS_PORT', default=5432),
+        'OPTIONS': {
             'client_encoding': 'UTF8',
         },
     },
