@@ -5,6 +5,8 @@ class Domain(models.Model):
     """PowerDNS Domain
 
     Model to access domain in the PowerDNS db.
+
+    See https://doc.powerdns.com/authoritative/backends/generic-postgresql.html#default-schema
     """
     TYPES = [
         ('MASTER', 'MASTER'),
@@ -26,6 +28,8 @@ class Record(models.Model):
     """PowerDNS Record
 
     Model to access records in the PowerDNS db.
+
+    See https://doc.powerdns.com/authoritative/backends/generic-postgresql.html#default-schema
     """
     TYPES = [
         ('A', 'A'),
