@@ -52,6 +52,9 @@ if __name__ == '__main__':
                 'templates/servershell/*',
                 'templates/servershell/modals/*',
             ],
+            'serveradmin.powerdns': [
+                'templates/powerdns/*',
+            ],
         },
         entry_points={
             'console_scripts': [
