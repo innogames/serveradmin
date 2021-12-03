@@ -81,6 +81,7 @@ INSTALLED_APPS = [
     'serveradmin.resources',
     'serveradmin.serverdb',
     'serveradmin.servershell',
+    'serveradmin.powerdns',
     'compressor',
 ]
 
