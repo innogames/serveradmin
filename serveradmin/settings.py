@@ -50,10 +50,12 @@ DATABASES = {
         'HOST': env('POSTGRES_PDNS_HOST', default=None),
         'PORT': env('POSTGRES_PDNS_PORT', default=5432),
         'OPTIONS': {
+            'connect_timeout': 1,
             'client_encoding': 'UTF8',
         },
     },
 }
+DATABASE_ROUTERS = ['serveradmin.powerdns.routers.PowerDNSRouter']
 
 MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
