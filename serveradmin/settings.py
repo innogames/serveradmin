@@ -81,12 +81,14 @@ INSTALLED_APPS = [
     'serveradmin.resources',
     'serveradmin.serverdb',
     'serveradmin.servershell',
+    'serveradmin.powerdns',
     'compressor',
 ]
 
 MENU_TEMPLATES = [
     'servershell/menu.html',
     'resources/menu.html',
+    'powerdns/menu.html',
 ]
 
 ROOT_URLCONF = 'serveradmin.urls'
