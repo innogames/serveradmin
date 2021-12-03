@@ -54,6 +54,7 @@ DATABASES = {
         },
     },
 }
+DATABASE_ROUTERS = ['serveradmin.powerdns.routers.PowerDNSRouter']
 
 MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
