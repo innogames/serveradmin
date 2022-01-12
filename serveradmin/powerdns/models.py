@@ -17,7 +17,8 @@ class Domain(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255, null=False)
     master = models.CharField(max_length=128, default=None)
-    type = models.CharField(max_length=6, null=False, choices=TYPES)
+    type = models.CharField(
+        max_length=6, null=False, choices=TYPES, default='NATIVE')
 
     class Meta:
         managed = False
