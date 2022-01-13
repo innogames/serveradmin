@@ -72,13 +72,8 @@ connection via .env file, environment variables or settings.py::
         },
     }
 
-The user role must have at least the privileges
-
-* SELECT
-* INSERT
-* UPDATE
-* DELETE
-* CONNECT
+The user role must have at least the privileges SELECT, INSERT, UPDATE, DELETE,
+CONNECT
 
 See `PostgreSQL Privileges <https://www.postgresql.org/docs/current/ddl-priv.html>`_
 
