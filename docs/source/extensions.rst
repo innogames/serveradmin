@@ -77,3 +77,21 @@ CONNECT
 
 See `PostgreSQL Privileges <https://www.postgresql.org/docs/current/ddl-priv.html>`_
 
+Domain Mapping Settings
+"""""""""""""""""""""""
+
+Serveradmin needs to know which servertype(s) represent domains and which
+attributes represent the domain information.
+
+The default configuration can be overridden via local_settings.py::
+
+    PDNS = {
+        'domain': [{
+            'servertype': 'domain',
+            'id': 'object_id',
+            'name': 'hostname',
+            'master': None,
+            'type': None,  # Default: NATIVE
+        }],
+    }
+

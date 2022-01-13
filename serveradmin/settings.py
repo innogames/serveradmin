@@ -217,6 +217,21 @@ GRAPHITE_SPRITE_PARAMS = (
     'graphOnly=true'
 )
 
+# PowerDNS mapping configuration
+#
+# Tell Serveradmin which servertypes represent domains and records and which
+# attributes represent the domain and record information.
+#
+PDNS = {
+    'domain': [{
+        'servertype': 'domain',
+        'id': 'object_id',
+        'name': 'hostname',
+        'master': None,
+        'type': None,  # Default: NATIVE
+    }],
+}
+
 # Using exec certainly isn't an awesome solution but it's the best we've got.
 # The problem boils down to django configs being python files but python only
 # imports code from modules in its path.  One solution would be to generate a
