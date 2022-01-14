@@ -1,6 +1,9 @@
 Extensions
 ==========
 
+The PowerDNS extension is not production ready and under development.
+
+.. image:: images/under_construction.png
 
 PowerDNS
 --------
