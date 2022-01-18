@@ -108,3 +108,11 @@
     right: 0;
     top: 1%;
 }
+
+.diff {
+    background-color: #f8d7da;
+}
+
+.equal {
+    background-color: #d1e7dd;
+}
