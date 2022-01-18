@@ -228,7 +228,7 @@ PDNS = {
         'id': 'object_id',
         'name': 'hostname',
         'master': None,
-        'type': None,  # Default: NATIVE
+        'type': None,  # Defaults to NATIVE if None
     }],
 }
 
