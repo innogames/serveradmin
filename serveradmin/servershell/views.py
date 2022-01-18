@@ -527,6 +527,14 @@ def diff(request: HttpRequest) -> HttpResponse:
 
     diff_data = []
     for attribute in sorted(set(chain(*[o.keys() for o in qs]))):
+        # object_id is always different and special
+        if attribute == 'object_id':
+            continue
+
+        # Show hostname only if request by user
+        if attribute == 'hostname' and attrs != [] and attribute not in attrs:
+            continue
+
         values = []
         for obj in qs:
             values.append(obj[attribute])
