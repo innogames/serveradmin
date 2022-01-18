@@ -13,8 +13,7 @@ def get_domain_settings() -> List:
     Returns the PDNS.domain django settings or an empty list if not setup.
     """
     if settings.PDNS:
-        if 'domain' in settings.PDNS:
-            return settings.PDNS.get('domain')
+        return settings.PDNS.get('domain', [])
 
     return list()
 
