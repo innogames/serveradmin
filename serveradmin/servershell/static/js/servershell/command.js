@@ -159,7 +159,7 @@ servershell.delete_attribute = function(object_id, attribute_id) {
  */
 function validate_selected(min=1, max=-1) {
     let selected = servershell.get_selected().length;
-    if ((min !== -1 && selected < min) || (max !== -1 && selected.length > max)) {
+    if ((min !== -1 && selected < min) || (max !== -1 && selected > max)) {
         if (max === -1) {
             servershell.alert(`You must select at least ${min} object(s)`, 'warning');
         }
@@ -633,6 +633,25 @@ servershell.commands = {
         servershell._ajax.fail = function() {};
         servershell._ajax.abort();
         servershell.alert('Pending request cancelled', 'success');
+    },
+    diff: function(attribute_ids) {
+        if (!validate_selected(2)) {
+            return;
+        }
+
+        attribute_ids = attribute_ids.split(',').map(a => a.trim()).filter(a => a !== '');
+        let unknown = attribute_ids.filter(a => servershell.attributes.find(b => b.attribute_id === a) === undefined);
+
+        if (unknown.length > 0) {
+            servershell.alert(`The attribute(s) ${unknown.join(', ')} doe not exist!`, 'warning');
+            return;
+        }
+
+        let objects = servershell.get_selected().map(o => `object=${o}`).join('&');
+        let attrs = attribute_ids.map(a => `attr=${a}`).join('&');
+        let url = servershell.urls.diff + '?' + objects + '&' + attrs;
+
+        window.open(url, '_blank');
     },
 };
 

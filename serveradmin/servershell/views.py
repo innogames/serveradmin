@@ -6,7 +6,7 @@ Copyright (c) 2021 InnoGames GmbH
 import json
 from distutils.util import strtobool
 from ipaddress import IPv6Address, IPv4Address, ip_interface
-from itertools import islice
+from itertools import islice, chain
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -21,13 +21,14 @@ from django.http import (
     Http404,
     JsonResponse,
     HttpResponseBadRequest,
-    HttpResponseNotFound
+    HttpResponseNotFound, HttpRequest
 )
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render, get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.html import mark_safe, escape as escape_html
 from django.views.decorators.http import require_http_methods
+from django.views.defaults import bad_request
 
 from adminapi.datatype import DatatypeError
 from adminapi.filters import Any, ContainedOnlyBy, filter_classes
@@ -511,3 +512,29 @@ def _prepare_regexp_html(regexp):
         regexp_html = (escape_html(regexp).replace('|', '|&#8203;')
                        .replace(']', ']&#8203;').replace(')', ')&#8203;'))
         return mark_safe(regexp_html)
+
+
+@login_required
+def diff(request: HttpRequest) -> HttpResponse:
+    attrs = request.GET.getlist('attr')
+    objects = request.GET.getlist('object')
+
+    if not objects or not all([o.isnumeric() for o in objects]):
+        return bad_request(request, HttpResponseBadRequest)
+
+    # Can raise ApiError for unknown attributes - let it flow ...
+    qs = Query({'object_id': Any(*objects)}, attrs if attrs else None)
+
+    diff_data = []
+    for attribute in sorted(set(chain(*[o.keys() for o in qs]))):
+        values = []
+        for obj in qs:
+            values.append(obj[attribute])
+
+        diff_data.append([attribute, values])
+
+    context = {
+        'objects': qs,
+        'diff_data': diff_data,
+    }
+    return render(request, 'servershell/diff.html', context)
