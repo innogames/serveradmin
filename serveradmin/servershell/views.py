@@ -541,8 +541,14 @@ def diff(request: HttpRequest) -> HttpResponse:
 
         diff_data.append([attribute, values])
 
+    # Fetch hostnames if not requested by user to display as header in result.
+    if 'hostname' in attrs:
+        hosts = qs
+    else:
+        hosts = Query({'object_id': Any(*objects)}, ['hostname'])
+
     context = {
-        'objects': qs,
+        'hosts': hosts,
         'diff_data': diff_data,
     }
     return render(request, 'servershell/diff.html', context)

@@ -20,8 +20,8 @@
                 <thead>
                     <tr>
                         <th scope="col">Attribute</th>
-                        {% for obj in objects %}
-                            <th scope="col">{{ obj.object_id }}</th>
+                        {% for host in hosts %}
+                            <th scope="col">{{ host.hostname }}</th>
                         {% endfor %}
                     </tr>
                 </thead>
