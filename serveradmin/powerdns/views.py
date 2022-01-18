@@ -24,6 +24,6 @@ def domains(request: HttpRequest) -> HttpResponse:
     context = {
         'settings': settings,
         'domains': page_obj,
-        'out_of_sync': get_domains_out_of_sync(),
+        'num_out_of_sync': len(get_domains_out_of_sync()),
     }
     return render(request, 'powerdns/domains.html', context)
