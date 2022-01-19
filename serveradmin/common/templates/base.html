@@ -41,16 +41,16 @@
             {% endif %}
             <li class="nav-item"><a class="nav-link" href="{% url 'logout' %}">Logout</a></li>
         </ul>
-    </div>
 
-    <span class="navbar-text">
-        <a class="nav-link text-secondary" target="_blank" href="https://github.com/innogames/serveradmin/tree/{% get_version %}">{% get_version %}</a>
-    </span>
-    <div id="spinner-timer" class="text-secondary">
-        <span id="spinner-timer-value"></span>&nbsp;&nbsp;
-    </div>
-    <div id="spinner" class="spinner-border text-secondary" role="status">
-        <span class="sr-only">Loading...</span>
+        <span class="navbar-text ml-auto">
+            <a class="nav-link text-secondary" target="_blank" href="https://github.com/innogames/serveradmin/tree/{% get_version %}">{% get_version %}</a>
+        </span>
+        <div id="spinner-timer" class="text-secondary">
+            <span id="spinner-timer-value"></span>&nbsp;&nbsp;
+        </div>
+        <div id="spinner" class="spinner-border text-secondary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
     </div>
 </nav>
 <div id="content">
