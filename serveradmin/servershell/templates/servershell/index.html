@@ -226,6 +226,7 @@
             commit: "{% url 'servershell_commit' %}",
             history: "{% url 'serverdb_history' %}",
             settings: "{% url 'servershell_save_settings' %}",
+            diff: "{% url 'servershell_diff' %}",
         };
 
         servershell.search_settings = {% autoescape off %}{{ search_settings|json }}{% endautoescape %};

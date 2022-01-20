@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Diff{% endblock %}
+
+{% block additional_styles %}
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/servershell.css">
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12">
+            <button class="btn btn-primary" data-toggle="button" aria-pressed="false" onclick="toggle_diff(this);">
+                Differences only
+            </button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <table class="table table-sm table-borderless table-striped table-responsive">
+                <thead>
+                    <tr>
+                        <th scope="col">Attribute</th>
+                        {% for host in hosts %}
+                            <th scope="col">{{ host.hostname }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in diff_data %}
+                        <tr>
+                            <td>{{ row.0 }}</td>
+                            {% with compare_to=row.1.0 %}
+                            {% for value in row.1 %}
+                                <td class="{% if value != compare_to %}diff{% else %}equal{% endif %}">{{ value }}</td>
+                            {% endfor %}
+                            {% endwith %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{% block additional_scripts %}
+    <script src="{{ STATIC_URL }}js/diff.js"></script>
+{% endblock %}

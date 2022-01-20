@@ -15,7 +15,7 @@ from serveradmin.servershell.views import (
     new_object,
     clone_object,
     choose_ip_addr,
-    settings,
+    settings, diff,
 )
 
 
@@ -30,4 +30,5 @@ urlpatterns = [
     path('clone', clone_object, name='servershell_clone'),
     path('choose_ip_addr', choose_ip_addr, name='servershell_choose_ip_addr'),
     path('settings', settings, name='servershell_save_settings'),
+    path('diff', diff, name='servershell_diff'),
 ]
