@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}PowerDNS Records{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
+            <h3>Mapping</h3>
+            <div class="alert alert-secondary" role="alert">
+                The following servertypes are mapped to PowerDNS records.
+            </div>
+
+            {% for setting in settings %}
+            <div style="float: left; margin-right: 10px;">
+                <table class="table table-sm table-borderless table-striped table-responsive">
+                    <tbody>
+                        <tr>
+                            <td><b>{{ setting.servertype }}</b></td>
+                            <td></td>
+                        </tr>
+                        {% for name, value in setting.items %}
+                            <tr>
+                                <td>{{ name }}</td>
+                                <td>{{ value }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
+            <h3>Records</h3>
+            {% if num_out_of_sync %}
+                <div class="alert alert-secondary">
+                        Found {{ num_out_of_sync }} Records not synchronised.
+                </div>
+            {% endif %}
+            <table class="table table-sm table-borderless table-striped">
+                <thead>
+                    <tr>
+                        <th scope="col">id</th>
+                        <th scope="col">domain</th>
+                        <th scope="col">name</th>
+                        <th scope="col">type</th>
+                        <th scope="col">content</th>
+                        <th scope="col">ttl</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                        <tr>
+                            <td>{{ record.id }}</td>
+                            <td>{{ record.domain.name }}</td>
+                            <td>{{ record.name }}</td>
+                            <td>{{ record.type }}</td>
+                            <td>{{ record.content }}</td>
+                            <td>{{ record.ttl }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% include "pagination.html" with page_obj=records %}
+        </div>
+    </div>
+{% endblock %}
