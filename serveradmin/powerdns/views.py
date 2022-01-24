@@ -4,7 +4,7 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
 from .models import Domain
-from .utils import get_domain_settings, get_domains_out_of_sync
+from .utils import get_settings, get_domains_out_of_sync
 
 
 def domains(request: HttpRequest) -> HttpResponse:
@@ -13,7 +13,7 @@ def domains(request: HttpRequest) -> HttpResponse:
     :param request:
     :return:
     """
-    settings = get_domain_settings()
+    settings = get_settings('domain')
     if not settings:
         messages.warning(request, 'No domain mapping configured in settings!')
         return render(request, 'empty.html')
