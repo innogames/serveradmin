@@ -4,7 +4,7 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
 from .models import Domain
-from .utils import get_settings, get_domains_out_of_sync
+from .utils import get_settings, get_out_of_sync
 
 
 def domains(request: HttpRequest) -> HttpResponse:
@@ -24,6 +24,6 @@ def domains(request: HttpRequest) -> HttpResponse:
     context = {
         'settings': settings,
         'domains': page_obj,
-        'num_out_of_sync': len(get_domains_out_of_sync()),
+        'num_out_of_sync': len(get_out_of_sync('domain')),
     }
     return render(request, 'powerdns/domains.html', context)
