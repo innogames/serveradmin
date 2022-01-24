@@ -114,11 +114,11 @@ u {
     appearance: none;
 }
 
-a[aria-expanded=true]:before {
+a.btn[aria-expanded=true]:before {
     content: "Hide";
 }
 
-a[aria-expanded=false]:before {
+a.btn[aria-expanded=false]:before {
     content: "Show";
 }
 

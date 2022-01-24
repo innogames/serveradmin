@@ -1,6 +1,9 @@
 Extensions
 ==========
 
+The PowerDNS extension is not production ready and under development.
+
+.. image:: images/under_construction.png
 
 PowerDNS
 --------
@@ -23,6 +26,14 @@ PostgreSQL database backend.
 This allows to manage DNS information for your hosts from the Serveradmin
 Servershell and Remote API (and it's benefits such as authentication and
 authorisation).
+
+This implementation hooks into blocking signals
+(`Django Signals <https://docs.djangoproject.com/en/3.2/topics/signals/>`_)
+of Serveradmin emitted before and after changes are committed.
+
+If you don't need the DNS information being updated immediately and per request
+performance matters you could use a script to query DNS information and update
+your DNS every now and then.
 
 
 How to use it
@@ -69,13 +80,26 @@ connection via .env file, environment variables or settings.py::
         },
     }
 
-The user role must have at least the privileges
-
-* SELECT
-* INSERT
-* UPDATE
-* DELETE
-* CONNECT
+The user role must have at least the privileges SELECT, INSERT, UPDATE, DELETE,
+CONNECT
 
 See `PostgreSQL Privileges <https://www.postgresql.org/docs/current/ddl-priv.html>`_
+
+Domain Mapping Settings
+"""""""""""""""""""""""
+
+Serveradmin needs to know which servertype(s) represent domains and which
+attributes represent the domain information.
+
+The default configuration can be overridden via local_settings.py::
+
+    PDNS = {
+        'domain': [{
+            'servertype': 'domain',
+            'id': 'object_id',
+            'name': 'hostname',
+            'master': None,
+            'type': None,  # Default: NATIVE
+        }],
+    }
 
