@@ -103,3 +103,30 @@ The default configuration can be overridden via local_settings.py::
         }],
     }
 
+
+Record Mapping Settings
+"""""""""""""""""""""""
+
+Serveradmin needs to know which servertype(s) contain record information and
+what attributes represent what record type.
+
+The default configuration can be overriden via local_settings.py::
+
+    PDNS = {
+        'record': [{
+            'servertype': 'vm',
+            'id': 'object_id', # Must be uniq
+            'domain_id': 'dns_domain', # Relation attribute to domain servertype
+            'name': 'hostname',
+            'type': 'A',
+            'content': 'intern_ip',
+            'ttl': 300, # Hardcode ttl, can be attribute too
+        }],
+    }
+
+In the above example all objects of servertype vm will have a DNS type A record
+based on the values of the attribute hostname and the attribute intern_ip with
+a fixed TTL of 5 minutes.
+
+domain_id must be a relation attribute to the domain servertype which this
+record belongs to.

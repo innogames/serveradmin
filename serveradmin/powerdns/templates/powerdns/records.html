@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}PowerDNS Records{% endblock %}
+
+{% block content %}
+    {% include "powerdns/settings.html" with title='Records' settings=settings %}
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
+            <h3>Records</h3>
+            {% if num_out_of_sync %}
+                <div class="alert alert-secondary">
+                    Found {{ num_out_of_sync }} Records not synchronised.
+                </div>
+            {% endif %}
+            <table class="table table-sm table-borderless table-striped">
+                <thead>
+                    <tr>
+                        <th scope="col">id</th>
+                        <th scope="col">domain</th>
+                        <th scope="col">name</th>
+                        <th scope="col">type</th>
+                        <th scope="col">content</th>
+                        <th scope="col">ttl</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                        <tr>
+                            <td>{{ record.id }}</td>
+                            <td>{{ record.domain.name }}</td>
+                            <td>{{ record.name }}</td>
+                            <td>{{ record.type }}</td>
+                            <td>{{ record.content }}</td>
+                            <td>{{ record.ttl }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% include "pagination.html" with page_obj=records %}
+        </div>
+    </div>
+{% endblock %}

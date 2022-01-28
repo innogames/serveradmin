@@ -230,6 +230,15 @@ PDNS = {
         'master': None,
         'type': None,  # Defaults to NATIVE if None
     }],
+    'record': [{
+        'servertype': 'record',
+        'id': 'object_id',
+        'domain_id': 'domain',
+        'name': 'hostname',
+        'type': 'A',
+        'content': 'intern_ip',
+        'ttl': 300,
+    }],
 }
 
 # Using exec certainly isn't an awesome solution but it's the best we've got.

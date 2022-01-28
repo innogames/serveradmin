@@ -45,7 +45,7 @@ class Record(models.Model):
     ]
 
     id = models.BigIntegerField(primary_key=True)
-    domain_id = models.ForeignKey('Domain', on_delete=models.CASCADE)
+    domain = models.ForeignKey('Domain', on_delete=models.CASCADE)
     name = models.CharField(max_length=255, default=None)
     type = models.CharField(max_length=10, default=None, choices=TYPES)
     content = models.CharField(max_length=65535, default=None)
