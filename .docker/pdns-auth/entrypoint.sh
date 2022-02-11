@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cat <<EOF > /etc/powerdns/pdns.d/pdns.local.gpgsql.conf
-launch+=gpgsql
+launch=gpgsql
 gpgsql-host=$GPGSQL_HOST
 gpgsql-port=$GPGSQL_PORT
 gpgsql-dbname=$GPGSQL_DBNAME
