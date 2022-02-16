@@ -6,6 +6,7 @@ ARG GPGSQL_DBNAME
 ARG GPGSQL_USER
 ARG GPGSQL_PASSWORD
 
-COPY entrypoint.sh ~/
+COPY pdns.conf /etc/powerdns/pdns.conf
+COPY entrypoint.sh /
 
-ENTRYPOINT ["~/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
