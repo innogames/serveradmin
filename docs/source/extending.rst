@@ -166,10 +166,10 @@ just modified files*)::
 **Don't forget to put a meaningful commit message.**
 
 Once you have done all your changes and your version is ready for deployment
-you can merge it back to master.  You may want to fetch changes from remote
+you can merge it back to main.  You may want to fetch changes from remote
 first::
 
-   git checkout master
+   git checkout main
    git pull # Optionally fetch changes from remote
    git merge my_changes
 

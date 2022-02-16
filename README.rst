@@ -1,4 +1,4 @@
-.. image:: https://travis-ci.com/innogames/serveradmin.svg?branch=master
+.. image:: https://travis-ci.com/innogames/serveradmin.svg?branch=main
     :target: https://travis-ci.com/innogames/serveradmin
     :alt: Continuous Integration Status
 
