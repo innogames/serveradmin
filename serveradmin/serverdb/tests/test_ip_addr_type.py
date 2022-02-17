@@ -8,7 +8,7 @@ from ipaddress import IPv4Network
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.test.testcases import TransactionTestCase
+from django.test import TransactionTestCase
 from faker import Faker
 from faker.providers import internet
 
@@ -27,9 +27,11 @@ class TestIpAddrType(TransactionTestCase):
 
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
         logging.getLogger('faker').setLevel(logging.ERROR)
 
     def setUp(self):
+        super().setUp()
         self.faker = Faker()
         self.faker.add_provider(internet)
 
