@@ -1,0 +1,39 @@
+[
+  {
+    "model": "serverdb.servertype",
+    "pk": "domain",
+    "fields": {
+      "description": "PowerDNS domain",
+      "ip_addr_type": "null"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
+    "pk": "type",
+    "fields": {
+      "type": "string",
+      "multi": false,
+      "hovertext": "PowerDNS domain type",
+      "group": "dns",
+      "help_link": null,
+      "readonly": false,
+      "target_servertype": null,
+      "reversed_attribute": null,
+      "clone": false,
+      "regexp": "\\A(MASTER|SLAVE|NATIVE)\\Z"
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 1,
+    "fields": {
+      "servertype": "domain",
+      "attribute": "type",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": true,
+      "default_value": "NATIVE",
+      "default_visible": false
+    }
+  }
+]
