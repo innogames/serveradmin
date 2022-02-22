@@ -20,7 +20,7 @@ jobs:
           - "3.10"
 
     services:
-      postgres:
+      db:
         image: 'postgres:14'
         env:
           POSTGRES_USER: serveradmin
@@ -29,10 +29,23 @@ jobs:
         ports:
           - 5432/tcp
         options: >-
-                  --health-cmd pg_isready
-                  --health-interval 10s
-                  --health-timeout 5s
-                  --health-retries 5
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      pdns-db:
+        image: 'postgres:14'
+        env:
+          POSTGRES_USER: pdns
+          POSTGRES_PASSWORD: pdns
+          POSTGRES_DB: pdns
+        ports:
+          - 5432/tcp
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Setup python
@@ -51,10 +64,22 @@ jobs:
               'default': {
                   'ENGINE': 'django.db.backends.postgresql',
                   'HOST': '127.0.0.1',
-                  'PORT': '${{ job.services.postgres.ports[5432]  }}',
+                  'PORT': '${{ job.services.db.ports[5432] }}',
                   'NAME': 'serveradmin',
                   'USER': 'serveradmin',
                   'PASSWORD': 'serveradmin',
+                  'OPTIONS': {
+                      'connect_timeout': 1,
+                      'client_encoding': 'UTF8',
+                  },
+              },
+              'pdns': {
+                  'ENGINE': 'django.db.backends.postgresql',
+                  'HOST': '127.0.0.1',
+                  'PORT': '${{ job.services.pdns-db.ports[5432] }}',
+                  'NAME': 'pdns',
+                  'USER': 'pdns',
+                  'PASSWORD': 'pdns',
                   'OPTIONS': {
                       'connect_timeout': 1,
                       'client_encoding': 'UTF8',
