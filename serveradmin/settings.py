@@ -222,7 +222,6 @@ PDNS = {
     'domain': [{
         'servertype': 'domain',
         'attributes': {
-            'id': 'object_id',
             'name': 'hostname',
             'type': 'type',
         }
