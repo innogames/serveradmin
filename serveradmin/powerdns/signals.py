@@ -45,3 +45,22 @@ def create_domains(sender, **kwargs):
             domain.name = queried_object[attrs['name']]
             domain.type = queried_object[attrs['type']]
             domain.save()
+
+
+@receiver(post_commit)
+@profile
+def delete_domains(sender, **kwargs):
+    """Delete PowerDNS domain for deleted objects
+
+    :param sender:
+    :param kwargs:
+    :return:
+    """
+
+    if not kwargs['deleted']:
+        return
+
+    # deleted contains a list of object_ids that were deleted and no further
+    # information about e.g. servertype so we just try to delete everything
+    # that matches.
+    Domain.objects.filter(id__in=kwargs['deleted']).delete()
