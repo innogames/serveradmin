@@ -41,7 +41,7 @@ def create_domains(sender, **kwargs):
 
             # All attributes are mandatory
             domain = Domain()
-            domain.id = queried_object[attrs['id']]
+            domain.id = queried_object['object_id']
             domain.name = queried_object[attrs['name']]
             domain.type = queried_object[attrs['type']]
             domain.save()
@@ -63,4 +63,6 @@ def delete_domains(sender, **kwargs):
     # deleted contains a list of object_ids that were deleted and no further
     # information about e.g. servertype so we just try to delete everything
     # that matches.
+    #
+    # @TODO: Find a way to avoid querying the database for irrelevant objects
     Domain.objects.filter(id__in=kwargs['deleted']).delete()
