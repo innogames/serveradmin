@@ -1,5 +1,5 @@
 .. image:: https://github.com/innogames/serveradmin/actions/workflows/tests.yml/badge.svg
-    :target: https://travis-ci.com/innogames/serveradmin
+    :target: https://github.com/innogames/serveradmin/actions/workflows/tests.yml/badge.svg
     :alt: Continuous Integration Status
 
 .. image:: https://readthedocs.org/projects/serveradmin/badge/?version=latest
