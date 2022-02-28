@@ -77,6 +77,9 @@ class BaseQuery(object):
                 raise TypeError('Restrict must be a list')
 
             if 'object_id' not in restrict:
+                # Don't change the original restrict to avoid the user working
+                # with unexpected elements.
+                restrict = restrict.copy()
                 restrict.append('object_id')
 
             return [
