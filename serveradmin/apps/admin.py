@@ -25,6 +25,8 @@ class ApplicationAdmin(admin.ModelAdmin):
         'disabled',
         'last_login',
     ]
+    search_fields = ['name', 'owner__username', ]
+    list_filter = ['superuser', 'disabled', ]
 
     readonly_fields = [
         'auth_token',
