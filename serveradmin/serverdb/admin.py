@@ -61,6 +61,9 @@ class ServerAdmin(admin.ModelAdmin):
         ServerStringAttributeInline,
     )
 
+    list_display = ['server_id', 'hostname', 'servertype', ]
+    list_display_links = ['hostname', ]
+
 
 class AttributeAdmin(admin.ModelAdmin):
     def get_readonly_fields(self, request, obj=None):
