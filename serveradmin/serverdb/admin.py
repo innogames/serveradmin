@@ -63,6 +63,8 @@ class ServerAdmin(admin.ModelAdmin):
 
     list_display = ['server_id', 'hostname', 'servertype', ]
     list_display_links = ['hostname', ]
+    search_fields = ['server_id', 'hostname', ]
+    list_filter = ['servertype__servertype_id', ]
 
 
 class AttributeAdmin(admin.ModelAdmin):
