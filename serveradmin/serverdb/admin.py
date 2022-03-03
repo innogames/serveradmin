@@ -68,6 +68,14 @@ class ServerAdmin(admin.ModelAdmin):
 
 
 class AttributeAdmin(admin.ModelAdmin):
+    list_display = [
+        'attribute_id',
+        'type',
+        'group',
+        'hovertext',
+        'multi',
+        'readonly',
+    ]
     def get_readonly_fields(self, request, obj=None):
         fields = super().get_readonly_fields(request, obj)
 
