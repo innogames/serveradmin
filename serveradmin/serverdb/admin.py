@@ -4,6 +4,7 @@ Copyright (c) 2019 InnoGames GmbH
 """
 
 from django.contrib import admin
+from django.utils.html import format_html
 
 from serveradmin.serverdb.forms import (
     ServertypeAttributeAdminForm,
@@ -72,7 +73,7 @@ class AttributeAdmin(admin.ModelAdmin):
         'attribute_id',
         'type',
         'group',
-        'hovertext',
+        'get_hovertext',
         'multi',
         'readonly',
     ]
@@ -89,6 +90,14 @@ class AttributeAdmin(admin.ModelAdmin):
             fields += ('type',)
 
         return fields
+
+    @admin.display(description='hovertext')
+    def get_hovertext(self, obj):
+        return format_html(
+            '<span title="{}">{}</span>',
+            obj.hovertext,
+            obj.hovertext[:50],
+        )
 
 
 admin.site.register(Servertype, ServertypeAdmin)
