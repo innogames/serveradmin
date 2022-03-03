@@ -27,6 +27,7 @@ class ApplicationAdmin(admin.ModelAdmin):
     ]
     search_fields = ['name', 'owner__username', ]
     list_filter = ['superuser', 'disabled', ]
+    list_select_related = ['owner', ]
 
     readonly_fields = [
         'auth_token',
