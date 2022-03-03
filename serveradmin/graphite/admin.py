@@ -33,5 +33,6 @@ class RelationInline(admin.TabularInline):
 class CollectionAdmin(admin.ModelAdmin):
     inlines = (TemplateInline, VariationInline, NumericInline, RelationInline)
 
+    list_display = ['name', 'overview', 'created_at']
 
 admin.site.register(Collection, CollectionAdmin)
