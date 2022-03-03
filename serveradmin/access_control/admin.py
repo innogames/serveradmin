@@ -10,6 +10,9 @@ from serveradmin.access_control.models import AccessControlGroup
 
 class AccessControlGroupAdmin(ModelAdmin):
     model = AccessControlGroup
+
+    list_display = ['name', 'query', 'is_whitelist']
+
     filter_horizontal = ['members', 'applications']
 
 
