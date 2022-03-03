@@ -34,9 +34,9 @@ class ApplicationAdmin(admin.ModelAdmin):
         PublicKeyInline
     ]
 
+    @admin.display(description='Public Keys')
     def get_public_keys(self, obj):
         return list(obj.public_keys.all())
-    get_public_keys.short_description = 'Public Keys'
 
     def has_delete_permission(self, request, obj=None):
         # We don't want the applications to be deleted but disabled.
