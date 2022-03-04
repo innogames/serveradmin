@@ -1,39 +1,20 @@
 [
   {
-    "model": "serverdb.servertype",
-    "pk": "domain",
-    "fields": {
-      "description": "PowerDNS domain",
-      "ip_addr_type": "null"
-    }
-  },
-  {
-    "model": "serverdb.attribute",
-    "pk": "type",
-    "fields": {
-      "type": "string",
-      "multi": false,
-      "hovertext": "PowerDNS domain type",
-      "group": "dns",
-      "help_link": null,
-      "readonly": false,
-      "target_servertype": null,
-      "reversed_attribute": null,
-      "clone": false,
-      "regexp": "\\A(MASTER|SLAVE|NATIVE)\\Z"
-    }
-  },
-  {
-    "model": "serverdb.servertypeattribute",
+    "model": "auth.user",
     "pk": 1,
     "fields": {
-      "servertype": "domain",
-      "attribute": "type",
-      "related_via_attribute": null,
-      "consistent_via_attribute": null,
-      "required": true,
-      "default_value": "NATIVE",
-      "default_visible": false
+      "password": "pbkdf2_sha256$260000$FQ50K49aOkQnzZWhjW1Uxb$QeMvKAQwkw5mBsgjtEilSC6E3TdxbWbdCEhSs0JlSq8=",
+      "last_login": "2022-02-11T10:48:23.437Z",
+      "is_superuser": true,
+      "username": "serveradmin",
+      "first_name": "",
+      "last_name": "",
+      "email": "",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2022-02-11T10:47:40.821Z",
+      "groups": [],
+      "user_permissions": []
     }
   }
 ]
