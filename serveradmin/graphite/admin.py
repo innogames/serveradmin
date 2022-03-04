@@ -33,5 +33,9 @@ class RelationInline(admin.TabularInline):
 class CollectionAdmin(admin.ModelAdmin):
     inlines = (TemplateInline, VariationInline, NumericInline, RelationInline)
 
+    list_display = ['name', 'overview', 'created_at']
+    search_fields = ['name']
+    list_filter = ['overview']
+
 
 admin.site.register(Collection, CollectionAdmin)

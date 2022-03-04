@@ -15,10 +15,6 @@ class PublicKeyInline(admin.TabularInline):
 
 
 class ApplicationAdmin(admin.ModelAdmin):
-    readonly_fields = [
-        'auth_token',
-        'last_login',
-    ]
 
     list_display = [
         'name',
@@ -29,14 +25,22 @@ class ApplicationAdmin(admin.ModelAdmin):
         'disabled',
         'last_login',
     ]
+    search_fields = ['name', 'owner__username', ]
+    list_filter = ['superuser', 'disabled', ]
+    list_select_related = ['owner', ]
 
+    readonly_fields = [
+        'auth_token',
+        'last_login',
+    ]
+    autocomplete_fields = ['owner']
     inlines = [
         PublicKeyInline
     ]
 
+    @admin.display(description='Public Keys')
     def get_public_keys(self, obj):
         return list(obj.public_keys.all())
-    get_public_keys.short_description = 'Public Keys'
 
     def has_delete_permission(self, request, obj=None):
         # We don't want the applications to be deleted but disabled.
@@ -48,6 +52,10 @@ class ApplicationAdmin(admin.ModelAdmin):
         if 'delete_selected' in actions:
             del actions['delete_selected']
         return actions
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.prefetch_related('public_keys')
 
 
 admin.site.register(Application, ApplicationAdmin)

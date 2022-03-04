@@ -4,6 +4,7 @@ Copyright (c) 2019 InnoGames GmbH
 """
 
 from django.contrib import admin
+from django.utils.html import format_html
 
 from serveradmin.serverdb.forms import (
     ServertypeAttributeAdminForm,
@@ -30,6 +31,9 @@ class ServertypeAdmin(admin.ModelAdmin):
     inlines = (
         ServertypeAttributeInline,
     )
+
+    list_display = ['servertype_id', 'description', ]
+    search_fields = ['servertype_id', 'description', ]
 
     def get_readonly_fields(self, request, obj=None):
         fields = super().get_readonly_fields(request, obj)
@@ -58,8 +62,24 @@ class ServerAdmin(admin.ModelAdmin):
         ServerStringAttributeInline,
     )
 
+    list_display = ['server_id', 'hostname', 'servertype', ]
+    list_display_links = ['hostname', ]
+    search_fields = ['server_id', 'hostname', ]
+    list_filter = ['servertype__servertype_id', ]
+
 
 class AttributeAdmin(admin.ModelAdmin):
+    list_display = [
+        'attribute_id',
+        'type',
+        'group',
+        'get_hovertext',
+        'multi',
+        'readonly',
+    ]
+    search_fields = ['attribute_id', ]
+    list_filter = ['type', 'group', 'multi', 'readonly', ]
+
     def get_readonly_fields(self, request, obj=None):
         fields = super().get_readonly_fields(request, obj)
 
@@ -70,6 +90,14 @@ class AttributeAdmin(admin.ModelAdmin):
             fields += ('type',)
 
         return fields
+
+    @admin.display(description='hovertext')
+    def get_hovertext(self, obj):
+        return format_html(
+            '<span title="{}">{}</span>',
+            obj.hovertext,
+            obj.hovertext[:50],
+        )
 
 
 admin.site.register(Servertype, ServertypeAdmin)
