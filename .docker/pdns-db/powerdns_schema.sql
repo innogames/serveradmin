@@ -1,1 +1,0 @@
-../../db/powerdns_schema.sql
