@@ -7,7 +7,7 @@ from serveradmin.powerdns.signals import create_domains, delete_domains
 
 
 class DomainTests(TransactionTestCase):
-    databases = {'default', 'pdns'}
+    databases = '__all__'
     fixtures = ['powerdns_auth.json', 'powerdns_serverdb.json']
 
     def test_create_powerdns_domain_from_post_commit_signal(self):
