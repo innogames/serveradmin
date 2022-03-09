@@ -5,12 +5,10 @@ from serveradmin.dataset import Query
 from serveradmin.powerdns.models import Domain
 
 
-class _DomainTestCase(TransactionTestCase):
+class DomainTests(TransactionTestCase):
     databases = {'default', 'pdns'}
     fixtures = ['powerdns_auth.json', 'powerdns_serverdb.json']
 
-
-class TestCreateDomain(_DomainTestCase):
     def test_create_domain(self):
         serveradmin_domain = Query().new_object('domain')
         serveradmin_domain['hostname'] = 'innogames.net'
@@ -30,8 +28,6 @@ class TestCreateDomain(_DomainTestCase):
             Domain.objects.filter(**query_set_filter).exists(),
             'PowerDNS domain not found')
 
-
-class TestDeleteDomain(_DomainTestCase):
     def test_delete_domain(self):
         serveradmin_domain = Query().new_object('domain')
         serveradmin_domain['hostname'] = 'innogames.net'
