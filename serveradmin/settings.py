@@ -217,6 +217,8 @@ GRAPHITE_SPRITE_PARAMS = (
     'graphOnly=true'
 )
 
+# Disable PowerDNS integration by default
+PDNS_ENABLE = False
 # Serveradmin to PowerDNS mapping
 PDNS = {
     'domain': [{
