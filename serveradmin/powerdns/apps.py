@@ -1,4 +1,5 @@
 from django.apps import AppConfig
+from django.conf import settings
 
 
 class PowerdnsConfig(AppConfig):
@@ -6,4 +7,5 @@ class PowerdnsConfig(AppConfig):
     name = 'serveradmin.powerdns'
 
     def ready(self):
-        from . import signals # noqa
+        if settings.PDNS_ENABLE:
+            from . import signals # noqa
