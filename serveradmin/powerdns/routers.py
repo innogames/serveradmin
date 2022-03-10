@@ -20,3 +20,18 @@ class PowerDNSRouter:
         if model._meta.app_label in self.route_app_labels:
             return 'pdns'
         return None
+
+    def allow_migrate(self, db, app_label, model_name=None, **hints):
+        """
+        Apply migrations to PowerDNS db only if target_db hint is set to pdns.
+
+        :param db:
+        :param app_label:
+        :param model_name:
+        :param hints:
+        :return:
+        """
+        if 'target_db' in hints:
+            return db == hints['target_db']
+
+        return db != 'pdns'

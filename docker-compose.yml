@@ -35,7 +35,6 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PDNS_PASSWORD}
     volumes:
       - ".docker/pdns-db/postgres.conf:/etc/postgresql/postgres.conf:ro"
-      - ".docker/pdns-db/powerdns_schema.sql:/docker-entrypoint-initdb.d/powerdns_schema.sql:ro"
     ports:
       - "127.0.0.1:6432:5432"
     command: "-c config_file=/etc/postgresql/postgres.conf"
