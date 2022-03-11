@@ -2,7 +2,7 @@ from django.apps import AppConfig
 from django.conf import settings
 from django.dispatch import Signal
 
-from serveradmin.serverdb.query_committer import post_commit
+from serveradmin.serverdb.signals import post_commit
 
 
 class PowerdnsConfig(AppConfig):
