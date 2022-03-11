@@ -6,6 +6,7 @@ from django.dispatch import receiver
 from serveradmin.common.utils import profile
 from serveradmin.dataset import Query
 from serveradmin.powerdns.models import Domain
+from serveradmin.powerdns.utils import DomainSettings
 from serveradmin.serverdb.query_committer import post_commit
 
 logger = logging.getLogger(__package__)
@@ -66,3 +67,44 @@ def delete_domains(sender, **kwargs):
     #
     # @TODO: Find a way to avoid querying the database for irrelevant objects
     Domain.objects.filter(id__in=kwargs['deleted']).delete()
+
+
+@receiver(post_commit)
+@profile
+def update_domains(sender, **kwargs):
+    """Update PowerDNS domain when changed
+
+    :param sender:
+    :param kwargs:
+    :return:
+    """
+
+    if not kwargs['changed']:
+        return
+
+    # Is any of the updated objects mapped to PowerDNS domain ?
+    object_ids = [changed['object_id'] for changed in kwargs['changed']]
+    domains_to_update = Domain.objects.filter(id__in=object_ids)
+    if not domains_to_update.exists():
+        return
+
+    domain_settings = DomainSettings()
+    for domain in domains_to_update:
+        attributes = domain_settings.get_attributes() + ['servertype']
+        # @TODO Find a way to avoid this extra Query if possible
+        queried_object = Query({'object_id': domain.id}, attributes).get()
+        servertype = queried_object['servertype']
+        this_settings = domain_settings.get_settings(servertype)
+        changed_object = next(
+            filter(lambda o: o['object_id'] == domain.id, kwargs['changed']))
+
+        has_changed = False
+        for pdns_key, sa_key in this_settings['attributes'].items():
+            if sa_key not in changed_object.keys():
+                continue
+
+            has_changed = True
+            setattr(domain, pdns_key, changed_object[sa_key]['new'])
+
+        if has_changed:
+            domain.save()
