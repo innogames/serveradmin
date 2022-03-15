@@ -1,18 +1,15 @@
 import logging
 
 from django.conf import settings
-from django.dispatch import receiver
 
 from serveradmin.common.utils import profile
 from serveradmin.dataset import Query
 from serveradmin.powerdns.models import Domain
 from serveradmin.powerdns.utils import DomainSettings
-from serveradmin.serverdb.query_committer import post_commit
 
 logger = logging.getLogger(__package__)
 
 
-@receiver(post_commit)
 @profile
 def create_domains(sender, **kwargs):
     """Create PowerDNS domain for newly created objects
@@ -48,7 +45,6 @@ def create_domains(sender, **kwargs):
             domain.save()
 
 
-@receiver(post_commit)
 @profile
 def delete_domains(sender, **kwargs):
     """Delete PowerDNS domain for deleted objects
@@ -69,7 +65,6 @@ def delete_domains(sender, **kwargs):
     Domain.objects.filter(id__in=kwargs['deleted']).delete()
 
 
-@receiver(post_commit)
 @profile
 def update_domains(sender, **kwargs):
     """Update PowerDNS domain when changed

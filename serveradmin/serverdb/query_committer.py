@@ -1,6 +1,6 @@
 """Serveradmin - Query Committer
 
-Copyright (c) 2019 InnoGames GmbH
+Copyright (c) 2022 InnoGames GmbH
 """
 
 import json
@@ -9,7 +9,6 @@ from itertools import chain
 
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
-from django.dispatch.dispatcher import Signal
 
 from adminapi.dataset import DatasetCommit
 from adminapi.request import json_encode_extra
@@ -28,9 +27,7 @@ from serveradmin.serverdb.query_materializer import (
     QueryMaterializer,
     get_default_attribute_values,
 )
-
-pre_commit = Signal()
-post_commit = Signal()
+from serveradmin.serverdb.signals import pre_commit, post_commit
 
 logger = logging.getLogger(__name__)
 
