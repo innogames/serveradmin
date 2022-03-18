@@ -11,7 +11,7 @@ env = environ.Env()
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 # Take environment variables from .env file
-environ.Env.read_env(os.path.join(ROOT_DIR, '.env'))
+environ.Env.read_env(os.path.join(ROOT_DIR, '../.env'))
 
 SECRET_KEY = env('SECRET_KEY', default=None)
 
