@@ -1,5 +1,13 @@
 from django.db import models
 
+# We provide the PowerDNS database schema for PostgreSQL with a Django
+# migration using RunSQL. It creates the necessary relations etc. if they
+# do not already exist.
+#
+# But we DON'T want Django to manage the based on the models because below
+# models only contain the fields we need for the "Serveradmin to PowerDNS"
+# integration and therefore are incomplete.
+
 
 class Domain(models.Model):
     """PowerDNS Domain
