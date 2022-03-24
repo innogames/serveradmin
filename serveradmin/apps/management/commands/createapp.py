@@ -37,8 +37,8 @@ class Command(BaseCommand):
                 owner = options['owner']
             else:
                 owner = input('Username of application owner (must exist!): ')
-            token = input(
-                'Token (empty for secure auto generated one): ').strip()
+
+            token = input('Token (empty for auto generated one): ').strip()
             superuser = options['superuser']
 
         user = User.objects.filter(username=owner)
@@ -56,6 +56,6 @@ class Command(BaseCommand):
         app.name = f'default app for {owner}'
         app.owner = user.get()
         app.superuser = superuser
-        if not token:
+        if token:
             app.auth_token = token
         app.save()
