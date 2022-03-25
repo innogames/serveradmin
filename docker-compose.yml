@@ -10,6 +10,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - ".docker/db/postgres.conf:/etc/postgresql/postgres.conf:ro"
+      - postgres-data:/var/lib/postgresql/data
     ports:
       - "127.0.0.1:5432:5432"
     command: "-c config_file=/etc/postgresql/postgres.conf"
@@ -53,3 +54,6 @@ services:
       - "127.0.0.1:1053:53/udp"
     depends_on:
       - pdns-db
+
+volumes:
+  postgres-data:
