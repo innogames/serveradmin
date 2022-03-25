@@ -177,7 +177,7 @@ get_string = function(object_id, attribute_id) {
     let object = servershell.get_object(object_id);
     if (attribute_id in object && object[attribute_id] !== null) {
         if (servershell.get_attribute(attribute_id).multi) {
-            return object[attribute_id].join(', ');
+            return object[attribute_id].sort().join(', ');
         } else {
             return object[attribute_id].toString();
         }
