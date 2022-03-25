@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="{{ STATIC_URL }}css/serveradmin.css">
     {% block additional_styles %}{% endblock %}
     {% endcompress %}
+    <link rel="search" type="application/opensearchdescription+xml" href="{% url 'opensearch.xml' %}" />
 
     <title>{% block title %}{% endblock %} &middot; Serveradmin</title>
 </head>
