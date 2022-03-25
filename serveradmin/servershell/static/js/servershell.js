@@ -135,7 +135,7 @@ const property_handler = {
     },
     get: function(object, property) {
         // Observer configured properties
-        if (Object.keys(this._config).includes(property) &&  object[property] && typeof object[property] === 'object') {
+        if (Object.keys(this._config).includes(property) && object[property] && typeof object[property] === 'object') {
             object[property]._property_of = property;
             return new Proxy(object[property], property_handler);
         }

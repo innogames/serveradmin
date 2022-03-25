@@ -278,9 +278,14 @@ servershell.commands = {
             return;
         }
 
-        attribute_ids = attribute_ids.split(',').map(a => a.trim()).filter(a => a !== '');
-        let unknown = attribute_ids.filter(a => servershell.attributes.find(b => b.attribute_id === a) === undefined);
+        if (attribute_ids.length > 0) {
+            attribute_ids = attribute_ids.split(',').map(a => a.trim()).filter(a => a !== '');
+        } else {
+            // if no attributes are passed, export all selected ones
+            attribute_ids = servershell.shown_attributes;
+        }
 
+        let unknown = attribute_ids.filter(a => servershell.attributes.find(b => b.attribute_id === a) === undefined);
         if (unknown.length > 0) {
             return servershell.alert(`The attribute(s) ${unknown.join(', ')} does not exist!`, 'warning');
         }
