@@ -4,7 +4,7 @@ Copyright (c) 2019 InnoGames GmbH
 """
 
 from django.contrib import admin
-
+from django import forms
 from serveradmin.graphite.models import (
     Collection,
     Numeric,
@@ -38,4 +38,16 @@ class CollectionAdmin(admin.ModelAdmin):
     list_filter = ['overview']
 
 
-admin.site.register(Collection, CollectionAdmin)
+class CollectionAdminForm(forms.ModelForm):
+
+    def clean_params(self):
+        params = self.cleaned_data['params'].split('&')
+        params_keys = [
+            param.split('=')[0] if '=' in param else param for param in params
+        ]
+        if len(params_keys) != len(set(params_keys)):
+            raise forms.ValidationError('Duplicate parameters are not allowed')
+        return self.cleaned_data['params']
+
+
+admin.site.register(Collection, CollectionAdmin, form=CollectionAdminForm)
