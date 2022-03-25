@@ -135,5 +135,9 @@ def json_to_datatype(value):
             # the outputs to match.
             if datatype is EUI:
                 return EUI(value, dialect=mac_unix_expanded)
+            # Disable strict mode for IP Networks because they might have
+            # host bits set. See ipaddress.IPv6Network module page
+            if datatype in [IPv4Network, IPv6Network]:
+                return datatype(value, strict=False)
             return datatype(value)
     return value
