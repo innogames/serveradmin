@@ -105,9 +105,9 @@
                 <div class="card">
                     <div class="card-header">
                         <b>Attributes</b>
-                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#accordion-attributes-body"></button>
+                        <button class="btn btn-link collapsed" type="button" data-toggle="collapse" aria-expanded="false" data-target="#accordion-attributes-body" onclick="servershell.save_hidden_attrlist(this)"></button>
                     </div>
-                    <div id="accordion-attributes-body" class="component show" data-parent="#accordion-attributes">
+                    <div id="accordion-attributes-body" class="component collapsed collapse" data-parent="#accordion-attributes">
                         <div id="attributes" class="card-body">
                             <b>Legend:</b><br>
                             <span class="attribute-indicator">
@@ -230,6 +230,7 @@
         };
 
         servershell.search_settings = {% autoescape off %}{{ search_settings|json }}{% endautoescape %};
+        servershell.sync_attrlist_visibility();
     });
 </script>
 {% endblock %}
