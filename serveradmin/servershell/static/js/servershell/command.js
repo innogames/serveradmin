@@ -655,6 +655,51 @@ servershell.commands = {
     },
 };
 
+function execute_command() {
+        let command = servershell.command.split(' ', 1).pop();
+        let params = servershell.command.substring(command.length).trim();
+        if (Object.keys(servershell.commands).includes(command)) {
+            servershell.commands[command](params);
+
+            return true;
+        }
+
+        if (servershell.command.match(/^([0-9]+(,|-|\s)?([0-9]+)?)+$/)) {
+            // User specified a one, more or a range of servers to select
+            servershell.commands.select(servershell.command);
+
+            return true;
+        }
+
+        let [attribute_name, value] = servershell.command.split('=');
+        let attribute = servershell.attributes.find(attribute => attribute.attribute_id === attribute_name);
+
+        if (attribute && !value) {
+            servershell.commands.attr(servershell.command);
+
+            return true;
+        }
+
+        if (attribute && value && attribute.multi) {
+            servershell.commands.multiadd(servershell.command);
+
+            return true;
+        }
+
+        if (attribute && value && !attribute.multi) {
+            servershell.commands.setattr(servershell.command);
+
+            return true;
+        }
+
+        // User had a nervous finger lets ignore this
+        if (command !== '') {
+            servershell.alert(`Unknown command ${command}!`, 'warning');
+        }
+
+        return false;
+}
+
 $(document).ready(function() {
    $('#command_form').submit(function(event) {
         event.preventDefault();
@@ -669,25 +714,8 @@ $(document).ready(function() {
         // This will fire it twice for other browser but that does not harm.
         $('#command').change();
 
-        let command = servershell.command.split(' ', 1).pop();
-        let params = servershell.command.substring(command.length).trim();
-        if (Object.keys(servershell.commands).includes(command)) {
-            servershell.commands[command](params);
-        }
-        else if (servershell.command.match(/^([0-9]+(,|-|\s)?([0-9]+)?)+$/)) {
-            // User specified a one, more or a range of servers to select
-            servershell.commands.select(servershell.command);
-        }
-        else {
-            // User had a nervous finger lets ignore this
-            if (command !== '') {
-                servershell.alert(`Unknown command ${command}!`, 'warning');
-            }
-
-            return;
-        }
-
-        // Reset command input on success
-        servershell.command = '';
+       if (execute_command()) {
+           servershell.command = '';
+       }
    })
 });
