@@ -2,7 +2,6 @@ version: "3.9"
 
 services:
   db:
-    tty: true
     image: "postgres:${POSTGRES_VERSION}"
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
@@ -16,7 +15,6 @@ services:
     command: "-c config_file=/etc/postgresql/postgres.conf"
 
   web:
-    tty: true
     build: .docker/web
     volumes:
       - ".:/code"
@@ -28,7 +26,6 @@ services:
       - pdns-db
 
   pdns-db:
-    tty: true
     image: "postgres:${POSTGRES_VERSION}"
     environment:
       - POSTGRES_DB=${POSTGRES_PDNS_DB}
@@ -41,7 +38,6 @@ services:
     command: "-c config_file=/etc/postgresql/postgres.conf"
 
   pdns-auth:
-    tty: true
     build: .docker/pdns-auth
     environment:
       - GPGSQL_HOST=${POSTGRES_PDNS_HOST}
