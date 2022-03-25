@@ -113,21 +113,7 @@
 </div>
 <div class="row">
     <div class="col-md-12">
-        <div class="pagination">
-            <span class="step-links">
-                {% if hosts.has_previous %}
-                    <a href="#" onclick="$('#page').val($(this).data('page')); $('#resources-form').submit();" data-page="1">&laquo; first</a>
-                    <a href="#" onclick="$('#page').val($(this).data('page')); $('#resources-form').submit();" data-page="{{ hosts.previous_page_number }}">previous</a>
-                {% endif %}
-                <span class="current">
-                    Page {{ hosts.number }} of {{ hosts.paginator.num_pages }}.
-                </span>
-                {% if hosts.has_next %}
-                    <a href="#" onclick="$('#page').val($(this).data('page')); $('#resources-form').submit();" data-page="{{ hosts.next_page_number }}">next</a>
-                    <a href="#" onclick="$('#page').val($(this).data('page')); $('#resources-form').submit();" data-page="{{ hosts.paginator.num_pages }}">last &raquo;</a>
-                {% endif %}
-            </span>
-        </div>
+        {% include "pagination.html" with paginator=hosts %}
     </div>
 </div>
 {% endblock %}
