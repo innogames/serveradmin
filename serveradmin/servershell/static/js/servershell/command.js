@@ -600,7 +600,7 @@ servershell.commands = {
         servershell.alert(`History for ${object_id} opened in a new tab`, 'success');
     },
     commit: function() {
-        spinner.enable();
+        spinner.enable('commit');
         let settings = {
             type: 'POST',
             url: servershell.urls.commit,
@@ -621,7 +621,7 @@ servershell.commands = {
             servershell.alert('Commit request failed retrying in 5 seconds!', 'danger');
             setTimeout(servershell.commands.commit, 5000);
         }).always(function() {
-            spinner.disable();
+            spinner.disable('commit');
         });
     },
     cancel: function() {

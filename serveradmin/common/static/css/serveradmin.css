@@ -125,3 +125,7 @@ a.btn[aria-expanded=false]:before {
 #spinner {
     animation-play-state: paused;
 }
+
+#spinner-timer * {
+    margin-right: 5px;
+}

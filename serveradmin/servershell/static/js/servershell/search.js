@@ -26,7 +26,7 @@ servershell.submit_search = function() {
     console.debug(`Submitting query to URL "${url}" with data:`);
     console.debug(data);
 
-    spinner.enable();
+    spinner.enable('search');
     servershell._ajax = $.getJSON(url, data, function(data) {
         if ('message' in data) {
             return servershell.alert(data.message, 'danger');
@@ -67,7 +67,7 @@ servershell.submit_search = function() {
         // Focus command input after successful search ...
         $('#command').focus();
     }).always(function() {
-        spinner.disable();
+        spinner.disable('search');
 
         // Reset running ajax call variable
         servershell._ajax = null;

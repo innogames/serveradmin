@@ -9,25 +9,27 @@ $(document).ready(function() {
     // everywhere when ever we need it for example when doing long running
     // ajax requests for the servershell search.
     window.spinner = {
-        _startedAt: 0,
+        _timers: {},
         _spinner: $('#spinner'),
-        enable: function () {
+        enable: function (action) {
             console.debug('spinner enabled');
-            this._startedAt = Date.now();
-
+            this._timers[action] = Date.now()
+            if($(`#spinner-timer-value-${action}`).length == 0) {
+                $("#spinner-timer").append(`<span id="spinner-timer-value-${action}"></span>`);
+            }
             this._spinner.removeClass('text-secondary');
             this._spinner.addClass('text-success');
             this._spinner.css('animation-play-state', 'running');
         },
-        disable: function () {
+        disable: function (action) {
             console.debug('spinner disabled');
 
-            let elapsed = Date.now() - this._startedAt;
+            let elapsed = Date.now() - this._timers[action];
             if (elapsed > 1000) {
-                $('#spinner-timer-value').text(`${elapsed / 1000} s`);
+                $(`#spinner-timer-value-${action}`).text(`${action}: ${elapsed / 1000} s`);
             }
             else {
-                $('#spinner-timer-value').text(`${elapsed} ms`);
+                $(`#spinner-timer-value-${action}`).text(`${action}: ${elapsed} ms`);
             }
 
             this._spinner.css('animation-play-state', 'paused');

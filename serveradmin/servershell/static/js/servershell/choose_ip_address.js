@@ -11,14 +11,14 @@ servershell.choose_ip_address = function(intern_ip) {
         async: false,
     };
 
-    spinner.enable();
+    spinner.enable('choose_ip_address');
     $.get(servershell.urls.choose_ip_address, data, function(html) {
         let modal = $('#modal_choose_ip_address');
 
         $('#modal_choose_ip_address .modal-body').html(html);
         $(modal).modal('show');
     }).always(function() {
-        spinner.disable();
+        spinner.disable('choose_ip_address');
     });
 };
 
