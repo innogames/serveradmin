@@ -7,3 +7,4 @@
          template="{{ request.scheme }}://{{ request.META.HTTP_HOST }}{% url 'servershell_index' %}?term={searchTerms}">
     </Url>
 </OpenSearchDescription>
+
