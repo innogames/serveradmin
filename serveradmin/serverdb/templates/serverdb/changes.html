@@ -157,13 +157,7 @@
     <div class="row">
         <div class="col-md-2"></div>
         <div class="col-md-8">
-            {% if commits.has_previous %}
-                <a class="btn btn-success btn-sm" href="#" onclick="$('#page').val({{ commits.previous_page_number }}); $('#changes-form').submit();">prev</a>
-            {% endif %}
-            {% if commits.has_next %}
-                <a class="btn btn-success btn-sm" href="#" onclick="$('#page').val({{ commits.next_page_number }}); $('#changes-form').submit();">next</a>
-            {% endif %}
-            page {{ commits.number }} of {{ commits.paginator.num_pages }}
+            {% include "pagination.html" with paginator=commits %}
         </div>
     </div>
 {% endblock content %}
