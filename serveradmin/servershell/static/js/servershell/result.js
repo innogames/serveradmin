@@ -81,13 +81,15 @@ get_row_html = function(object, number) {
             if (change) {
                 if (attribute.multi) {
                     let to_add = change.add.join(', ');
-                    let to_delete = change.remove.join(', ');
+                    let to_delete = change.remove;
                     let value = object[attribute_id].filter(v => !to_delete.includes(v)).join(', ');
 
                     cell.text(value);
-
                     let del = $('<del>');
-                    del.text(to_delete);
+                    del.text(to_delete.join(', '));
+                    if (value.length > 0) {
+                        cell.append(', ');
+                    }
                     cell.append(del);
 
                     let add = $('<u>');
