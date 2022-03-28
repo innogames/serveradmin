@@ -4,6 +4,7 @@ Copyright (c) 2020 InnoGames GmbH
 """
 
 from django.urls import path
+from django.views.generic.base import TemplateView
 
 from serveradmin.servershell.views import (
     index,
@@ -31,4 +32,5 @@ urlpatterns = [
     path('choose_ip_addr', choose_ip_addr, name='servershell_choose_ip_addr'),
     path('settings', settings, name='servershell_save_settings'),
     path('diff', diff, name='servershell_diff'),
+    path('opensearch.xml', TemplateView.as_view(template_name='servershell/opensearch.xml'), name='opensearch.xml'),
 ]
