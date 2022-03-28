@@ -253,3 +253,23 @@ servershell.get_attribute = function(attribute_id) {
     return servershell.attributes.find(
         attribute => attribute.attribute_id === attribute_id);
 };
+
+/**
+ * Save the status of attributes list
+ */
+servershell.save_hidden_attrlist = function(element) {
+    localStorage.setItem('attrlist_hidden', (element.attributes["aria-expanded"]["nodeValue"] === 'true'));
+};
+
+/**
+ * Check the local storage and toggle attributes list
+ *
+ * If it's not defined or set to not hidden, it triggers collapse function
+ * to show. Otherwise it keeps it closed.
+ */
+servershell.sync_attrlist_visibility = function() {
+    let attribute_list_hidden = localStorage.getItem('attrlist_hidden');
+    if ( attribute_list_hidden === "false" || attribute_list_hidden === null ) {
+        $("#accordion-attributes-body").collapse('show');
+    };
+};
