@@ -629,7 +629,7 @@ servershell.commands = {
             servershell.alert('No running request to cancel', 'warning');
             return;
         }
-        
+
         servershell._ajax.fail = function() {};
         servershell._ajax.abort();
         servershell.alert('Pending request cancelled', 'success');
@@ -655,49 +655,55 @@ servershell.commands = {
     },
 };
 
+/**
+ * Tries to run the command specified in the #command input.
+ * Returns true if the input should be cleared
+ *
+ * @returns {boolean}
+ */
 function execute_command() {
-        let command = servershell.command.split(' ', 1).pop();
-        let params = servershell.command.substring(command.length).trim();
-        if (Object.keys(servershell.commands).includes(command)) {
-            servershell.commands[command](params);
+    let command = servershell.command.split(' ', 1).pop();
+    let params = servershell.command.substring(command.length).trim();
+    if (Object.keys(servershell.commands).includes(command)) {
+        servershell.commands[command](params);
 
-            return true;
-        }
+        return true;
+    }
 
-        if (servershell.command.match(/^([0-9]+(,|-|\s)?([0-9]+)?)+$/)) {
-            // User specified a one, more or a range of servers to select
-            servershell.commands.select(servershell.command);
+    if (servershell.command.match(/^([0-9]+(,|-|\s)?([0-9]+)?)+$/)) {
+        // User specified a one, more or a range of servers to select
+        servershell.commands.select(servershell.command);
 
-            return true;
-        }
+        return true;
+    }
 
-        let [attribute_name, value] = servershell.command.split('=');
-        let attribute = servershell.attributes.find(attribute => attribute.attribute_id === attribute_name);
+    let [attribute_name, value] = servershell.command.split('=');
+    let attribute = servershell.attributes.find(attribute => attribute.attribute_id === attribute_name);
 
-        if (attribute && !value) {
-            servershell.commands.attr(servershell.command);
+    if (attribute && !value) {
+        servershell.commands.attr(servershell.command);
 
-            return true;
-        }
+        return true;
+    }
 
-        if (attribute && value && attribute.multi) {
-            servershell.commands.multiadd(servershell.command);
+    if (attribute && value && attribute.multi) {
+        servershell.commands.multiadd(servershell.command);
 
-            return true;
-        }
+        return true;
+    }
 
-        if (attribute && value && !attribute.multi) {
-            servershell.commands.setattr(servershell.command);
+    if (attribute && value && !attribute.multi) {
+        servershell.commands.setattr(servershell.command);
 
-            return true;
-        }
+        return true;
+    }
 
-        // User had a nervous finger lets ignore this
-        if (command !== '') {
-            servershell.alert(`Unknown command ${command}!`, 'warning');
-        }
+    // User had a nervous finger lets ignore this
+    if (command !== '') {
+        servershell.alert(`Unknown command ${command}!`, 'warning');
+    }
 
-        return false;
+    return false;
 }
 
 $(document).ready(function() {
