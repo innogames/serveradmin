@@ -174,15 +174,9 @@ function validate_selected(min=1, max=-1) {
 
 servershell.commands = {
     pin: function() {
-        if (!Array.isArray(servershell.pinned)) {
-            servershell.pinned = [];
-        }
-
         let selected_ids = servershell.get_selected();
         servershell.pinned.push(...selected_ids);
-        servershell.pinned = servershell.pinned.filter((value, index) =>
-            servershell.pinned.indexOf(value) === index
-        );
+        servershell.pinned = [...new Set(servershell.pinned)];
         servershell.update_result();
     },
     unpin: function() {

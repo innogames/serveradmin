@@ -1,5 +1,5 @@
 /**
- * Sends the ajax request to the serveradmin api
+ * Send the search term to the backend, process and display the results or show errors if there are any.
  *
  * @param url
  * @param search_term
