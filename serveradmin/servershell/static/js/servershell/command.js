@@ -678,7 +678,7 @@ function execute_command() {
     }
 
     let [attribute_name, value] = servershell.command.split('=');
-    let attribute = servershell.attributes.find(attribute => attribute.attribute_id === attribute_name);
+    let attribute = servershell.attributes.find(attribute => attribute.attribute_id === attribute_name.trim());
 
     if (attribute && !value) {
         servershell.commands.attr(servershell.command);
