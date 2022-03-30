@@ -5,7 +5,19 @@
             <input type="text" class="form-control mb-2" id="ip_address" placeholder="Enter manually ...">
         </div>
         <div class="col-auto">
-            <button type="button" class="btn btn-success mb-2" onclick="submit_ip_address($('#ip_address').val());">Submit</button>
+            <button type="button" class="btn btn-success mb-2" onclick="submit_ip_address($('#ip_address').val());">
+                Submit
+            </button>
+        </div>
+    </div>
+    <div class="form-row align-items-center">
+        <div class="col-auto">
+            <input type="text" class="form-control mb-2" id="search_term" placeholder="Search ..."
+                   onchange="search($('#search_term').val());">
+        </div>
+        <div class="col-auto">
+            <button type="button" class="btn btn-success mb-2" onclick="search($('#search_term').val());">Search
+            </button>
         </div>
     </div>
     {% if servers %}
@@ -18,17 +30,18 @@
             </thead>
             <tbody>
                 {% for server in servers %}
-                <tr onclick="servershell.choose_ip_address('{{ server.intern_ip }}')">
-                    <td>{{ server.hostname }}</td>
-                    <td>{{ server.intern_ip }}</td>
-                </tr>
+                    <tr onclick="servershell.choose_ip_address('{{ server.intern_ip }}')"
+                        data-search-values="{{ server.hostname }}, {{ server.intern_ip }}">
+                        <td>{{ server.hostname }}</td>
+                        <td>{{ server.intern_ip }}</td>
+                    </tr>
                 {% endfor %}
             </tbody>
         </table>
     {% elif ip_addrs %}
         <ul>
             {% for ip_addr in ip_addrs %}
-                <li onclick="$('input[name=attr_intern_ip]').val('{{ ip_addr }}'); $(this).closest('.modal').modal('hide');">{{ ip_addr }}</li>
+                <li data-search-values="{{ ip_addr }}" onclick="$('input[name=attr_intern_ip]').val('{{ ip_addr }}'); $(this).closest('.modal').modal('hide');">{{ ip_addr }}</li>
             {% endfor %}
         </ul>
     {% else %}

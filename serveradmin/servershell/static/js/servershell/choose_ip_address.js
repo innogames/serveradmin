@@ -26,3 +26,16 @@ let submit_ip_address = function(new_value) {
     $('input[name="attr_intern_ip"]').val(new_value);
     $('.modal').modal('hide');
 };
+
+let search = function(search_term) {
+    let search_elements = $('#modal_choose_ip_address [data-search-values]');
+
+    if (!search_term) {
+        search_elements.css('display', '');
+
+        return;
+    }
+
+    search_elements.css('display', 'none');
+    $(`#modal_choose_ip_address [data-search-values*="${search_term}"]`).css('display', '');
+};
