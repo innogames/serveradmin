@@ -12,7 +12,7 @@ try:
 except ImportError:
     from netaddr import mac_unix as mac_unix_expanded
 
-from adminapi.exceptions import DatatypeError
+from adminapi.exceptions import DatatypeError, FilterValueError
 
 
 # We use a set of regular expressions to cast to datatypes.  This module
@@ -135,5 +135,12 @@ def json_to_datatype(value):
             # the outputs to match.
             if datatype is EUI:
                 return EUI(value, dialect=mac_unix_expanded)
+            # Expect a ValueError and raise it as a FilterValueError
+            if datatype in [IPv4Network, IPv6Network]:
+                try:
+                    result = datatype(value)
+                except ValueError as e:
+                    raise FilterValueError(e)
+                return result
             return datatype(value)
     return value
