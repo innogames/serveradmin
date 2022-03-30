@@ -173,6 +173,23 @@ function validate_selected(min=1, max=-1) {
 }
 
 servershell.commands = {
+    pin: function() {
+        if (!Array.isArray(servershell.pinned)) {
+            servershell.pinned = [];
+        }
+
+        let selected_ids = servershell.get_selected();
+        servershell.pinned.push(...selected_ids);
+        servershell.pinned = servershell.pinned.filter((value, index) =>
+            servershell.pinned.indexOf(value) === index
+        );
+        servershell.update_result();
+    },
+    unpin: function() {
+        let selected_ids = servershell.get_selected();
+        servershell.pinned = servershell.pinned.filter(value => selected_ids.indexOf(value) === -1);
+        servershell.update_result();
+    },
     search: function() {
         $('#term').focus();
     },
@@ -634,7 +651,7 @@ servershell.commands = {
             servershell.alert('No running request to cancel', 'warning');
             return;
         }
-        
+
         servershell._ajax.fail = function() {};
         servershell._ajax.abort();
         servershell.alert('Pending request cancelled', 'success');

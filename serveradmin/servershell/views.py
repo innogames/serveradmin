@@ -128,11 +128,53 @@ def autocomplete(request):
                         content_type='application/x-json')
 
 
+class MergedQuery:
+    queries = []
+
+    def __init__(self, queries):
+        self.queries = queries
+
+    def __iter__(self):
+        return MergedQueryIterator(self.queries)
+
+
+class MergedQueryIterator:
+    served_ids = []
+    queries = []
+    current_query = 0
+
+    def __init__(self, queries):
+        self.queries = [iter(i) for i in queries]
+        self.served_ids = []
+
+    def next(self):
+        try:
+            if len(self.queries) > self.current_query:
+                return self.queries[self.current_query].__next__()
+        except StopIteration:
+            self.current_query += 1
+
+            return self.next()
+
+        raise StopIteration()
+
+    def __next__(self):
+        value = self.next()
+
+        while value.object_id in self.served_ids:
+            value = self.next()
+
+        self.served_ids.append(value.object_id)
+
+        return value
+
+
 @login_required
 def get_results(request):
     term = request.GET.get('term', '')
     shown_attributes = request.GET.getlist('shown_attributes[]')
     deep_link = bool(strtobool(request.GET.get('deep_link', 'false')))
+    pinned = request.GET.getlist('pinned[]')
 
     if request.session.get('save_attributes') and not deep_link:
         request.session['shown_attributes'] = shown_attributes
@@ -156,12 +198,17 @@ def get_results(request):
         restrict = shown_attributes.copy()
         if 'servertype' not in restrict:
             restrict.append('servertype')
-        query = Query(parse_query(term), restrict, order_by)
+        main_query = Query(parse_query(term), restrict, order_by)
+
+        query = MergedQuery([
+            Query({'object_id': Any(*pinned)}, restrict, None),
+            main_query,
+        ])
 
         # TODO: Using len is terribly slow for large datasets because it has
         #  to query all objects but we cannot use count which is available on
         #  Django QuerySet
-        num_servers = len(query)
+        num_servers = len(list(query))
     except (DatatypeError, ObjectDoesNotExist, ValidationError) as error:
         return HttpResponse(json.dumps({
             'status': 'error',
@@ -194,7 +241,7 @@ def get_results(request):
 
     return HttpResponse(json.dumps({
         'status': 'success',
-        'understood': repr(query),
+        'understood': repr(main_query),
         'servers': servers,
         'num_servers': num_servers,
         'editable_attributes': editable_attributes,

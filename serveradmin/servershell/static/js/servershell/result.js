@@ -54,8 +54,18 @@ get_row_html = function(object, number) {
     // deletion.
     if (servershell.to_commit.deleted.includes(object.object_id)) {
         row.addClass('delete');
-    } else if (object.hasOwnProperty('state')) {
+    }
+
+    if (object.hasOwnProperty('state')) {
         row.addClass(`state-${object.state}`);
+    }
+
+    if (Object.keys(servershell.to_commit.changes).map(value => Number.parseInt(value)).includes(object.object_id)) {
+        row.addClass('changed');
+    }
+
+    if ((servershell.pinned ?? []).includes(object.object_id)) {
+        row.addClass('pinned');
     }
 
     // Standard columns which should always be present

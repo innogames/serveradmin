@@ -93,6 +93,15 @@ table ul {
     color: #ffffff !important;
 }
 
+.pinned {
+    font-weight: bold;
+}
+
+.changed {
+    font-weight: bold;
+    color: var(--info);
+}
+
 del {
     color: var(--remove);
 }
