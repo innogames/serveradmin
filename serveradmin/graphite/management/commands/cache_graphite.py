@@ -5,6 +5,7 @@ Copyright (c) 2019 InnoGames GmbH
 
 import json
 from datetime import datetime
+from decimal import Decimal
 from os import mkdir
 from os.path import isdir
 import time
@@ -123,7 +124,7 @@ class Command(BaseCommand):
                 locked_server.servernumberattribute_set.update_or_create(
                     server_id=locked_server.server_id,
                     attribute=numeric.attribute,
-                    defaults={'value': value},
+                    defaults={'value': Decimal(value)},
                 )
 
     def get_from_graphite(self, params):
