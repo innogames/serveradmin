@@ -71,6 +71,17 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
         in list(attribute_lookup.values()) + list(Attribute.specials.values())
     }
 
+    # TODO: We rely on the "protocol" that everything that creates or changes
+    #       one or more Server(s) uses this API or also acquires an exclusive
+    #       lock as happening below in _fetch_servers.
+    #
+    #       If not, "nonrepeatable reads" might happen since we fetch data for
+    #       the same objects multiple times but have only the isolation level
+    #       read committed.
+    #
+    #       We should check if we can make the commit_query more robust against
+    #       changes elsewhere by changing to the isolation level
+    #       # "repeatable read".
     with transaction.atomic():
         change_commit = ChangeCommit.objects.create(app=app, user=user)
         changed_servers = _fetch_servers(set(c['object_id'] for c in changed))
