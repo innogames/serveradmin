@@ -4,24 +4,25 @@ Copyright (c) 2019 InnoGames GmbH
 """
 
 import json
+import time
 from datetime import datetime
 from decimal import Decimal
+from io import BytesIO
 from os import mkdir
 from os.path import isdir
-import time
-from PIL import Image
-from io import BytesIO
+from urllib.error import HTTPError
 from urllib.request import (
     HTTPBasicAuthHandler,
     HTTPPasswordMgrWithDefaultRealm,
     build_opener
 )
-from urllib.error import HTTPError
 
-from django.core.management.base import BaseCommand
+from PIL import Image
 from django.conf import settings
+from django.core.management.base import BaseCommand
 from django.db import transaction
 
+from adminapi import filters
 from serveradmin.dataset import Query
 from serveradmin.graphite.models import (
     GRAPHITE_ATTRIBUTE_ID,
@@ -29,7 +30,6 @@ from serveradmin.graphite.models import (
     AttributeFormatter,
 )
 from serveradmin.serverdb.models import Server
-from adminapi import filters
 
 
 class Command(BaseCommand):
