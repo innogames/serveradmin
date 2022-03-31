@@ -1,6 +1,6 @@
 """Serveradmin - Graphite Integration
 
-Copyright (c) 2019 InnoGames GmbH
+Copyright (c) 2022 InnoGames GmbH
 """
 
 import json
