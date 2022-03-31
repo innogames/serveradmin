@@ -1,6 +1,6 @@
 """Serveradmin - Graphite Integration
 
-Copyright (c) 2019 InnoGames GmbH
+Copyright (c) 2022 InnoGames GmbH
 """
 
 from django import forms
@@ -30,6 +30,8 @@ def _validate_params(params):
 class InlineFormSet(forms.models.BaseInlineFormSet):
     def clean(self):
         super().clean()
+        if not self.is_valid():
+            return
         for data in self.cleaned_data:
             params = data.get('params')
             if not params:
@@ -58,14 +60,12 @@ class RelationInline(admin.TabularInline):
 
 class CollectionAdmin(admin.ModelAdmin):
     inlines = (TemplateInline, VariationInline, NumericInline, RelationInline)
-
     list_display = ['name', 'overview', 'created_at']
     search_fields = ['name']
     list_filter = ['overview']
 
 
 class CollectionAdminForm(forms.ModelForm):
-
     def clean_params(self):
         _validate_params(self.cleaned_data['params'])
         return self.cleaned_data['params']
