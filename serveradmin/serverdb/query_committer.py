@@ -119,6 +119,8 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
         _upsert_attributes(attribute_lookup, changed, changed_servers)
         changed_objects = _materialize(changed_servers, joined_attributes)
 
+        # @TODO Improve this function by checking only attributes of ACLs that
+        #       have actually changed and not all.
         _access_control(
             user, app, unchanged_objects,
             created_objects, changed_objects, deleted_objects
