@@ -27,7 +27,7 @@ from serveradmin.graphite.models import (
     Collection,
     AttributeFormatter,
 )
-from serveradmin.serverdb.models import ServerNumberAttribute
+from serveradmin.serverdb.models import Server
 from adminapi import filters
 
 
@@ -116,8 +116,12 @@ class Command(BaseCommand):
             # it is set up like this.  This process takes a long time.
             # We want the values to be immediately available to the users.
             with transaction.atomic():
-                ServerNumberAttribute.objects.update_or_create(
-                    server_id=server.object_id,
+                # Lock server for changes to avoid nonrepeatable reads in the
+                # query_committer.
+                locked_server = Server.objects.select_for_update().get(
+                    server_id=server.object_id)
+                locked_server.servernumberattribute_set.update_or_create(
+                    server_id=locked_server.server_id,
                     attribute=numeric.attribute,
                     defaults={'value': value},
                 )
