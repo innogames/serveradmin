@@ -3,7 +3,6 @@
 Copyright (c) 2022 InnoGames GmbH
 """
 
-from django import forms
 from django.contrib import admin
 
 from serveradmin.graphite.models import (
@@ -15,43 +14,16 @@ from serveradmin.graphite.models import (
 )
 
 
-def _validate_params(params):
-    params = params.split('&')
-    params_keys = [
-        param.split('=')[0] if '=' in param else param
-        for param in params
-    ]
-    if len(params_keys) != len(set(params_keys)):
-        raise forms.ValidationError(
-            'Duplicate parameters are not allowed'
-        )
-
-
-class InlineFormSet(forms.models.BaseInlineFormSet):
-    def clean(self):
-        super().clean()
-        if not self.is_valid():
-            return
-        for data in self.cleaned_data:
-            params = data.get('params')
-            if not params:
-                continue
-            _validate_params(params)
-        return self.cleaned_data
-
-
 class TemplateInline(admin.TabularInline):
     model = Template
 
 
 class VariationInline(admin.TabularInline):
     model = Variation
-    formset = InlineFormSet
 
 
 class NumericInline(admin.TabularInline):
     model = Numeric
-    formset = InlineFormSet
 
 
 class RelationInline(admin.TabularInline):
@@ -65,10 +37,4 @@ class CollectionAdmin(admin.ModelAdmin):
     list_filter = ['overview']
 
 
-class CollectionAdminForm(forms.ModelForm):
-    def clean_params(self):
-        _validate_params(self.cleaned_data['params'])
-        return self.cleaned_data['params']
-
-
-admin.site.register(Collection, CollectionAdmin, form=CollectionAdminForm)
+admin.site.register(Collection, CollectionAdmin)
