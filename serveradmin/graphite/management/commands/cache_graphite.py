@@ -1,34 +1,35 @@
 """Serveradmin - Graphite Integration
 
-Copyright (c) 2019 InnoGames GmbH
+Copyright (c) 2022 InnoGames GmbH
 """
 
 import json
+import time
 from datetime import datetime
+from decimal import Decimal
+from io import BytesIO
 from os import mkdir
 from os.path import isdir
-import time
-from PIL import Image
-from io import BytesIO
+from urllib.error import HTTPError
 from urllib.request import (
     HTTPBasicAuthHandler,
     HTTPPasswordMgrWithDefaultRealm,
     build_opener
 )
-from urllib.error import HTTPError
 
-from django.core.management.base import BaseCommand
+from PIL import Image
 from django.conf import settings
+from django.core.management.base import BaseCommand
 from django.db import transaction
 
+from adminapi import filters
 from serveradmin.dataset import Query
 from serveradmin.graphite.models import (
     GRAPHITE_ATTRIBUTE_ID,
     Collection,
     AttributeFormatter,
 )
-from serveradmin.serverdb.models import ServerNumberAttribute
-from adminapi import filters
+from serveradmin.serverdb.models import Server
 
 
 class Command(BaseCommand):
@@ -116,10 +117,14 @@ class Command(BaseCommand):
             # it is set up like this.  This process takes a long time.
             # We want the values to be immediately available to the users.
             with transaction.atomic():
-                ServerNumberAttribute.objects.update_or_create(
-                    server_id=server.object_id,
+                # Lock server for changes to avoid nonrepeatable reads in the
+                # query_committer.
+                locked_server = Server.objects.select_for_update().get(
+                    server_id=server.object_id)
+                locked_server.servernumberattribute_set.update_or_create(
+                    server_id=locked_server.server_id,
                     attribute=numeric.attribute,
-                    defaults={'value': value},
+                    defaults={'value': Decimal(value)},
                 )
 
     def get_from_graphite(self, params):
