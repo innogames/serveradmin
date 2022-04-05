@@ -15,6 +15,7 @@ from django.db import models
 from django.conf import settings
 
 from adminapi.dataset import MultiAttr
+from serveradmin.graphite.validators import validate_unique_uri_parameters
 
 from serveradmin.serverdb.models import LOOKUP_ID_VALIDATORS, Attribute
 
@@ -44,7 +45,7 @@ class Collection(models.Model):
             width=500&height=500
 
         [1] https://docs.python.org/2/library/string.html#formatstrings
-        """)
+        """, validators=[validate_unique_uri_parameters])
     sort_order = models.FloatField(default=0)
     overview = models.BooleanField(default=False, help_text="""
         Marks the collection to be shown on the overview page.  For
@@ -162,7 +163,8 @@ class Numeric(models.Model):
         limit_choices_to={'overview': True},
     )
     params = models.TextField(
-        blank=True, help_text="Same as the params of the collections"
+        blank=True, help_text="Same as the params of the collections",
+        validators=[validate_unique_uri_parameters]
     )
     sort_order = models.FloatField(default=0)
     attribute = models.ForeignKey(
@@ -212,7 +214,7 @@ class Template(models.Model):
     name = models.CharField(max_length=255)
     params = models.TextField(blank=True, help_text="""
         Same as the params of the collections.
-        """)
+        """, validators=[validate_unique_uri_parameters])
     sort_order = models.FloatField(default=0)
     description = models.TextField(blank=True)
     foreach_path = models.CharField(max_length=256, blank=True, help_text="""
@@ -276,7 +278,7 @@ class Variation(models.Model):
     name = models.CharField(max_length=255)
     params = models.TextField(blank=True, help_text="""
         Same as the params of the collections.
-        """)
+        """, validators=[validate_unique_uri_parameters])
     sort_order = models.FloatField(default=0)
     summarize_interval = models.CharField(max_length=255, help_text="""
         Interval string that makes sense to use on the summarize() function on
