@@ -31,7 +31,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.defaults import bad_request
 
 from adminapi.datatype import DatatypeError
-from adminapi.filters import Any, ContainedOnlyBy, filter_classes
+from adminapi.filters import Any, ContainedOnlyBy, filter_classes, Not
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
 
@@ -484,10 +484,13 @@ def choose_ip_addr(request):
         return TemplateResponse(request, 'servershell/choose_ip_addr.html',
                                 {'servers': servers})
 
-    network_query = Query({'intern_ip': network}, ['intern_ip'])
+    # TODO: This is specific to our data model, we should get it independent
+    network_query = Query(
+        {'intern_ip': network, 'servertype': Not('provider_network')},
+        ['intern_ip', 'servertype'])
 
     return TemplateResponse(request, 'servershell/choose_ip_addr.html', {
-        'ip_addrs': islice(network_query.get_free_ip_addrs(), 1000)})
+        'ip_addrs': islice(network_query.get_free_ip_addrs(), 50)})
 
 
 @login_required
