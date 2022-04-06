@@ -61,11 +61,11 @@ get_row_html = function(object, number) {
     }
 
     if (Object.keys(servershell.to_commit.changes).map(value => Number.parseInt(value)).includes(object.object_id)) {
-        row.addClass('changed');
+        row.addClass('highlight');
     }
 
     if ((servershell.pinned ?? []).includes(object.object_id)) {
-        row.addClass('pinned');
+        row.addClass('highlight');
     }
 
     // Standard columns which should always be present
