@@ -70,6 +70,17 @@ $(document).ready(function() {
                         });
                     }
                 });
+
+                if (choices.length === 0) {
+                    servershell.attributes.map(item => item.attribute_id).sort().forEach(function(attribute) {
+                        if (attribute !== command && attribute.startsWith(command)) {
+                            choices.push({
+                                'label': `${attribute}`,
+                                'value': `${attribute} `,
+                            });
+                        }
+                    });
+                }
             }
             else {
                 // Auto complete for certain commands and its values
