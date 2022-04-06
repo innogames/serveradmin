@@ -6,7 +6,7 @@
  * @param pinned
  * @returns {Promise<{}>}
  */
-async function search(url, search_term, pinned = []) {
+async function _search(url, search_term, pinned = []) {
     let request_data = {
         term: search_term, // Avoid error on trailing spaces
         shown_attributes: servershell.shown_attributes,
@@ -80,7 +80,7 @@ servershell.submit_search = function() {
         ...(Object.keys((to_commit.changes ?? {})).map(val => Number.parseInt(val)))
     ];
 
-    search(url, servershell.term, touched_objects)
+    _search(url, servershell.term, touched_objects)
         .then(data => {
             servershell.editable_attributes = data.editable_attributes;
             servershell.servers = data.servers;
