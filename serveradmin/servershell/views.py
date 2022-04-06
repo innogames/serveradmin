@@ -48,6 +48,7 @@ from serveradmin.servershell.helper.autocomplete import (
     attribute_value_startswith,
     attribute_startswith
 )
+from serveradmin.servershell.merged_query_iterator import MergedQuery
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 25
@@ -133,6 +134,7 @@ def get_results(request):
     term = request.GET.get('term', '')
     shown_attributes = request.GET.getlist('shown_attributes[]')
     deep_link = bool(strtobool(request.GET.get('deep_link', 'false')))
+    pinned = request.GET.getlist('pinned[]')
 
     if request.session.get('save_attributes') and not deep_link:
         request.session['shown_attributes'] = shown_attributes
@@ -156,12 +158,17 @@ def get_results(request):
         restrict = shown_attributes.copy()
         if 'servertype' not in restrict:
             restrict.append('servertype')
-        query = Query(parse_query(term), restrict, order_by)
+        main_query = Query(parse_query(term), restrict, order_by)
+
+        merged_query = MergedQuery([
+            Query({'object_id': Any(*pinned)}, restrict),
+            main_query,
+        ])
 
         # TODO: Using len is terribly slow for large datasets because it has
         #  to query all objects but we cannot use count which is available on
         #  Django QuerySet
-        num_servers = len(query)
+        num_servers = len(list(merged_query))
     except (DatatypeError, ObjectDoesNotExist, ValidationError) as error:
         return HttpResponse(json.dumps({
             'status': 'error',
@@ -171,7 +178,7 @@ def get_results(request):
     # Query successful term must be valid here, so we can save it safely now.
     request.session['term'] = term
 
-    servers = list(islice(query, offset, offset + limit))
+    servers = list(islice(merged_query, offset, offset + limit))
 
     # Add information about available, editable attributes on servertypes
     servertype_ids = {s['servertype'] for s in servers}
@@ -194,7 +201,7 @@ def get_results(request):
 
     return HttpResponse(json.dumps({
         'status': 'success',
-        'understood': repr(query),
+        'understood': repr(main_query),
         'servers': servers,
         'num_servers': num_servers,
         'editable_attributes': editable_attributes,

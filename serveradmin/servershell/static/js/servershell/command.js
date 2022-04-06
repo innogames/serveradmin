@@ -173,6 +173,17 @@ function validate_selected(min=1, max=-1) {
 }
 
 servershell.commands = {
+    pin: function() {
+        let selected_ids = servershell.get_selected();
+        servershell.pinned.push(...selected_ids);
+        servershell.pinned = [...new Set(servershell.pinned)];
+        servershell.update_result();
+    },
+    unpin: function() {
+        let selected_ids = servershell.get_selected();
+        servershell.pinned = servershell.pinned.filter(value => selected_ids.indexOf(value) === -1);
+        servershell.update_result();
+    },
     search: function() {
         $('#term').focus();
     },

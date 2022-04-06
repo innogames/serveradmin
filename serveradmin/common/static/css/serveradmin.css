@@ -93,6 +93,10 @@ table ul {
     color: #ffffff !important;
 }
 
+.highlight {
+    font-weight: bold;
+}
+
 del {
     color: var(--remove);
 }
