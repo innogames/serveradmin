@@ -483,7 +483,7 @@ def choose_ip_addr(request):
         ['intern_ip', 'servertype'])
 
     return TemplateResponse(request, 'servershell/choose_ip_addr.html', {
-        'ip_addrs': islice(network_query.get_free_ip_addrs(), 1000)})
+        'ip_addrs': islice(network_query.get_free_ip_addrs(), 50)})
 
 
 @login_required
