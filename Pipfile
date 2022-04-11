@@ -22,7 +22,7 @@ Pillow = "~=9.1"
 # Required to parse human readable string like "a day ago" to a datetime
 dateparser = "<1.0.0"
 # Use Twelve-factor methodology to configure environment variables
-django-environ = "*"
+django-environ = "<1.0.0"
 
 django_compressor = ">=2.4"
 
