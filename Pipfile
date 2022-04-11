@@ -29,7 +29,7 @@ django_compressor = "<3.0.0"
 # Serveradmin extras:
 paramiko = "~=2.10"
 jinja2 = "~=2.10"
-pexpect = "*"
+pexpect = "<5.0.0"
 
 [dev-packages]
 # Used to build the sphinx docs
