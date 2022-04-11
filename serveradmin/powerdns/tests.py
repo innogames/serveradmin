@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.test import TransactionTestCase
 
 from serveradmin.dataset import Query
-from serveradmin.powerdns.models import Domain
+from serveradmin.powerdns.models import Domain, Record
 from serveradmin.powerdns.signals import (
     create_domains,
     delete_domains,
@@ -33,6 +33,12 @@ class DomainTests(TransactionTestCase):
     reset_sequences = True
     databases = '__all__'
     fixtures = ['powerdns_auth.json', 'powerdns_serverdb.json']
+
+    def tearDown(self) -> None:
+        # Because PowerDNS models are unmanaged we need to take care of
+        # cleaning up after each test case on our own.
+        Domain.objects.all().delete()
+        Record.objects.all().delete()
 
     def test_create_powerdns_domain_from_post_commit_signal(self):
         serveradmin_domain = _create_serveradmin_domain()
