@@ -11,9 +11,6 @@ name = "pypi"
 # Like ipaddress but for MACs
 netaddr = "<1.0.0"
 
-# Serveradmin:
-# WSGI server
-gunicorn = "*"
 # Debian stretch version
 Django = "~=3.2"
 # postgres lib used by django
