@@ -45,7 +45,7 @@ pex = "<3.0.0"
 requests = "<3.0.0"
 setuptools = "*"
 # Generate fake data for tests
-faker = "*"
+faker = "<14.0.0"
 
 [requires]
 python_version = "3.7"
