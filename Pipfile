@@ -42,7 +42,7 @@ Werkzeug = "<3.0.0"
 # Used to package a single executable according to PEP 441
 pex = "<3.0.0"
 # Pex complains without requests
-requests = "*"
+requests = "<3.0.0"
 setuptools = "*"
 # Generate fake data for tests
 faker = "*"
