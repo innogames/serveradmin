@@ -28,7 +28,7 @@ django_compressor = "<3.0.0"
 
 # Serveradmin extras:
 paramiko = "~=2.10"
-jinja2 = "*"
+jinja2 = "~=2.10"
 pexpect = "*"
 
 [dev-packages]
