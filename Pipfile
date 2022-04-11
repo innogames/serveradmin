@@ -9,7 +9,7 @@ name = "pypi"
 
 # Adminapi:
 # Like ipaddress but for MACs
-netaddr = "*"
+netaddr = "<1.0.0"
 
 # Serveradmin:
 # WSGI server
