@@ -36,7 +36,7 @@ pexpect = "<5.0.0"
 sphinx = "~=4.3"
 sphinx-rtd-theme = "<2.0.0"
 # Provides runserver_plus and other gadgets
-django-extensions = "*"
+django-extensions = "<4.0.0"
 # Required for runserver_plus to work
 Werkzeug = "*"
 # Used to package a single executable according to PEP 441
