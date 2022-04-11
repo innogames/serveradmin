@@ -24,7 +24,7 @@ dateparser = "<1.0.0"
 # Use Twelve-factor methodology to configure environment variables
 django-environ = "<1.0.0"
 
-django_compressor = ">=2.4"
+django_compressor = "<3.0.0"
 
 # Serveradmin extras:
 paramiko = "*"
