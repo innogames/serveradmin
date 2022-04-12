@@ -172,10 +172,6 @@ TEMPLATES = [
             ],
         },
     },
-    {
-        'BACKEND': 'django.template.backends.jinja2.Jinja2',
-        'APP_DIRS': True,
-    },
 ]
 
 # Python dotted path to the WSGI application used by Django's runserver.
