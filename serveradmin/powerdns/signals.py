@@ -44,6 +44,9 @@ def create_domains(sender, **kwargs):
             domain.type = queried_object[attrs['type']]
             domain.save()
 
+            # Ensure only one domain setting is applied
+            break
+
 
 @profile
 def delete_domains(sender, **kwargs):
