@@ -628,8 +628,8 @@ servershell.commands = {
                 }
                 else {
                     servershell.alert('Data successfully committed!', 'success');
-                    servershell.submit_search();
                     servershell.to_commit = {deleted: [], changes: {}};
+                    servershell.submit_search();
                 }
             },
         };
