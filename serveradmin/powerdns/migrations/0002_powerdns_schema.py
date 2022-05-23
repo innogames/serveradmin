@@ -114,6 +114,6 @@ class Migration(migrations.Migration):
     
             CREATE UNIQUE INDEX IF NOT EXISTS namealgoindex ON tsigkeys(name, algorithm);
             """,
-            hints={'target_db': 'pdns'}
+            hints={'target_db': 'powerdns'}
         )
     ]

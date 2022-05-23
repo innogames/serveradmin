@@ -36,9 +36,9 @@ jobs:
       pdns-db:
         image: 'postgres:14'
         env:
-          POSTGRES_USER: pdns
-          POSTGRES_PASSWORD: pdns
-          POSTGRES_DB: pdns
+          POSTGRES_USER: powerdns
+          POSTGRES_PASSWORD: powerdns
+          POSTGRES_DB: powerdns
         ports:
           - 5432/tcp
         options: >-
@@ -73,13 +73,13 @@ jobs:
                       'client_encoding': 'UTF8',
                   },
               },
-              'pdns': {
+              'powerdns': {
                   'ENGINE': 'django.db.backends.postgresql',
                   'HOST': '127.0.0.1',
                   'PORT': '${{ job.services.pdns-db.ports[5432] }}',
-                  'NAME': 'pdns',
-                  'USER': 'pdns',
-                  'PASSWORD': 'pdns',
+                  'NAME': 'powerdns',
+                  'USER': 'powerdns',
+                  'PASSWORD': 'powerdns',
                   'OPTIONS': {
                       'connect_timeout': 1,
                       'client_encoding': 'UTF8',

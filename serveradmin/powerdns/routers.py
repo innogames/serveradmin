@@ -10,7 +10,7 @@ class PowerDNSRouter:
         Attempts to read powerdns models go to the pdns db.
         """
         if model._meta.app_label in self.route_app_labels:
-            return 'pdns'
+            return 'powerdns'
         return None
 
     def db_for_write(self, model, **hints):
@@ -18,7 +18,7 @@ class PowerDNSRouter:
         Attempts to write powerdns models go to the pdns db.
         """
         if model._meta.app_label in self.route_app_labels:
-            return 'pdns'
+            return 'powerdns'
         return None
 
     def allow_migrate(self, db, app_label, model_name=None, **hints):
@@ -34,4 +34,4 @@ class PowerDNSRouter:
         if 'target_db' in hints:
             return db == hints['target_db']
 
-        return db != 'pdns'
+        return db != 'powerdns'
