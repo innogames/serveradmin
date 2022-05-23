@@ -42,13 +42,13 @@ DATABASES = {
         },
     },
     # Optional PowerDNS database connection
-    'pdns': {
+    'powerdns': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('POSTGRES_PDNS_DB', default=None),
-        'USER': env('POSTGRES_PDNS_USER', default=None),
-        'PASSWORD': env('POSTGRES_PDNS_PASSWORD', default=None),
-        'HOST': env('POSTGRES_PDNS_HOST', default=None),
-        'PORT': env('POSTGRES_PDNS_PORT', default=5432),
+        'NAME': env('POSTGRES_POWERDNS_DB', default=None),
+        'USER': env('POSTGRES_POWERDNS_USER', default=None),
+        'PASSWORD': env('POSTGRES_POWERDNS_PASSWORD', default=None),
+        'HOST': env('POSTGRES_POWERDNS_HOST', default=None),
+        'PORT': env('POSTGRES_POWERDNS_PORT', default=5432),
         'OPTIONS': {
             'connect_timeout': 1,
             'client_encoding': 'UTF8',
