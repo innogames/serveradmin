@@ -6,11 +6,9 @@ name = "pypi"
 [packages]
 # Most of the dependencies in here are for serveradmin and not actually
 # required for adminapi.
-
 # Adminapi:
 # Like ipaddress but for MACs
 netaddr = "<1.0.0"
-
 # Debian stretch version
 Django = "~=3.2"
 # postgres lib used by django
@@ -23,9 +21,7 @@ Pillow = "~=9.1"
 dateparser = "<1.0.0"
 # Use Twelve-factor methodology to configure environment variables
 django-environ = "<1.0.0"
-
 django_compressor = "<3.0.0"
-
 # Serveradmin extras:
 paramiko = "~=2.10"
 pexpect = "<5.0.0"
@@ -45,7 +41,7 @@ requests = "<3.0.0"
 setuptools = "*"
 # Generate fake data for tests
 faker = "<14.0.0"
+tblib = "*"
 
 [requires]
 python_version = "3.7"
-
