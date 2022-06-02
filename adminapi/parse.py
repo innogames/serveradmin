@@ -10,6 +10,9 @@ _trigger_re_chars = ('.*', '.+', '[', ']', '|', '\\', '$', '^', '<')
 
 
 def parse_query(term, hostname=None):  # NOQA: C901
+    # Ignore newlines to allow queries across multiple lines
+    term = term.replace('\n', '')
+
     parsed_args = parse_function_string(term, strict=True)
     if not parsed_args:
         return {}
