@@ -283,7 +283,13 @@ servershell.commands = {
             return;
         }
 
-        servershell.order_by = attribute_id;
+        if (servershell.order_by === attribute_id) {
+            // Avoid unnecessary reload
+            return;
+        }
+        else {
+            servershell.order_by = attribute_id;
+        }
 
         // Attribute not visible yet ...
         if (!servershell.shown_attributes.includes(attribute_id)) {
