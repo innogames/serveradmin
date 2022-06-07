@@ -87,7 +87,10 @@ class AttributeAdmin(admin.ModelAdmin):
         # objects and the little use-cases we have right now we don't
         # support it.
         if obj:
-            fields += ('type',)
+            fields += (
+                'type', 'attribute_id', 'target_servertype',
+                'reversed_attribute'
+            )
 
         return fields
 
