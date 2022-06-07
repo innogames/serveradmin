@@ -278,9 +278,13 @@ servershell.commands = {
             return;
         }
 
-        // Avoid unnecessary reload ...
-        if (servershell.order_by !== attribute_id) {
-            servershell.order_by = attribute_id;
+        servershell.order_by = attribute_id;
+
+        // Attribute not visible yet ...
+        if (!servershell.shown_attributes.includes(attribute_id)) {
+            servershell.shown_attributes.push(attribute_id);
+        }
+        else {
             servershell.submit_search();
         }
     },
