@@ -41,6 +41,7 @@ if __name__ == '__main__':
             ],
             'serveradmin.serverdb': [
                 'static/*',
+                'static/css/*',
                 'templates/serverdb/*',
             ],
             'serveradmin.servershell': [
