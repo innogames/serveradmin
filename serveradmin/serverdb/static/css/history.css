@@ -1,0 +1,7 @@
+table {
+    overflow-wrap: anywhere;
+}
+
+table th {
+    min-width: 125px;
+}
