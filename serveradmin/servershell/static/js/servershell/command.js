@@ -244,6 +244,11 @@ servershell.commands = {
         shown_attributes = shown_attributes.filter(a => !to_remove.includes(a));
         shown_attributes.splice(shown_attributes.length, 0, ...to_add);
 
+        // Attribute currently ordered by is about to be removed
+        if (to_remove.indexOf(servershell.order_by) !== -1) {
+            servershell.order_by = 'object_id';
+        }
+
         // Now trigger reload with all changes at once
         servershell.shown_attributes = shown_attributes;
     },
@@ -278,9 +283,19 @@ servershell.commands = {
             return;
         }
 
-        // Avoid unnecessary reload ...
-        if (servershell.order_by !== attribute_id) {
+        if (servershell.order_by === attribute_id) {
+            // Avoid unnecessary reload
+            return;
+        }
+        else {
             servershell.order_by = attribute_id;
+        }
+
+        // Attribute not visible yet ...
+        if (!servershell.shown_attributes.includes(attribute_id)) {
+            servershell.shown_attributes.push(attribute_id);
+        }
+        else {
             servershell.submit_search();
         }
     },
