@@ -346,16 +346,23 @@ def _edit(request, server, edit_mode=False, template='edit'):  # NOQA: C901
         ):
             continue
 
+        is_related_attribute = False
         attribute = attribute_lookup[key]
         servertype_attribute = servertype_attributes.get(key)
-        if servertype_attribute and servertype_attribute.related_via_attribute:
-            continue
+        if (
+            servertype_attribute and
+            servertype_attribute.related_via_attribute
+        ):
+            if edit_mode:
+                continue
+            else:
+                is_related_attribute = True
 
         fields_set.add(key)
         fields.append({
             'key': key,
             'value': value,
-            'type': attribute.type,
+            'type': attribute.type if not is_related_attribute else 'related',
             'multi': attribute.multi,
             'required': (
                     servertype_attribute and servertype_attribute.required or
