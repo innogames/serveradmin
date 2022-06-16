@@ -96,6 +96,7 @@ def graph_table(request):
                 graph_table += collection.graph_table(servers[hostname])
         graph_tables.append(graph_table)
 
+    graph_table = []
     if len(servers) > 1:
         # Add hostname to the titles
         for order, hostname in enumerate(servers.keys()):
