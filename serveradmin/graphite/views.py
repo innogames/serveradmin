@@ -43,7 +43,7 @@ def graph_table(request):
     if len(hostnames) == 0 and len(object_ids) == 0:
         return HttpResponseBadRequest('No hostname or object_id provided')
 
-    # For convenience we will cache the servers in a dictionary.
+    # For convenience, we will cache the servers in a dictionary.
     servers = {s['hostname']: s for s in
                Query({'hostname': Any(*hostnames)}, None)}
     servers.update({s['hostname']: s for s in
@@ -55,7 +55,7 @@ def graph_table(request):
             'One or more objects with hostname: {} or object_ids: {} does not '
             'exist'.format(','.join(hostnames), ','.join(object_ids)))
 
-    # Find the collections which are related with all of the hostnames.
+    # Find the collections which are related with all the hostnames.
     # If there are two collections with same match, use only the one which
     # is not an overview.
     collections = []
