@@ -116,11 +116,21 @@
                             {% endif %}
                         {% endfor %}
                     {% elif type == 'delete' %}
-                        <form method="post" action="{% url 'serverdb_restore_deleted' change.commit.id %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="object_id" value="{{ change.server_id }}" />
-                            <input class="btn btn-sm btn-danger" type="submit" value="Restore this server" />
-                        </form>
+                        <tr class="">
+                            <td>{{ change.commit.change_on|date:"r" }}</td>
+                            <td>{{ change.commit.change_on|timesince }}</td>
+                            <td>{{ change.commit.app|default:"Servershell" }}</td>
+                            <td>{{ change.commit.user }}</td>
+                            <td>
+                                <form method="post" action="{% url 'serverdb_restore_deleted' change.commit.id %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="object_id" value="{{ change.server_id }}" />
+                                    <input class="btn btn-sm btn-danger" type="submit" value="Restore this server" />
+                                </form>
+                            </td>
+                            <td>-</td>
+                            <td>-</td>
+                        </tr>
                     {% endif %}
                 {% endfor %}
             </tbody>
