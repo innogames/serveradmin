@@ -2,6 +2,10 @@
 
 {% load servershell %}
 
+{% block additional_styles %}
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/servershell.css">
+{% endblock %}
+
 {% block title %}
     Inspect {{ object_id }}
 {% endblock %}
@@ -31,7 +35,7 @@
             </thead>
             <tbody>
                 {% for field in fields %}
-                <tr>
+                <tr class="{% if field.type == 'related' %}disabled{% endif %}">
                     <td>{{ field.key }}</td>
                     <td>
                         {% if field.multi and field.value != None %}
