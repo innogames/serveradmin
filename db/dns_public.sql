@@ -23,7 +23,6 @@ select
     r.content,
     86400 as ttl,
     0 as prio,
-    0 as change_date,
     false as disabled,
     null::text as ordername,
     true as auth
@@ -34,10 +33,10 @@ from (
         v.content::text
     from public.server
     cross join (values
-        ('SOA', 'dnspub-af.innogames.de. hostmaster.innogames.de.'),
+        ('SOA', 'dnspub-af.innogames.de. hostmaster.innogames.de. 1 86400 7200 2419200 172800'),
         ('NS', 'dnspub-af.innogames.de'),
         ('NS', 'dnspub-aw.innogames.de'),
-        ('NS', 'dnspub-vn.innogames.de')
+        ('NS', 'dnspub-al.innogames.de')
     ) as v(type, content)
     where server.servertype_id = 'provider_domain'
 union all
