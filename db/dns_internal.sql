@@ -23,7 +23,6 @@ select
     r.content,
     86400 as ttl,
     0 as prio,
-    0 as change_date,
     false as disabled,
     null::text as ordername,
     true as auth
@@ -34,13 +33,15 @@ from (
         v.content::text
     from public.server
     cross join (values
-        ('SOA', 'dns-internal-af-1.ndco.ig.local. hostmaster.innogames.de.'),
+        ('SOA', 'dns-internal-af-1.ndco.ig.local. hostmaster.innogames.de. 1 86400 7200 2419200 172800'),
         ('NS', 'dns-internal-af-1.ndco.ig.local'),
         ('NS', 'dns-internal-af-2.ndco.ig.local'),
         ('NS', 'dns-internal-aw-1.ndco.ig.local'),
         ('NS', 'dns-internal-aw-2.ndco.ig.local'),
-        ('NS', 'dns-internal-vn-1.ndco.ig.local'),
-        ('NS', 'dns-internal-vn-2.ndco.ig.local')
+        ('NS', 'dns-internal-al-1.ndco.ig.local'),
+        ('NS', 'dns-internal-al-2.ndco.ig.local'),
+        ('NS', 'dns-internal-aws-euc1-az1.ndco.ig.local'),
+        ('NS', 'dns-internal-aws-euc1-az2.ndco.ig.local')
     ) as v(type, content)
     where server.servertype_id = 'provider_domain'
 union all
