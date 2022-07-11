@@ -29,9 +29,15 @@
                     {% for row in diff_data %}
                         <tr>
                             <td>{{ row.0 }}</td>
-                            {% with compare_to=row.1.0 %}
+                            {# Index 1 store the attribute value #}
+                            {% with compare_to=row.1.0.1 %}
                             {% for value in row.1 %}
-                                <td class="{% if value != compare_to %}diff{% else %}equal{% endif %}">{{ value }}</td>
+                                {# Index 0 store whatever the object has this attribute at all #}
+                                {% if value.0 %}
+                                <td class="{% if value.1 != compare_to %}diff{% else %}equal{% endif %}">{{ value.1 }}</td>
+                                {% else %}
+                                <td class="disabled"></td>
+                                {% endif %}
                             {% endfor %}
                             {% endwith %}
                         </tr>
