@@ -541,7 +541,6 @@ def diff(request: HttpRequest) -> HttpResponse:
 
     # Can raise ApiError for unknown attributes - let it flow ...
     qs = Query({'object_id': Any(*objects)}, attrs if attrs else None)
-
     diff_data = []
     for attribute in sorted(set(chain(*[o.keys() for o in qs]))):
         # object_id is always different and special
@@ -554,7 +553,10 @@ def diff(request: HttpRequest) -> HttpResponse:
 
         values = []
         for obj in qs:
-            values.append(obj[attribute])
+            if attribute not in obj:
+                values.append((False, None))
+            else:
+                values.append((True, obj[attribute]))
 
         diff_data.append([attribute, values])
 
