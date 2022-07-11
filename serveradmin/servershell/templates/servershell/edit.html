@@ -46,14 +46,14 @@
                         <td>
                             {% if field.multi %}
                                 <textarea class="edit_value" rows="3"  cols="70"  name="attr_{{ field.key }}"
-                                        {% if field.readonly %} disabled="disabled"{% endif %}
+                                        {% if field.readonly or field.type == 'related' %} disabled="disabled"{% endif %}
                                         {% if field.required %} required {% endif %}
                                         {% if field.regexp %}data-pattern="{{ field.regexp }}"{% endif %}
                                 >{% if field.value != None %}{{ field|field_to_str }}{% endif %}</textarea>
                             {% else %}
                                 <input class="edit_value"  type="text"  name="attr_{{ field.key }}"
                                        value="{% if field.value != None %}{{ field|field_to_str }}{% endif %}"
-                                       size="70" {% if field.readonly %}disabled="disabled" {% endif %}
+                                       size="70" {% if field.readonly or field.type == 'related' %}disabled="disabled" {% endif %}
                                        {% if field.regexp %}data-pattern="{{ field.regexp }}"{% endif %}
                                        {% if field.required %} required {% endif %}
                                        {% if field.key == 'intern_ip' %}readonly onclick="servershell.choose_ip_address();"{% endif %}

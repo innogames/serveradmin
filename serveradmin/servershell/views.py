@@ -353,10 +353,7 @@ def _edit(request, server, edit_mode=False, template='edit'):  # NOQA: C901
             servertype_attribute and
             servertype_attribute.related_via_attribute
         ):
-            if edit_mode:
-                continue
-            else:
-                is_related_attribute = True
+            is_related_attribute = True
 
         fields_set.add(key)
         fields.append({
