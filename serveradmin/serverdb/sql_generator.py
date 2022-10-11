@@ -223,7 +223,7 @@ def _condition_sql(attribute, template, related_vias):
     if attribute.type == 'domain':
         return _exists_sql(Server, 'sub', (
             "sub.servertype_id = '{0}'".format(attribute.target_servertype_id),
-            "server.hostname ~ ('\\A[^\.]+\.' || regexp_replace(",
+            "server.hostname ~ ('\\A[^\.]+\.' || regexp_replace("
             "sub.hostname, '(\*|\-|\.)', '\\\1', 'g') || '\\Z')",
             template.format('sub.server_id'),
         ))
