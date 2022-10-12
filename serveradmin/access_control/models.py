@@ -13,6 +13,7 @@ from serveradmin.serverdb.models import Attribute
 
 class AccessControlGroup(models.Model):
     name = models.CharField(max_length=80, unique=True)
+    description = models.TextField(blank=True)
     query = models.CharField(max_length=1000)
     members = models.ManyToManyField(
         User,
