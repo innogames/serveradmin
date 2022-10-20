@@ -35,7 +35,10 @@ def changes(request):
     t_until = request.GET.get('until')
     hostname = request.GET.get('hostname')
     application = request.GET.get('application')
-    date_settings = {'TIMEZONE': settings.TIME_ZONE}
+    date_settings = {
+        'TIMEZONE': settings.TIME_ZONE,
+        'RETURN_AS_TIMEZONE_AWARE': True,
+    }
 
     try:
         if hostname:
