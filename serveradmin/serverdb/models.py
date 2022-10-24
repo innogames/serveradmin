@@ -736,23 +736,6 @@ class ServerDateTimeAttribute(ServerAttribute):
         index_together = [['attribute', 'value']]
 
 
-class Change(models.Model):
-    change_on = models.DateTimeField(default=now, db_index=True)
-    user = models.ForeignKey(User, null=True, on_delete=models.PROTECT)
-    app = models.ForeignKey(Application, null=True, on_delete=models.PROTECT)
-    changes_json = models.TextField()
-
-    class Meta:
-        app_label = 'serverdb'
-
-    @property
-    def changes(self):
-        return json.loads(self.changes_json)
-
-    def __str__(self):
-        return str(self.change_on)
-
-
 class ChangeCommit(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)
     user = models.ForeignKey(User, null=True, on_delete=models.PROTECT)
