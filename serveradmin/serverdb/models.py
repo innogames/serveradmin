@@ -737,9 +737,9 @@ class ServerDateTimeAttribute(ServerAttribute):
 
 
 class ChangeCommit(models.Model):
-    change_on = models.DateTimeField(default=now, db_index=True)
     user = models.ForeignKey(User, null=True, on_delete=models.PROTECT)
     app = models.ForeignKey(Application, null=True, on_delete=models.PROTECT)
+    change_on = models.DateTimeField(default=now, db_index=True)
 
     class Meta:
         app_label = 'serverdb'
@@ -748,6 +748,22 @@ class ChangeCommit(models.Model):
         return str(self.change_on)
 
 
+class Change(models.Model):
+    class Type(models.TextChoices):
+        CREATE = 'create', _('create')
+        CHANGE = 'change', _('change')
+        DELETE = 'delete', _('delete')
+
+    object_id = models.IntegerField(db_index=True)
+    change_type = models.CharField(choices=Type.choices, max_length=6)
+    change_json = models.JSONField()
+    commit = models.ForeignKey(ChangeCommit, on_delete=models.CASCADE)
+
+    class Meta:
+        app_label = 'serverdb'
+
+
+# XXX: Deprecated remove when transition is done
 class ChangeDelete(models.Model):
     commit = models.ForeignKey(ChangeCommit, on_delete=models.CASCADE)
     server_id = models.IntegerField(db_index=True)
@@ -765,6 +781,7 @@ class ChangeDelete(models.Model):
         return '{0}: {1}'.format(str(self.commit), self.server_id)
 
 
+# XXX: Deprecated remove when transition is done
 class ChangeUpdate(models.Model):
     commit = models.ForeignKey(ChangeCommit, on_delete=models.CASCADE)
     server_id = models.IntegerField(db_index=True)
@@ -782,6 +799,7 @@ class ChangeUpdate(models.Model):
         return '{0}: {1}'.format(str(self.commit), self.server_id)
 
 
+# XXX: Deprecated remove when transition is done
 class ChangeAdd(models.Model):
     commit = models.ForeignKey(ChangeCommit, on_delete=models.CASCADE)
     server_id = models.IntegerField(db_index=True)
