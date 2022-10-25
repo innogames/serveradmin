@@ -3,7 +3,6 @@
 Copyright (c) 2022 InnoGames GmbH
 """
 
-import json
 import logging
 from itertools import chain
 
@@ -18,10 +17,8 @@ from serveradmin.serverdb.models import (
     Server,
     ServerAttribute,
     ServerRelationAttribute,
-    ChangeAdd,
     ChangeCommit,
-    ChangeUpdate,
-    ChangeDelete,
+    Change,
 )
 from serveradmin.serverdb.query_materializer import (
     QueryMaterializer,
@@ -438,28 +435,27 @@ def _acl_violations(changed_objects, obj, acl):
 
 def _log_changes(commit, changed, created_objects, deleted_objects):
     for updates in changed:
-        ChangeUpdate.objects.create(
+        Change.objects.create(
+            object_id=updates['object_id'],
+            change_type=Change.Type.CHANGE,
+            change_json=updates,
             commit=commit,
-            server_id=updates['object_id'],
-            updates_json=json.dumps(updates, default=json_encode_extra),
         )
 
     for attributes in deleted_objects.values():
-        attributes_json = json.dumps(attributes, default=json_encode_extra)
-        ChangeDelete.objects.create(
+        Change.objects.create(
+            object_id=attributes['object_id'],
+            change_type=Change.Type.DELETE,
+            change_json=attributes,
             commit=commit,
-            server_id=attributes['object_id'],
-            attributes_json=attributes_json,
         )
 
     for obj in created_objects.values():
-        attributes_json = json.dumps(
-            obj, default=json_encode_extra
-        )
-        ChangeAdd.objects.create(
+        Change.objects.create(
+            object_id=obj['object_id'],
+            change_type=Change.Type.CREATE,
+            change_json=obj,
             commit=commit,
-            server_id=obj['object_id'],
-            attributes_json=attributes_json,
         )
 
 

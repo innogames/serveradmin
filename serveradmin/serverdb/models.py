@@ -9,10 +9,20 @@ import netfields
 
 from typing import Union
 
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Q
 from netaddr import EUI
 from distutils.util import strtobool
-from ipaddress import ip_network, IPv4Interface, IPv6Interface, ip_interface
+from ipaddress import (
+    IPv4Address,
+    IPv6Address,
+    ip_interface,
+    IPv4Interface,
+    IPv6Interface,
+    ip_network,
+    IPv4Network,
+    IPv6Network,
+)
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -754,9 +764,34 @@ class Change(models.Model):
         CHANGE = 'change', _('change')
         DELETE = 'delete', _('delete')
 
+    class ChangeJSONEncoder(DjangoJSONEncoder):
+        _NETWORK_TYPES = (
+            IPv4Address,
+            IPv6Address,
+            IPv4Network,
+            IPv6Network,
+            EUI,
+        )
+
+        # This is close to json_encode_extra used in adminapi.request but with
+        # two differences. First we don't need to take care about BaseFilter
+        # objects as they are already "resolved". Second DjangoJSONEncoder
+        # handles datetime on its own. Third we don't blindly cast everything
+        # else to string but explicitly check for the types we now and fail
+        # for the others.
+        def default(self, obj):
+            # Handles ServerInetAttribute and ServerMACAddressAttribute values
+            if isinstance(obj, self._NETWORK_TYPES):
+                return str(obj)
+            # Handles MultiAttr values
+            elif isinstance(obj, set):
+                return list(obj)
+
+            return super().default(obj)
+
     object_id = models.IntegerField(db_index=True)
     change_type = models.CharField(choices=Type.choices, max_length=6)
-    change_json = models.JSONField()
+    change_json = models.JSONField(encoder=ChangeJSONEncoder)
     commit = models.ForeignKey(ChangeCommit, on_delete=models.CASCADE)
 
     class Meta:
