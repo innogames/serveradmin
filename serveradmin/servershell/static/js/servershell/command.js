@@ -623,7 +623,7 @@ servershell.commands = {
         let url = servershell.urls.history + `?object_id=${object_id}`;
 
         if (attribute_id) {
-            url += `&search_string=${attribute_id}`;
+            url += `&attribute_filter=${attribute_id}`;
         }
 
         window.open(url, '_blank');
