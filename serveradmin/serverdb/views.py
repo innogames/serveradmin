@@ -4,16 +4,16 @@ Copyright (c) 2019 InnoGames GmbH
 """
 
 import dateparser
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
+from django.utils.functional import cached_property
 
+from serveradmin import settings
 from serveradmin.serverdb.models import (
     ChangeCommit,
     ChangeDelete,
@@ -25,70 +25,63 @@ from serveradmin.serverdb.query_committer import CommitError, commit_query
 
 @login_required
 def changes(request):
-    context = dict()
-    column_filter = dict()
-    q_filter = list()
-    t_from = request.GET.get('from', '1 year ago')
-    t_until = request.GET.get('until')
-    hostname = request.GET.get('hostname')
-    application = request.GET.get('application')
+    commits = ChangeCommit.objects.all().order_by('-id')
     date_settings = {
-        'TIMEZONE': settings.TIME_ZONE,
-        'RETURN_AS_TIMEZONE_AWARE': True,
+        'TIMEZONE': settings.TIME_ZONE, 'RETURN_AS_TIMEZONE_AWARE': True
     }
 
-    try:
-        if hostname:
-            object_id = Server.objects.get(hostname=hostname).server_id
-        else:
-            object_id = request.GET.get('object_id')
-    except ObjectDoesNotExist:
-        messages.error(request, 'Server does not exist')
-        return TemplateResponse(request, 'serverdb/changes.html', {})
+    f_from = request.GET.get('from')
+    if f_from:
+        f_from = dateparser.parse(f_from, settings=date_settings)
+        commits = commits.filter(change_on__gt=f_from)
 
-    if t_from:
-        column_filter['change_on__gt'] = dateparser.parse(
-            t_from,
-            settings=date_settings,
-        )
-        context['from_understood'] = column_filter['change_on__gt']
-    if t_until:
-        column_filter['change_on__lt'] = dateparser.parse(
-            t_until,
-            settings=date_settings,
-        )
-        context['until_understood'] = column_filter['change_on__lt']
-    if object_id:
-        q_filter.append((
-            Q(changeupdate__server_id=object_id) |
-            Q(changedelete__server_id=object_id) |
-            Q(changeadd__server_id=object_id)
-        ))
-    if application:
-        q_filter.append((
-            Q(app__name=application) | Q(user__username=application)
-        ))
+    f_until = request.GET.get('until')
+    if f_until:
+        f_until = dateparser.parse(f_until, settings=date_settings)
+        commits = commits.filter(change_on__lt=f_until)
 
-    commits = ChangeCommit.objects.filter(
-        *q_filter,
-        **column_filter,
-    ).order_by('-change_on')
-    paginator = Paginator(commits, 20)
+    f_hostname = request.GET.get('hostname')
+    if f_hostname:
+        # Display all changes that have or had this hostname
+        # TODO: Create DB index for hostname to speed up this
+        object_ids = set(Change.objects.filter(
+            change_type__in=[Change.Type.CREATE, Change.Type.DELETE],
+            change_json__hostname=f_hostname).values_list(
+            'change_json__object_id', flat=True))
+        commits = commits.filter(change__object_id__in=object_ids)
 
-    try:
-        page = paginator.page(request.GET.get('page', 1))
-    except (PageNotAnInteger, EmptyPage):
-        page = paginator.page(1)
+    f_object_id = request.GET.get('object_id')
+    if f_object_id:
+        commits = commits.filter(change__object_id=f_object_id)
 
-    context.update({
+    f_user_or_app = request.GET.get('user_or_app')
+    if f_user_or_app:
+        commits = commits.filter(
+            Q(app__name=f_user_or_app) | Q(user__username=f_user_or_app))
+
+    commits = commits.select_related('app', 'user')
+    commits = commits.prefetch_related('change_set')
+
+    class NoCountPaginator(Paginator):
+        @cached_property
+        def count(self):
+            return 2**32
+
+    paginator = NoCountPaginator(commits, 20)
+    page = paginator.get_page(request.GET.get('page', 1))
+    # Defaulting to first page when exceeding page range does not work here
+    # because of the override count.
+    if len(page.object_list) == 0:
+        page = paginator.get_page(1)
+
+    return TemplateResponse(request, 'serverdb/changes.html', {
         'commits': page,
-        'from': t_from,
-        'until': t_until,
-        'hostname': hostname,
-        'object_id': object_id,
-        'application': application,
+        'from': f_from,
+        'until': f_until,
+        'hostname': f_hostname,
+        'object_id': f_object_id,
+        'user_or_app': f_user_or_app,
     })
-    return TemplateResponse(request, 'serverdb/changes.html', context)
 
 
 @login_required
