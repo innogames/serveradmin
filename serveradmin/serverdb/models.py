@@ -797,6 +797,29 @@ class Change(models.Model):
     class Meta:
         app_label = 'serverdb'
 
+    def hostname(self):
+        """Get last hostname for object of Change
+
+        Get the current hostname if the object still exists or the last known
+        one when deleted.
+
+        :return:
+        """
+
+        if self.change_type == Change.Type.DELETE:
+            return self.change_json['hostname']
+        else:
+            try:
+                return Server.objects.filter(
+                    pk=self.object_id).only('hostname').get().hostname
+            except Server.DoesNotExist:
+                # We seem to have re-used the same object_id in the past in
+                # some exceptions - in such as case just pick the latest.
+                return Change.objects.filter(
+                    object_id=self.object_id,
+                    change_type=Change.Type.DELETE
+                ).order_by('-id').first().change_json['hostname']
+
 
 # XXX: Deprecated remove when transition is done
 class ChangeDelete(models.Model):
