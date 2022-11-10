@@ -41,11 +41,11 @@
                         {% if field.multi and field.value != None %}
                             <ul>
                                 {% for val in field.value %}
-                                    <li>{{ val|value_to_str:field.type }}</li>
+                                    <li>{{ val|value_to_str:field.type|link_to_object:field.type }}</li>
                                 {% endfor %}
                             </ul>
-                        {% else %}
-                            {% if field.value != None %}{{ field.value|value_to_str:field.type }}{% endif %}
+                        {% elif field.value != None %}
+                            {{ field.value|value_to_str:field.type|link_to_object:field.type }}
                         {% endif %}
                     </td>
                     <td>{{ field.type }}</td>
