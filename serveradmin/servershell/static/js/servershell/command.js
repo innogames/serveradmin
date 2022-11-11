@@ -684,6 +684,38 @@ servershell.commands = {
 
         window.open(url, '_blank');
     },
+    sum: function(attribute_id) {
+        if (!validate_selected()) {
+            return;
+        }
+        let attribute = servershell.get_attribute(attribute_id);
+        if (!attribute) {
+            servershell.alert(`Attribute ${attribute_id} does not exist`, 'warning');
+            return;
+        }
+        if (attribute.type !== 'number') {
+            servershell.alert(`Attribute ${attribute_id} is not a number`, 'warning');
+            return;
+        }
+        // Add not yet visible attributes ...
+        let to_add = [attribute_id].filter(a => servershell.shown_attributes.find(b => b === a) === undefined);
+        servershell.shown_attributes.splice(servershell.shown_attributes.length, 0, ...to_add);
+
+        $(document).one('servershell_search_finished', function() {
+            let sum = 0;
+            let selected = servershell.get_selected();
+            let servers = servershell.servers.filter(s => selected.includes(s.object_id));
+            servers.forEach(function(object) {
+                if (object.hasOwnProperty(attribute_id)) {
+                    sum += isNaN(object[attribute_id]) ? 0 : object[attribute_id];
+                }
+            });
+
+            $('#sum_text').text(sum);
+            $('#sum_attribute_text').text(attribute_id);
+            $('#modal_sum').modal('show');
+        });
+    }
 };
 
 /**

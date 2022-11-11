@@ -115,7 +115,7 @@ $(document).ready(function() {
                         }
                     });
                 }
-                if (command === 'attr' || command === 'export' || command === 'diff') {
+                if (command === 'attr' || command === 'export' || command === 'diff' || command === 'sum') {
                     values = values.split(',').map(v => v.trim());
                     let search_string = values.pop();
                     let attribute_ids = get_attribute_ids(search_string, values);
