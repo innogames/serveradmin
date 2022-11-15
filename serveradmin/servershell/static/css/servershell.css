@@ -124,3 +124,7 @@ table tr:nth-child(odd) .disabled {
 .equal {
     background-color: #d1e7dd;
 }
+
+#result_table textarea {
+    resize: both;
+}
