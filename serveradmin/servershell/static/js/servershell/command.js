@@ -233,7 +233,7 @@ servershell.commands = {
         let unknown = attribute_ids.filter(a => servershell.attributes.find(b => b.attribute_id === a) === undefined);
 
         if (unknown.length > 0) {
-            servershell.alert(`The attribute(s) ${unknown.join(', ')} doe not exist!`, 'warning');
+            servershell.alert(`The attribute(s) ${unknown.join(', ')} does not exist!`, 'warning');
             return;
         }
 
@@ -674,7 +674,7 @@ servershell.commands = {
         let unknown = attribute_ids.filter(a => servershell.attributes.find(b => b.attribute_id === a) === undefined);
 
         if (unknown.length > 0) {
-            servershell.alert(`The attribute(s) ${unknown.join(', ')} doe not exist!`, 'warning');
+            servershell.alert(`The attribute(s) ${unknown.join(', ')} does not exist!`, 'warning');
             return;
         }
 
