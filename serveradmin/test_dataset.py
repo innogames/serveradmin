@@ -7,6 +7,7 @@ from ipaddress import IPv4Address
 from datetime import datetime, timezone, tzinfo, timedelta, date
 from django.contrib.auth.models import User
 from django.test import TransactionTestCase
+from netaddr import EUI
 
 from adminapi.filters import (
     Any,
@@ -18,7 +19,7 @@ from serveradmin.dataset import Query
 
 
 class TestQuery(TransactionTestCase):
-    fixtures = ['test_dataset.json']
+    fixtures = ['test_dataset.json', 'auth_user.json']
 
     def test_query_hostname(self):
         s = Query({'hostname': 'test0'}).get()
@@ -79,7 +80,7 @@ class TestQuery(TransactionTestCase):
 
 
 class TestCommit(TransactionTestCase):
-    fixtures = ['test_dataset.json']
+    fixtures = ['test_dataset.json', 'auth_user.json']
 
     def test_commit_query(self):
         q = Query({'hostname': 'test1'}, ['os', 'intern_ip'])
@@ -112,7 +113,7 @@ class TestCommit(TransactionTestCase):
 
 
 class TestAttributeDatetime(TransactionTestCase):
-    fixtures = ['test_dataset.json']
+    fixtures = ['test_dataset.json', 'auth_user.json']
 
     def test_set_attribute(self):
         """Try to set and retrieve a datetime attribute"""
@@ -146,7 +147,7 @@ class TestAttributeDatetime(TransactionTestCase):
 
 
 class TestAttributeDate(TransactionTestCase):
-    fixtures = ['test_dataset.json']
+    fixtures = ['test_dataset.json', 'auth_user.json']
 
     def test_set_attribute(self):
         """Try to set and retrieve a date attribute"""
@@ -159,3 +160,19 @@ class TestAttributeDate(TransactionTestCase):
 
         s = Query({'hostname': 'test0'}, ['created']).get()
         self.assertEqual(s['created'], dt)
+
+
+class TestAttributeMac(TransactionTestCase):
+    fixtures = ['test_dataset.json', 'auth_user.json']
+
+    def test_set_attribute(self):
+        """Try to set and retrieve a MAC attribute"""
+
+        mac_address = EUI('00:11:22:33:44:55')
+        q = Query({'hostname': 'test0'}, ['mac_address'])
+        s = q.get()
+        s['mac_address'] = mac_address
+        q.commit(user=User.objects.first())
+
+        s = Query({'hostname': 'test0'}, ['mac_address']).get()
+        self.assertEqual(s['mac_address'], mac_address)

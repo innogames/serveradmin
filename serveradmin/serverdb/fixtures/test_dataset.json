@@ -97,6 +97,22 @@
   },
   {
     "model": "serverdb.attribute",
+    "pk": "mac_address",
+    "fields": {
+      "type": "macaddr",
+      "multi": false,
+      "hovertext": "",
+      "group": "other",
+      "help_link": null,
+      "readonly": false,
+      "target_servertype": null,
+      "reversed_attribute": null,
+      "clone": false,
+      "regexp": "\\A.*\\Z"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
     "pk": "os",
     "fields": {
       "type": "string",
@@ -182,6 +198,19 @@
     "fields": {
       "servertype": "test0",
       "attribute": "created",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": false
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 7,
+    "fields": {
+      "servertype": "test0",
+      "attribute": "mac_address",
       "related_via_attribute": null,
       "consistent_via_attribute": null,
       "required": false,
@@ -286,24 +315,6 @@
       "server": 4,
       "attribute": "game_world",
       "value": "10"
-    }
-  },
-  {
-    "model": "auth.user",
-    "pk": 1,
-    "fields": {
-      "password": "pbkdf2_sha256$260000$cM9aZ9oN6K1ltfeMzqZNdS$cUfGmMNvELAjCEf0yq3k/Za8XGL5cLrZoAkFQ/qNs0k=",
-      "last_login": "2022-11-16T09:46:11.082Z",
-      "is_superuser": true,
-      "username": "hannah.acker",
-      "first_name": "Hannah",
-      "last_name": "Acker",
-      "email": "hannah.acker@example.com",
-      "is_staff": true,
-      "is_active": true,
-      "date_joined": "2018-01-26T11:55:03.947Z",
-      "groups": [],
-      "user_permissions": []
     }
   }
 ]
