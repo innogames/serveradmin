@@ -228,3 +228,19 @@ class TestAttributeInet(TransactionTestCase):
 
         s = Query({'hostname': 'test4'}, ['inet_address']).get()
         self.assertEqual(s['inet_address'], ipv6_network)
+
+
+class TestAttributeNumber(TransactionTestCase):
+    fixtures = ['test_dataset.json', 'auth_user.json']
+
+    def test_set_attribute(self):
+        """Try set and retrieve a number attribute"""
+
+        game_world = 42
+        q = Query({'hostname': 'test2'}, ['game_world'])
+        s = q.get()
+        s['game_world'] = game_world
+        q.commit(user=User.objects.first())
+
+        s = Query({'hostname': 'test2'}, ['game_world']).get()
+        self.assertEqual(s['game_world'], game_world)
