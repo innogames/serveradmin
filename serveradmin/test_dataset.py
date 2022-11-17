@@ -3,7 +3,7 @@
 Copyright (c) 2019 InnoGames GmbH
 """
 
-from ipaddress import IPv4Address
+from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 from datetime import datetime, timezone, tzinfo, timedelta, date
 from django.contrib.auth.models import User
 from django.test import TransactionTestCase
@@ -76,7 +76,7 @@ class TestQuery(TransactionTestCase):
 
     def test_startswith_servertype(self):
         q = Query({'servertype': StartsWith('tes')})
-        self.assertEqual(len(q), 4)
+        self.assertEqual(len(q), 5)
 
 
 class TestCommit(TransactionTestCase):
@@ -176,3 +176,55 @@ class TestAttributeMac(TransactionTestCase):
 
         s = Query({'hostname': 'test0'}, ['mac_address']).get()
         self.assertEqual(s['mac_address'], mac_address)
+
+
+class TestAttributeInet(TransactionTestCase):
+    fixtures = ['test_dataset.json', 'auth_user.json']
+
+    def test_set_attribute_ipv4_address(self):
+        """Try to set and retrieve a IPv4Address from an inet attribute"""
+
+        ipv4_address = IPv4Address('10.0.0.1')
+        q = Query({'hostname': 'test0'}, ['inet_address'])
+        s = q.get()
+        s['inet_address'] = ipv4_address
+        q.commit(user=User.objects.first())
+
+        s = Query({'hostname': 'test0'}, ['inet_address']).get()
+        self.assertEqual(s['inet_address'], ipv4_address)
+
+    def test_set_attribute_ipv6_address(self):
+        """Try to set and retrieve a IPv6Address from an inet attribute"""
+
+        ipv6_address = IPv6Address('0100::')
+        q = Query({'hostname': 'test0'}, ['inet_address'])
+        s = q.get()
+        s['inet_address'] = ipv6_address
+        q.commit(user=User.objects.first())
+
+        s = Query({'hostname': 'test0'}, ['inet_address']).get()
+        self.assertEqual(s['inet_address'], ipv6_address)
+
+    def test_set_attribute_ipv4_network(self):
+        """Try to set and retrieve a IPv4Network from an inet attribute"""
+
+        ipv4_network = IPv4Network('10.0.0.0/24')
+        q = Query({'hostname': 'test4'}, ['inet_address'])
+        s = q.get()
+        s['inet_address'] = ipv4_network
+        q.commit(user=User.objects.first())
+
+        s = Query({'hostname': 'test4'}, ['inet_address']).get()
+        self.assertEqual(s['inet_address'], ipv4_network)
+
+    def test_set_attribute_ipv6_network(self):
+        """Try to set and retrieve a IPv6Network from an inet attribute"""
+
+        ipv6_network = IPv6Network('0100::/64')
+        q = Query({'hostname': 'test4'}, ['inet_address'])
+        s = q.get()
+        s['inet_address'] = ipv6_network
+        q.commit(user=User.objects.first())
+
+        s = Query({'hostname': 'test4'}, ['inet_address']).get()
+        self.assertEqual(s['inet_address'], ipv6_network)
