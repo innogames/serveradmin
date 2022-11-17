@@ -4,7 +4,7 @@ Copyright (c) 2019 InnoGames GmbH
 """
 
 from ipaddress import IPv4Address
-from datetime import datetime, timezone, tzinfo, timedelta
+from datetime import datetime, timezone, tzinfo, timedelta, date
 from django.contrib.auth.models import User
 from django.test import TransactionTestCase
 
@@ -143,3 +143,19 @@ class TestAttributeDatetime(TransactionTestCase):
 
         s = Query({'hostname': 'test0'}, ['last_edited']).get()
         self.assertEqual(str(s['last_edited']), '1970-01-01 00:00:00+00:00')
+
+
+class TestAttributeDate(TransactionTestCase):
+    fixtures = ['test_dataset.json']
+
+    def test_set_attribute(self):
+        """Try to set and retrieve a date attribute"""
+
+        dt = date.today()
+        q = Query({'hostname': 'test0'}, ['created'])
+        s = q.get()
+        s['created'] = dt
+        q.commit(user=User.objects.first())
+
+        s = Query({'hostname': 'test0'}, ['created']).get()
+        self.assertEqual(s['created'], dt)
