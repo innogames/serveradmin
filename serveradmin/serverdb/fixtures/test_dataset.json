@@ -19,7 +19,7 @@
     "model": "serverdb.servertype",
     "pk": "test2",
     "fields": {
-      "description": "",
+      "description": "test2",
       "ip_addr_type": "host"
     }
   },
@@ -85,6 +85,22 @@
       "reversed_attribute": null,
       "clone": false,
       "regexp": "\\A(0|[1-9][0-9]*)\\Z"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
+    "pk": "has_monitoring",
+    "fields": {
+      "type": "boolean",
+      "multi": false,
+      "hovertext": "",
+      "group": "other",
+      "help_link": null,
+      "readonly": false,
+      "target_servertype": null,
+      "reversed_attribute": null,
+      "clone": false,
+      "regexp": "\\A.*\\Z"
     }
   },
   {
@@ -269,6 +285,19 @@
     }
   },
   {
+    "model": "serverdb.servertypeattribute",
+    "pk": 11,
+    "fields": {
+      "servertype": "test2",
+      "attribute": "has_monitoring",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": false
+    }
+  },
+  {
     "model": "serverdb.server",
     "pk": 1,
     "fields": {
@@ -347,6 +376,14 @@
       "server": 4,
       "attribute": "os",
       "value": "squeeze"
+    }
+  },
+  {
+    "model": "serverdb.serverbooleanattribute",
+    "pk": 1,
+    "fields": {
+      "server": 3,
+      "attribute": "has_monitoring"
     }
   },
   {

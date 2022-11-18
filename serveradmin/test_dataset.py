@@ -244,3 +244,19 @@ class TestAttributeNumber(TransactionTestCase):
 
         s = Query({'hostname': 'test2'}, ['game_world']).get()
         self.assertEqual(s['game_world'], game_world)
+
+
+class TestAttributeBoolean(TransactionTestCase):
+    fixtures = ['test_dataset.json', 'auth_user.json']
+
+    def test_set_attribute(self):
+        """Try to set and retrieve a boolean attribute"""
+
+        has_monitoring = True
+        q = Query({'hostname': 'test2'}, ['has_monitoring'])
+        s = q.get()
+        s['has_monitoring'] = has_monitoring
+        q.commit(user=User.objects.first())
+
+        s = Query({'hostname': 'test2'}, ['has_monitoring']).get()
+        self.assertEqual(s['has_monitoring'], has_monitoring)
