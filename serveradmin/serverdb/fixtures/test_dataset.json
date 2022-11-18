@@ -164,7 +164,7 @@
       "target_servertype": null,
       "reversed_attribute": null,
       "clone": false,
-      "regexp": "\\A(wheezy|squeeze)\\Z"
+      "regexp": "\\A(wheezy|squeeze|jessie|buster|bullseye)\\Z"
     }
   },
   {
@@ -376,14 +376,6 @@
       "server": 4,
       "attribute": "os",
       "value": "squeeze"
-    }
-  },
-  {
-    "model": "serverdb.serverbooleanattribute",
-    "pk": 1,
-    "fields": {
-      "server": 3,
-      "attribute": "has_monitoring"
     }
   },
   {

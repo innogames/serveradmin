@@ -260,3 +260,19 @@ class TestAttributeBoolean(TransactionTestCase):
 
         s = Query({'hostname': 'test2'}, ['has_monitoring']).get()
         self.assertEqual(s['has_monitoring'], has_monitoring)
+
+
+class TestAttributeString(TransactionTestCase):
+    fixtures = ['test_dataset.json', 'auth_user.json']
+
+    def test_set_attribute(self):
+        """Try to set and retrieve a string attribute"""
+
+        os = 'bullseye'
+        q = Query({'hostname': 'test0'}, ['os'])
+        s = q.get()
+        s['os'] = os
+        q.commit(user=User.objects.first())
+
+        s = Query({'hostname': 'test0'}, ['os']).get()
+        self.assertEqual(s['os'], os)
