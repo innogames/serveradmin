@@ -304,3 +304,19 @@ class TestRelationAttribute(TransactionTestCase):
 
         with self.assertRaises(ValidationError):
             q.commit(user=User.objects.first())
+
+
+class TestReverseAttribute(TransactionTestCase):
+    fixtures = ['test_dataset.json', 'auth_user.json']
+
+    def test_attribute_is_set(self):
+        """Set a relation attribute and check the reverse attribute value"""
+
+        hypervisor = 'hv-1'  # must be of servertype hypervisor
+        q = Query({'hostname': 'vm-1'}, ['hypervisor'])
+        s = q.get()
+        s['hypervisor'] = hypervisor
+        q.commit(user=User.objects.first())
+
+        s = Query({'hostname': 'hv-1'}, ['vms']).get()
+        self.assertIn('vm-1', s['vms'])
