@@ -1,6 +1,14 @@
 [
   {
     "model": "serverdb.servertype",
+    "pk": "hypervisor",
+    "fields": {
+      "description": "Hypervisor",
+      "ip_addr_type": "host"
+    }
+  },
+  {
+    "model": "serverdb.servertype",
     "pk": "test0",
     "fields": {
       "description": "test servertype",
@@ -20,6 +28,14 @@
     "pk": "test2",
     "fields": {
       "description": "test2",
+      "ip_addr_type": "host"
+    }
+  },
+  {
+    "model": "serverdb.servertype",
+    "pk": "vm",
+    "fields": {
+      "description": "Virtual Machine",
       "ip_addr_type": "host"
     }
   },
@@ -105,6 +121,22 @@
   },
   {
     "model": "serverdb.attribute",
+    "pk": "hypervisor",
+    "fields": {
+      "type": "relation",
+      "multi": false,
+      "hovertext": "",
+      "group": "other",
+      "help_link": null,
+      "readonly": false,
+      "target_servertype": "hypervisor",
+      "reversed_attribute": null,
+      "clone": false,
+      "regexp": "\\A.*\\Z"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
     "pk": "inet_address",
     "fields": {
       "type": "inet",
@@ -165,6 +197,22 @@
       "reversed_attribute": null,
       "clone": false,
       "regexp": "\\A(wheezy|squeeze|jessie|buster|bullseye)\\Z"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
+    "pk": "vms",
+    "fields": {
+      "type": "reverse",
+      "multi": true,
+      "hovertext": "",
+      "group": "other",
+      "help_link": null,
+      "readonly": true,
+      "target_servertype": null,
+      "reversed_attribute": "hypervisor",
+      "clone": false,
+      "regexp": "\\A.*\\Z"
     }
   },
   {
@@ -298,6 +346,32 @@
     }
   },
   {
+    "model": "serverdb.servertypeattribute",
+    "pk": 13,
+    "fields": {
+      "servertype": "vm",
+      "attribute": "hypervisor",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": false
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 14,
+    "fields": {
+      "servertype": "hypervisor",
+      "attribute": "vms",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": false
+    }
+  },
+  {
     "model": "serverdb.server",
     "pk": 1,
     "fields": {
@@ -343,6 +417,24 @@
     }
   },
   {
+    "model": "serverdb.server",
+    "pk": 6,
+    "fields": {
+      "hostname": "hv-1",
+      "intern_ip": "10.0.1.1/32",
+      "servertype": "hypervisor"
+    }
+  },
+  {
+    "model": "serverdb.server",
+    "pk": 7,
+    "fields": {
+      "hostname": "vm-1",
+      "intern_ip": "10.0.2.1/32",
+      "servertype": "vm"
+    }
+  },
+  {
     "model": "serverdb.serverstringattribute",
     "pk": 1,
     "fields": {
@@ -376,6 +468,15 @@
       "server": 4,
       "attribute": "os",
       "value": "squeeze"
+    }
+  },
+  {
+    "model": "serverdb.serverrelationattribute",
+    "pk": 2,
+    "fields": {
+      "server": 7,
+      "attribute": "hypervisor",
+      "value": 6
     }
   },
   {

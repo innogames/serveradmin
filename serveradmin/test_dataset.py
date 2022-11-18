@@ -6,6 +6,7 @@ Copyright (c) 2019 InnoGames GmbH
 from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 from datetime import datetime, timezone, tzinfo, timedelta, date
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.test import TransactionTestCase
 from netaddr import EUI
 
@@ -276,3 +277,30 @@ class TestAttributeString(TransactionTestCase):
 
         s = Query({'hostname': 'test0'}, ['os']).get()
         self.assertEqual(s['os'], os)
+
+
+class TestRelationAttribute(TransactionTestCase):
+    fixtures = ['test_dataset.json', 'auth_user.json']
+
+    def test_set_attribute(self):
+        """Try to set and retrieve a relation attribute"""
+
+        hypervisor = 'hv-1'  # must be of servertype hypervisor
+        q = Query({'hostname': 'vm-1'}, ['hypervisor'])
+        s = q.get()
+        s['hypervisor'] = hypervisor
+        q.commit(user=User.objects.first())
+
+        s = Query({'hostname': 'vm-1'}, ['hypervisor']).get()
+        self.assertEqual(s['hypervisor'], hypervisor)
+
+    def test_set_attribute_with_wrong_servertype(self):
+        """Try to set a relation attribute of wrong servertype"""
+
+        hypervisor = 'vm-1'  # wrong servertype should throw exception
+        q = Query({'hostname': 'vm-1'}, ['hypervisor'])
+        s = q.get()
+        s['hypervisor'] = hypervisor
+
+        with self.assertRaises(ValidationError):
+            q.commit(user=User.objects.first())
