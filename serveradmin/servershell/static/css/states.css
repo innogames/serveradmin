@@ -19,3 +19,7 @@ tr.state-maintenance {
 tr.state-retired {
     background-color: #ff8a80 !important; /* red */
 }
+
+tr.state-cold_standby {
+    background-color: #cfd8dc !important /* blue grey */;
+}
