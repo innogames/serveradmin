@@ -1,221 +1,509 @@
 [
-    {
-        "pk": 1,
-        "model": "auth.user",
-        "fields": {
-            "first_name": "Hannah",
-            "last_name": "Acker",
-            "username": "hannah.acker",
-            "password": "!",
-            "email": "hannah.acker@example.com",
-            "user_permissions": [],
-            "groups": [],
-            "last_login": null,
-            "is_staff": true,
-            "is_active": true,
-            "is_superuser": true,
-            "date_joined": "2018-01-26T11:55:03.947Z"
-        }
-    },
-    {
-        "pk": "os",
-        "model": "serverdb.attribute",
-        "fields": {
-            "type": "string",
-            "regexp": "\\A(wheezy|squeeze)\\Z"
-        }
-    },
-    {
-        "pk": "game_world",
-        "model": "serverdb.attribute",
-        "fields": {
-            "type": "number",
-            "regexp": "\\A(0|[1-9][0-9]*)\\Z"
-        }
-    },
-    {
-        "pk": "additional_ips",
-        "model": "serverdb.attribute",
-        "fields": {
-            "type": "integer",
-            "regexp": "\\A.*\\Z"
-        }
-    },
-    {
-        "pk": "database",
-        "model": "serverdb.attribute",
-        "fields": {
-            "multi": true,
-            "type": "string",
-            "regexp": "\\A.*\\Z"
-        }
-    },
-    {
-        "pk": "last_edited",
-        "model": "serverdb.attribute",
-        "fields": {
-            "type": "datetime",
-            "regexp": "\\A.*\\Z"
-        }
-    },
-    {
-        "pk": "test0",
-        "model": "serverdb.servertype",
-        "fields": {
-            "ip_addr_type": "host"
-        }
-    },
-    {
-        "pk": "test2",
-        "model": "serverdb.servertype",
-        "fields": {
-            "ip_addr_type": "host"
-        }
-    },
-    {
-        "pk": 1,
-        "model": "serverdb.servertypeattribute",
-        "fields": {
-            "required": true,
-            "default_value": "squeeze",
-            "servertype": "test0",
-            "attribute": "os"
-        }
-    },
-    {
-        "pk": 2,
-        "model": "serverdb.servertypeattribute",
-        "fields": {
-            "required": true,
-            "default_value": null,
-            "servertype": "test2",
-            "attribute": "os"
-        }
-    },
-    {
-        "pk": 3,
-        "model": "serverdb.servertypeattribute",
-        "fields": {
-            "default_value": null,
-            "servertype": "test2",
-            "attribute": "game_world"
-        }
-    },
-    {
-        "pk": 4,
-        "model": "serverdb.servertypeattribute",
-        "fields": {
-            "default_value": null,
-            "servertype": "test0",
-            "attribute": "database"
-        }
-    },
-    {
-        "pk": 5,
-        "model": "serverdb.servertypeattribute",
-        "fields": {
-            "default_value": null,
-            "servertype": "test0",
-            "attribute": "last_edited"
-        }
-    },
-    {
-        "pk": 1,
-        "model": "serverdb.server",
-        "fields": {
-            "intern_ip": 168820737,
-            "hostname": "test0",
-            "servertype": "test0"
-        }
-    },
-    {
-        "pk": 2,
-        "model": "serverdb.server",
-        "fields": {
-            "intern_ip": 168820738,
-            "hostname": "test1",
-            "servertype": "test2"
-        }
-    },
-    {
-        "pk": 3,
-        "model": "serverdb.server",
-        "fields": {
-            "intern_ip": 168820739,
-            "hostname": "test2",
-            "servertype": "test2"
-        }
-    },
-    {
-        "pk": 4,
-        "model": "serverdb.server",
-        "fields": {
-            "intern_ip": 168820740,
-            "hostname": "test3",
-            "servertype": "test2"
-        }
-    },
-    {
-        "pk": 1,
-        "model": "serverdb.serverstringattribute",
-        "fields": {
-            "attribute": "os",
-            "value": "wheezy",
-            "server": 1
-        }
-    },
-    {
-        "pk": 2,
-        "model": "serverdb.serverstringattribute",
-        "fields": {
-            "attribute": "os",
-            "value": "squeeze",
-            "server": 2
-        }
-    },
-    {
-        "pk": 3,
-        "model": "serverdb.serverstringattribute",
-        "fields": {
-            "attribute": "os",
-            "value": "squeeze",
-            "server": 3
-        }
-    },
-    {
-        "pk": 4,
-        "model": "serverdb.serverstringattribute",
-        "fields": {
-            "attribute": "os",
-            "value": "squeeze",
-            "server": 4
-        }
-    },
-    {
-        "pk": 5,
-        "model": "serverdb.servernumberattribute",
-        "fields": {
-            "attribute": "game_world",
-            "value": "1",
-            "server": 2
-        }
-    },
-    {
-        "pk": 6,
-        "model": "serverdb.servernumberattribute",
-        "fields": {
-            "attribute": "game_world",
-            "value": "2",
-            "server": 3
-        }
-    },
-    {
-        "pk": 7,
-        "model": "serverdb.servernumberattribute",
-        "fields": {
-            "attribute": "game_world",
-            "value": "10",
-            "server": 4
-        }
+  {
+    "model": "serverdb.servertype",
+    "pk": "hypervisor",
+    "fields": {
+      "description": "Hypervisor",
+      "ip_addr_type": "host"
     }
+  },
+  {
+    "model": "serverdb.servertype",
+    "pk": "test0",
+    "fields": {
+      "description": "test servertype",
+      "ip_addr_type": "host"
+    }
+  },
+  {
+    "model": "serverdb.servertype",
+    "pk": "test1",
+    "fields": {
+      "description": "network servertype",
+      "ip_addr_type": "network"
+    }
+  },
+  {
+    "model": "serverdb.servertype",
+    "pk": "test2",
+    "fields": {
+      "description": "test2",
+      "ip_addr_type": "host"
+    }
+  },
+  {
+    "model": "serverdb.servertype",
+    "pk": "vm",
+    "fields": {
+      "description": "Virtual Machine",
+      "ip_addr_type": "host"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
+    "pk": "additional_ips",
+    "fields": {
+      "type": "integer",
+      "multi": false,
+      "hovertext": "",
+      "group": "other",
+      "help_link": null,
+      "readonly": false,
+      "target_servertype": null,
+      "reversed_attribute": null,
+      "clone": false,
+      "regexp": "\\A.*\\Z"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
+    "pk": "created",
+    "fields": {
+      "type": "date",
+      "multi": false,
+      "hovertext": "",
+      "group": "other",
+      "help_link": null,
+      "readonly": false,
+      "target_servertype": null,
+      "reversed_attribute": null,
+      "clone": false,
+      "regexp": "\\A.*\\Z"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
+    "pk": "database",
+    "fields": {
+      "type": "string",
+      "multi": true,
+      "hovertext": "",
+      "group": "other",
+      "help_link": null,
+      "readonly": false,
+      "target_servertype": null,
+      "reversed_attribute": null,
+      "clone": false,
+      "regexp": "\\A.*\\Z"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
+    "pk": "game_world",
+    "fields": {
+      "type": "number",
+      "multi": false,
+      "hovertext": "",
+      "group": "other",
+      "help_link": null,
+      "readonly": false,
+      "target_servertype": null,
+      "reversed_attribute": null,
+      "clone": false,
+      "regexp": "\\A(0|[1-9][0-9]*)\\Z"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
+    "pk": "has_monitoring",
+    "fields": {
+      "type": "boolean",
+      "multi": false,
+      "hovertext": "",
+      "group": "other",
+      "help_link": null,
+      "readonly": false,
+      "target_servertype": null,
+      "reversed_attribute": null,
+      "clone": false,
+      "regexp": "\\A.*\\Z"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
+    "pk": "hypervisor",
+    "fields": {
+      "type": "relation",
+      "multi": false,
+      "hovertext": "",
+      "group": "other",
+      "help_link": null,
+      "readonly": false,
+      "target_servertype": "hypervisor",
+      "reversed_attribute": null,
+      "clone": false,
+      "regexp": "\\A.*\\Z"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
+    "pk": "inet_address",
+    "fields": {
+      "type": "inet",
+      "multi": false,
+      "hovertext": "",
+      "group": "other",
+      "help_link": null,
+      "readonly": false,
+      "target_servertype": null,
+      "reversed_attribute": null,
+      "clone": false,
+      "regexp": "\\A.*\\Z"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
+    "pk": "last_edited",
+    "fields": {
+      "type": "datetime",
+      "multi": false,
+      "hovertext": "",
+      "group": "other",
+      "help_link": null,
+      "readonly": false,
+      "target_servertype": null,
+      "reversed_attribute": null,
+      "clone": false,
+      "regexp": "\\A.*\\Z"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
+    "pk": "mac_address",
+    "fields": {
+      "type": "macaddr",
+      "multi": false,
+      "hovertext": "",
+      "group": "other",
+      "help_link": null,
+      "readonly": false,
+      "target_servertype": null,
+      "reversed_attribute": null,
+      "clone": false,
+      "regexp": "\\A.*\\Z"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
+    "pk": "os",
+    "fields": {
+      "type": "string",
+      "multi": false,
+      "hovertext": "",
+      "group": "other",
+      "help_link": null,
+      "readonly": false,
+      "target_servertype": null,
+      "reversed_attribute": null,
+      "clone": false,
+      "regexp": "\\A(wheezy|squeeze|jessie|buster|bullseye)\\Z"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
+    "pk": "vms",
+    "fields": {
+      "type": "reverse",
+      "multi": true,
+      "hovertext": "",
+      "group": "other",
+      "help_link": null,
+      "readonly": true,
+      "target_servertype": null,
+      "reversed_attribute": "hypervisor",
+      "clone": false,
+      "regexp": "\\A.*\\Z"
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 1,
+    "fields": {
+      "servertype": "test0",
+      "attribute": "os",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": true,
+      "default_value": "squeeze",
+      "default_visible": false
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 2,
+    "fields": {
+      "servertype": "test2",
+      "attribute": "os",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": true,
+      "default_value": null,
+      "default_visible": false
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 3,
+    "fields": {
+      "servertype": "test2",
+      "attribute": "game_world",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": false
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 4,
+    "fields": {
+      "servertype": "test0",
+      "attribute": "database",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": false
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 5,
+    "fields": {
+      "servertype": "test0",
+      "attribute": "last_edited",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": false
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 6,
+    "fields": {
+      "servertype": "test0",
+      "attribute": "created",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": false
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 7,
+    "fields": {
+      "servertype": "test0",
+      "attribute": "mac_address",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": false
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 8,
+    "fields": {
+      "servertype": "test0",
+      "attribute": "inet_address",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": false
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 9,
+    "fields": {
+      "servertype": "test1",
+      "attribute": "inet_address",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": false
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 11,
+    "fields": {
+      "servertype": "test2",
+      "attribute": "has_monitoring",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": false
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 13,
+    "fields": {
+      "servertype": "vm",
+      "attribute": "hypervisor",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": false
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 14,
+    "fields": {
+      "servertype": "hypervisor",
+      "attribute": "vms",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": false
+    }
+  },
+  {
+    "model": "serverdb.server",
+    "pk": 1,
+    "fields": {
+      "hostname": "test0",
+      "intern_ip": "10.16.0.1/32",
+      "servertype": "test0"
+    }
+  },
+  {
+    "model": "serverdb.server",
+    "pk": 2,
+    "fields": {
+      "hostname": "test1",
+      "intern_ip": "10.16.0.2/32",
+      "servertype": "test2"
+    }
+  },
+  {
+    "model": "serverdb.server",
+    "pk": 3,
+    "fields": {
+      "hostname": "test2",
+      "intern_ip": "10.16.0.3/32",
+      "servertype": "test2"
+    }
+  },
+  {
+    "model": "serverdb.server",
+    "pk": 4,
+    "fields": {
+      "hostname": "test3",
+      "intern_ip": "10.16.0.4/32",
+      "servertype": "test2"
+    }
+  },
+  {
+    "model": "serverdb.server",
+    "pk": 5,
+    "fields": {
+      "hostname": "test4",
+      "intern_ip": "10.0.0.1/32",
+      "servertype": "test1"
+    }
+  },
+  {
+    "model": "serverdb.server",
+    "pk": 6,
+    "fields": {
+      "hostname": "hv-1",
+      "intern_ip": "10.0.1.1/32",
+      "servertype": "hypervisor"
+    }
+  },
+  {
+    "model": "serverdb.server",
+    "pk": 7,
+    "fields": {
+      "hostname": "vm-1",
+      "intern_ip": "10.0.2.1/32",
+      "servertype": "vm"
+    }
+  },
+  {
+    "model": "serverdb.serverstringattribute",
+    "pk": 1,
+    "fields": {
+      "server": 1,
+      "attribute": "os",
+      "value": "wheezy"
+    }
+  },
+  {
+    "model": "serverdb.serverstringattribute",
+    "pk": 2,
+    "fields": {
+      "server": 2,
+      "attribute": "os",
+      "value": "squeeze"
+    }
+  },
+  {
+    "model": "serverdb.serverstringattribute",
+    "pk": 3,
+    "fields": {
+      "server": 3,
+      "attribute": "os",
+      "value": "squeeze"
+    }
+  },
+  {
+    "model": "serverdb.serverstringattribute",
+    "pk": 4,
+    "fields": {
+      "server": 4,
+      "attribute": "os",
+      "value": "squeeze"
+    }
+  },
+  {
+    "model": "serverdb.serverrelationattribute",
+    "pk": 2,
+    "fields": {
+      "server": 7,
+      "attribute": "hypervisor",
+      "value": 6
+    }
+  },
+  {
+    "model": "serverdb.servernumberattribute",
+    "pk": 5,
+    "fields": {
+      "server": 2,
+      "attribute": "game_world",
+      "value": "1"
+    }
+  },
+  {
+    "model": "serverdb.servernumberattribute",
+    "pk": 6,
+    "fields": {
+      "server": 3,
+      "attribute": "game_world",
+      "value": "2"
+    }
+  },
+  {
+    "model": "serverdb.servernumberattribute",
+    "pk": 7,
+    "fields": {
+      "server": 4,
+      "attribute": "game_world",
+      "value": "10"
+    }
+  }
 ]
