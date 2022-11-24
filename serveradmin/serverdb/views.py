@@ -1,11 +1,12 @@
 """Serveradmin
 
-Copyright (c) 2019 InnoGames GmbH
+Copyright (c) 2022 InnoGames GmbH
 """
 
 import dateparser
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
@@ -16,7 +17,6 @@ from django.utils.functional import cached_property
 from serveradmin import settings
 from serveradmin.serverdb.models import (
     ChangeCommit,
-    ChangeDelete,
     Server,
     ServertypeAttribute, Change,
 )
@@ -122,29 +122,24 @@ def history(request):
 
 
 @login_required
-def restore_deleted(request, change_commit_id):
-    object_id = request.POST.get('object_id')
-    deleted = get_object_or_404(
-        ChangeDelete,
-        server_id=object_id,
-        commit__pk=change_commit_id,
-    )
-
-    server_obj = deleted.attributes
+def restore(request, change_id):
+    change = get_object_or_404(Change, pk=change_id)
+    server_object = change.change_json
 
     # Remove consistent_via_attribute values they are implicit
     consistent_attribute_ids = ServertypeAttribute.objects.filter(
-        servertype_id=server_obj['servertype']).exclude(
+        servertype_id=server_object['servertype']).exclude(
         consistent_via_attribute_id=None)
     for attribute in consistent_attribute_ids:
-        server_obj.pop(attribute.attribute_id)
+        server_object.pop(attribute.attribute_id)
 
     try:
-        commit = commit_query([server_obj], user=request.user)
+        commit = commit_query([server_object], user=request.user)
         object_id = str(commit.created[0]['object_id'])
-    except CommitError as error:
+    except (CommitError, ValidationError) as error:
         messages.error(request, str(error))
+        return redirect(reverse('serverdb_changes'))
     else:
-        messages.success(request, 'Restored object with new id ' + object_id)
+        messages.success(request, f'Restored object with new id {object_id}')
 
     return redirect(reverse('serverdb_history') + '?object_id=' + object_id)
