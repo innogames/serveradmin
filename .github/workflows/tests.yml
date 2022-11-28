@@ -87,7 +87,8 @@ jobs:
               },
           }
           SECRET_KEY = 'TEST'
-          LOGGING = {}" > serveradmin/local_settings.py
+          TIME_ZONE = 'Europe/Berlin'
+          LOGGING = {}" > serveradmin/local_settings.py          
           cat serveradmin/local_settings.py
           pipenv run python -m serveradmin migrate
       - name: Tests
