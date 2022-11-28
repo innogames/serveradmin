@@ -74,3 +74,6 @@ __pycache__/
 # Virtual Environment
 /venv/
 /.env
+
+# Pipenv
+/requirements.txt
