@@ -11,12 +11,11 @@
         {% endif %}
 
         <span class="current">
-            Page {{ paginator.number }} of {{ paginator.paginator.num_pages }}.
+            Page {{ paginator.number }}
         </span>
 
         {% if paginator.has_next %}
             <a href="?page={{ paginator.next_page_number }}">next</a>
-            <a href="?page={{ paginator.paginator.num_pages }}">last &raquo;</a>
         {% endif %}
     </span>
 </div>
