@@ -122,14 +122,14 @@ def index(request):
         if page > hosts_pager.num_pages:
             page = 1
 
-        hosts_pager = hosts_pager.page(page)
+        hosts = hosts_pager.page(page)
     except (PageNotAnInteger, EmptyPage):
         raise SuspiciousOperation('{} is not a valid!'.format(page))
 
     sprite_url = settings.MEDIA_URL + 'graph_sprite/' + collection.name
     template_info.update({
         'columns': columns,
-        'hosts': hosts_pager,
+        'hosts': hosts,
         'page': page,
         'per_page': per_page,
         'matched_hostnames': matched_hostnames,
