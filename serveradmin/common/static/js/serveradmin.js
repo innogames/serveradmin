@@ -37,5 +37,24 @@ $(document).ready(function() {
             this._spinner.addClass('text-secondary');
         },
 
-    }
+    };
+
+    // Find pagination controls with in forms and submit the form instead of
+    // submitting the links.
+    $('.pagination.form a').each(function(index, anchor) {
+        anchor.onclick = function(event) {
+            let form = this.closest('form');
+            if (form) {
+                event.preventDefault();
+
+                let page = this.href.split('=').pop();
+                let input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'page';
+                input.value = page;
+                form.append(input);
+                form.submit();
+            }
+        };
+    });
 });

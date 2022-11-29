@@ -1,17 +1,21 @@
-<div class="pagination">
+{# Usage: {% include "pagination.html" with page=obj form=False %} #}
+
+{# Set form parameter to True to make the pagination controls find the #}
+{# form it is enclosed and submit it with the page parameter appended. #}
+
+<div class="pagination {% if form %}form{% endif %}">
     <span class="step-links">
-        {% if paginator.has_previous %}
+        {% if page.has_previous %}
             <a href="?page=1">&laquo; first</a>
-            <a href="?page={{ paginator.previous_page_number }}">previous</a>
+            <a href="?page={{ page.previous_page_number }}">previous</a>
         {% endif %}
 
         <span class="current">
-            Page {{ paginator.number }} of {{ paginator.paginator.num_pages }}.
+            Page {{ page.number }}
         </span>
 
-        {% if paginator.has_next %}
-            <a href="?page={{ paginator.next_page_number }}">next</a>
-            <a href="?page={{ paginator.paginator.num_pages }}">last &raquo;</a>
+        {% if page.has_next %}
+            <a href="?page={{ page.next_page_number }}">next</a>
         {% endif %}
     </span>
 </div>
