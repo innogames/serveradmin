@@ -26,7 +26,7 @@
                 <p>
                     Values are automatically casted according to the type of
                     the attribute. This means
-                    <code>intern_ip=between(10.16.1.3 10.16.1.17)</code>
+                    <code>intern_ip=any(10.16.1.3 10.16.1.17)</code>
                     doesn't do string comparison, but comparison based on IP
                     semantics. Also you don't need quotes around strings,
                     unless your string contains spaces or other quotes.
@@ -45,14 +45,9 @@
                     <code>project=grepo game_market=any(de fr)</code>
                 </p>
                 <p>
-                    Find Tribal Wars webservers in Germany for worlds 20-30:
+                    Find Tribal Wars webservers in Germany for worlds 20 and 30:
                     <br/><code>project=staemme game_function=web
-                    game_world=between(20 30)</code>
-                </p>
-                <p>
-                    Find Tribal Wars servers for worlds 10-20 and 60-70: <br/>
-                    <code>project=staemme game_world=or(between(10 20)
-                        between(60 70))</code>
+                    game_world=any(20 30)</code>
                 </p>
                 <p>
                     Hostname matches ".*\.tr": <br/>
