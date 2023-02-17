@@ -68,6 +68,13 @@ servershell.submit_search = function() {
         return servershell.alert('Pending request, cancel it or wait for it to finish!', 'danger');
     }
 
+    // Do not submit search on load.
+    let params = new URLSearchParams(window.location.search);
+    if (servershell.term === null && !params.has('term')) {
+        servershell.term = '';
+        return;
+    }
+
     let url = $('#search_form').get(0).action;
     console.debug(`Submitting query to URL "${url}" with data:`);
     spinner.enable('search');

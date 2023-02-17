@@ -97,7 +97,7 @@ def index(request):
             shown_attributes = get_default_shown_attributes()
 
     return TemplateResponse(request, 'servershell/index.html', {
-        'term': request.GET.get('term', request.session.get('term', '')),
+        'term': request.GET.get('term', request.session.get('term')),
         'shown_attributes': shown_attributes,
         'deep_link': bool(strtobool(request.GET.get('deep_link', 'false'))),
         'attributes': attributes_json,
