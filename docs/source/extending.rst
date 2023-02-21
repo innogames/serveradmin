@@ -27,17 +27,17 @@ You can access the web service to execute Django commands and run scripts::
     docker-compose exec web
 
     # Example: Run Django management commands
-    pipenv run python -m serveradmin -h
+    poetry run python -m serveradmin -h
 
     # Example: Use the Python Remote API
-    pipenv run python -m adminapi "hostname=example.com"
+    poetry run python -m adminapi "hostname=example.com"
 
 
 **Tip**
 
 You may still want to have a virtual environment for Serveradmin on your
-host machines and run pipenv install -D to have all modules available for your
-IDEs auto completion etc.
+host machines and run poetry install --group django-backend --group dev to have 
+all modules available for your IDEs auto completion etc.
 
 
 Database Dump
@@ -65,10 +65,10 @@ manual testing.
 You can execute the tests with the following commands
 
     # Tests for the commandline interface: adminapi
-    pipenv run python -m unittest discover adminapi -v
+    poetry run python -m unittest discover adminapi -v
 
     # Tests for the backend code
-    pipenv run python -Wall -m serveradmin test --noinput --parallel
+    poetry run python -Wall -m serveradmin test --noinput --parallel
 
 
 Bonus: Setting up a cool debugger

@@ -57,9 +57,8 @@ jobs:
       - name: Prepare
         run: |
           pip install --upgrade pip
-          pip install pipenv
-          pipenv lock --python ${{ matrix.python }}
-          pipenv install --dev --python ${{ matrix.python }}
+          curl -sSL https://install.python-poetry.org | python3 -
+          poetry install --with django-backend
           echo "DATABASES = {
               'default': {
                   'ENGINE': 'django.db.backends.postgresql',
@@ -89,12 +88,12 @@ jobs:
           SECRET_KEY = 'TEST'
           LOGGING = {}" > serveradmin/local_settings.py
           cat serveradmin/local_settings.py
-          pipenv run python -m serveradmin migrate
+          poetry run python -m serveradmin migrate
       - name: Tests
         run: |
           # This will use Python's standard unit test discovery feature.
-          pipenv run python -m unittest discover adminapi -v
-          pipenv run python -Wall -m serveradmin test --noinput --parallel
+          poetry run python -m unittest discover adminapi -v
+          poetry run python -Wall -m serveradmin test --noinput --parallel
           # Build sphinx docs, error on warning
           cd docs
-          SPHINXBUILD='pipenv run sphinx-build' SPHINXOPTS='-W' make html
+          SPHINXBUILD='poetry run sphinx-build' SPHINXOPTS='-W' make html
