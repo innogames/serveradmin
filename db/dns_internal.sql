@@ -75,7 +75,7 @@ union all
     join public.server_relation_attribute as domain_attribute using (server_id)
     join public.server as domain on domain_attribute.value = domain.server_id
     where server.intern_ip is not null and
-        domain_attribute.attribute_id = 'domain'
+        domain_attribute.attribute_id in ('domain', 'internal_domain')
 union all
     select
         domain.hostname::text as name,
@@ -86,7 +86,7 @@ union all
     join public.server_relation_attribute as domain_attribute using (server_id)
     join public.server as domain on domain_attribute.value = domain.server_id
     where server.intern_ip is not null and
-        domain_attribute.attribute_id = 'domain'
+        domain_attribute.attribute_id in ('domain', 'internal_domain')
 union all
     select
         server.hostname::text as name,
