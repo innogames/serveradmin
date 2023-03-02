@@ -250,6 +250,9 @@ class Attribute(models.Model):
         limit_choices_to=dict(type='relation'),
     )
     clone = models.BooleanField(null=False, default=False)
+    history = models.BooleanField(
+        null=False, default=True,
+        help_text='Log changes to this attribute')
     regexp = models.CharField(max_length=1024, validators=REGEX_VALIDATORS)
     _compiled_regexp = None
 
