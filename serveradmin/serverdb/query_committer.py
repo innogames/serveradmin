@@ -80,7 +80,6 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
     #       changes elsewhere by changing to the isolation level
     #       # "repeatable read".
     with transaction.atomic():
-        change_commit = ChangeCommit.objects.create(app=app, user=user)
         changed_servers = _fetch_servers(set(c['object_id'] for c in changed))
         unchanged_objects = _materialize(changed_servers, joined_attributes)
 
@@ -123,7 +122,7 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
             created_objects, changed_objects, deleted_objects
         )
 
-        _log_changes(change_commit, changed, created_objects, deleted_objects)
+        _log_changes(user, app, changed, created_objects, deleted_objects)
 
     post_commit.send_robust(
         commit_query, created=created, changed=changed, deleted=deleted
@@ -433,30 +432,42 @@ def _acl_violations(changed_objects, obj, acl):
     return violations or None
 
 
-def _log_changes(commit, changed, created_objects, deleted_objects):
+def _log_changes(user, app, changed, created_objects, deleted_objects):
+    changes = list()
+    commit = ChangeCommit(user=user, app=app)
+
+    excl_attrs = Attribute.objects.filter(history=False).values_list(flat=True)
     for updates in changed:
-        Change.objects.create(
-            object_id=updates['object_id'],
-            change_type=Change.Type.CHANGE,
-            change_json=updates,
-            commit=commit,
-        )
+        # At least one attribute aside from object_id has changed.
+        if len(updates.keys() ^ excl_attrs) > 1:
+            # Get changes for attributes that should be logged.
+            to_log = {k: v for k, v in updates.items() if k not in excl_attrs}
+            changes.append(Change(
+                object_id=updates['object_id'],
+                change_type=Change.Type.CHANGE,
+                change_json=to_log,
+                commit=commit,
+            ))
 
     for attributes in deleted_objects.values():
-        Change.objects.create(
+        changes.append(Change(
             object_id=attributes['object_id'],
             change_type=Change.Type.DELETE,
             change_json=attributes,
             commit=commit,
-        )
+        ))
 
     for obj in created_objects.values():
-        Change.objects.create(
+        changes.append(Change(
             object_id=obj['object_id'],
             change_type=Change.Type.CREATE,
             change_json=obj,
             commit=commit,
-        )
+        ))
+
+    if changes:
+        commit.save()
+        Change.objects.bulk_create(changes)
 
 
 def _fetch_servers(object_ids):
