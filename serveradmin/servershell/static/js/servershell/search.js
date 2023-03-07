@@ -6,7 +6,7 @@
  * @param pinned
  * @returns {Promise<{}>}
  */
-async function _search(url, search_term, pinned = []) {
+async function _search(url, search_term, pinned = [], focus_command_input = false) {
     let request_data = {
         term: search_term, // Avoid error on trailing spaces
         shown_attributes: servershell.shown_attributes,
@@ -49,8 +49,12 @@ async function _search(url, search_term, pinned = []) {
     // Indicator that we have successfully reloaded ...
     servershell._term = servershell.term;
 
-    // Focus command input after successful search ...
-    $('#command').focus();
+    // Focus command input. Should only be set to true when the user has
+    // submitted the form but not when the search is triggered by for example
+    // changing the shown attributes.
+    if (focus_command_input) {
+        $('#command').focus();
+    }
 
     return data;
 }
@@ -62,7 +66,7 @@ async function _search(url, search_term, pinned = []) {
  * and submit the query to the Serveradmin backend. On success extract the
  * result to the corresponding servershell properties.
  */
-servershell.submit_search = function() {
+servershell.submit_search = function(focus_command_input = false) {
     // Prevent somebody hitting enter like crazy
     if (servershell._ajax !== null) {
         return servershell.alert('Pending request, cancel it or wait for it to finish!', 'danger');
@@ -87,7 +91,7 @@ servershell.submit_search = function() {
         ...(Object.keys((to_commit.changes ?? {})).map(val => Number.parseInt(val)))
     ];
 
-    _search(url, servershell.term, touched_objects)
+    _search(url, servershell.term, touched_objects, focus_command_input)
         .then(data => {
             servershell.editable_attributes = data.editable_attributes;
             servershell.servers = data.servers;
@@ -126,7 +130,7 @@ $(document).ready(function() {
     // Submit form with Ajax and prevent normal submission
     $('#search_form').submit(function(event) {
         event.preventDefault();
-        servershell.submit_search();
+        servershell.submit_search(true);
     });
 
     // Reload search if anything relevant changes ...
