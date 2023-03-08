@@ -95,7 +95,7 @@ jobs:
         run: |
           # This will use Python's standard unit test discovery feature.
           pipenv run python -m unittest discover adminapi -v
-          pipenv run python -Wall -m serveradmin test --noinput --parallel
+          pipenv run python -Wall -m serveradmin test --noinput --parallel=1
           # Build sphinx docs, error on warning
           cd docs
           SPHINXBUILD='pipenv run sphinx-build' SPHINXOPTS='-W' make html
