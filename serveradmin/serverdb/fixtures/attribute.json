@@ -1,0 +1,70 @@
+[
+  {
+    "model": "serverdb.servertype",
+    "pk": "project",
+    "fields": {
+      "description": "Project information",
+      "ip_addr_type": "null"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
+    "pk": "last_updated",
+    "fields": {
+      "type": "datetime",
+      "multi": false,
+      "hovertext": "",
+      "group": "project",
+      "help_link": null,
+      "readonly": false,
+      "target_servertype": null,
+      "reversed_attribute": null,
+      "clone": false,
+      "history": false,
+      "regexp": "\\A.*\\Z"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
+    "pk": "owner",
+    "fields": {
+      "type": "string",
+      "multi": false,
+      "hovertext": "",
+      "group": "project",
+      "help_link": null,
+      "readonly": false,
+      "target_servertype": null,
+      "reversed_attribute": null,
+      "clone": false,
+      "history": true,
+      "regexp": "\\A.*\\Z"
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 1,
+    "fields": {
+      "servertype": "project",
+      "attribute": "owner",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": true
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 2,
+    "fields": {
+      "servertype": "project",
+      "attribute": "last_updated",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": true
+    }
+  }
+]
