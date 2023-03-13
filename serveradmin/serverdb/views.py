@@ -18,7 +18,8 @@ from serveradmin import settings
 from serveradmin.serverdb.models import (
     ChangeCommit,
     Server,
-    ServertypeAttribute, Change,
+    ServertypeAttribute,
+    Change,
 )
 from serveradmin.serverdb.query_committer import CommitError, commit_query
 
