@@ -108,7 +108,7 @@ def migrate_change_update(apps, schema_editor):
 def print_progress(current, total, batch_size, batch_duration):
     percentage_done = current / total * 100
     rate = batch_size / batch_duration.total_seconds()
-    estimated_minutes_left = (total - current) / rate
+    estimated_minutes_left = ((total - current) / rate) / 60
 
     print(
         f'\t- [{now()}] Migrated {current}/{total} | {percentage_done:.2f}%, '
