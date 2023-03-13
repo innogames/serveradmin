@@ -25,7 +25,7 @@ from serveradmin.serverdb.query_committer import CommitError, commit_query
 
 @login_required
 def changes(request):
-    commits = ChangeCommit.objects.all().order_by('-id')
+    commits = ChangeCommit.objects.all().order_by('-change_on')
     date_settings = {
         'TIMEZONE': settings.TIME_ZONE, 'RETURN_AS_TIMEZONE_AWARE': True
     }
