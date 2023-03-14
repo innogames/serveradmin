@@ -790,6 +790,7 @@ class Change(models.Model):
             return super().default(obj)
 
     object_id = models.IntegerField(db_index=True)
+    # XXX: Add migration with PostgreSQL native enum
     change_type = models.CharField(choices=Type.choices, max_length=6)
     change_json = models.JSONField(encoder=ChangeJSONEncoder)
     commit = models.ForeignKey(ChangeCommit, on_delete=models.CASCADE)
