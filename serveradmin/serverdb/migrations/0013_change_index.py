@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
         # Apparently Django doesn't support creating indexes on jsonb keys yet
         migrations.RunSQL(
             """
-            CREATE INDEX
+            CREATE INDEX IF NOT EXISTS 
                 serverdb_change_change_json_hostname
             ON
                 serverdb_change (
