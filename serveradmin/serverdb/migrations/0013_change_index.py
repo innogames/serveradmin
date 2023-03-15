@@ -16,10 +16,9 @@ class Migration(migrations.Migration):
             CREATE INDEX IF NOT EXISTS 
                 serverdb_change_change_json_hostname
             ON
-                serverdb_change (
-                    (change_json->'hostname'), 
-                    (change_type in ('create', 'delete'))
-                );
+                serverdb_change ((change_json->'hostname'))
+            WHERE
+                change_type in ('create', 'delete');
             """
         ),
     ]

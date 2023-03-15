@@ -44,7 +44,6 @@ def changes(request):
     f_hostname = request.GET.get('hostname')
     if f_hostname:
         # Display all changes that have or had this hostname
-        # TODO: Create DB index for hostname to speed up this
         object_ids = set(Change.objects.filter(
             change_type__in=[Change.Type.CREATE, Change.Type.DELETE],
             change_json__hostname=f_hostname).values_list(
