@@ -5,9 +5,9 @@
 {% block title %}Changes{% endblock %}
 
 {% block content %}
+<form id="changes-form" method="get" action="{% url 'serverdb_changes' %}" onsubmit="spinner.enable();">
     <div class="row">
-        <div class="col-md-2"></div>
-        <div class="col-md-8">
+        <div class="col-md-12">
             <h3>
                 Changes
                 <small class="text-muted">(1 commit per row)</small>
@@ -15,139 +15,100 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-md-2"></div>
-        <div class="col-md-8 controls">
-            <p style="white-space: pre-wrap">
-                You can use the following inputs to filter for changes. the From and Until input accept a human eadable time expression such as a year ago,
-                yesterday etc. and normal ones such as 13:14. The readonly inputs on the right show you what the backend has understood when parsing your string.
-
-                Please mind that the queries can be rather expensive and take some time as we have to parse the whole history so please try to keep the filter as precise as possible.
-            </p>
-            <form id="changes-form" method="get" action="{% url 'serverdb_changes' %}" onsubmit="spinner.enable();">
-                <div class="form-group row input-controls">
-                    <label for="from" class="col-sm-1 col-form-label">From:</label>
-                    <div class="col-md-4">
-                        <input name="from" id="from" type="text" value="{% if from %}{{ from }}{% endif %}" class="form-control form-control-sm" placeholder="Human readable time like for example 7 days ago" />
-                    </div>
-                    <div class="col-md-4">
-                        <input type="text" readonly="readonly" class="form-control form-control-sm" value="{{ from_understood|default:"-" }}" />
+        <div class="col-md-12 controls">
+            <div class="form-group row input-controls">
+                <label for="from" class="col-sm-1 col-form-label">From:</label>
+                <div class="col-md-4">
+                    <input name="from" id="from" type="text" value="{% if from %}{{ from }}{% endif %}" class="form-control form-control-sm" placeholder="Human readable time like for example 7 days ago" />
+                </div>
+            </div>
+            <div class="form-group row input-controls">
+                <label for="until" class="col-sm-1 col-form-label">Until:</label>
+                <div class="col-md-4">
+                    <input name="until" id="until" type="text" value="{% if until %}{{ until }}{% endif %}" class="form-control form-control-sm" placeholder="Human readable time like for example 7 days ago" />
+                </div>
+            </div>
+            <div class="form-group row input-controls">
+                <label for="hostname" class="col-sm-1 col-form-label">Hostname:</label>
+                <div class="col-md-4">
+                    <input name="hostname" id="hostname" type="text" value="{% if hostname %}{{ hostname }}{% endif %}" class="form-control form-control-sm" placeholder="yy1w1.ox.ig.local" />
+                </div>
+            </div>
+            <div class="form-group row input-controls">
+                <label for="object_id" class="col-sm-1 col-form-label">Object ID:</label>
+                <div class="col-md-4">
+                    <input id="object_id" name="object_id" type="text" value="{% if object_id %}{{ object_id }}{% endif %}" class="form-control form-control-sm" placeholder="466880" />
+                </div>
+            </div>
+            <div class="form-group row input-controls">
+                <label for="user_or_app" class="col-sm-1 col-form-label">User/App:</label>
+                <div class="col-md-4">
+                    <input name="user_or_app" id="user_or_app" type="text" value="{% if user_or_app %}{{ user_or_app }}{% endif %}" class="form-control form-control-sm dropdown-toggle" data-toggle="dropdown" placeholder="daniel.kroeger" />
+                    <div class="dropdown-menu">
+                        {% for app in user_or_apps %}
+                        <a class="dropdown-item">{{ app }}</a>
+                        {% endfor %}
                     </div>
                 </div>
-                <div class="form-group row input-controls">
-                    <label for="until" class="col-sm-1 col-form-label">Until:</label>
-                    <div class="col-md-4">
-                        <input name="until" id="until" type="text" value="{% if until %}{{ until }}{% endif %}" class="form-control form-control-sm" placeholder="Human readable time like for example 7 days ago" />
-                    </div>
-                    <div class="col-md-4">
-                        <input type="text" readonly="readonly" class="form-control form-control-sm" value="{{ until_understood|default:"-" }}" />
-                    </div>
-                </div>
-                <div class="form-group row input-controls">
-                    <label for="hostname" class="col-sm-1 col-form-label">Hostname:</label>
-                    <div class="col-md-4">
-                        <input name="hostname" id="hostname" type="text" value="{% if hostname %}{{ hostname }}{% endif %}" class="form-control form-control-sm" placeholder="yy1w1.ox.ig.local" />
-                    </div>
-                </div>
-                <div class="form-group row input-controls">
-                    <label for="object_id" class="col-sm-1 col-form-label">Object ID:</label>
-                    <div class="col-md-4">
-                        <input id="object_id" name="object_id" type="text" value="{% if object_id %}{{ object_id }}{% endif %}" class="form-control form-control-sm" placeholder="466880" />
-                    </div>
-                </div>
-                <div class="form-group row input-controls">
-                    <label for="application" class="col-sm-1 col-form-label">User/App:</label>
-                    <div class="col-md-4">
-                        <input name="application" id="application" type="text" value="{% if application %}{{ application }}{% endif %}" class="form-control form-control-sm dropdown-toggle" data-toggle="dropdown" placeholder="daniel.kroeger" />
-                        <div class="dropdown-menu">
-                            {% for app in applications %}
-                            <a class="dropdown-item">{{ app }}</a>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-                <div class="form-group row input-controls buttons">
-                    <input type="hidden" id="page" name="page" value="{{ commits.number }}" />
-                    <button class="btn btn-success" type="submit">Apply</button>
-                </div>
-            </form>
+            </div>
+            <div class="form-group row input-controls buttons">
+                <input type="hidden" id="page" name="page" value="{{ commits.number }}" />
+                <button class="btn btn-success" type="submit">Filter</button>
+            </div>
         </div>
     </div>
     <hr>
     <div class="row">
-        <div class="col-md-2"></div>
-        <div class="col-md-8">
+        <div class="col-md-12">
             <table class="table table-sm table-striped table-bordered table-borderless">
                 <thead>
                 <tr>
-                    <th>Change Date</th>
-                    <th>Time passed since</th>
-                    <th>User/App</th>
-                    <th>Deleted</th>
-                    <th>Added</th>
+                    <th>Commit</th>
+                    <th>Date</th>
+                    <th>Time Since</th>
+                    <th>App</th>
+                    <th>Owner</th>
+                    <th>Created</th>
                     <th>Changed</th>
+                    <th>Deleted</th>
                 </tr>
                 </thead>
                 <tbody>
                 {% for commit in commits %}
                     <tr>
+                        <td>{{ commit.id }}</td>
                         <td>{{ commit.change_on|date:"r" }}</td>
                         <td>{{ commit.change_on|timesince }}</td>
-                        <td>{% spaceless %}
-                            {% if commit.app %}
-                                {{ commit.app }}
-                            {% elif commit.user %}
-                                {{ commit.user.username }}
-                            {% else %}
-                                Internal Code
-                            {% endif %}
-                        {% endspaceless %}</td>
-                        <td>{% spaceless %}
-                            {% if commit.changedelete_set.count == 1 %}
-                                {% for change_del in commit.changedelete_set.all %}
-                                    <a target="_blank" href="{% url 'serverdb_history' %}?object_id={{ change_del.server_id }}&commit={{ commit.id }}">{{ change_del.server_id }}</a>
-                                {% endfor %}
-                            {% elif commit.changedelete_set.count > 1 %}
-                                <a href="#change-delete-{{ forloop.counter }}" data-toggle="collapse">view/hide all</a>
-                                <ul id="change-delete-{{ forloop.counter }}" class="collapse">
-                                {% for change_del in commit.changedelete_set.all %}
-                                    <li><a target="_blank" href="{% url 'serverdb_history' %}?object_id={{ change_del.server_id }}&commit={{ commit.id }}">{{ change_del.server_id }}</a></li>
-                                {% endfor %}
-                            {% else %}
-                                -
-                            {% endif %}
-                        {% endspaceless %}</td>
-                        <td>{% spaceless %}
-                            {% if commit.changeadd_set.count == 1 %}
-                                {% for change_add in commit.changeadd_set.all %}
-                                    <a target="_blank" href="{% url 'serverdb_history' %}?object_id={{ change_add.server_id }}&commit={{ commit.id }}">{{ change_add.server_id|hostname }}</a>
-                                {% endfor %}
-                            {% elif commit.changeadd_set.count > 1 %}
-                                <a href="#change-add-{{ forloop.counter }}" data-toggle="collapse">view/hide all</a>
-                                <ul id="change-add-{{ forloop.counter }}" class="collapse">
-                                {% for change_add in commit.changeadd_set.all %}
-                                    <li><a target="_blank" href="{% url 'serverdb_history' %}?object_id={{ change_add.server_id }}&commit={{ commit.id }}">{{ change_add.server_id|hostname }}</a></li>
-                                {% endfor %}
-                                </ul>
-                            {% else %}
-                                -
-                            {% endif %}
-                        {% endspaceless %}</td>
-                        <td>{% spaceless %}
-                            {% if commit.changeupdate_set.count == 1 %}
-                                {% for change_update in commit.changeupdate_set.all %}
-                                    <a target="_blank" href="{% url 'serverdb_history' %}?object_id={{ change_update.server_id }}&commit={{ commit.id }}">{{ change_update.server_id|hostname }}</a>
-                                {% endfor %}
-                            {% elif commit.changeupdate_set.count > 1 %}
-                                <a href="#change-update-{{ forloop.counter }}" data-toggle="collapse">view/hide all</a>
-                                <ul id="change-update-{{ forloop.counter }}" class="collapse">
-                                {% for change_update in commit.changeupdate_set.all %}
-                                    <li><a target="_blank" href="{% url 'serverdb_history' %}?object_id={{ change_update.server_id }}&commit={{ commit.id }}">{{ change_update.server_id|hostname }}</a></li>
-                                {% endfor %}
-                                 </ul>
-                            {% else %}
-                                -
-                            {% endif %}
-                        {% endspaceless %}</td>
+                        <td>{{ commit.app|default:"Servershell" }}</td>
+                        <td>{{ commit.user }}</td>
+                        {# TODO: Find a way to avoid a SQL query for each Change to get the hostname by object_id #}
+                        <td>
+                            <ul>
+                            {% for change in commit.change_set.get_queryset %}
+                                {% if change.change_type == 'create' %}
+                                    <li><a href="{% url 'serverdb_history' %}?commit_id={{ commit.id }}&object_id={{ change.object_id }}">View history of {{ change.hostname }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+                            </ul>
+                        </td>
+                        <td>
+                            <ul>
+                            {% for change in commit.change_set.get_queryset %}
+                                {% if change.change_type == 'change' %}
+                                    <li><a href="{% url 'serverdb_history' %}?commit_id={{ commit.id }}&object_id={{ change.object_id }}">View history of {{ change.hostname }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+                            </ul>
+                        </td>
+                        <td>
+                            <ul>
+                            {% for change in commit.change_set.get_queryset %}
+                                {% if change.change_type == 'delete' %}
+                                    <li><a href="{% url 'serverdb_restore' change.id %}">Restore object {{ change.hostname }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+                            </ul>
+                        </td>
                     </tr>
                 {% endfor %}
                 </tbody>
@@ -155,9 +116,9 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-md-2"></div>
-        <div class="col-md-8">
-            {% include "pagination.html" with page=commits %}
+        <div class="col-md-12">
+            {% include "pagination.html" with page=commits form=True %}
         </div>
     </div>
+</form>
 {% endblock content %}

@@ -9,10 +9,20 @@ import netfields
 
 from typing import Union
 
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Q
 from netaddr import EUI
 from distutils.util import strtobool
-from ipaddress import ip_network, IPv4Interface, IPv6Interface, ip_interface
+from ipaddress import (
+    IPv4Address,
+    IPv6Address,
+    ip_interface,
+    IPv4Interface,
+    IPv6Interface,
+    ip_network,
+    IPv4Network,
+    IPv6Network,
+)
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -737,9 +747,9 @@ class ServerDateTimeAttribute(ServerAttribute):
 
 
 class ChangeCommit(models.Model):
-    change_on = models.DateTimeField(default=now, db_index=True)
     user = models.ForeignKey(User, null=True, on_delete=models.PROTECT)
     app = models.ForeignKey(Application, null=True, on_delete=models.PROTECT)
+    change_on = models.DateTimeField(default=now, db_index=True)
 
     class Meta:
         app_label = 'serverdb'
@@ -748,52 +758,65 @@ class ChangeCommit(models.Model):
         return str(self.change_on)
 
 
-class ChangeDelete(models.Model):
+class Change(models.Model):
+    class Type(models.TextChoices):
+        CREATE = 'create', _('create')
+        CHANGE = 'change', _('change')
+        DELETE = 'delete', _('delete')
+
+    class ChangeJSONEncoder(DjangoJSONEncoder):
+        _NETWORK_TYPES = (
+            IPv4Address,
+            IPv6Address,
+            IPv4Network,
+            IPv6Network,
+            EUI,
+        )
+
+        # This is close to json_encode_extra used in adminapi.request but with
+        # two differences. First we don't need to take care about BaseFilter
+        # objects as they are already "resolved". Second DjangoJSONEncoder
+        # handles datetime on its own. Third we don't blindly cast everything
+        # else to string but explicitly check for the types we now and fail
+        # for the others.
+        def default(self, obj):
+            # Handles ServerInetAttribute and ServerMACAddressAttribute values
+            if isinstance(obj, self._NETWORK_TYPES):
+                return str(obj)
+            # Handles MultiAttr values
+            elif isinstance(obj, set):
+                return list(obj)
+
+            return super().default(obj)
+
+    object_id = models.IntegerField(db_index=True)
+    # XXX: Add migration with PostgreSQL native enum
+    change_type = models.CharField(choices=Type.choices, max_length=6)
+    change_json = models.JSONField(encoder=ChangeJSONEncoder)
     commit = models.ForeignKey(ChangeCommit, on_delete=models.CASCADE)
-    server_id = models.IntegerField(db_index=True)
-    attributes_json = models.TextField()
 
     class Meta:
         app_label = 'serverdb'
-        unique_together = [['commit', 'server_id']]
 
-    @property
-    def attributes(self):
-        return json.loads(self.attributes_json)
+    def hostname(self):
+        """Get last hostname for object of Change
 
-    def __str__(self):
-        return '{0}: {1}'.format(str(self.commit), self.server_id)
+        Get the current hostname if the object still exists or the last known
+        one when deleted.
 
+        :return:
+        """
 
-class ChangeUpdate(models.Model):
-    commit = models.ForeignKey(ChangeCommit, on_delete=models.CASCADE)
-    server_id = models.IntegerField(db_index=True)
-    updates_json = models.TextField()
-
-    class Meta:
-        app_label = 'serverdb'
-        unique_together = [['commit', 'server_id']]
-
-    @property
-    def updates(self):
-        return json.loads(self.updates_json)
-
-    def __str__(self):
-        return '{0}: {1}'.format(str(self.commit), self.server_id)
-
-
-class ChangeAdd(models.Model):
-    commit = models.ForeignKey(ChangeCommit, on_delete=models.CASCADE)
-    server_id = models.IntegerField(db_index=True)
-    attributes_json = models.TextField()
-
-    class Meta:
-        app_label = 'serverdb'
-        unique_together = [['commit', 'server_id']]
-
-    @property
-    def attributes(self):
-        return json.loads(self.attributes_json)
-
-    def __str__(self):
-        return '{0}: {1}'.format(str(self.commit), self.server_id)
+        if self.change_type == Change.Type.DELETE:
+            return self.change_json['hostname']
+        else:
+            try:
+                return Server.objects.filter(
+                    pk=self.object_id).only('hostname').get().hostname
+            except Server.DoesNotExist:
+                # We seem to have re-used the same object_id in the past in
+                # some exceptions - in such as case just pick the latest.
+                return Change.objects.filter(
+                    object_id=self.object_id,
+                    change_type=Change.Type.DELETE
+                ).order_by('-id').first().change_json['hostname']
