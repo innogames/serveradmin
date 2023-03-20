@@ -31,6 +31,10 @@ def changes(request):
         'TIMEZONE': settings.TIME_ZONE, 'RETURN_AS_TIMEZONE_AWARE': True
     }
 
+    f_commit = request.GET.get('commit_id')
+    if f_commit:
+        commits = commits.filter(pk=f_commit)
+
     f_from = request.GET.get('from')
     if f_from:
         f_from = dateparser.parse(f_from, settings=date_settings)

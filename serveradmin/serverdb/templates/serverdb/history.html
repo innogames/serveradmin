@@ -51,7 +51,7 @@
                             {% for key, value in change.change_json.items %}
                                 {% if not attribute_filter or attribute_filter == key %}
                                 <tr>
-                                    <td>{{ change.commit.id }}</td>
+                                    <td><a href="{% url 'serverdb_changes' %}?commit_id={{ change.commit.id }}">{{ change.commit.id }}</a></td>
                                     <td>{{ change.commit.change_on|date:"r" }}</td>
                                     <td>{{ change.commit.change_on|timesince }}</td>
                                     <td>{{ change.commit.app|default:"Servershell" }}</td>
@@ -77,7 +77,7 @@
                                 {% if key != 'object_id' %}
                                     {% if not attribute_filter or attribute_filter == key %}
                                         <tr>
-                                            <td>{{ change.commit.id }}</td>
+                                            <td><a href="{% url 'serverdb_changes' %}?commit_id={{ change.commit.id }}">{{ change.commit.id }}</a></td>
                                             <td>{{ change.commit.change_on|date:"r" }}</td>
                                             <td>{{ change.commit.change_on|timesince }}</td>
                                             <td>{{ change.commit.app|default:"Servershell" }}</td>
@@ -116,7 +116,7 @@
                             {% endfor %}
                         {% elif change.change_type == 'delete' %}
                             <tr class="">
-                                <td>{{ change.commit.id }}</td>
+                                <td><a href="{% url 'serverdb_changes' %}?commit_id={{ change.commit.id }}">{{ change.commit.id }}</a></td>
                                 <td>{{ change.commit.change_on|date:"r" }}</td>
                                 <td>{{ change.channge_commit.change_on|timesince }}</td>
                                 <td>{{ change.commit.app|default:"Servershell" }}</td>
