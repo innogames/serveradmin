@@ -76,9 +76,10 @@ class AttributeAdmin(admin.ModelAdmin):
         'multi',
         'readonly',
         'clone',
+        'history',
     ]
     search_fields = ['attribute_id', ]
-    list_filter = ['type', 'group', 'multi', 'readonly', 'clone', ]
+    list_filter = ['type', 'group', 'multi', 'readonly', 'clone', 'history', ]
 
     def get_readonly_fields(self, request, obj=None):
         fields = super().get_readonly_fields(request, obj)
