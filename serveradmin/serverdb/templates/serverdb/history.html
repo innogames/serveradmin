@@ -9,14 +9,24 @@
 {% block content %}
 <form id="changes-form" method="get" action="{% url 'serverdb_history' %}">
     <div class="row">
-        <div class="col-md-3"></div>
-        <div class="col-md-6">
+        <div class="col-md-12">
             <h3>History for {{ name }}</h3>
         </div>
     </div>
     <div class="row">
-        <div class="col-md-3"></div>
-        <div class="col-md-6 controls">
+        <div class="col-md-12 controls">
+            {% if no_history_attributes %}
+            <div class="form-group row">
+                Attributes which have history disabled and won't show up here:
+            </div>
+            <div>
+                <ul class="attributes">
+                    {% for attribute in no_history_attributes %}
+                        <li>{{ attribute.attribute_id }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
             <div class="form-group row input-controls">
                 <label for="attribute_filter" class="col-sm-1 col-form-label">Attribute:</label>
                 <div class="col-md-4">

@@ -19,7 +19,7 @@ from serveradmin.serverdb.models import (
     ChangeCommit,
     Server,
     ServertypeAttribute,
-    Change,
+    Change, Attribute,
 )
 from serveradmin.serverdb.query_committer import CommitError, commit_query
 
@@ -116,12 +116,19 @@ def history(request):
     pager = Paginator(obj_history, 25)
     page_obj = pager.get_page(page)
 
+    no_history_attributes = ServertypeAttribute.objects.filter(
+        servertype_id=server.servertype_id
+    ).select_related('attribute').filter(
+        attribute__history=False
+    ).only('attribute_id')
+
     return TemplateResponse(request, 'serverdb/history.html', {
         'changes': page_obj,
         'commit_id': commit_id,
         'object_id': object_id,
         'name': server.hostname,
         'attribute_filter': attribute_filter,
+        'no_history_attributes': no_history_attributes,
     })
 
 
