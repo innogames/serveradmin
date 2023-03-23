@@ -5,3 +5,11 @@ table {
 table th {
     min-width: 125px;
 }
+
+.attributes {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 200px;
+    grid-template-rows: repeat(5, 1fr);
+    margin-top: 15px;
+}
