@@ -439,7 +439,7 @@ def _log_changes(user, app, changed, created_objects, deleted_objects):
     excl_attrs = Attribute.objects.filter(history=False).values_list(flat=True)
     for updates in changed:
         # At least one attribute aside from object_id has changed.
-        if len(updates.keys() ^ excl_attrs) > 1:
+        if len(updates.keys() - excl_attrs) > 1:
             # Get changes for attributes that should be logged.
             to_log = {k: v for k, v in updates.items() if k not in excl_attrs}
             changes.append(Change(
