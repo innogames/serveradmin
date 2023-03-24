@@ -81,7 +81,6 @@
                         <td>{{ commit.change_on|timesince }}</td>
                         <td>{{ commit.app|default:"Servershell" }}</td>
                         <td>{{ commit.user }}</td>
-                        {# TODO: Find a way to avoid a SQL query for each Change to get the hostname by object_id #}
                         <td>
                             <ul>
                             {% for change in commit.change_set.get_queryset %}

@@ -8,7 +8,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Subquery, OuterRef, Prefetch, CharField
+from django.db.models.fields.json import KeyTextTransform
+from django.db.models.functions import Coalesce, Cast
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
@@ -19,8 +21,7 @@ from serveradmin.serverdb.models import (
     ChangeCommit,
     Server,
     ServertypeAttribute,
-    Change, Attribute,
-)
+    Change, )
 from serveradmin.serverdb.query_committer import CommitError, commit_query
 
 
@@ -64,7 +65,23 @@ def changes(request):
             Q(app__name=f_user_or_app) | Q(user__username=f_user_or_app))
 
     commits = commits.select_related('app', 'user')
-    commits = commits.prefetch_related('change_set')
+
+    # This complex statement is just here to be able to prefetch the changes'
+    # relation including the hostname fetched either from the server table
+    # or from the change entry where the object was deleted.
+    server_hostname = Server.objects.filter(
+        server_id=OuterRef('object_id')).values('hostname')
+    change_hostname = Change.objects.filter(
+        id=OuterRef('id'),
+        change_type=Change.Type.DELETE).order_by('-id').values('change_json')
+    commits = commits.prefetch_related(Prefetch(
+        'change_set',
+        queryset=Change.objects.all().annotate(hostname=Coalesce(
+            Subquery(server_hostname),
+            Cast(
+                KeyTextTransform('hostname', Subquery(change_hostname)),
+                output_field=CharField())
+    ))))
 
     class NoCountPaginator(Paginator):
         @cached_property
