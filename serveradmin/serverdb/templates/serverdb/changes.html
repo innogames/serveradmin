@@ -85,7 +85,7 @@
                             <ul>
                             {% for change in commit.change_set.get_queryset %}
                                 {% if change.change_type == 'create' %}
-                                    <li><a href="{% url 'serverdb_history' %}?commit_id={{ commit.id }}&object_id={{ change.object_id }}">View history of {{ change.hostname }}</a></li>
+                                    <li><a href="{% url 'serverdb_history' %}?commit_id={{ commit.id }}&object_id={{ change.object_id }}">History for {{ change.hostname }}</a></li>
                                 {% endif %}
                             {% endfor %}
                             </ul>
@@ -94,7 +94,7 @@
                             <ul>
                             {% for change in commit.change_set.get_queryset %}
                                 {% if change.change_type == 'change' %}
-                                    <li><a href="{% url 'serverdb_history' %}?commit_id={{ commit.id }}&object_id={{ change.object_id }}">View history of {{ change.hostname }}</a></li>
+                                    <li><a href="{% url 'serverdb_history' %}?commit_id={{ commit.id }}&object_id={{ change.object_id }}">History for {{ change.hostname }}</a></li>
                                 {% endif %}
                             {% endfor %}
                             </ul>
@@ -103,7 +103,7 @@
                             <ul>
                             {% for change in commit.change_set.get_queryset %}
                                 {% if change.change_type == 'delete' %}
-                                    <li><a href="{% url 'serverdb_restore' change.id %}">Restore object {{ change.hostname }}</a></li>
+                                    <li><a href="{% url 'serverdb_restore' change.id %}">Recreate {{ change.hostname }}</a></li>
                                 {% endif %}
                             {% endfor %}
                             </ul>
