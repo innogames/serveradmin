@@ -137,11 +137,11 @@ def restore(request, change_id):
     change = get_object_or_404(Change, pk=change_id)
     server_object = change.change_json
 
-    # Remove consistent_via_attribute values they are implicit
-    consistent_attribute_ids = ServertypeAttribute.objects.filter(
+    # Remove related_via_attribute values they are implicit
+    related_attribute_ids = ServertypeAttribute.objects.filter(
         servertype_id=server_object['servertype']).exclude(
-        consistent_via_attribute_id=None)
-    for attribute in consistent_attribute_ids:
+        related_via_attribute=None)
+    for attribute in related_attribute_ids:
         server_object.pop(attribute.attribute_id)
 
     try:
