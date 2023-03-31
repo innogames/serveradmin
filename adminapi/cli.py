@@ -5,7 +5,7 @@ Copyright (c) 2019 InnoGames GmbH
 import sys
 from argparse import ArgumentParser, ArgumentTypeError
 
-from adminapi.dataset import Query
+from adminapi.dataset import MultiAttr, Query
 from adminapi.parse import parse_query
 
 
@@ -35,7 +35,7 @@ def parse_args(args):
         '-r',
         '--reset',
         action='append',
-        help='Multi attributes to reset' + multi_note,
+        help='Attributes to reset' + multi_note,
     )
     parser.add_argument(
         '-u',
@@ -87,7 +87,12 @@ def attr_value(arg):
 
 def apply_resets(server, attribute_ids):
     for attribute_id in attribute_ids:
-        server[attribute_id].clear()
+        if isinstance(server[attribute_id], MultiAttr):
+            server[attribute_id].clear()
+        elif isinstance(server[attribute_id], bool):
+            raise Exception('Attribute of type boolean cannot be reset')
+        else:
+            server.set(attribute_id, None)
 
 
 def apply_updates(server, attribute_values):
