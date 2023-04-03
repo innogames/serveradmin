@@ -4,14 +4,6 @@ Copyright (c) 2021 InnoGames GmbH
 """
 
 import re
-import json
-import netfields
-
-from typing import Union
-
-from django.core.serializers.json import DjangoJSONEncoder
-from django.db.models import Q
-from netaddr import EUI
 from distutils.util import strtobool
 from ipaddress import (
     IPv4Address,
@@ -23,17 +15,21 @@ from ipaddress import (
     IPv4Network,
     IPv6Network,
 )
+from typing import Union
 
+import netfields
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.core.serializers.json import DjangoJSONEncoder
 from django.core.validators import RegexValidator
 from django.db import models
+from django.db.models import Q
 from django.utils.timezone import now
 from django.utils.translation import gettext as _
+from netaddr import EUI
 
 from adminapi.datatype import STR_BASED_DATATYPES
 from serveradmin.apps.models import Application
-
 
 ATTRIBUTE_TYPES = {
     'string': str,
@@ -800,26 +796,3 @@ class Change(models.Model):
 
     class Meta:
         app_label = 'serverdb'
-
-    def hostname(self):
-        """Get last hostname for object of Change
-
-        Get the current hostname if the object still exists or the last known
-        one when deleted.
-
-        :return:
-        """
-
-        if self.change_type == Change.Type.DELETE:
-            return self.change_json['hostname']
-        else:
-            try:
-                return Server.objects.filter(
-                    pk=self.object_id).only('hostname').get().hostname
-            except Server.DoesNotExist:
-                # We seem to have re-used the same object_id in the past in
-                # some exceptions - in such as case just pick the latest.
-                return Change.objects.filter(
-                    object_id=self.object_id,
-                    change_type=Change.Type.DELETE
-                ).order_by('-id').first().change_json['hostname']
