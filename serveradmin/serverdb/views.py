@@ -73,7 +73,7 @@ def changes(request):
     server_hostname = Server.objects.filter(
         server_id=OuterRef('object_id')).values('hostname')
     change_hostname = Change.objects.filter(
-        id=OuterRef('id'),
+        object_id=OuterRef('object_id'),
         change_type=Change.Type.DELETE).order_by('-id').values('change_json')
     commits = commits.prefetch_related(Prefetch(
         'change_set',
