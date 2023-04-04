@@ -21,7 +21,8 @@ from serveradmin.serverdb.models import (
     ChangeCommit,
     Server,
     ServertypeAttribute,
-    Change, )
+    Change,
+)
 from serveradmin.serverdb.query_committer import CommitError, commit_query
 
 
@@ -154,12 +155,18 @@ def restore(request, change_id):
     change = get_object_or_404(Change, pk=change_id)
     server_object = change.change_json
 
-    # Remove related_via_attribute values they are implicit
-    related_attribute_ids = ServertypeAttribute.objects.filter(
-        servertype_id=server_object['servertype']).exclude(
-        related_via_attribute=None)
-    for attribute in related_attribute_ids:
-        server_object.pop(attribute.attribute_id)
+    # Remove related_via_attribute and "computed" attributes they are implicit
+    # and have no values in the database.
+    servertype_id = server_object['servertype']
+    exclude = ServertypeAttribute.objects.filter(servertype_id=servertype_id)
+    exclude = exclude.filter(
+        ~Q(related_via_attribute=None) |
+        Q(attribute__type__in=['supernet', 'domain', 'reverse'])
+    ).values_list('attribute_id', flat=True)
+
+    for attribute_id in exclude:
+        if attribute_id in server_object:
+            server_object.pop(attribute_id)
 
     try:
         commit = commit_query([server_object], user=request.user)
