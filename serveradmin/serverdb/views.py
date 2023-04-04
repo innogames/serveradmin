@@ -102,6 +102,7 @@ def changes(request):
         'until': f_until,
         'hostname': f_hostname,
         'object_id': f_object_id,
+        'commit_id': f_commit,
         'user_or_app': f_user_or_app,
     })
 
