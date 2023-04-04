@@ -41,6 +41,12 @@
                 </div>
             </div>
             <div class="form-group row input-controls">
+                <label for="commit_id" class="col-sm-1 col-form-label">Commit ID:</label>
+                <div class="col-md-4">
+                    <input id="commit_id" name="commit_id" type="text" value="{% if commit_id %}{{ commit_id }}{% endif %}" class="form-control form-control-sm" placeholder="123456789" />
+                </div>
+            </div>
+            <div class="form-group row input-controls">
                 <label for="user_or_app" class="col-sm-1 col-form-label">User/App:</label>
                 <div class="col-md-4">
                     <input name="user_or_app" id="user_or_app" type="text" value="{% if user_or_app %}{{ user_or_app }}{% endif %}" class="form-control form-control-sm dropdown-toggle" data-toggle="dropdown" placeholder="daniel.kroeger" />
