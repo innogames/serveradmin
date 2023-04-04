@@ -109,7 +109,7 @@
                             <ul>
                             {% for change in commit.change_set.get_queryset %}
                                 {% if change.change_type == 'delete' %}
-                                    <li><a href="{% url 'serverdb_restore' change.id %}">Recreate {{ change.hostname }}</a></li>
+                                    <li><a href="{% url 'serverdb_recreate' change.id %}">Recreate {{ change.hostname }}</a></li>
                                 {% endif %}
                             {% endfor %}
                             </ul>

@@ -152,7 +152,7 @@ def history(request):
 
 
 @login_required
-def restore(request, change_id):
+def recreate(request, change_id):
     change = get_object_or_404(Change, pk=change_id)
     server_object = change.change_json
 
