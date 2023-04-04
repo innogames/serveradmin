@@ -132,10 +132,10 @@
                                 <td>{{ change.commit.app|default:"Servershell" }}</td>
                                 <td>{{ change.commit.user }}</td>
                                 <td>
-                                    <form method="post" action="{% url 'serverdb_restore' change.commit.id %}">
+                                    <form method="post" action="{% url 'serverdb_recreate' change.commit.id %}">
                                         {% csrf_token %}
                                         <input type="hidden" name="object_id" value="{{ change.server_id }}" />
-                                        <input class="btn btn-sm btn-danger" type="submit" value="Restore this server" />
+                                        <input class="btn btn-sm btn-danger" type="submit" value="Re-create this server" />
                                     </form>
                                 </td>
                                 <td>-</td>
