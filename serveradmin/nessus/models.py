@@ -61,7 +61,7 @@ class NessusAPI():
     EXPORT_STATUS = EXPORT + '/{file_id}/status'
     EXPORT_HISTORY = EXPORT + '?history_id={history_id}'
 
-    def __init__(self, username=None, password=None, access_key=None, secret_key=None, url=None, hostname=None, port=None, log=None, log_level="INFO"):
+    def __init__(self, username=None, password=None, access_key=None, secret_key=None, url=None, hostname=None, port=None):
         '''
         Initialise function.
 
@@ -82,15 +82,7 @@ class NessusAPI():
             self.base = 'https://%s:%s' % (self.hostname, self.port)
         else:
             self.base = self.url
-        self.log = log
-        self.log_level = log_level
-
-        if log_level == 'WARNING':
-            logging.basicConfig(filename=self.log, format='%(asctime)s - [ %(levelname)s ]: %(message)s', level=logging.WARNING)
-        elif log_level == "ERROR":
-            logging.basicConfig(filename=self.log, format='%(asctime)s - [ %(levelname)s ]: %(message)s', level=logging.ERROR)
-        else:
-            logging.basicConfig(filename=self.log, format='%(asctime)s - [ %(levelname)s ]: %(message)s', level=logging.INFO)
+        self.logger = logging.getLogger(__package__)
 
         self.api_token = ''
 
@@ -115,7 +107,7 @@ class NessusAPI():
         if len(self.sess_token) > 5:
             self.session.headers['X-Cookie'] = "token=" + self.sess_token
         elif self.access_key and self.secret_key:
-            logging.info('Using API keys')
+            self.logger.info('Using API keys')
             self.api_keys = True
             self.session.headers['X-ApiKeys'] = 'accessKey=%s; secretKey=%s' % (self.access_key, self.secret_key)
 
@@ -129,13 +121,13 @@ class NessusAPI():
         data = {"username": self.user, "password": self.password}
         response = self.request('/session', method='POST', data=json.dumps(data))
         if response.status_code == 200:
-            logging.info('Logged in to Nessus using password authentication and X-Api-Token - %s' % (self.api_token))
+            self.logger.info('Logged in to Nessus using password authentication and X-Api-Token - %s' % (self.api_token))
             return json.loads(response.text)['token']
         elif "Invalid Credentials" in response.text:
-            logging.error('Invalid credentials provided! Cannot authenticate to Nessus.')
+            self.logger.error('Invalid credentials provided! Cannot authenticate to Nessus.')
             raise Exception('[FAIL] Invalid credentials provided! Cannot authenticate to Nessus.')
         else:
-            logging.error('Couldn\'t authenticate! Error returned by Nessus: %s' % (json.loads(response.text)['error']))
+            self.logger.error('Couldn\'t authenticate! Error returned by Nessus: %s' % (json.loads(response.text)['error']))
             raise Exception('[FAIL] Couldn\'t authenticate! Error returned by Nessus: %s' % (json.loads(response.text)['error']))
 
     def get_api_token(self) -> None:
@@ -147,9 +139,9 @@ class NessusAPI():
         if token[0]:
             self.api_token = token[0]
             self.session.headers['X-Api-Token'] = self.api_token
-            logging.info('Got new X-Api-Token from Nessus - %s' % (self.api_token))
+            self.logger.info('Got new X-Api-Token from Nessus - %s' % (self.api_token))
         else:
-            logging.error('Could not get new X-Api-Token from Nessus')
+            self.logger.error('Could not get new X-Api-Token from Nessus')
             raise Exception('Could not get new X-Api-Token from Nessus')
 
     def request(self, url, data=None, method='POST', download=False, json_output=False):
@@ -167,7 +159,7 @@ class NessusAPI():
         success = False
         method = method.lower()
         url = self.base + url
-        logging.info('Requesting to url %s' % (url))
+        self.logger.info('Requesting to url %s' % (url))
 
         while (timeout <= 30) and (not success):
             while 1:
@@ -175,8 +167,8 @@ class NessusAPI():
                     response = getattr(self.session, method)(url, data=data, verify=ca_certificates)
                     break
                 except Exception as e:
-                    logging.error("[!] [CONNECTION ERROR] - Run into connection issue: %s" % (e))
-                    logging.error("[!] Retrying in 10 seconds")
+                    self.logger.error("[!] [CONNECTION ERROR] - Run into connection issue: %s" % (e))
+                    self.logger.error("[!] Retrying in 10 seconds")
                     time.sleep(10)
                     pass
             if response.status_code == 412:
@@ -189,23 +181,23 @@ class NessusAPI():
                     if self.api_keys:
                         continue
                     self.login()
-                    logging.info('Session token refreshed')
+                    self.logger.info('Session token refreshed')
                 except Exception as e:
-                    logging.error('Could not refresh session token. Reason: %s' % (str(e)))
+                    self.logger.error('Could not refresh session token. Reason: %s' % (str(e)))
             else:
                 success = True
 
         if json_output and len(response.text) > 0:
             return response.json()
         if download:
-            logging.info('Downloading data.content')
+            self.logger.info('Downloading data.content')
             response_data = ''
             count = 0
             for chunk in response.iter_content(chunk_size=8192):
                 count += 1
                 if chunk:
                     response_data += chunk.decode("utf-8", "replace")
-            logging.info('Processed %s chunks' % (str(count)))
+            self.logger.info('Processed %s chunks' % (str(count)))
             return response_data
         return response
 
