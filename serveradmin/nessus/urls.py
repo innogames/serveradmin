@@ -1,6 +1,6 @@
 """Serveradmin - Nessus Integration
 
-Copyright (c) 2020 InnoGames GmbH
+Copyright (c) 2023 InnoGames GmbH
 """
 
 from django.urls import path

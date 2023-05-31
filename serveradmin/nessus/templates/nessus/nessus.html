@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
 {% block title %}
-    Scan configuration
+    Nessus Scan configuration
 {% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-md-1"></div>
     <div class="col-md-9">
-        <h3>Scan configuration</h3>
+        <h3>Nessus Scan configuration</h3>
     </div>
 </div>
 <div class="row">
@@ -34,11 +34,11 @@
             <div class="form-group row input-controls">
                 <label for="email" class="col-sm-1 col-form-label">Receiving email:</label>
                 <div class="col-sm-8">
-                    <input id="email" name="email" type="text" value="user@email.com" class="form-control form-control-sm" />
+                    <input id="email" name="email" type="text" value="{{ email }}" class="form-control form-control-sm" />
                 </div>
             </div>
             <div class="form-group row input-controls buttons">
-                <input class="btn btn-success" name="action" type="submit" value="Submit" action="/nessus" />
+                <input class="btn-success btn-lg" name="action" type="submit" value="Start Scan" action="/nessus" />
             </div>
         </form>
     </div>
