@@ -1,4 +1,4 @@
-"""Serveradmin - Graphite Integration
+"""Serveradmin - Nessus Integration
 
 Copyright (c) 2019 InnoGames GmbH
 """
@@ -79,7 +79,7 @@ class NessusAPI():
         self.url = url
         if url is None:
             self.hostname = hostname
-            self.base = 'https://{hostname}:{port}'.format(hostname=self.hostname, port=self.port)
+            self.base = 'https://%s:%s' % (self.hostname, self.port)
         else:
             self.base = self.url
         self.log = log
@@ -117,7 +117,7 @@ class NessusAPI():
         elif self.access_key and self.secret_key:
             logging.info('Using API keys')
             self.api_keys = True
-            self.session.headers['X-ApiKeys'] = 'accessKey={}; secretKey={}'.format(self.access_key, self.secret_key)
+            self.session.headers['X-ApiKeys'] = 'accessKey=%s; secretKey=%s' % (self.access_key, self.secret_key)
 
 
     def login(self):
@@ -129,14 +129,14 @@ class NessusAPI():
         data = {"username": self.user, "password": self.password}
         response = self.request('/session', method='POST', data=json.dumps(data))
         if response.status_code == 200:
-            logging.info('Logged in to Nessus using password authentication and X-Api-Token - {}'.format(self.api_token))
+            logging.info('Logged in to Nessus using password authentication and X-Api-Token - %s' % (self.api_token))
             return json.loads(response.text)['token']
         elif "Invalid Credentials" in response.text:
             logging.error('Invalid credentials provided! Cannot authenticate to Nessus.')
             raise Exception('[FAIL] Invalid credentials provided! Cannot authenticate to Nessus.')
         else:
-            logging.error('Couldn\'t authenticate! Error returned by Nessus: {}'.format(json.loads(response.text)['error']))
-            raise Exception('[FAIL] Couldn\'t authenticate! Error returned by Nessus: {}'.format(json.loads(response.text)['error']))
+            logging.error('Couldn\'t authenticate! Error returned by Nessus: %s' % (json.loads(response.text)['error']))
+            raise Exception('[FAIL] Couldn\'t authenticate! Error returned by Nessus: %s' % (json.loads(response.text)['error']))
 
     def get_api_token(self) -> None:
         """Refresh X-Api-Token value."""
@@ -147,7 +147,7 @@ class NessusAPI():
         if token[0]:
             self.api_token = token[0]
             self.session.headers['X-Api-Token'] = self.api_token
-            logging.info('Got new X-Api-Token from Nessus - {}'.format(self.api_token))
+            logging.info('Got new X-Api-Token from Nessus - %s' % (self.api_token))
         else:
             logging.error('Could not get new X-Api-Token from Nessus')
             raise Exception('Could not get new X-Api-Token from Nessus')
@@ -167,7 +167,7 @@ class NessusAPI():
         success = False
         method = method.lower()
         url = self.base + url
-        logging.info('Requesting to url {}'.format(url))
+        logging.info('Requesting to url %s' % (url))
 
         while (timeout <= 30) and (not success):
             while 1:
@@ -175,7 +175,7 @@ class NessusAPI():
                     response = getattr(self.session, method)(url, data=data, verify=ca_certificates)
                     break
                 except Exception as e:
-                    logging.error("[!] [CONNECTION ERROR] - Run into connection issue: {}".format(e))
+                    logging.error("[!] [CONNECTION ERROR] - Run into connection issue: %s" % (e))
                     logging.error("[!] Retrying in 10 seconds")
                     time.sleep(10)
                     pass
@@ -191,7 +191,7 @@ class NessusAPI():
                     self.login()
                     logging.info('Session token refreshed')
                 except Exception as e:
-                    logging.error('Could not refresh session token. Reason: {}'.format(str(e)))
+                    logging.error('Could not refresh session token. Reason: %s' % (str(e)))
             else:
                 success = True
 
@@ -205,7 +205,7 @@ class NessusAPI():
                 count += 1
                 if chunk:
                     response_data += chunk.decode("utf-8", "replace")
-            logging.info('Processed {} chunks'.format(count))
+            logging.info('Processed %s chunks' % (str(count)))
             return response_data
         return response
 
@@ -234,7 +234,7 @@ class NessusAPI():
 
         return list of strings.
         """
-        req =  self.request(method='GET', url='/scans/{}'.format(scan_id), json_output=True)['info']
+        req =  self.request(method='GET', url='/scans/%s' % (str(scan_id)), json_output=True)['info']
         if 'targets' not in req.keys():
             self.launch_scan(scan_id)
             time.sleep(2)

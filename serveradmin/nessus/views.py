@@ -52,9 +52,9 @@ def nessus_config(request):
                     nessus.create_scan(scan_name=', '.join(hostnames), uuid=uuid, folder_id=folder_id, target=ips, policy_id=policy_id, receiver=user_email)
                     messages.info(request, str('Scan started.'))
                 except Exception as error:
-                    messages.error(request, str('Scan could not be started. {}'.format(error)))
+                    messages.error(request, str('Scan could not be started. %s' % (error)))
             else:
-                messages.error(request, str('Scan for at least one of the targets is already running with scan id: {}.'.format(', '.join(scan_ids))))
+                messages.error(request, str('Scan for at least one of the targets is already running with scan id: %s.' % (', '.join(scan_ids))))
         except IOError as error:
             return HttpResponseServerError("Communication with nessus failed.")
 
