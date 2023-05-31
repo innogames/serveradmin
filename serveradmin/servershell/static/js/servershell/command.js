@@ -375,6 +375,17 @@ servershell.commands = {
 
         servershell.alert('Opened graph results in new browser tab.', 'info');
     },
+    scan: function() {
+        if (!validate_selected()) {
+            return;
+        }
+
+        let query_string = servershell.get_selected().map(o => `object_id=${o}`).join('&');
+        let url = servershell.urls.nessus + '?' + query_string;
+        window.open(url, '_blank');
+
+        servershell.alert('Opened nessus scan configuration page in new browser tab.', 'info');
+    },
     inspect: function() {
         if (!validate_selected()) {
             return;

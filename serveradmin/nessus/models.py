@@ -1,0 +1,278 @@
+"""Serveradmin - Graphite Integration
+
+Copyright (c) 2019 InnoGames GmbH
+"""
+
+import json
+import time
+import json
+import re
+import logging
+import requests
+import certifi
+from ipaddress import IPv4Address, IPv4Network, ip_address, ip_network
+
+ca_certificates = certifi.where()
+
+class NessusAPI():
+    """
+    Class that communicates with Nessus API.
+
+    Attributes
+    __________
+    Paths within nessus API:
+        SESSION = '/session'
+        FOLDERS = '/folders'
+        SCANS = '/scans'
+        SCAN_ID = SCANS + '/{scan_id}'
+        HOST_VULN = SCAN_ID + '/hosts/{host_id}'
+        PLUGINS = HOST_VULN + '/plugins/{plugin_id}'
+        EXPORT = SCAN_ID + '/export'
+        EXPORT_TOKEN_DOWNLOAD = '/scans/exports/{token_id}/download'
+        EXPORT_FILE_DOWNLOAD = EXPORT + '/{file_id}/download'
+        EXPORT_STATUS = EXPORT + '/{file_id}/status'
+        EXPORT_HISTORY = EXPORT + '?history_id={history_id}'
+
+    Methods
+    -------
+        login()
+            Logs in to nessus using credentials provided in config.
+        get_api_token()
+            Grabs X-API-Token from nessus page.
+        request(url, data=None, method='POST', download=False, json_output=False):
+            Send requests to nessus API.
+        create_scan(uuid=None, scan_name=None, folder_id=None, policy_id=None, target=None, receiver=None):
+            Creates a scan in nessus and launches it.
+        check_if_running(new_targets)
+            Gets a list of scan targets, finds corresponding scan and checks if suplied targets are present.
+        get_scan_targets(scan_id)
+            Returns a list of predefined targets for a scan.
+    """
+
+    SESSION = '/session'
+    FOLDERS = '/folders'
+    SCANS = '/scans'
+    SCAN_ID = SCANS + '/{scan_id}'
+    HOST_VULN = SCAN_ID + '/hosts/{host_id}'
+    PLUGINS = HOST_VULN + '/plugins/{plugin_id}'
+    EXPORT = SCAN_ID + '/export'
+    EXPORT_TOKEN_DOWNLOAD = '/scans/exports/{token_id}/download'
+    EXPORT_FILE_DOWNLOAD = EXPORT + '/{file_id}/download'
+    EXPORT_STATUS = EXPORT + '/{file_id}/status'
+    EXPORT_HISTORY = EXPORT + '?history_id={history_id}'
+
+    def __init__(self, username=None, password=None, access_key=None, secret_key=None, url=None, hostname=None, port=None, log=None, log_level="INFO"):
+        '''
+        Initialise function.
+
+        Parameters
+        ----------
+        config : str, required
+            Path to config file.
+        '''
+        self.api_keys = False
+        self.user = username
+        self.password = password
+        self.access_key = access_key
+        self.secret_key = secret_key
+        self.port = port
+        self.url = url
+        if url is None:
+            self.hostname = hostname
+            self.base = 'https://{hostname}:{port}'.format(hostname=self.hostname, port=self.port)
+        else:
+            self.base = self.url
+        self.log = log
+        self.log_level = log_level
+
+        if log_level == 'WARNING':
+            logging.basicConfig(filename=self.log, format='%(asctime)s - [ %(levelname)s ]: %(message)s', level=logging.WARNING)
+        elif log_level == "ERROR":
+            logging.basicConfig(filename=self.log, format='%(asctime)s - [ %(levelname)s ]: %(message)s', level=logging.ERROR)
+        else:
+            logging.basicConfig(filename=self.log, format='%(asctime)s - [ %(levelname)s ]: %(message)s', level=logging.INFO)
+
+        self.api_token = ''
+
+        self.session = requests.Session()
+        self.session.verify = False
+        self.session.stream = True
+        self.session.headers = {
+            'Origin': self.base,
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Accept-Language': 'en-US,en;q=0.8',
+            'User-Agent': 'Nessus-Helper',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json, text/javascript, */*; q=0.01',
+            'Referer': self.base,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Connection': 'keep-alive',
+            'X-Api-Token': self.api_token
+        }
+
+        self.sess_token = self.login()
+
+        if len(self.sess_token) > 5:
+            self.session.headers['X-Cookie'] = "token=" + self.sess_token
+        elif self.access_key and self.secret_key:
+            logging.info('Using API keys')
+            self.api_keys = True
+            self.session.headers['X-ApiKeys'] = 'accessKey={}; secretKey={}'.format(self.access_key, self.secret_key)
+
+
+    def login(self):
+        """
+        Log user into nessus.
+
+        return string auth token that needs to be send with every later request in a cookie X-Cookie: token=<token>.
+        """
+        data = {"username": self.user, "password": self.password}
+        response = self.request('/session', method='POST', data=json.dumps(data))
+        if response.status_code == 200:
+            logging.info('Logged in to Nessus using password authentication and X-Api-Token - {}'.format(self.api_token))
+            return json.loads(response.text)['token']
+        elif "Invalid Credentials" in response.text:
+            logging.error('Invalid credentials provided! Cannot authenticate to Nessus.')
+            raise Exception('[FAIL] Invalid credentials provided! Cannot authenticate to Nessus.')
+        else:
+            logging.error('Couldn\'t authenticate! Error returned by Nessus: {}'.format(json.loads(response.text)['error']))
+            raise Exception('[FAIL] Couldn\'t authenticate! Error returned by Nessus: {}'.format(json.loads(response.text)['error']))
+
+    def get_api_token(self) -> None:
+        """Refresh X-Api-Token value."""
+        response = self.request('/nessus6.js?v=1642551183681', method='get')
+        offset = response.text.index('return g(a,[{key:"getApiToken",value:function(){')
+        token = re.findall(r'return"(.*?)"\}\}', response.text[offset:offset + 100])
+
+        if token[0]:
+            self.api_token = token[0]
+            self.session.headers['X-Api-Token'] = self.api_token
+            logging.info('Got new X-Api-Token from Nessus - {}'.format(self.api_token))
+        else:
+            logging.error('Could not get new X-Api-Token from Nessus')
+            raise Exception('Could not get new X-Api-Token from Nessus')
+
+    def request(self, url, data=None, method='POST', download=False, json_output=False):
+        """
+        Send request to nessus.
+
+        :data: request body to send.
+        :method: request method GET, POST, PUT, DELETE.
+        :downnload: True for downloading scan results in csv format.
+        :json_output: True / False.
+
+        return dict
+        """
+        timeout = 0
+        success = False
+        method = method.lower()
+        url = self.base + url
+        logging.info('Requesting to url {}'.format(url))
+
+        while (timeout <= 30) and (not success):
+            while 1:
+                try:
+                    response = getattr(self.session, method)(url, data=data, verify=ca_certificates)
+                    break
+                except Exception as e:
+                    logging.error("[!] [CONNECTION ERROR] - Run into connection issue: {}".format(e))
+                    logging.error("[!] Retrying in 10 seconds")
+                    time.sleep(10)
+                    pass
+            if response.status_code == 412:
+                self.get_api_token()
+            elif response.status_code == 401:
+                if url == self.base + self.SESSION:
+                    break
+                try:
+                    timeout += 1
+                    if self.api_keys:
+                        continue
+                    self.login()
+                    logging.info('Session token refreshed')
+                except Exception as e:
+                    logging.error('Could not refresh session token. Reason: {}'.format(str(e)))
+            else:
+                success = True
+
+        if json_output and len(response.text) > 0:
+            return response.json()
+        if download:
+            logging.info('Downloading data.content')
+            response_data = ''
+            count = 0
+            for chunk in response.iter_content(chunk_size=8192):
+                count += 1
+                if chunk:
+                    response_data += chunk.decode("utf-8", "replace")
+            logging.info('Processed {} chunks'.format(count))
+            return response_data
+        return response
+
+    def create_scan(self, uuid, scan_name, folder_id, policy_id, target, receiver):
+        """
+        Create a scan.
+
+        :uuid: user uid.
+        :scan_name: name of the scan.
+        :folder_id: ID of the folder where scan will be placed.
+        :policy_id: policy uid string.
+        :target: string of targets.
+        :receiver: user email string.
+
+        return dict.
+        """
+        target = ', '.join([ str(element) for element in target  ])
+        data = {"uuid":uuid,"settings":{"emails":receiver,"attach_report":True,"filter_type":"and","filters":[],"launch_now":True,"enabled":True,"live_results":False,"name":scan_name,"description":"SCAN STARTED BY SERVERADMIN","folder_id":folder_id,"scanner_id":"1","policy_id":policy_id,"text_targets":target,"file_targets":""}}
+        return self.request("/scans/", json_output=True, method='post', data=json.dumps(data))
+
+    def get_scan_targets(self, scan_id):
+        """
+        Get the list of scan targets for a scan id.
+
+        :scan_id: ID of scan.
+
+        return list of strings.
+        """
+        req =  self.request(method='GET', url='/scans/{}'.format(scan_id), json_output=True)['info']
+        if 'targets' not in req.keys():
+            self.launch_scan(scan_id)
+            time.sleep(2)
+            self.stop_scan(scan_id)
+            return self.get_scan_targets(scan_id)
+        return req['targets']
+
+    def check_if_running(self, new_targets):
+        """
+        Check if scan is in progress.
+
+        :new_targets: list of targets to find a scan on and check if running.
+
+        return list of strings.
+        """
+        running_scans = self.request("/scanners/1/scans", json_output=True, method='get')
+        scan_ids = []
+        if running_scans['scans']:
+            for scan in running_scans['scans']:
+                existing_targets = self.get_scan_targets(scan['scan_id']).split(',')
+                existing_targets = [ element.strip() for element in existing_targets ]
+                for existing_target in existing_targets:
+                    ip = None
+                    network = None
+                    for new_target in new_targets:
+                        try:
+                            ip = IPv4Address(existing_target)
+                        except Exception:
+                            network = IPv4Network(existing_target)
+
+                        if ip and ip_address(new_target):
+                            if ip == new_target:
+                                scan_ids.append(str(scan['scan_id']))
+                        elif network and ip_address(new_target):
+                            if new_target in network:
+                                scan_ids.append(str(scan['scan_id']))
+                        elif network and ip_network(new_target):
+                            if network.overlaps(new_target):
+                                scan_ids.append(str(scan['scan_id']))
+        scan_ids = [*set(scan_ids)]
+        return scan_ids
