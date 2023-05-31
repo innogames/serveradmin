@@ -67,8 +67,13 @@ class NessusAPI():
 
         Parameters
         ----------
-        config : str, required
-            Path to config file.
+        :username: string username for nessus
+        :password: string user password for nessus
+        :access_key: string access key for nessus api
+        :secret_key: string secret key for nessus api
+        :url: string url
+        :hostname: string hostname
+        :port: integer port number
         '''
         self.api_keys = False
         self.user = username
