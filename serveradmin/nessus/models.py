@@ -43,6 +43,10 @@ class NessusAPI():
             Send requests to nessus API.
         create_scan(uuid=None, scan_name=None, folder_id=None, policy_id=None, target=None, receiver=None):
             Creates a scan in nessus and launches it.
+        launch_scan(scan_id)
+            Launches a scan in nessus.
+        stop_scan(scan_id)
+            Stops a scan in nessus.
         check_if_running(new_targets)
             Gets a list of scan targets, finds corresponding scan and checks if suplied targets are present.
         get_scan_targets(scan_id)
@@ -248,7 +252,7 @@ class NessusAPI():
         return list of strings.
         """
         running_scans = self.request("/scanners/1/scans", json_output=True, method='get')
-        scan_ids = []
+        scan_ids = set()
         if not running_scans['scans']:
             return []
         else:
@@ -264,14 +268,31 @@ class NessusAPI():
                         except Exception:
                             network = IPv4Network(existing_target)
 
-                        if ip and ip_address(new_target):
-                            if ip == new_target:
-                                scan_ids.append(str(scan['scan_id']))
-                        elif network and ip_address(new_target):
-                            if new_target in network:
-                                scan_ids.append(str(scan['scan_id']))
-                        elif network and ip_network(new_target):
-                            if network.overlaps(new_target):
-                                scan_ids.append(str(scan['scan_id']))
-        scan_ids = [*set(scan_ids)]
+                        if ip and ip_address(new_target) and ip == new_target:
+                            scan_ids.add(str(scan['scan_id']))
+                        elif network and ip_address(new_target) and new_target in network:
+                            scan_ids.add(str(scan['scan_id']))
+                        elif network and ip_network(new_target) and network.overlaps(new_target):
+                            scan_ids.add(str(scan['scan_id']))
+        scan_ids = list(scan_ids)
         return scan_ids
+
+    def stop_scan(self, scan_id):
+        """
+        Stop scan.
+
+        :scan_id: ID of scan.
+
+        :dict.
+        """
+        return self.request('/scans/{}/stop'.format(scan_id), method='post', json_output=True)
+
+    def launch_scan(self, scan_id):
+        """
+        Launch a scan.
+
+        :scan_id: ID of scan.
+
+        return dict.
+        """
+        return self.request("/scans/{}/launch".format(scan_id), method='post')
