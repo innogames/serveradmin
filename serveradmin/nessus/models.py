@@ -125,15 +125,15 @@ class NessusAPI():
         """
         data = {"username": self.user, "password": self.password}
         response = self.request('/session', method='POST', data=json.dumps(data))
-        if response.status_code == 200:
-            self.logger.info('Logged in to Nessus using password authentication and X-Api-Token - %s' % (self.api_token))
-            return json.loads(response.text)['token']
-        elif "Invalid Credentials" in response.text:
+        if "Invalid Credentials" in response.text:
             self.logger.error('Invalid credentials provided! Cannot authenticate to Nessus.')
             raise Exception('[FAIL] Invalid credentials provided! Cannot authenticate to Nessus.')
-        else:
+        elif response.status_code != 200:
             self.logger.error('Couldn\'t authenticate! Error returned by Nessus: %s' % (json.loads(response.text)['error']))
             raise Exception('[FAIL] Couldn\'t authenticate! Error returned by Nessus: %s' % (json.loads(response.text)['error']))
+        else:
+            self.logger.info('Logged in to Nessus using password authentication and X-Api-Token - %s' % (self.api_token))
+            return json.loads(response.text)['token']
 
     def get_api_token(self) -> None:
         """Refresh X-Api-Token value."""
@@ -249,7 +249,9 @@ class NessusAPI():
         """
         running_scans = self.request("/scanners/1/scans", json_output=True, method='get')
         scan_ids = []
-        if running_scans['scans']:
+        if not running_scans['scans']:
+            return []
+        else:
             for scan in running_scans['scans']:
                 existing_targets = self.get_scan_targets(scan['scan_id']).split(',')
                 existing_targets = [ element.strip() for element in existing_targets ]
