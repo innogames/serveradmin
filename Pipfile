@@ -26,6 +26,7 @@ django_compressor = "<3.0.0"
 paramiko = "~=2.10"
 pexpect = "<5.0.0"
 rich = "*"
+typing-extensions = "*"
 
 [dev-packages]
 # Used to build the sphinx docs
@@ -45,4 +46,7 @@ faker = "<14.0.0"
 tblib = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.9"
+
+[production]
+sentry-sdk = {version = "*", extras = ["django"]}

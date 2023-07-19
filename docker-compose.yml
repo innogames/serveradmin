@@ -2,14 +2,13 @@ version: "3.9"
 
 services:
   db:
-    image: "postgres:${POSTGRES_VERSION}"
+    image: "postgres:15"
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - ".docker/db/postgres.conf:/etc/postgresql/postgres.conf:ro"
-      - ".docker/db/pdns-db.sql:/docker-entrypoint-initdb.d/pdns-db.sql:ro"
       - postgres-data:/var/lib/postgresql/data
     ports:
       - "127.0.0.1:5432:5432"
@@ -23,21 +22,6 @@ services:
       - "127.0.0.1:8000:8000"
     depends_on:
       - db
-
-  pdns-auth:
-    build: .docker/pdns-auth
-    environment:
-      - GPGSQL_HOST=${POSTGRES_POWERDNS_HOST}
-      - GPGSQL_PORT=5432
-      - GPGSQL_DBNAME=${POSTGRES_POWERDNS_DB}
-      - GPGSQL_USER=${POSTGRES_POWERDNS_USER}
-      - GPGSQL_PASSWORD=${POSTGRES_POWERDNS_PASSWORD}
-    ports:
-      - "127.0.0.1:1053:53"
-      - "127.0.0.1:1053:53/udp"
-    depends_on:
-      - db
-      - web
 
 volumes:
   postgres-data:
