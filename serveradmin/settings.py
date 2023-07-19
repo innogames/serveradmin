@@ -28,7 +28,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 # Try to connect to a local postgres DB called serveradmin via user based
 # authentication by default.
 DATABASES = {
-    # Serveradmin database connection
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': env('POSTGRES_DB', default=None),
@@ -41,21 +40,7 @@ DATABASES = {
             'client_encoding': 'UTF8',
         },
     },
-    # Optional PowerDNS database connection
-    'powerdns': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('POSTGRES_POWERDNS_DB', default=None),
-        'USER': env('POSTGRES_POWERDNS_USER', default=None),
-        'PASSWORD': env('POSTGRES_POWERDNS_PASSWORD', default=None),
-        'HOST': env('POSTGRES_POWERDNS_HOST', default=None),
-        'PORT': env('POSTGRES_POWERDNS_PORT', default=5432),
-        'OPTIONS': {
-            'connect_timeout': 1,
-            'client_encoding': 'UTF8',
-        },
-    },
 }
-DATABASE_ROUTERS = ['serveradmin.powerdns.routers.PowerDNSRouter']
 
 MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
@@ -83,14 +68,12 @@ INSTALLED_APPS = [
     'serveradmin.resources',
     'serveradmin.serverdb',
     'serveradmin.servershell',
-    'serveradmin.powerdns',
     'compressor',
 ]
 
 MENU_TEMPLATES = [
     'servershell/menu.html',
     'resources/menu.html',
-    'powerdns/menu.html',
 ]
 
 ROOT_URLCONF = 'serveradmin.urls'
@@ -212,19 +195,6 @@ GRAPHITE_SPRITE_PARAMS = (
     'height=' + str(GRAPHITE_SPRITE_HEIGHT) + '&' +
     'graphOnly=true'
 )
-
-# Disable PowerDNS integration by default
-PDNS_ENABLE = False
-# Serveradmin to PowerDNS mapping
-PDNS = {
-    'domain': [{
-        'servertype': 'domain',
-        'attributes': {
-            'name': 'hostname',
-            'type': 'type',
-        }
-    }],
-}
 
 # Using exec certainly isn't an awesome solution but it's the best we've got.
 # The problem boils down to django configs being python files but python only

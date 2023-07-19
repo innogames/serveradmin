@@ -31,19 +31,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      pdns-db:
-        image: 'postgres:15'
-        env:
-          POSTGRES_USER: powerdns
-          POSTGRES_PASSWORD: powerdns
-          POSTGRES_DB: powerdns
-        ports:
-          - 5432/tcp
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: Setup python
@@ -66,18 +53,6 @@ jobs:
                   'NAME': 'serveradmin',
                   'USER': 'serveradmin',
                   'PASSWORD': 'serveradmin',
-                  'OPTIONS': {
-                      'connect_timeout': 1,
-                      'client_encoding': 'UTF8',
-                  },
-              },
-              'powerdns': {
-                  'ENGINE': 'django.db.backends.postgresql',
-                  'HOST': '127.0.0.1',
-                  'PORT': '${{ job.services.pdns-db.ports[5432] }}',
-                  'NAME': 'powerdns',
-                  'USER': 'powerdns',
-                  'PASSWORD': 'powerdns',
                   'OPTIONS': {
                       'connect_timeout': 1,
                       'client_encoding': 'UTF8',

@@ -13,7 +13,6 @@ done
 
 # Apply pending migrations on every start
 python3 -m pipenv run python -m serveradmin migrate --no-input
-python3 -m pipenv run python -m serveradmin migrate --database=powerdns --no-input
 
 # Requires Django >= 3.x
 # pipenv run python -m serveradmin createsuper --no-input

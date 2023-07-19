@@ -7,4 +7,3 @@ Serveradmin Documentation
    extending.rst
    python-api.rst
    module-adminapi.rst
-   extensions.rst

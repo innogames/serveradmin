@@ -31,7 +31,7 @@ Copyright (c) 2019 InnoGames GmbH
 # LOGGING['loggers']['myapp'] = {'level': LOG_LEVEL}
 
 # # See https://docs.djangoproject.com/en/dev/ref/settings/#databases
-# # for more detauls on how to configure your database connection.
+# # for more defaults on how to configure your database connection.
 # DATABASES = {
 # }
 
