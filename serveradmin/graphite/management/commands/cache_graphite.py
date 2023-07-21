@@ -5,6 +5,7 @@ Copyright (c) 2023 InnoGames GmbH
 
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 from io import BytesIO
 from os import mkdir
@@ -40,9 +41,14 @@ class Command(BaseCommand):
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("--collections", nargs='*', type=str, help='Generate/update only these collections.')
         parser.add_argument("--query", type=str, help="Generate/update only objects matching this Serveradmin query.")
+        parser.add_argument("--threads", type=int, default=5, help="Generate n sprites/numerics concurrently.")
 
     def handle(self, *args, **options):
         """The entry point of the command"""
+
+        if options["threads"] < 1:
+            self.stderr.write(self.style.ERROR(f"--threads must be greater 0!"))
+            exit(1)
 
         start = time.time()
 
@@ -70,21 +76,24 @@ class Command(BaseCommand):
             if options["query"]:
                 query_filter.update(**parse_query(options["query"]))
 
-            for server in Query(query_filter, ["hostname"]):
-                graph_table = collection.graph_table(server, sprite_params)
-                if graph_table:
-                    self.generate_sprite(collection_dir, graph_table, server)
-                    self.stdout.write(f"[{now()}] Generated sprite for {server['hostname']}")
-                self.cache_numerics(collection, server)
-                self.stdout.write(f"[{now()}] Updated numerics for {server['hostname']}")
+            futures = []
+            with ThreadPoolExecutor(options["threads"]) as executor:
+                for server in Query(query_filter, ["hostname"]):
+                    futures.append(executor.submit(self.generate_sprite, collection_dir, server, collection, sprite_params))
+                    futures.append(executor.submit(self.cache_numerics, collection, server))
 
             self.stdout.write(f"[{now()}] Finished collection {collection}")
 
         end = time.time()
         self.stdout.write(self.style.SUCCESS(f"Total time: {end - start:.2f} seconds."))
 
-    def generate_sprite(self, collection_dir, graph_table, server):
+    def generate_sprite(self, collection_dir, server, collection, sprite_params):
         """Generate sprites for the given server using the given collection"""
+
+        graph_table = collection.graph_table(server, sprite_params)
+        if not graph_table:
+            return
+
         graphs = [v2 for k1, v1 in graph_table for k2, v2 in v1]
         sprite_width = settings.GRAPHITE_SPRITE_WIDTH
         sprite_height = settings.GRAPHITE_SPRITE_HEIGHT
@@ -98,6 +107,8 @@ class Command(BaseCommand):
                 sprite_img.paste(Image.open(BytesIO(response)), box)
 
         sprite_img.save(collection_dir + '/' + server['hostname'] + '.png')
+
+        self.stdout.write(f"[{now()}] Generated sprite for {server['hostname']}")
 
     def cache_numerics(self, collection, server):
         """Generate sprites for the given server using the given collection"""
@@ -137,6 +148,8 @@ class Command(BaseCommand):
                     attribute=numeric.attribute,
                     defaults={'value': Decimal(value)},
                 )
+
+        self.stdout.write(f"[{now()}] Updated numerics for {server['hostname']}")
 
     def get_from_graphite(self, params):
         """Make a GET request to Graphite with the given params"""
