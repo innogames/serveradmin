@@ -19,7 +19,7 @@ from urllib.request import (
 
 from PIL import Image
 from django.conf import settings
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandParser
 from django.db import transaction
 
 from adminapi import filters
@@ -36,7 +36,10 @@ class Command(BaseCommand):
     """Generate sprites and update numeric values for collections."""
     help = __doc__
 
-    def handle(self, *args, **kwargs):
+    def add_arguments(self, parser: CommandParser) -> None:
+        parser.add_argument("--collections", nargs='*', type=str, help='Generate/update only these collections.')
+
+    def handle(self, *args, **options):
         """The entry point of the command"""
 
         start = time.time()
@@ -47,7 +50,11 @@ class Command(BaseCommand):
             mkdir(sprite_dir)
 
         # We will make sure to generate a single sprite for a single hostname.
-        for collection in Collection.objects.filter(overview=True):
+        collections = Collection.objects.filter(overview=True)
+        if options['collections']:
+            collections = collections.filter(name__in=options['collections'])
+
+        for collection in collections:
             collection_start = time.time()
 
             collection_dir = sprite_dir + '/' + collection.name
