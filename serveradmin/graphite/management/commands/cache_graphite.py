@@ -5,7 +5,6 @@ Copyright (c) 2023 InnoGames GmbH
 
 import json
 import time
-from datetime import datetime
 from decimal import Decimal
 from io import BytesIO
 from os import mkdir
@@ -21,6 +20,7 @@ from PIL import Image
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandParser
 from django.db import transaction
+from django.utils.timezone import now
 
 from adminapi import filters
 from adminapi.parse import parse_query
@@ -44,8 +44,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         """The entry point of the command"""
 
-        start = time.time()
-
         sprite_params = settings.GRAPHITE_SPRITE_PARAMS
         sprite_dir = settings.MEDIA_ROOT + '/graph_sprite'
         if not isdir(sprite_dir):
@@ -56,7 +54,7 @@ class Command(BaseCommand):
             collections = collections.filter(name__in=options['collections'])
 
         for collection in collections:
-            collection_start = time.time()
+            self.stdout.write(f"[{now()}] Starting collection {collection}")
 
             collection_dir = sprite_dir + '/' + collection.name
             if not isdir(collection_dir):
@@ -68,21 +66,17 @@ class Command(BaseCommand):
             }
 
             if options["query"]:
-                query_filter = query_filter.update(**parse_query(options["query"]))
+                query_filter.update(**parse_query(options["query"]))
 
             for server in Query(query_filter, ["hostname"]):
                 graph_table = collection.graph_table(server, sprite_params)
                 if graph_table:
                     self.generate_sprite(collection_dir, graph_table, server)
+                    self.stdout.write(f"[{now()}] Generated sprite for {server['hostname']}")
                 self.cache_numerics(collection, server)
+                self.stdout.write(f"[{now()}] Updated numerics for {server['hostname']}")
 
-            collection_duration = time.time() - collection_start
-            print('[{}] Collection {} finished after {} seconds'.format(
-                datetime.now(), collection.name, collection_duration))
-
-        duration = time.time() - start
-        print('[{}] Finished after {} seconds'.format(datetime.now(),
-                                                      duration))
+            self.stdout.write(f"[{now()}] Finished collection {collection}")
 
     def generate_sprite(self, collection_dir, graph_table, server):
         """Generate sprites for the given server using the given collection"""
@@ -113,15 +107,11 @@ class Command(BaseCommand):
             try:
                 value = response_json[0]['datapoints'][0][0]
             except IndexError:
-                print(
-                    (
-                        "Warning: Graphite response '{}' for collection {}/{}"
-                        " on server {} couldn't be parsed"
-                    ).format(response, collection, numeric, server['hostname'])
-                )
+                self.stdout.write(self.style.NOTICE(f"[{now()}] {server['hostname']}: Can't parse response {response} for {params}."))
                 continue
 
             if value is None:
+                self.stdout.write(self.style.NOTICE(f"[{now()}] {server['hostname']}: None value for {params} received."))
                 continue
 
             # Django can be set up to implicitly execute commands in database
@@ -158,12 +148,8 @@ class Command(BaseCommand):
             with build_opener(auth_handler).open(url) as response:
                 return response.read()
         except HTTPError as error:
-            print('Warning: Graphite returned ' + str(error) + ' to ' + url)
+            self.stdout.write(self.style.NOTICE(f"Graphite returned {error} for {url}"))
         finally:
             end = time.time()
             if end - start > 10:
-                print(
-                    'Warning: Graphite request to {0} took {1} seconds'.format(
-                        url, end - start
-                    )
-                )
+                self.stdout.write(self.style.WARNING(f"Graphite request {url} took {end - start} seconds"))
