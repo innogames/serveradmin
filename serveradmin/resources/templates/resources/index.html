@@ -69,53 +69,53 @@
             <button type="submit" class="btn btn-sm btn-success">Apply</button>
         </div>
     </div>
-</form>
-<hr>
-<div class="row">
-    <div class="col-md-12">
-        <table class="table table-sm table-borderless table-striped table-responsive">
-            <thead>
-                <tr>
-                    <th>Hostname</th>
-                    {% for column in columns %}
-                        {% if column.visible %}
-                            <th>{{ column.name }}</th>
-                        {% endif %}
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for obj in hosts %}
-                <tr>
-                    <td>
-                        <a href="{% url 'graphite_graph_table' %}?hostname={{ obj.hostname | urlencode }}">{{ obj.hostname }}</a>
-                    </td>
-                    {% for column in columns %}
-                        {% if column.visible %}
-                        <td>
-                            {% if column.type == 'numeric' %}
-                                {{ obj|dict_get:column.name }}
-                            {% elif column.type == 'relation' %}
-                                {% for rel in obj|dict_get:column.name %}
-                                    <a href="{% url 'graphite_graph_table' %}?hostname={{ rel }}" {% if rel in matched_hostnames %}style="color:#d00;"{% endif %}>{{ rel }}</a>
-                                {% endfor %}
-                            {% else %}
-                                <a class="graph_sprite" style="background:url({{ STATIC_URL }}empty.png) -{{ column.sprite_offset }}px 0;" data-hostname="{{ obj.hostname }}" data-graph="{{ column.graph_index }}" data-image="{{ sprite_url }}/{{ obj.hostname }}.png"></a>
+    <hr>
+    <div class="row">
+        <div class="col-md-12">
+            <table class="table table-sm table-borderless table-striped table-responsive">
+                <thead>
+                    <tr>
+                        <th>Hostname</th>
+                        {% for column in columns %}
+                            {% if column.visible %}
+                                <th>{{ column.name }}</th>
                             {% endif %}
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for obj in hosts %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'graphite_graph_table' %}?hostname={{ obj.hostname | urlencode }}">{{ obj.hostname }}</a>
                         </td>
-                        {% endif %}
+                        {% for column in columns %}
+                            {% if column.visible %}
+                            <td>
+                                {% if column.type == 'numeric' %}
+                                    {{ obj|dict_get:column.name }}
+                                {% elif column.type == 'relation' %}
+                                    {% for rel in obj|dict_get:column.name %}
+                                        <a href="{% url 'graphite_graph_table' %}?hostname={{ rel }}" {% if rel in matched_hostnames %}style="color:#d00;"{% endif %}>{{ rel }}</a>
+                                    {% endfor %}
+                                {% else %}
+                                    <a class="graph_sprite" style="background:url({{ STATIC_URL }}empty.png) -{{ column.sprite_offset }}px 0;" data-hostname="{{ obj.hostname }}" data-graph="{{ column.graph_index }}" data-image="{{ sprite_url }}/{{ obj.hostname }}.png"></a>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                        {% endfor %}
                     {% endfor %}
-                {% endfor %}
-                </tr>
-            </tbody>
-        </table>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
-</div>
-<div class="row">
-    <div class="col-md-12">
-        {% include "pagination.html" with page=hosts %}
+    <div class="row">
+        <div class="col-md-12">
+            {% include "pagination.html" with page=hosts form=True %}
+        </div>
     </div>
-</div>
+</form>
 {% endblock %}
 {% block additional_scripts %}
 <script type="text/javascript" src="{{ STATIC_URL }}js/graphite.js"></script>

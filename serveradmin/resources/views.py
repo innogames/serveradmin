@@ -29,7 +29,7 @@ def index(request):
     term = request.GET.get('term', request.session.get('term', ''))
     collections = list(Collection.objects.filter(overview=True))
 
-    # If a graph collection was specified, use it.  Otherwise use the first one
+    # If a graph collection was specified, use it. Otherwise, use the first one
     for collection in collections:
         if request.GET.get('current_collection'):
             if str(collection.id) != request.GET['current_collection']:
