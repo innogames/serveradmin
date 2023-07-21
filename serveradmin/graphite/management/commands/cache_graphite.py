@@ -119,10 +119,14 @@ class Command(BaseCommand):
             # it is set up like this.  This process takes a long time.
             # We want the values to be immediately available to the users.
             with transaction.atomic():
-                # Lock server for changes to avoid nonrepeatable reads in the
-                # query_committer.
-                locked_server = Server.objects.select_for_update().get(
-                    server_id=server.object_id)
+                try:
+                    # Lock server for changes to avoid non-repeatable reads in the
+                    # query_committer.
+                    locked_server = Server.objects.select_for_update().get(server_id=server.object_id)
+                except Server.DoesNotExist:
+                    self.stdout.write(self.style.NOTICE(f"[{now()}] {server['hostname']} has been deleted."))
+                    continue
+
                 locked_server.servernumberattribute_set.update_or_create(
                     server_id=locked_server.server_id,
                     attribute=numeric.attribute,
