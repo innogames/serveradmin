@@ -44,6 +44,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         """The entry point of the command"""
 
+        start = time.time()
+
         sprite_params = settings.GRAPHITE_SPRITE_PARAMS
         sprite_dir = settings.MEDIA_ROOT + '/graph_sprite'
         if not isdir(sprite_dir):
@@ -77,6 +79,9 @@ class Command(BaseCommand):
                 self.stdout.write(f"[{now()}] Updated numerics for {server['hostname']}")
 
             self.stdout.write(f"[{now()}] Finished collection {collection}")
+
+        end = time.time()
+        self.stdout.write(self.style.SUCCESS(f"Total time: {end - start:.2f} seconds."))
 
     def generate_sprite(self, collection_dir, graph_table, server):
         """Generate sprites for the given server using the given collection"""
