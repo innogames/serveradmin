@@ -23,6 +23,7 @@ from django.core.management.base import BaseCommand, CommandParser
 from django.db import transaction
 
 from adminapi import filters
+from adminapi.parse import parse_query
 from serveradmin.dataset import Query
 from serveradmin.graphite.models import (
     GRAPHITE_ATTRIBUTE_ID,
@@ -38,6 +39,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("--collections", nargs='*', type=str, help='Generate/update only these collections.')
+        parser.add_argument("--query", type=str, help="Generate/update only objects matching this Serveradmin query.")
 
     def handle(self, *args, **options):
         """The entry point of the command"""
@@ -49,7 +51,6 @@ class Command(BaseCommand):
         if not isdir(sprite_dir):
             mkdir(sprite_dir)
 
-        # We will make sure to generate a single sprite for a single hostname.
         collections = Collection.objects.filter(overview=True)
         if options['collections']:
             collections = collections.filter(name__in=options['collections'])
@@ -61,11 +62,15 @@ class Command(BaseCommand):
             if not isdir(collection_dir):
                 mkdir(collection_dir)
 
-            for server in Query(
-                {
-                    GRAPHITE_ATTRIBUTE_ID: collection.name,
-                    'state': filters.Not('retired'),
-                }):
+            query_filter = {
+                GRAPHITE_ATTRIBUTE_ID: collection.name,
+                "state": filters.Not("retired"),
+            }
+
+            if options["query"]:
+                query_filter = query_filter.update(**parse_query(options["query"]))
+
+            for server in Query(query_filter, ["hostname"]):
                 graph_table = collection.graph_table(server, sprite_params)
                 if graph_table:
                     self.generate_sprite(collection_dir, graph_table, server)
