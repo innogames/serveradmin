@@ -1,6 +1,6 @@
 """Serveradmin - Graphite Integration
 
-Copyright (c) 2022 InnoGames GmbH
+Copyright (c) 2023 InnoGames GmbH
 """
 
 import json
@@ -33,7 +33,7 @@ from serveradmin.serverdb.models import Server
 
 
 class Command(BaseCommand):
-    """Generate sprites from the overview graphics"""
+    """Generate sprites and update numeric values for collections."""
     help = __doc__
 
     def handle(self, *args, **kwargs):
