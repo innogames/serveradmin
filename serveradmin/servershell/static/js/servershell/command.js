@@ -215,7 +215,7 @@ servershell.commands = {
         servershell.submit_search();
     },
     perpage: function(limit) {
-        if (isNaN(limit) || limit < 0) {
+        if (isNaN(limit) || limit < 1) {
             servershell.alert(`${limit} must be a number greater zero!`, 'warning');
             return;
         }
