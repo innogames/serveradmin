@@ -85,7 +85,7 @@ def graph_table(request):
     graph_tables = []
     for hostname in servers.keys():
         graph_table = []
-        if request.GET.get('action') == 'Submit':
+        if request.GET.get('action') == 'Submit' and (request.GET.get('from') or request.GET.get('until')):
             custom_params = request.GET.urlencode()
             for collection in collections:
                 column = collection.graph_column(
@@ -126,8 +126,8 @@ def graph_table(request):
         'graph_table': graph_table,
         'grafana_links': grafana_links,
         'link': request.get_full_path(),
-        'from': request.GET.get('from', '-24h'),
-        'until': request.GET.get('until', 'now'),
+        'from': request.GET.get('from', ''),
+        'until': request.GET.get('until', ''),
     })
 
 

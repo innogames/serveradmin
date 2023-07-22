@@ -33,13 +33,13 @@
             <div class="form-group row input-controls">
                 <label for="from" class="col-sm-1 col-form-label">From:</label>
                 <div class="col-sm-8">
-                    <input id="from" name="from" type="text" value="{{ from }}" class="form-control form-control-sm" />
+                    <input id="from" name="from" type="text" value="{{ from }}" placeholder="e.g. -24h" class="form-control form-control-sm" />
                 </div>
             </div>
             <div class="form-group row input-controls">
                 <label for="until" class="col-sm-1 col-form-label">Until:</label>
                 <div class="col-sm-8">
-                    <input id="until" name="until" type="text" value="{{ until }}" class="form-control form-control-sm" />
+                    <input id="until" name="until" type="text" value="{{ until }}" placeholder="e.g. now" class="form-control form-control-sm" />
                 </div>
             </div>
             {% for hostname in hostnames %}
