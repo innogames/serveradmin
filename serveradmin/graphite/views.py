@@ -81,21 +81,22 @@ def graph_table(request):
             )
 
     # Prepare the graph tables for all hosts
-    graph_table = []
     graph_tables = []
     for hostname in servers.keys():
-        graph_table = []
+        host_graph_table = []
+
         if request.GET.get('action') == 'Submit' and (request.GET.get('from') or request.GET.get('until')):
             custom_params = request.GET.urlencode()
             for collection in collections:
                 column = collection.graph_column(
                     servers[hostname], custom_params
                 )
-                graph_table += [(k, [('Custom', v)]) for k, v in column]
+                host_graph_table += [(k, [('Custom', v)]) for k, v in column]
         else:
             for collection in collections:
-                graph_table += collection.graph_table(servers[hostname])
-        graph_tables.append(graph_table)
+                host_graph_table += collection.graph_table(servers[hostname])
+
+        graph_tables.append(host_graph_table)
 
     if len(servers) > 1:
         # Add hostname to the titles
@@ -103,10 +104,10 @@ def graph_table(request):
             graph_tables[order] = [(k + ' on ' + hostname, v) for k, v in
                                    graph_tables[order]]
 
-        # Combine them
-        graph_table = []
-        for combined_tables in zip(*graph_tables):
-            graph_table += list(combined_tables)
+    # Combine them
+    all_graph_tables = []
+    for combined_tables in zip(*graph_tables):
+        all_graph_tables += list(combined_tables)
 
     # One can optionally specify a Grafana dashboard which has a parameter
     # called SERVER that receives a coded hostname as alternative to the
@@ -123,7 +124,7 @@ def graph_table(request):
     return TemplateResponse(request, 'graphite/graph_table.html', {
         'hostnames': servers.keys(),
         'descriptions': descriptions,
-        'graph_table': graph_table,
+        'graph_table': all_graph_tables,
         'grafana_links': grafana_links,
         'link': request.get_full_path(),
         'from': request.GET.get('from', ''),
