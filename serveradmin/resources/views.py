@@ -27,17 +27,23 @@ from serveradmin.graphite.views import graph
 def index(request):
     """The hardware resources page"""
     term = request.GET.get('term', request.session.get('term', ''))
+    current_collection_id = request.GET.get('current_collection', request.session.get('current_collection'))
     collections = list(Collection.objects.filter(overview=True))
 
-    # If a graph collection was specified, use it.  Otherwise use the first one
-    for collection in collections:
-        if request.GET.get('current_collection'):
-            if str(collection.id) != request.GET['current_collection']:
-                continue
-        current_collection = collection
-        break
+    # If a graph collection was specified, use it. Otherwise, use the first one
+    if not current_collection_id:
+        current_collection = collections[0]
     else:
-        return HttpResponseBadRequest('No matching current collection')
+        for collection in collections:
+            if collection.id != int(current_collection_id):
+                continue
+            current_collection = collection
+            break
+        else:
+            return HttpResponseBadRequest(f"Collection {current_collection_id} does not exist!")
+
+    # Save latest choice for collection
+    request.session['current_collection'] = current_collection.id
 
     template_info = {
         'search_term': term,
@@ -102,7 +108,7 @@ def index(request):
         attribute_ids.append(relation.attribute_id)
 
     hosts = OrderedDict()
-    filters = {GRAPHITE_ATTRIBUTE_ID: collection.name}
+    filters = {GRAPHITE_ATTRIBUTE_ID: current_collection.name}
     if len(hostnames) > 0:
         filters['hostname'] = Any(*hostnames)
         for server in Query(filters, attribute_ids):
@@ -126,7 +132,7 @@ def index(request):
     except (PageNotAnInteger, EmptyPage):
         raise SuspiciousOperation('{} is not a valid!'.format(page))
 
-    sprite_url = settings.MEDIA_URL + 'graph_sprite/' + collection.name
+    sprite_url = settings.MEDIA_URL + 'graph_sprite/' + current_collection.name
     template_info.update({
         'columns': columns,
         'hosts': hosts_page,
