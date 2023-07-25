@@ -85,7 +85,7 @@ class Command(BaseCommand):
             self.stdout.write(f"[{now()}] Finished collection {collection}")
 
         end = time.time()
-        self.stdout.write(self.style.SUCCESS(f"Total time: {end - start:.2f} seconds."))
+        self.stdout.write(self.style.SUCCESS(f"[{now()}] Total time: {end - start:.2f} seconds."))
 
     def generate_sprite(self, collection_dir, server, collection, sprite_params):
         """Generate sprites for the given server using the given collection"""
@@ -170,8 +170,8 @@ class Command(BaseCommand):
             with build_opener(auth_handler).open(url) as response:
                 return response.read()
         except HTTPError as error:
-            self.stdout.write(self.style.NOTICE(f"Graphite returned {error} for {url}"))
+            self.stdout.write(self.style.NOTICE(f"[{now()}] Graphite returned {error} for {url}"))
         finally:
             end = time.time()
             if end - start > 10:
-                self.stdout.write(self.style.WARNING(f"Graphite request {url} took {end - start} seconds"))
+                self.stdout.write(self.style.WARNING(f"[{now()}] Graphite request {url} took {end - start} seconds"))
