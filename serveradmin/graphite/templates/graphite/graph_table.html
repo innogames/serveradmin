@@ -100,7 +100,7 @@
             <tr>
                 {% for column_name, graph in graph_column %}
                 <td>
-                    <img class="graph" src="{% url 'graphite_graph' %}?{{ graph }}"  alt="{{ name }} {{ column_name }}" />
+                    <img class="graph" title="Click to refresh graph!" src="{% url 'graphite_graph' %}?{{ graph }}"  alt="{{ name }} {{ column_name }}" />
                 </td>
                 {% endfor %}
             </tr>
@@ -133,4 +133,18 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block additional_scripts %}
+<script type="text/javascript">
+    $(document).ready(function() {
+        // When clicking on any graph reload the image to show latest data.
+        $('img.graph').on("click", function() {
+            let url = new URL(this.src);
+            url.searchParams.set("refresh", Date.now());
+
+            this.src = url.toString();
+        });
+    });
+</script>
 {% endblock %}
