@@ -53,6 +53,9 @@ if __name__ == '__main__':
                 'templates/servershell/*',
                 'templates/servershell/modals/*',
             ],
+            'serveradmin.nessus': [
+                'templates/nessus/*',
+            ]
         },
         entry_points={
             'console_scripts': [
