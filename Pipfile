@@ -22,6 +22,8 @@ dateparser = "~=1.1"
 # Use Twelve-factor methodology to configure environment variables
 django-environ = "<1.0.0"
 django_compressor = "<3.0.0"
+# Nessus scan
+requests = "<3.0.0"
 # Serveradmin extras:
 paramiko = "~=2.10"
 pexpect = "<5.0.0"
@@ -39,7 +41,6 @@ Werkzeug = "<3.0.0"
 # Used to package a single executable according to PEP 441
 pex = "<3.0.0"
 # Pex complains without requests
-requests = "<3.0.0"
 setuptools = "*"
 # Generate fake data for tests
 faker = "<14.0.0"
