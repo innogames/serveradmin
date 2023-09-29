@@ -14,16 +14,16 @@
 <div class="row">
     <div class="col-md-1"></div>
     <div class="controls col-md-9">
-        <form>
+        <form action="{% url 'nessus_config' %}" method="get">
             <p>
             <div class="form-group row input-controls">
-                <label for="host" class="col-sm-1 col-form-label">Hosts:</label>
+                <label for="host" class="col-sm-2 col-form-label">Hosts:</label>
                 <div class="col-sm-8">
                     <input id="hosts" name="hosts" type="text" value="{{ hostnames|join:", " }}" class="form-control form-control-sm" />
                 </div>
             </div>
             <div class="form-group row input-controls">
-                <label for="type" class="col-sm-1 col-form-label">Scan Type:</label>
+                <label for="type" class="col-sm-2 col-form-label">Scan Type:</label>
                 <div class="col-sm-8">
                     <select id="type" name="type" class="form-select form-control form-control-sm">
                         <option>network</option>
@@ -32,13 +32,13 @@
                 </div>
             </div>
             <div class="form-group row input-controls">
-                <label for="email" class="col-sm-1 col-form-label">Receiving email:</label>
+                <label for="email" class="col-sm-2 col-form-label">Receiving email:</label>
                 <div class="col-sm-8">
                     <input id="email" name="email" type="text" value="{{ email }}" class="form-control form-control-sm" />
                 </div>
             </div>
             <div class="form-group row input-controls buttons">
-                <input class="btn-success btn-lg" name="action" type="submit" value="Start Scan" action="/nessus" />
+                <input class="btn btn-sm btn-success" name="action" type="submit" value="Start Scan" />
             </div>
         </form>
     </div>

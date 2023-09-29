@@ -1,15 +1,12 @@
 """Serveradmin - Nessus Integration
 
-Copyright (c) 2019 InnoGames GmbH
+Copyright (c) 2023 InnoGames GmbH
 """
 
 import json
-import time
-import json
-import re
 import logging
-import requests
-import certifi
+import re
+import time
 from ipaddress import (
     IPv4Address,
     IPv4Network,
@@ -17,6 +14,10 @@ from ipaddress import (
     ip_network,
     AddressValueError,
 )
+
+import certifi
+import requests
+
 
 ca_certificates = certifi.where()
 
