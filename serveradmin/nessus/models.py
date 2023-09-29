@@ -7,6 +7,7 @@ import json
 import logging
 import re
 import time
+import requests
 from ipaddress import (
     IPv4Address,
     IPv4Network,
@@ -14,12 +15,6 @@ from ipaddress import (
     ip_network,
     AddressValueError,
 )
-
-import certifi
-import requests
-
-
-ca_certificates = certifi.where()
 
 
 class NessusAPI:
@@ -136,9 +131,7 @@ class NessusAPI:
         while (timeout <= 30) and (not success):
             while 1:
                 try:
-                    response = getattr(self.session, method)(
-                        url, data=data, verify=ca_certificates
-                    )
+                    response = getattr(self.session, method)(url, data=data)
                     break
                 except requests.RequestException as e:
                     self.logger.error(
