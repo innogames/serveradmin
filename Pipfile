@@ -35,7 +35,7 @@ sphinx-rtd-theme = "<2.0.0"
 # Provides runserver_plus and other gadgets
 django-extensions = "<4.0.0"
 # Required for runserver_plus to work
-Werkzeug = "<3.0.0"
+Werkzeug = "<4.0.0"
 # Used to package a single executable according to PEP 441
 pex = "<3.0.0"
 # Pex complains without requests
