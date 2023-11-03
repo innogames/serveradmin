@@ -591,8 +591,6 @@ class ServerRelationAttribute(ServerAttribute):
         index_together = [['attribute', 'value']]
 
     def save_value(self, value):
-        target_servertype = self.attribute.target_servertype
-
         try:
             target_server = Server.objects.get(hostname=value)
         except Server.DoesNotExist:
@@ -600,7 +598,8 @@ class ServerRelationAttribute(ServerAttribute):
                 'No server with hostname "{0}" exist.'.format(value)
             )
 
-        if target_server.servertype != target_servertype:
+        target_servertype = self.attribute.target_servertype
+        if target_servertype and target_server.servertype != target_servertype:
             raise ValidationError(
                 'Attribute "{0}" has to be from servertype "{1}".'
                 .format(self.attribute, self.attribute.target_servertype)
