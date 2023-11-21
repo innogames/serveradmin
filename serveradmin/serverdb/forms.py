@@ -22,7 +22,7 @@ class ServertypeAttributeAdminForm(forms.ModelForm):
 
     def clean(self):
         # It makes no sense to add inet or supernet attributes to hosts of
-        # ip_addr_type null because they would have to be empty anyways.
+        # ip_addr_type null because they would have to be empty anyway.
         inet_attribute = (
             self.cleaned_data['attribute'].type in ('inet', 'supernet') and
             self.instance.servertype.ip_addr_type == 'null'

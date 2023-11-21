@@ -49,6 +49,7 @@ IP_ADDR_TYPES = [
     ('null', 'null: intern_ip must be empty, no inet attributes'),
     ('host', 'host: intern_ip and inet must be an ip address and unique across all objects'),
     ('loadbalancer', 'loadbalancer: intern_ip and inet must be an ip address'),
+    ('simple_network', 'simple network: intern_ip and inet must be an ip network.'),
     ('network', 'network: intern_ip and inet must be an ip network, not overlapping with same servertype'),
 ]
 
@@ -469,10 +470,14 @@ class Server(models.Model):
                 is_unique_ip(self.intern_ip, self.server_id)
             elif ip_addr_type == 'loadbalancer':
                 is_ip_address(self.intern_ip)
-            elif ip_addr_type == 'network':
+            elif ip_addr_type == 'network' or ip_addr_type == 'simple_network':
                 is_network(self.intern_ip)
-                network_overlaps(self.intern_ip, self.servertype.servertype_id,
-                                 self.server_id)
+                if ip_addr_type == 'network':
+                    network_overlaps(
+                        self.intern_ip,
+                        self.servertype.servertype_id,
+                        self.server_id
+                    )
 
     def get_attributes(self, attribute):
         model = ServerAttribute.get_model(attribute.type)
@@ -690,10 +695,14 @@ class ServerInetAttribute(ServerAttribute):
             is_unique_ip(self.value, self.server.server_id)
         elif ip_addr_type == 'loadbalancer':
             is_ip_address(self.value)
-        elif ip_addr_type == 'network':
+        elif ip_addr_type == 'network' or ip_addr_type == 'simple_network':
             is_network(self.value)
-            network_overlaps(self.value, self.server.servertype_id,
-                             self.server.server_id)
+            if ip_addr_type == 'network':
+                network_overlaps(
+                    self.value,
+                    self.server.servertype_id,
+                    self.server.server_id
+                )
 
 
 class ServerMACAddressAttribute(ServerAttribute):

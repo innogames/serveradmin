@@ -278,7 +278,7 @@ class QueryMaterializer:
                     if servertype.ip_addr_type in ('host', 'loadbalancer'):
                         yield attribute.attribute_id, value.ip
                     else:
-                        assert servertype.ip_addr_type == 'network'
+                        assert servertype.ip_addr_type in ['network', 'simple_network']
                         yield attribute.attribute_id, value.network
             elif value is None:
                 yield attribute.attribute_id, None
