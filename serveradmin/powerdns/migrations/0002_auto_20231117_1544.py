@@ -22,7 +22,4 @@ class Migration(migrations.Migration):
                 ('source_value', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='+', to='serverdb.attribute')),
             ],
         ),
-        migrations.DeleteModel(
-            name='RecordSettings',
-        ),
     ]

@@ -13,14 +13,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='RecordSettings',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('record_type', models.TextField(verbose_name='record_type')),
-                ('domain', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='+', to='serverdb.attribute')),
-                ('servertype', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='serverdb.servertype')),
-                ('source_value', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='+', to='serverdb.attribute')),
-            ],
-        ),
+
     ]
