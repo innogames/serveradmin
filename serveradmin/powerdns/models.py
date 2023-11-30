@@ -2,26 +2,63 @@ import logging
 
 from django.db import models, connection
 from django.db.models import Q
-from django.utils.translation import gettext_lazy as _
 
+from serveradmin.powerdns.http_client.objects import RecordType
+from serveradmin.powerdns.view_sql import ViewSQL
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
-    ServerAttribute,
 )
+
+logger = logging.getLogger(__name__)
+
+
+# represents the view records
+class Record(models.Model):
+    """PowerDNS Record
+    See https://doc.powerdns.com/authoritative/backends/generic-postgresql.html#default-schema
+    """
+
+    object_id = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=255)
+    type = models.CharField(
+        max_length=8, choices=[(name.name, name.name) for name in RecordType]
+    )
+    content = models.CharField(max_length=65535)
+    domain = models.CharField(max_length=500)
+
+    class Meta:
+        managed = False
+        db_table = "records"
+
+    def __str__(self):
+        return f"{self.object_id} {self.name} {self.type} {self.domain}"
+
+
+class Domain(models.Model):
+    """PowerDNS Domain
+    Model to access domain in the PowerDNS db.
+    See https://doc.powerdns.com/authoritative/backends/generic-postgresql.html#default-schema
+    """
+    TYPES = [
+        ('MASTER', 'MASTER'),
+        ('SLAVE', 'SLAVE'),
+        ('NATIVE', 'NATIVE'),
+    ]
+
+    id = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=255, null=False)
+    type = models.CharField(max_length=6, null=False, choices=TYPES)
+
+    class Meta:
+        managed = False
+        db_table = 'domains'
 
 
 class RecordSetting(models.Model):
-    class RecordType(models.TextChoices):
-        A = "A", _("A")
-        AAAA = "AAAA", _("AAAA")
-        SSHFP = "SSHFP", _("SSHFP")
-        TXT = "TXT", _("TXT")
-        MX = "MX", _("MX")
-
     servertype = models.ForeignKey(Servertype, on_delete=models.CASCADE)
     record_type = models.CharField(
-        max_length=8, choices=RecordType.choices
+        max_length=8, choices=[(name.name, name.name) for name in RecordType]
     )
 
     source_value = models.ForeignKey(
@@ -36,8 +73,9 @@ class RecordSetting(models.Model):
     )
 
     domain = models.ForeignKey(
-        Attribute, on_delete=models.CASCADE, related_name="+"
-    )  # Restrict to relatation attribute
+        Attribute, on_delete=models.CASCADE, related_name="+",
+        blank=True, null=True
+    )  # todo: Restrict to relatation attribute
 
     class Meta:
         constraints = [
@@ -61,62 +99,8 @@ class RecordSetting(models.Model):
         super().save(*args, **kwargs)
 
         with connection.cursor() as cursor:
-            sql = self.get_record_view_sql()
+            # todo if view schema is safe, remove it and only REPLACE VIEW
+            cursor.execute('DROP VIEW IF EXISTS records')
+
+            sql = ViewSQL.get_record_view_sql()
             cursor.execute(sql)
-
-    # XXX: Put all methods to SQL module
-    def get_record_view_sql(self):
-        # XXX:
-        # - Avoid executing this for all settings
-        # - Escape parameters injected
-        sql = "CREATE OR REPLACE VIEW records (name, type, content) AS ("
-        sub_queries = []
-        for record_setting in RecordSetting.objects.all():
-            attribute_join = self.get_attribute_join(record_setting)
-            content_expression = self.get_content_expression(record_setting)
-
-            sub_queries.append(
-                f"""
-                SELECT 
-                    hostname as name,
-                    '{record_setting.record_type}' as type,
-                    {content_expression} as content,
-                    (SELECT hostname from server where server_id = domain.value) as domain_id            
-                FROM 
-                    server s
-                {attribute_join}
-                LEFT JOIN server_relation_attribute domain
-                    ON s.server_id = domain.server_id 
-                    AND domain.attribute_id = '{record_setting.domain}'
-                WHERE 
-                    servertype_id = '{record_setting.servertype}'
-            """
-            )
-        sql += " UNION ALL ".join(sub_queries)
-        sql += ")"
-
-        return sql
-
-    def get_attribute_join(self, record_setting):
-        if record_setting.source_value_special:
-            attribute_join = ""
-        else:
-            target_table = ServerAttribute.get_model(record_setting.source_value.type)._meta.db_table
-            attribute_join = f"""
-                JOIN {target_table} tt
-                    ON s.server_id = tt.server_id 
-                    AND tt.attribute_id = '{record_setting.source_value}'
-                    """
-        return attribute_join
-
-    def get_content_expression(self, record_setting):
-        if record_setting.source_value_special:
-            attribute = Attribute.specials[record_setting.source_value_special]
-            if attribute.type == 'inet':
-                return f"host(s.{attribute.attribute_id})"
-            else:
-                return f"s.{attribute.attribute_id}::text"
-        elif record_setting.source_value.type == "inet":
-            return "host(tt.value)"
-        else:
-            return "tt.value::text"

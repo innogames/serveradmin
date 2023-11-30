@@ -9,6 +9,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - ".docker/db/postgres.conf:/etc/postgresql/postgres.conf:ro"
+      - ".docker/db/pdns-db.sql:/docker-entrypoint-initdb.d/pdns-db.sql:ro"
       - postgres-data:/var/lib/postgresql/data
     ports:
       - "127.0.0.1:5432:5432"
@@ -22,6 +23,35 @@ services:
       - "127.0.0.1:8000:8000"
     depends_on:
       - db
+    stop_grace_period: 1s
+
+  pdns-auth:
+     build: .docker/pdns-auth
+     environment:
+       - GPGSQL_HOST=${POSTGRES_POWERDNS_HOST}
+       - GPGSQL_PORT=5432
+       - GPGSQL_DBNAME=${POSTGRES_POWERDNS_DB}
+       - GPGSQL_USER=${POSTGRES_POWERDNS_USER}
+       - GPGSQL_PASSWORD=${POSTGRES_POWERDNS_PASSWORD}
+     ports:
+       - "127.0.0.1:1053:53"
+       - "127.0.0.1:1053:53/udp"
+       - "0.0.0.0:8081:8081" # web api
+     depends_on:
+       - db
+       - web
+     stop_grace_period: 1s
+  pdns-admin:
+     image: powerdnsadmin/pda-legacy:latest
+     environment:
+       - SECRET_KEY=0815passwd
+     depends_on:
+       - pdns-auth
+     ports:
+       - "0.0.0.0:8082:80" # web api
+     volumes:
+       - pdns-admin-data:/data
 
 volumes:
   postgres-data:
+  pdns-admin-data:
