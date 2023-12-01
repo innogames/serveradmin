@@ -6,7 +6,7 @@ from django.apps import AppConfig
 from serveradmin.powerdns.signals import create_records, delete_records, update_records
 from serveradmin.serverdb.signals import post_commit
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__package__)
 
 
 class PowerdnsConfig(AppConfig):

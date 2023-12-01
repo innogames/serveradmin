@@ -1,6 +1,4 @@
-import logging
-
-from django.db import models, connection
+from django.db import models
 from django.db.models import Q
 
 from serveradmin.powerdns.http_client.objects import RecordType
@@ -10,13 +8,9 @@ from serveradmin.serverdb.models import (
     Attribute,
 )
 
-logger = logging.getLogger(__name__)
 
-
-# represents the view records
 class Record(models.Model):
-    """PowerDNS Record
-    See https://doc.powerdns.com/authoritative/backends/generic-postgresql.html#default-schema
+    """PowerDNS Record VIEW representation, so no real table!
     """
 
     object_id = models.IntegerField(primary_key=True)
@@ -33,26 +27,6 @@ class Record(models.Model):
 
     def __str__(self):
         return f"{self.object_id} {self.name} {self.type} {self.domain}"
-
-
-class Domain(models.Model):
-    """PowerDNS Domain
-    Model to access domain in the PowerDNS db.
-    See https://doc.powerdns.com/authoritative/backends/generic-postgresql.html#default-schema
-    """
-    TYPES = [
-        ('MASTER', 'MASTER'),
-        ('SLAVE', 'SLAVE'),
-        ('NATIVE', 'NATIVE'),
-    ]
-
-    id = models.IntegerField(primary_key=True)
-    name = models.CharField(max_length=255, null=False)
-    type = models.CharField(max_length=6, null=False, choices=TYPES)
-
-    class Meta:
-        managed = False
-        db_table = 'domains'
 
 
 class RecordSetting(models.Model):
@@ -80,8 +54,9 @@ class RecordSetting(models.Model):
     class Meta:
         constraints = [
             models.CheckConstraint(
-                # todo xor on NULL
-                check=Q(source_value=None) | Q(source_value_special=None),
+                # todo native xor seems to be not in django 3.2, please recheck
+                check=(Q(source_value__isnull=False) & Q(source_value_special__isnull=True)) |
+                      (Q(source_value__isnull=True) & Q(source_value_special__isnull=False)),
                 name="only_one_source_value",
             ),
         ]
@@ -95,12 +70,13 @@ class RecordSetting(models.Model):
 
         return display_name
 
+    # todo maybe use signals instead of overriding save/delete?
+    def delete(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        ViewSQL.update_view_schema()
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
-        with connection.cursor() as cursor:
-            # todo if view schema is safe, remove it and only REPLACE VIEW
-            cursor.execute('DROP VIEW IF EXISTS records')
-
-            sql = ViewSQL.get_record_view_sql()
-            cursor.execute(sql)
+        ViewSQL.update_view_schema()

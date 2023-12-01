@@ -1,8 +1,19 @@
 from serveradmin.serverdb.models import ServerAttribute, Attribute
+from django.db import connection
 
 
 class ViewSQL:
-    """Class to generate SQL for views for DNS related tables"""
+    """Class to manage the "records" View which represents all configured DNS
+    records bases on the serveradmin data."""
+
+    @classmethod
+    def update_view_schema(cls):
+        with connection.cursor() as cursor:
+            # todo if view schema is safe, remove it and only REPLACE VIEW
+            cursor.execute('DROP VIEW IF EXISTS records')
+
+            sql = cls.get_record_view_sql()
+            cursor.execute(sql)
 
     @classmethod
     def get_record_view_sql(cls):
@@ -10,6 +21,7 @@ class ViewSQL:
 
         # XXX:
         # - Escape parameters injected
+        # - todo: check materialized view with proper indexes
         sql = "CREATE OR REPLACE VIEW records (object_id, name, type, content, domain) AS ("
         sub_queries = []
         for record_setting in RecordSetting.objects.all():
@@ -85,6 +97,7 @@ class ViewSQL:
     def get_record_type_expression(cls, record_setting):
         if record_setting.record_type in ['A', 'AAAA']:
             # todo: magic okay here?
+            # if we duplicate the entries, we have way more query overhead and have to filter the other ones out.
             return f"case family({cls.get_content_expression(record_setting)}::inet) when 4 then 'A'::text else 'AAAA'::text end"
 
         return f"'{record_setting.record_type}'"
@@ -102,6 +115,6 @@ class ViewSQL:
         if record_setting.domain:
             return f"(SELECT hostname from server sd where server_id = domain.value)"
         elif record_setting.record_type == 'PTR':
-            return "'ip6.arpa'"  # todo ipv4/6
+            return f"case family({cls.get_content_expression(record_setting)}::inet) when 4 then 'in-addr.arpa' else 'ip6.arpa' end"
         else:
             return 'get_last_two_parts(s.hostname)'

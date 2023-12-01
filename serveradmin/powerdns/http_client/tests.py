@@ -2,7 +2,7 @@ import json
 import unittest
 
 from powerdns.http_client.objects import RecordContent, RRSet, RRSetEncoder
-from serveradmin.powerdns.http_client.utils import ensure_trailing_dot, quote_string
+from serveradmin.powerdns.http_client.utils import ensure_canonical, quote_string
 
 
 class Records(unittest.TestCase):
@@ -10,7 +10,7 @@ class Records(unittest.TestCase):
         rrsets = []
         rrset = RRSet()
         rrset.type = "A"
-        rrset.name = ensure_trailing_dot("foo.example.com")
+        rrset.name = ensure_canonical("foo.example.com")
         rrset.ttl = 3600
         rrset.records = [
             RecordContent("127.0.0.1"),
@@ -32,7 +32,7 @@ class TestUtils(unittest.TestCase):
             ('test.de', 'test.de.'),
         ]
         for test_case in test_cases:
-            self.assertEqual(ensure_trailing_dot(test_case[0]), test_case[1])
+            self.assertEqual(ensure_canonical(test_case[0]), test_case[1])
 
     def test_quote_string(self):
         test_cases = [
