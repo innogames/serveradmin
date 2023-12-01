@@ -4,10 +4,10 @@ import requests
 
 from django.conf import settings
 
-from serveradmin.powerdns.http_client.utils import ensure_trailing_dot
+from serveradmin.powerdns.http_client.utils import ensure_canonical, divide_chunks
 from serveradmin.powerdns.http_client.objects import RRSet, RRSetEncoder, RecordContent
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__package__)
 
 
 class PowerDNSApiClient:
@@ -15,44 +15,42 @@ class PowerDNSApiClient:
     See https://doc.powerdns.com/authoritative/http-api/zone.html
     """
 
+    CHUNK_SIZE = 500
+
     def __init__(self):
-        self.endpoint = settings.POWERDNS_API_ENDPOINT
-        self.api_key = settings.POWERDNS_API_SECRET_KEY
-        self.server_id = settings.POWERDNS_API_SERVER_ID
+        self.api_url = f"{settings.POWERDNS_API_ENDPOINT}/api/v1/servers/{settings.POWERDNS_API_SERVER_ID}"
         self.headers = {
-            'X-API-Key': self.api_key,
+            'X-API-Key': settings.POWERDNS_API_SECRET_KEY,
             'Content-Type': 'application/json'
         }
 
     def get_zones(self):
-        url = f"{self.endpoint}/api/v1/servers/{self.server_id}/zones"
+        url = f"{self.api_url}/zones"
         response = requests.get(url, headers=self.headers)
         self._handle_response_errors(response)
 
         return response.json()
 
     def get_zone(self, zone: str):
-        zone = ensure_trailing_dot(zone)
+        zone = ensure_canonical(zone)
 
-        url = f"{self.endpoint}/api/v1/servers/{self.server_id}/zones/{zone}"
+        url = f"{self.api_url}/zones/{zone}"
         response = requests.get(url, headers=self.headers)
         self._handle_response_errors(response)
 
-        logger.warning("matze44", response.text)
-        logger.warning("matze45", response.json())
-
         return response.json()
 
-    def get_rrsets(self, zone: str, domain_name: str):
-        zone = ensure_trailing_dot(zone)
+    def get_rrsets(self, zone: str, domain_name: str) -> dict[str, RRSet]:
+        """Get all RRSet objects for a given domain name, indexed by record type"""
+        zone = ensure_canonical(zone)
 
-        url = f"{self.endpoint}/api/v1/servers/{self.server_id}/zones/{zone}?rrset_name={domain_name}"
+        url = f"{self.api_url}/zones/{zone}?rrset_name={domain_name}"
         response = requests.get(url, headers=self.headers)
         self._handle_response_errors(response)
 
         data = response.json()['rrsets']
 
-        rrsets = []
+        rrsets = {}
         for raw in data:
             rrset = RRSet()
             rrset.name = raw['name']
@@ -61,14 +59,14 @@ class PowerDNSApiClient:
             rrset.records = []
             for record in raw['records']:
                 rrset.records.append(RecordContent(record['content']))
-            rrsets.append(rrset)
+            rrsets[rrset.type] = rrset
 
         return rrsets
 
     def create_zone(self, zone: str, kind: str):
-        zone = ensure_trailing_dot(zone)
+        zone = ensure_canonical(zone)
 
-        url = f"{self.endpoint}/api/v1/servers/{self.server_id}/zones"
+        url = f"{self.api_url}/zones"
         payload = {
             "name": zone,
             "kind": kind,
@@ -79,26 +77,29 @@ class PowerDNSApiClient:
         return response.json()
 
     def create_or_update_rrsets(self, zone: str, records: list[RRSet]):
-        zone = ensure_trailing_dot(zone)
+        zone = ensure_canonical(zone)
+        url = f"{self.api_url}/zones/{zone}"
 
-        url = f"{self.endpoint}/api/v1/servers/{self.server_id}/zones/{zone}"
-        payload = json.dumps({"rrsets": records}, cls=RRSetEncoder)
+        for chunk in divide_chunks(records, self.CHUNK_SIZE):
+            payload = json.dumps({"rrsets": chunk}, cls=RRSetEncoder)
 
-        logger.warning(f"matze payload {payload}")
+            logger.info(f"rrset update: {payload}")
 
-        response = requests.patch(url, headers=self.headers, data=payload)
-        self._handle_response_errors(response)
+            response = requests.patch(url, headers=self.headers, data=payload)
+            self._handle_response_errors(response)
 
+    # todo maybe remove again
     def delete_zone(self, zone: str):
-        zone = ensure_trailing_dot(zone)
+        zone = ensure_canonical(zone)
 
-        url = f"{self.endpoint}/api/v1/servers/{self.server_id}/zones/{zone}."
+        url = f"{self.api_url}/zones/{zone}."
         response = requests.delete(url, headers=self.headers)
         self._handle_response_errors(response)
 
         return response.json()
 
-    def _handle_response_errors(self, response):
+    @staticmethod
+    def _handle_response_errors(response):
         if response.status_code >= 400:
             raise PowerDNSApiException(f"Error {response.status_code}: {response.text}")
 
