@@ -1,8 +1,9 @@
 import logging
+from typing import List, Dict
 
-from serveradmin.powerdns.http_client.client import PowerDNSApiClient, PowerDNSApiException
-from serveradmin.powerdns.http_client.objects import RecordContent, get_ttl, RRSet
-from serveradmin.powerdns.http_client.utils import ensure_canonical, quote_string
+from serveradmin.powerdns.sync.client import PowerDNSApiClient, PowerDNSApiException
+from serveradmin.powerdns.sync.objects import RecordContent, RRSet
+from serveradmin.powerdns.sync.utils import ensure_canonical, quote_string
 
 logger = logging.getLogger(__package__)
 
@@ -17,7 +18,7 @@ def sync_records(records: list):
             dns_client.get_zone(zone)
         except PowerDNSApiException:
             logging.info(f"Creating new zone {zone}")
-            dns_client.create_zone(zone, "Native")  # todo which type?
+            dns_client.create_zone(zone, "Native")
 
         # todo we have to loop over all domain names not just whole zone..
         # convert our database records to PowerDNS RRSet objects and push via HTTP
@@ -27,31 +28,31 @@ def sync_records(records: list):
 
         dns_client.create_or_update_rrsets(zone, diff)
 
-    # todo: only send one /notify here in the end to trigger AXFR process?
+        # todo: only send one /notify here in the end to trigger AXFR process?
+        dns_client.notify(zone)
 
 
-def get_changed_records(all_actuals: dict[str, RRSet], all_expected: list[RRSet]) -> list[RRSet]:
-
+def get_changed_records(all_actual: Dict[str, RRSet], all_expected: List[RRSet]) -> List[RRSet]:
     final_changes = []
     for expected in all_expected:
-        if expected.type not in all_actuals:
+        if expected.type not in all_actual:
             # new record type -> keep!
             final_changes.append(expected)
             continue
 
         # todo filter out unchanged ones properly
-        if all_actuals[expected.type] == expected:
+        if all_actual[expected.type] == expected:
             # same contents -> keep!
-            logger.info(f"Record {expected.name} {expected.type} are same a:{str(all_actuals[expected.type])} r:{str(expected)}")
+            logger.info(f"Record {expected.name} {expected.type} are same a:{str(all_actual[expected.type])} r:{str(expected)}")
         else:
-            logger.info(f"Record {expected.name} {expected.type} are NOT same a:{str(all_actuals[expected.type])} r:{str(expected)}")
+            logger.info(f"Record {expected.name} {expected.type} are NOT same a:{str(all_actual[expected.type])} r:{str(expected)}")
             final_changes.append(expected)
         # todo DELETE old ones
 
     return final_changes
 
 
-def group_by_zone(records: list) -> dict[str, list]:
+def group_by_zone(records: list) -> Dict[str, list]:
     records_by_zone = {}
     for record in records:
         if record.domain not in records_by_zone:
@@ -61,7 +62,7 @@ def group_by_zone(records: list) -> dict[str, list]:
     return records_by_zone
 
 
-def db_records_to_pdns_rrsets(records: list) -> list[RRSet]:
+def db_records_to_pdns_rrsets(records: list) -> List[RRSet]:
     """Convert database records to PowerDNS RRSet objects
     This groups the records by name and type and creates a RRSet object for each
     """
@@ -97,3 +98,7 @@ def db_records_to_pdns_rrsets(records: list) -> list[RRSet]:
             rrsets.append(rrset)
 
     return rrsets
+
+def get_ttl():
+    """todo: somehow configurable via RecordsSettings?"""
+    return 300

@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION get_last_two_parts(domain VARCHAR)
+CREATE OR REPLACE FUNCTION get_dns_zone(domain VARCHAR)
 RETURNS VARCHAR AS $$
 DECLARE
   parts TEXT[];

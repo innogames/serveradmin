@@ -2,7 +2,7 @@ import json
 import unittest
 
 from powerdns.http_client.objects import RecordContent, RRSet, RRSetEncoder
-from serveradmin.powerdns.http_client.utils import ensure_canonical, quote_string
+from serveradmin.powerdns.sync.utils import ensure_canonical, quote_string
 
 
 class Records(unittest.TestCase):

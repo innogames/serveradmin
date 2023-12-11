@@ -1,11 +1,13 @@
 import json
 import logging
+from typing import Dict, List
+
 import requests
 
 from django.conf import settings
 
-from serveradmin.powerdns.http_client.utils import ensure_canonical, divide_chunks
-from serveradmin.powerdns.http_client.objects import RRSet, RRSetEncoder, RecordContent
+from serveradmin.powerdns.sync.utils import ensure_canonical, divide_chunks
+from serveradmin.powerdns.sync.objects import RRSet, RRSetEncoder, RecordContent
 
 logger = logging.getLogger(__package__)
 
@@ -40,7 +42,7 @@ class PowerDNSApiClient:
 
         return response.json()
 
-    def get_rrsets(self, zone: str, domain_name: str) -> dict[str, RRSet]:
+    def get_rrsets(self, zone: str, domain_name: str) -> Dict[str, RRSet]:
         """Get all RRSet objects for a given domain name, indexed by record type"""
         zone = ensure_canonical(zone)
 
@@ -76,7 +78,7 @@ class PowerDNSApiClient:
 
         return response.json()
 
-    def create_or_update_rrsets(self, zone: str, records: list[RRSet]):
+    def create_or_update_rrsets(self, zone: str, records: List[RRSet]):
         zone = ensure_canonical(zone)
         url = f"{self.api_url}/zones/{zone}"
 
@@ -88,12 +90,22 @@ class PowerDNSApiClient:
             response = requests.patch(url, headers=self.headers, data=payload)
             self._handle_response_errors(response)
 
-    # todo maybe remove again
+    # todo maybe remove again, as it should not be needed here
     def delete_zone(self, zone: str):
         zone = ensure_canonical(zone)
 
-        url = f"{self.api_url}/zones/{zone}."
+        url = f"{self.api_url}/zones/{zone}"
         response = requests.delete(url, headers=self.headers)
+        self._handle_response_errors(response)
+
+        return response.json()
+
+    def notify(self, zone: str):
+        """Send a DNS NOTIFY to all slaves."""
+
+        zone = ensure_canonical(zone)
+        url = f"{self.api_url}/zones/{zone}/notify"
+        response = requests.put(url, headers=self.headers)
         self._handle_response_errors(response)
 
         return response.json()

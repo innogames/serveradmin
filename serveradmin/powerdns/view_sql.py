@@ -22,7 +22,7 @@ class ViewSQL:
         # XXX:
         # - Escape parameters injected
         # - todo: check materialized view with proper indexes
-        sql = "CREATE OR REPLACE VIEW records (object_id, name, type, content, domain) AS ("
+        sql = "CREATE OR REPLACE VIEW records (object_id, name, type, content, domain, zone) AS ("
         sub_queries = []
         for record_setting in RecordSetting.objects.all():
             name_expression = cls.get_name_expression(record_setting)
@@ -30,23 +30,24 @@ class ViewSQL:
             content_expression = cls.get_content_expression(record_setting)
             domain_expression = cls.get_domain_expression(record_setting)
             attribute_join = cls.get_attribute_join(record_setting)
+            domain_join = cls.get_domain_join(record_setting)
             if record_setting.record_type == 'PTR':
                 content_expression = 's.hostname'
 
+            # todo: exclude retired ones?!
             sub_queries.append(
                 f"""
                 SELECT 
                     s.server_id as object_id,
                     {name_expression} as name,
                     {type_expression} as type,
-                    {content_expression}::text as content,
-                    {domain_expression} as domain         
+                    {content_expression} as content,
+                    {domain_expression} as domain,
+                    get_dns_zone({domain_expression}) as zone
                 FROM 
                     server s
                 {attribute_join}
-                LEFT JOIN server_relation_attribute domain
-                    ON s.server_id = domain.server_id 
-                    AND domain.attribute_id = '{record_setting.domain}'
+                {domain_join}
                 WHERE 
                     s.servertype_id = '{record_setting.servertype}'
             """
@@ -61,15 +62,16 @@ class ViewSQL:
         if record_setting.source_value_special:
             attribute = Attribute.specials[record_setting.source_value_special]
             if attribute.type == 'inet':
+                # get plain IP address from inet (which also contains the netmask)
                 return f"host(s.{attribute.attribute_id})"
             else:
-                return f"s.{attribute.attribute_id}"
+                return f"s.{attribute.attribute_id}::text"
         elif record_setting.source_value.type == "inet":
             return "host(tt.value)"
         elif record_setting.source_value.type == "relation":
             return "rs.hostname"
         else:
-            return "tt.value"
+            return "tt.value::text"
 
     @staticmethod
     def get_attribute_join(record_setting):
@@ -96,7 +98,7 @@ class ViewSQL:
     @classmethod
     def get_record_type_expression(cls, record_setting):
         if record_setting.record_type in ['A', 'AAAA']:
-            # todo: magic okay here?
+            # todo: is this magic okay here?
             # if we duplicate the entries, we have way more query overhead and have to filter the other ones out.
             return f"case family({cls.get_content_expression(record_setting)}::inet) when 4 then 'A'::text else 'AAAA'::text end"
 
@@ -104,6 +106,10 @@ class ViewSQL:
 
     @classmethod
     def get_name_expression(cls, record_setting):
+        if record_setting.domain:
+            # todo mhm this is not really nice yes, as we map around things...
+            return f"(SELECT hostname from server sd where server_id = domain.value)"
+
         if record_setting.record_type == 'PTR':
             content = cls.get_content_expression(record_setting)
             return f"public.ptr({content}::inet)"
@@ -113,8 +119,16 @@ class ViewSQL:
     @classmethod
     def get_domain_expression(cls, record_setting):
         if record_setting.domain:
-            return f"(SELECT hostname from server sd where server_id = domain.value)"
+            return f"(SELECT get_dns_zone(hostname) from server sd where server_id = domain.value)"
         elif record_setting.record_type == 'PTR':
             return f"case family({cls.get_content_expression(record_setting)}::inet) when 4 then 'in-addr.arpa' else 'ip6.arpa' end"
         else:
-            return 'get_last_two_parts(s.hostname)'
+            return 'get_dns_zone(s.hostname)'
+
+    @classmethod
+    def get_domain_join(cls, record_setting):
+        if record_setting.domain:
+            return f"""  LEFT JOIN server_relation_attribute domain
+                            ON s.server_id = domain.server_id 
+                            AND domain.attribute_id = '{record_setting.domain}'"""
+        return ""

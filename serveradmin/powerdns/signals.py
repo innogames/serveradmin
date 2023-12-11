@@ -1,7 +1,7 @@
 import logging
 import time
 
-from serveradmin.powerdns.sync import sync_records
+from serveradmin.powerdns.sync.sync import sync_records
 from serveradmin.common.utils import profile
 
 logger = logging.getLogger(__package__)
@@ -37,6 +37,7 @@ def delete_records(sender, **kwargs):
     from serveradmin.powerdns.models import Record
 
     object_ids = kwargs['deleted']
+    # todo fetch deleted entries beforehand to get consistent state to sync?
     records = Record.objects.filter(object_id__in=object_ids).all()
     logger.error(f"matze to delete {records}")
 
@@ -63,4 +64,4 @@ def update_records(sender, **kwargs):
 
     start = time.time()
     sync_records(records)
-    logger.info(f"Matze Sync took {time.time() - start}s")
+    logger.info(f"DNS sync took {time.time() - start}s")

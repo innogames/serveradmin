@@ -1,7 +1,7 @@
 from django.db import models
 from django.db.models import Q
 
-from serveradmin.powerdns.http_client.objects import RecordType
+from serveradmin.powerdns.sync.objects import RecordType
 from serveradmin.powerdns.view_sql import ViewSQL
 from serveradmin.serverdb.models import (
     Servertype,
@@ -20,6 +20,7 @@ class Record(models.Model):
     )
     content = models.CharField(max_length=65535)
     domain = models.CharField(max_length=500)
+    zone = models.CharField(max_length=500)
 
     class Meta:
         managed = False
