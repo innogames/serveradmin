@@ -2,6 +2,11 @@ import json
 from enum import Enum
 from typing import List
 
+"""
+The following classes are used to represent the data that is sent to the PowerDNS API.
+The API expects JSON and the classes are used to convert the data to JSON.
+"""
+
 RecordType = Enum('record_type', [
     'A',
     'AAAA',
@@ -73,7 +78,3 @@ class RRSetEncoder(json.JSONEncoder):
         else:
             return super().default(obj)
 
-
-def get_ttl():
-    """todo: somehow configurable via RecordsSettings?"""
-    return 300

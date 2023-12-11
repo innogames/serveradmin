@@ -22,15 +22,18 @@ class RecordAdmin(admin.ModelAdmin):
         'type',
         'content',
         'domain',
+        'zone',
     ]
     list_filter = [
         'type',
         'domain',
+        'zone',
     ]
     search_fields = [
         'name',
         'content',
         'domain',
+        'zone',
     ]
 
     # todo is there a cleaner way to block modification on the VIEW?

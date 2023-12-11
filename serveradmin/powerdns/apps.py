@@ -10,7 +10,6 @@ logger = logging.getLogger(__package__)
 
 
 class PowerdnsConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
     name = 'serveradmin.powerdns'
 
     def ready(self):
