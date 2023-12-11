@@ -16,7 +16,7 @@ from serveradmin.serverdb.models import (
     ServertypeAttribute,
     Server,
     ServerAttribute,
-    ServerRelationAttribute,
+    ServerRelationAttribute
 )
 
 
@@ -116,12 +116,9 @@ class QueryMaterializer:
         """Add the attributes to the results"""
         for key, attributes in self._attributes_by_type.items():
             if key == 'supernet':
-                for attribute in attributes:
-                    self._add_supernet_attribute(attribute, (
-                        s
-                        for st in self._servertype_ids_by_attribute[attribute]
-                        for s in servers_by_type[st]
-                    ))
+                # Add supernets only after all other attributes.
+                # Some might be needed for supernet calculation.
+                continue
             elif key == 'domain':
                 for attribute in attributes:
                     self._add_domain_attribute(attribute, [
@@ -160,6 +157,15 @@ class QueryMaterializer:
                         sa.get_value(),
                     )
 
+        for key, attributes in self._attributes_by_type.items():
+            if key == 'supernet':
+                for attribute in attributes:
+                    self._add_supernet_attribute(attribute, (
+                        s
+                        for st in self._servertype_ids_by_attribute[attribute]
+                        for s in servers_by_type[st]
+                    ))
+
     def _add_related_attributes(self, servers_by_type):
         for attribute, sa in self._related_servertype_attributes:
             self._add_related_attribute(attribute, sa, servers_by_type)
@@ -185,24 +191,35 @@ class QueryMaterializer:
         This function takes advantage of networks in the same servertype not
         overlapping with each other.
         """
-        target = None
-        for source in sorted(servers, key=lambda s: _sort_key(s.intern_ip)):
-            # Check the previous target
-            if target is not None:
-                network = target.intern_ip.network
-                if network.version != source.intern_ip.version:
-                    target = None
-                elif network.broadcast_address < source.intern_ip.ip:
-                    target = None
-                elif source.intern_ip not in network:
-                    continue
+
+        # Sort servers by IP addresses so that when iterating over them
+        # subsequent servers might belong to the same supernet.
+        servers_sorted = sorted(servers, key=lambda s:
+            (_sort_key(s.intern_ip),) +  # TODO: Remove "intern_ip" support
+            tuple(x for x in self._server_attributes[s] if x.supernet)
+        )
+
+        supernet = None
+        cached_address = None
+        cached_attribute = None
+
+        for server in servers_sorted:
+            # Check if the current server belongs to a supernet found
+            # for the previous server.
+            if supernet is not None:
+                # TODO: Remove "intern_ip" support.
+                if cached_attribute is None:
+                    server_address = server.intern_ip
+                else:
+                    server_address = self._server_attributes[server][cached_attribute].value
+                if server_address.ip not in cached_address.network:
+                    supernet = None  # It will be re-assigned in the next step.
+
             # Check for a new target
-            if target is None and source.intern_ip:
-                try:
-                    target = source.get_supernet(attribute.target_servertype)
-                except Server.DoesNotExist:
-                    continue
-            self._server_attributes[source][attribute] = target
+            if supernet is None:
+                supernet, cached_address, cached_attribute = server.get_supernet(attribute.target_servertype)
+
+            self._server_attributes[server][attribute] = supernet
 
     def _add_related_attribute(
         self, attribute, servertype_attribute, servers_by_type
@@ -271,7 +288,7 @@ class QueryMaterializer:
             if attribute not in self._joined_attributes:
                 continue
 
-            if attribute.type == 'inet':
+            if attribute.type in ['inet', 'inet4', 'inet6']:
                 if value is None:
                     yield attribute.attribute_id, None
                 else:
