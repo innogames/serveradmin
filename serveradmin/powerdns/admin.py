@@ -3,6 +3,23 @@ from .models import RecordSetting, Record
 from .sync.utils import get_dns_zone
 
 
+class ZoneListFilter(admin.SimpleListFilter):
+    title = 'Zone'
+    parameter_name = 'zone'
+
+    def lookups(self, request, model_admin):
+        # Fetch all unique domain values from records and calculate unique zones
+        domains = set(model_admin.model.objects.distinct('domain').values_list('domain', flat=True))
+        zones = set(get_dns_zone(domain) for domain in domains)
+
+        return [(zone, zone) for zone in sorted(zones)]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(domain__endswith=self.value())
+        return queryset
+
+
 class RecordSettingAdmin(admin.ModelAdmin):
     list_display = [
         'servertype',
@@ -27,7 +44,7 @@ class RecordAdmin(admin.ModelAdmin):
     ]
     list_filter = [
         'type',
-        'domain',
+        ZoneListFilter
     ]
     search_fields = [
         'name',
@@ -39,7 +56,6 @@ class RecordAdmin(admin.ModelAdmin):
     def get_zone(self, obj: Record) -> str:
         return obj.get_zone()
 
-    # todo is there a cleaner way to block modification on the VIEW?
     def has_change_permission(self, request, obj=None):
         return False
 

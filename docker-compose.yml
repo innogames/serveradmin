@@ -49,6 +49,8 @@ services:
        - GPGSQL_USER=${POSTGRES_POWERDNS_SECONDARY_USER}
        - GPGSQL_PASSWORD=${POSTGRES_POWERDNS_SECONDARY_PASSWORD}
      ports:
+       - "127.0.0.1:1054:53"
+       - "127.0.0.1:1054:53/udp"
        - "0.0.0.0:8083:8081" # web api of secondary
      depends_on:
        - pdns-auth
