@@ -21,7 +21,7 @@ def sync_records(records: list):
         try:
             dns_client.get_zone(zone)
         except PowerDNSApiException:
-            print(f"Creating new zone {zone}")
+            logger.info(f"Creating new zone {zone}")
             dns_client.create_zone(zone, "Primary")
 
         # first we have to fetch all relevant existing records from powerdns to check for diff

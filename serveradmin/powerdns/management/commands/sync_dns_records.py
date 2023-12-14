@@ -23,7 +23,7 @@ class Command(BaseCommand):
         records = Record.objects
 
         if options['domain']:
-            records = records.filter(domain=options['domain'])
+            records = records.filter(domain__endswith=options['domain'])
         records = records.all()
 
         start = time.time()

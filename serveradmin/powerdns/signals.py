@@ -18,10 +18,11 @@ def create_records(sender, **kwargs):
     if not kwargs['created']:
         return
 
-    for new_object in kwargs['created']:
-        servertype = new_object['servertype']
+    object_ids = [changed['object_id'] for changed in kwargs['created']]
 
-        logger.error(f"matze to create {servertype} {new_object}")
+    from serveradmin.powerdns.models import Record
+    records = Record.objects.filter(object_id__in=object_ids).all()
+    sync(records)
 
 
 @profile
@@ -37,9 +38,12 @@ def delete_records(sender, **kwargs):
     from serveradmin.powerdns.models import Record
 
     object_ids = kwargs['deleted']
+
+    logger.info(f"object to delete {kwargs['deleted']}")
+
     # todo fetch deleted entries beforehand to get consistent state to sync?
     records = Record.objects.filter(object_id__in=object_ids).all()
-    logger.error(f"matze to delete {records}")
+    sync(records)
 
 
 @profile
@@ -57,11 +61,14 @@ def update_records(sender, **kwargs):
     from serveradmin.powerdns.models import Record
     object_ids = [changed['object_id'] for changed in kwargs['changed']]
     records = Record.objects.filter(object_id__in=object_ids).all()
-    logger.error(f"matze records {records}")
+
+    sync(records)
+
+
+def sync(records):
     if not records:
-        # nothing DNS related changed
         return
 
     start = time.time()
     sync_records(records)
-    logger.info(f"DNS sync took {time.time() - start}s")
+    logger.info(f"DNS sync of {len(records)} took {time.time() - start}s {records}")
