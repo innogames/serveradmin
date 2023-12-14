@@ -42,11 +42,14 @@ class PowerDNSApiClient:
 
         return response.json()
 
-    def get_rrsets(self, zone: str, domain_name: str) -> Dict[str, RRSet]:
-        """Get all RRSet objects for a given domain name, indexed by record type"""
+    def get_rrsets(self, zone: str, domain_filter: str = '') -> Dict[str, Dict[str, RRSet]]:
+        """Get all RRSet objects for a given zone name, indexed by name and record type"""
         zone = ensure_canonical(zone)
 
-        url = f"{self.api_url}/zones/{zone}?rrset_name={domain_name}"
+        url = f"{self.api_url}/zones/{zone}"
+        if domain_filter:
+            url = url + f"?rrset_name={domain_filter}"
+
         response = requests.get(url, headers=self.headers)
         self._handle_response_errors(response)
 
@@ -58,10 +61,14 @@ class PowerDNSApiClient:
             rrset.name = raw['name']
             rrset.type = raw['type']
             rrset.ttl = raw['ttl']
-            rrset.records = []
+            rrset.records = set()
             for record in raw['records']:
-                rrset.records.append(RecordContent(record['content']))
-            rrsets[rrset.type] = rrset
+                rrset.records.add(RecordContent(record['content']))
+
+            if rrset.name not in rrsets:
+                rrsets[rrset.name] = {}
+
+            rrsets[rrset.name][rrset.type] = rrset
 
         return rrsets
 
@@ -89,16 +96,6 @@ class PowerDNSApiClient:
 
             response = requests.patch(url, headers=self.headers, data=payload)
             self._handle_response_errors(response)
-
-    # todo maybe remove again, as it should not be needed here
-    def delete_zone(self, zone: str):
-        zone = ensure_canonical(zone)
-
-        url = f"{self.api_url}/zones/{zone}"
-        response = requests.delete(url, headers=self.headers)
-        self._handle_response_errors(response)
-
-        return response.json()
 
     def notify(self, zone: str):
         """Send a DNS NOTIFY to all slaves."""

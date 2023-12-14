@@ -14,11 +14,6 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
-            "--type",
-            type=str,
-            help="Limit sync to given DNS type, like A or TXT.",
-        )
-        parser.add_argument(
             "--domain",
             type=str,
             help="Limit sync to given domain, like eu.forgeofempires.com or sunrisevillage.com",
@@ -29,8 +24,6 @@ class Command(BaseCommand):
 
         if options['domain']:
             records = records.filter(domain=options['domain'])
-        if options['type']:
-            records = records.filter(type=options['type'].upper())
         records = records.all()
 
         start = time.time()

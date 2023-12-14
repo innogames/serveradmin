@@ -2,6 +2,7 @@ from django.db import models
 from django.db.models import Q
 
 from serveradmin.powerdns.sync.objects import RecordType
+from serveradmin.powerdns.sync.utils import get_dns_zone
 from serveradmin.powerdns.view_sql import ViewSQL
 from serveradmin.serverdb.models import (
     Servertype,
@@ -20,7 +21,6 @@ class Record(models.Model):
     )
     content = models.CharField(max_length=65535)
     domain = models.CharField(max_length=500)
-    zone = models.CharField(max_length=500)
 
     class Meta:
         managed = False
@@ -28,6 +28,9 @@ class Record(models.Model):
 
     def __str__(self):
         return f"{self.object_id} {self.name} {self.type} {self.domain}"
+
+    def get_zone(self):
+        return get_dns_zone(self.domain)
 
 
 class RecordSetting(models.Model):

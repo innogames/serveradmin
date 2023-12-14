@@ -39,7 +39,19 @@ services:
        - "0.0.0.0:8081:8081" # web api
      depends_on:
        - db
-       - web
+     stop_grace_period: 1s
+  pdns-auth-secondary:
+     build: .docker/pdns-auth
+     environment:
+       - GPGSQL_HOST=${POSTGRES_POWERDNS_SECONDARY_HOST}
+       - GPGSQL_PORT=5432
+       - GPGSQL_DBNAME=${POSTGRES_POWERDNS_SECONDARY_DB}
+       - GPGSQL_USER=${POSTGRES_POWERDNS_SECONDARY_USER}
+       - GPGSQL_PASSWORD=${POSTGRES_POWERDNS_SECONDARY_PASSWORD}
+     ports:
+       - "0.0.0.0:8083:8081" # web api of secondary
+     depends_on:
+       - pdns-auth
      stop_grace_period: 1s
   pdns-admin:
      image: powerdnsadmin/pda-legacy:latest

@@ -10,10 +10,13 @@ gpgsql-password=$GPGSQL_PASSWORD
 gpgsql-dnssec=no
 EOF
 
-until timeout 5 bash -c "</dev/tcp/web/8000" &> /dev/null; do
-  echo "Waiting for web to be ready ?!..."
-  sleep 5
-done
+if [[ $GPGSQL_USER == *"secondary"* ]]; then
+  echo "This node is secondary"
+  echo "secondary=yes" >> /etc/powerdns/pdns.d/replication.conf
+else
+  echo "This node is primary"
+  echo "primary=yes" >> /etc/powerdns/pdns.d/replication.conf
+fi
 
 # https://github.com/PowerDNS/pdns/blob/master/Dockerfile-auth#L106
 /usr/bin/tini -- /usr/local/sbin/pdns_server-startup
