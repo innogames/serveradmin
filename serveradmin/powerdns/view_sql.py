@@ -22,7 +22,7 @@ class ViewSQL:
         # XXX:
         # - Escape parameters injected
         # - todo: check materialized view with proper indexes
-        sql = "CREATE OR REPLACE VIEW records (object_id, name, type, content, domain, zone) AS ("
+        sql = "CREATE OR REPLACE VIEW records (object_id, name, type, content, domain) AS ("
         sub_queries = []
         for record_setting in RecordSetting.objects.all():
             name_expression = cls.get_name_expression(record_setting)
@@ -42,8 +42,7 @@ class ViewSQL:
                     {name_expression} as name,
                     {type_expression} as type,
                     {content_expression} as content,
-                    {domain_expression} as domain,
-                    get_dns_zone({domain_expression}) as zone
+                    {domain_expression} as domain
                 FROM 
                     server s
                 {attribute_join}
@@ -119,11 +118,11 @@ class ViewSQL:
     @classmethod
     def get_domain_expression(cls, record_setting):
         if record_setting.domain:
-            return f"(SELECT get_dns_zone(hostname) from server sd where server_id = domain.value)"
+            return f"(SELECT hostname from server sd where server_id = domain.value)"
         elif record_setting.record_type == 'PTR':
             return f"case family({cls.get_content_expression(record_setting)}::inet) when 4 then 'in-addr.arpa' else 'ip6.arpa' end"
         else:
-            return 'get_dns_zone(s.hostname)'
+            return 's.hostname'
 
     @classmethod
     def get_domain_join(cls, record_setting):

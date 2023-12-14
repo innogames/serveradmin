@@ -1,6 +1,6 @@
 import json
 from enum import Enum
-from typing import List
+from typing import Set
 
 """
 The following classes are used to represent the data that is sent to the PowerDNS API.
@@ -39,6 +39,12 @@ class RecordContent:
     def __eq__(self, other):
         return self.content == other.content
 
+    def __lt__(self, other):
+        return self.content < other.content
+
+    def __hash__(self):
+        return hash(self.content)
+
 
 class RRSet:
     """Represents a PowerDNS "Resource Record Set" which is a collection of records with the same name and type"""
@@ -46,7 +52,7 @@ class RRSet:
     type: RecordType
     ttl: int
     changetype: Changetype
-    records: List[RecordContent]
+    records: Set[RecordContent]
 
     def __init__(self):
         self.changetype = 'REPLACE'
@@ -75,6 +81,8 @@ class RRSetEncoder(json.JSONEncoder):
             return obj.value  # Convert enums to their values
         elif isinstance(obj, RecordContent) or isinstance(obj, RRSet):
             return obj.__dict__  # Convert Record objects to their dictionaries
+        elif isinstance(obj, set):
+            return list(obj)  # Convert set to list because JSON supports list
         else:
             return super().default(obj)
 

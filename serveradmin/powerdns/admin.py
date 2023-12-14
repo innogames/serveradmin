@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import RecordSetting, Record
+from .sync.utils import get_dns_zone
 
 
 class RecordSettingAdmin(admin.ModelAdmin):
@@ -22,19 +23,21 @@ class RecordAdmin(admin.ModelAdmin):
         'type',
         'content',
         'domain',
-        'zone',
+        'get_zone',
     ]
     list_filter = [
         'type',
         'domain',
-        'zone',
     ]
     search_fields = [
         'name',
         'content',
         'domain',
-        'zone',
     ]
+
+    @admin.display(description='Zone')
+    def get_zone(self, obj: Record) -> str:
+        return obj.get_zone()
 
     # todo is there a cleaner way to block modification on the VIEW?
     def has_change_permission(self, request, obj=None):
