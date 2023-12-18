@@ -1,4 +1,4 @@
-FROM powerdns/pdns-auth-46:latest
+FROM powerdns/pdns-auth-48:latest
 
 ARG GPGSQL_HOST
 ARG GPGSQL_PORT
