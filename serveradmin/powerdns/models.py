@@ -36,7 +36,8 @@ class Record(models.Model):
 class RecordSetting(models.Model):
     servertype = models.ForeignKey(Servertype, on_delete=models.CASCADE)
     record_type = models.CharField(
-        max_length=8, choices=[(name.name, name.name) for name in RecordType]
+        # Support all powerdns record types and an automagic A/AAAA record based on IP family
+        max_length=8, choices=[("A_AAAA", "A/AAAA")] + [(name.name, name.name) for name in RecordType]
     )
 
     source_value = models.ForeignKey(
@@ -52,8 +53,9 @@ class RecordSetting(models.Model):
 
     domain = models.ForeignKey(
         Attribute, on_delete=models.CASCADE, related_name="+",
-        blank=True, null=True
-    )  # todo: Restrict to relatation attribute
+        blank=True, null=True,
+        limit_choices_to={'type': 'relation'},
+    )
 
     class Meta:
         constraints = [

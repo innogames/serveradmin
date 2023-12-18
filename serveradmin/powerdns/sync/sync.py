@@ -1,7 +1,7 @@
 import logging
 from typing import List, Dict
 
-from serveradmin.powerdns.sync.client import PowerDNSApiClient, PowerDNSApiException
+from serveradmin.powerdns.sync.client import PowerDNSApiClient
 from serveradmin.powerdns.sync.objects import RecordContent, RRSet
 from serveradmin.powerdns.sync.utils import ensure_canonical, quote_string
 
@@ -13,16 +13,7 @@ def sync_records(records: list):
 
     # handle each domain separately and push all touched records to PowerDNS
     for zone, records in group_by_zone(records).items():
-        if not zone:
-            # todo: valid case? I got this while doing a full sync
-            continue
-
-        # todo don't check every time...maybe just in case of 404 of client.get_rrsets?
-        try:
-            dns_client.get_zone(zone)
-        except PowerDNSApiException:
-            logger.info(f"Creating new zone {zone}")
-            dns_client.create_zone(zone, "Primary")
+        dns_client.ensure_zone_exists(zone)
 
         # first we have to fetch all relevant existing records from powerdns to check for diff
         # in most cases we only need to fetch the records for the domain we are
@@ -30,6 +21,7 @@ def sync_records(records: list):
         domain_names = set([record.name for record in records])
         domain_filter = ''
         if len(domain_names) == 1:
+            # todo: find a smarter way to do fetch only relevant records without fetching the whole zone
             domain_filter = domain_names.pop()
         actual = dns_client.get_rrsets(zone, domain_filter)
 
@@ -41,11 +33,16 @@ def sync_records(records: list):
 
         dns_client.create_or_update_rrsets(zone, diff)
 
-        # todo: only send one /notify here in the end (IF there were changes) to trigger AXFR process?
+        # todo: only send one /notify here in the end (IF there were changes) to trigger AXFR process only once?
         dns_client.notify(zone)
 
 
 def get_changed_records(all_actual: Dict[str, Dict[str, RRSet]], all_expected: List[RRSet]) -> List[RRSet]:
+    """
+    Compare the actual records from PowerDNS with the expected records from the database
+    The list contains entries with changetype "REPLACE" with all entries to delete or update.
+    And "DELETE" for all unknown ones to wipe
+    """
     final_changes = []
     for expected in all_expected:
         if expected.name not in all_actual or expected.type not in all_actual[expected.name]:
@@ -59,17 +56,20 @@ def get_changed_records(all_actual: Dict[str, Dict[str, RRSet]], all_expected: L
 
         del all_actual[expected.name][expected.type]
 
-        # todo: we don't care so far, most likely powerdns config will take care of this
-        if 'SOA' in all_actual[expected.name]:
-            del all_actual[expected.name]['SOA']
-
         # no changes anymore for this domain!
         if not all_actual[expected.name]:
             del all_actual[expected.name]
 
-    # todo DELETE old ones
-    if all_actual:
-        logger.info(f"Found some old records: {all_actual}")
+    # delete all unknown ones!
+    for name_to_delete in all_actual:
+        for type_to_delete in all_actual[name_to_delete]:
+            rrset = RRSet()
+            rrset.changetype = 'DELETE'
+            rrset.name = name_to_delete
+            rrset.type = type_to_delete
+            rrset.ttl = None
+            final_changes.append(rrset)
+            logger.info(f"Record {rrset} is old, deleting")
 
     return final_changes
 

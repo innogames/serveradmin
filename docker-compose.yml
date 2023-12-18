@@ -7,6 +7,8 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "serveradmin"]
     volumes:
       - ".docker/db/postgres.conf:/etc/postgresql/postgres.conf:ro"
       - ".docker/db/pdns-db.sql:/docker-entrypoint-initdb.d/pdns-db.sql:ro"
@@ -62,7 +64,7 @@ services:
      depends_on:
        - pdns-auth
      ports:
-       - "0.0.0.0:8082:80" # web api
+       - "0.0.0.0:8082:80" # dns admin panel
      volumes:
        - pdns-admin-data:/data
 

@@ -14,6 +14,7 @@ RecordType = Enum('record_type', [
     'MX',
     'NS',
     'PTR',
+    'SSHFP',
     'SOA',
     'SRV',
     'TXT',
@@ -56,6 +57,8 @@ class RRSet:
 
     def __init__(self):
         self.changetype = 'REPLACE'
+        self.ttl = 3600
+        self.records = set()
 
     def __eq__(self, other):
         if self.name != other.name:
@@ -76,13 +79,17 @@ class RRSet:
 
 
 class RRSetEncoder(json.JSONEncoder):
+    """Special JSON encoder that can convert our custom powerdns structure to JSON"""
     def default(self, obj):
         if isinstance(obj, Enum):
-            return obj.value  # Convert enums to their values
+            # Convert enums to their values
+            return obj.value
         elif isinstance(obj, RecordContent) or isinstance(obj, RRSet):
-            return obj.__dict__  # Convert Record objects to their dictionaries
+            # Convert Record objects to their dictionaries
+            return obj.__dict__
         elif isinstance(obj, set):
-            return list(obj)  # Convert set to list because JSON supports list
+            # Convert set to list because JSON supports list
+            return list(obj)
         else:
             return super().default(obj)
 

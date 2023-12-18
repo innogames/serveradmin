@@ -30,4 +30,4 @@ class Command(BaseCommand):
 
         logger.info(f"Start syncing {len(records)} records...")
         sync_records(records)
-        logger.info(f"Sync took {time.time() - start}s for {len(records)} records")
+        logger.info(f"Sync took {round(time.time() - start, 2)}s for {len(records)} records")

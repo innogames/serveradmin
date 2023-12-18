@@ -33,10 +33,13 @@ class PowerDNSApiClient:
 
         return response.json()
 
-    def get_zone(self, zone: str):
+    def get_zone(self, zone: str, rrsets=True):
         zone = ensure_canonical(zone)
 
         url = f"{self.api_url}/zones/{zone}"
+        if not rrsets:
+            url = url + "?rrsets=false"
+
         response = requests.get(url, headers=self.headers)
         self._handle_response_errors(response)
 
@@ -57,6 +60,10 @@ class PowerDNSApiClient:
 
         rrsets = {}
         for raw in data:
+            if raw['type'] == 'SOA':
+                # we don't care so far!
+                continue
+
             rrset = RRSet()
             rrset.name = raw['name']
             rrset.type = raw['type']
@@ -111,6 +118,14 @@ class PowerDNSApiClient:
     def _handle_response_errors(response):
         if response.status_code >= 400:
             raise PowerDNSApiException(f"Error {response.status_code}: {response.text}")
+
+    def ensure_zone_exists(self, zone:str):
+        try:
+            # quick check if the zone is defined in powerdns
+            self.get_zone(zone, rrsets=False)
+        except PowerDNSApiException:
+            logger.info(f"Creating new zone {zone}")
+            self.create_zone(zone, "Primary")
 
 
 class PowerDNSApiException(Exception):

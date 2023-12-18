@@ -26,7 +26,7 @@ def get_dns_zone(domain: str) -> str:
         return ''
 
     # A list of common country-code second-level domains.
-    cc_slds = ['br', 'co', 'com', 'org', 'net', 'gov', 'edu', 'mil']
+    cc_slds = ['br', 'co', 'com', 'org', 'no', 'net', 'gov', 'edu', 'mil', 'or']
 
     # Split the domain into parts.
     parts = domain.split('.')

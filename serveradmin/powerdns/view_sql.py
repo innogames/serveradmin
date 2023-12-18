@@ -95,9 +95,8 @@ class ViewSQL:
 
     @classmethod
     def get_record_type_expression(cls, record_setting):
-        if record_setting.record_type in ['A', 'AAAA']:
-            # todo: is this magic okay here?
-            # if we duplicate the entries, we have way more query overhead and have to filter the other ones out.
+        if record_setting.record_type == 'A_AAAA':
+            # support meta record type to get A or AAAA based on IP family
             return f"case family({cls.get_content_expression(record_setting)}::inet) when 4 then 'A'::text else 'AAAA'::text end"
 
         return f"'{record_setting.record_type}'"
@@ -105,7 +104,7 @@ class ViewSQL:
     @classmethod
     def get_name_expression(cls, record_setting):
         if record_setting.domain:
-            return f"(SELECT hostname from server sd where server_id = domain.value)"
+            return f"domain_name.hostname"
 
         if record_setting.record_type == 'PTR':
             content = cls.get_content_expression(record_setting)
@@ -116,8 +115,9 @@ class ViewSQL:
     @classmethod
     def get_domain_expression(cls, record_setting):
         if record_setting.domain:
-            return f"(SELECT hostname from server sd where server_id = domain.value)"
+            return f"domain_name.hostname"
         elif record_setting.record_type == 'PTR':
+            # for the PTR we have to put the record in the correct pseudo arpa zone.
             return f"case family({cls.get_content_expression(record_setting)}::inet) when 4 then 'in-addr.arpa' else 'ip6.arpa' end"
         else:
             return 's.hostname'
@@ -125,7 +125,10 @@ class ViewSQL:
     @classmethod
     def get_domain_join(cls, record_setting):
         if record_setting.domain:
-            return f"""  LEFT JOIN server_relation_attribute domain
-                            ON s.server_id = domain.server_id 
-                            AND domain.attribute_id = '{record_setting.domain}'"""
+            return f""" 
+                JOIN server_relation_attribute domain
+                    ON domain.server_id = s.server_id 
+                    AND domain.attribute_id = '{record_setting.domain}'
+                JOIN server domain_name
+                     ON domain_name.server_id = domain.value"""
         return ""
