@@ -8,6 +8,7 @@ from serveradmin.powerdns.sync.utils import ensure_canonical, quote_string
 logger = logging.getLogger(__package__)
 
 
+# todo fix renaming domain should drop old entries
 def sync_records(records: list):
     dns_client = PowerDNSApiClient()
 
@@ -26,7 +27,7 @@ def sync_records(records: list):
         actual = dns_client.get_rrsets(zone, domain_filter)
 
         # convert our database records to PowerDNS RRSet objects and push via HTTP
-        expected = db_records_to_pdns_rrsets(records)
+        expected = db_records_to_pdns_rrsets(zone, records)
         diff = get_changed_records(actual, expected)
         if not diff:
             continue
@@ -35,6 +36,18 @@ def sync_records(records: list):
 
         # todo: only send one /notify here in the end (IF there were changes) to trigger AXFR process only once?
         dns_client.notify(zone)
+
+
+# todo: this is a bit hacky, maybe we can confugure it somewhere else, as we have to set the NS records for all zones
+def get_ns_records(zone: str) -> RRSet:
+    servers = ['ns1.example.com', 'ns2.example.com']  # todo jus some dummy test
+
+    rrset = RRSet(zone, 'NS', 3600)
+
+    for server in servers:
+        rrset.records.add(RecordContent(ensure_canonical(server)))
+
+    return rrset
 
 
 def get_changed_records(all_actual: Dict[str, Dict[str, RRSet]], all_expected: List[RRSet]) -> List[RRSet]:
@@ -63,12 +76,11 @@ def get_changed_records(all_actual: Dict[str, Dict[str, RRSet]], all_expected: L
     # delete all unknown ones!
     for name_to_delete in all_actual:
         for type_to_delete in all_actual[name_to_delete]:
-            rrset = RRSet()
+            rrset = RRSet(name_to_delete, type_to_delete, None)
             rrset.changetype = 'DELETE'
-            rrset.name = name_to_delete
-            rrset.type = type_to_delete
-            rrset.ttl = None
-            final_changes.append(rrset)
+
+            # we prepend all DELETEs to make sure we don't get conflicts with other REPLACE in the same request
+            final_changes.insert(0, rrset)
             logger.info(f"Record {rrset} is old, deleting")
 
     return final_changes
@@ -85,44 +97,39 @@ def group_by_zone(records: list) -> Dict[str, list]:
     return records_by_zone
 
 
-def db_records_to_pdns_rrsets(records: list) -> List[RRSet]:
+def db_records_to_pdns_rrsets(zone: str, records: list) -> List[RRSet]:
     """Convert database records to PowerDNS RRSet objects
-    This groups the records by name and type and creates a RRSet object for each
+    This function groups the records by name and type and creates a flat list of RRSet
     """
-    content_group_by_type = {}
+    rrsets_group_by_type = {}
 
     for record in records:
-        if record.name not in content_group_by_type:
-            content_group_by_type[record.name] = {}
-        if record.type not in content_group_by_type[record.name]:
-            content_group_by_type[record.name][record.type] = set()
+        if record.name not in rrsets_group_by_type:
+            rrsets_group_by_type[record.name] = {}
+        if record.type not in rrsets_group_by_type[record.name]:
+            rrset = RRSet(record.name, record.type, record.ttl)
+            rrsets_group_by_type[record.name][record.type] = rrset
 
         # some special handling for certain record types
-        if record.type in ['PTR', 'CNAME']:
+        if record.type in ['PTR', 'CNAME', 'MX']:
+            # we need the trailing "."
             record.content = ensure_canonical(record.content)
         elif record.type == 'TXT':
             # TXT records need to be quoted via powerdns API
             record.content = quote_string(record.content)
-        elif record.type == 'MX':
-            # todo which prio?
-            record.content = f"10 {ensure_canonical(record.content)}"
 
         record_content = RecordContent(record.content)
-        content_group_by_type[record.name][record.type].add(record_content)
+        rrsets_group_by_type[record.name][record.type].records.add(record_content)
 
-    rrsets = []
-    for name, types in content_group_by_type.items():
-        for type, contents in types.items():
-            rrset = RRSet()
-            rrset.type = type
-            rrset.name = ensure_canonical(name)
-            rrset.ttl = get_ttl()
-            rrset.records = contents
-            rrsets.append(rrset)
+    final_rrsets = []
+    for name, types in rrsets_group_by_type.items():
+        for type, rrset in types.items():
+            if "CNAME" in types and type != "CNAME":
+                # if there is a CNAME set, ignore all other records for this name
+                continue
 
-    return rrsets
+            final_rrsets.append(rrset)
 
+    final_rrsets.append(get_ns_records(zone))
 
-def get_ttl():
-    """todo: somehow configurable via RecordsSettings?"""
-    return 300
+    return final_rrsets

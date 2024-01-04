@@ -16,7 +16,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--domain",
             type=str,
-            help="Limit sync to given domain, like eu.forgeofempires.com or sunrisevillage.com",
+            help="Limit sync to given domain, like eu.example.com or example.com",
         )
 
     def handle(self, *args, **options):

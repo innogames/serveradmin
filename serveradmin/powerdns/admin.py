@@ -26,7 +26,9 @@ class RecordSettingAdmin(admin.ModelAdmin):
         'record_type',
         'source_value_field',
         'domain_field',
+        'ttl',
     ]
+    ordering = ('record_type',)
 
     @admin.display(description='Source Attribute')
     def source_value_field(self, obj: Record) -> str:
@@ -54,6 +56,7 @@ class RecordAdmin(admin.ModelAdmin):
         'content',
         'domain',
         'get_zone',
+        'ttl',
     ]
     list_filter = [
         'type',
@@ -64,6 +67,7 @@ class RecordAdmin(admin.ModelAdmin):
         'content',
         'domain',
     ]
+    show_full_result_count = False  # prevent slow SELECT COUNT(*) on the View
 
     @admin.display(description='Zone')
     def get_zone(self, obj: Record) -> str:

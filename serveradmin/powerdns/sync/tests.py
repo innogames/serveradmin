@@ -8,13 +8,10 @@ from serveradmin.powerdns.sync.utils import ensure_canonical, quote_string, get_
 class Records(unittest.TestCase):
     def test_to_json(self):
         rrsets = []
-        rrset = RRSet()
-        rrset.type = "A"
-        rrset.name = ensure_canonical("foo.example.com")
-        rrset.ttl = 3600
-        rrset.records = [
+        rrset = RRSet("foo.example.com", "A", 3600)
+        rrset.records = (
             RecordContent("127.0.0.1"),
-        ]
+        )
         rrsets.append(rrset)
 
         actual = json.dumps(rrsets, cls=RRSetEncoder)
