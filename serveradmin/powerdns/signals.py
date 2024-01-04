@@ -72,7 +72,7 @@ def update_records(sender, **kwargs):
     # then check in the changes and extract all such domain from the before+after changes.
     touched_domains = set()
     for changes in kwargs['changed']:
-        logger.warn(f"touched domains {touched_domains}")
+        logger.warning(f"touched domains {touched_domains}")
 
         for domain_attribute in domain_attributes:
             domain_attribute = str(domain_attribute)

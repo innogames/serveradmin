@@ -21,6 +21,7 @@ class Record(models.Model):
     )
     content = models.CharField(max_length=65535)
     domain = models.CharField(max_length=500)
+    ttl = models.IntegerField()
 
     class Meta:
         managed = False
@@ -56,6 +57,7 @@ class RecordSetting(models.Model):
         blank=True, null=True,
         limit_choices_to={'type': 'relation'},
     )
+    ttl = models.IntegerField(default=3600)
 
     class Meta:
         constraints = [

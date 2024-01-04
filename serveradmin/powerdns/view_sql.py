@@ -21,7 +21,7 @@ class ViewSQL:
         # - todo if view schema is safe, remove it and only REPLACE VIEW
         # - todo rename view to "powerdns_record_view"?
         sql = 'DROP VIEW IF EXISTS records;'
-        sql += "CREATE OR REPLACE VIEW records (object_id, name, type, content, domain) AS ("
+        sql += "CREATE OR REPLACE VIEW records (object_id, name, type, content, domain, ttl) AS ("
         sub_queries = []
         for record_setting in RecordSetting.objects.all():
             name_expression = cls.get_name_expression(record_setting)
@@ -40,7 +40,8 @@ class ViewSQL:
                     {name_expression} as name,
                     {type_expression} as type,
                     {content_expression} as content,
-                    {domain_expression} as domain
+                    {domain_expression} as domain,
+                    {record_setting.ttl} as ttl
                 FROM 
                     server s
                 {attribute_join}
@@ -103,22 +104,21 @@ class ViewSQL:
 
     @classmethod
     def get_name_expression(cls, record_setting):
-        if record_setting.domain:
-            return f"domain_name.hostname"
-
         if record_setting.record_type == 'PTR':
             content = cls.get_content_expression(record_setting)
             return f"public.ptr({content}::inet)"
-
-        return 's.hostname'
+        elif record_setting.domain:
+            return f"domain_name.hostname"
+        else:
+            return 's.hostname'
 
     @classmethod
     def get_domain_expression(cls, record_setting):
-        if record_setting.domain:
-            return f"domain_name.hostname"
-        elif record_setting.record_type == 'PTR':
+        if record_setting.record_type == 'PTR':
             # for the PTR we have to put the record in the correct pseudo arpa zone.
             return f"case family({cls.get_content_expression(record_setting)}::inet) when 4 then 'in-addr.arpa' else 'ip6.arpa' end"
+        elif record_setting.domain:
+            return f"domain_name.hostname"
         else:
             return 's.hostname'
 

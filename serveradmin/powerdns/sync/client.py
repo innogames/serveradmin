@@ -64,11 +64,7 @@ class PowerDNSApiClient:
                 # we don't care so far!
                 continue
 
-            rrset = RRSet()
-            rrset.name = raw['name']
-            rrset.type = raw['type']
-            rrset.ttl = raw['ttl']
-            rrset.records = set()
+            rrset = RRSet(raw['name'], raw['type'], raw['ttl'])
             for record in raw['records']:
                 rrset.records.add(RecordContent(record['content']))
 

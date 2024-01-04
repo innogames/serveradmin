@@ -2,6 +2,8 @@ import json
 from enum import Enum
 from typing import Set
 
+from serveradmin.powerdns.sync.utils import ensure_canonical
+
 """
 The following classes are used to represent the data that is sent to the PowerDNS API.
 The API expects JSON and the classes are used to convert the data to JSON.
@@ -55,10 +57,12 @@ class RRSet:
     changetype: Changetype
     records: Set[RecordContent]
 
-    def __init__(self):
+    def __init__(self, name: str, record_type: RecordType, ttl: int = 3600):
         self.changetype = 'REPLACE'
-        self.ttl = 3600
+        self.ttl = ttl
         self.records = set()
+        self.name = ensure_canonical(name)
+        self.type = record_type
 
     def __eq__(self, other):
         if self.name != other.name:
@@ -92,4 +96,3 @@ class RRSetEncoder(json.JSONEncoder):
             return list(obj)
         else:
             return super().default(obj)
-
