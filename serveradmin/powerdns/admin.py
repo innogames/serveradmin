@@ -1,6 +1,8 @@
 from django.contrib import admin
 from .models import RecordSetting, Record
+from .sync.sync import sync_records
 from .sync.utils import get_dns_zone
+from .view_sql import ViewSQL
 
 
 class ZoneListFilter(admin.SimpleListFilter):
@@ -20,6 +22,17 @@ class ZoneListFilter(admin.SimpleListFilter):
         return queryset
 
 
+@admin.action(description="Sync with Powerdns")
+def sync_with_powerdns(modeladmin, request, queryset):
+    records = Record.objects.all()
+    sync_records(records)
+
+
+@admin.action(description="Update SQL View")
+def update_view(modeladmin, request, queryset):
+    ViewSQL.update_view_schema()
+
+
 class RecordSettingAdmin(admin.ModelAdmin):
     list_display = [
         'servertype',
@@ -29,6 +42,7 @@ class RecordSettingAdmin(admin.ModelAdmin):
         'ttl',
     ]
     ordering = ('record_type',)
+    actions = [sync_with_powerdns, update_view]
 
     @admin.display(description='Source Attribute')
     def source_value_field(self, obj: Record) -> str:
@@ -60,7 +74,8 @@ class RecordAdmin(admin.ModelAdmin):
     ]
     list_filter = [
         'type',
-        ZoneListFilter
+        ZoneListFilter,
+        'ttl',
     ]
     search_fields = [
         'name',

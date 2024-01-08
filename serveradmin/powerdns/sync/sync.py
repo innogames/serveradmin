@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import List, Dict
 
 from serveradmin.powerdns.sync.client import PowerDNSApiClient
@@ -10,7 +11,12 @@ logger = logging.getLogger(__package__)
 
 # todo fix renaming domain should drop old entries
 def sync_records(records: list):
+    if not records:
+        return
+
     dns_client = PowerDNSApiClient()
+    changed = 0
+    start_time = time.time()
 
     # handle each domain separately and push all touched records to PowerDNS
     for zone, records in group_by_zone(records).items():
@@ -33,21 +39,15 @@ def sync_records(records: list):
             continue
 
         dns_client.create_or_update_rrsets(zone, diff)
+        changed += len(diff)
 
         # todo: only send one /notify here in the end (IF there were changes) to trigger AXFR process only once?
         dns_client.notify(zone)
 
-
-# todo: this is a bit hacky, maybe we can confugure it somewhere else, as we have to set the NS records for all zones
-def get_ns_records(zone: str) -> RRSet:
-    servers = ['ns1.example.com', 'ns2.example.com']  # todo jus some dummy test
-
-    rrset = RRSet(zone, 'NS', 3600)
-
-    for server in servers:
-        rrset.records.add(RecordContent(ensure_canonical(server)))
-
-    return rrset
+    logger.info(
+        f"DNS sync took {round(time.time() - start_time, 2)}s. "
+        f"{len(records)} records. {changed} changes. records: {records}"
+    )
 
 
 def get_changed_records(all_actual: Dict[str, Dict[str, RRSet]], all_expected: List[RRSet]) -> List[RRSet]:
@@ -130,6 +130,22 @@ def db_records_to_pdns_rrsets(zone: str, records: list) -> List[RRSet]:
 
             final_rrsets.append(rrset)
 
-    final_rrsets.append(get_ns_records(zone))
+    final_rrsets += get_ns_soa_records(zone)
 
     return final_rrsets
+
+
+# todo: this is a bit hacky, maybe we can configure it somewhere else, as we have to set the NS records for all zones
+def get_ns_soa_records(zone: str) -> List[RRSet]:
+    name_servers = ['ns1.example.com', 'ns2.example.com']  # todo jus some dummy test
+
+    ns_rrset = RRSet(zone, 'NS', 3600)
+    for server in name_servers:
+        ns_rrset.records.add(RecordContent(ensure_canonical(server)))
+
+    soa_rrset = RRSet(zone, 'SOA', 3600)
+    soa_rrset.records.add(RecordContent(
+        f"{ensure_canonical(name_servers[0])} hostmaster.{zone}. 1 10800 3600 604800 3600"
+    ))
+
+    return [ns_rrset, soa_rrset]

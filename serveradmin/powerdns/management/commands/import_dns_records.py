@@ -3,6 +3,8 @@ import csv
 
 from django.core.management.base import BaseCommand, CommandParser
 
+import dns.resolver
+
 from adminapi.dataset import Query
 from adminapi.exceptions import DatasetError
 from serveradmin.powerdns.models import Record
@@ -10,7 +12,7 @@ from serveradmin.serverdb.models import Attribute
 
 logger = logging.getLogger(__package__)
 
-# todo: how to configure?
+# todo: how to configure attributes?
 DNS_FIELDS = {
     'CNAME': 'dns_cname',
     'MX': 'dns_mx',
@@ -36,29 +38,39 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--file",
+            help="CSV file with DNS records",
             type=str,
+            required=True,
         )
 
         parser.add_argument(
             "--add_to_sa",
+            help="Add missing DNS records to serveradmin attributes",
             type=bool,
+        )
+        parser.add_argument(
+            "--ignore_invalid_domains",
+            type=bool,
+            help="Ignore domains that do not have a valid NS record",
+            default=True,
         )
 
     def handle(self, *args, **options):
-        csv_filename = 'ns-2023-12-20.txt'
+        csv_filename = options['file']
 
         # first group by zone->type
         records_by_zone = {}
         with open(csv_filename, mode='r') as file:
             csv_reader = csv.DictReader(file)
 
-            # example record: {'domain': 'example.pl', 'name': 'foo.example.pl', 'type': 'NS', 'content': 'ns2.provider.de', 'ttl': '3600'}
+            # example record:
+            # {'domain': 'example.pl', 'name': 'foo.example.pl', 'type': 'NS', 'content': 'ns2.provider.de', 'ttl': '3600'}
             for record in csv_reader:
                 zone = record['domain']
                 type = record['type']
+
                 if type in IGNORED_DNS_FIELDS:
                     continue
-
                 if options['zone'] and zone != options['zone']:
                     continue
                 if options['type'] and type != options['type']:
@@ -71,6 +83,7 @@ class Command(BaseCommand):
                 if type == 'MX':
                     record['content'] = f"10 {record['content']}"  # todo correct prio from csv!
 
+                # combine records with same name and type, so have a list with all TXT records for example
                 if identifier not in records_by_zone[zone]:
                     records_by_zone[zone][identifier] = record
                     records_by_zone[zone][identifier]['content_list'] = [record['content']]
@@ -78,13 +91,19 @@ class Command(BaseCommand):
                     records_by_zone[zone][identifier]['content_list'].append(record['content'])
 
         for zone in records_by_zone:
-
             print(f"Checking zone {zone}:")
+            if options['ignore_invalid_domains']:
+                try:
+                    dns.resolver.resolve(zone, 'NS')
+                except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.LifetimeTimeout):
+                    print(f"⚠️  {zone} does not have a real NS record...looks old!")
+                    continue
+
             for identifier in records_by_zone[zone]:
                 record = records_by_zone[zone][identifier]
                 db_records = Record.objects.filter(domain=record['name'], type=record['type']).values_list('content', flat=True)
                 db_content_list = sorted([db_record for db_record in db_records])
-                backup_str = f"{record['name']} {record['type']} {record['content_list']} ttl:{record['ttl']}"
+                backup_str = f"{record['name']} {record['type']} ttl:{record['ttl']}"
 
                 if db_content_list and db_content_list == sorted(record['content_list']):
                     # quick return, all good!
@@ -96,7 +115,6 @@ class Command(BaseCommand):
                 else:
                     print(f" ⚠️  {backup_str}: '{db_content_list}' vs '{record['content_list']}'")
 
-                # sync INWX to Serveradmin
                 if options['add_to_sa'] and record['type'] in DNS_FIELDS:
                     if '_' in record['name']:
                         print(f"   ❌  {record['name']} is a invalid hostname (contains '_')")
@@ -109,7 +127,8 @@ class Command(BaseCommand):
                     query = Query({'hostname': record['name'], 'servertype': 'public_domain'}, [sa_field])
                     if len(query) == 0:
                         print(f"   ➕ added new public_domain for {record['name']}")
-                        domain_object = Query().new_object(servertype='public_domain')  # todo : is there some other possible type?
+                        # todo : is there some other possible type?
+                        domain_object = Query().new_object(servertype='public_domain')
                         domain_object['hostname'] = record['name']
                         domain_object['project'] = 'admin'  # todo: how to get this?
                     else:

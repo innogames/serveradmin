@@ -25,7 +25,7 @@ class Record(models.Model):
 
     class Meta:
         managed = False
-        db_table = "records"
+        db_table = "powerdns_records"
 
     def __str__(self):
         return f"{self.object_id} {self.name} {self.type} {self.domain}"
