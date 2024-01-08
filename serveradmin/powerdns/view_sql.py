@@ -19,9 +19,8 @@ class ViewSQL:
         # - todo: Escape parameters injected
         # - todo: check materialized view with proper indexes
         # - todo if view schema is safe, remove it and only REPLACE VIEW
-        # - todo rename view to "powerdns_record_view"?
-        sql = 'DROP VIEW IF EXISTS records;'
-        sql += "CREATE OR REPLACE VIEW records (object_id, name, type, content, domain, ttl) AS ("
+        sql = 'DROP VIEW IF EXISTS powerdns_records;'
+        sql += "CREATE OR REPLACE VIEW powerdns_records (object_id, name, type, content, domain, ttl) AS ("
         sub_queries = []
         for record_setting in RecordSetting.objects.all():
             name_expression = cls.get_name_expression(record_setting)

@@ -24,7 +24,7 @@ def create_records(sender, **kwargs):
 
     from serveradmin.powerdns.models import Record
     records = Record.objects.filter(object_id__in=object_ids).all()
-    sync(records)
+    sync_records(records)
 
 
 @profile
@@ -45,7 +45,7 @@ def delete_records(sender, **kwargs):
 
     # todo fetch deleted entries beforehand to get consistent state to sync?
     records = Record.objects.filter(object_id__in=object_ids).all()
-    sync(records)
+    sync_records(records)
 
 
 @profile
@@ -86,13 +86,4 @@ def update_records(sender, **kwargs):
     object_ids = [changed['object_id'] for changed in kwargs['changed']]
     records = Record.objects.filter(Q(object_id__in=object_ids)|Q(domain__in=touched_domains)).all()
 
-    sync(records)
-
-
-def sync(records):
-    if not records:
-        return
-
-    start = time.time()
     sync_records(records)
-    logger.info(f"DNS sync of {len(records)} took {round(time.time() - start, 2)}s {records}")
