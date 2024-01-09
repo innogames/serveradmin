@@ -3,8 +3,11 @@ from django.db import connection
 
 
 class ViewSQL:
-    """Class to manage the "records" View which represents all configured DNS
-    records bases on the serveradmin data."""
+    """Class to manage the "powerdns_records" View which represents all configured DNS
+    records bases on the serveradmin data.
+    The view contains ALL DNS related records in a powerdns-like schema and the "object_ids" which are responsible
+    for tis record, like vm-server or related domain names
+    """
 
     @classmethod
     def update_view_schema(cls):
@@ -20,33 +23,31 @@ class ViewSQL:
         # - todo: check materialized view with proper indexes
         # - todo if view schema is safe, remove it and only REPLACE VIEW
         sql = 'DROP VIEW IF EXISTS powerdns_records;'
-        sql += "CREATE OR REPLACE VIEW powerdns_records (object_id, name, type, content, domain, ttl) AS ("
+        sql += "CREATE OR REPLACE VIEW powerdns_records (object_ids, name, type, content, domain, ttl) AS ("
         sub_queries = []
         for record_setting in RecordSetting.objects.all():
+            object_ids_expression = cls.get_object_ids_expression(record_setting)
             name_expression = cls.get_name_expression(record_setting)
             type_expression = cls.get_record_type_expression(record_setting)
-            content_expression = cls.get_content_expression(record_setting)
+            content_expression = cls.get_content_expression(record_setting, True)
             domain_expression = cls.get_domain_expression(record_setting)
             attribute_join = cls.get_attribute_join(record_setting)
             domain_join = cls.get_domain_join(record_setting)
-            if record_setting.record_type == 'PTR':
-                content_expression = 's.hostname'
+            where_condition = cls.get_where_condition(record_setting)
 
             sub_queries.append(
                 f"""
                 SELECT 
-                    s.server_id as object_id,
+                    {object_ids_expression} as object_ids,
                     {name_expression} as name,
                     {type_expression} as type,
                     {content_expression} as content,
                     {domain_expression} as domain,
                     {record_setting.ttl} as ttl
-                FROM 
-                    server s
+                FROM server s
                 {attribute_join}
                 {domain_join}
-                WHERE 
-                    s.servertype_id = '{record_setting.servertype}'
+                {where_condition}
             """
             )
         sql += " UNION ALL ".join(sub_queries)
@@ -55,8 +56,16 @@ class ViewSQL:
         return sql
 
     @staticmethod
-    def get_content_expression(record_setting):
+    def get_content_expression(record_setting, main: bool = False):
+        if record_setting.record_type == 'PTR' and main:
+            # todo check if we can simplify PTRs a bit, as we have to reverse a bunch of logic
+            if record_setting.domain:
+                return f"domain_name.hostname"
+            else:
+                return 's.hostname'
+
         if record_setting.source_value_special:
+            # the content is in the "server table already"
             attribute = Attribute.specials[record_setting.source_value_special]
             if attribute.type == 'inet':
                 # get plain IP address from inet (which also contains the netmask)
@@ -73,6 +82,7 @@ class ViewSQL:
 
     @staticmethod
     def get_attribute_join(record_setting):
+        """if the record content is in an non-special attribute, we need to JOIN the attribute table(s)"""
         if record_setting.source_value_special:
             # the needed attribute is already in the server table
             attribute_join = ""
@@ -103,6 +113,7 @@ class ViewSQL:
 
     @classmethod
     def get_name_expression(cls, record_setting):
+        """get the "name" field for the record"""
         if record_setting.record_type == 'PTR':
             content = cls.get_content_expression(record_setting)
             return f"public.ptr({content}::inet)"
@@ -123,6 +134,7 @@ class ViewSQL:
 
     @classmethod
     def get_domain_join(cls, record_setting):
+        """Get the JOIN for the domain, if needed"""
         if record_setting.domain:
             return f""" 
                 JOIN server_relation_attribute domain
@@ -131,3 +143,22 @@ class ViewSQL:
                 JOIN server domain_name
                      ON domain_name.server_id = domain.value"""
         return ""
+
+    @classmethod
+    def get_where_condition(cls, record_setting):
+        """Add special WHERE conditions to the query, if needed"""
+        if record_setting.servertype:
+            return f"WHERE s.servertype_id = '{record_setting.servertype}'"
+        return ''
+
+    @classmethod
+    def get_object_ids_expression(cls, record_setting):
+        """Get the expression to get the object_ids for the record
+        This are the object_ids of the server and the object_ids of the domain.
+        So all objects which are kinda touching this record
+        """
+        ids = ['s.server_id']
+        if record_setting.domain:
+            ids.append('domain_name.server_id')
+
+        return f"ARRAY[{','.join(ids)}]::integer[]"

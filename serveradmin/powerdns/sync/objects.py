@@ -72,6 +72,9 @@ class RRSet:
         if self.ttl != other.ttl:
             return False
         if sorted(self.records) != sorted(other.records):
+            if self.type == 'SOA':
+                # todo check serial in the SOA record
+                return True
             return False
         return True
 

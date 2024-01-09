@@ -60,10 +60,6 @@ class PowerDNSApiClient:
 
         rrsets = {}
         for raw in data:
-            if raw['type'] == 'SOA':
-                # we don't care so far!
-                continue
-
             rrset = RRSet(raw['name'], raw['type'], raw['ttl'])
             for record in raw['records']:
                 rrset.records.add(RecordContent(record['content']))

@@ -58,7 +58,7 @@ LOOKUP_ID_VALIDATORS = [
 
 HOSTNAME_VALIDATORS = [
     RegexValidator(
-        r'\A(\*\.)?([a-z0-9]+(\.|-+))*[a-z0-9]+\Z', 'Invalid hostname'
+        r'\A(\*\.)?([a-z0-9_]+(\.|-+))*[a-z0-9]+\Z', 'Invalid hostname'
     ),
 ]
 
