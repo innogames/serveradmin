@@ -64,7 +64,7 @@ class RecordAdmin(admin.ModelAdmin):
     """
 
     list_display = [
-        'object_id',
+        'object_ids',
         'name',
         'type',
         'content',

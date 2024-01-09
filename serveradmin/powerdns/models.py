@@ -1,3 +1,4 @@
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models import Q
 
@@ -14,7 +15,7 @@ class Record(models.Model):
     """PowerDNS Record VIEW representation, so no real table!
     """
 
-    object_id = models.IntegerField(primary_key=True)
+    object_ids = ArrayField(models.IntegerField(), primary_key=True)
     name = models.CharField(max_length=255)
     type = models.CharField(
         max_length=8, choices=[(name.name, name.name) for name in RecordType]
@@ -28,14 +29,14 @@ class Record(models.Model):
         db_table = "powerdns_records"
 
     def __str__(self):
-        return f"{self.object_id} {self.name} {self.type} {self.domain}"
+        return f"{self.object_ids} {self.name} {self.type} {self.domain}"
 
     def get_zone(self):
         return get_dns_zone(self.domain)
 
 
 class RecordSetting(models.Model):
-    servertype = models.ForeignKey(Servertype, on_delete=models.CASCADE)
+    servertype = models.ForeignKey(Servertype, on_delete=models.CASCADE, blank=True, null=True)
     record_type = models.CharField(
         # Support all powerdns record types and an automagic A/AAAA record based on IP family
         max_length=8, choices=[("A_AAAA", "A/AAAA")] + [(name.name, name.name) for name in RecordType]

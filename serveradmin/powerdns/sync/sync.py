@@ -19,13 +19,13 @@ def sync_records(records: list):
     start_time = time.time()
 
     # handle each domain separately and push all touched records to PowerDNS
-    for zone, records in group_by_zone(records).items():
+    for zone, zone_records in group_by_zone(records).items():
         dns_client.ensure_zone_exists(zone)
 
         # first we have to fetch all relevant existing records from powerdns to check for diff
         # in most cases we only need to fetch the records for the domain we are
         # currently syncing instead of the whole zone
-        domain_names = set([record.name for record in records])
+        domain_names = set([record.name for record in zone_records])
         domain_filter = ''
         if len(domain_names) == 1:
             # todo: find a smarter way to do fetch only relevant records without fetching the whole zone
@@ -33,7 +33,7 @@ def sync_records(records: list):
         actual = dns_client.get_rrsets(zone, domain_filter)
 
         # convert our database records to PowerDNS RRSet objects and push via HTTP
-        expected = db_records_to_pdns_rrsets(zone, records)
+        expected = db_records_to_pdns_rrsets(zone, zone_records)
         diff = get_changed_records(actual, expected)
         if not diff:
             continue
@@ -137,7 +137,7 @@ def db_records_to_pdns_rrsets(zone: str, records: list) -> List[RRSet]:
 
 # todo: this is a bit hacky, maybe we can configure it somewhere else, as we have to set the NS records for all zones
 def get_ns_soa_records(zone: str) -> List[RRSet]:
-    name_servers = ['ns1.example.com', 'ns2.example.com']  # todo jus some dummy test
+    name_servers = ['ns1.example.com', 'ns2.example.com']  # todo just some dummy test
 
     ns_rrset = RRSet(zone, 'NS', 3600)
     for server in name_servers:
@@ -145,7 +145,7 @@ def get_ns_soa_records(zone: str) -> List[RRSet]:
 
     soa_rrset = RRSet(zone, 'SOA', 3600)
     soa_rrset.records.add(RecordContent(
-        f"{ensure_canonical(name_servers[0])} hostmaster.{zone}. 1 10800 3600 604800 3600"
+        f"{ensure_canonical(name_servers[0])} hostmaster.{zone}. 1 86400 7200 2419200 172800"
     ))
 
     return [ns_rrset, soa_rrset]
