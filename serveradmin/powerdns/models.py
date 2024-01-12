@@ -79,7 +79,6 @@ class RecordSetting(models.Model):
 
         return display_name
 
-    # todo maybe use signals instead of overriding save/delete?
     def delete(self, *args, **kwargs):
         super().save(*args, **kwargs)
 

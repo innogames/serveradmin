@@ -15,7 +15,8 @@ class Records(unittest.TestCase):
         rrsets.append(rrset)
 
         actual = json.dumps(rrsets, cls=RRSetEncoder)
-        expected = """[{"changetype": "REPLACE", "type": "A", "name": "foo.example.com.", "ttl": 3600, "records": [{"content": "127.0.0.1"}]}]"""
+        expected = """[{"changetype": "REPLACE", "type": "A", "name": "foo.example.com.",
+         "ttl": 3600, "records": [{"content": "127.0.0.1"}]}]"""
         self.assertEqual(actual, expected)
 
 

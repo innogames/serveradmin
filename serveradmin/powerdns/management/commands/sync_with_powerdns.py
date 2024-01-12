@@ -26,4 +26,4 @@ class Command(BaseCommand):
             records = records.filter(domain__endswith=options['domain'])
         records = records.all()
 
-        sync_records(records)
+        sync_records(records, delete_unknown_in_zones=True, sync_whole_zone=True)

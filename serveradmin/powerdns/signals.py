@@ -24,7 +24,7 @@ def create_records(sender, **kwargs):
 
     from serveradmin.powerdns.models import Record
     records = Record.objects.filter(object_ids__contains=object_ids).all()
-    sync_records(records)
+    sync_records(records, False)
 
 
 @profile
@@ -41,11 +41,9 @@ def delete_records(sender, **kwargs):
 
     object_ids = kwargs['deleted']
 
-    logger.info(f"object to delete {kwargs['deleted']}")
-
-    # todo fetch deleted entries beforehand to get consistent state to sync?
-    records = Record.objects.filter(object_ids__cntains=object_ids).all()
-    sync_records(records)
+    # todo delete them, in best case AFTER the commit went through
+    records_to_delete = Record.objects.filter(object_ids__contains=object_ids).all()
+    #sync_records(records)
 
 
 @profile
@@ -61,12 +59,80 @@ def update_records(sender, **kwargs):
 
     # todo: support changes like this, the following code is not fully working...and not even clean code
     # [{'domain': {'action': 'multi', 'add': ['xx3.example.com'], 'remove': ['xx4.example.com']}, 'object_id': 11384}]
+    # [{'intern_ip': {'action': 'update', 'new': '212.53.194.143', 'old': '212.53.194.144'}, 'object_id': 549446}]
     # we have to update xx3.example.com + xx4.example.com and not just the new one
-    from serveradmin.powerdns.models import Record
+    from serveradmin.powerdns.models import Record, RecordSetting
 
-    # Is any of the updated objects mapped to a PowerDNS domain?
-    object_ids = [changed['object_id'] for changed in kwargs['changed']]
-    records = Record.objects.filter(object_ids__contains=object_ids).all()
+    # changes on the main object
+    #object_ids = [changed['object_id'] for changed in kwargs['changed']]
+    object_ids = []
 
-    sync_records(records)
-    logger.info(f"object to delete {kwargs['changed']} {object_ids}")
+    # first get all attribute fields which could potentially be related to a DNS record...
+
+    #domain_attributes = get_domain_attributes()
+    #logger.warning(f"domain_attributes {domain_attributes}")
+    all_relevant_attributes = get_all_attributes()
+    logger.warning(f"all_attributes {all_relevant_attributes}")
+
+    # then check in the changes and extract all such domain from the before+after changes.
+    touched_domains = set()
+    for changes in kwargs['changed']:
+        logger.warning(f"changes {changes}")
+
+        # change = {'intern_ip': {'action': 'update', 'new': '212.53.194.143', 'old': '212.53.194.144'}, 'object_id': 549446}
+        for field, change in changes.items():
+            if field == 'object_id':
+                continue
+            if field in all_relevant_attributes:
+                print(f"field {field} in all_attributes!! {change}")
+                object_ids.append(changes['object_id'])
+                break
+
+#        logger.warning(f"touched domains {touched_domains}")
+#        logger.warning(f"changes  {changes}")
+#
+#        for domain_attribute in domain_attributes:
+#            domain_attribute = str(domain_attribute)
+#            if domain_attribute in changes:
+#                touched_domains.update(changes[domain_attribute].get('add', None))
+#                touched_domains.update(changes[domain_attribute].get('remove', None))
+
+    if not object_ids:
+        return
+
+    touched_domains = list(filter(None, touched_domains))
+    logger.warning(f"touched domains {touched_domains}")
+
+    records = Record.objects.filter(Q(object_ids__contains=object_ids)|Q(domain__in=touched_domains)).all()
+    logger.info(records)
+    sync_records(records, False)
+
+    logger.info(f"object to update {kwargs['changed']} {object_ids}")
+
+
+def get_domain_attributes():
+    """Get all attributes which could be related to a DNS record
+    :return:
+    """
+    from serveradmin.powerdns.models import RecordSetting
+
+    domain_attributes = (RecordSetting.objects.exclude(domain__isnull=True)
+                         .distinct('domain').values_list('domain', flat=True))
+
+    return set(domain_attributes)
+
+
+def get_all_attributes():
+    """Get all attributes which could be related to a DNS record
+    :return:
+    """
+    from serveradmin.powerdns.models import RecordSetting
+
+    # todo: this could be cached...even if the querries are very fast
+    columns = 'source_value', 'source_value_special', 'domain'
+
+    distinct_values = ['hostname']
+    for column in columns:
+        distinct_values += list(RecordSetting.objects.values_list(column, flat=True).distinct())
+
+    return set(filter(None, distinct_values))

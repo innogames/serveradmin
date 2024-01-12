@@ -73,7 +73,7 @@ class RRSet:
             return False
         if sorted(self.records) != sorted(other.records):
             if self.type == 'SOA':
-                # todo check serial in the SOA record
+                # todo check serial in the SOA record. or do we care at all now?
                 return True
             return False
         return True

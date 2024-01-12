@@ -17,6 +17,7 @@ DNS_FIELDS = {
     'CNAME': 'dns_cname',
     'MX': 'dns_mx',
     'TXT': 'dns_txt',
+    #'NS': 'dns_ns',
 }
 
 IGNORED_DNS_FIELDS = ['SOA', 'NS']
@@ -135,7 +136,7 @@ class Command(BaseCommand):
                         domain_object = next(iter(query))
 
                     if sa_attribute.multi:
-                        domain_object[sa_field] = record['content_list']  # todo multi/non-multi fields!
+                        domain_object[sa_field] = record['content_list']
                     else:
                         domain_object[sa_field] = record['content_list'][0]
 

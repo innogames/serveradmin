@@ -8,9 +8,11 @@ from serveradmin.powerdns.sync.utils import ensure_canonical, quote_string
 
 logger = logging.getLogger(__package__)
 
-
-# todo fix renaming domain should drop old entries
-def sync_records(records: list):
+# todo access to ClouDNS
+# todo base setup of Zone Transfer
+# todo move to serveradmin_extras
+# todo add MX priority to INWX backup
+def sync_records(records: list, delete_unknown_in_zones: bool = True, sync_whole_zone: bool = False):
     if not records:
         return
 
@@ -25,16 +27,18 @@ def sync_records(records: list):
         # first we have to fetch all relevant existing records from powerdns to check for diff
         # in most cases we only need to fetch the records for the domain we are
         # currently syncing instead of the whole zone
-        domain_names = set([record.name for record in zone_records])
-        domain_filter = ''
-        if len(domain_names) == 1:
-            # todo: find a smarter way to do fetch only relevant records without fetching the whole zone
-            domain_filter = domain_names.pop()
-        actual = dns_client.get_rrsets(zone, domain_filter)
+        if sync_whole_zone:
+            actual = dns_client.get_rrsets(zone)
+        else:
+            actual = {}
+            for domain_name in set([record.name for record in zone_records]):
+                actual[ensure_canonical(domain_name)] = dns_client.get_rrsets(zone, domain_name).get(
+                    ensure_canonical(domain_name), []
+                )
 
         # convert our database records to PowerDNS RRSet objects and push via HTTP
         expected = db_records_to_pdns_rrsets(zone, zone_records)
-        diff = get_changed_records(actual, expected)
+        diff = get_changed_records(actual, expected, delete_unknown_in_zones)
         if not diff:
             continue
 
@@ -42,15 +46,16 @@ def sync_records(records: list):
         changed += len(diff)
 
         # todo: only send one /notify here in the end (IF there were changes) to trigger AXFR process only once?
-        dns_client.notify(zone)
+        #dns_client.notify(zone)
 
     logger.info(
         f"DNS sync took {round(time.time() - start_time, 2)}s. "
-        f"{len(records)} records. {changed} changes. records: {records}"
+        f"{len(records)} records. {changed} changes."
     )
 
 
-def get_changed_records(all_actual: Dict[str, Dict[str, RRSet]], all_expected: List[RRSet]) -> List[RRSet]:
+def get_changed_records(all_actual: Dict[str, Dict[str, RRSet]], all_expected: List[RRSet],
+                        delete_unknown_in_zones: bool) -> List[RRSet]:
     """
     Compare the actual records from PowerDNS with the expected records from the database
     The list contains entries with changetype "REPLACE" with all entries to delete or update.
@@ -64,7 +69,10 @@ def get_changed_records(all_actual: Dict[str, Dict[str, RRSet]], all_expected: L
             continue
 
         if all_actual[expected.name][expected.type] != expected:
-            logger.info(f"Record {expected.name} {expected.type} are NOT same {str(all_actual[expected.name][expected.type])} != {str(expected)}")
+            logger.info(
+                f"Record {expected.name} {expected.type} are "
+                f"NOT same {str(all_actual[expected.name][expected.type])} != {str(expected)}"
+            )
             final_changes.append(expected)
 
         del all_actual[expected.name][expected.type]
@@ -73,15 +81,16 @@ def get_changed_records(all_actual: Dict[str, Dict[str, RRSet]], all_expected: L
         if not all_actual[expected.name]:
             del all_actual[expected.name]
 
-    # delete all unknown ones!
-    for name_to_delete in all_actual:
-        for type_to_delete in all_actual[name_to_delete]:
-            rrset = RRSet(name_to_delete, type_to_delete, None)
-            rrset.changetype = 'DELETE'
+    if delete_unknown_in_zones:
+        # delete all unknown ones!
+        for name_to_delete in all_actual:
+            for type_to_delete in all_actual[name_to_delete]:
+                rrset = RRSet(name_to_delete, type_to_delete, None)
+                rrset.changetype = 'DELETE'
 
-            # we prepend all DELETEs to make sure we don't get conflicts with other REPLACE in the same request
-            final_changes.insert(0, rrset)
-            logger.info(f"Record {rrset} is old, deleting")
+                # we prepend all DELETEs to make sure we don't get conflicts with other REPLACE in the same request
+                final_changes.insert(0, rrset)
+                logger.info(f"Record {rrset} is old, deleting")
 
     return final_changes
 
@@ -126,26 +135,9 @@ def db_records_to_pdns_rrsets(zone: str, records: list) -> List[RRSet]:
         for type, rrset in types.items():
             if "CNAME" in types and type != "CNAME":
                 # if there is a CNAME set, ignore all other records for this name
+                # there might be a case where we have a CNAME and a A record for the same name in INWX
                 continue
 
             final_rrsets.append(rrset)
 
-    final_rrsets += get_ns_soa_records(zone)
-
     return final_rrsets
-
-
-# todo: this is a bit hacky, maybe we can configure it somewhere else, as we have to set the NS records for all zones
-def get_ns_soa_records(zone: str) -> List[RRSet]:
-    name_servers = ['ns1.example.com', 'ns2.example.com']  # todo just some dummy test
-
-    ns_rrset = RRSet(zone, 'NS', 3600)
-    for server in name_servers:
-        ns_rrset.records.add(RecordContent(ensure_canonical(server)))
-
-    soa_rrset = RRSet(zone, 'SOA', 3600)
-    soa_rrset.records.add(RecordContent(
-        f"{ensure_canonical(name_servers[0])} hostmaster.{zone}. 1 86400 7200 2419200 172800"
-    ))
-
-    return [ns_rrset, soa_rrset]
