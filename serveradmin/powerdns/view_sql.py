@@ -21,7 +21,6 @@ class ViewSQL:
 
         # - todo: Escape parameters injected
         # - todo: check materialized view with proper indexes
-        # - todo if view schema is safe, remove it and only REPLACE VIEW
         sql = 'DROP VIEW IF EXISTS powerdns_records;'
         sql += "CREATE OR REPLACE VIEW powerdns_records (object_ids, name, type, content, domain, ttl) AS ("
         sub_queries = []
@@ -58,7 +57,6 @@ class ViewSQL:
     @staticmethod
     def get_content_expression(record_setting, main: bool = False):
         if record_setting.record_type == 'PTR' and main:
-            # todo check if we can simplify PTRs a bit, as we have to reverse a bunch of logic
             if record_setting.domain:
                 return f"domain_name.hostname"
             else:
