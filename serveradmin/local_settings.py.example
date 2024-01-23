@@ -61,8 +61,3 @@ Copyright (c) 2019 InnoGames GmbH
 #     'https://graphite.example.com/grafana'
 #     '/dashboard/db/system-overview'
 # )
-
-# enable Powerdns sync
-# POWERDNS_API_ENDPOINT='http://pdns-auth:8081'
-# POWERDNS_API_SECRET_KEY = '0815passwd'
-# POWERDNS_API_SERVER_ID = 'localhost'

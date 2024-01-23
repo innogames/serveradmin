@@ -40,19 +40,6 @@ DATABASES = {
             'client_encoding': 'UTF8',
         },
     },
-    # Optional PowerDNS database connection
-    'powerdns': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('POSTGRES_POWERDNS_DB', default=None),
-        'USER': env('POSTGRES_POWERDNS_USER', default=None),
-        'PASSWORD': env('POSTGRES_POWERDNS_PASSWORD', default=None),
-        'HOST': env('POSTGRES_POWERDNS_HOST', default=None),
-        'PORT': env('POSTGRES_POWERDNS_PORT', default=5432),
-        'OPTIONS': {
-            'connect_timeout': 1,
-            'client_encoding': 'UTF8',
-        },
-    },
 }
 
 MIDDLEWARE = [
@@ -63,11 +50,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
-# todo move to example and clean up names
-POWERDNS_API_ENDPOINT='http://pdns-auth:8081'
-POWERDNS_API_SECRET_KEY = '0815passwd'
-POWERDNS_API_SERVER_ID = 'localhost'
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -86,14 +68,12 @@ INSTALLED_APPS = [
     'serveradmin.resources',
     'serveradmin.serverdb',
     'serveradmin.servershell',
-    'serveradmin.powerdns',
     'compressor',
 ]
 
 MENU_TEMPLATES = [
     'servershell/menu.html',
     'resources/menu.html',
-    'powerdns/menu.html',
 ]
 
 ROOT_URLCONF = 'serveradmin.urls'
