@@ -16,4 +16,18 @@ class Migration(migrations.Migration):
             name='hostname',
             field=models.CharField(max_length=254, unique=True, validators=[django.core.validators.RegexValidator('\\A(\\*\\.)?([a-z0-9_]+(\\.|-+))*[a-z0-9]+\\Z', 'Invalid hostname')]),
         ),
+        migrations.RunSQL(
+            sql=(
+                "ALTER TABLE server "
+                "DROP CONSTRAINT server_hostname_check, "
+                "ADD CONSTRAINT server_hostname_check "
+                "CHECK (hostname::text ~ '\A(\*\.)?([a-z0-9_]+(\.|-+))*[a-z0-9]+\Z'::text);"
+            ),
+            reverse_sql=(
+                "ALTER TABLE server "
+                "DROP CONSTRAINT server_hostname_check, "
+                "ADD CONSTRAINT server_hostname_check "
+                "CHECK (hostname::text ~ '\A(\*\.)?([a-z0-9]+(\.|-+))*[a-z0-9]+\Z'::text);"
+            )
+        ),
     ]

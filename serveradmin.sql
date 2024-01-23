@@ -885,7 +885,7 @@ CREATE TABLE public.server (
     hostname character varying(254) NOT NULL,
     intern_ip inet,
     servertype_id character varying(32) NOT NULL,
-    CONSTRAINT server_hostname_check CHECK (((hostname)::text ~ '\A(\*\.)?([a-z0-9]+(\.|-+))*[a-z0-9]+\Z'::text))
+    CONSTRAINT server_hostname_check CHECK (((hostname)::text ~ '\A(\*\.)?([a-z0-9_]+(\.|-+))*[a-z0-9]+\Z'::text))
 );
 
 
