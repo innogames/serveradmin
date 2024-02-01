@@ -72,9 +72,12 @@ def changes(request):
     # or from the change entry where the object was deleted.
     server_hostname = Server.objects.filter(
         server_id=OuterRef('object_id')).values('hostname')
+    # Workaround: In previous versions of Serveradmin restoring objects with
+    # the same id was possible, so we can end up with objects being deleted
+    # multiple times. We only take the latest into account.
     change_hostname = Change.objects.filter(
         object_id=OuterRef('object_id'),
-        change_type=Change.Type.DELETE).order_by('-id').values('change_json')
+        change_type=Change.Type.DELETE).values('change_json').order_by('-id')[:1]
     commits = commits.prefetch_related(Prefetch(
         'change_set',
         queryset=Change.objects.all().annotate(hostname=Coalesce(
