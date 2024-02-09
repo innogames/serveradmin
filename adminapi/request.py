@@ -75,16 +75,6 @@ def calc_message(timestamp, data=None):
     return str(timestamp) + (':' + data) if data else str(timestamp)
 
 
-def signable(key):
-    """Checks if key is able to sign the message
-    """
-    try:
-        key.sign_ssh_data(b'InnoGames')
-        return True
-    except SSHException:
-        return False
-
-
 def calc_signature(private_key, timestamp, data=None):
     """Create a proof that we posess the private key
 
@@ -107,6 +97,18 @@ def calc_signature(private_key, timestamp, data=None):
         # for keys loaded from a file. Fix the file loaded once:
         sig = sig.asbytes()
     return b64encode(sig).decode()
+
+
+def calc_signatures(private_keys, timestamp, data=None):
+    """Create multiple signatures for all passed keys"""
+    sigs = {}
+    for key in private_keys:
+        try:
+            sigs[key.get_base64()] = calc_signature(key, timestamp, data)
+        except SSHException:
+            # Ignore unusable keys
+            pass
+    return sigs
 
 
 def calc_security_token(auth_token, timestamp, data=None):
@@ -168,17 +170,16 @@ def _build_request(endpoint, get_params, post_params):
     else:
         try:
             agent = Agent()
-            agent_keys = filter(signable, agent.get_keys())
+            agent_keys = agent.get_keys()
         except SSHException:
             raise AuthenticationError('No token and ssh agent found')
 
         if not agent_keys:
             raise AuthenticationError('No token and ssh agent keys found')
 
-        key_signatures = {
-            key.get_base64(): calc_signature(key, timestamp, post_data)
-            for key in agent_keys
-        }
+        key_signatures = calc_signatures(agent_keys, timestamp, post_data)
+        if not key_signatures:
+            raise AuthenticationError('No token and ssh agent keys found')
 
         headers['X-PublicKeys'] = ','.join(key_signatures.keys())
         headers['X-Signatures'] = ','.join(key_signatures.values())
