@@ -173,7 +173,7 @@ def _containment_filter_template(attribute, filt):
     template = None     # To be formatted 2 times
     value = filt.value
 
-    if attribute.type == 'inet':
+    if attribute.type in ['inet', 'inet4', 'inet6']:
         if isinstance(filt, StartsWith):
             template = "{{0}} >>= {0} AND host({{0}}) = host(0{})"
         elif isinstance(filt, Contains):
