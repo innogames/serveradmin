@@ -238,7 +238,7 @@ def edit(request):
     return _edit(request, server, True)
 
 
-def _edit(request, server, edit_mode=False, template='edit'):  # NOQA: C901
+def _edit(request: HttpRequest, server, edit_mode=False, template='edit'):  # NOQA: C901
     # @TODO work with ServerAttribute models here and use Django forms
     invalid_attrs = set()
     if edit_mode and request.POST:
@@ -346,6 +346,9 @@ def _edit(request, server, edit_mode=False, template='edit'):  # NOQA: C901
         ):
             continue
 
+        # Apply pre-filled values from query string if submitted
+        value = request.GET.get(key, value)
+
         is_related_attribute = False
         attribute = attribute_lookup[key]
         servertype_attribute = servertype_attributes.get(key)
@@ -423,7 +426,7 @@ def commit(request):
 
 
 @login_required
-def new_object(request):
+def new_object(request: HttpRequest):
     servertype = request.GET.get('servertype')
 
     try:
