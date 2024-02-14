@@ -76,6 +76,39 @@ def get_choices(types):
     # to use the same names.
     return zip(*([types] * 2))
 
+def is_supernet_consistent(ip_address, server):
+    """Check if requested IP address is consistent with supernets for all other IP address of a server."""
+
+    # A server belongs to different supernets depending on network servertype
+    supernet_attributes = Attribute.objects.filter(
+        type='supernet',
+        servertype_attributes__servertype_id=server.servertype_id,
+    )
+    supernet_servertypes = [x.target_servertype for x in supernet_attributes]
+
+    for supernet_servertype in supernet_servertypes:
+        supernet_1, _, _ = server.get_supernet(supernet_servertype)  # The result is guaranteed to be consistent
+
+        print(f'is_supernet_consistent 1: {supernet_1}')
+        if supernet_1 is None:
+            continue
+
+        # Check the supernet of the new IP address
+        print(f'is_supernet_consistent 2: {ip_address} {supernet_servertype}')
+        for a in ServerInetAttribute.objects.filter(
+            value__net_contains_or_equals=ip_address,
+            server__servertype__ip_addr_type='network',
+            server__servertype_id=supernet_servertype,
+        ):
+            supernet_2 = a.server
+            print(f'is_supernet_consistent 3: {supernet_2}')
+
+            if supernet_1 != supernet_2:
+                raise ValidationError(
+                    f'Non-matching {supernet_servertype} {supernet_2} for IP address {ip_address}, '
+                    f'other IP addresses of {server.hostname} are in {supernet_1}'
+            )
+
 
 # TODO: Make validators out of the methods is_ip_address, is_unique and
 #       is_network and attach them to the model fields validators.
@@ -121,7 +154,7 @@ def is_unique_ip(ip_interface: Union[IPv4Interface, IPv6Interface],
     # only withing the same attribute id. That means different hosts can have
     # the same IP address as long as it is in different attributes.
 
-    # TODO: Make "aid" mandatory when intern_ip is gone.
+    # TODO: Make "attribute_id" mandatory when intern_ip is gone.
     if attribute_id:
         object_attribute_condition = Q(server_id=object_id) | ~Q(attribute_id=attribute_id)
     else:
@@ -274,6 +307,7 @@ class Attribute(models.Model):
         db_index=False,
         limit_choices_to=dict(type='relation'),
     )
+    supernet = models.BooleanField(null=False, default=False)
     clone = models.BooleanField(null=False, default=False)
     history = models.BooleanField(
         null=False, default=True,
@@ -467,10 +501,63 @@ class Server(models.Model):
         return self.hostname
 
     def get_supernet(self, servertype):
-        return Server.objects.get(
-            servertype=servertype,
-            intern_ip__net_contains_or_equals=self.intern_ip,
+        """Get a supernet of given servertype for the current server.
+
+        This function will check all IP addresses of a server which have the "supernet" feature enabled.
+        If data is inconsistent, an exception is raised.
+        No matching network for just some of the addresses does not mean inconsistency.
+        """
+
+        supernet_1 = None
+        supernet_ip_address = None
+        supernet_attribute = None
+
+        # TODO: Remove "intern_ip" support. Just remove this block of code below.
+        try:
+            supernet_1 = Server.objects.get(
+                servertype=servertype,
+                intern_ip__net_contains_or_equals=self.intern_ip,
+            )
+        except Server.DoesNotExist:
+            return(None, None, None)
+
+        supernet_ip_address = self.intern_ip
+        supernet_attribute = None # Magic value for intern_ip
+
+        # Configurable attributes
+
+        ip_addresses = ServerInetAttribute.objects.filter(
+            server_id=self.server_id,
+            attribute__supernet=True,
         )
+
+        # TODO: How to net_contains_or_equals for iterable?
+        for ip_address in ip_addresses:
+            try:
+                attr = ServerInetAttribute.objects.get(
+                    value__net_contains_or_equals=ip_address.value,
+                    server__servertype__ip_addr_type='network',
+                    server__servertype_id=servertype.servertype_id,
+                )
+                if not attr.attribute.supernet:
+                    raise ValidationError(f'Not a supernet: {servertype} {ip_address.value}!')
+                supernet_2 = attr.server
+                # TODO: Shouldn't we check that the requested servertype really point
+            except ServerInetAttribute.DoesNotExist:
+               continue
+            else:
+                # Always trust the 1st found network
+                if supernet_1 is None:
+                    supernet_1 = supernet_2
+                    supernet_ip_address = ip_address.value
+                    supernet_attribute = ip_addresses.attribute
+                # Verify that all found networks match the 1st found one.
+                elif supernet_1 != supernet_2:
+                    raise ValidationError(f'Can\'t determine {servertype} for {self.hostname}!')
+
+        print(f'get_supernet: {supernet_1} {supernet_ip_address} {supernet_attribute}')
+        return (supernet_1, supernet_ip_address, supernet_attribute)
+
 
     def clean(self):
         super(Server, self).clean()
@@ -502,6 +589,9 @@ class Server(models.Model):
                 is_network(self.intern_ip)
                 network_overlaps(self.intern_ip, self.servertype.servertype_id,
                                  self.server_id)
+
+            if ip_addr_type != 'null':
+                is_supernet_consistent(self.intern_ip, self)
 
     def get_attributes(self, attribute):
         model = ServerAttribute.get_model(attribute.type)
@@ -736,6 +826,7 @@ class ServerInetAttribute(ServerAttribute):
             network_overlaps(self.value, self.server.servertype_id,
                              self.server.server_id)
 
+        is_supernet_consistent(self.value, self.server)
 
 class ServerMACAddressAttribute(ServerAttribute):
     attribute = models.ForeignKey(
