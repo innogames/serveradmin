@@ -13,7 +13,7 @@ from ipaddress import (
     IPv6Interface,
     ip_network,
     IPv4Network,
-    IPv6Network,
+    IPv6Network, AddressValueError, NetmaskValueError,
 )
 from typing import Union
 
@@ -38,6 +38,8 @@ ATTRIBUTE_TYPES = {
     'reverse': str,
     'number': lambda x: float(x) if '.' in str(x) else int(x),
     'inet': lambda x: inet_to_python(x),
+    'inet4': lambda x: inet4_to_python(x),
+    'inet6': lambda x: inet6_to_python(x),
     'macaddr': EUI,
     'date': str,
     'datetime': str,
@@ -106,16 +108,31 @@ def is_unique_ip(ip_interface: Union[IPv4Interface, IPv6Interface],
     :return:
     """
 
+    if ip_interface.version == 4:
+        server_attribute_cls = ServerInet4Attribute
+    else:
+        server_attribute_cls = ServerInet6Attribute
+
     # We avoid querying the duplicate hosts here and giving the user
     # detailed information because checking with exists is cheaper than
     # querying the server and this is a validation and should be fast.
+    # Always exclude the current object_id from the query because we allow
+    # duplication of data between the legacy (intern_ip, primary_ip6) and
+    # the modern (ipv4, ipv6) attributes.
     has_duplicates = (
         Server.objects.filter(intern_ip=ip_interface).exclude(
             Q(servertype__ip_addr_type='network') |
             Q(server_id=object_id)
         ).exists() or
         ServerInetAttribute.objects.filter(value=ip_interface).exclude(
-            server__servertype__ip_addr_type='network').exists())
+            Q(server__servertype__ip_addr_type='network') |
+            Q(server_id=object_id)
+        ).exists() or
+        server_attribute_cls.objects.filter(value=ip_interface).exclude(
+            Q(server__servertype__ip_addr_type='network') |
+            Q(server_id=object_id)
+        ).exists()
+    )
     if has_duplicates:
         raise ValidationError(
             'An object with {0} already exists'.format(str(ip_interface)))
@@ -150,6 +167,20 @@ def inet_to_python(obj: object) -> Union[IPv4Interface, IPv6Interface]:
         return ip_interface(obj)
     except ValueError as error:
         raise ValidationError(str(error))
+
+# WARNING: called only for edit->commit, not for commit!
+def inet4_to_python(obj: object) -> IPv4Interface:
+    try:
+        return IPv4Interface(obj)
+    except (AddressValueError, NetmaskValueError):
+        raise ValidationError(f'{obj} does not appear to be an IPv4 interface')
+
+
+def inet6_to_python(obj: object) -> IPv6Interface:
+    try:
+        return IPv6Interface(obj)
+    except (AddressValueError, NetmaskValueError):
+        raise ValidationError(f'{obj} does not appear to be an IPv6 interface')
 
 
 def network_overlaps(ip_interface: Union[IPv4Interface, IPv6Interface],
@@ -520,6 +551,10 @@ class ServerAttribute(models.Model):
             return ServerNumberAttribute
         if attribute_type == 'inet':
             return ServerInetAttribute
+        if attribute_type == 'inet4':
+            return ServerInet4Attribute
+        if attribute_type == 'inet6':
+            return ServerInet6Attribute
         if attribute_type == 'macaddr':
             return ServerMACAddressAttribute
         if attribute_type == 'date':
@@ -674,6 +709,89 @@ class ServerInetAttribute(ServerAttribute):
 
         if type(self.value) not in [IPv4Interface, IPv6Interface]:
             self.value = inet_to_python(self.value)
+
+        # Get the ip_addr_type of the servertype
+        ip_addr_type = self.server.servertype.ip_addr_type
+
+        if ip_addr_type == 'null':
+            # A Servertype with ip_addr_type "null" and attributes of type
+            # inet must be denied per configuration. This is just a safety net
+            # in case e.g. somebody creates them programmatically.
+            raise ValidationError(
+                _('%(attribute_id)s must be null'), code='invalid value',
+                params={'attribute_id': self.attribute_id})
+        elif ip_addr_type == 'host':
+            is_ip_address(self.value)
+            is_unique_ip(self.value, self.server.server_id)
+        elif ip_addr_type == 'loadbalancer':
+            is_ip_address(self.value)
+        elif ip_addr_type == 'network':
+            is_network(self.value)
+            network_overlaps(self.value, self.server.servertype_id,
+                             self.server.server_id)
+
+class ServerInet4Attribute(ServerAttribute):
+    attribute = models.ForeignKey(
+        Attribute,
+        db_index=False,
+        on_delete=models.CASCADE,
+        limit_choices_to=dict(type='inet4'),
+    )
+    value = netfields.InetAddressField()
+
+    class Meta:
+        app_label = 'serverdb'
+        db_table = 'server_inet4_attribute'
+        unique_together = [['server', 'attribute', 'value']]
+        index_together = [['attribute', 'value']]
+
+    def clean(self):
+        super(ServerAttribute, self).clean()
+
+        if type(self.value) != IPv4Interface:
+            self.value = inet4_to_python(self.value)
+
+        # Get the ip_addr_type of the servertype
+        ip_addr_type = self.server.servertype.ip_addr_type
+
+        if ip_addr_type == 'null':
+            # A Servertype with ip_addr_type "null" and attributes of type
+            # inet must be denied per configuration. This is just a safety net
+            # in case e.g. somebody creates them programmatically.
+            raise ValidationError(
+                _('%(attribute_id)s must be null'), code='invalid value',
+                params={'attribute_id': self.attribute_id})
+        elif ip_addr_type == 'host':
+            is_ip_address(self.value)
+            is_unique_ip(self.value, self.server.server_id)
+        elif ip_addr_type == 'loadbalancer':
+            is_ip_address(self.value)
+        elif ip_addr_type == 'network':
+            is_network(self.value)
+            network_overlaps(self.value, self.server.servertype_id,
+                             self.server.server_id)
+
+
+class ServerInet6Attribute(ServerAttribute):
+    attribute = models.ForeignKey(
+        Attribute,
+        db_index=False,
+        on_delete=models.CASCADE,
+        limit_choices_to=dict(type='inet6'),
+    )
+    value = netfields.InetAddressField()
+
+    class Meta:
+        app_label = 'serverdb'
+        db_table = 'server_inet6_attribute'
+        unique_together = [['server', 'attribute', 'value']]
+        index_together = [['attribute', 'value']]
+
+    def clean(self):
+        super(ServerAttribute, self).clean()
+
+        if type(self.value) != IPv6Interface:
+            self.value = inet6_to_python(self.value)
 
         # Get the ip_addr_type of the servertype
         ip_addr_type = self.server.servertype.ip_addr_type

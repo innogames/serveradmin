@@ -271,7 +271,7 @@ class QueryMaterializer:
             if attribute not in self._joined_attributes:
                 continue
 
-            if attribute.type == 'inet':
+            if attribute.type in ['inet', 'inet4', 'inet6']:
                 if value is None:
                     yield attribute.attribute_id, None
                 else:
