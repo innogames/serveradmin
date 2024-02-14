@@ -109,13 +109,19 @@ def is_unique_ip(ip_interface: Union[IPv4Interface, IPv6Interface],
     # We avoid querying the duplicate hosts here and giving the user
     # detailed information because checking with exists is cheaper than
     # querying the server and this is a validation and should be fast.
+    # Always exclude the current object_id from the query because we allow
+    # duplication of data between the legacy (intern_ip, primary_ip6) and
+    # the modern (ipv4, ipv6) attributes.
     has_duplicates = (
         Server.objects.filter(intern_ip=ip_interface).exclude(
             Q(servertype__ip_addr_type='network') |
             Q(server_id=object_id)
         ).exists() or
         ServerInetAttribute.objects.filter(value=ip_interface).exclude(
-            server__servertype__ip_addr_type='network').exists())
+            Q(server__servertype__ip_addr_type='network') |
+            Q(server_id=object_id)
+        ).exists()
+    )
     if has_duplicates:
         raise ValidationError(
             'An object with {0} already exists'.format(str(ip_interface)))
@@ -207,6 +213,11 @@ class Servertype(models.Model):
         return self.servertype_id
 
 
+class InetAddressTypeChoice(models.TextChoices):
+    ANY = 'ANY', _('Any')
+    IPV4 = 'IPV4', _('IPv4')
+    IPV6 = 'IPV6', _('IPv6')
+
 class Attribute(models.Model):
     special = None
 
@@ -232,6 +243,8 @@ class Attribute(models.Model):
         max_length=32, null=False, blank=False, default='other'
     )
     help_link = models.CharField(max_length=255, blank=True, null=True)
+    inet_address_type = models.TextField(choices=InetAddressTypeChoice.choices,
+                                         default=InetAddressTypeChoice.ANY)
     readonly = models.BooleanField(null=False, default=False)
     target_servertype = models.ForeignKey(
         Servertype, on_delete=models.CASCADE,
@@ -672,8 +685,20 @@ class ServerInetAttribute(ServerAttribute):
     def clean(self):
         super(ServerAttribute, self).clean()
 
-        if type(self.value) not in [IPv4Interface, IPv6Interface]:
+        if self.attribute.inet_address_type == InetAddressTypeChoice.IPV4:
+            allowed_types = (IPv4Interface,)
+        elif self.attribute.inet_address_type == InetAddressTypeChoice.IPV6:
+            allowed_types = (IPv6Interface,)
+        else:
+            allowed_types = (IPv4Interface, IPv6Interface)
+
+        if type(self.value) not in allowed_types:
             self.value = inet_to_python(self.value)
+            if type(self.value) not in allowed_types:
+                raise ValidationError(
+                    f'IP address {self.value} is not '
+                    f'of type {self.attribute.inet_address_type}!'
+                )
 
         # Get the ip_addr_type of the servertype
         ip_addr_type = self.server.servertype.ip_addr_type
