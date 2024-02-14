@@ -96,7 +96,8 @@ def is_ip_address(ip_interface: Union[IPv4Interface, IPv6Interface]) -> None:
 
 
 def is_unique_ip(ip_interface: Union[IPv4Interface, IPv6Interface],
-                 object_id: int) -> None:
+                 object_id: int,
+                 aid: models.CharField = None) -> None:
     """Validate if IPv4/IPv6 address is unique
 
     Raises a ValidationError if intern_ip or any other attribute of type inet
@@ -109,13 +110,31 @@ def is_unique_ip(ip_interface: Union[IPv4Interface, IPv6Interface],
     # We avoid querying the duplicate hosts here and giving the user
     # detailed information because checking with exists is cheaper than
     # querying the server and this is a validation and should be fast.
+
+    # Always exclude the current object_id from the query because we allow
+    # duplication of data between the legacy (intern_ip, primary_ip6) and
+    # the modern (ipv4, ipv6) attributes.
+
+    # When operating on real attributes (not on intern_ip) find duplicates
+    # only withing the same attribute id. That means different hosts can have
+    # the same IP address as long as it is in different attributes.
+
+    # TODO: Make "aid" mandatory when intern_ip is gone.
+    if aid:
+        filter = Q(server_id=object_id) | ~Q(attribute_id=aid)
+    else:
+        filter = Q(server_id=object_id)
+
     has_duplicates = (
+        # TODO: Remove intern_ip.
         Server.objects.filter(intern_ip=ip_interface).exclude(
             Q(servertype__ip_addr_type='network') |
             Q(server_id=object_id)
         ).exists() or
         ServerInetAttribute.objects.filter(value=ip_interface).exclude(
-            server__servertype__ip_addr_type='network').exists())
+            Q(server__servertype__ip_addr_type='network') | filter
+        ).exists()
+    )
     if has_duplicates:
         raise ValidationError(
             'An object with {0} already exists'.format(str(ip_interface)))
@@ -206,6 +225,10 @@ class Servertype(models.Model):
     def __str__(self):
         return self.servertype_id
 
+class InetAddressFamilyChoice(models.TextChoices):
+    ANY = 'ANY', _('Any')
+    IPV4 = 'IPV4', _('IPv4')
+    IPV6 = 'IPV6', _('IPv6')
 
 class Attribute(models.Model):
     special = None
@@ -232,6 +255,9 @@ class Attribute(models.Model):
         max_length=32, null=False, blank=False, default='other'
     )
     help_link = models.CharField(max_length=255, blank=True, null=True)
+    inet_address_family = models.CharField(choices=InetAddressFamilyChoice.choices,
+                                           default=InetAddressFamilyChoice.ANY,
+                                           max_length=5)
     readonly = models.BooleanField(null=False, default=False)
     target_servertype = models.ForeignKey(
         Servertype, on_delete=models.CASCADE,
@@ -672,8 +698,20 @@ class ServerInetAttribute(ServerAttribute):
     def clean(self):
         super(ServerAttribute, self).clean()
 
-        if type(self.value) not in [IPv4Interface, IPv6Interface]:
+        if self.attribute.inet_address_family == InetAddressFamilyChoice.IPV4:
+            allowed_types = (IPv4Interface,)
+        elif self.attribute.inet_address_family == InetAddressFamilyChoice.IPV6:
+            allowed_types = (IPv6Interface,)
+        else:
+            allowed_types = (IPv4Interface, IPv6Interface)
+
+        if type(self.value) not in allowed_types:
             self.value = inet_to_python(self.value)
+            if type(self.value) not in allowed_types:
+                raise ValidationError(
+                    f'IP address {self.value} is not '
+                    f'of type {self.attribute.get_inet_address_family_display()}!'
+                )
 
         # Get the ip_addr_type of the servertype
         ip_addr_type = self.server.servertype.ip_addr_type
@@ -687,7 +725,7 @@ class ServerInetAttribute(ServerAttribute):
                 params={'attribute_id': self.attribute_id})
         elif ip_addr_type == 'host':
             is_ip_address(self.value)
-            is_unique_ip(self.value, self.server.server_id)
+            is_unique_ip(self.value, self.server.server_id, self.attribute_id)
         elif ip_addr_type == 'loadbalancer':
             is_ip_address(self.value)
         elif ip_addr_type == 'network':
