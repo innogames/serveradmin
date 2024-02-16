@@ -226,9 +226,9 @@ class Servertype(models.Model):
         return self.servertype_id
 
 class InetAddressFamilyChoice(models.TextChoices):
-    ANY = 'ANY', _('Any')
     IPV4 = 'IPV4', _('IPv4')
     IPV6 = 'IPV6', _('IPv6')
+    __empty__ = _("none or any")
 
 class Attribute(models.Model):
     special = None
@@ -255,9 +255,7 @@ class Attribute(models.Model):
         max_length=32, null=False, blank=False, default='other'
     )
     help_link = models.CharField(max_length=255, blank=True, null=True)
-    inet_address_family = models.CharField(choices=InetAddressFamilyChoice.choices,
-                                           default=InetAddressFamilyChoice.ANY,
-                                           max_length=5)
+    inet_address_family = models.CharField(choices=InetAddressFamilyChoice.choices, max_length=5, blank=True)
     readonly = models.BooleanField(null=False, default=False)
     target_servertype = models.ForeignKey(
         Servertype, on_delete=models.CASCADE,
