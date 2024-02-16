@@ -97,13 +97,15 @@ def is_ip_address(ip_interface: Union[IPv4Interface, IPv6Interface]) -> None:
 
 def is_unique_ip(ip_interface: Union[IPv4Interface, IPv6Interface],
                  object_id: int,
-                 aid: models.CharField = None) -> None:
+                 attribute_id: str = None) -> None:
     """Validate if IPv4/IPv6 address is unique
 
     Raises a ValidationError if intern_ip or any other attribute of type inet
     with this ip_address already exists.
 
     :param ip_interface:
+    :param object_id:
+    :param attribute_id:
     :return:
     """
 
@@ -120,8 +122,8 @@ def is_unique_ip(ip_interface: Union[IPv4Interface, IPv6Interface],
     # the same IP address as long as it is in different attributes.
 
     # TODO: Make "aid" mandatory when intern_ip is gone.
-    if aid:
-        filter = Q(server_id=object_id) | ~Q(attribute_id=aid)
+    if attribute_id:
+        filter = Q(server_id=object_id) | ~Q(attribute_id=attribute_id)
     else:
         filter = Q(server_id=object_id)
 
