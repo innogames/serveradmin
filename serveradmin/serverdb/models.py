@@ -229,12 +229,13 @@ class Servertype(models.Model):
     def __str__(self):
         return self.servertype_id
 
-class InetAddressFamilyChoice(models.TextChoices):
-    IPV4 = 'IPV4', _('IPv4')
-    IPV6 = 'IPV6', _('IPv6')
-    __empty__ = _("none or any")
 
 class Attribute(models.Model):
+    class InetAddressFamilyChoice(models.TextChoices):
+        IPV4 = 'IPV4', _('IPv4')
+        IPV6 = 'IPV6', _('IPv6')
+        __empty__ = _("none or any")
+
     special = None
 
     def __init__(self, *args, **kwargs):
@@ -700,9 +701,9 @@ class ServerInetAttribute(ServerAttribute):
     def clean(self):
         super(ServerAttribute, self).clean()
 
-        if self.attribute.inet_address_family == InetAddressFamilyChoice.IPV4:
+        if self.attribute.inet_address_family == Attribute.InetAddressFamilyChoice.IPV4:
             allowed_types = (IPv4Interface,)
-        elif self.attribute.inet_address_family == InetAddressFamilyChoice.IPV6:
+        elif self.attribute.inet_address_family == Attribute.InetAddressFamilyChoice.IPV6:
             allowed_types = (IPv6Interface,)
         else:
             allowed_types = (IPv4Interface, IPv6Interface)
