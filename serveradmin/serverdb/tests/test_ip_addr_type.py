@@ -205,11 +205,10 @@ class TestIpAddrTypeHostForInetAttributes(TestIpAddrType):
         server['ip_config'] = '10.0.0.2/32'
         server.commit(user=User.objects.first())
 
-        duplicate = self._get_server('host')
-        duplicate['intern_ip'] = '10.0.0.3/32'
-        duplicate['ip_config_new'] = '10.0.0.2/32'
-        with self.assertRaises(ValidationError):
-            duplicate.commit(user=User.objects.first())
+        other_attribute = self._get_server('host')
+        other_attribute['intern_ip'] = '10.0.0.3/32'
+        other_attribute['ip_config_new'] = '10.0.0.2/32'
+        self.assertIsNone(other_attribute.commit(user=User.objects.first()))
 
     def test_server_with_duplicate_inet_for_loadbalancer(self):
         server = self._get_server('loadbalancer')
