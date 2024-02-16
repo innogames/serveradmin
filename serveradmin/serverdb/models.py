@@ -123,9 +123,9 @@ def is_unique_ip(ip_interface: Union[IPv4Interface, IPv6Interface],
 
     # TODO: Make "aid" mandatory when intern_ip is gone.
     if attribute_id:
-        filter = Q(server_id=object_id) | ~Q(attribute_id=attribute_id)
+        object_attribute_condition = Q(server_id=object_id) | ~Q(attribute_id=attribute_id)
     else:
-        filter = Q(server_id=object_id)
+        object_attribute_condition = Q(server_id=object_id)
 
     has_duplicates = (
         # TODO: Remove intern_ip.
@@ -134,7 +134,7 @@ def is_unique_ip(ip_interface: Union[IPv4Interface, IPv6Interface],
             Q(server_id=object_id)
         ).exists() or
         ServerInetAttribute.objects.filter(value=ip_interface).exclude(
-            Q(server__servertype__ip_addr_type='network') | filter
+            Q(server__servertype__ip_addr_type='network') | object_attribute_condition
         ).exists()
     )
     if has_duplicates:
