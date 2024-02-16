@@ -193,6 +193,8 @@ def network_overlaps(ip_interface: Union[IPv4Interface, IPv6Interface],
         ).exclude(
             server_id=object_id
         ).exists() or
+        # TODO: We should filter for attribute id here as well to have
+        # consistent bebaviour with ip_addr_type: host and is_unique.
         ServerInetAttribute.objects.filter(
             server__servertype=servertype_id,
             value__net_overlaps=ip_interface
