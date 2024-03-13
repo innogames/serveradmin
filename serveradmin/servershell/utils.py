@@ -6,8 +6,8 @@ def servershell_plugins():
     """Find $app.servershell.plugin.js files from Serveradmin apps
 
     Scans all apps beginning with serveradmin_ for files that follow the pattern
-    $app.servershell.plugin.js and return them. This allows apps to add
-    commands to the Servershell.
+    $app.servershell.plugin.js and return them. This allows Serveradmin apps to
+    extend the Servershell for example with custom commands.
 
     @return:
     """
