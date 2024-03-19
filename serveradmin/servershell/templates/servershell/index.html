@@ -235,4 +235,8 @@
         servershell.sync_attrlist_visibility();
     });
 </script>
+{% for plugin in servershell_plugins %}
+    {# Load javascript files from serveradmin apps for easy extension  #}
+    <script src="{{ STATIC_URL }}{{ plugin }}"></script>
+{% endfor %}
 {% endblock %}

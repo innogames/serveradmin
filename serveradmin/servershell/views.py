@@ -49,6 +49,7 @@ from serveradmin.servershell.helper.autocomplete import (
     attribute_startswith
 )
 from serveradmin.servershell.merged_query_iterator import MergedQuery
+from serveradmin.servershell.utils import servershell_plugins
 
 MAX_DISTINGUISHED_VALUES = 50
 NUM_SERVERS_DEFAULT = 25
@@ -106,6 +107,7 @@ def index(request):
         'order_by': 'hostname',
         'filters': sorted([(f.__name__, f.__doc__) for f in filter_classes]),
         'search_settings': search_settings,
+        'servershell_plugins': servershell_plugins(),
     })
 
 

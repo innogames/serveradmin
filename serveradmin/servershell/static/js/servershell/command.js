@@ -172,6 +172,18 @@ function validate_selected(min=1, max=-1) {
     return true;
 }
 
+// Serveradmin Servershell plugins can provide help for custom commands by
+// extending the servershell.commands_help array like in the example below in
+// their static/js/$app.servershell.plugin.js
+servershell.commands_help = [
+    // Example:
+    // {
+    //     "command": "foo",
+    //     "arguments": "attr_name",
+    //     "description": "A foo that bars",
+    // }
+]
+
 servershell.commands = {
     pin: function() {
         let selected_ids = servershell.get_selected();
@@ -770,7 +782,23 @@ function execute_command() {
 }
 
 $(document).ready(function() {
-   $('#command_form').submit(function(event) {
+
+    // Gather description for custom commands from Servershell plugins and add
+    // them to the help modal.
+    servershell.commands_help.forEach(function(command_help) {
+        let row = document.createElement("tr");
+        row.id = `cmd-${command_help["command"]}`;
+
+        for (let index of ["command", "arguments", "description"]) {
+            let cell = document.createElement("td");
+            cell.innerText = command_help[index];
+            row.appendChild(cell);
+        }
+
+        $("#help_command").append(row);
+    });
+
+    $('#command_form').submit(function(event) {
         event.preventDefault();
 
         // Workaround:
@@ -786,5 +814,5 @@ $(document).ready(function() {
        if (execute_command()) {
            servershell.command = '';
        }
-   })
+    });
 });
