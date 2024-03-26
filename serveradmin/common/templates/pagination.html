@@ -1,9 +1,14 @@
-{# Usage: {% include "pagination.html" with page=obj form=False %} #}
+{# Usage expamples: #}
+{# {% include "pagination.html" with page=obj form=False %} #}
+{# {% include "pagination.html" with page=obj form=True %} #}
+{# {% include "pagination.html" with page=obj form=True form_id="myform" %} #}
 
-{# Set form parameter to True to make the pagination controls find the #}
-{# form it is enclosed and submit it with the page parameter appended. #}
+{# Set form parameter to True to make the pagination controls find the form it #}
+{# is enclosed and submit it with the page parameter appended. If there are #}
+{# multiple forms you can set form_id to the HTML id of the form that should #}
+{# get submitted. #}
 
-<div class="pagination {% if form %}form{% endif %}">
+<div class="pagination {% if form %}form{% endif %}" {% if form_id %}data-form-id="{{ form_id }}"{% endif %}>
     <span class="step-links">
         {% if page.has_previous %}
             <a href="?page=1">&laquo; first</a>

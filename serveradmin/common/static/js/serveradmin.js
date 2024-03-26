@@ -6,7 +6,7 @@ $(document).ready(function() {
     }
 
     // This is our progress spinner we can call e.g. spinner.enable() from
-    // everywhere when ever we need it for example when doing long running
+    // everywhere when ever we need it for example when doing long-running
     // ajax requests for the servershell search.
     window.spinner = {
         _timers: {},
@@ -43,7 +43,15 @@ $(document).ready(function() {
     // submitting the links.
     $('.pagination.form a').each(function(index, anchor) {
         anchor.onclick = function(event) {
-            let form = this.closest('form');
+            let form = null;
+            let formId = this.closest('.pagination').dataset.formId;
+            if (formId) {
+                form = document.getElementById(formId);
+            }
+            else {
+                this.closest('form');
+            }
+
             if (form) {
                 event.preventDefault();
 
