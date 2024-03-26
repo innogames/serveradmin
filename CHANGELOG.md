@@ -2,6 +2,7 @@
 
 ## 4.14.0
 * Allow Serveradmin apps to extend the Servershell (Javascript) [PR!348](https://github.com/innogames/serveradmin/pull/348)
+* Support pagination with multiple forms [PR!349](https://github.com/innogames/serveradmin/pull/349)
 
 ## 4.13.0
 * Extend inet attributes and improve ip address type validation [PR!346](https://github.com/innogames/serveradmin/pull/346)
