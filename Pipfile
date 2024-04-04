@@ -17,7 +17,7 @@ psycopg2-binary = "<2.9"
 django-netfields = "<2.0.0"
 # Required to generate sprites from Graphite
 Pillow = "~=10.0"
-# Required to parse human readable string like "a day ago" to a datetime
+# Required to parse human-readable string like "a day ago" to a datetime
 dateparser = "~=1.1"
 # Use Twelve-factor methodology to configure environment variables
 django-environ = "<1.0.0"
