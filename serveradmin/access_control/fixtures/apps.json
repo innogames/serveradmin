@@ -1,0 +1,32 @@
+[
+  {
+    "model": "apps.application",
+    "pk": 1,
+    "fields": {
+      "name": "default app for serveradmin",
+      "app_id": "421cbe6b6e6044f785e77267f7f403dd8646be9f",
+      "auth_token": "8igR21kG0yspOm9KRwUwozlu",
+      "owner": 1,
+      "location": "",
+      "disabled": false,
+      "last_login": null,
+      "superuser": true,
+      "allowed_methods": ""
+    }
+  },
+  {
+    "model": "apps.application",
+    "pk": 2,
+    "fields": {
+      "name": "test",
+      "app_id": "52095437c8551641a736fe64c70177e0a32f02c7",
+      "auth_token": "dyiNqQVXS2tjpDAI5iCMlIhb",
+      "owner": 1,
+      "location": "local",
+      "disabled": false,
+      "last_login": null,
+      "superuser": false,
+      "allowed_methods": ""
+    }
+  }
+]
