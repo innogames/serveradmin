@@ -1,0 +1,93 @@
+[
+  {
+    "model": "serverdb.servertype",
+    "pk": "hv",
+    "fields": {
+      "description": "Hypervisor",
+      "ip_addr_type": "null"
+    }
+  },
+  {
+    "model": "serverdb.servertype",
+    "pk": "vm",
+    "fields": {
+      "description": "Virtual Machine",
+      "ip_addr_type": "null"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
+    "pk": "hv",
+    "fields": {
+      "type": "relation",
+      "multi": false,
+      "hovertext": "",
+      "group": "other",
+      "help_link": null,
+      "inet_address_family": "",
+      "readonly": false,
+      "target_servertype": "hv",
+      "reversed_attribute": null,
+      "clone": false,
+      "history": true,
+      "regexp": "\\A.*\\Z"
+    }
+  },
+  {
+    "model": "serverdb.attribute",
+    "pk": "nic",
+    "fields": {
+      "type": "string",
+      "multi": false,
+      "hovertext": "",
+      "group": "other",
+      "help_link": null,
+      "inet_address_family": "",
+      "readonly": false,
+      "target_servertype": null,
+      "reversed_attribute": null,
+      "clone": false,
+      "history": true,
+      "regexp": "\\A.*\\Z"
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 1,
+    "fields": {
+      "servertype": "vm",
+      "attribute": "hv",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": false
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 2,
+    "fields": {
+      "servertype": "vm",
+      "attribute": "nic",
+      "related_via_attribute": "hv",
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": false
+    }
+  },
+  {
+    "model": "serverdb.servertypeattribute",
+    "pk": 3,
+    "fields": {
+      "servertype": "hv",
+      "attribute": "nic",
+      "related_via_attribute": null,
+      "consistent_via_attribute": null,
+      "required": false,
+      "default_value": null,
+      "default_visible": false
+    }
+  }
+]

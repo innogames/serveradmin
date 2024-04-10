@@ -1,0 +1,19 @@
+[
+  {
+    "model": "access_control.accesscontrolgroup",
+    "pk": 1,
+    "fields": {
+      "name": "test",
+      "description": "",
+      "query": "servertype=vm",
+      "is_whitelist": true,
+      "members": [],
+      "applications": [
+        2
+      ],
+      "attributes": [
+        "hv"
+      ]
+    }
+  }
+]

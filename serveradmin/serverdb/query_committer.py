@@ -18,7 +18,7 @@ from serveradmin.serverdb.models import (
     ServerAttribute,
     ServerRelationAttribute,
     ChangeCommit,
-    Change,
+    Change, ServertypeAttribute,
 )
 from serveradmin.serverdb.query_materializer import (
     QueryMaterializer,
@@ -422,6 +422,17 @@ def _acl_violations(changed_objects, obj, acl):
             attribute_id not in attribute_ids and
             attribute_value != old_object[attribute_id]
         ):
+            is_related_via: bool = ServertypeAttribute.objects.filter(
+                servertype_id=obj['servertype'],
+                attribute_id=attribute_id,
+                related_via_attribute__isnull=False
+            ).exists()
+            if is_related_via:
+                # Attributes which are related via another servertype can be
+                # skipped because permission to change the value is checked
+                # at the target servertype where the actual change takes place.
+                continue
+
             violations.append(
                 'Change is not covered by ACL "{}", Attribute "{}" was '
                 'modified despite not beeing whitelisted.'.format(
