@@ -7,7 +7,7 @@ This is the adminapi Rust library
 | Feature      | Status          | Note                                                                                                            |
 |--------------|-----------------|-----------------------------------------------------------------------------------------------------------------|
 | Querying     | Implemented     | Querying works by either a generic `serde_json::Value`, or with a `serde` supported type.                       |
-| Creating     | Not implemented |                                                                                                                 |
+| Creating     | Implemented     | Creating/Changing/Deleting is implemented via `adminapi::commit::Commit` object. (may change later)             |
 | *other* APIs | Not implemented | The adminapi supports other APIs such as the "firewall" api. The support for those is currently not implemented |
 | Token Auth   | Implemented     |                                                                                                                 |
 | SSH Auth     | Not implemented |                                                                                                                 |
