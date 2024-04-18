@@ -1,28 +1,57 @@
 use std::fmt::Display;
 
+use crate::commit::{AttributeChange, Dataset, Changeset, Commit, IntoAttributeValue};
 use crate::config::Config;
 use crate::query::Query;
 
-pub type ServerObject = serde_json::Value;
-
 pub const QUERY_ENDPOINT: &str = "dataset/query";
+pub const COMMIT_ENDPOINT: &str = "dataset/commit";
+pub const NEW_OBJECT_ENDPOINT: &str = "dataset/new_object";
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct QueryResponse<T = ServerObject> {
-    status: String,
-    result: Vec<Server<T>>,
+pub struct QueryResponse<T = Dataset> {
+    pub status: String,
+    pub result: Vec<Server<T>>,
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct Server<T=ServerObject> {
-    object_id: u64,
+pub struct NewResponse {
+    pub result: Dataset,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct CommitResponse {
+    pub status: String,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct Server<T = Dataset> {
+    pub object_id: u64,
     #[serde(flatten)]
-    attributes: T
+    pub attributes: T,
+    #[serde(skip, default)]
+    changes: Changeset,
 }
 
 pub async fn query_objects<T: serde::de::DeserializeOwned>(query: &Query) -> anyhow::Result<QueryResponse<T>> {
     let config = Config::build_from_environment()?;
     let response = request_api(QUERY_ENDPOINT, serde_json::to_value(query)?, config).await?;
+    let response = response.error_for_status()?;
+
+    Ok(response.json().await?)
+}
+
+pub async fn new_object(servertype: impl Display) -> anyhow::Result<NewResponse> {
+    let config = Config::build_from_environment()?;
+    let response = request_api(format!("{NEW_OBJECT_ENDPOINT}?servertype={servertype}"), serde_json::Value::Null, config).await?;
+    let response = response.error_for_status()?;
+
+    Ok(response.json().await?)
+}
+
+pub async fn commit_changes(commit: &Commit) -> anyhow::Result<CommitResponse> {
+    let config = Config::build_from_environment()?;
+    let response = request_api(COMMIT_ENDPOINT, serde_json::to_value(commit)?, config).await?;
     let response = response.error_for_status()?;
 
     Ok(response.json().await?)
@@ -62,7 +91,7 @@ fn calculate_security_token(token: &String, now: u64, body: &str) -> String {
     hmac.update(format!("{now}:{body}").as_bytes());
     let result = hmac.finalize();
 
-    result.into_bytes().iter().map(|byte| format!("{:02x}", byte)).collect::<String>()
+    result.into_bytes().iter().fold(String::new(), |hash, byte| format!("{hash}{byte:02x}"))
 }
 
 fn calculate_app_id(token: &String) -> String {
@@ -71,5 +100,78 @@ fn calculate_app_id(token: &String) -> String {
     hasher.update(token.as_bytes());
     let result = hasher.finalize();
 
-    result.iter().map(|byte| format!("{:02x}", byte)).collect::<String>()
+    result.iter().fold(String::new(), |hash, byte| format!("{hash}{byte:02x}"))
+}
+
+impl Server {
+    pub fn set(&mut self, attribute: impl ToString, value: impl IntoAttributeValue + 'static) -> anyhow::Result<&mut Self> {
+        let new = value.into_attribute_value();
+        let attribute = attribute.to_string();
+
+        if self.attributes.get(&attribute).is_array() {
+            return Err(anyhow::anyhow!("Attribute is a multi attribute, set is not supported!"));
+        }
+
+        let old = self.attributes.get(&attribute);
+        self.attributes.set(attribute.clone(), new.clone());
+        self.changes.attributes.insert(attribute, AttributeChange::Update { old, new });
+
+        Ok(self)
+    }
+
+    pub fn add(&mut self, attribute: impl ToString, value: impl IntoAttributeValue + 'static) -> anyhow::Result<&mut Self> {
+        let value = value.into_attribute_value();
+        let attribute = attribute.to_string();
+
+        if !self.attributes.get(&attribute).is_array() {
+            return Err(anyhow::anyhow!("add is only supported with multi attributes"));
+        }
+
+        self.attributes.add(attribute.clone(), value.clone());
+        let entry = self.changes.attributes.entry(attribute).or_insert(AttributeChange::Multi { remove: vec![], add: vec![] });
+
+        if let AttributeChange::Multi { add, .. } = entry {
+            add.push(value);
+        }
+        Ok(self)
+    }
+
+    pub fn remove(&mut self, attribute: impl ToString, value: impl IntoAttributeValue + 'static) -> anyhow::Result<&mut Self> {
+        let value = value.into_attribute_value();
+        let attribute = attribute.to_string();
+
+        if !self.attributes.get(&attribute).is_array() {
+            return Err(anyhow::anyhow!("remove is only supported with multi attributes"));
+        }
+
+        self.attributes.remove(attribute.clone(), value.clone());
+        let entry = self.changes.attributes.entry(attribute).or_insert(AttributeChange::Multi { remove: vec![], add: vec![] });
+
+        if let AttributeChange::Multi { remove, .. } = entry {
+            remove.push(value);
+        }
+
+        Ok(self)
+    }
+
+    pub fn changeset(&self) -> Changeset {
+        let mut set = self.changes.clone();
+        set.object_id = self.object_id;
+
+        set
+    }
+}
+
+impl<T: serde::de::DeserializeOwned> QueryResponse<T> {
+    pub fn one(mut self) -> anyhow::Result<Server<T>> {
+        if self.result.len() > 1 {
+            return Err(anyhow::anyhow!("Result has more then one item!"));
+        }
+
+        self.result.pop().ok_or(anyhow::anyhow!("No result returned!"))
+    }
+
+    pub fn all(self) -> Vec<Server<T>> {
+        self.result
+    }
 }

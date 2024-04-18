@@ -4,3 +4,4 @@ pub mod api;
 pub mod filter;
 pub mod query;
 pub mod config;
+pub mod commit;
