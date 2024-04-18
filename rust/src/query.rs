@@ -27,7 +27,9 @@ impl Query {
         query_objects(self).await
     }
 
-    pub async fn request_typed<T: serde::de::DeserializeOwned>(&self) -> anyhow::Result<QueryResponse<T>> {
+    pub async fn request_typed<T: serde::de::DeserializeOwned>(
+        &self,
+    ) -> anyhow::Result<QueryResponse<T>> {
         query_objects::<T>(self).await
     }
 }
@@ -37,13 +39,19 @@ impl QueryBuilder {
         Default::default()
     }
 
-    pub fn filter(mut self, attribute: impl ToString, value: impl IntoFilterValue + 'static) -> Self {
-        self.0.filters.insert(attribute.to_string(), value.into_filter_value());
+    pub fn filter(
+        mut self,
+        attribute: impl ToString,
+        value: impl IntoFilterValue + 'static,
+    ) -> Self {
+        self.0
+            .filters
+            .insert(attribute.to_string(), value.into_filter_value());
 
         self
     }
 
-    pub fn restrict<S: ToString, I: IntoIterator<Item=S>>(mut self, attributes: I) -> Self {
+    pub fn restrict<S: ToString, I: IntoIterator<Item = S>>(mut self, attributes: I) -> Self {
         self.0.restrict = HashSet::from_iter(attributes.into_iter().map(|v| v.to_string()));
 
         self
