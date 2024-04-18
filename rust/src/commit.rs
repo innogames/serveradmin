@@ -105,7 +105,10 @@ impl IntoAttributeValue for i32 {
 
 impl<T: IntoAttributeValue> IntoAttributeValue for Vec<T> {
     fn into_attribute_value(self) -> AttributeValue {
-        AttributeValue::from_iter(self.into_iter().map(IntoAttributeValue::into_attribute_value))
+        AttributeValue::from_iter(
+            self.into_iter()
+                .map(IntoAttributeValue::into_attribute_value),
+        )
     }
 }
 
@@ -126,13 +129,21 @@ impl Dataset {
         Self(Default::default())
     }
 
-    pub fn set(&mut self, name: impl ToString, attr: impl IntoAttributeValue + 'static) -> &mut Self {
+    pub fn set(
+        &mut self,
+        name: impl ToString,
+        attr: impl IntoAttributeValue + 'static,
+    ) -> &mut Self {
         self.0.insert(name.to_string(), attr.into_attribute_value());
 
         self
     }
 
-    pub fn add(&mut self, name: impl ToString, attr: impl IntoAttributeValue + 'static) -> &mut Self {
+    pub fn add(
+        &mut self,
+        name: impl ToString,
+        attr: impl IntoAttributeValue + 'static,
+    ) -> &mut Self {
         let name = name.to_string();
         let attr = attr.into_attribute_value();
 
@@ -144,7 +155,11 @@ impl Dataset {
         self
     }
 
-    pub fn remove(&mut self, name: impl ToString, attr: impl IntoAttributeValue + 'static) -> &mut Self {
+    pub fn remove(
+        &mut self,
+        name: impl ToString,
+        attr: impl IntoAttributeValue + 'static,
+    ) -> &mut Self {
         let name = name.to_string();
         let attr = attr.into_attribute_value();
 

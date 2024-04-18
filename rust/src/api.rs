@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::commit::{AttributeChange, Dataset, Changeset, Commit, IntoAttributeValue};
+use crate::commit::{AttributeChange, Changeset, Commit, Dataset, IntoAttributeValue};
 use crate::config::Config;
 use crate::query::Query;
 
@@ -33,7 +33,9 @@ pub struct Server<T = Dataset> {
     changes: Changeset,
 }
 
-pub async fn query_objects<T: serde::de::DeserializeOwned>(query: &Query) -> anyhow::Result<QueryResponse<T>> {
+pub async fn query_objects<T: serde::de::DeserializeOwned>(
+    query: &Query,
+) -> anyhow::Result<QueryResponse<T>> {
     let config = Config::build_from_environment()?;
     let response = request_api(QUERY_ENDPOINT, serde_json::to_value(query)?, config).await?;
     let response = response.error_for_status()?;
@@ -43,7 +45,12 @@ pub async fn query_objects<T: serde::de::DeserializeOwned>(query: &Query) -> any
 
 pub async fn new_object(servertype: impl Display) -> anyhow::Result<NewResponse> {
     let config = Config::build_from_environment()?;
-    let response = request_api(format!("{NEW_OBJECT_ENDPOINT}?servertype={servertype}"), serde_json::Value::Null, config).await?;
+    let response = request_api(
+        format!("{NEW_OBJECT_ENDPOINT}?servertype={servertype}"),
+        serde_json::Value::Null,
+        config,
+    )
+    .await?;
     let response = response.error_for_status()?;
 
     Ok(response.json().await?)
@@ -57,17 +64,27 @@ pub async fn commit_changes(commit: &Commit) -> anyhow::Result<CommitResponse> {
     Ok(response.json().await?)
 }
 
-pub async fn request_api(endpoint: impl Display, data: serde_json::Value, config: Config) -> anyhow::Result<reqwest::Response> {
+pub async fn request_api(
+    endpoint: impl Display,
+    data: serde_json::Value,
+    config: Config,
+) -> anyhow::Result<reqwest::Response> {
     let client = reqwest::Client::new();
     let token = config.auth_token.unwrap_or_default();
     let body = serde_json::to_string(&data)?;
-    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs();
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_secs();
     let url = format!("{}/{endpoint}", config.base_url);
-    let request = client.post(url)
+    let request = client
+        .post(url)
         .header("Content-Type", "application/json")
         .header("X-Timestamp", now.to_string())
         .header("X-API-Version", config.api_version)
-        .header("X-SecurityToken", calculate_security_token(&token, now, &body))
+        .header(
+            "X-SecurityToken",
+            calculate_security_token(&token, now, &body),
+        )
         .header("X-Application", calculate_app_id(&token))
         .body(body.into_bytes());
 
@@ -87,11 +104,15 @@ fn calculate_security_token(token: &String, now: u64, body: &str) -> String {
     use hmac::Mac;
 
     type HmacSha1 = hmac::Hmac<sha1::Sha1>;
-    let mut hmac = HmacSha1::new_from_slice(token.as_bytes()).expect("Hmac can accept any size of key");
+    let mut hmac =
+        HmacSha1::new_from_slice(token.as_bytes()).expect("Hmac can accept any size of key");
     hmac.update(format!("{now}:{body}").as_bytes());
     let result = hmac.finalize();
 
-    result.into_bytes().iter().fold(String::new(), |hash, byte| format!("{hash}{byte:02x}"))
+    result
+        .into_bytes()
+        .iter()
+        .fold(String::new(), |hash, byte| format!("{hash}{byte:02x}"))
 }
 
 fn calculate_app_id(token: &String) -> String {
@@ -100,35 +121,58 @@ fn calculate_app_id(token: &String) -> String {
     hasher.update(token.as_bytes());
     let result = hasher.finalize();
 
-    result.iter().fold(String::new(), |hash, byte| format!("{hash}{byte:02x}"))
+    result
+        .iter()
+        .fold(String::new(), |hash, byte| format!("{hash}{byte:02x}"))
 }
 
 impl Server {
-    pub fn set(&mut self, attribute: impl ToString, value: impl IntoAttributeValue + 'static) -> anyhow::Result<&mut Self> {
+    pub fn set(
+        &mut self,
+        attribute: impl ToString,
+        value: impl IntoAttributeValue + 'static,
+    ) -> anyhow::Result<&mut Self> {
         let new = value.into_attribute_value();
         let attribute = attribute.to_string();
 
         if self.attributes.get(&attribute).is_array() {
-            return Err(anyhow::anyhow!("Attribute is a multi attribute, set is not supported!"));
+            return Err(anyhow::anyhow!(
+                "Attribute is a multi attribute, set is not supported!"
+            ));
         }
 
         let old = self.attributes.get(&attribute);
         self.attributes.set(attribute.clone(), new.clone());
-        self.changes.attributes.insert(attribute, AttributeChange::Update { old, new });
+        self.changes
+            .attributes
+            .insert(attribute, AttributeChange::Update { old, new });
 
         Ok(self)
     }
 
-    pub fn add(&mut self, attribute: impl ToString, value: impl IntoAttributeValue + 'static) -> anyhow::Result<&mut Self> {
+    pub fn add(
+        &mut self,
+        attribute: impl ToString,
+        value: impl IntoAttributeValue + 'static,
+    ) -> anyhow::Result<&mut Self> {
         let value = value.into_attribute_value();
         let attribute = attribute.to_string();
 
         if !self.attributes.get(&attribute).is_array() {
-            return Err(anyhow::anyhow!("add is only supported with multi attributes"));
+            return Err(anyhow::anyhow!(
+                "add is only supported with multi attributes"
+            ));
         }
 
         self.attributes.add(attribute.clone(), value.clone());
-        let entry = self.changes.attributes.entry(attribute).or_insert(AttributeChange::Multi { remove: vec![], add: vec![] });
+        let entry = self
+            .changes
+            .attributes
+            .entry(attribute)
+            .or_insert(AttributeChange::Multi {
+                remove: vec![],
+                add: vec![],
+            });
 
         if let AttributeChange::Multi { add, .. } = entry {
             add.push(value);
@@ -136,16 +180,29 @@ impl Server {
         Ok(self)
     }
 
-    pub fn remove(&mut self, attribute: impl ToString, value: impl IntoAttributeValue + 'static) -> anyhow::Result<&mut Self> {
+    pub fn remove(
+        &mut self,
+        attribute: impl ToString,
+        value: impl IntoAttributeValue + 'static,
+    ) -> anyhow::Result<&mut Self> {
         let value = value.into_attribute_value();
         let attribute = attribute.to_string();
 
         if !self.attributes.get(&attribute).is_array() {
-            return Err(anyhow::anyhow!("remove is only supported with multi attributes"));
+            return Err(anyhow::anyhow!(
+                "remove is only supported with multi attributes"
+            ));
         }
 
         self.attributes.remove(attribute.clone(), value.clone());
-        let entry = self.changes.attributes.entry(attribute).or_insert(AttributeChange::Multi { remove: vec![], add: vec![] });
+        let entry = self
+            .changes
+            .attributes
+            .entry(attribute)
+            .or_insert(AttributeChange::Multi {
+                remove: vec![],
+                add: vec![],
+            });
 
         if let AttributeChange::Multi { remove, .. } = entry {
             remove.push(value);
@@ -168,7 +225,9 @@ impl<T: serde::de::DeserializeOwned> QueryResponse<T> {
             return Err(anyhow::anyhow!("Result has more then one item!"));
         }
 
-        self.result.pop().ok_or(anyhow::anyhow!("No result returned!"))
+        self.result
+            .pop()
+            .ok_or(anyhow::anyhow!("No result returned!"))
     }
 
     pub fn all(self) -> Vec<Server<T>> {

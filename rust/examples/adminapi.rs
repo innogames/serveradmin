@@ -6,11 +6,14 @@ use adminapi::query::Query;
 async fn main() -> anyhow::Result<()> {
     env_logger::init();
 
-    let query = Query::builder().filter("hostname", regexp(".*payment-staging.*"))
+    let query = Query::builder()
+        .filter("hostname", regexp(".*payment-staging.*"))
         .filter("os", not(empty()))
-        .restrict(["hostname", "responsible_admin", "os"]).build();
+        .restrict(["hostname", "responsible_admin", "os"])
+        .build();
 
-    #[allow(dead_code)] // The fields are unused, but this example still should show, that you can have the query return structured data
+    // The fields are unused, but this example still should show, that you can have the query return structured data
+    #[allow(dead_code)]
     #[derive(Clone, Debug, serde::Deserialize)]
     struct MyServer {
         hostname: String,
