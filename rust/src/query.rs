@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
-use crate::api::{query_objects, QueryResponse};
+use crate::api::{commit_changes, query_objects, CommitResponse, QueryResponse, Server};
+use crate::commit::{Changeset, Commit};
 use crate::filter::{AttributeFilter, IntoFilterValue};
 
 #[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize)]
@@ -71,5 +72,14 @@ impl QueryBuilder {
         self.0.restrict.insert(String::from("object_id"));
 
         self.0
+    }
+}
+
+impl Server {
+    pub async fn commit(&mut self) -> anyhow::Result<CommitResponse> {
+        let commit = Commit::new().update(self.changeset());
+        self.changes = Changeset::default();
+
+        commit_changes(&commit).await
     }
 }

@@ -15,22 +15,13 @@ pub struct QueryResponse<T = Dataset> {
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct NewResponse {
+pub struct NewObjectResponse {
     pub result: Dataset,
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct CommitResponse {
     pub status: String,
-}
-
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
-pub struct Server<T = Dataset> {
-    pub object_id: u64,
-    #[serde(flatten)]
-    pub attributes: T,
-    #[serde(skip, default)]
-    changes: Changeset,
 }
 
 pub async fn query_objects<T: serde::de::DeserializeOwned>(
@@ -43,7 +34,7 @@ pub async fn query_objects<T: serde::de::DeserializeOwned>(
     Ok(response.json().await?)
 }
 
-pub async fn new_object(servertype: impl Display) -> anyhow::Result<NewResponse> {
+pub async fn new_object(servertype: impl Display) -> anyhow::Result<NewObjectResponse> {
     let config = Config::build_from_environment()?;
     let response = request_api(
         format!("{NEW_OBJECT_ENDPOINT}?servertype={servertype}"),
@@ -89,6 +80,15 @@ pub async fn request_api(
         .body(body.into_bytes());
 
     Ok(request.send().await?)
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct Server<T = Dataset> {
+    pub object_id: u64,
+    #[serde(flatten)]
+    pub attributes: T,
+    #[serde(skip, default)]
+    pub(crate) changes: Changeset,
 }
 
 impl<T: serde::de::DeserializeOwned> IntoIterator for QueryResponse<T> {

@@ -1,6 +1,5 @@
-use adminapi::api::{commit_changes, new_object};
-use adminapi::commit::Commit;
 use adminapi::filter::{empty, not, regexp};
+use adminapi::new_object::NewObject;
 use adminapi::query::Query;
 
 #[tokio::main]
@@ -22,18 +21,21 @@ pub async fn main() -> anyhow::Result<()> {
         .add("responsible_admin", "yannik.schwiegerr")?
         .remove("responsible_admin", "yannik.schwieger")?;
 
-    let mut new_sg = new_object("service_group").await?.result;
+    server.commit().await?;
+
+    let mut new_sg = NewObject::request_new("service_group").await?;
     new_sg
         .set("hostname", "yannik-adminapi-rs-2.test.sg")
         .set("project", "test")
         .add("responsible_admin", "yannik.schwieger")
         .add("protocol_ports_inbound", "tcp443");
-
-    let changes = Commit::new().update(server.changeset()).create(new_sg);
-    println!("{}", serde_json::to_string_pretty(&changes)?);
-
-    let response = commit_changes(&changes).await?;
-    println!("{response:#?}");
+    let mut created_sg = new_sg.commit().await?;
+    created_sg
+        .add("protocol_ports_inbound", "tcp80")?
+        .add("sg_allow_from", "yannik-adminapi-rs-2.test.sg")?
+        .add("sg_allow_to", "yannik-adminapi-rs-2.test.sg")?
+        .commit()
+        .await?;
 
     Ok(())
 }

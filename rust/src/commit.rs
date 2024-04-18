@@ -37,8 +37,8 @@ pub struct Commit {
     pub deleted: Vec<u64>,
 }
 
-pub trait IntoAttributes {
-    fn into_attributes(self) -> Dataset;
+pub trait IntoDataset {
+    fn into_dataset(self) -> Dataset;
 }
 
 pub trait IntoAttributeValue {
@@ -54,8 +54,8 @@ impl Commit {
         }
     }
 
-    pub fn create(mut self, attrs: impl IntoAttributes + 'static) -> Self {
-        self.created.push(attrs.into_attributes());
+    pub fn create(mut self, attrs: impl IntoDataset + 'static) -> Self {
+        self.created.push(attrs.into_dataset());
 
         self
     }
@@ -73,8 +73,8 @@ impl Commit {
     }
 }
 
-impl IntoAttributes for Dataset {
-    fn into_attributes(self) -> Dataset {
+impl IntoDataset for Dataset {
+    fn into_dataset(self) -> Dataset {
         self
     }
 }
