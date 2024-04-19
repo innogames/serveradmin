@@ -13,9 +13,7 @@ impl NewObject {
         let servertype = servertype.to_string();
         let NewObjectResponse { result } = new_object(&servertype).await?;
 
-        Ok(Self {
-            attributes: result,
-        })
+        Ok(Self { attributes: result })
     }
 
     pub async fn commit(self) -> anyhow::Result<Server> {
