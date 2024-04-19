@@ -3,7 +3,7 @@ use std::fmt::Display;
 use signature::Signer;
 use ssh_encoding::Encode;
 
-use crate::commit::{AttributeChange, Changeset, Commit, Dataset, IntoAttributeValue};
+use crate::commit::{AttributeChange, AttributeValue, Changeset, Commit, Dataset, IntoAttributeValue};
 use crate::config::Config;
 use crate::query::Query;
 
@@ -229,6 +229,10 @@ impl Server {
         }
 
         Ok(self)
+    }
+
+    pub fn get(&self, name: &str) -> AttributeValue {
+        self.attributes.get(name)
     }
 
     pub fn changeset(&self) -> Changeset {
