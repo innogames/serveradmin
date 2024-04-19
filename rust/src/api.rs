@@ -1,12 +1,15 @@
 use std::fmt::Display;
 
+use signature::Signer;
+use ssh_encoding::Encode;
+
 use crate::commit::{AttributeChange, Changeset, Commit, Dataset, IntoAttributeValue};
 use crate::config::Config;
 use crate::query::Query;
 
-pub const QUERY_ENDPOINT: &str = "dataset/query";
-pub const COMMIT_ENDPOINT: &str = "dataset/commit";
-pub const NEW_OBJECT_ENDPOINT: &str = "dataset/new_object";
+pub const QUERY_ENDPOINT: &str = "/api/dataset/query";
+pub const COMMIT_ENDPOINT: &str = "/api/dataset/commit";
+pub const NEW_OBJECT_ENDPOINT: &str = "/api/dataset/new_object";
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct QueryResponse<T = Dataset> {
@@ -66,18 +69,35 @@ pub async fn request_api(
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)?
         .as_secs();
-    let url = format!("{}/{endpoint}", config.base_url);
-    let request = client
+    let sign_body = format!("{now}:{body}");
+    let url = format!("{}{endpoint}", config.base_url);
+    let mut request = client
         .post(url)
         .header("Content-Type", "application/json")
         .header("X-Timestamp", now.to_string())
         .header("X-API-Version", config.api_version)
-        .header(
-            "X-SecurityToken",
-            calculate_security_token(&token, now, &body),
-        )
-        .header("X-Application", calculate_app_id(&token))
         .body(body.into_bytes());
+
+    if let Some(signer) = &config.ssh_signer {
+        let signature = signer.try_sign(sign_body.as_bytes())?;
+        let len = Encode::encoded_len_prefixed(&signature)?;
+        let base64_len = (((len.saturating_mul(4)) / 3).saturating_add(3)) & !3;
+        let mut buf = vec![0; base64_len];
+        let mut writer = ssh_encoding::Base64Writer::new(&mut buf)?;
+        signature.encode(&mut writer)?;
+        let signature = writer.finish()?;
+
+        request = request
+            .header("X-PublicKeys", signer.get_public_key())
+            .header("X-Signatures", signature.to_string());
+    } else {
+        request = request
+            .header(
+                "X-SecurityToken",
+                calculate_security_token(&token, &sign_body),
+            )
+            .header("X-Application", calculate_app_id(&token))
+    }
 
     Ok(request.send().await?)
 }
@@ -100,13 +120,13 @@ impl<T: serde::de::DeserializeOwned> IntoIterator for QueryResponse<T> {
     }
 }
 
-fn calculate_security_token(token: &String, now: u64, body: &str) -> String {
+fn calculate_security_token(token: &String, sign_body: &str) -> String {
     use hmac::Mac;
 
     type HmacSha1 = hmac::Hmac<sha1::Sha1>;
     let mut hmac =
         HmacSha1::new_from_slice(token.as_bytes()).expect("Hmac can accept any size of key");
-    hmac.update(format!("{now}:{body}").as_bytes());
+    hmac.update(sign_body.as_bytes());
     let result = hmac.finalize();
 
     result
