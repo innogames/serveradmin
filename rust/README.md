@@ -1,8 +1,16 @@
 # Adminapi in Rust!
 
-This is the adminapi Rust library
+This is the client library for ServerAdmin in Rust!
 
-## Features
+## ServerAdmin
+
+Serveradmin is the central server database management system of InnoGames.
+It has an HTTP web interface and an HTTP JSON API. Check out `the documentation
+<https://serveradmin.readthedocs.io/en/latest/>`_  or watch `this FOSDEM 19
+talk <https://archive.org/details/youtube-nWuisFTIgME>`_ for a deepdive how
+InnoGames works with serveradmin.
+
+## Features of this library
 
 | Feature      | Status          | Note                                                                                                            |
 |--------------|-----------------|-----------------------------------------------------------------------------------------------------------------|
