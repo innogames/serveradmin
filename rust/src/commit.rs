@@ -85,6 +85,12 @@ impl IntoAttributeValue for String {
     }
 }
 
+impl IntoAttributeValue for &String {
+    fn into_attribute_value(self) -> AttributeValue {
+        AttributeValue::String(self.clone())
+    }
+}
+
 impl IntoAttributeValue for () {
     fn into_attribute_value(self) -> AttributeValue {
         AttributeValue::Null
