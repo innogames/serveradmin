@@ -40,6 +40,13 @@ impl QueryBuilder {
         Default::default()
     }
 
+    pub fn filters(mut self, filter: AttributeFilter) -> Self {
+        self.0.filters.extend(filter);
+
+        self
+    }
+
+
     pub fn filter(
         mut self,
         attribute: impl ToString,
