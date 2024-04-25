@@ -3,7 +3,9 @@ use std::fmt::Display;
 use signature::Signer;
 use ssh_encoding::Encode;
 
-use crate::commit::{AttributeChange, AttributeValue, Changeset, Commit, Dataset, IntoAttributeValue};
+use crate::commit::{
+    AttributeChange, AttributeValue, Changeset, Commit, Dataset, IntoAttributeValue,
+};
 use crate::config::Config;
 use crate::query::Query;
 

@@ -46,7 +46,6 @@ impl QueryBuilder {
         self
     }
 
-
     pub fn filter(
         mut self,
         attribute: impl ToString,
