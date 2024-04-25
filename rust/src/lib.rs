@@ -6,3 +6,4 @@ pub mod config;
 pub mod filter;
 pub mod new_object;
 pub mod query;
+pub mod cli;
