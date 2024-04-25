@@ -1,9 +1,11 @@
 use std::str::Chars;
 
-use crate::filter::{AttributeFilter, FilterValue, IntoFilterValue};
 use crate::filter;
+use crate::filter::{AttributeFilter, FilterValue, IntoFilterValue};
 
-pub fn parse_filter_args(args: impl Iterator<Item=String> + 'static) -> anyhow::Result<AttributeFilter> {
+pub fn parse_filter_args(
+    args: impl Iterator<Item = String> + 'static,
+) -> anyhow::Result<AttributeFilter> {
     let mut filter = AttributeFilter::default();
 
     for arg in args {
@@ -46,7 +48,6 @@ pub fn lookup_function(chars: &mut Chars) -> FilterValue {
             fn_name.extend(buffer.drain(0..));
         }
 
-
         if char == '(' && depth == 1 {
             continue;
         }
@@ -74,11 +75,14 @@ pub fn lookup_function(chars: &mut Chars) -> FilterValue {
     }
 
     let filter_fn = get_filter_function(&fn_name.to_lowercase());
-    let mut inner_filters = inner.into_iter().map(|filter| {
-        let mut chars = filter.chars();
+    let mut inner_filters = inner
+        .into_iter()
+        .map(|filter| {
+            let mut chars = filter.chars();
 
-        lookup_function(&mut chars)
-    }).collect::<Vec<_>>();
+            lookup_function(&mut chars)
+        })
+        .collect::<Vec<_>>();
 
     if inner_filters.len() == 1 {
         filter_fn(inner_filters.pop().unwrap())
@@ -89,50 +93,20 @@ pub fn lookup_function(chars: &mut Chars) -> FilterValue {
 
 fn get_filter_function(name: &str) -> Box<dyn Fn(FilterValue) -> FilterValue> {
     match name {
-        "all" => {
-            Box::new(filter::all)
-        }
-        "any" => {
-            Box::new(filter::any)
-        }
-        "containedby" => {
-            Box::new(filter::contained_by)
-        }
-        "containedonlyby" => {
-            Box::new(filter::contained_only_by)
-        }
-        "contains" => {
-            Box::new(filter::contains)
-        }
-        "empty" => {
-            Box::new(|_| filter::empty())
-        }
-        "greaterthan" => {
-            Box::new(filter::greater_than)
-        }
-        "greaterthanorequals" => {
-            Box::new(filter::greater_than_or_equals)
-        }
-        "lessthan" => {
-            Box::new(filter::less_than)
-        }
-        "lessthanorequals" => {
-            Box::new(filter::less_than_or_equals)
-        }
-        "not" => {
-            Box::new(filter::not)
-        }
-        "overlaps" => {
-            Box::new(filter::overlaps)
-        }
-        "regexp" => {
-            Box::new(filter::regexp)
-        }
-        "startswith" => {
-            Box::new(filter::starts_with)
-        }
-        _name => {
-            Box::new(IntoFilterValue::into_filter_value)
-        }
+        "all" => Box::new(filter::all),
+        "any" => Box::new(filter::any),
+        "containedby" => Box::new(filter::contained_by),
+        "containedonlyby" => Box::new(filter::contained_only_by),
+        "contains" => Box::new(filter::contains),
+        "empty" => Box::new(|_| filter::empty()),
+        "greaterthan" => Box::new(filter::greater_than),
+        "greaterthanorequals" => Box::new(filter::greater_than_or_equals),
+        "lessthan" => Box::new(filter::less_than),
+        "lessthanorequals" => Box::new(filter::less_than_or_equals),
+        "not" => Box::new(filter::not),
+        "overlaps" => Box::new(filter::overlaps),
+        "regexp" => Box::new(filter::regexp),
+        "startswith" => Box::new(filter::starts_with),
+        _name => Box::new(IntoFilterValue::into_filter_value),
     }
 }
