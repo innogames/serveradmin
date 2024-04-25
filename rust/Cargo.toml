@@ -24,3 +24,5 @@ ssh-key = { version = "0.6", features = ["serde", "ed25519", "dsa", "crypto", "r
 [dev-dependencies]
 env_logger = "0.11"
 tokio = { version = "1.37", features = ["full"] }
+clap = "4.5"
+futures = "0.3"
