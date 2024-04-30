@@ -3,7 +3,8 @@
 Copyright (c) 2019 InnoGames GmbH
 """
 
-from re import compile as re_compile, error as re_error
+from re import compile as re_compile
+from re import error as re_error
 
 from adminapi.datatype import STR_BASED_DATATYPES
 from adminapi.exceptions import FilterValueError
@@ -20,14 +21,9 @@ class BaseFilter(object):
         elif isinstance(value, str):
             for char in '\'"':
                 if char in value:
-                    raise FilterValueError(
-                        '"{}" character is not allowed on filter values'
-                        .format(char)
-                    )
+                    raise FilterValueError('"{}" character is not allowed on filter values'.format(char))
         else:
-            raise FilterValueError(
-                'Filter value cannot be {}'.format(type(value).__name__)
-            )
+            raise FilterValueError('Filter value cannot be {}'.format(type(value).__name__))
 
         self.value = value
 
@@ -121,13 +117,11 @@ class LessThan(LessThanOrEquals):
 
 class Any(BaseFilter):
     """Check if the attribute satisfies any of the conditions"""
+
     func = any
 
     def __init__(self, *values):
-        self.values = [
-            v if isinstance(v, BaseFilter) else BaseFilter(v)
-            for v in values
-        ]
+        self.values = [v if isinstance(v, BaseFilter) else BaseFilter(v) for v in values]
 
     def __repr__(self):
         return '{}({})'.format(
@@ -141,9 +135,7 @@ class Any(BaseFilter):
     @classmethod
     def deserialize_value(cls, value):
         if not isinstance(value, list):
-            raise FilterValueError(
-                'Invalid value for {}()'.format(cls.__name__)
-            )
+            raise FilterValueError('Invalid value for {}()'.format(cls.__name__))
         return cls(*[cls.deserialize(v) for v in value])
 
     def matches(self, value):
@@ -157,6 +149,7 @@ class Any(BaseFilter):
 
 class All(Any):
     """Check if an attribute satisfies all of the conditions"""
+
     func = all
 
     def destiny(self):
@@ -242,9 +235,7 @@ class Empty(BaseFilter):
     @classmethod
     def deserialize_value(cls, value):
         if value is not None:
-            raise FilterValueError(
-                'Invalid value for {}()'.format(cls.__name__)
-            )
+            raise FilterValueError('Invalid value for {}()'.format(cls.__name__))
         return cls()
 
     def matches(self, value):
@@ -252,8 +243,4 @@ class Empty(BaseFilter):
 
 
 # Collect all classes that are subclass of BaseFilter (exclusive)
-filter_classes = [
-    v
-    for v in globals().values()
-    if type(v) == type and BaseFilter in v.mro()[1:]
-]
+filter_classes = [v for v in globals().values() if type(v) == type and BaseFilter in v.mro()[1:]]

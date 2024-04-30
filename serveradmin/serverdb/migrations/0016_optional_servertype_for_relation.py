@@ -4,18 +4,15 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('serverdb', '0015_attribute_history_field'),
     ]
 
     operations = [
-        migrations.RunSQL(
-            "ALTER TABLE attribute DROP CONSTRAINT IF EXISTS attribute_target_servertype_id_check"
-        ),
+        migrations.RunSQL('ALTER TABLE attribute DROP CONSTRAINT IF EXISTS attribute_target_servertype_id_check'),
         # This is the same as before but without a check for type relation.
         migrations.RunSQL(
-            "ALTER TABLE attribute ADD CONSTRAINT attribute_target_servertype_id_check "
+            'ALTER TABLE attribute ADD CONSTRAINT attribute_target_servertype_id_check '
             "CHECK((type IN ('domain', 'supernet', 'relation')) = (target_servertype_id IS NOT NULL OR type = 'relation'))"
         ),
     ]

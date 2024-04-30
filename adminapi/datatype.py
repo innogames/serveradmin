@@ -2,18 +2,19 @@
 
 Copyright (c) 2019 InnoGames GmbH
 """
+
 from datetime import date, datetime
-from re import compile as re_compile
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
+from re import compile as re_compile
 
 from netaddr import EUI
+
 try:
     from netaddr import mac_unix_expanded
 except ImportError:
     from netaddr import mac_unix as mac_unix_expanded
 
 from adminapi.exceptions import DatatypeError, FilterValueError
-
 
 # We use a set of regular expressions to cast to datatypes.  This module
 # is not aware of the attributes types of the server, neither it tries
@@ -100,10 +101,7 @@ def validate_value(value, datatype=None):
         if issubclass(newtype, supertype) and supertype != object:
             return supertype
 
-    raise DatatypeError(
-        'Value from {} is not compatible with existing value from {}'
-        .format(type(value), datatype)
-    )
+    raise DatatypeError('Value from {} is not compatible with existing value from {}'.format(type(value), datatype))
 
 
 def str_to_datatype(value):
@@ -123,7 +121,7 @@ def json_to_datatype(value):
         if regexp.match(str(value)):
             # date constructors need a decode format
             if datatype is date:
-                return datetime.strptime(value, "%Y-%m-%d").date()
+                return datetime.strptime(value, '%Y-%m-%d').date()
             if datatype is datetime:
                 return datetime.strptime(value, '%Y-%m-%d %H:%M:%S%z')
 

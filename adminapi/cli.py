@@ -2,6 +2,7 @@
 
 Copyright (c) 2019 InnoGames GmbH
 """
+
 import sys
 from argparse import ArgumentParser, ArgumentTypeError
 
@@ -63,10 +64,7 @@ def main():
     query = Query(filters, attribute_ids_to_fetch, args.order)
 
     if args.one and len(query) > 1:
-        raise Exception(
-            'Expecting exactly one server, found {} servers'
-            .format(len(query))
-        )
+        raise Exception('Expecting exactly one server, found {} servers'.format(len(query)))
 
     for server in query:
         if args.reset:

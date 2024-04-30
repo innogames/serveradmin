@@ -2,6 +2,7 @@
 
 Copyright (c) 2019 InnoGames GmbH
 """
+
 import gzip
 import logging
 import os
@@ -27,10 +28,12 @@ from adminapi import VERSION
 
 try:
     from paramiko import RSAKey, ECDSAKey, Ed25519Key
+
     key_classes = (RSAKey, ECDSAKey, Ed25519Key)
 except ImportError:
     # Ed25519Key requires paramiko >= 2.2
     from paramiko import RSAKey, ECDSAKey
+
     key_classes = (RSAKey, ECDSAKey)
 
 from adminapi.cmduser import get_auth_token
@@ -118,9 +121,7 @@ def calc_signatures(private_keys, timestamp, data=None):
 
 def calc_security_token(auth_token, timestamp, data=None):
     message = calc_message(timestamp, data)
-    return hmac.new(
-        auth_token.encode('utf8'), message.encode('utf8'), sha1
-    ).hexdigest()
+    return hmac.new(auth_token.encode('utf8'), message.encode('utf8'), sha1).hexdigest()
 
 
 def calc_app_id(auth_token):
@@ -137,7 +138,7 @@ def send_request(endpoint, get_params=None, post_params=None):
         # In case of an error, sleep before trying again
         time.sleep(Settings.sleep_interval)
     else:
-        assert False    # Cannot happen
+        assert False  # Cannot happen
 
     content_encoding = response.info().get('Content-Encoding')
     content = response.read()
@@ -145,6 +146,7 @@ def send_request(endpoint, get_params=None, post_params=None):
         content = gzip.decompress(content)
 
     return json.loads(content)
+
 
 def _build_request(endpoint, get_params, post_params, retry=1):
     """Wrap request data in an urllib Request instance
@@ -169,14 +171,10 @@ def _build_request(endpoint, get_params, post_params, retry=1):
 
     if Settings.auth_key:
         headers['X-PublicKeys'] = Settings.auth_key.get_base64()
-        headers['X-Signatures'] = calc_signature(
-            Settings.auth_key, timestamp, post_data
-        )
+        headers['X-Signatures'] = calc_signature(Settings.auth_key, timestamp, post_data)
     elif Settings.auth_token:
         headers['X-Application'] = calc_app_id(Settings.auth_token)
-        headers['X-SecurityToken'] = calc_security_token(
-            Settings.auth_token, timestamp, post_data
-        )
+        headers['X-SecurityToken'] = calc_security_token(Settings.auth_token, timestamp, post_data)
     else:
         try:
             agent = Agent()
@@ -200,13 +198,12 @@ def _build_request(endpoint, get_params, post_params, retry=1):
             logger.error(
                 f'Signing the requests took {time_spent_signing} seconds! '
                 'Serveradmin would reject this request. Maybe your signing '
-                f'soft-/hardware is congested ? Retry {retry}/{Settings.tries}.')
-            return _build_request(endpoint, get_params, post_params, retry+1)
+                f'soft-/hardware is congested ? Retry {retry}/{Settings.tries}.'
+            )
+            return _build_request(endpoint, get_params, post_params, retry + 1)
 
     if not Settings.base_url:
-        raise ConfigurationError(
-            'Environment variable SERVERADMIN_BASE_URL not set'
-        )
+        raise ConfigurationError('Environment variable SERVERADMIN_BASE_URL not set')
 
     url = Settings.base_url + endpoint
     if get_params:

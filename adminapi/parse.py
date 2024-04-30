@@ -4,7 +4,7 @@ Copyright (c) 2019 InnoGames GmbH
 """
 
 from adminapi.datatype import DatatypeError, str_to_datatype
-from adminapi.filters import BaseFilter, Any, Regexp, filter_classes
+from adminapi.filters import Any, BaseFilter, Regexp, filter_classes
 
 _trigger_re_chars = ('.*', '.+', '[', ']', '|', '\\', '$', '^', '<')
 
@@ -22,7 +22,7 @@ def parse_query(term, hostname=None):  # NOQA: C901
     if token != 'key':
         if hostname:
             # We already parsed a hostname, so we don't expect another one
-            raise DatatypeError("Garbled hostname: {0}".format(hostname))
+            raise DatatypeError('Garbled hostname: {0}'.format(hostname))
 
         term_parts = term.split(None, 1)
         if len(term_parts) == 2:
@@ -61,10 +61,7 @@ def parse_query(term, hostname=None):  # NOQA: C901
             # Do not allow functions without preceding key
             # if they are on top level (e.g. call_depth = 0)
             if not stack or (call_depth == 0 and stack[-1][0] != 'key'):
-                raise DatatypeError(
-                    'Invalid term: top level function requires '
-                    'preceding attribute'
-                )
+                raise DatatypeError('Invalid term: top level function requires ' 'preceding attribute')
             call_depth += 1
             stack.append(arg)
 
@@ -84,9 +81,7 @@ def parse_query(term, hostname=None):  # NOQA: C901
                     try:
                         instance = filter_class(*fn_args)
                     except TypeError:
-                        raise DatatypeError(
-                            'Invalid function args ' + filter_class.__name__
-                        )
+                        raise DatatypeError('Invalid function args ' + filter_class.__name__)
                     break
             else:
                 raise DatatypeError('Invalid function ' + s_value)
@@ -95,10 +90,7 @@ def parse_query(term, hostname=None):  # NOQA: C901
         elif token == 'literal':
             # Do not allow literals without key or function context
             if not stack or (call_depth == 0 and stack[-1][0] != 'key'):
-                raise DatatypeError(
-                    'Invalid term: Top level literals are not '
-                    'allowed when attributes are used'
-                )
+                raise DatatypeError('Invalid term: Top level literals are not ' 'allowed when attributes are used')
             if call_depth == 0:
                 stack.append(('literal', BaseFilter(value)))
             else:
@@ -106,15 +98,13 @@ def parse_query(term, hostname=None):  # NOQA: C901
 
     if stack and stack[0][0] == 'key':
         if len(stack) != 2:
-            raise DatatypeError(
-                'Invalid term: Attribute requires one argument'
-            )
+            raise DatatypeError('Invalid term: Attribute requires one argument')
         query_args[stack[0][1]] = stack[1][1]
 
     return query_args
 
 
-def parse_function_string(args, strict=True):   # NOQA C901
+def parse_function_string(args, strict=True):  # NOQA C901
     state = 'start'
     args_len = len(args)
     parsed_args = []
@@ -138,9 +128,7 @@ def parse_function_string(args, strict=True):   # NOQA C901
             if args[i] == '\\':
                 if i == args_len - 1:
                     if strict:
-                        raise DatatypeError(
-                            'Escape is not allowed at the end'
-                        )
+                        raise DatatypeError('Escape is not allowed at the end')
                 if args[i + 1] == '\\':
                     string_buf.append('\\')
                     i += 2
@@ -159,9 +147,7 @@ def parse_function_string(args, strict=True):   # NOQA C901
                 i += 1
         elif state == 'unquotedstring':
             if args[i] == ' ':
-                parsed_args.append(
-                    ('literal', str_to_datatype(args[string_start:i]))
-                )
+                parsed_args.append(('literal', str_to_datatype(args[string_start:i])))
                 state = 'start'
             elif args[i] == '(':
                 if string_start != i:
@@ -170,17 +156,13 @@ def parse_function_string(args, strict=True):   # NOQA C901
                     state = 'start'
             elif args[i] == ')' and call_depth != 0:
                 if string_start != i:
-                    parsed_args.append(
-                        ('literal', str_to_datatype(args[string_start:i]))
-                    )
+                    parsed_args.append(('literal', str_to_datatype(args[string_start:i])))
                 parsed_args.append(('endfunc', ''))
                 call_depth -= 1
                 state = 'start'
             # Do not parse key inside functions or of preceding token
             # was also a key
-            elif args[i] == '=' and call_depth == 0 and (
-                not parsed_args or parsed_args[-1][0] != 'key'
-            ):
+            elif args[i] == '=' and call_depth == 0 and (not parsed_args or parsed_args[-1][0] != 'key'):
                 parsed_args.append(('key', args[string_start:i]))
                 state = 'start'
             i += 1
