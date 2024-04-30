@@ -3,6 +3,7 @@ class MergedQuery:
     Holds an arbitrary amount of serveradmin queries that can be used as
     a single iteratable object.
     """
+
     queries = []
 
     def __init__(self, queries):
@@ -17,6 +18,7 @@ class MergedQueryIterator:
     Iterates over each query to retrieve the server's data.
     Avoids duplicate items by saving already iterated server-ids.
     """
+
     served_ids = []
     queries = []
     current_query = 0

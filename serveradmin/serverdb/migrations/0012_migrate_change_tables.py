@@ -2,7 +2,7 @@
 
 import math
 
-from django.db import migrations, transaction, connection
+from django.db import connection, migrations, transaction
 from rich.progress import Progress
 
 BATCH_SIZE = 100000
@@ -14,12 +14,13 @@ def migrate_change_add(apps, schema_editor):
     batches = math.ceil(total / BATCH_SIZE)
 
     with Progress() as progress:
-        migration = progress.add_task("\t[green]Migrating ChangeAdd data...", total=batches)
+        migration = progress.add_task('\t[green]Migrating ChangeAdd data...', total=batches)
 
         with connection.cursor() as cursor:
             while not progress.finished:
                 with transaction.atomic():
-                    cursor.execute("""
+                    cursor.execute(
+                        """
                         WITH moved AS (
                             DELETE FROM serverdb_changeadd
                             WHERE id IN (SELECT id FROM serverdb_changeadd ORDER BY id DESC LIMIT %s FOR UPDATE)
@@ -31,7 +32,9 @@ def migrate_change_add(apps, schema_editor):
                         )
                         INSERT INTO serverdb_change (object_id, change_type, change_json, commit_id) 
                         SELECT * FROM moved;
-                    """, [BATCH_SIZE])
+                    """,
+                        [BATCH_SIZE],
+                    )
 
                 progress.update(migration, advance=1)
 
@@ -42,12 +45,13 @@ def migrate_change_delete(apps, schema_editor):
     batches = math.ceil(total / BATCH_SIZE)
 
     with Progress() as progress:
-        migration = progress.add_task("\t[green]Migrating ChangeDelete data...", total=batches)
+        migration = progress.add_task('\t[green]Migrating ChangeDelete data...', total=batches)
 
         with connection.cursor() as cursor:
             while not progress.finished:
                 with transaction.atomic():
-                    cursor.execute("""
+                    cursor.execute(
+                        """
                         WITH moved AS (
                             DELETE FROM serverdb_changedelete
                             WHERE id IN (SELECT id FROM serverdb_changedelete ORDER BY id DESC LIMIT %s FOR UPDATE)
@@ -59,7 +63,9 @@ def migrate_change_delete(apps, schema_editor):
                         )
                         INSERT INTO serverdb_change (object_id, change_type, change_json, commit_id)
                         SELECT * FROM moved;
-                    """, [BATCH_SIZE])
+                    """,
+                        [BATCH_SIZE],
+                    )
 
                 progress.update(migration, advance=1)
 
@@ -70,12 +76,13 @@ def migrate_change_update(apps, schema_editor):
     batches = math.ceil(total / BATCH_SIZE)
 
     with Progress() as progress:
-        migration = progress.add_task("\t[green]Migrating ChangeUpdate data...", total=batches)
+        migration = progress.add_task('\t[green]Migrating ChangeUpdate data...', total=batches)
 
         with connection.cursor() as cursor:
             while not progress.finished:
                 with transaction.atomic():
-                    cursor.execute("""
+                    cursor.execute(
+                        """
                         WITH moved AS (
                             DELETE FROM serverdb_changeupdate
                             WHERE id IN (SELECT id FROM serverdb_changeupdate ORDER BY id DESC LIMIT %s FOR UPDATE)
@@ -87,7 +94,9 @@ def migrate_change_update(apps, schema_editor):
                         )
                         INSERT INTO serverdb_change (object_id, change_type, change_json, commit_id)
                         SELECT * FROM moved;
-                    """, [BATCH_SIZE])
+                    """,
+                        [BATCH_SIZE],
+                    )
 
                 progress.update(migration, advance=1)
 

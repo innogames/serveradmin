@@ -3,11 +3,11 @@
 Copyright (c) 2019 InnoGames GmbH
 """
 
+import json
+from base64 import b64decode
 from datetime import datetime, timedelta
 from functools import update_wrapper
 from logging import getLogger
-from base64 import b64decode
-import json
 
 from django.core.exceptions import (
     ObjectDoesNotExist,
@@ -16,20 +16,19 @@ from django.core.exceptions import (
     ValidationError,
 )
 from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.utils import dateformat, timezone
 from django.utils.crypto import constant_time_compare
-from django.utils import timezone, dateformat
-
+from django.views.decorators.csrf import csrf_exempt
 from paramiko.message import Message
 
+from adminapi.filters import FilterValueError
 from adminapi.request import (
     calc_message,
     calc_security_token,
     json_encode_extra,
 )
-from adminapi.filters import FilterValueError
-from serveradmin.apps.models import Application, PublicKey
 from serveradmin.api import AVAILABLE_API_FUNCTIONS
+from serveradmin.apps.models import Application, PublicKey
 
 logger = getLogger('serveradmin')
 
@@ -42,9 +41,7 @@ TIMESTAMP_GRACE_PERIOD = timedelta(seconds=16)
 def api_view(view):
     @csrf_exempt
     def _wrapper(request):
-        logger.debug('api: Start processing request: {} {}'.format(
-            request.scheme, request.path
-        ))
+        logger.debug('api: Start processing request: {} {}'.format(request.scheme, request.path))
 
         now = timezone.now()
         body = request.body.decode('utf8') if request.body else None
@@ -52,25 +49,26 @@ def api_view(view):
         signatures = request.META.get('HTTP_X_SIGNATURES')
         app_id = request.META.get('HTTP_X_APPLICATION')
         token = request.META.get('HTTP_X_SECURITYTOKEN')
-        then = datetime.utcfromtimestamp(
-            int(request.META['HTTP_X_TIMESTAMP'])
-        ).replace(tzinfo=timezone.utc)
+        then = datetime.utcfromtimestamp(int(request.META['HTTP_X_TIMESTAMP'])).replace(tzinfo=timezone.utc)
         body_json = json.loads(body) if body else None
         status_code = 200
 
         try:
-            app = authenticate_app(
-                public_keys, signatures, app_id, token, then, now, body
-            )
+            app = authenticate_app(public_keys, signatures, app_id, token, then, now, body)
             return_value = view(request, app, body_json)
 
-            logger.info('api: Call: ' + (', '.join([
-                'Method: {}'.format(view.__name__),
-                'Application: {}'.format(app),
-                'Time elapsed: {:.3f}s'.format(
-                    (timezone.now() - now).total_seconds()
-                ),
-            ])))
+            logger.info(
+                'api: Call: '
+                + (
+                    ', '.join(
+                        [
+                            'Method: {}'.format(view.__name__),
+                            'Application: {}'.format(app),
+                            'Time elapsed: {:.3f}s'.format((timezone.now() - now).total_seconds()),
+                        ]
+                    )
+                )
+            )
         except (
             FilterValueError,
             ValidationError,
@@ -80,10 +78,7 @@ def api_view(view):
         ) as error:
             reason = ''
 
-            if isinstance(
-                error,
-                (FilterValueError, ValidationError, SuspiciousOperation)
-            ):
+            if isinstance(error, (FilterValueError, ValidationError, SuspiciousOperation)):
                 status_code = 400
                 reason = 'Bad Request'
             if isinstance(error, PermissionDenied):
@@ -110,9 +105,7 @@ def api_view(view):
     return update_wrapper(_wrapper, view)
 
 
-def authenticate_app(
-    public_keys, signatures, app_id, token, then, now, body
-):
+def authenticate_app(public_keys, signatures, app_id, token, then, now, body):
     """Authenticate requests
 
     Ensure this request isn't beeing replayed by making sure the timestamp
@@ -127,16 +120,12 @@ def authenticate_app(
 
     Return the app the user authenticated to
     """
-    if (
-        then + TIMESTAMP_GRACE_PERIOD < now or
-        then - TIMESTAMP_GRACE_PERIOD > now
-    ):
+    if then + TIMESTAMP_GRACE_PERIOD < now or then - TIMESTAMP_GRACE_PERIOD > now:
         raise PermissionDenied(
-            'Request expired, header timestamp off by {:0.0f} seconds'
-            .format((now - then).total_seconds())
+            'Request expired, header timestamp off by {:0.0f} seconds'.format((now - then).total_seconds())
         )
 
-    timestamp = dateformat.format(then, u'U')
+    timestamp = dateformat.format(then, 'U')
     if public_keys and signatures:
         app = authenticate_app_ssh(public_keys, signatures, timestamp, body)
     elif app_id and token:
@@ -211,10 +200,7 @@ def authenticate_app_ssh(public_keys, signatures, timestamp, body):
         Return the public key on success
         """
         expected_message = calc_message(timestamp, body)
-        if not public_key.load().verify_ssh_sig(
-            data=expected_message.encode(),
-            msg=Message(b64decode(signature))
-        ):
+        if not public_key.load().verify_ssh_sig(data=expected_message.encode(), msg=Message(b64decode(signature))):
             raise PermissionDenied('Invalid signature')
 
         return public_key
@@ -225,9 +211,7 @@ def authenticate_app_ssh(public_keys, signatures, timestamp, body):
 
     verified_keys = {
         verify_signature(public_key, key_signatures[public_key.key_base64])
-        for public_key in PublicKey.objects.filter(
-            key_base64__in=key_signatures.keys()
-        )
+        for public_key in PublicKey.objects.filter(key_base64__in=key_signatures.keys())
     }
 
     if not verified_keys:
@@ -236,9 +220,9 @@ def authenticate_app_ssh(public_keys, signatures, timestamp, body):
     applications = {key.application for key in verified_keys}
     if len(applications) > 1:
         raise PermissionDenied(
-            'Valid signatures for more than one application received: ' +
-            ', '.join([str(key) for key in verified_keys]) +
-            '. It is unclear which ACLs to enforce, giving up.'
+            'Valid signatures for more than one application received: '
+            + ', '.join([str(key) for key in verified_keys])
+            + '. It is unclear which ACLs to enforce, giving up.'
         )
 
     application = applications.pop()

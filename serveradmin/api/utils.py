@@ -16,7 +16,7 @@ def build_function_description(fn):
     else:
         extra_args = 0
 
-    arguments = list(code.co_varnames[:code.co_argcount + extra_args])
+    arguments = list(code.co_varnames[: code.co_argcount + extra_args])
 
     if is_kwargs:
         arguments[-1] = '**' + arguments[-1]

@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('serverdb', '0017_inet_family_choice'),
     ]
@@ -14,21 +13,28 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='server',
             name='hostname',
-            field=models.CharField(max_length=254, unique=True, validators=[django.core.validators.RegexValidator('\\A(\\*\\.)?([a-z0-9_]+(\\.|-+))*[a-z0-9]+\\Z', 'Invalid hostname')]),
+            field=models.CharField(
+                max_length=254,
+                unique=True,
+                validators=[
+                    django.core.validators.RegexValidator(
+                        '\\A(\\*\\.)?([a-z0-9_]+(\\.|-+))*[a-z0-9]+\\Z', 'Invalid hostname'
+                    )
+                ],
+            ),
         ),
         migrations.RunSQL(
             sql=(
-                "ALTER TABLE server "
-                "DROP CONSTRAINT server_hostname_check, "
-                "ADD CONSTRAINT server_hostname_check "
+                'ALTER TABLE server '
+                'DROP CONSTRAINT server_hostname_check, '
+                'ADD CONSTRAINT server_hostname_check '
                 "CHECK (hostname::text ~ '\A(\*\.)?([a-z0-9_]+(\.|-+))*[a-z0-9]+\Z'::text);"
             ),
             reverse_sql=(
-                "ALTER TABLE server "
-                "DROP CONSTRAINT server_hostname_check, "
-                "ADD CONSTRAINT server_hostname_check "
+                'ALTER TABLE server '
+                'DROP CONSTRAINT server_hostname_check, '
+                'ADD CONSTRAINT server_hostname_check '
                 "CHECK (hostname::text ~ '\A(\*\.)?([a-z0-9]+(\.|-+))*[a-z0-9]+\Z'::text);"
-            )
+            ),
         ),
     ]
-

@@ -7,11 +7,13 @@ clean up the log entries from the previous day.
 
 Copyright (c) 2020 InnoGames GmbH
 """
-from datetime import datetime, timedelta, timezone
+
+from datetime import datetime, timezone
+
 from django.core.management.base import BaseCommand
 
 from adminapi.dataset import Query
-from adminapi.filters import Not, Empty
+from adminapi.filters import Empty, Not
 
 
 class Command(BaseCommand):
@@ -24,26 +26,21 @@ class Command(BaseCommand):
         and delete all entries which are from the previous day.
         """
 
-        all_hypervisors = Query({'igvm_migration_log': Not(Empty()),
-                                 'servertype': 'hypervisor'},
-                           ['igvm_migration_log', 'hostname'])
+        all_hypervisors = Query(
+            {'igvm_migration_log': Not(Empty()), 'servertype': 'hypervisor'}, ['igvm_migration_log', 'hostname']
+        )
 
         now = datetime.now(tz=timezone.utc)
 
         for hypervisor in all_hypervisors:
-
             for entry in hypervisor['igvm_migration_log']:
                 timestamp = entry.split()[0]
 
-                dt_object_sa = datetime.fromtimestamp(
-                    int(timestamp),
-                    tz=timezone.utc)
+                dt_object_sa = datetime.fromtimestamp(int(timestamp), tz=timezone.utc)
 
                 if dt_object_sa.date() == now.date():
                     continue
 
                 hypervisor['igvm_migration_log'].discard(entry)
                 hypervisor.commit()
-                self.stdout.write(self.style.SUCCESS(
-                    'Delete old entries from {} '.format(
-                        hypervisor['hostname'])))
+                self.stdout.write(self.style.SUCCESS('Delete old entries from {} '.format(hypervisor['hostname'])))

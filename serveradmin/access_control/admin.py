@@ -3,7 +3,7 @@
 Copyright (c) 2019 InnoGames GmbH
 """
 
-from django.contrib.admin import site, ModelAdmin
+from django.contrib.admin import ModelAdmin, site
 
 from serveradmin.access_control.models import AccessControlGroup
 

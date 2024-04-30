@@ -1,14 +1,14 @@
-from base64 import b64encode, b64decode
+from base64 import b64decode, b64encode
 from hashlib import sha256
 
-from django.db import models
-from django.db.models.signals import pre_save, post_save
-from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-
+from django.db import models
+from django.db.models.signals import post_save, pre_save
+from django.dispatch import receiver
+from paramiko import ECDSAKey, RSAKey
 from paramiko.ssh_exception import SSHException
-from paramiko import RSAKey, ECDSAKey
+
 try:
     from paramiko import Ed25519Key
 except ImportError:
@@ -66,9 +66,7 @@ def set_disabled(sender, instance, **kwargs):
 
 
 class PublicKey(models.Model):
-    application = models.ForeignKey(
-        Application, related_name="public_keys", on_delete=models.CASCADE
-    )
+    application = models.ForeignKey(Application, related_name='public_keys', on_delete=models.CASCADE)
     key_algorithm = models.CharField(max_length=80)
     key_base64 = models.CharField(primary_key=True, max_length=2048)
     key_comment = models.CharField(max_length=80, blank=True)
@@ -135,9 +133,7 @@ class PublicKey(models.Model):
                 application=application,
                 key_algorithm=public_key_parts[0],
                 key_base64=public_key_parts[1],
-                key_comment=(
-                    public_key_parts[2] if len(public_key_parts) == 3 else ''
-                ),
+                key_comment=(public_key_parts[2] if len(public_key_parts) == 3 else ''),
             )
 
         return instance

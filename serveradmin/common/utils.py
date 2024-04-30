@@ -2,12 +2,12 @@
 
 Copyright (c) 2020 InnoGames GmbH
 """
+
 import functools
+import logging
 import os
 import re
 import time
-import logging
-
 from base64 import b64encode
 
 _hostname_re = re.compile(
@@ -45,4 +45,5 @@ def profile(func):
         logging.getLogger('profile').info(msg)
 
         return value
+
     return wrapper_profile

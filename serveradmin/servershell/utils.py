@@ -12,9 +12,9 @@ def servershell_plugins():
     @return:
     """
     js_files = list()
-    app_names = [app.name for app in apps.get_app_configs() if app.name.startswith("serveradmin_")]
+    app_names = [app.name for app in apps.get_app_configs() if app.name.startswith('serveradmin_')]
     for app_name in app_names:
-        path = f"js/{app_name}.servershell.plugin.js"
+        path = f'js/{app_name}.servershell.plugin.js'
         js_file = finders.find(path)
         if js_file:
             js_files.append(path)

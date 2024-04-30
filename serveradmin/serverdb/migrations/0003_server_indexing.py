@@ -8,10 +8,7 @@ class Migration(migrations.Migration):
     operations = [
         # Add a pg_trgm based trigram index on the server hostname.
         migrations.RunSQL('CREATE EXTENSION IF NOT EXISTS pg_trgm'),
-        migrations.RunSQL(
-            'CREATE INDEX server_hostname_trgm '
-            'ON server USING gin (hostname gin_trgm_ops)'
-        ),
+        migrations.RunSQL('CREATE INDEX server_hostname_trgm ' 'ON server USING gin (hostname gin_trgm_ops)'),
         # Ensure objects within the same servertype have a unique intern_ip.
         migrations.RunSQL('CREATE EXTENSION IF NOT EXISTS btree_gist'),
         migrations.RunSQL(

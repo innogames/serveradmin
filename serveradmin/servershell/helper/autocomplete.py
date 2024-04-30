@@ -1,7 +1,6 @@
-from django.db import connection, ProgrammingError
+from django.db import ProgrammingError, connection
 
-from serveradmin.serverdb.models import Attribute, ServerAttribute, Server
-from django.core.exceptions import ObjectDoesNotExist
+from serveradmin.serverdb.models import Attribute, Server, ServerAttribute
 
 
 def attribute_startswith(search_string, limit=20):
@@ -13,9 +12,9 @@ def attribute_startswith(search_string, limit=20):
     :return:
     """
 
-    query = Attribute.objects.filter(
-        attribute_id__startswith=search_string).only('attribute_id').order_by(
-        'attribute_id')
+    query = (
+        Attribute.objects.filter(attribute_id__startswith=search_string).only('attribute_id').order_by('attribute_id')
+    )
     attributes = [attribute.attribute_id for attribute in query[:limit]]
 
     for attribute in Attribute.specials.keys():
@@ -53,8 +52,9 @@ def _specials_value_startswith(attribute_id, search_string, limit=20):
 
     with connection.cursor() as cursor:
         # This is safe because field_name comes from us
-        sql = "SELECT DISTINCT {} FROM server WHERE {} LIKE %s ORDER BY {} ASC LIMIT {}".format(
-            column_name, column_name, column_name, limit)
+        sql = 'SELECT DISTINCT {} FROM server WHERE {} LIKE %s ORDER BY {} ASC LIMIT {}'.format(
+            column_name, column_name, column_name, limit
+        )
         # This MUST be escaped to prevent SQL injection
         try:
             cursor.execute(sql, [search_string + '%'])
@@ -85,14 +85,21 @@ def _value_startswith(attribute_id, search_string, limit=20):
         return []
 
     if attribute.type == 'relation':
-        query = Server.objects.filter(servertype_id=attribute_id).filter(
-            hostname__startswith=search_string).only('hostname').order_by(
-            'hostname')
+        query = (
+            Server.objects.filter(servertype_id=attribute_id)
+            .filter(hostname__startswith=search_string)
+            .only('hostname')
+            .order_by('hostname')
+        )
         return [server.hostname for server in query[:limit]]
     if attribute.type == 'boolean':
         return ['true', 'false']
 
-    query = attribute_model.objects.filter(attribute_id=attribute_id).filter(
-        value__startswith=search_string).only('value').distinct(
-        'value').order_by('value')
+    query = (
+        attribute_model.objects.filter(attribute_id=attribute_id)
+        .filter(value__startswith=search_string)
+        .only('value')
+        .distinct('value')
+        .order_by('value')
+    )
     return [attr.value for attr in query[:limit]]

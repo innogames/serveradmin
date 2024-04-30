@@ -21,7 +21,8 @@ from serveradmin.serverdb.models import (
     ServerAttribute,
     ServerRelationAttribute,
     ChangeCommit,
-    Change, ServertypeAttribute,
+    Change,
+    ServertypeAttribute,
 )
 from serveradmin.serverdb.query_materializer import (
     QueryMaterializer,
@@ -56,17 +57,11 @@ class CommitNewerData(CommitError):
 def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
     """The main function to commit queries"""
 
-    pre_commit.send_robust(
-        commit_query, created=created, changed=changed, deleted=deleted
-    )
+    pre_commit.send_robust(commit_query, created=created, changed=changed, deleted=deleted)
 
     # TODO: Find out which attributes we actually need
     attribute_lookup = {a.pk: a for a in Attribute.objects.all()}
-    joined_attributes = {
-        a: None
-        for a
-        in list(attribute_lookup.values()) + list(Attribute.specials.values())
-    }
+    joined_attributes = {a: None for a in list(attribute_lookup.values()) + list(Attribute.specials.values())}
 
     # TODO: We rely on the "protocol" that everything that creates or changes
     #       one or more Server(s) uses this API or also acquires an exclusive
@@ -117,16 +112,11 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
 
         # TODO Improve this function by checking only attributes of ACLs that
         #      have actually changed and not all.
-        _access_control(
-            user, app, unchanged_objects,
-            created_objects, changed_objects, deleted_objects
-        )
+        _access_control(user, app, unchanged_objects, created_objects, changed_objects, deleted_objects)
 
         _log_changes(user, app, changed, created_objects, deleted_objects)
 
-    post_commit.send_robust(
-        commit_query, created=created, changed=changed, deleted=deleted
-    )
+    post_commit.send_robust(commit_query, created=created, changed=changed, deleted=deleted)
 
     return DatasetCommit(
         list(created_objects.values()),
@@ -139,22 +129,11 @@ def _validate(attribute_lookup, changed, changed_objects):
     servertype_attributes = _get_servertype_attributes(changed_objects)
 
     # Attributes must be always validated
-    violations_attribs = _validate_attributes(
-        changed, changed_objects, servertype_attributes
-    )
-    violations_readonly = _validate_readonly(
-        attribute_lookup, changed, changed_objects
-    )
-    violations_regexp = list(
-        _validate_regexp(changed, changed_objects, attribute_lookup)
-    )
-    violations_required = _validate_required(
-        changed, changed_objects, servertype_attributes
-    )
-    if (
-        violations_attribs or violations_readonly or
-        violations_regexp or violations_required
-    ):
+    violations_attribs = _validate_attributes(changed, changed_objects, servertype_attributes)
+    violations_readonly = _validate_readonly(attribute_lookup, changed, changed_objects)
+    violations_regexp = list(_validate_regexp(changed, changed_objects, attribute_lookup))
+    violations_required = _validate_required(changed, changed_objects, servertype_attributes)
+    if violations_attribs or violations_readonly or violations_regexp or violations_required:
         error_message = _build_error_message(
             violations_attribs,
             violations_readonly,
@@ -163,10 +142,7 @@ def _validate(attribute_lookup, changed, changed_objects):
         )
         raise CommitValidationFailed(
             error_message,
-            violations_attribs +
-            violations_readonly +
-            violations_regexp +
-            violations_required,
+            violations_attribs + violations_readonly + violations_regexp + violations_required,
         )
 
     newer = _validate_commit(changed, changed_objects)
@@ -179,11 +155,7 @@ def _delete_attributes(attribute_lookup, changed, changed_servers, deleted):
     # to avoid integrity errors.  Other attributes will just go away
     # with the servers.
     if deleted:
-        (
-            ServerRelationAttribute.objects
-            .filter(server_id__in=deleted)
-            .delete()
-        )
+        (ServerRelationAttribute.objects.filter(server_id__in=deleted).delete())
 
     for changes in changed:
         object_id = changes['object_id']
@@ -196,9 +168,7 @@ def _delete_attributes(attribute_lookup, changed, changed_servers, deleted):
             attribute = attribute_lookup[attribute_id]
             action = change['action']
 
-            if action == 'delete' or (
-                action == 'update' and change['new'] is None
-            ):
+            if action == 'delete' or (action == 'update' and change['new'] is None):
                 server.get_attributes(attribute).delete()
             elif action == 'multi' and change['remove']:
                 for server_attribute in server.get_attributes(attribute):
@@ -218,8 +188,9 @@ def _delete_servers(changed, deleted, deleted_servers):
             server.delete()
     except IntegrityError as error:
         raise CommitError(
-            'Cannot delete servers because they are referenced by {0}'
-            .format(', '.join(str(o) for o in error.protected_objects))
+            'Cannot delete servers because they are referenced by {0}'.format(
+                ', '.join(str(o) for o in error.protected_objects)
+            )
         )
 
     # We should ignore the changes to the deleted servers.
@@ -310,8 +281,12 @@ def _upsert_attributes(attribute_lookup, changed, changed_servers):
 
 
 def _access_control(
-    user: Optional[User], app: Optional[Application], unchanged_objects: dict,
-    created_objects: dict, changed_objects: dict, deleted_objects: dict,
+    user: Optional[User],
+    app: Optional[Application],
+    unchanged_objects: dict,
+    created_objects: dict,
+    changed_objects: dict,
+    deleted_objects: dict,
 ) -> None:
     """Enforce serveradmin ACLs
 
@@ -357,17 +332,13 @@ def _access_control(
     ):
         # Check app or if not present user permissions
         for entity_class, entity_name, groups in entities:
-            acl_violations = {
-                acl: _acl_violations(unchanged_objects, obj, acl)
-                for acl in groups
-            }
+            acl_violations = {acl: _acl_violations(unchanged_objects, obj, acl) for acl in groups}
 
             # If all ACLs resulted in violations, none of them allowed the edit
             # Build a verbose error message and abort the commit
             if all(acl_violations.values()):
-                msg = (
-                    'Insufficient access rights to object "{}" for {} "{}": '
-                    .format(obj['hostname'], entity_class, entity_name)
+                msg = 'Insufficient access rights to object "{}" for {} "{}": '.format(
+                    obj['hostname'], entity_class, entity_name
                 )
                 for acl, violations in acl_violations.items():
                     msg += ' '.join(violations)
@@ -413,9 +384,10 @@ def _acl_violations(touched_objects, pending_changes, acl):
 
         if not attribute_filter.matches(to_compare.get(attribute_id)):
             violations.append(
-                'Object is not covered by ACL "{}", Attribute "{}" '
-                'does not match the filter "{}".'.format(
-                    acl, attribute_id, attribute_filter,
+                'Object is not covered by ACL "{}", Attribute "{}" ' 'does not match the filter "{}".'.format(
+                    acl,
+                    attribute_id,
+                    attribute_filter,
                 )
             )
 
@@ -435,14 +407,11 @@ def _acl_violations(touched_objects, pending_changes, acl):
 
     # Check whether all changed attributes are on this ACLs attribute whitelist
     for attribute_id, attribute_value in pending_changes.items():
-        if (
-            attribute_id not in attribute_ids and
-            attribute_value != old_object[attribute_id]
-        ):
+        if attribute_id not in attribute_ids and attribute_value != old_object[attribute_id]:
             is_related_via: bool = ServertypeAttribute.objects.filter(
                 servertype_id=pending_changes['servertype'],
                 attribute_id=attribute_id,
-                related_via_attribute__isnull=False
+                related_via_attribute__isnull=False,
             ).exists()
             if is_related_via:
                 # Attributes which are related via another servertype can be
@@ -453,7 +422,8 @@ def _acl_violations(touched_objects, pending_changes, acl):
             violations.append(
                 'Change is not covered by ACL "{}", Attribute "{}" was '
                 'modified despite not beeing whitelisted.'.format(
-                    acl, attribute_id,
+                    acl,
+                    attribute_id,
                 )
             )
 
@@ -470,28 +440,34 @@ def _log_changes(user, app, changed, created_objects, deleted_objects):
         if len(updates.keys() - excl_attrs) > 1:
             # Get changes for attributes that should be logged.
             to_log = {k: v for k, v in updates.items() if k not in excl_attrs}
-            changes.append(Change(
-                object_id=updates['object_id'],
-                change_type=Change.Type.CHANGE,
-                change_json=to_log,
-                commit=commit,
-            ))
+            changes.append(
+                Change(
+                    object_id=updates['object_id'],
+                    change_type=Change.Type.CHANGE,
+                    change_json=to_log,
+                    commit=commit,
+                )
+            )
 
     for attributes in deleted_objects.values():
-        changes.append(Change(
-            object_id=attributes['object_id'],
-            change_type=Change.Type.DELETE,
-            change_json=attributes,
-            commit=commit,
-        ))
+        changes.append(
+            Change(
+                object_id=attributes['object_id'],
+                change_type=Change.Type.DELETE,
+                change_json=attributes,
+                commit=commit,
+            )
+        )
 
     for obj in created_objects.values():
-        changes.append(Change(
-            object_id=obj['object_id'],
-            change_type=Change.Type.CREATE,
-            change_json=obj,
-            commit=commit,
-        ))
+        changes.append(
+            Change(
+                object_id=obj['object_id'],
+                change_type=Change.Type.CREATE,
+                change_json=obj,
+                commit=commit,
+            )
+        )
 
     if changes:
         commit.save()
@@ -499,11 +475,7 @@ def _log_changes(user, app, changed, created_objects, deleted_objects):
 
 
 def _fetch_servers(object_ids):
-    servers = {
-        s.server_id: s
-        for s
-        in Server.objects.select_for_update().filter(server_id__in=object_ids)
-    }
+    servers = {s.server_id: s for s in Server.objects.select_for_update().filter(server_id__in=object_ids)}
     for object_id in object_ids:
         if object_id in servers:
             continue
@@ -513,10 +485,7 @@ def _fetch_servers(object_ids):
 
 
 def _materialize(servers, joined_attributes):
-    return {
-        o['object_id']: o
-        for o in QueryMaterializer(list(servers.values()), joined_attributes)
-    }
+    return {o['object_id']: o for o in QueryMaterializer(list(servers.values()), joined_attributes)}
 
 
 def _get_servertype_attributes(servers):
@@ -548,7 +517,8 @@ def _validate_attributes(changes, servers, servertype_attributes):
 
             if (
                 # No such attribute.
-                attribute_id not in attributes or
+                attribute_id not in attributes
+                or
                 # Attributes related via another one, cannot be changed.
                 attributes[attribute_id].related_via_attribute
             ):
@@ -635,9 +605,7 @@ def _validate_commit(changes, servers):
     return newer
 
 
-def _build_error_message(violations_attribs, violations_readonly,
-                         violations_regexp, violations_required):
-
+def _build_error_message(violations_attribs, violations_readonly, violations_regexp, violations_required):
     violation_types = [
         (violations_attribs, 'Attribute not on servertype'),
         (violations_readonly, 'Attribute is read-only'),
@@ -656,9 +624,7 @@ def _build_error_message(violations_attribs, violations_readonly,
 
         if seen:
             for vattr, num_affected in seen.items():
-                message.append('{0}: {1} (#affected: {2})'.format(
-                    message_type, vattr, num_affected
-                ))
+                message.append('{0}: {1} (#affected: {2})'.format(message_type, vattr, num_affected))
 
     return '. '.join(message)
 
@@ -676,20 +642,19 @@ def _get_real_attributes(attributes, attribute_lookup):
             continue
 
         attribute = attribute_lookup[attribute_id]
-        value_multi = (
-            isinstance(value, (list, set)) or
-            hasattr(value, '_proxied_set')
-        )
+        value_multi = isinstance(value, (list, set)) or hasattr(value, '_proxied_set')
 
         if attribute.multi and not value_multi:
             raise CommitError(
-                '{0} is a multi attribute, but {1} of type {2} given.'
-                .format(attribute, repr(value), type(value).__name__)
+                '{0} is a multi attribute, but {1} of type {2} given.'.format(
+                    attribute, repr(value), type(value).__name__
+                )
             )
         if not attribute.multi and value_multi:
             raise CommitError(
-                '{0} is not a multi attribute, but {1} of type {2} given.'
-                .format(attribute, repr(value), type(value).__name__)
+                '{0} is not a multi attribute, but {1} of type {2} given.'.format(
+                    attribute, repr(value), type(value).__name__
+                )
             )
 
         # Ignore nulls
@@ -703,7 +668,7 @@ def _get_real_attributes(attributes, attribute_lookup):
         yield attribute, value
 
 
-def _validate_real_attributes(servertype, real_attributes):     # NOQA: C901
+def _validate_real_attributes(servertype, real_attributes):  # NOQA: C901
     violations_regexp = []
     violations_required = []
     servertype_attributes = set()
@@ -757,7 +722,6 @@ def _validate_real_attributes(servertype, real_attributes):     # NOQA: C901
 
 
 def _insert_server(hostname, intern_ip, servertype, attributes):
-
     if Server.objects.filter(hostname=hostname).exists():
         raise CommitError('Server with that hostname already exists')
 
@@ -786,15 +750,11 @@ def handle_violations(
 ):
     if violations_regexp or violations_required:
         if violations_regexp:
-            regexp_msg = 'Attributes violating regexp: {0}. '.format(
-                ', '.join(violations_regexp)
-            )
+            regexp_msg = 'Attributes violating regexp: {0}. '.format(', '.join(violations_regexp))
         else:
             regexp_msg = ''
         if violations_required:
-            required_msg = 'Attributes violating required: {0}.'.format(
-                ', '.join(violations_required)
-            )
+            required_msg = 'Attributes violating required: {0}.'.format(', '.join(violations_required))
         else:
             required_msg = ''
 
@@ -804,8 +764,8 @@ def handle_violations(
         )
     if violations_attribs:
         raise CommitError(
-            'Attributes {0} are not defined on '
-            'this servertype. You can\'t skip this validation!'
-            .format(', '.join(violations_attribs)),
+            'Attributes {0} are not defined on ' "this servertype. You can't skip this validation!".format(
+                ', '.join(violations_attribs)
+            ),
             violations_regexp + violations_required + violations_attribs,
         )

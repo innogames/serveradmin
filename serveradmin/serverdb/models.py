@@ -32,43 +32,43 @@ from adminapi.datatype import STR_BASED_DATATYPES
 from serveradmin.apps.models import Application
 
 ATTRIBUTE_TYPES = {
-    "string": str,
-    "boolean": lambda x: bool(strtobool(x)),
-    "relation": str,
-    "reverse": str,
-    "number": lambda x: float(x) if "." in str(x) else int(x),
-    "inet": lambda x: inet_to_python(x),
-    "macaddr": EUI,
-    "date": str,
-    "datetime": str,
-    "supernet": str,
-    "domain": str,
+    'string': str,
+    'boolean': lambda x: bool(strtobool(x)),
+    'relation': str,
+    'reverse': str,
+    'number': lambda x: float(x) if '.' in str(x) else int(x),
+    'inet': lambda x: inet_to_python(x),
+    'macaddr': EUI,
+    'date': str,
+    'datetime': str,
+    'supernet': str,
+    'domain': str,
 }
 
 IP_ADDR_TYPES = [
-    ("null", "null: intern_ip must be empty, no inet attributes"),
+    ('null', 'null: intern_ip must be empty, no inet attributes'),
     (
-        "host",
-        "host: intern_ip and inet must be an ip address and unique across all objects per attribute",
+        'host',
+        'host: intern_ip and inet must be an ip address and unique across all objects per attribute',
     ),
-    ("loadbalancer", "loadbalancer: intern_ip and inet must be an ip address"),
+    ('loadbalancer', 'loadbalancer: intern_ip and inet must be an ip address'),
     (
-        "network",
-        "network: intern_ip and inet must be an ip network, not overlapping with same servertype",
+        'network',
+        'network: intern_ip and inet must be an ip network, not overlapping with same servertype',
     ),
 ]
 
 LOOKUP_ID_VALIDATORS = [
-    RegexValidator(r"\A[a-z][a-z0-9_]+\Z", "Invalid id"),
+    RegexValidator(r'\A[a-z][a-z0-9_]+\Z', 'Invalid id'),
 ]
 
 HOSTNAME_VALIDATORS = [
-    RegexValidator(r"\A(\*\.)?([a-z0-9_]+(\.|-+))*[a-z0-9]+\Z", "Invalid hostname"),
+    RegexValidator(r'\A(\*\.)?([a-z0-9_]+(\.|-+))*[a-z0-9]+\Z', 'Invalid hostname'),
 ]
 
 REGEX_VALIDATORS = [
     RegexValidator(
-        r"\A\\A.*\\Z\Z",
+        r'\A\\A.*\\Z\Z',
         'You must wrap your pattern in "\\A" and "\\Z" to force line matching',
     ),
 ]
@@ -95,12 +95,12 @@ def is_ip_address(ip_interface: Union[IPv4Interface, IPv6Interface]) -> None:
     max_prefix_length = ip_interface.network.max_prefixlen
 
     if prefix_length != max_prefix_length:
-        raise ValidationError("Netmask length must be {0}".format(max_prefix_length))
+        raise ValidationError('Netmask length must be {0}'.format(max_prefix_length))
 
 
 def is_unique_ip(
     ip_interface: Union[IPv4Interface, IPv6Interface],
-    server: "Server",
+    server: 'Server',
     addr_types: list[str],
     attribute_id: Optional[int] = None,
 ) -> None:
@@ -133,9 +133,7 @@ def is_unique_ip(
 
     # TODO: Make attribute_id mandatory when intern_ip is gone.
     if attribute_id:
-        object_attribute_q = Q(server_id=server.server_id) | ~Q(
-            attribute_id=attribute_id
-        )
+        object_attribute_q = Q(server_id=server.server_id) | ~Q(attribute_id=attribute_id)
     else:
         object_attribute_q = Q(server_id=server.server_id)
 
@@ -147,7 +145,7 @@ def is_unique_ip(
             & ~Q(server_id=server.server_id)  # Self-server
         )
     ):
-        duplicates.append(f"{d.hostname} (intern_ip)")
+        duplicates.append(f'{d.hostname} (intern_ip)')
 
     for d in ServerInetAttribute.objects.filter(
         Q(
@@ -156,7 +154,7 @@ def is_unique_ip(
             & ~object_attribute_q  # Self-server
         )
     ):
-        duplicates.append(f"{d.server.hostname} ({d.attribute})")
+        duplicates.append(f'{d.server.hostname} ({d.attribute})')
 
     if duplicates:
         raise ValidationError(
@@ -166,7 +164,7 @@ def is_unique_ip(
 
 def network_overlaps(
     ip_interface: Union[IPv4Interface, IPv6Interface],
-    server: "Server",
+    server: 'Server',
     addr_types: list[str],
     attribute_id: Optional[int] = None,
 ) -> None:
@@ -191,9 +189,7 @@ def network_overlaps(
 
     # TODO: Make attribute_id mandatory when intern_ip is gone.
     if attribute_id:
-        object_attribute_q = Q(server_id=server.server_id) | ~Q(
-            attribute_id=attribute_id
-        )
+        object_attribute_q = Q(server_id=server.server_id) | ~Q(attribute_id=attribute_id)
     else:
         object_attribute_q = Q(server_id=server.server_id)
 
@@ -206,7 +202,7 @@ def network_overlaps(
             & ~Q(server_id=server.server_id)  # Self-server
         )
     ):
-        duplicates.append(f"{d.hostname} (intern_ip)")
+        duplicates.append(f'{d.hostname} (intern_ip)')
 
     for d in ServerInetAttribute.objects.filter(
         Q(
@@ -216,7 +212,7 @@ def network_overlaps(
             & ~object_attribute_q  # Self-server
         )
     ):
-        duplicates.append(f"{d.server.hostname} ({d.attribute})")
+        duplicates.append(f'{d.server.hostname} ({d.attribute})')
 
     if duplicates:
         raise ValidationError(
@@ -269,9 +265,9 @@ class Servertype(models.Model):
     )
 
     class Meta:
-        app_label = "serverdb"
-        db_table = "servertype"
-        ordering = ["servertype_id"]
+        app_label = 'serverdb'
+        db_table = 'servertype'
+        ordering = ['servertype_id']
 
     def __str__(self):
         return self.servertype_id
@@ -279,16 +275,16 @@ class Servertype(models.Model):
 
 class Attribute(models.Model):
     class InetAddressFamilyChoice(models.TextChoices):
-        IPV4 = "IPV4", _("IPv4")
-        IPV6 = "IPV6", _("IPv6")
-        __empty__ = _("none or any")
+        IPV4 = 'IPV4', _('IPv4')
+        IPV6 = 'IPV6', _('IPv6')
+        __empty__ = _('none or any')
 
     special = None
 
     def __init__(self, *args, **kwargs):
-        if "special" in kwargs:
-            self.special = kwargs["special"]
-            del kwargs["special"]
+        if 'special' in kwargs:
+            self.special = kwargs['special']
+            del kwargs['special']
         super(Attribute, self).__init__(*args, **kwargs)
 
     attribute_id = models.CharField(
@@ -302,36 +298,30 @@ class Attribute(models.Model):
         choices=get_choices(ATTRIBUTE_TYPES.keys()),
     )
     multi = models.BooleanField(null=False, default=False)
-    hovertext = models.TextField(null=False, blank=True, default="")
-    group = models.CharField(max_length=32, null=False, blank=False, default="other")
+    hovertext = models.TextField(null=False, blank=True, default='')
+    group = models.CharField(max_length=32, null=False, blank=False, default='other')
     help_link = models.CharField(max_length=255, blank=True, null=True)
-    inet_address_family = models.CharField(
-        choices=InetAddressFamilyChoice.choices, max_length=5, blank=True
-    )
+    inet_address_family = models.CharField(choices=InetAddressFamilyChoice.choices, max_length=5, blank=True)
     readonly = models.BooleanField(null=False, default=False)
-    target_servertype = models.ForeignKey(
-        Servertype, on_delete=models.CASCADE, db_index=False, null=True, blank=True
-    )
+    target_servertype = models.ForeignKey(Servertype, on_delete=models.CASCADE, db_index=False, null=True, blank=True)
     reversed_attribute = models.ForeignKey(
-        "self",
+        'self',
         on_delete=models.CASCADE,
-        related_name="reversed_attribute_set",
+        related_name='reversed_attribute_set',
         null=True,
         blank=True,
         db_index=False,
-        limit_choices_to=dict(type="relation"),
+        limit_choices_to=dict(type='relation'),
     )
     clone = models.BooleanField(null=False, default=False)
-    history = models.BooleanField(
-        null=False, default=True, help_text="Log changes to this attribute"
-    )
+    history = models.BooleanField(null=False, default=True, help_text='Log changes to this attribute')
     regexp = models.CharField(max_length=1024, validators=REGEX_VALIDATORS)
     _compiled_regexp = None
 
     class Meta:
-        app_label = "serverdb"
-        db_table = "attribute"
-        ordering = ["attribute_id"]
+        app_label = 'serverdb'
+        db_table = 'attribute'
+        ordering = ['attribute_id']
 
     def __str__(self):
         return self.attribute_id
@@ -339,13 +329,13 @@ class Attribute(models.Model):
     def initializer(self):
         if self.multi:
             return set
-        if self.type == "boolean":
+        if self.type == 'boolean':
             return bool
         return lambda: None
 
     def from_str(self, value):
         if self.multi and not isinstance(value, (list, set)):
-            raise ValidationError("Attr is multi, but value is not a list/set")
+            raise ValidationError('Attr is multi, but value is not a list/set')
 
         if value is None:
             return value
@@ -367,11 +357,7 @@ class Attribute(models.Model):
     def regexp_match(self, value):
         re_compiled = self._get_compiled_regexp()
         if re_compiled is None:
-            raise ValidationError(
-                "Attribute {} has no value validation regexp set".format(
-                    self.attribute_id
-                )
-            )
+            raise ValidationError('Attribute {} has no value validation regexp set'.format(self.attribute_id))
 
         # We use lower case booleans in our regexes but python __str__ methods
         # on booleans return them in upper case.
@@ -383,7 +369,7 @@ class Attribute(models.Model):
         return re_compiled.match(value)
 
     def clean(self):
-        if self.regexp == "":
+        if self.regexp == '':
             self.regexp = None
         super(Attribute, self).clean()
 
@@ -395,37 +381,37 @@ class ServerTableSpecial(object):
 
 
 Attribute.specials = {
-    "object_id": Attribute(
-        attribute_id="object_id",
-        type="number",
+    'object_id': Attribute(
+        attribute_id='object_id',
+        type='number',
         multi=False,
         clone=False,
-        group="base",
-        special=ServerTableSpecial("server_id"),
+        group='base',
+        special=ServerTableSpecial('server_id'),
     ),
-    "hostname": Attribute(
-        attribute_id="hostname",
-        type="string",
+    'hostname': Attribute(
+        attribute_id='hostname',
+        type='string',
         multi=False,
         clone=True,
-        group="base",
-        special=ServerTableSpecial("hostname", unique=True),
+        group='base',
+        special=ServerTableSpecial('hostname', unique=True),
     ),
-    "servertype": Attribute(
-        attribute_id="servertype",
-        type="string",
+    'servertype': Attribute(
+        attribute_id='servertype',
+        type='string',
         multi=False,
         clone=True,
-        group="base",
-        special=ServerTableSpecial("servertype_id"),
+        group='base',
+        special=ServerTableSpecial('servertype_id'),
     ),
-    "intern_ip": Attribute(
-        attribute_id="intern_ip",
-        type="inet",
+    'intern_ip': Attribute(
+        attribute_id='intern_ip',
+        type='inet',
         multi=False,
         clone=True,
-        group="base",
-        special=ServerTableSpecial("intern_ip"),
+        group='base',
+        special=ServerTableSpecial('intern_ip'),
     ),
 }
 
@@ -433,36 +419,34 @@ Attribute.specials = {
 class ServertypeAttribute(models.Model):
     servertype = models.ForeignKey(
         Servertype,
-        related_name="attributes",
+        related_name='attributes',
         db_index=False,
         on_delete=models.CASCADE,
     )
     attribute = models.ForeignKey(
         Attribute,
-        related_name="servertype_attributes",
+        related_name='servertype_attributes',
         db_index=False,
         on_delete=models.CASCADE,
     )
     related_via_attribute = models.ForeignKey(
         Attribute,
         on_delete=models.CASCADE,
-        related_name="related_via_servertype_attributes",
+        related_name='related_via_servertype_attributes',
         null=True,
         blank=True,
         db_index=False,
         # It can only be related via a relation (AKA as an hostname
         # attribute).
-        limit_choices_to=models.Q(
-            type__in=["relation", "reverse", "supernet", "domain"]
-        ),
+        limit_choices_to=models.Q(type__in=['relation', 'reverse', 'supernet', 'domain']),
     )
     consistent_via_attribute = models.ForeignKey(
         Attribute,
         on_delete=models.CASCADE,
-        related_name="consistent_via_servertype_attributes",
+        related_name='consistent_via_servertype_attributes',
         null=True,
         blank=True,
-        db_column="consistent_via_attribute_id",
+        db_column='consistent_via_attribute_id',
         db_index=False,
     )
     required = models.BooleanField(null=False, default=False)
@@ -470,27 +454,27 @@ class ServertypeAttribute(models.Model):
     default_visible = models.BooleanField(null=False, default=False)
 
     class Meta:
-        app_label = "serverdb"
-        db_table = "servertype_attribute"
-        ordering = ["servertype", "attribute"]
-        unique_together = [["servertype", "attribute"]]
+        app_label = 'serverdb'
+        db_table = 'servertype_attribute'
+        ordering = ['servertype', 'attribute']
+        unique_together = [['servertype', 'attribute']]
 
     def __str__(self):
-        return "{0} - {1}".format(self.servertype, self.attribute)
+        return '{0} - {1}'.format(self.servertype, self.attribute)
 
     def get_default_value(self):
         if not self.default_value:
             return self.attribute.initializer()()
 
         if self.attribute.multi:
-            default_value = self.default_value.split(",")
+            default_value = self.default_value.split(',')
         else:
             default_value = self.default_value
 
         return self.attribute.from_str(default_value)
 
     def clean(self):
-        if self.default_value == "":
+        if self.default_value == '':
             self.default_value = None
         super(ServertypeAttribute, self).clean()
 
@@ -504,15 +488,13 @@ class Server(models.Model):
     objects = netfields.NetManager()
 
     server_id = models.AutoField(primary_key=True)
-    hostname = models.CharField(
-        max_length=254, unique=True, validators=HOSTNAME_VALIDATORS
-    )
+    hostname = models.CharField(max_length=254, unique=True, validators=HOSTNAME_VALIDATORS)
     intern_ip = netfields.InetAddressField(null=True, blank=True)
     servertype = models.ForeignKey(Servertype, on_delete=models.PROTECT)
 
     class Meta:
-        app_label = "serverdb"
-        db_table = "server"
+        app_label = 'serverdb'
+        db_table = 'server'
 
     def __str__(self):
         return self.hostname
@@ -521,16 +503,14 @@ class Server(models.Model):
         super(Server, self).clean()
 
         ip_addr_type = self.servertype.ip_addr_type
-        if ip_addr_type == "null":
+        if ip_addr_type == 'null':
             if self.intern_ip is not None:
-                raise ValidationError(_("intern_ip must be null"), code="invalid value")
+                raise ValidationError(_('intern_ip must be null'), code='invalid value')
         else:
             # This is special to intern_ip for inet attributes this is covered
             # by making them required.
             if self.intern_ip is None:
-                raise ValidationError(
-                    _("intern_ip must not be null"), code="missing value"
-                )
+                raise ValidationError(_('intern_ip must not be null'), code='missing value')
 
             # TODO: This logic is duplicated to the ServerInetAttribute clean
             #       method but can be removed when we remove the special
@@ -538,13 +518,13 @@ class Server(models.Model):
             if type(self.intern_ip) not in [IPv4Interface, IPv6Interface]:
                 self.intern_ip = inet_to_python(self.intern_ip)
 
-            if ip_addr_type == "host":
+            if ip_addr_type == 'host':
                 is_ip_address(self.intern_ip)
-                is_unique_ip(self.intern_ip, self, ["host"])
-            elif ip_addr_type == "network":
+                is_unique_ip(self.intern_ip, self, ['host'])
+            elif ip_addr_type == 'network':
                 is_network(self.intern_ip)
-                network_overlaps(self.intern_ip, self, ["network"])
-            elif ip_addr_type == "loadbalancer":
+                network_overlaps(self.intern_ip, self, ['network'])
+            elif ip_addr_type == 'loadbalancer':
                 is_ip_address(self.intern_ip)
 
     def get_attributes(self, attribute):
@@ -566,7 +546,7 @@ class ServerAttribute(models.Model):
         abstract = True
 
     def __str__(self):
-        return "{0}->{1}={2}".format(self.server, self.attribute, self.get_value())
+        return '{0}->{1}={2}'.format(self.server, self.attribute, self.get_value())
 
     def get_value(self):
         return self.value
@@ -579,21 +559,21 @@ class ServerAttribute(models.Model):
 
     @staticmethod
     def get_model(attribute_type):
-        if attribute_type in "string":
+        if attribute_type in 'string':
             return ServerStringAttribute
-        if attribute_type == "relation":
+        if attribute_type == 'relation':
             return ServerRelationAttribute
-        if attribute_type == "boolean":
+        if attribute_type == 'boolean':
             return ServerBooleanAttribute
-        if attribute_type == "number":
+        if attribute_type == 'number':
             return ServerNumberAttribute
-        if attribute_type == "inet":
+        if attribute_type == 'inet':
             return ServerInetAttribute
-        if attribute_type == "macaddr":
+        if attribute_type == 'macaddr':
             return ServerMACAddressAttribute
-        if attribute_type == "date":
+        if attribute_type == 'date':
             return ServerDateAttribute
-        if attribute_type == "datetime":
+        if attribute_type == 'datetime':
             return ServerDateTimeAttribute
 
 
@@ -602,28 +582,24 @@ class ServerStringAttribute(ServerAttribute):
         Attribute,
         db_index=False,
         on_delete=models.CASCADE,
-        limit_choices_to=dict(type="string"),
+        limit_choices_to=dict(type='string'),
     )
     value = models.CharField(max_length=1024)
 
     class Meta:
-        app_label = "serverdb"
-        db_table = "server_string_attribute"
-        unique_together = [["server", "attribute", "value"]]
-        index_together = [["attribute", "value"]]
+        app_label = 'serverdb'
+        db_table = 'server_string_attribute'
+        unique_together = [['server', 'attribute', 'value']]
+        index_together = [['attribute', 'value']]
 
     def save_value(self, value):
-        for char in "'\"":
+        for char in '\'"':
             if char in value:
-                raise ValidationError(
-                    '"{}" character is not allowed on string attributes'.format(char)
-                )
+                raise ValidationError('"{}" character is not allowed on string attributes'.format(char))
         for datatype, regexp in STR_BASED_DATATYPES:
             if regexp.match(value):
                 raise ValidationError(
-                    'String attribute value "{}" matches with {} type'.format(
-                        value, datatype.__name__
-                    )
+                    'String attribute value "{}" matches with {} type'.format(value, datatype.__name__)
                 )
 
         super().save_value(value)
@@ -632,7 +608,7 @@ class ServerStringAttribute(ServerAttribute):
 class ServerRelationAttributeManager(models.Manager):
     def get_queryset(self):
         manager = super(ServerRelationAttributeManager, self)
-        return manager.get_queryset().prefetch_related("value")
+        return manager.get_queryset().prefetch_related('value')
 
 
 class ServerRelationAttribute(ServerAttribute):
@@ -642,22 +618,22 @@ class ServerRelationAttribute(ServerAttribute):
         Attribute,
         db_index=False,
         on_delete=models.CASCADE,
-        limit_choices_to=dict(type="relation"),
+        limit_choices_to=dict(type='relation'),
     )
     value = models.ForeignKey(
         Server,
-        db_column="value",
+        db_column='value',
         db_index=False,
         on_delete=models.PROTECT,
-        related_name="relation_attribute_servers",
-        related_query_name="relation_attribute_server",
+        related_name='relation_attribute_servers',
+        related_query_name='relation_attribute_server',
     )
 
     class Meta:
-        app_label = "serverdb"
-        db_table = "server_relation_attribute"
-        unique_together = [["server", "attribute", "value"]]
-        index_together = [["attribute", "value"]]
+        app_label = 'serverdb'
+        db_table = 'server_relation_attribute'
+        unique_together = [['server', 'attribute', 'value']]
+        index_together = [['attribute', 'value']]
 
     def save_value(self, value):
         try:
@@ -680,14 +656,14 @@ class ServerBooleanAttribute(ServerAttribute):
     attribute = models.ForeignKey(
         Attribute,
         on_delete=models.CASCADE,
-        limit_choices_to=dict(type="boolean"),
+        limit_choices_to=dict(type='boolean'),
     )
 
     class Meta:
-        app_label = "serverdb"
-        db_table = "server_boolean_attribute"
-        unique_together = [["server", "attribute"]]
-        index_together = [["attribute"]]
+        app_label = 'serverdb'
+        db_table = 'server_boolean_attribute'
+        unique_together = [['server', 'attribute']]
+        index_together = [['attribute']]
 
     def get_value(self):
         return True
@@ -704,22 +680,18 @@ class ServerNumberAttribute(ServerAttribute):
         Attribute,
         db_index=False,
         on_delete=models.CASCADE,
-        limit_choices_to=dict(type="number"),
+        limit_choices_to=dict(type='number'),
     )
     value = models.DecimalField(max_digits=65, decimal_places=0)
 
     class Meta:
-        app_label = "serverdb"
-        db_table = "server_number_attribute"
-        unique_together = [["server", "attribute", "value"]]
-        index_together = [["attribute", "value"]]
+        app_label = 'serverdb'
+        db_table = 'server_number_attribute'
+        unique_together = [['server', 'attribute', 'value']]
+        index_together = [['attribute', 'value']]
 
     def get_value(self):
-        return (
-            int(self.value)
-            if self.value.as_tuple().exponent == 0
-            else float(self.value)
-        )
+        return int(self.value) if self.value.as_tuple().exponent == 0 else float(self.value)
 
 
 class ServerInetAttribute(ServerAttribute):
@@ -727,24 +699,22 @@ class ServerInetAttribute(ServerAttribute):
         Attribute,
         db_index=False,
         on_delete=models.CASCADE,
-        limit_choices_to=dict(type="inet"),
+        limit_choices_to=dict(type='inet'),
     )
     value = netfields.InetAddressField()
 
     class Meta:
-        app_label = "serverdb"
-        db_table = "server_inet_attribute"
-        unique_together = [["server", "attribute", "value"]]
-        index_together = [["attribute", "value"]]
+        app_label = 'serverdb'
+        db_table = 'server_inet_attribute'
+        unique_together = [['server', 'attribute', 'value']]
+        index_together = [['attribute', 'value']]
 
     def clean(self):
         super(ServerAttribute, self).clean()
 
         if self.attribute.inet_address_family == Attribute.InetAddressFamilyChoice.IPV4:
             allowed_types = (IPv4Interface,)
-        elif (
-            self.attribute.inet_address_family == Attribute.InetAddressFamilyChoice.IPV6
-        ):
+        elif self.attribute.inet_address_family == Attribute.InetAddressFamilyChoice.IPV6:
             allowed_types = (IPv6Interface,)
         else:
             allowed_types = (IPv4Interface, IPv6Interface)
@@ -753,29 +723,28 @@ class ServerInetAttribute(ServerAttribute):
             self.value = inet_to_python(self.value)
             if type(self.value) not in allowed_types:
                 raise ValidationError(
-                    f"IP address {self.value} is not "
-                    f"of type {self.attribute.get_inet_address_family_display()}!"
+                    f'IP address {self.value} is not ' f'of type {self.attribute.get_inet_address_family_display()}!'
                 )
 
         # Get the ip_addr_type of the servertype
         ip_addr_type = self.server.servertype.ip_addr_type
 
-        if ip_addr_type == "null":
+        if ip_addr_type == 'null':
             # A Servertype with ip_addr_type "null" and attributes of type
             # inet must be denied per configuration. This is just a safety net
             # in case e.g. somebody creates them programmatically.
             raise ValidationError(
-                _("%(attribute_id)s must be null"),
-                code="invalid value",
-                params={"attribute_id": self.attribute_id},
+                _('%(attribute_id)s must be null'),
+                code='invalid value',
+                params={'attribute_id': self.attribute_id},
             )
-        elif ip_addr_type == "host":
+        elif ip_addr_type == 'host':
             is_ip_address(self.value)
-            is_unique_ip(self.value, self.server, ["host"], self.attribute_id)
-        elif ip_addr_type == "network":
+            is_unique_ip(self.value, self.server, ['host'], self.attribute_id)
+        elif ip_addr_type == 'network':
             is_network(self.value)
-            network_overlaps(self.value, self.server, ["network"], self.attribute_id)
-        elif ip_addr_type == "loadbalancer":
+            network_overlaps(self.value, self.server, ['network'], self.attribute_id)
+        elif ip_addr_type == 'loadbalancer':
             is_ip_address(self.value)
 
 
@@ -784,15 +753,15 @@ class ServerMACAddressAttribute(ServerAttribute):
         Attribute,
         db_index=False,
         on_delete=models.CASCADE,
-        limit_choices_to=dict(type="macaddr"),
+        limit_choices_to=dict(type='macaddr'),
     )
     value = netfields.MACAddressField()
 
     class Meta:
-        app_label = "serverdb"
-        db_table = "server_macaddr_attribute"
-        unique_together = [["server", "attribute", "value"]]
-        index_together = [["attribute", "value"]]
+        app_label = 'serverdb'
+        db_table = 'server_macaddr_attribute'
+        unique_together = [['server', 'attribute', 'value']]
+        index_together = [['attribute', 'value']]
 
 
 class ServerDateAttribute(ServerAttribute):
@@ -800,15 +769,15 @@ class ServerDateAttribute(ServerAttribute):
         Attribute,
         db_index=False,
         on_delete=models.CASCADE,
-        limit_choices_to=dict(type="date"),
+        limit_choices_to=dict(type='date'),
     )
     value = models.DateField()
 
     class Meta:
-        app_label = "serverdb"
-        db_table = "server_date_attribute"
-        unique_together = [["server", "attribute", "value"]]
-        index_together = [["attribute", "value"]]
+        app_label = 'serverdb'
+        db_table = 'server_date_attribute'
+        unique_together = [['server', 'attribute', 'value']]
+        index_together = [['attribute', 'value']]
 
 
 class ServerDateTimeAttribute(ServerAttribute):
@@ -816,15 +785,15 @@ class ServerDateTimeAttribute(ServerAttribute):
         Attribute,
         db_index=False,
         on_delete=models.CASCADE,
-        limit_choices_to=dict(type="datetime"),
+        limit_choices_to=dict(type='datetime'),
     )
     value = models.DateTimeField()
 
     class Meta:
-        app_label = "serverdb"
-        db_table = "server_datetime_attribute"
-        unique_together = [["server", "attribute", "value"]]
-        index_together = [["attribute", "value"]]
+        app_label = 'serverdb'
+        db_table = 'server_datetime_attribute'
+        unique_together = [['server', 'attribute', 'value']]
+        index_together = [['attribute', 'value']]
 
 
 class ChangeCommit(models.Model):
@@ -833,7 +802,7 @@ class ChangeCommit(models.Model):
     change_on = models.DateTimeField(default=now, db_index=True)
 
     class Meta:
-        app_label = "serverdb"
+        app_label = 'serverdb'
 
     def __str__(self):
         return str(self.change_on)
@@ -841,9 +810,9 @@ class ChangeCommit(models.Model):
 
 class Change(models.Model):
     class Type(models.TextChoices):
-        CREATE = "create", _("create")
-        CHANGE = "change", _("change")
-        DELETE = "delete", _("delete")
+        CREATE = 'create', _('create')
+        CHANGE = 'change', _('change')
+        DELETE = 'delete', _('delete')
 
     class ChangeJSONEncoder(DjangoJSONEncoder):
         _NETWORK_TYPES = (
@@ -877,4 +846,4 @@ class Change(models.Model):
     commit = models.ForeignKey(ChangeCommit, on_delete=models.CASCADE)
 
     class Meta:
-        app_label = "serverdb"
+        app_label = 'serverdb'

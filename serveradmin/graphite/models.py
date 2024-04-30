@@ -5,18 +5,13 @@ Copyright (c) 2019 InnoGames GmbH
 
 import json
 from string import Formatter
-from urllib.request import (
-    HTTPBasicAuthHandler,
-    HTTPPasswordMgrWithDefaultRealm,
-    build_opener
-)
+from urllib.request import HTTPBasicAuthHandler, HTTPPasswordMgrWithDefaultRealm, build_opener
 
-from django.db import models
 from django.conf import settings
+from django.db import models
 
 from adminapi.dataset import MultiAttr
 from serveradmin.graphite.validators import validate_unique_uri_parameters
-
 from serveradmin.serverdb.models import LOOKUP_ID_VALIDATORS, Attribute
 
 GRAPHITE_ATTRIBUTE_ID = 'graphite_graphs'
@@ -24,8 +19,11 @@ GRAPHITE_ATTRIBUTE_ID = 'graphite_graphs'
 
 class Collection(models.Model):
     """Collection of graphs and values to be shown for the servers"""
+
     name = models.CharField(max_length=255, validators=LOOKUP_ID_VALIDATORS)
-    params = models.TextField(blank=True, help_text="""
+    params = models.TextField(
+        blank=True,
+        help_text="""
         Part of the URL after "?" to GET the graph or the value from
         the Graphite.  It will be concatenated with the params for
         the template and the variation.  Make sure it doesn't include
@@ -45,15 +43,20 @@ class Collection(models.Model):
             width=500&height=500
 
         [1] https://docs.python.org/2/library/string.html#formatstrings
-        """, validators=[validate_unique_uri_parameters])
+        """,
+        validators=[validate_unique_uri_parameters],
+    )
     sort_order = models.FloatField(default=0)
-    overview = models.BooleanField(default=False, help_text="""
+    overview = models.BooleanField(
+        default=False,
+        help_text="""
         Marks the collection to be shown on the overview page.  For
         the overview page, sprites will be generated and cached on
         the server in advance to improve the loading time.  A suffix
         will be appended to the generated URLs to get the overview
         images, as defined by the GRAPHITE_SPRITE_PARAMS setting.
-        """)
+        """,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -63,8 +66,8 @@ class Collection(models.Model):
 
     def __init__(self, *args, **kwargs):
         models.Model.__init__(self, *args, **kwargs)
-        self._templates = None     # To cache graph templates
-        self._variations = None    # To cache graph variations
+        self._templates = None  # To cache graph templates
+        self._variations = None  # To cache graph variations
 
     def __str__(self):
         name = self.name
@@ -87,9 +90,11 @@ class Collection(models.Model):
         column = []
         for template in self.template_set.all():
             for foreach_metric in template.foreach(server):
-                formatter = AttributeFormatter({
-                    'foreach_id': foreach_metric['id'],
-                })
+                formatter = AttributeFormatter(
+                    {
+                        'foreach_id': foreach_metric['id'],
+                    }
+                )
                 params = self.merged_params((template.params, custom_params))
 
                 name = template.name
@@ -125,15 +130,14 @@ class Collection(models.Model):
             for foreach_metric in template.foreach(server):
                 column = []
                 for variation in self.variation_set.all():
-                    formatter = AttributeFormatter({
-                        'foreach_id': foreach_metric['id'],
-                        'summarize_interval': variation.summarize_interval,
-                    })
-                    params = self.merged_params((variation.params,
-                                                 template.params,
-                                                 custom_params))
-                    column.append((variation.name,
-                                   formatter.vformat(params, (), server)))
+                    formatter = AttributeFormatter(
+                        {
+                            'foreach_id': foreach_metric['id'],
+                            'summarize_interval': variation.summarize_interval,
+                        }
+                    )
+                    params = self.merged_params((variation.params, template.params, custom_params))
+                    column.append((variation.name, formatter.vformat(params, (), server)))
 
                 name = template.name
                 if foreach_metric['text']:
@@ -158,22 +162,24 @@ class Collection(models.Model):
 
 class Numeric(models.Model):
     """Templates in the collections"""
+
     collection = models.ForeignKey(
-        Collection, on_delete=models.CASCADE,
+        Collection,
+        on_delete=models.CASCADE,
         limit_choices_to={'overview': True},
     )
     params = models.TextField(
-        blank=True, help_text="Same as the params of the collections",
-        validators=[validate_unique_uri_parameters]
+        blank=True, help_text='Same as the params of the collections', validators=[validate_unique_uri_parameters]
     )
     sort_order = models.FloatField(default=0)
     attribute = models.ForeignKey(
-        Attribute, on_delete=models.CASCADE,
+        Attribute,
+        on_delete=models.CASCADE,
         limit_choices_to={
             'multi': False,
             'type': 'number',
             'readonly': True,
-        }
+        },
     )
 
     class Meta:
@@ -187,16 +193,13 @@ class Numeric(models.Model):
 
 class Relation(models.Model):
     """Templates in the collections"""
-    collection = models.ForeignKey(
-        Collection, on_delete=models.CASCADE,
-        limit_choices_to={'overview': True}
-    )
+
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE, limit_choices_to={'overview': True})
     sort_order = models.FloatField(default=0)
     attribute = models.ForeignKey(
-        Attribute, on_delete=models.CASCADE,
-        limit_choices_to=models.Q(
-            type__in=['relation', 'reverse', 'supernet', 'domain']
-        )
+        Attribute,
+        on_delete=models.CASCADE,
+        limit_choices_to=models.Q(type__in=['relation', 'reverse', 'supernet', 'domain']),
     )
 
     class Meta:
@@ -210,20 +213,29 @@ class Relation(models.Model):
 
 class Template(models.Model):
     """Templates in the collections"""
+
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
-    params = models.TextField(blank=True, help_text="""
+    params = models.TextField(
+        blank=True,
+        help_text="""
         Same as the params of the collections.
-        """, validators=[validate_unique_uri_parameters])
+        """,
+        validators=[validate_unique_uri_parameters],
+    )
     sort_order = models.FloatField(default=0)
     description = models.TextField(blank=True)
-    foreach_path = models.CharField(max_length=256, blank=True, help_text="""
+    foreach_path = models.CharField(
+        max_length=256,
+        blank=True,
+        help_text="""
         Generates multiple graphs from the same template.  Variables can be
         used like "params".  It will be a variable for the "params" that can
         be used as {foreach_id}.  Example value:
 
             servers.{hostname}.system.cpu.*
-        """)
+        """,
+    )
 
     class Meta:
         db_table = 'graphite_template'
@@ -242,9 +254,7 @@ class Template(models.Model):
 
         if self.foreach_path:
             formatter = AttributeFormatter()
-            params = formatter.vformat(
-                'query=' + self.foreach_path, (), server
-            )
+            params = formatter.vformat('query=' + self.foreach_path, (), server)
 
             password_mgr = HTTPPasswordMgrWithDefaultRealm()
             password_mgr.add_password(
@@ -254,37 +264,43 @@ class Template(models.Model):
                 settings.GRAPHITE_PASSWORD,
             )
             auth_handler = HTTPBasicAuthHandler(password_mgr)
-            url = '{0}/metrics/find?{1}'.format(
-                settings.GRAPHITE_URL, params
-            )
+            url = '{0}/metrics/find?{1}'.format(settings.GRAPHITE_URL, params)
             with build_opener(auth_handler).open(url) as response:
                 return json.loads(response.read().decode())
 
-        return [{
-            'id': '',
-            'leaf': 0,
-            'context': {},
-            'text': '',
-            'expandable': 0,
-            'allowChildren': 0,
-        }]
+        return [
+            {
+                'id': '',
+                'leaf': 0,
+                'context': {},
+                'text': '',
+                'expandable': 0,
+                'allowChildren': 0,
+            }
+        ]
 
 
 class Variation(models.Model):
-    """Variation to render the templates
-    """
+    """Variation to render the templates"""
 
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
-    params = models.TextField(blank=True, help_text="""
+    params = models.TextField(
+        blank=True,
+        help_text="""
         Same as the params of the collections.
-        """, validators=[validate_unique_uri_parameters])
+        """,
+        validators=[validate_unique_uri_parameters],
+    )
     sort_order = models.FloatField(default=0)
-    summarize_interval = models.CharField(max_length=255, help_text="""
+    summarize_interval = models.CharField(
+        max_length=255,
+        help_text="""
         Interval string that makes sense to use on the summarize() function on
         the Graphite for this variation.  It can be used in the params as
         {summarize_interval}.
-        """)
+        """,
+    )
 
     class Meta:
         db_table = 'graphite_variation'
@@ -349,5 +365,5 @@ def format_attribute_value(value):
     # XXX This function is a terrible temporary hack that needs to go away
     for suffix in ['.ig.local', '.innogames.net']:
         if value.endswith(suffix):
-            value = value[:-len(suffix)]
+            value = value[: -len(suffix)]
     return value.replace('.', '_')

@@ -3,8 +3,9 @@
 Copyright (c) 2019 InnoGames GmbH
 """
 
-from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
-from datetime import datetime, timezone, tzinfo, timedelta, date
+from datetime import date, datetime, timedelta, timezone, tzinfo
+from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.test import TransactionTestCase
