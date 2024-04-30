@@ -23,7 +23,7 @@ from django.http import (
     HttpResponseBadRequest,
     HttpResponseNotFound, HttpRequest
 )
-from django.shortcuts import redirect, render, get_object_or_404
+from django.shortcuts import redirect, render
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.html import mark_safe, escape as escape_html
@@ -34,7 +34,6 @@ from adminapi.datatype import DatatypeError
 from adminapi.filters import Any, ContainedOnlyBy, filter_classes, Not
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
-
 from serveradmin.dataset import Query
 from serveradmin.serverdb.models import (
     Servertype,
@@ -44,10 +43,6 @@ from serveradmin.serverdb.models import (
 )
 from serveradmin.serverdb.query_committer import commit_query
 from serveradmin.servershell.helper import get_default_shown_attributes
-from serveradmin.servershell.helper.autocomplete import (
-    attribute_value_startswith,
-    attribute_startswith
-)
 from serveradmin.servershell.merged_query_iterator import MergedQuery
 from serveradmin.servershell.utils import servershell_plugins
 
