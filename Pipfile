@@ -44,6 +44,7 @@ setuptools = "*"
 # Generate fake data for tests
 faker = "<14.0.0"
 tblib = "*"
+ruff ="*"
 
 [requires]
 python_version = "3.9"
