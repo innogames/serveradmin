@@ -4,7 +4,7 @@ Copyright (c) 2019 InnoGames GmbH
 """
 
 from adminapi.datatype import DatatypeError, str_to_datatype
-from adminapi.filters import BaseFilter, Any, Regexp, filter_classes
+from adminapi.filters import Any, BaseFilter, Regexp, filter_classes
 
 _trigger_re_chars = ('.*', '.+', '[', ']', '|', '\\', '$', '^', '<')
 

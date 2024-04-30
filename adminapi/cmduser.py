@@ -4,8 +4,7 @@ Copyright (c) 2019 InnoGames GmbH
 """
 
 import os
-from os.path import isfile
-from os.path import expanduser
+from os.path import expanduser, isfile
 
 
 def get_auth_token():

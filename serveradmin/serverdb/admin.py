@@ -7,16 +7,16 @@ from django.contrib import admin
 from django.utils.html import format_html
 
 from serveradmin.serverdb.forms import (
-    ServertypeAttributeAdminForm,
     ServertypeAdminForm,
+    ServertypeAttributeAdminForm,
 )
 from serveradmin.serverdb.models import (
-    Servertype,
     Attribute,
-    ServertypeAttribute,
     Server,
     ServerRelationAttribute,
     ServerStringAttribute,
+    Servertype,
+    ServertypeAttribute,
 )
 
 
@@ -27,12 +27,16 @@ class ServertypeAttributeInline(admin.TabularInline):
 
 class ServertypeAdmin(admin.ModelAdmin):
     form = ServertypeAdminForm
-    inlines = (
-        ServertypeAttributeInline,
-    )
+    inlines = (ServertypeAttributeInline,)
 
-    list_display = ['servertype_id', 'description', ]
-    search_fields = ['servertype_id', 'description', ]
+    list_display = [
+        'servertype_id',
+        'description',
+    ]
+    search_fields = [
+        'servertype_id',
+        'description',
+    ]
 
     def get_readonly_fields(self, request, obj=None):
         fields = super().get_readonly_fields(request, obj)
@@ -61,10 +65,21 @@ class ServerAdmin(admin.ModelAdmin):
         ServerStringAttributeInline,
     )
 
-    list_display = ['server_id', 'hostname', 'servertype', ]
-    list_display_links = ['hostname', ]
-    search_fields = ['server_id', 'hostname', ]
-    list_filter = ['servertype__servertype_id', ]
+    list_display = [
+        'server_id',
+        'hostname',
+        'servertype',
+    ]
+    list_display_links = [
+        'hostname',
+    ]
+    search_fields = [
+        'server_id',
+        'hostname',
+    ]
+    list_filter = [
+        'servertype__servertype_id',
+    ]
 
 
 class AttributeAdmin(admin.ModelAdmin):
@@ -78,8 +93,17 @@ class AttributeAdmin(admin.ModelAdmin):
         'clone',
         'history',
     ]
-    search_fields = ['attribute_id', ]
-    list_filter = ['type', 'group', 'multi', 'readonly', 'clone', 'history', ]
+    search_fields = [
+        'attribute_id',
+    ]
+    list_filter = [
+        'type',
+        'group',
+        'multi',
+        'readonly',
+        'clone',
+        'history',
+    ]
 
     def get_readonly_fields(self, request, obj=None):
         fields = super().get_readonly_fields(request, obj)
@@ -88,10 +112,7 @@ class AttributeAdmin(admin.ModelAdmin):
         # objects and the little use-cases we have right now we don't
         # support it.
         if obj:
-            fields += (
-                'type', 'attribute_id', 'target_servertype',
-                'reversed_attribute'
-            )
+            fields += ('type', 'attribute_id', 'target_servertype', 'reversed_attribute')
 
         return fields
 

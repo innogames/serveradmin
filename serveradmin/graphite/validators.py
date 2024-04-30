@@ -17,9 +17,7 @@ def validate_unique_uri_parameters(query_string: str):
 
     for key, occurences in counter.most_common():
         if occurences > 1:
-            errors.append(ValidationError(
-                _('Parameter "%(key)s" must only appear once!'),
-                params={'key': key}))
+            errors.append(ValidationError(_('Parameter "%(key)s" must only appear once!'), params={'key': key}))
 
     if errors:
         raise ValidationError(*errors)

@@ -4,9 +4,9 @@
 Copyright (c) 2021 InnoGames GmbH
 """
 
-from setuptools import setup, find_packages
-from adminapi import VERSION as SERVERADMIN_VERSION
+from setuptools import find_packages, setup
 
+from adminapi import VERSION as SERVERADMIN_VERSION
 
 if __name__ == '__main__':
     setup(

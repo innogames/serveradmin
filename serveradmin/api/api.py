@@ -24,9 +24,9 @@ def lock(identifier, seconds=60):
 
     # Use hash sum because this has a constant length
     hash_sum = Lock.get_hash_sum(identifier)
-    obj, created = Lock.objects.get_or_create(hash_sum=hash_sum, defaults={
-        'duration': seconds,
-        'until': timezone.now() + timedelta(seconds=seconds)})
+    obj, created = Lock.objects.get_or_create(
+        hash_sum=hash_sum, defaults={'duration': seconds, 'until': timezone.now() + timedelta(seconds=seconds)}
+    )
 
     if created:
         return True

@@ -7,18 +7,18 @@ from django.urls import path
 from django.views.generic.base import TemplateView
 
 from serveradmin.servershell.views import (
-    index,
     autocomplete,
-    get_results,
-    edit,
-    inspect,
-    commit,
-    new_object,
-    clone_object,
     choose_ip_addr,
-    settings, diff,
+    clone_object,
+    commit,
+    diff,
+    edit,
+    get_results,
+    index,
+    inspect,
+    new_object,
+    settings,
 )
-
 
 urlpatterns = [
     path('', index, name='servershell_index'),

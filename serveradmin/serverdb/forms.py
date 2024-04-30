@@ -24,12 +24,12 @@ class ServertypeAttributeAdminForm(forms.ModelForm):
         # It makes no sense to add inet or supernet attributes to hosts of
         # ip_addr_type null because they would have to be empty anyways.
         inet_attribute = (
-            self.cleaned_data['attribute'].type in ('inet', 'supernet') and
-            self.instance.servertype.ip_addr_type == 'null'
+            self.cleaned_data['attribute'].type in ('inet', 'supernet')
+            and self.instance.servertype.ip_addr_type == 'null'
         )
         if inet_attribute:
             raise ValidationError(
-                'Adding an attribute of type inet or supernet when '
-                'ip_addr_type is null is not possible!')
+                'Adding an attribute of type inet or supernet when ' 'ip_addr_type is null is not possible!'
+            )
 
         super().clean()

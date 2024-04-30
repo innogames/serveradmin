@@ -2,6 +2,7 @@
 
 Copyright (c) 2019 InnoGames GmbH
 """
+
 from urllib.parse import urlencode
 from urllib.request import (
     HTTPBasicAuthHandler,
@@ -35,30 +36,29 @@ def graph_table(request):
     :return:
     """
 
-    hostnames = [h.strip() for h in request.GET.getlist("hostname", []) if h]
-    object_ids = [o.strip() for o in request.GET.getlist("object_id", []) if o]
+    hostnames = [h.strip() for h in request.GET.getlist('hostname', []) if h]
+    object_ids = [o.strip() for o in request.GET.getlist('object_id', []) if o]
 
     if len(hostnames) == 0 and len(object_ids) == 0:
-        return HttpResponseBadRequest("No hostname or object_id provided")
+        return HttpResponseBadRequest('No hostname or object_id provided')
 
     # For convenience, we will cache the servers in a dictionary.
-    servers = {s["hostname"]: s for s in Query({"hostname": Any(*hostnames)}, None)}
-    servers.update(
-        {s["hostname"]: s for s in Query({"object_id": Any(*object_ids)}, None)}
-    )
+    servers = {s['hostname']: s for s in Query({'hostname': Any(*hostnames)}, None)}
+    servers.update({s['hostname']: s for s in Query({'object_id': Any(*object_ids)}, None)})
 
     if len(servers) != len(hostnames) + len(object_ids):
         messages.error(
             request,
-            "One or more objects with hostname: {} or object_ids: {} does not "
-            "exist".format(",".join(hostnames), ",".join(object_ids)),
+            'One or more objects with hostname: {} or object_ids: {} does not ' 'exist'.format(
+                ','.join(hostnames), ','.join(object_ids)
+            ),
         )
 
     # Find the collections which are related with all the hostnames.
     # If there are two collections with same match, use only the one which
     # is not an overview.
     collections = []
-    for collection in Collection.objects.order_by("overview", "sort_order"):
+    for collection in Collection.objects.order_by('overview', 'sort_order'):
         if any(collection.name == c.name for c in collections):
             continue
         for hostname in servers.keys():
@@ -75,22 +75,18 @@ def graph_table(request):
     descriptions = []
     for collection in collections:
         for template in collection.template_set.all():
-            descriptions += [(template.name, template.description)] * len(
-                servers.keys()
-            )
+            descriptions += [(template.name, template.description)] * len(servers.keys())
 
     # Prepare the graph tables for all hosts
     graph_tables = []
     for hostname in servers.keys():
         host_graph_table = []
 
-        if request.GET.get("action") == "Submit" and (
-            request.GET.get("from") or request.GET.get("until")
-        ):
+        if request.GET.get('action') == 'Submit' and (request.GET.get('from') or request.GET.get('until')):
             custom_params = request.GET.urlencode()
             for collection in collections:
                 column = collection.graph_column(servers[hostname], custom_params)
-                host_graph_table += [(k, [("Custom", v)]) for k, v in column]
+                host_graph_table += [(k, [('Custom', v)]) for k, v in column]
         else:
             for collection in collections:
                 host_graph_table += collection.graph_table(servers[hostname])
@@ -100,9 +96,7 @@ def graph_table(request):
     if len(servers) > 1:
         # Add hostname to the titles
         for order, hostname in enumerate(servers.keys()):
-            graph_tables[order] = [
-                (k + " on " + hostname, v) for k, v in graph_tables[order]
-            ]
+            graph_tables[order] = [(k + ' on ' + hostname, v) for k, v in graph_tables[order]]
 
     # Combine them
     all_graph_tables = []
@@ -113,29 +107,25 @@ def graph_table(request):
     # called SERVER that receives a coded hostname as alternative to the
     # builtin graphs.
     grafana_links = []
-    if hasattr(settings, "GRAFANA_DASHBOARD"):
+    if hasattr(settings, 'GRAFANA_DASHBOARD'):
 
         def _get_grafana_link(hostname):
-            return (
-                settings.GRAFANA_DASHBOARD
-                + "?"
-                + urlencode({"var-SERVER": format_attribute_value(hostname)})
-            )
+            return settings.GRAFANA_DASHBOARD + '?' + urlencode({'var-SERVER': format_attribute_value(hostname)})
 
         for hostname in servers.keys():
             grafana_links.append((hostname, _get_grafana_link(hostname)))
 
     return TemplateResponse(
         request,
-        "graphite/graph_table.html",
+        'graphite/graph_table.html',
         {
-            "hostnames": servers.keys(),
-            "descriptions": descriptions,
-            "graph_table": all_graph_tables,
-            "grafana_links": grafana_links,
-            "link": request.get_full_path(),
-            "from": request.GET.get("from", ""),
-            "until": request.GET.get("until", ""),
+            'hostnames': servers.keys(),
+            'descriptions': descriptions,
+            'graph_table': all_graph_tables,
+            'grafana_links': grafana_links,
+            'link': request.get_full_path(),
+            'from': request.GET.get('from', ''),
+            'until': request.GET.get('until', ''),
         },
     )
 
@@ -157,7 +147,7 @@ def graph(request):
         settings.GRAPHITE_PASSWORD,
     )
     auth_handler = HTTPBasicAuthHandler(password_mgr)
-    url = "{0}/render?{1}".format(settings.GRAPHITE_URL, request.GET.urlencode())
+    url = '{0}/render?{1}'.format(settings.GRAPHITE_URL, request.GET.urlencode())
 
     # If the Graphite server fails, we would return proper server error
     # to the user instead of failing.  This is not really a matter for
@@ -167,6 +157,6 @@ def graph(request):
     # empty result with 200 instead of proper error codes.
     try:
         with build_opener(auth_handler).open(url) as response:
-            return HttpResponse(response.read(), content_type="image/png")
+            return HttpResponse(response.read(), content_type='image/png')
     except IOError as error:
         return HttpResponseServerError(str(error))

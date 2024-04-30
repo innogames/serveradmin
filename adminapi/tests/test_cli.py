@@ -1,6 +1,6 @@
 import unittest
 from argparse import ArgumentParser
-from typing import Text, NoReturn
+from typing import NoReturn, Text
 
 from adminapi.cli import parse_args
 
@@ -13,11 +13,11 @@ class ArgumentParserMock(ArgumentParser):
 
 class TestCommandlineInterface(unittest.TestCase):
     def test_no_argument(self, *args):
-        with self.assertRaises(SystemExit) as e:
+        with self.assertRaises(SystemExit):
             parse_args([])
 
     def test_unknown_argument(self, *args):
-        with self.assertRaises(SystemExit) as e:
+        with self.assertRaises(SystemExit):
             parse_args(['project=adminapi', '--attr', 'state', 'spaceship'])
 
     def test_one_argument(self, *args):
