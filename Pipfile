@@ -21,7 +21,7 @@ Pillow = "~=10.0"
 dateparser = "~=1.1"
 # Use Twelve-factor methodology to configure environment variables
 django-environ = "<1.0.0"
-django_compressor = "<3.0.0"
+django_compressor = "~=4.4"
 # Serveradmin extras:
 paramiko = "~=2.10"
 pexpect = "<5.0.0"
