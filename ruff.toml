@@ -1,0 +1,9 @@
+line-length = 120
+target-version = "py39"
+
+[lint]
+extend-select = ["I"]
+
+[format]
+quote-style = "single"
+

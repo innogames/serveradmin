@@ -6,6 +6,7 @@ to do this.
 
 Copyright (c) 2021 InnoGames GmbH
 """
+
 from os import environ
 
 from django.contrib.auth.models import User

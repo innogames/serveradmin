@@ -12,7 +12,7 @@ from django.test import TransactionTestCase
 from faker import Faker
 from faker.providers import internet
 
-from serveradmin.dataset import Query, DatasetObject
+from serveradmin.dataset import DatasetObject, Query
 from serveradmin.serverdb.forms import ServertypeAttributeAdminForm
 from serveradmin.serverdb.models import ServertypeAttribute
 
@@ -61,13 +61,14 @@ class TestIpAddrTypeNullForInetAttributes(TestIpAddrType):
     """Most important tests for ip_addr_type null and inet attributes"""
 
     def test_add_inet_attribute_in_admin_panel(self):
-        attr = ServertypeAttribute(
-            attribute_id='ip_config', servertype_id='null')
+        attr = ServertypeAttribute(attribute_id='ip_config', servertype_id='null')
         form = ServertypeAttributeAdminForm(
             data={
                 'attribute': 'ip_config',
                 'servertype': 'null',
-            }, instance=attr)
+            },
+            instance=attr,
+        )
         form.is_valid()
         with self.assertRaises(ValidationError):
             form.clean()

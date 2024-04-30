@@ -3,7 +3,8 @@
 Copyright (c) 2019 InnoGames GmbH
 """
 
-from re import compile as re_compile, error as re_error
+from re import compile as re_compile
+from re import error as re_error
 
 from adminapi.datatype import STR_BASED_DATATYPES
 from adminapi.exceptions import FilterValueError

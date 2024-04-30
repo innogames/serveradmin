@@ -8,7 +8,7 @@ from collections import OrderedDict
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import SuspiciousOperation
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.http import HttpResponseBadRequest
 from django.template.response import TemplateResponse
 from django.urls import reverse
@@ -22,7 +22,7 @@ from serveradmin.graphite.models import GRAPHITE_ATTRIBUTE_ID, Collection
 from serveradmin.graphite.views import graph
 
 
-@login_required     # NOQA: C901
+@login_required  # NOQA: C901
 @ensure_csrf_cookie
 def index(request):
     """The hardware resources page"""
@@ -40,7 +40,7 @@ def index(request):
             current_collection = collection
             break
         else:
-            return HttpResponseBadRequest(f"Collection {current_collection_id} does not exist!")
+            return HttpResponseBadRequest(f'Collection {current_collection_id} does not exist!')
 
     # Save latest choice for collection
     request.session['current_collection'] = current_collection.id
@@ -75,8 +75,7 @@ def index(request):
 
     variations = list(current_collection.variation_set.all())
     columns = []
-    columns_selected = request.GET.getlist(
-        'columns', request.session.get('resources_columns', []))
+    columns_selected = request.GET.getlist('columns', request.session.get('resources_columns', []))
     request.session['resources_columns'] = columns_selected
     attribute_ids = ['hostname', 'servertype']
     graph_index = 0
@@ -84,27 +83,33 @@ def index(request):
     for template in current_collection.template_set.all():
         for variation in variations:
             name = str(template) + ' ' + str(variation)
-            columns.append({
-                'name': name,
-                'type': 'graph',
-                'graph_index': graph_index,
-                'sprite_offset': graph_index * sprite_width,
-                'visible': slugify(name) in columns_selected,
-            })
+            columns.append(
+                {
+                    'name': name,
+                    'type': 'graph',
+                    'graph_index': graph_index,
+                    'sprite_offset': graph_index * sprite_width,
+                    'visible': slugify(name) in columns_selected,
+                }
+            )
             graph_index += 1
     for numeric in current_collection.numeric_set.all():
-        columns.append({
-            'name': str(numeric),
-            'type': 'numeric',
-            'visible': slugify(numeric) in columns_selected,
-        })
+        columns.append(
+            {
+                'name': str(numeric),
+                'type': 'numeric',
+                'visible': slugify(numeric) in columns_selected,
+            }
+        )
         attribute_ids.append(numeric.attribute_id)
     for relation in current_collection.relation_set.all():
-        columns.append({
-            'name': str(relation),
-            'type': 'relation',
-            'visible': slugify(relation) in columns_selected,
-        })
+        columns.append(
+            {
+                'name': str(relation),
+                'type': 'relation',
+                'visible': slugify(relation) in columns_selected,
+            }
+        )
         attribute_ids.append(relation.attribute_id)
 
     hosts = OrderedDict()
@@ -115,8 +120,7 @@ def index(request):
             hosts[server['hostname']] = dict(server)
 
     page = abs(int(request.GET.get('page', 1)))
-    per_page = int(request.GET.get(
-        'per_page', request.session.get('resources_per_page', 8)))
+    per_page = int(request.GET.get('per_page', request.session.get('resources_per_page', 8)))
 
     # Save settings in session
     request.session['resources_per_page'] = per_page
@@ -133,16 +137,18 @@ def index(request):
         raise SuspiciousOperation('{} is not a valid!'.format(page))
 
     sprite_url = settings.MEDIA_URL + 'graph_sprite/' + current_collection.name
-    template_info.update({
-        'columns': columns,
-        'hosts': hosts_page,
-        'page': page,
-        'per_page': per_page,
-        'matched_hostnames': matched_hostnames,
-        'understood': understood,
-        'error': None,
-        'sprite_url': sprite_url,
-    })
+    template_info.update(
+        {
+            'columns': columns,
+            'hosts': hosts_page,
+            'page': page,
+            'per_page': per_page,
+            'matched_hostnames': matched_hostnames,
+            'understood': understood,
+            'error': None,
+            'sprite_url': sprite_url,
+        }
+    )
 
     return TemplateResponse(request, 'resources/index.html', template_info)
 
@@ -159,17 +165,19 @@ def graph_popup(request):
     # but we don't bother because they are unlikely to be more than a few
     # marked as overview.
     for collection in Collection.objects.filter(overview=True):
-        servers = list(Query({
-            GRAPHITE_ATTRIBUTE_ID: collection.name,
-            'hostname': hostname,
-        }))
+        servers = list(
+            Query(
+                {
+                    GRAPHITE_ATTRIBUTE_ID: collection.name,
+                    'hostname': hostname,
+                }
+            )
+        )
         if servers:
             table = collection.graph_table(servers[0])
             params = [v2 for k1, v1 in table for k2, v2 in v1][int(graph_id)]
             url = reverse(graph) + '?' + params
 
-            return TemplateResponse(request, 'resources/graph_popup.html', {
-                'image': url
-            })
+            return TemplateResponse(request, 'resources/graph_popup.html', {'image': url})
 
     return HttpResponseBadRequest('No graph found')

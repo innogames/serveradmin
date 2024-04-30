@@ -8,9 +8,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.db.models import Q, Subquery, OuterRef, Prefetch, CharField
+from django.db.models import CharField, OuterRef, Prefetch, Q, Subquery
 from django.db.models.fields.json import KeyTextTransform
-from django.db.models.functions import Coalesce, Cast
+from django.db.models.functions import Cast, Coalesce
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
@@ -18,10 +18,10 @@ from django.utils.functional import cached_property
 
 from serveradmin import settings
 from serveradmin.serverdb.models import (
+    Change,
     ChangeCommit,
     Server,
     ServertypeAttribute,
-    Change,
 )
 from serveradmin.serverdb.query_committer import CommitError, commit_query
 
@@ -29,9 +29,7 @@ from serveradmin.serverdb.query_committer import CommitError, commit_query
 @login_required
 def changes(request):
     commits = ChangeCommit.objects.all().order_by('-change_on')
-    date_settings = {
-        'TIMEZONE': settings.TIME_ZONE, 'RETURN_AS_TIMEZONE_AWARE': True
-    }
+    date_settings = {'TIMEZONE': settings.TIME_ZONE, 'RETURN_AS_TIMEZONE_AWARE': True}
 
     f_commit = request.GET.get('commit_id')
     if f_commit:
@@ -50,10 +48,11 @@ def changes(request):
     f_hostname = request.GET.get('hostname')
     if f_hostname:
         # Display all changes that have or had this hostname
-        object_ids = set(Change.objects.filter(
-            change_type__in=[Change.Type.CREATE, Change.Type.DELETE],
-            change_json__hostname=f_hostname).values_list(
-            'change_json__object_id', flat=True))
+        object_ids = set(
+            Change.objects.filter(
+                change_type__in=[Change.Type.CREATE, Change.Type.DELETE], change_json__hostname=f_hostname
+            ).values_list('change_json__object_id', flat=True)
+        )
         commits = commits.filter(change__object_id__in=object_ids)
 
     f_object_id = request.GET.get('object_id')
@@ -62,30 +61,33 @@ def changes(request):
 
     f_user_or_app = request.GET.get('user_or_app')
     if f_user_or_app:
-        commits = commits.filter(
-            Q(app__name=f_user_or_app) | Q(user__username=f_user_or_app))
+        commits = commits.filter(Q(app__name=f_user_or_app) | Q(user__username=f_user_or_app))
 
     commits = commits.select_related('app', 'user')
 
     # This complex statement is just here to be able to prefetch the changes'
     # relation including the hostname fetched either from the server table
     # or from the change entry where the object was deleted.
-    server_hostname = Server.objects.filter(
-        server_id=OuterRef('object_id')).values('hostname')
+    server_hostname = Server.objects.filter(server_id=OuterRef('object_id')).values('hostname')
     # Workaround: In previous versions of Serveradmin restoring objects with
     # the same id was possible, so we can end up with objects being deleted
     # multiple times. We only take the latest into account.
-    change_hostname = Change.objects.filter(
-        object_id=OuterRef('object_id'),
-        change_type=Change.Type.DELETE).values('change_json').order_by('-id')[:1]
-    commits = commits.prefetch_related(Prefetch(
-        'change_set',
-        queryset=Change.objects.all().annotate(hostname=Coalesce(
-            Subquery(server_hostname),
-            Cast(
-                KeyTextTransform('hostname', Subquery(change_hostname)),
-                output_field=CharField())
-    ))))
+    change_hostname = (
+        Change.objects.filter(object_id=OuterRef('object_id'), change_type=Change.Type.DELETE)
+        .values('change_json')
+        .order_by('-id')[:1]
+    )
+    commits = commits.prefetch_related(
+        Prefetch(
+            'change_set',
+            queryset=Change.objects.all().annotate(
+                hostname=Coalesce(
+                    Subquery(server_hostname),
+                    Cast(KeyTextTransform('hostname', Subquery(change_hostname)), output_field=CharField()),
+                )
+            ),
+        )
+    )
 
     class NoCountPaginator(Paginator):
         @cached_property
@@ -99,15 +101,19 @@ def changes(request):
     if len(page.object_list) == 0:
         page = paginator.get_page(1)
 
-    return TemplateResponse(request, 'serverdb/changes.html', {
-        'commits': page,
-        'from': f_from,
-        'until': f_until,
-        'hostname': f_hostname,
-        'object_id': f_object_id,
-        'commit_id': f_commit,
-        'user_or_app': f_user_or_app,
-    })
+    return TemplateResponse(
+        request,
+        'serverdb/changes.html',
+        {
+            'commits': page,
+            'from': f_from,
+            'until': f_until,
+            'hostname': f_hostname,
+            'object_id': f_object_id,
+            'commit_id': f_commit,
+            'user_or_app': f_user_or_app,
+        },
+    )
 
 
 @login_required
@@ -115,9 +121,7 @@ def history(request):
     object_id = request.GET.get('object_id')
 
     if not Server.objects.filter(server_id=object_id).exists():
-        messages.error(
-            request,
-            f'Object with id {object_id} does not or no longer exist.')
+        messages.error(request, f'Object with id {object_id} does not or no longer exist.')
         return redirect(reverse('serverdb_changes'))
 
     server = get_object_or_404(Server, server_id=object_id)
@@ -138,20 +142,25 @@ def history(request):
     pager = Paginator(obj_history, 25)
     page_obj = pager.get_page(page)
 
-    no_history_attributes = ServertypeAttribute.objects.filter(
-        servertype_id=server.servertype_id
-    ).select_related('attribute').filter(
-        attribute__history=False
-    ).only('attribute_id')
+    no_history_attributes = (
+        ServertypeAttribute.objects.filter(servertype_id=server.servertype_id)
+        .select_related('attribute')
+        .filter(attribute__history=False)
+        .only('attribute_id')
+    )
 
-    return TemplateResponse(request, 'serverdb/history.html', {
-        'changes': page_obj,
-        'commit_id': commit_id,
-        'object_id': object_id,
-        'name': server.hostname,
-        'attribute_filter': attribute_filter,
-        'no_history_attributes': no_history_attributes,
-    })
+    return TemplateResponse(
+        request,
+        'serverdb/history.html',
+        {
+            'changes': page_obj,
+            'commit_id': commit_id,
+            'object_id': object_id,
+            'name': server.hostname,
+            'attribute_filter': attribute_filter,
+            'no_history_attributes': no_history_attributes,
+        },
+    )
 
 
 @login_required
@@ -164,8 +173,7 @@ def recreate(request, change_id):
     servertype_id = server_object['servertype']
     exclude = ServertypeAttribute.objects.filter(servertype_id=servertype_id)
     exclude = exclude.filter(
-        ~Q(related_via_attribute=None) |
-        Q(attribute__type__in=['supernet', 'domain', 'reverse'])
+        ~Q(related_via_attribute=None) | Q(attribute__type__in=['supernet', 'domain', 'reverse'])
     ).values_list('attribute_id', flat=True)
 
     for attribute_id in exclude:

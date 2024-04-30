@@ -7,13 +7,13 @@ import re
 from distutils.util import strtobool
 from ipaddress import (
     IPv4Address,
-    IPv6Address,
-    ip_interface,
     IPv4Interface,
-    IPv6Interface,
-    ip_network,
     IPv4Network,
+    IPv6Address,
+    IPv6Interface,
     IPv6Network,
+    ip_interface,
+    ip_network,
 )
 from typing import Union
 
@@ -57,16 +57,11 @@ LOOKUP_ID_VALIDATORS = [
 ]
 
 HOSTNAME_VALIDATORS = [
-    RegexValidator(
-        r'\A(\*\.)?([a-z0-9]+(\.|-+))*[a-z0-9]+\Z', 'Invalid hostname'
-    ),
+    RegexValidator(r'\A(\*\.)?([a-z0-9]+(\.|-+))*[a-z0-9]+\Z', 'Invalid hostname'),
 ]
 
 REGEX_VALIDATORS = [
-    RegexValidator(
-        r'\A\\A.*\\Z\Z',
-        'You must wrap your pattern in "\\A" and "\\Z" to force line matching'
-    ),
+    RegexValidator(r'\A\\A.*\\Z\Z', 'You must wrap your pattern in "\\A" and "\\Z" to force line matching'),
 ]
 
 
@@ -91,13 +86,10 @@ def is_ip_address(ip_interface: Union[IPv4Interface, IPv6Interface]) -> None:
     max_prefix_length = ip_interface.network.max_prefixlen
 
     if prefix_length != max_prefix_length:
-        raise ValidationError(
-            'Netmask length must be {0}'.format(max_prefix_length))
+        raise ValidationError('Netmask length must be {0}'.format(max_prefix_length))
 
 
-def is_unique_ip(ip_interface: Union[IPv4Interface, IPv6Interface],
-                 object_id: int,
-                 attribute_id: str = None) -> None:
+def is_unique_ip(ip_interface: Union[IPv4Interface, IPv6Interface], object_id: int, attribute_id: str = None) -> None:
     """Validate if IPv4/IPv6 address is unique
 
     Raises a ValidationError if intern_ip or any other attribute of type inet
@@ -129,17 +121,15 @@ def is_unique_ip(ip_interface: Union[IPv4Interface, IPv6Interface],
 
     has_duplicates = (
         # TODO: Remove intern_ip.
-        Server.objects.filter(intern_ip=ip_interface).exclude(
-            Q(servertype__ip_addr_type='network') |
-            Q(server_id=object_id)
-        ).exists() or
-        ServerInetAttribute.objects.filter(value=ip_interface).exclude(
-            Q(server__servertype__ip_addr_type='network') | object_attribute_condition
-        ).exists()
+        Server.objects.filter(intern_ip=ip_interface)
+        .exclude(Q(servertype__ip_addr_type='network') | Q(server_id=object_id))
+        .exists()
+        or ServerInetAttribute.objects.filter(value=ip_interface)
+        .exclude(Q(server__servertype__ip_addr_type='network') | object_attribute_condition)
+        .exists()
     )
     if has_duplicates:
-        raise ValidationError(
-            'An object with {0} already exists'.format(str(ip_interface)))
+        raise ValidationError('An object with {0} already exists'.format(str(ip_interface)))
 
 
 def is_network(ip_interface: Union[IPv4Interface, IPv6Interface]) -> None:
@@ -173,8 +163,7 @@ def inet_to_python(obj: object) -> Union[IPv4Interface, IPv6Interface]:
         raise ValidationError(str(error))
 
 
-def network_overlaps(ip_interface: Union[IPv4Interface, IPv6Interface],
-                     servertype_id: str, object_id: int) -> None:
+def network_overlaps(ip_interface: Union[IPv4Interface, IPv6Interface], servertype_id: str, object_id: int) -> None:
     """Validate if network overlaps with other objects of the servertype_id
 
     Raises a ValidationError if the ip network overlaps with any other existing
@@ -187,25 +176,18 @@ def network_overlaps(ip_interface: Union[IPv4Interface, IPv6Interface],
     """
 
     overlaps = (
-        Server.objects.filter(
-            servertype=servertype_id,
-            intern_ip__net_overlaps=ip_interface
-        ).exclude(
-            server_id=object_id
-        ).exists() or
+        Server.objects.filter(servertype=servertype_id, intern_ip__net_overlaps=ip_interface)
+        .exclude(server_id=object_id)
+        .exists()
+        or
         # TODO: We should filter for attribute id here as well to have
         # consistent bebaviour with ip_addr_type: host and is_unique.
-        ServerInetAttribute.objects.filter(
-            server__servertype=servertype_id,
-            value__net_overlaps=ip_interface
-        ).exclude(
-            server_id=object_id
-        ).exists()
+        ServerInetAttribute.objects.filter(server__servertype=servertype_id, value__net_overlaps=ip_interface)
+        .exclude(server_id=object_id)
+        .exists()
     )
     if overlaps:
-        raise ValidationError(
-            '{0} overlaps with network of another object'.format(
-                str(ip_interface)))
+        raise ValidationError('{0} overlaps with network of another object'.format(str(ip_interface)))
 
 
 class Servertype(models.Model):
@@ -234,7 +216,7 @@ class Attribute(models.Model):
     class InetAddressFamilyChoice(models.TextChoices):
         IPV4 = 'IPV4', _('IPv4')
         IPV6 = 'IPV6', _('IPv6')
-        __empty__ = _("none or any")
+        __empty__ = _('none or any')
 
     special = None
 
@@ -256,18 +238,14 @@ class Attribute(models.Model):
     )
     multi = models.BooleanField(null=False, default=False)
     hovertext = models.TextField(null=False, blank=True, default='')
-    group = models.CharField(
-        max_length=32, null=False, blank=False, default='other'
-    )
+    group = models.CharField(max_length=32, null=False, blank=False, default='other')
     help_link = models.CharField(max_length=255, blank=True, null=True)
     inet_address_family = models.CharField(choices=InetAddressFamilyChoice.choices, max_length=5, blank=True)
     readonly = models.BooleanField(null=False, default=False)
-    target_servertype = models.ForeignKey(
-        Servertype, on_delete=models.CASCADE,
-        db_index=False, null=True, blank=True
-    )
+    target_servertype = models.ForeignKey(Servertype, on_delete=models.CASCADE, db_index=False, null=True, blank=True)
     reversed_attribute = models.ForeignKey(
-        'self', on_delete=models.CASCADE,
+        'self',
+        on_delete=models.CASCADE,
         related_name='reversed_attribute_set',
         null=True,
         blank=True,
@@ -275,9 +253,7 @@ class Attribute(models.Model):
         limit_choices_to=dict(type='relation'),
     )
     clone = models.BooleanField(null=False, default=False)
-    history = models.BooleanField(
-        null=False, default=True,
-        help_text='Log changes to this attribute')
+    history = models.BooleanField(null=False, default=True, help_text='Log changes to this attribute')
     regexp = models.CharField(max_length=1024, validators=REGEX_VALIDATORS)
     _compiled_regexp = None
 
@@ -320,10 +296,7 @@ class Attribute(models.Model):
     def regexp_match(self, value):
         re_compiled = self._get_compiled_regexp()
         if re_compiled is None:
-            raise ValidationError(
-                'Attribute {} has no value validation regexp set'
-                .format(self.attribute_id)
-            )
+            raise ValidationError('Attribute {} has no value validation regexp set'.format(self.attribute_id))
 
         # We use lower case booleans in our regexes but python __str__ methods
         # on booleans return them in upper case.
@@ -396,19 +369,19 @@ class ServertypeAttribute(models.Model):
         on_delete=models.CASCADE,
     )
     related_via_attribute = models.ForeignKey(
-        Attribute, on_delete=models.CASCADE,
+        Attribute,
+        on_delete=models.CASCADE,
         related_name='related_via_servertype_attributes',
         null=True,
         blank=True,
         db_index=False,
         # It can only be related via a relation (AKA as an hostname
         # attribute).
-        limit_choices_to=models.Q(
-            type__in=['relation', 'reverse', 'supernet', 'domain']
-        ),
+        limit_choices_to=models.Q(type__in=['relation', 'reverse', 'supernet', 'domain']),
     )
     consistent_via_attribute = models.ForeignKey(
-        Attribute, on_delete=models.CASCADE,
+        Attribute,
+        on_delete=models.CASCADE,
         related_name='consistent_via_servertype_attributes',
         null=True,
         blank=True,
@@ -450,12 +423,11 @@ class Server(models.Model):
     entity-attribute-value schema.  There are multiple models to store
     the attribute values of the servers by different data types.
     """
+
     objects = netfields.NetManager()
 
     server_id = models.AutoField(primary_key=True)
-    hostname = models.CharField(
-        max_length=254, unique=True, validators=HOSTNAME_VALIDATORS
-    )
+    hostname = models.CharField(max_length=254, unique=True, validators=HOSTNAME_VALIDATORS)
     intern_ip = netfields.InetAddressField(null=True, blank=True)
     servertype = models.ForeignKey(Servertype, on_delete=models.PROTECT)
 
@@ -478,14 +450,12 @@ class Server(models.Model):
         ip_addr_type = self.servertype.ip_addr_type
         if ip_addr_type == 'null':
             if self.intern_ip is not None:
-                raise ValidationError(
-                    _('intern_ip must be null'), code='invalid value')
+                raise ValidationError(_('intern_ip must be null'), code='invalid value')
         else:
             # This is special to intern_ip for inet attributes this is covered
             # by making them required.
             if self.intern_ip is None:
-                raise ValidationError(
-                    _('intern_ip must not be null'), code='missing value')
+                raise ValidationError(_('intern_ip must not be null'), code='missing value')
 
             # TODO: This logic is duplicated to the ServerInetAttribute clean
             #       method but can be removed when we remove the special
@@ -500,8 +470,7 @@ class Server(models.Model):
                 is_ip_address(self.intern_ip)
             elif ip_addr_type == 'network':
                 is_network(self.intern_ip)
-                network_overlaps(self.intern_ip, self.servertype.servertype_id,
-                                 self.server_id)
+                network_overlaps(self.intern_ip, self.servertype.servertype_id, self.server_id)
 
     def get_attributes(self, attribute):
         model = ServerAttribute.get_model(attribute.type)
@@ -516,17 +485,13 @@ class Server(models.Model):
 
 
 class ServerAttribute(models.Model):
-    server = models.ForeignKey(
-        Server, db_index=False, on_delete=models.CASCADE
-    )
+    server = models.ForeignKey(Server, db_index=False, on_delete=models.CASCADE)
 
     class Meta:
         abstract = True
 
     def __str__(self):
-        return '{0}->{1}={2}'.format(
-            self.server, self.attribute, self.get_value()
-        )
+        return '{0}->{1}={2}'.format(self.server, self.attribute, self.get_value())
 
     def get_value(self):
         return self.value
@@ -575,15 +540,11 @@ class ServerStringAttribute(ServerAttribute):
     def save_value(self, value):
         for char in '\'"':
             if char in value:
-                raise ValidationError(
-                    '"{}" character is not allowed on string attributes'
-                    .format(char)
-                )
+                raise ValidationError('"{}" character is not allowed on string attributes'.format(char))
         for datatype, regexp in STR_BASED_DATATYPES:
             if regexp.match(value):
                 raise ValidationError(
-                    'String attribute value "{}" matches with {} type'
-                    .format(value, datatype.__name__)
+                    'String attribute value "{}" matches with {} type'.format(value, datatype.__name__)
                 )
 
         super().save_value(value)
@@ -623,15 +584,14 @@ class ServerRelationAttribute(ServerAttribute):
         try:
             target_server = Server.objects.get(hostname=value)
         except Server.DoesNotExist:
-            raise ValidationError(
-                'No server with hostname "{0}" exist.'.format(value)
-            )
+            raise ValidationError('No server with hostname "{0}" exist.'.format(value))
 
         target_servertype = self.attribute.target_servertype
         if target_servertype and target_server.servertype != target_servertype:
             raise ValidationError(
-                'Attribute "{0}" has to be from servertype "{1}".'
-                .format(self.attribute, self.attribute.target_servertype)
+                'Attribute "{0}" has to be from servertype "{1}".'.format(
+                    self.attribute, self.attribute.target_servertype
+                )
             )
 
         ServerAttribute.save_value(self, target_server)
@@ -676,11 +636,7 @@ class ServerNumberAttribute(ServerAttribute):
         index_together = [['attribute', 'value']]
 
     def get_value(self):
-        return (
-            int(self.value)
-            if self.value.as_tuple().exponent == 0
-            else float(self.value)
-        )
+        return int(self.value) if self.value.as_tuple().exponent == 0 else float(self.value)
 
 
 class ServerInetAttribute(ServerAttribute):
@@ -712,8 +668,7 @@ class ServerInetAttribute(ServerAttribute):
             self.value = inet_to_python(self.value)
             if type(self.value) not in allowed_types:
                 raise ValidationError(
-                    f'IP address {self.value} is not '
-                    f'of type {self.attribute.get_inet_address_family_display()}!'
+                    f'IP address {self.value} is not ' f'of type {self.attribute.get_inet_address_family_display()}!'
                 )
 
         # Get the ip_addr_type of the servertype
@@ -724,8 +679,8 @@ class ServerInetAttribute(ServerAttribute):
             # inet must be denied per configuration. This is just a safety net
             # in case e.g. somebody creates them programmatically.
             raise ValidationError(
-                _('%(attribute_id)s must be null'), code='invalid value',
-                params={'attribute_id': self.attribute_id})
+                _('%(attribute_id)s must be null'), code='invalid value', params={'attribute_id': self.attribute_id}
+            )
         elif ip_addr_type == 'host':
             is_ip_address(self.value)
             is_unique_ip(self.value, self.server.server_id, self.attribute_id)
@@ -733,8 +688,7 @@ class ServerInetAttribute(ServerAttribute):
             is_ip_address(self.value)
         elif ip_addr_type == 'network':
             is_network(self.value)
-            network_overlaps(self.value, self.server.servertype_id,
-                             self.server.server_id)
+            network_overlaps(self.value, self.server.servertype_id, self.server.server_id)
 
 
 class ServerMACAddressAttribute(ServerAttribute):

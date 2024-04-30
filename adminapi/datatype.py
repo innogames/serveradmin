@@ -3,17 +3,17 @@
 Copyright (c) 2019 InnoGames GmbH
 """
 from datetime import date, datetime
-from re import compile as re_compile
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
+from re import compile as re_compile
 
 from netaddr import EUI
+
 try:
     from netaddr import mac_unix_expanded
 except ImportError:
     from netaddr import mac_unix as mac_unix_expanded
 
 from adminapi.exceptions import DatatypeError, FilterValueError
-
 
 # We use a set of regular expressions to cast to datatypes.  This module
 # is not aware of the attributes types of the server, neither it tries
