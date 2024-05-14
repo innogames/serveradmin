@@ -36,7 +36,7 @@ pub async fn main() -> anyhow::Result<()> {
         .cloned()
         .collect::<Vec<_>>();
 
-    if !["buster", "bookworm", "trixie"].contains(&os_release.as_str()) {
+    if !["buster", "bullseye", "bookworm", "trixie"].contains(&os_release.as_str()) {
         return Err(anyhow::anyhow!(
             "Error: {os_release} is not a valid Debian release!"
         ));
