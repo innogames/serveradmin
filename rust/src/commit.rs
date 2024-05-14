@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use serde_json::Number;
 
@@ -186,5 +186,9 @@ impl Dataset {
 
     pub fn get(&self, name: &str) -> AttributeValue {
         self.0.get(name).cloned().unwrap_or(AttributeValue::Null)
+    }
+
+    pub fn keys(&self) -> HashSet<String> {
+        self.0.keys().cloned().collect()
     }
 }

@@ -7,6 +7,11 @@ use signature::Signer;
 
 use crate::API_VERSION;
 
+pub const ENV_NAME_BASE_URL: &'static str = "SERVERADMIN_BASE_URL";
+pub const ENV_NAME_TOKEN: &'static str = "SERVERADMIN_TOKEN";
+pub const ENV_NAME_KEY_PATH: &'static str = "SERVERADMIN_KEY_PATH";
+pub const ENV_NAME_SSH_AGENT: &'static str = "SSH_AUTH_SOCK";
+
 #[derive(Clone, Debug, Default)]
 pub struct Config {
     pub base_url: String,
@@ -27,26 +32,26 @@ pub enum SshSigner {
 impl Config {
     pub fn build_from_environment() -> anyhow::Result<Self> {
         let config = Self {
-            base_url: std::env::var("SERVERADMIN_BASE_URL")?
+            base_url: std::env::var(ENV_NAME_BASE_URL)?
                 .trim_end_matches('/')
                 .trim_end_matches("/api")
                 .to_string(),
             api_version: API_VERSION.to_string(),
             ssh_signer: Self::get_signing_key()?,
-            auth_token: std::env::var("SERVERADMIN_TOKEN").ok(),
+            auth_token: std::env::var(ENV_NAME_TOKEN).ok(),
         };
 
         Ok(config)
     }
 
     fn get_signing_key() -> anyhow::Result<Option<SshSigner>> {
-        if let Ok(path) = std::env::var("SERVERADMIN_KEY_PATH") {
+        if let Ok(path) = std::env::var(ENV_NAME_KEY_PATH) {
             let key = ssh_key::PrivateKey::read_openssh_file(Path::new(&path))?;
 
             return Ok(Some(SshSigner::Key(Box::new(key))));
         }
 
-        let path = std::env::var("SSH_AUTH_SOCK").unwrap_or_default();
+        let path = std::env::var(ENV_NAME_SSH_AGENT).unwrap_or_default();
         let client = ssh_agent_client_rs::Client::connect(Path::new(&path))
             .map_err(|error| log::error!("Unable to connect to SSH agent: {error}"))
             .ok();

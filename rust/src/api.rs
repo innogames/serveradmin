@@ -186,6 +186,10 @@ impl Server {
             ));
         }
 
+        if self.attributes.get(&attribute).as_array().unwrap().contains(&value) {
+            return Ok(self);
+        }
+
         self.attributes.add(attribute.clone(), value.clone());
         let entry = self
             .changes
@@ -214,6 +218,10 @@ impl Server {
             return Err(anyhow::anyhow!(
                 "remove is only supported with multi attributes"
             ));
+        }
+
+        if !self.attributes.get(&attribute).as_array().unwrap().contains(&value) {
+            return Ok(self);
         }
 
         self.attributes.remove(attribute.clone(), value.clone());
