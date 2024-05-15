@@ -7,7 +7,7 @@ python3 -m pipenv install --dev
 
 # Wait for database to be available before running migrations
 until pg_isready -h "$POSTGRES_HOST" -U "$POSTGRES_USER" &> /dev/null; do
-  echo "Waiting for database to be ready ..."
+  echo "Waiting for database to be ready on ${POSTGRES_HOST} ..."
   sleep 5
 done
 
