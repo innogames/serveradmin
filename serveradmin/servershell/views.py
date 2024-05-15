@@ -1,6 +1,6 @@
 """Serveradmin - Servershell
 
-Copyright (c) 2021 InnoGames GmbH
+Copyright (c) 2024 InnoGames GmbH
 """
 
 import json
@@ -389,8 +389,7 @@ def _edit(request: HttpRequest, server, edit_mode=False, template='edit'):  # NO
         'object_id': server.object_id,
         'hostname': server['hostname'],
         'fields': fields,
-        'is_ajax': request.is_ajax(),
-        'base_template': 'empty.html' if request.is_ajax() else 'base.html',
+        'base_template': 'base.html',
         'link': request.get_full_path(),
     })
 
