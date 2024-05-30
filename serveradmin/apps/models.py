@@ -102,7 +102,7 @@ class PublicKey(models.Model):
         """
         # I don't think there is a key type independent way of doing this
         public_key_blob = b64decode(self.key_base64)
-        if self.key_algorithm.startswith('ssh-ed25519'):
+        if self.key_algorithm.startswith('ssh-ed25519') or self.key_algorithm.startswith('sk-ssh-ed25519'):
             try:
                 return Ed25519Key(data=public_key_blob)
             except NameError:
