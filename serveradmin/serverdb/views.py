@@ -11,6 +11,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Subquery, OuterRef, Prefetch, CharField
 from django.db.models.fields.json import KeyTextTransform
 from django.db.models.functions import Coalesce, Cast
+from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
@@ -112,16 +113,25 @@ def changes(request):
 
 @login_required
 def history(request):
-    object_id = request.GET.get('object_id')
+    if 'object_id' in request.GET:
+        query = Q(server_id=request.GET['object_id'])
+        error_text = f'object_id {request.GET["object_id"]}'
+    elif 'hostname' in request.GET:
+        query = Q(hostname=request.GET['hostname'])
+        error_text = f'hostname {request.GET["hostname"]}'
+    else:
+        return HttpResponseBadRequest(
+            'object_id or hostname parameter is mandatory')
 
-    if not Server.objects.filter(server_id=object_id).exists():
+    try:
+        server = Server.objects.get(query)
+    except Server.DoesNotExist:
         messages.error(
             request,
-            f'Object with id {object_id} does not or no longer exist.')
+            f'Object with {error_text} does not or no longer exist.')
         return redirect(reverse('serverdb_changes'))
 
-    server = get_object_or_404(Server, server_id=object_id)
-    obj_history = Change.objects.filter(object_id=object_id)
+    obj_history = Change.objects.filter(object_id=server.server_id)
 
     commit_id = request.GET.get('commit_id')
     if commit_id:
@@ -147,7 +157,7 @@ def history(request):
     return TemplateResponse(request, 'serverdb/history.html', {
         'changes': page_obj,
         'commit_id': commit_id,
-        'object_id': object_id,
+        'object_id': server.server_id,
         'name': server.hostname,
         'attribute_filter': attribute_filter,
         'no_history_attributes': no_history_attributes,
