@@ -5,12 +5,15 @@ Copyright (c) 2023 InnoGames GmbH
 
 import logging
 from itertools import chain
+from typing import Optional
 
+from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
 
 from adminapi.dataset import DatasetCommit
 from adminapi.request import json_encode_extra
+from serveradmin.apps.models import Application
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
@@ -307,9 +310,9 @@ def _upsert_attributes(attribute_lookup, changed, changed_servers):
 
 
 def _access_control(
-    user, app, unchanged_objects,
-    created_objects, changed_objects, deleted_objects,
-):
+    user: Optional[User], app: Optional[Application], unchanged_objects: dict,
+    created_objects: dict, changed_objects: dict, deleted_objects: dict,
+) -> None:
     """Enforce serveradmin ACLs
 
     For Servershell commits, ensure the user is allowed to make the requested
