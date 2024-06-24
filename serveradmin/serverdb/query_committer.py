@@ -53,9 +53,6 @@ class CommitNewerData(CommitError):
 def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
     """The main function to commit queries"""
 
-    if not user:
-        user = app.owner
-
     pre_commit.send_robust(
         commit_query, created=created, changed=changed, deleted=deleted
     )
@@ -315,14 +312,14 @@ def _access_control(
 ):
     """Enforce serveradmin ACLs
 
-    For servershell commits, ensure the user is allowed to make the requested
-    changes.  For adminapi commits, ensure both the user and its app are
-    allowed to make the requested changes.
+    For Servershell commits, ensure the user is allowed to make the requested
+    changes.  For adminapi commits, ensure both the app is allowed to make the
+    requested changes.
 
-    Serveradmin ACLs are additive.  This means not all ACL must allow all the
-    changes a user is trying to make, but a single ACL is enough.
+    Serveradmin ACLs are additive. This means not all ACLs must allow all the
+    changes a user or app is trying to make, but a single ACL is enough.
 
-    Note: Different ACLs may be be used to permit different parts of a commit.
+    Note: Different ACLs may be used to permit different parts of a commit.
     The commit is checked per object changed in the commit.  As a result at
     least all changes to a single object within a commit must be permissible
     via a single ACL.
@@ -335,15 +332,19 @@ def _access_control(
     Returns None on success.
     """
 
+    # superusers and apps can not violate permissions.
+    if (user and user.is_superuser) or (app and app.superuser):
+        return None
+
     entities = []
-    if not user.is_superuser:
-        entities.append(
-            ('user', user, list(user.access_control_groups.all()))
-        )
-    if app and not app.superuser:
-        entities.append(
-            ('application', app, list(app.access_control_groups.all()))
-        )
+    if app:
+        entities.append(('application', app, list(app.access_control_groups.all())))
+    elif user:
+        entities.append(('user', user, list(user.access_control_groups.all())))
+    else:
+        # This should not be possible as it means not authenticated but better
+        # safe than sorry.
+        raise PermissionDenied('Missing authentication!')
 
     # Check all objects touched by this commit
     for obj in chain(
@@ -351,8 +352,7 @@ def _access_control(
         changed_objects.values(),
         deleted_objects.values(),
     ):
-        # Check both the user and, if applicable, the users app
-        # If either doesn't have the necessary rights, abort the commit
+        # Check app or if not present user permissions
         for entity_class, entity_name, groups in entities:
             acl_violations = {
                 acl: _acl_violations(unchanged_objects, obj, acl)
