@@ -397,6 +397,12 @@ def _acl_violations(changed_objects, obj, acl):
 
     # Check wether the object matches all the attribute filters of the ACL
     for attribute_id, attribute_filter in acl.get_filters().items():
+        # TODO: This relies on the object to have all attributes that are
+        #  present in the attribute_filter which currently works because
+        #  we fetch all attributes in commit_query (joined_attribtues).
+        #  This method would be better of not relying on the caller
+        #  making sure passing down all relevant attributes which isn't
+        #  even documented.
         if not attribute_filter.matches(obj.get(attribute_id)):
             violations.append(
                 'Object is not covered by ACL "{}", Attribute "{}" '
