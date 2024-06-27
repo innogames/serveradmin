@@ -5,12 +5,15 @@ Copyright (c) 2023 InnoGames GmbH
 
 import logging
 from itertools import chain
+from typing import Optional
 
+from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
 
 from adminapi.dataset import DatasetCommit
 from adminapi.request import json_encode_extra
+from serveradmin.apps.models import Application
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
@@ -52,9 +55,6 @@ class CommitNewerData(CommitError):
 
 def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
     """The main function to commit queries"""
-
-    if not user:
-        user = app.owner
 
     pre_commit.send_robust(
         commit_query, created=created, changed=changed, deleted=deleted
@@ -310,19 +310,19 @@ def _upsert_attributes(attribute_lookup, changed, changed_servers):
 
 
 def _access_control(
-    user, app, unchanged_objects,
-    created_objects, changed_objects, deleted_objects,
-):
+    user: Optional[User], app: Optional[Application], unchanged_objects: dict,
+    created_objects: dict, changed_objects: dict, deleted_objects: dict,
+) -> None:
     """Enforce serveradmin ACLs
 
-    For servershell commits, ensure the user is allowed to make the requested
-    changes.  For adminapi commits, ensure both the user and its app are
-    allowed to make the requested changes.
+    For Servershell commits, ensure the user is allowed to make the requested
+    changes.  For adminapi commits, ensure both the app is allowed to make the
+    requested changes.
 
-    Serveradmin ACLs are additive.  This means not all ACL must allow all the
-    changes a user is trying to make, but a single ACL is enough.
+    Serveradmin ACLs are additive. This means not all ACLs must allow all the
+    changes a user or app is trying to make, but a single ACL is enough.
 
-    Note: Different ACLs may be be used to permit different parts of a commit.
+    Note: Different ACLs may be used to permit different parts of a commit.
     The commit is checked per object changed in the commit.  As a result at
     least all changes to a single object within a commit must be permissible
     via a single ACL.
@@ -335,15 +335,19 @@ def _access_control(
     Returns None on success.
     """
 
+    # superusers and apps can not violate permissions.
+    if (user and user.is_superuser) or (app and app.superuser):
+        return None
+
     entities = []
-    if not user.is_superuser:
-        entities.append(
-            ('user', user, list(user.access_control_groups.all()))
-        )
-    if app and not app.superuser:
-        entities.append(
-            ('application', app, list(app.access_control_groups.all()))
-        )
+    if app:
+        entities.append(('application', app, list(app.access_control_groups.all())))
+    elif user:
+        entities.append(('user', user, list(user.access_control_groups.all())))
+    else:
+        # This should not be possible as it means not authenticated but better
+        # safe than sorry.
+        raise PermissionDenied('Missing authentication!')
 
     # Check all objects touched by this commit
     for obj in chain(
@@ -351,8 +355,7 @@ def _access_control(
         changed_objects.values(),
         deleted_objects.values(),
     ):
-        # Check both the user and, if applicable, the users app
-        # If either doesn't have the necessary rights, abort the commit
+        # Check app or if not present user permissions
         for entity_class, entity_name, groups in entities:
             acl_violations = {
                 acl: _acl_violations(unchanged_objects, obj, acl)
@@ -394,6 +397,12 @@ def _acl_violations(changed_objects, obj, acl):
 
     # Check wether the object matches all the attribute filters of the ACL
     for attribute_id, attribute_filter in acl.get_filters().items():
+        # TODO: This relies on the object to have all attributes that are
+        #  present in the attribute_filter which currently works because
+        #  we fetch all attributes in commit_query (joined_attribtues).
+        #  This method would be better of not relying on the caller
+        #  making sure passing down all relevant attributes which isn't
+        #  even documented.
         if not attribute_filter.matches(obj.get(attribute_id)):
             violations.append(
                 'Object is not covered by ACL "{}", Attribute "{}" '
