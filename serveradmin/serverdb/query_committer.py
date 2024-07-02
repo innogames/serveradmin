@@ -403,7 +403,15 @@ def _acl_violations(touched_objects, pending_changes, acl):
         #  This method would be better of not relying on the caller
         #  making sure passing down all relevant attributes which isn't
         #  even documented.
-        if not attribute_filter.matches(pending_changes.get(attribute_id)):
+        if pending_changes['object_id'] in touched_objects:
+            # If the object already exists ensure the ACL matches the status
+            # quo and not the wanted changes.
+            to_compare = touched_objects.get(pending_changes['object_id'])
+        else:
+            # Otherwise check if the ACL allows the "to be" object.
+            to_compare = pending_changes
+
+        if not attribute_filter.matches(to_compare.get(attribute_id)):
             violations.append(
                 'Object is not covered by ACL "{}", Attribute "{}" '
                 'does not match the filter "{}".'.format(
