@@ -376,7 +376,7 @@ def _access_control(
                 raise PermissionDenied(msg)
 
 
-def _acl_violations(changed_objects, obj, acl):
+def _acl_violations(touched_objects, pending_changes, acl):
     """Check if ACL allows all the changes to obj
 
     An ACL can fail to validate in two ways.  Every ACL has a filter describing
@@ -389,13 +389,13 @@ def _acl_violations(changed_objects, obj, acl):
 
     For more context read the _access_control() doc string.
 
-    Returns a list of human readable ACL violations on failure.
+    Returns a list of human-readable ACL violations on failure.
     Returns None on success.
     """
 
     violations = []
 
-    # Check wether the object matches all the attribute filters of the ACL
+    # Check whether the object matches all the attribute filters of the ACL
     for attribute_id, attribute_filter in acl.get_filters().items():
         # TODO: This relies on the object to have all attributes that are
         #  present in the attribute_filter which currently works because
@@ -403,7 +403,15 @@ def _acl_violations(changed_objects, obj, acl):
         #  This method would be better of not relying on the caller
         #  making sure passing down all relevant attributes which isn't
         #  even documented.
-        if not attribute_filter.matches(obj.get(attribute_id)):
+        if pending_changes['object_id'] in touched_objects:
+            # If the object already exists ensure the ACL matches the status
+            # quo and not the wanted changes.
+            to_compare = touched_objects.get(pending_changes['object_id'])
+        else:
+            # Otherwise check if the ACL allows the "to be" object.
+            to_compare = pending_changes
+
+        if not attribute_filter.matches(to_compare.get(attribute_id)):
             violations.append(
                 'Object is not covered by ACL "{}", Attribute "{}" '
                 'does not match the filter "{}".'.format(
@@ -417,22 +425,22 @@ def _acl_violations(changed_objects, obj, acl):
 
     # For existing objects we only check attributes which were changed
     # For new objects we only check attributes different to their default
-    if obj['object_id'] in changed_objects:
-        old_object = changed_objects[obj['object_id']]
+    if pending_changes['object_id'] in touched_objects:
+        old_object = touched_objects[pending_changes['object_id']]
     else:
-        old_object = get_default_attribute_values(obj['servertype'])
+        old_object = get_default_attribute_values(pending_changes['servertype'])
 
     # Gather attribute ids this ACL allows changing
     attribute_ids = acl.get_permissible_attribute_ids()
 
-    # Check wether all changed attributes are on this ACLs attribute whitelist
-    for attribute_id, attribute_value in obj.items():
+    # Check whether all changed attributes are on this ACLs attribute whitelist
+    for attribute_id, attribute_value in pending_changes.items():
         if (
             attribute_id not in attribute_ids and
             attribute_value != old_object[attribute_id]
         ):
             is_related_via: bool = ServertypeAttribute.objects.filter(
-                servertype_id=obj['servertype'],
+                servertype_id=pending_changes['servertype'],
                 attribute_id=attribute_id,
                 related_via_attribute__isnull=False
             ).exists()
