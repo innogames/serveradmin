@@ -2,7 +2,7 @@
 
 Copyright (c) 2019 InnoGames GmbH
 """
-
+import logging
 import os
 from hashlib import sha1
 import hmac
@@ -41,6 +41,9 @@ from adminapi.exceptions import (
 )
 
 
+logger = logging.getLogger(__name__)
+
+
 def load_private_key_file(private_key_path):
     """Try to load a private ssh key from disk
 
@@ -69,6 +72,7 @@ class Settings:
     timeout = 60.0
     tries = 3
     sleep_interval = 5
+    grace_period = 15  # <= serveradmin.api.decorators.TIMESTAMP_GRACE_PERIOD
 
 
 def calc_message(timestamp, data=None):
@@ -137,7 +141,7 @@ def send_request(endpoint, get_params=None, post_params=None):
     return json.loads(response.read().decode())
 
 
-def _build_request(endpoint, get_params, post_params):
+def _build_request(endpoint, get_params, post_params, retry=1):
     """Wrap request data in an urllib Request instance
 
     Aside from preparing the get and post data for transport, this function
@@ -183,6 +187,15 @@ def _build_request(endpoint, get_params, post_params):
 
         headers['X-PublicKeys'] = ','.join(key_signatures.keys())
         headers['X-Signatures'] = ','.join(key_signatures.values())
+
+    time_spent_signing = int(time.time()) - timestamp
+    if time_spent_signing > Settings.grace_period:
+        if retry <= Settings.tries:
+            logger.error(
+                f'Signing the requests took {time_spent_signing} seconds! '
+                'Serveradmin would reject this request. Maybe your signing '
+                f'soft-/hardware is congested ? Retry {retry}/{Settings.tries}.')
+            return _build_request(endpoint, get_params, post_params, retry+1)
 
     if not Settings.base_url:
         raise ConfigurationError(
