@@ -492,3 +492,33 @@ class ACLTestCase(TransactionTestCase):
             "whitelisted.",
             str(error.exception),
         )
+
+    def test_hijack_objects_not_possible(self):
+        # When an application or user is allowed to change certain attributes
+        # it must be guaranteed that permission checks are taking place against
+        # the status quo and not the new values.
+
+        user = User.objects.first()
+        user.is_superuser = False
+
+        acl = AccessControlGroup.objects.create(
+            name="app test", query="servertype=test0", is_whitelist=False
+        )
+        acl.members.add(user)
+        acl.save()
+
+        unchanged_object = Query(
+            {"hostname": "test2", "servertype": "test2"}, ["hostname", "servertype"]
+        ).get()
+        unchanged_objects = {unchanged_object["object_id"]: unchanged_object}
+
+        changed_object = Query(
+            {"hostname": "test2", "servertype": "test2"}, ["hostname", "servertype"]
+        ).get()
+        changed_object["servertype"] = "test0"  # Attacker attempts to hijack object
+        changed_objects = {changed_object["object_id"]: changed_object}
+
+        with self.assertRaises(PermissionDenied) as error:
+            query_committer._access_control(
+                user, None, unchanged_objects, {}, changed_objects, {}
+            )
