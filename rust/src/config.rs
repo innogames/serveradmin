@@ -7,10 +7,10 @@ use signature::Signer;
 
 use crate::API_VERSION;
 
-pub const ENV_NAME_BASE_URL: &'static str = "SERVERADMIN_BASE_URL";
-pub const ENV_NAME_TOKEN: &'static str = "SERVERADMIN_TOKEN";
-pub const ENV_NAME_KEY_PATH: &'static str = "SERVERADMIN_KEY_PATH";
-pub const ENV_NAME_SSH_AGENT: &'static str = "SSH_AUTH_SOCK";
+pub const ENV_NAME_BASE_URL: &str = "SERVERADMIN_BASE_URL";
+pub const ENV_NAME_TOKEN: &str = "SERVERADMIN_TOKEN";
+pub const ENV_NAME_KEY_PATH: &str = "SERVERADMIN_KEY_PATH";
+pub const ENV_NAME_SSH_AGENT: &str = "SSH_AUTH_SOCK";
 
 #[derive(Clone, Debug, Default)]
 pub struct Config {
