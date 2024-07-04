@@ -25,10 +25,10 @@ pub async fn main() -> anyhow::Result<()> {
 
     let mut new_sg = NewObject::request_new("service_group").await?;
     new_sg
-        .set("hostname", "yannik-adminapi-rs-2.test.sg")
-        .set("project", "test")
-        .add("responsible_admin", "yannik.schwieger")
-        .add("protocol_ports_inbound", "tcp443");
+        .set("hostname", "yannik-adminapi-rs-2.test.sg")?
+        .set("project", "test")?
+        .add("responsible_admin", "yannik.schwieger")?
+        .add("protocol_ports_inbound", "tcp443")?;
     let mut created_sg = new_sg.commit().await?;
     created_sg
         .add("protocol_ports_inbound", "tcp80")?
