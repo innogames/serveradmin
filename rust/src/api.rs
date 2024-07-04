@@ -186,7 +186,13 @@ impl Server {
             ));
         }
 
-        if self.attributes.get(&attribute).as_array().unwrap().contains(&value) {
+        if self
+            .attributes
+            .get(&attribute)
+            .as_array()
+            .unwrap()
+            .contains(&value)
+        {
             return Ok(self);
         }
 
@@ -220,7 +226,13 @@ impl Server {
             ));
         }
 
-        if !self.attributes.get(&attribute).as_array().unwrap().contains(&value) {
+        if !self
+            .attributes
+            .get(&attribute)
+            .as_array()
+            .unwrap()
+            .contains(&value)
+        {
             return Ok(self);
         }
 

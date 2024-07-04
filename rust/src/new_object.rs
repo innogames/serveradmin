@@ -23,7 +23,10 @@ impl NewObject {
         })
     }
 
-    pub async fn get_or_create(servertype: impl ToString, hostname: impl ToString) -> anyhow::Result<Self> {
+    pub async fn get_or_create(
+        servertype: impl ToString,
+        hostname: impl ToString,
+    ) -> anyhow::Result<Self> {
         let mut new_object = Self::request_new(servertype).await?;
 
         if let Ok(server) = Query::builder()
@@ -32,7 +35,8 @@ impl NewObject {
             .build()
             .request()
             .await?
-            .one() {
+            .one()
+        {
             new_object.object_id = Some(server.object_id);
             new_object.attributes = server.attributes;
         }
