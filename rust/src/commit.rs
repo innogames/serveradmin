@@ -60,7 +60,21 @@ impl Commit {
         self
     }
 
-    pub fn update(mut self, changeset: Changeset) -> Self {
+    pub fn update(mut self, mut changeset: Changeset) -> Self {
+        let filtered = changeset
+            .attributes
+            .into_iter()
+            .filter(|(_, change)| {
+                if let AttributeChange::Update { new, old } = change {
+                    return new.ne(old);
+                }
+
+                true
+            })
+            .collect();
+
+        changeset.attributes = filtered;
+
         self.changed.push(changeset);
 
         self
