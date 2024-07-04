@@ -159,7 +159,7 @@ impl Server {
 
         if self.attributes.get(&attribute).is_array() {
             return Err(anyhow::anyhow!(
-                "Attribute is a multi attribute, set is not supported!"
+                "Attribute {attribute} is a multi attribute, set is not supported!"
             ));
         }
 
