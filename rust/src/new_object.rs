@@ -1,14 +1,14 @@
 use std::ops::{Deref, DerefMut};
 
 use crate::api::{commit_changes, new_object, NewObjectResponse, Server};
-use crate::commit::{AttributeValue, Changeset, Commit, Dataset};
+use crate::commit::{AttributeValue, Changeset, Commit};
 use crate::query::Query;
 
 #[derive(Clone, Debug)]
 pub struct NewObject {
     object_id: Option<u64>,
-    attributes: Dataset,
-    changeset: Changeset,
+    server: Server,
+    deferred_changes: Changeset,
 }
 
 impl NewObject {
@@ -18,8 +18,12 @@ impl NewObject {
 
         Ok(Self {
             object_id: None,
-            attributes: result,
-            changeset: Default::default(),
+            server: Server {
+                object_id: 0,
+                attributes: result,
+                changes: Default::default(),
+            },
+            deferred_changes: Default::default(),
         })
     }
 
@@ -31,17 +35,21 @@ impl NewObject {
 
         if let Ok(server) = Query::builder()
             .filter("hostname", hostname.to_string())
-            .restrict(new_object.attributes.keys())
+            .restrict(new_object.server.attributes.keys())
             .build()
             .request()
             .await?
             .one()
         {
             new_object.object_id = Some(server.object_id);
-            new_object.attributes = server.attributes;
+            new_object.server = server;
         }
 
         Ok(new_object)
+    }
+
+    pub fn is_new(&self) -> bool {
+        self.object_id.is_none()
     }
 
     ///
@@ -50,12 +58,16 @@ impl NewObject {
     /// The changes done in [NewObject::deferred] will not be submitted yet, but the returned [Server]
     /// object is preloaded with them.
     ///
-    pub async fn commit(self) -> anyhow::Result<Server> {
-        let AttributeValue::String(hostname) = self.attributes.get("hostname") else {
+    pub async fn commit(mut self) -> anyhow::Result<Server> {
+        let AttributeValue::String(hostname) = self.server.get("hostname") else {
             return Err(anyhow::anyhow!("Required attribute 'hostname' is missing"));
         };
-        let commit = Commit::new().create(self.attributes);
-        commit_changes(&commit).await?;
+
+        if self.is_new() {
+            commit_changes(&Commit::new().create(self.server.attributes)).await?;
+        } else {
+            self.server.commit().await?;
+        }
 
         let mut server = Query::builder()
             .filter("hostname", hostname)
@@ -64,7 +76,7 @@ impl NewObject {
             .await?
             .one()?;
 
-        server.changes = self.changeset;
+        server.changes = self.deferred_changes;
 
         Ok(server)
     }
@@ -82,28 +94,28 @@ impl NewObject {
     pub fn deferred<R>(&mut self, callback: impl FnOnce(&mut Server) -> R) -> R {
         let mut server = Server {
             object_id: 0,
-            attributes: self.attributes.clone(),
-            changes: std::mem::take(&mut self.changeset),
+            attributes: self.server.attributes.clone(),
+            changes: std::mem::take(&mut self.deferred_changes),
         };
 
         let output = callback(&mut server);
 
-        self.changeset = std::mem::take(&mut server.changes);
+        self.deferred_changes = std::mem::take(&mut server.changes);
 
         output
     }
 }
 
 impl Deref for NewObject {
-    type Target = Dataset;
+    type Target = Server;
 
     fn deref(&self) -> &Self::Target {
-        &self.attributes
+        &self.server
     }
 }
 
 impl DerefMut for NewObject {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.attributes
+        &mut self.server
     }
 }
