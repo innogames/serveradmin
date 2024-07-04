@@ -52,6 +52,14 @@ impl NewObject {
         self.object_id.is_none()
     }
 
+    pub fn has_changes(&self) -> bool {
+        if self.is_new() {
+            return true;
+        }
+
+        self.server.has_changes()
+    }
+
     ///
     /// Commits the new object
     ///

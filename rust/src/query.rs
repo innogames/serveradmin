@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
-use crate::api::{commit_changes, query_objects, CommitResponse, QueryResponse, Server};
-use crate::commit::{Changeset, Commit};
+use crate::api::{commit_changes, CommitResponse, query_objects, QueryResponse, Server};
+use crate::commit::{AttributeChange, Changeset, Commit};
 use crate::filter::{AttributeFilter, IntoFilterValue};
 
 #[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize)]
@@ -58,7 +58,7 @@ impl QueryBuilder {
         self
     }
 
-    pub fn restrict<S: ToString, I: IntoIterator<Item = S>>(mut self, attributes: I) -> Self {
+    pub fn restrict<S: ToString, I: IntoIterator<Item=S>>(mut self, attributes: I) -> Self {
         self.0.restrict = HashSet::from_iter(attributes.into_iter().map(|v| v.to_string()));
 
         self
@@ -87,5 +87,19 @@ impl Server {
         self.changes = Changeset::default();
 
         commit_changes(&commit).await
+    }
+
+    pub fn has_changes(&self) -> bool {
+        self.changes
+            .attributes
+            .iter()
+            .filter(|(_, change)| {
+                if let AttributeChange::Update { new, old } = change {
+                    return new.ne(old);
+                }
+
+                true
+            })
+            .find(|_| true).is_some()
     }
 }
