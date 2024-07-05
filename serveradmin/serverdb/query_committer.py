@@ -230,7 +230,7 @@ def _delete_servers(changed, deleted, deleted_servers):
 
 def _create_servers(attribute_lookup, created):
     created_servers = {}
-    for attributes in created:
+    for idx, attributes in enumerate(created):
         if not attributes.get('hostname'):
             raise CommitError('"hostname" attribute is required.')
         hostname = attributes['hostname']
@@ -246,10 +246,8 @@ def _create_servers(attribute_lookup, created):
 
         server = _insert_server(hostname, intern_ip, servertype, attributes)
 
-        created_server = {k.pk: v for k, v in attributes.items()}
-        created_server['hostname'] = hostname
-        created_server['servertype'] = servertype.pk
-        created_server['intern_ip'] = intern_ip
+        # make new id available in signals
+        created[idx]['object_id'] = server.server_id
 
         created_servers[server.server_id] = server
 
