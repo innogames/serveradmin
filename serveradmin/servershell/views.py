@@ -102,6 +102,7 @@ def index(request):
         'shown_attributes': shown_attributes,
         'deep_link': bool(strtobool(request.GET.get('deep_link', 'false'))),
         'attributes': attributes_json,
+        'servertypes': list(Servertype.objects.values_list('servertype_id', flat=True)),
         'offset': 0,
         'limit': request.session.get('limit', NUM_SERVERS_DEFAULT),
         'order_by': 'hostname',
