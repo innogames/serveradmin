@@ -18,22 +18,22 @@ class ACLTestCase(TransactionTestCase):
 
     """
 
-    fixtures = ["auth_user.json", "test_dataset.json"]
+    fixtures = ['auth_user.json', 'test_dataset.json']
 
     def test_deny_if_not_authenticated(self):
         with self.assertRaises(PermissionDenied) as error:
             # Trying to commit without being authenticated must not be possible.
             query_committer._access_control(None, None, {}, {}, {}, {})
-        self.assertEqual("Missing authentication!", str(error.exception))
+        self.assertEqual('Missing authentication!', str(error.exception))
 
     def test_permit_if_superuser_app(self):
         user = User.objects.first()
         app = Application.objects.create(
-            name="superuser test",
-            app_id="superuser test",
-            auth_token="secret",
+            name='superuser test',
+            app_id='superuser test',
+            auth_token='secret',
             owner=user,
-            location="test",
+            location='test',
         )
 
         self.assertIsNone(query_committer._access_control(None, app, {}, {}, {}, {}))
@@ -47,22 +47,22 @@ class ACLTestCase(TransactionTestCase):
     def test_deny_if_app_acl_does_not_cover_object(self):
         user = User.objects.first()
         app = Application.objects.create(
-            name="superuser test",
-            app_id="superuser test",
-            auth_token="secret",
+            name='superuser test',
+            app_id='superuser test',
+            auth_token='secret',
             owner=user,
-            location="test",
+            location='test',
         )
-        acl = AccessControlGroup.objects.create(name="app test", query="servertype=vm")
+        acl = AccessControlGroup.objects.create(name='app test', query='servertype=vm')
         acl.applications.add(app)
         acl.save()
 
-        unchanged_object = Query({"object_id": 1}, ["os", "hostname"]).get()
-        unchanged_objects = {unchanged_object["object_id"]: unchanged_object}
+        unchanged_object = Query({'object_id': 1}, ['os', 'hostname']).get()
+        unchanged_objects = {unchanged_object['object_id']: unchanged_object}
 
-        changed_object = Query({"object_id": 1}, ["os", "hostname"]).get()
-        changed_object["os"] = "bookworm"
-        changed_objects = {changed_object["object_id"]: changed_object}
+        changed_object = Query({'object_id': 1}, ['os', 'hostname']).get()
+        changed_object['os'] = 'bookworm'
+        changed_objects = {changed_object['object_id']: changed_object}
 
         with self.assertRaises(PermissionDenied) as error:
             query_committer._access_control(
@@ -79,16 +79,16 @@ class ACLTestCase(TransactionTestCase):
         user = User.objects.first()
         user.is_superuser = False
 
-        acl = AccessControlGroup.objects.create(name="app test", query="servertype=vm")
+        acl = AccessControlGroup.objects.create(name='app test', query='servertype=vm')
         acl.members.add(user)
         acl.save()
 
-        unchanged_object = Query({"object_id": 1}, ["os", "hostname"]).get()
-        unchanged_objects = {unchanged_object["object_id"]: unchanged_object}
+        unchanged_object = Query({'object_id': 1}, ['os', 'hostname']).get()
+        unchanged_objects = {unchanged_object['object_id']: unchanged_object}
 
-        changed_object = Query({"object_id": 1}, ["os", "hostname"]).get()
-        changed_object["os"] = "bookworm"
-        changed_objects = {changed_object["object_id"]: changed_object}
+        changed_object = Query({'object_id': 1}, ['os', 'hostname']).get()
+        changed_object['os'] = 'bookworm'
+        changed_objects = {changed_object['object_id']: changed_object}
 
         with self.assertRaises(PermissionDenied) as error:
             query_committer._access_control(
@@ -104,26 +104,26 @@ class ACLTestCase(TransactionTestCase):
     def test_permit_if_app_acl_covers_object(self):
         user = User.objects.first()
         app = Application.objects.create(
-            name="superuser test",
-            app_id="superuser test",
-            auth_token="secret",
+            name='superuser test',
+            app_id='superuser test',
+            auth_token='secret',
             owner=user,
-            location="test",
+            location='test',
         )
         acl = AccessControlGroup.objects.create(
-            name="app test", query="servertype=test0", is_whitelist=False
+            name='app test', query='servertype=test0', is_whitelist=False
         )
         acl.applications.add(app)
         acl.save()
 
         unchanged_object = Query(
-            {"object_id": 1}, ["os", "hostname", "servertype"]
+            {'object_id': 1}, ['os', 'hostname', 'servertype']
         ).get()
-        unchanged_objects = {unchanged_object["object_id"]: unchanged_object}
+        unchanged_objects = {unchanged_object['object_id']: unchanged_object}
 
-        changed_object = Query({"object_id": 1}, ["os", "hostname", "servertype"]).get()
-        changed_object["os"] = "bookworm"
-        changed_objects = {changed_object["object_id"]: changed_object}
+        changed_object = Query({'object_id': 1}, ['os', 'hostname', 'servertype']).get()
+        changed_object['os'] = 'bookworm'
+        changed_objects = {changed_object['object_id']: changed_object}
 
         self.assertIsNone(
             query_committer._access_control(
@@ -135,19 +135,19 @@ class ACLTestCase(TransactionTestCase):
         user = User.objects.first()
         user.is_superuser = False
         acl = AccessControlGroup.objects.create(
-            name="app test", query="servertype=test0", is_whitelist=False
+            name='app test', query='servertype=test0', is_whitelist=False
         )
         acl.members.add(user)
         acl.save()
 
         unchanged_object = Query(
-            {"object_id": 1}, ["os", "hostname", "servertype"]
+            {'object_id': 1}, ['os', 'hostname', 'servertype']
         ).get()
-        unchanged_objects = {unchanged_object["object_id"]: unchanged_object}
+        unchanged_objects = {unchanged_object['object_id']: unchanged_object}
 
-        changed_object = Query({"object_id": 1}, ["os", "hostname", "servertype"]).get()
-        changed_object["os"] = "bookworm"
-        changed_objects = {changed_object["object_id"]: changed_object}
+        changed_object = Query({'object_id': 1}, ['os', 'hostname', 'servertype']).get()
+        changed_object['os'] = 'bookworm'
+        changed_objects = {changed_object['object_id']: changed_object}
 
         self.assertIsNone(
             query_committer._access_control(
@@ -158,26 +158,26 @@ class ACLTestCase(TransactionTestCase):
     def test_deny_if_app_acl_whitelist_does_not_list_attribute(self):
         user = User.objects.first()
         app = Application.objects.create(
-            name="superuser test",
-            app_id="superuser test",
-            auth_token="secret",
+            name='superuser test',
+            app_id='superuser test',
+            auth_token='secret',
             owner=user,
-            location="test",
+            location='test',
         )
         acl = AccessControlGroup.objects.create(
-            name="app test", query="servertype=test0", is_whitelist=True
+            name='app test', query='servertype=test0', is_whitelist=True
         )
         acl.applications.add(app)
         acl.save()
 
         unchanged_object = Query(
-            {"object_id": 1}, ["os", "hostname", "servertype"]
+            {'object_id': 1}, ['os', 'hostname', 'servertype']
         ).get()
-        unchanged_objects = {unchanged_object["object_id"]: unchanged_object}
+        unchanged_objects = {unchanged_object['object_id']: unchanged_object}
 
-        changed_object = Query({"object_id": 1}, ["os", "hostname", "servertype"]).get()
-        changed_object["os"] = "bookworm"
-        changed_objects = {changed_object["object_id"]: changed_object}
+        changed_object = Query({'object_id': 1}, ['os', 'hostname', 'servertype']).get()
+        changed_object['os'] = 'bookworm'
+        changed_objects = {changed_object['object_id']: changed_object}
 
         with self.assertRaises(PermissionDenied) as error:
             query_committer._access_control(
@@ -195,19 +195,19 @@ class ACLTestCase(TransactionTestCase):
         user.is_superuser = False
 
         acl = AccessControlGroup.objects.create(
-            name="app test", query="servertype=test0", is_whitelist=True
+            name='app test', query='servertype=test0', is_whitelist=True
         )
         acl.members.add(user)
         acl.save()
 
         unchanged_object = Query(
-            {"object_id": 1}, ["os", "hostname", "servertype"]
+            {'object_id': 1}, ['os', 'hostname', 'servertype']
         ).get()
-        unchanged_objects = {unchanged_object["object_id"]: unchanged_object}
+        unchanged_objects = {unchanged_object['object_id']: unchanged_object}
 
-        changed_object = Query({"object_id": 1}, ["os", "hostname", "servertype"]).get()
-        changed_object["os"] = "bookworm"
-        changed_objects = {changed_object["object_id"]: changed_object}
+        changed_object = Query({'object_id': 1}, ['os', 'hostname', 'servertype']).get()
+        changed_object['os'] = 'bookworm'
+        changed_objects = {changed_object['object_id']: changed_object}
 
         with self.assertRaises(PermissionDenied) as error:
             query_committer._access_control(
@@ -223,27 +223,27 @@ class ACLTestCase(TransactionTestCase):
     def test_permit_if_app_acl_whitelist_lists_attribute(self):
         user = User.objects.first()
         app = Application.objects.create(
-            name="superuser test",
-            app_id="superuser test",
-            auth_token="secret",
+            name='superuser test',
+            app_id='superuser test',
+            auth_token='secret',
             owner=user,
-            location="test",
+            location='test',
         )
         acl = AccessControlGroup.objects.create(
-            name="app test", query="servertype=test0", is_whitelist=True
+            name='app test', query='servertype=test0', is_whitelist=True
         )
         acl.applications.add(app)
-        acl.attributes.add(Attribute.objects.get(attribute_id="os"))
+        acl.attributes.add(Attribute.objects.get(attribute_id='os'))
         acl.save()
 
         unchanged_object = Query(
-            {"object_id": 1}, ["os", "hostname", "servertype"]
+            {'object_id': 1}, ['os', 'hostname', 'servertype']
         ).get()
-        unchanged_objects = {unchanged_object["object_id"]: unchanged_object}
+        unchanged_objects = {unchanged_object['object_id']: unchanged_object}
 
-        changed_object = Query({"object_id": 1}, ["os", "hostname", "servertype"]).get()
-        changed_object["os"] = "bookworm"
-        changed_objects = {changed_object["object_id"]: changed_object}
+        changed_object = Query({'object_id': 1}, ['os', 'hostname', 'servertype']).get()
+        changed_object['os'] = 'bookworm'
+        changed_objects = {changed_object['object_id']: changed_object}
 
         self.assertIsNone(
             query_committer._access_control(
@@ -255,20 +255,20 @@ class ACLTestCase(TransactionTestCase):
         user = User.objects.first()
         user.is_superuser = False
         acl = AccessControlGroup.objects.create(
-            name="app test", query="servertype=test0", is_whitelist=True
+            name='app test', query='servertype=test0', is_whitelist=True
         )
         acl.members.add(user)
-        acl.attributes.add(Attribute.objects.get(attribute_id="os"))
+        acl.attributes.add(Attribute.objects.get(attribute_id='os'))
         acl.save()
 
         unchanged_object = Query(
-            {"object_id": 1}, ["os", "hostname", "servertype"]
+            {'object_id': 1}, ['os', 'hostname', 'servertype']
         ).get()
-        unchanged_objects = {unchanged_object["object_id"]: unchanged_object}
+        unchanged_objects = {unchanged_object['object_id']: unchanged_object}
 
-        changed_object = Query({"object_id": 1}, ["os", "hostname", "servertype"]).get()
-        changed_object["os"] = "bookworm"
-        changed_objects = {changed_object["object_id"]: changed_object}
+        changed_object = Query({'object_id': 1}, ['os', 'hostname', 'servertype']).get()
+        changed_object['os'] = 'bookworm'
+        changed_objects = {changed_object['object_id']: changed_object}
 
         self.assertIsNone(
             query_committer._access_control(
@@ -279,27 +279,27 @@ class ACLTestCase(TransactionTestCase):
     def test_deny_if_app_acl_blacklist_lists_attribute(self):
         user = User.objects.first()
         app = Application.objects.create(
-            name="superuser test",
-            app_id="superuser test",
-            auth_token="secret",
+            name='superuser test',
+            app_id='superuser test',
+            auth_token='secret',
             owner=user,
-            location="test",
+            location='test',
         )
         acl = AccessControlGroup.objects.create(
-            name="app test", query="servertype=test0", is_whitelist=False
+            name='app test', query='servertype=test0', is_whitelist=False
         )
         acl.applications.add(app)
-        acl.attributes.add(Attribute.objects.get(attribute_id="os"))
+        acl.attributes.add(Attribute.objects.get(attribute_id='os'))
         acl.save()
 
         unchanged_object = Query(
-            {"object_id": 1}, ["os", "hostname", "servertype"]
+            {'object_id': 1}, ['os', 'hostname', 'servertype']
         ).get()
-        unchanged_objects = {unchanged_object["object_id"]: unchanged_object}
+        unchanged_objects = {unchanged_object['object_id']: unchanged_object}
 
-        changed_object = Query({"object_id": 1}, ["os", "hostname", "servertype"]).get()
-        changed_object["os"] = "bookworm"
-        changed_objects = {changed_object["object_id"]: changed_object}
+        changed_object = Query({'object_id': 1}, ['os', 'hostname', 'servertype']).get()
+        changed_object['os'] = 'bookworm'
+        changed_objects = {changed_object['object_id']: changed_object}
 
         with self.assertRaises(PermissionDenied) as error:
             query_committer._access_control(
@@ -316,20 +316,20 @@ class ACLTestCase(TransactionTestCase):
         user = User.objects.first()
         user.is_superuser = False
         acl = AccessControlGroup.objects.create(
-            name="app test", query="servertype=test0", is_whitelist=False
+            name='app test', query='servertype=test0', is_whitelist=False
         )
         acl.members.add(user)
-        acl.attributes.add(Attribute.objects.get(attribute_id="os"))
+        acl.attributes.add(Attribute.objects.get(attribute_id='os'))
         acl.save()
 
         unchanged_object = Query(
-            {"object_id": 1}, ["os", "hostname", "servertype"]
+            {'object_id': 1}, ['os', 'hostname', 'servertype']
         ).get()
-        unchanged_objects = {unchanged_object["object_id"]: unchanged_object}
+        unchanged_objects = {unchanged_object['object_id']: unchanged_object}
 
-        changed_object = Query({"object_id": 1}, ["os", "hostname", "servertype"]).get()
-        changed_object["os"] = "bookworm"
-        changed_objects = {changed_object["object_id"]: changed_object}
+        changed_object = Query({'object_id': 1}, ['os', 'hostname', 'servertype']).get()
+        changed_object['os'] = 'bookworm'
+        changed_objects = {changed_object['object_id']: changed_object}
 
         with self.assertRaises(PermissionDenied) as error:
             query_committer._access_control(
@@ -345,26 +345,26 @@ class ACLTestCase(TransactionTestCase):
     def test_permit_if_app_acl_blacklist_misses_attribute(self):
         user = User.objects.first()
         app = Application.objects.create(
-            name="superuser test",
-            app_id="superuser test",
-            auth_token="secret",
+            name='superuser test',
+            app_id='superuser test',
+            auth_token='secret',
             owner=user,
-            location="test",
+            location='test',
         )
         acl = AccessControlGroup.objects.create(
-            name="app test", query="servertype=test0", is_whitelist=False
+            name='app test', query='servertype=test0', is_whitelist=False
         )
         acl.applications.add(app)
         acl.save()
 
         unchanged_object = Query(
-            {"object_id": 1}, ["os", "hostname", "servertype"]
+            {'object_id': 1}, ['os', 'hostname', 'servertype']
         ).get()
-        unchanged_objects = {unchanged_object["object_id"]: unchanged_object}
+        unchanged_objects = {unchanged_object['object_id']: unchanged_object}
 
-        changed_object = Query({"object_id": 1}, ["os", "hostname", "servertype"]).get()
-        changed_object["os"] = "bookworm"
-        changed_objects = {changed_object["object_id"]: changed_object}
+        changed_object = Query({'object_id': 1}, ['os', 'hostname', 'servertype']).get()
+        changed_object['os'] = 'bookworm'
+        changed_objects = {changed_object['object_id']: changed_object}
 
         self.assertIsNone(
             query_committer._access_control(
@@ -376,19 +376,19 @@ class ACLTestCase(TransactionTestCase):
         user = User.objects.first()
         user.is_superuser = False
         acl = AccessControlGroup.objects.create(
-            name="app test", query="servertype=test0", is_whitelist=False
+            name='app test', query='servertype=test0', is_whitelist=False
         )
         acl.members.add(user)
         acl.save()
 
         unchanged_object = Query(
-            {"object_id": 1}, ["os", "hostname", "servertype"]
+            {'object_id': 1}, ['os', 'hostname', 'servertype']
         ).get()
-        unchanged_objects = {unchanged_object["object_id"]: unchanged_object}
+        unchanged_objects = {unchanged_object['object_id']: unchanged_object}
 
-        changed_object = Query({"object_id": 1}, ["os", "hostname", "servertype"]).get()
-        changed_object["os"] = "bookworm"
-        changed_objects = {changed_object["object_id"]: changed_object}
+        changed_object = Query({'object_id': 1}, ['os', 'hostname', 'servertype']).get()
+        changed_object['os'] = 'bookworm'
+        changed_objects = {changed_object['object_id']: changed_object}
 
         self.assertIsNone(
             query_committer._access_control(
@@ -402,38 +402,38 @@ class ACLTestCase(TransactionTestCase):
 
         user = User.objects.first()
         app = Application.objects.create(
-            name="superuser test",
-            app_id="superuser test",
-            auth_token="secret",
+            name='superuser test',
+            app_id='superuser test',
+            auth_token='secret',
             owner=user,
-            location="test",
+            location='test',
         )
 
         acl_1 = AccessControlGroup.objects.create(
-            name="app test", query="servertype=test0", is_whitelist=True
+            name='app test', query='servertype=test0', is_whitelist=True
         )
         acl_1.applications.add(app)
-        acl_1.attributes.add(Attribute.objects.get(attribute_id="os"))
+        acl_1.attributes.add(Attribute.objects.get(attribute_id='os'))
         acl_1.save()
 
         acl_2 = AccessControlGroup.objects.create(
-            name="app test 2", query="servertype=test0", is_whitelist=True
+            name='app test 2', query='servertype=test0', is_whitelist=True
         )
         acl_2.applications.add(app)
-        acl_2.attributes.add(Attribute.objects.get(attribute_id="database"))
+        acl_2.attributes.add(Attribute.objects.get(attribute_id='database'))
         acl_2.save()
 
         unchanged_object = Query(
-            {"object_id": 1}, ["os", "database", "hostname", "servertype"]
+            {'object_id': 1}, ['os', 'database', 'hostname', 'servertype']
         ).get()
-        unchanged_objects = {unchanged_object["object_id"]: unchanged_object}
+        unchanged_objects = {unchanged_object['object_id']: unchanged_object}
 
         changed_object = Query(
-            {"object_id": 1}, ["os", "database", "hostname", "servertype"]
+            {'object_id': 1}, ['os', 'database', 'hostname', 'servertype']
         ).get()
-        changed_object["os"] = "bookworm"
-        changed_object["database"] = "bingo"
-        changed_objects = {changed_object["object_id"]: changed_object}
+        changed_object['os'] = 'bookworm'
+        changed_object['database'] = 'bingo'
+        changed_objects = {changed_object['object_id']: changed_object}
 
         with self.assertRaises(PermissionDenied) as error:
             query_committer._access_control(
@@ -444,7 +444,7 @@ class ACLTestCase(TransactionTestCase):
             '"superuser test": Change is not covered by ACL "app test", '
             'Attribute "database" was modified despite not beeing whitelisted.'
             'Change is not covered by ACL "app test 2", Attribute "os" was '
-            "modified despite not beeing whitelisted.",
+            'modified despite not beeing whitelisted.',
             str(error.exception),
         )
 
@@ -456,30 +456,30 @@ class ACLTestCase(TransactionTestCase):
         user.is_superuser = False
 
         acl_1 = AccessControlGroup.objects.create(
-            name="app test", query="servertype=test0", is_whitelist=True
+            name='app test', query='servertype=test0', is_whitelist=True
         )
         acl_1.members.add(user)
-        acl_1.attributes.add(Attribute.objects.get(attribute_id="os"))
+        acl_1.attributes.add(Attribute.objects.get(attribute_id='os'))
         acl_1.save()
 
         acl_2 = AccessControlGroup.objects.create(
-            name="app test 2", query="servertype=test0", is_whitelist=True
+            name='app test 2', query='servertype=test0', is_whitelist=True
         )
         acl_1.members.add(user)
-        acl_2.attributes.add(Attribute.objects.get(attribute_id="database"))
+        acl_2.attributes.add(Attribute.objects.get(attribute_id='database'))
         acl_2.save()
 
         unchanged_object = Query(
-            {"object_id": 1}, ["os", "database", "hostname", "servertype"]
+            {'object_id': 1}, ['os', 'database', 'hostname', 'servertype']
         ).get()
-        unchanged_objects = {unchanged_object["object_id"]: unchanged_object}
+        unchanged_objects = {unchanged_object['object_id']: unchanged_object}
 
         changed_object = Query(
-            {"object_id": 1}, ["os", "database", "hostname", "servertype"]
+            {'object_id': 1}, ['os', 'database', 'hostname', 'servertype']
         ).get()
-        changed_object["os"] = "bookworm"
-        changed_object["database"] = "bingo"
-        changed_objects = {changed_object["object_id"]: changed_object}
+        changed_object['os'] = 'bookworm'
+        changed_object['database'] = 'bingo'
+        changed_objects = {changed_object['object_id']: changed_object}
 
         with self.assertRaises(PermissionDenied) as error:
             query_committer._access_control(
@@ -489,6 +489,36 @@ class ACLTestCase(TransactionTestCase):
             'Insufficient access rights to object "test0" for user '
             '"hannah.acker": Change is not covered by ACL "app test", '
             'Attribute "database" was modified despite not beeing '
-            "whitelisted.",
+            'whitelisted.',
             str(error.exception),
         )
+
+    def test_hijack_objects_not_possible(self):
+        # When an application or user is allowed to change certain attributes
+        # it must be guaranteed that permission checks are taking place against
+        # the status quo and not the new values.
+
+        user = User.objects.first()
+        user.is_superuser = False
+
+        acl = AccessControlGroup.objects.create(
+            name='app test', query='servertype=test0', is_whitelist=False
+        )
+        acl.members.add(user)
+        acl.save()
+
+        unchanged_object = Query(
+            {'hostname': 'test2', 'servertype': 'test2'}, ['hostname', 'servertype']
+        ).get()
+        unchanged_objects = {unchanged_object['object_id']: unchanged_object}
+
+        changed_object = Query(
+            {'hostname': 'test2', 'servertype': 'test2'}, ['hostname', 'servertype']
+        ).get()
+        changed_object['servertype'] = 'test0'  # Attacker attempts to hijack object
+        changed_objects = {changed_object['object_id']: changed_object}
+
+        with self.assertRaises(PermissionDenied) as error:
+            query_committer._access_control(
+                user, None, unchanged_objects, {}, changed_objects, {}
+            )
