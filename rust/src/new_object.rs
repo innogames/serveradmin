@@ -57,7 +57,7 @@ impl NewObject {
             return true;
         }
 
-        self.server.has_changes()
+        self.server.has_changes() || self.deferred_changes.has_changes()
     }
 
     ///
