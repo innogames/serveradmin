@@ -60,8 +60,7 @@ impl Changeset {
 
                 true
             })
-            .find(|_| true)
-            .is_some()
+            .any(|_| true)
     }
 }
 
