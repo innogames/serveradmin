@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::api::{commit_changes, query_objects, CommitResponse, QueryResponse, Server};
-use crate::commit::{AttributeChange, Changeset, Commit};
+use crate::commit::{Changeset, Commit};
 use crate::filter::{AttributeFilter, IntoFilterValue};
 
 #[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize)]
