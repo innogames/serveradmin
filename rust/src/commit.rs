@@ -45,6 +45,26 @@ pub trait IntoAttributeValue {
     fn into_attribute_value(self) -> AttributeValue;
 }
 
+impl Changeset {
+    pub fn has_changes(&self) -> bool {
+        self.attributes
+            .iter()
+            .filter(|(_, change)| {
+                if let AttributeChange::Multi { add, remove } = change {
+                    return add.len() + remove.len() > 0;
+                }
+
+                if let AttributeChange::Update { new, old } = change {
+                    return new.ne(old);
+                }
+
+                true
+            })
+            .find(|_| true)
+            .is_some()
+    }
+}
+
 impl Commit {
     pub fn new() -> Self {
         Self {
@@ -67,6 +87,10 @@ impl Commit {
             .filter(|(_, change)| {
                 if let AttributeChange::Update { new, old } = change {
                     return new.ne(old);
+                }
+
+                if let AttributeChange::Multi { add, remove } = change {
+                    return add.len() + remove.len() > 0;
                 }
 
                 true

@@ -209,6 +209,7 @@ impl Server {
         if let AttributeChange::Multi { add, .. } = entry {
             add.push(value);
         }
+
         Ok(self)
     }
 
