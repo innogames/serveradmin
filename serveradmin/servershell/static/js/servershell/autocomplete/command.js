@@ -179,6 +179,19 @@ $(document).ready(function() {
                         });
                     }
                 }
+                if (command === 'new') {
+                    let search_string = values.split(' ').shift();
+                    servershell.servertypes.forEach(function(servertype) {
+                        if (search_string && !servertype.startsWith(search_string)) {
+                            return;
+                        }
+
+                        choices.push({
+                            'label': `Servertype: ${servertype}`,
+                            'value': `${command} ${servertype}`,
+                        });
+                    });
+                }
             }
 
             // Don't auto complete if the user has already entered everything
