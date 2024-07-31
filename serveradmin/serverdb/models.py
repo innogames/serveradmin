@@ -503,60 +503,56 @@ class Server(models.Model):
     def get_supernet(self, servertype):
         """Get a supernet of given servertype for the current server.
 
-        This function will check all IP addresses of a server which have the "supernet" feature enabled.
-        If data is inconsistent, an exception is raised.
-        No matching network for just some of the addresses does not mean inconsistency.
+        This function will check all IP addresses of a server which have the "supernet"
+        feature enabled. If data is inconsistent, an exception is raised. It is not an
+        inconsistency if there is no supernet found just for some attributes. But there
+        must be at least one attribute providing a valid supernet.
         """
 
-        supernet_1 = None
-        supernet_ip_address = None
-        supernet_attribute = None
+        supernets = {} # (ip_address, attribute) -> (supernet, attribute)
 
+        # Supernet from intern_ip
         # TODO: Remove "intern_ip" support. Just remove this block of code below.
         try:
             supernet_1 = Server.objects.get(
                 servertype=servertype,
                 intern_ip__net_contains_or_equals=self.intern_ip,
             )
+            # None means intern_ip, that's not an attribute but a column!
+            supernets[(self.intern_ip, None)] = supernet_1
         except Server.DoesNotExist:
             return(None, None, None)
 
-        supernet_ip_address = self.intern_ip
-        supernet_attribute = None # Magic value for intern_ip
-
-        # Configurable attributes
-
+        # Supernet from configurable attributes
+        # Get all IP addresses of the server which have the "supernet" feature enabled.
         ip_addresses = ServerInetAttribute.objects.filter(
             server_id=self.server_id,
             attribute__supernet=True,
         )
-
-        # TODO: How to net_contains_or_equals for iterable?
+        # XXX: It seems that querying for net_contains_or_equals__in is impossible.
+        #      How can we make the code below not make so many queries for attribute?
         for ip_address in ip_addresses:
-            try:
-                attr = ServerInetAttribute.objects.get(
-                    value__net_contains_or_equals=ip_address.value,
-                    server__servertype__ip_addr_type='network',
-                    server__servertype_id=servertype.servertype_id,
-                )
-                if not attr.attribute.supernet:
-                    raise ValidationError(f'Not a supernet: {servertype} {ip_address.value}!')
-                supernet_2 = attr.server
-                # TODO: Shouldn't we check that the requested servertype really point
-            except ServerInetAttribute.DoesNotExist:
-               continue
-            else:
-                # Always trust the 1st found network
-                if supernet_1 is None:
-                    supernet_1 = supernet_2
-                    supernet_ip_address = ip_address.value
-                    supernet_attribute = ip_addresses.attribute
-                # Verify that all found networks match the 1st found one.
-                elif supernet_1 != supernet_2:
-                    raise ValidationError(f'Can\'t determine {servertype} for {self.hostname}!')
+            networks = ServerInetAttribute.objects.filter(
+                attribute=ip_address.attribute, # Compare only the same attribute!
+                value__net_contains_or_equals=ip_address.value,
+                server__servertype__ip_addr_type='network',
+                server__servertype_id=servertype.servertype_id,
+            )
+            for network in networks:
+                supernets[(ip_address.value, ip_address.attribute)] = network
 
-        print(f'get_supernet: {supernet_1} {supernet_ip_address} {supernet_attribute}')
-        return (supernet_1, supernet_ip_address, supernet_attribute)
+        supernets_msg = ''
+        for s1, s2 in supernets.items():
+            supernets_msg += f'{servertype}: {s1} -> {s2}\n'
+
+        network_cmp = {supernets.values()}
+        if len(network_cmp) != 1:
+            raise ValidationError(
+                f'Can\'t determine {servertype} for {self.hostname}, got:\n {supernets_msg}'
+            )
+
+        for s1, s2 in supernets.items():
+            return (s2, s1[0], s1[1])
 
 
     def clean(self):
