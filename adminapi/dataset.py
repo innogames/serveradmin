@@ -3,7 +3,6 @@
 Copyright (c) 2019 InnoGames GmbH
 """
 
-from distutils.util import strtobool
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 from itertools import chain
 from types import GeneratorType
@@ -461,7 +460,7 @@ class DatasetObject(dict):
         if isinstance(self[key], MultiAttr):
             self[key].add(value)
         elif type(self[key]) is bool:
-            self[key] = bool(strtobool(value))
+            self[key] = strtobool(value)
         elif type(self[key]) is int:
             self[key] = int(value)
         else:
@@ -595,3 +594,21 @@ def _format_attribute_value(value):
     if isinstance(value, dict):
         return _format_obj(value)
     return json_to_datatype(value)
+
+
+def strtobool(val) -> bool:
+    """
+    Convert a string representation of truth to true or false.
+    Acts the same as distutils.util.strtobool, which was removed in Python 3.12.
+
+    True values are 'y', 'yes', 't', 'true', 'on', and '1';
+    false values are 'n', 'no', 'f', 'false', 'off', and '0'.
+    Raises ValueError if 'val' is anything else.
+    """
+    val = val.lower()
+    if val in ('y', 'yes', 't', 'true', 'on', '1'):
+        return True
+    elif val in ('n', 'no', 'f', 'false', 'off', '0'):
+        return False
+    else:
+        raise ValueError(f"invalid truth value {val}")
