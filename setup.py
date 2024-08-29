@@ -60,9 +60,9 @@ if __name__ == '__main__':
                 'adminapi=adminapi.__main__:main',
             ],
         },
-        install_require=[
-            'paramiko',
-            'netaddr',
+        install_requires=[
+            'paramiko~=2.10',
+            'netaddr~=1.0',
         ],
         author='InnoGames System Administration',
         author_email='it@innogames.com',
