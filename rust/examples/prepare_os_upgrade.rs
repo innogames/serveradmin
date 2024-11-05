@@ -4,6 +4,8 @@ use adminapi::query::Query;
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
+    env_logger::init();
+
     let clap = clap::Command::new("prepare_os_upgrade")
         .author("Yannik, yannik.schwieger@innogames.com")
         .arg(clap::arg!([OS_RELEASE] "Sets the OS release name").required(true))
@@ -60,6 +62,11 @@ pub async fn main() -> anyhow::Result<()> {
             return Err(anyhow::anyhow!("Unexpected value for repositories"));
         };
 
+        server.set("os", os_release.to_string())?;
+        if matches.get_flag("maintenance") {
+            server.set("state", "maintenance")?;
+        }
+
         for repo in repos {
             let AttributeValue::String(repo) = repo else {
                 return Err(anyhow::anyhow!("Unexpected value for repository"));
@@ -71,11 +78,6 @@ pub async fn main() -> anyhow::Result<()> {
 
             server.add("repositories", repo.replace(&base_os, os_release))?;
             server.remove("repositories", repo)?;
-            server.set("os", os_release.to_string())?;
-
-            if matches.get_flag("maintenance") {
-                server.set("state", "maintenance")?;
-            }
 
             if let Some(environment) = matches.get_one::<String>("puppet-environment") {
                 if !server.get("puppet_environment").is_null() {
