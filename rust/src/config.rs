@@ -1,7 +1,6 @@
 use std::fmt::{Debug, Formatter};
 use std::path::Path;
-use std::rc::Rc;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use signature::Signer;
 
@@ -24,7 +23,7 @@ pub struct Config {
 pub enum SshSigner {
     Agent(
         Box<ssh_key::PublicKey>,
-        Box<Rc<Mutex<ssh_agent_client_rs::Client>>>,
+        Box<Arc<Mutex<ssh_agent_client_rs::Client>>>,
     ),
     Key(Box<ssh_key::PrivateKey>),
 }
@@ -72,7 +71,7 @@ impl Config {
 
                     return Ok(Some(SshSigner::Agent(
                         Box::new(key),
-                        Box::new(Rc::new(Mutex::new(client))),
+                        Box::new(Arc::new(Mutex::new(client))),
                     )));
                 }
             }
@@ -120,3 +119,6 @@ impl Signer<ssh_key::Signature> for SshSigner {
         }
     }
 }
+
+unsafe impl Send for SshSigner {}
+unsafe impl Sync for SshSigner {}

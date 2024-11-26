@@ -27,6 +27,8 @@ pub struct NewObjectResponse {
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct CommitResponse {
     pub status: String,
+    #[serde(default)]
+    pub message: Option<String>,
 }
 
 pub async fn query_objects<T: serde::de::DeserializeOwned>(
@@ -55,9 +57,22 @@ pub async fn new_object(servertype: impl Display) -> anyhow::Result<NewObjectRes
 pub async fn commit_changes(commit: &Commit) -> anyhow::Result<CommitResponse> {
     let config = Config::build_from_environment()?;
     let response = request_api(COMMIT_ENDPOINT, serde_json::to_value(commit)?, config).await?;
-    let response = response.error_for_status()?;
+    let status = response.status();
+    let body = response.json::<CommitResponse>().await?;
 
-    Ok(response.json().await?)
+    if status.is_client_error() || status.is_server_error() {
+        return Err(anyhow::anyhow!("Unable to process request").context(format!("{:?}", body)));
+    }
+
+    if body.status == "error" {
+        return Err(anyhow::anyhow!(
+            "Error while committing {}",
+            body.message
+                .unwrap_or_else(|| String::from("Unknown commit error"))
+        ));
+    }
+
+    Ok(body)
 }
 
 pub async fn request_api(
@@ -149,6 +164,12 @@ fn calculate_app_id(token: &String) -> String {
 }
 
 impl Server {
+    pub fn clear(&mut self, attribute: impl ToString) -> anyhow::Result<&mut Self> {
+        self.attributes.clear(attribute.to_string());
+
+        Ok(self)
+    }
+
     pub fn set(
         &mut self,
         attribute: impl ToString,
@@ -263,6 +284,17 @@ impl Server {
         set.object_id = self.object_id;
 
         set
+    }
+
+    /// Rolls back the changes.
+    ///
+    /// Returns the reverted changes
+    pub fn rollback(&mut self) -> Changeset {
+        let old_changes = self.changeset();
+
+        self.changes = Changeset::default();
+
+        old_changes
     }
 }
 
