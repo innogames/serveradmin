@@ -1,7 +1,7 @@
 use std::ops::{Deref, DerefMut};
 
 use crate::api::{commit_changes, new_object, NewObjectResponse, Server};
-use crate::commit::{AttributeValue, Changeset, Commit};
+use crate::commit::{AttributeValue, Changeset, Commit, Dataset};
 use crate::query::Query;
 
 #[derive(Clone, Debug)]
@@ -12,6 +12,18 @@ pub struct NewObject {
 }
 
 impl NewObject {
+    pub fn from_dataset(dataset: Dataset) -> Self {
+        Self {
+            object_id: None,
+            server: Server {
+                object_id: 0,
+                attributes: dataset,
+                changes: Default::default(),
+            },
+            deferred_changes: Default::default(),
+        }
+    }
+
     pub async fn request_new(servertype: impl ToString) -> anyhow::Result<Self> {
         let servertype = servertype.to_string();
         let NewObjectResponse { result } = new_object(&servertype).await?;
@@ -31,7 +43,7 @@ impl NewObject {
         servertype: impl ToString,
         hostname: impl ToString,
     ) -> anyhow::Result<Self> {
-        let mut new_object = Self::request_new(servertype).await?;
+        let mut new_object = Self::request_new(servertype.to_string()).await?;
 
         if let Ok(server) = Query::builder()
             .filter("hostname", hostname.to_string())
@@ -87,6 +99,16 @@ impl NewObject {
         server.changes = self.deferred_changes;
 
         Ok(server)
+    }
+
+    ///
+    /// Gets the initial commit data and the follow-up commit of deferred changes
+    ///
+    pub fn get_commit(self) -> (Commit, Commit) {
+        (
+            Commit::new().create(self.server.attributes),
+            Commit::new().update(self.deferred_changes),
+        )
     }
 
     ///
