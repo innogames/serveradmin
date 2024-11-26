@@ -172,6 +172,12 @@ impl Dataset {
         Self(Default::default())
     }
 
+    pub fn clear(&mut self, name: impl ToString) -> &mut Self {
+        self.0.remove(&name.to_string());
+
+        self
+    }
+
     pub fn set(
         &mut self,
         name: impl ToString,
