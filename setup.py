@@ -48,6 +48,7 @@ if __name__ == '__main__':
                 'static/*',
                 'static/css/*',
                 'static/js/*',
+                'static/webfonts/*',
                 'static/js/servershell/*',
                 'static/js/servershell/autocomplete/*',
                 'templates/servershell/*',
