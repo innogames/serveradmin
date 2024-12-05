@@ -24,6 +24,7 @@ if __name__ == '__main__':
                 'static/icons/*',
                 'static/js/*',
                 'static/js/plugins/*',
+                'static/webfonts/*',
                 'templates/*',
                 'templates/igrestlogin/*',
             ],

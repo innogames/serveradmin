@@ -15,7 +15,23 @@ servershell.update_result = function() {
     header.empty();
     header.append('<th scope="col"></th>');
     header.append('<th scope="col">#</th>');
-    servershell.shown_attributes.forEach((attribute, index) => header.append($('<th scope="col">').text(attribute)));
+    servershell.shown_attributes.forEach((attribute, index) => header.append(
+        $('<th scope="col">').append(
+            $('<span>').text(attribute),
+            $(`<a href="#" class="attr-tooltip" title="Order by ${attribute} attribute">`).append(
+                $('<i class="fa-solid fa-arrow-down-a-z">')
+            ).click(function(e) {
+                e.preventDefault();
+                servershell.commands.orderby(attribute);
+            }),
+            $(`<a href="#" class="attr-tooltip" title="Remove ${attribute} column">`).append(
+                $('<i class="fa-solid fa-xmark">')
+            ).click(function(e) {
+                e.preventDefault();
+                servershell.commands.attr(attribute);
+            }),
+        )
+    ));
 
     // Recreate table body
     let body = table.find('tbody');
