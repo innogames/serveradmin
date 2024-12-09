@@ -16,6 +16,7 @@ table tr:nth-child(odd) .disabled {
 
 #result_table thead th {
     padding-right: 1ch;
+    white-space: nowrap;
 }
 
 .results-info:last-of-type {
