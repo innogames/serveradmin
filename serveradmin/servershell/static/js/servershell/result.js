@@ -18,13 +18,13 @@ servershell.update_result = function() {
     servershell.shown_attributes.forEach((attribute, index) => header.append(
         $('<th scope="col">').append(
             $('<span>').text(attribute),
-            $(`<a href="#" class="attr-tooltip" title="Order by ${attribute} attribute">`).append(
+            $(`<a href="#" class="attr-headericons" title="Order by ${attribute} attribute">`).append(
                 $('<i class="fa-solid fa-arrow-down-a-z">')
             ).click(function(e) {
                 e.preventDefault();
                 servershell.commands.orderby(attribute);
             }),
-            $(`<a href="#" class="attr-tooltip" title="Remove ${attribute} column">`).append(
+            $(`<a href="#" class="attr-headericons" title="Remove ${attribute} column">`).append(
                 $('<i class="fa-solid fa-xmark">')
             ).click(function(e) {
                 e.preventDefault();

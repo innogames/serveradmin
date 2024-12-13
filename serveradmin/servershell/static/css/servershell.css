@@ -19,6 +19,15 @@ table tr:nth-child(odd) .disabled {
     white-space: nowrap;
 }
 
+.attr-headericons {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+th:hover .attr-headericons {
+    opacity: 1;
+}
+
 .results-info:last-of-type {
     margin-bottom: 1rem;
 }
