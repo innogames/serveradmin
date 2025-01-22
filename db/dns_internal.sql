@@ -9,8 +9,9 @@ select
     null::text as master,
     null::int as last_check,
     'NATIVE'::text as type,
-    null::int as notified_serial,
-    null::text as account
+    null::bigint as notified_serial,
+    null::text as account,
+    null::text as catalog
 from public.server
 where servertype_id = 'provider_domain';
 
