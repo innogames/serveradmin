@@ -12,12 +12,14 @@
 #
 import os
 import sys
+from datetime import datetime
+
 sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 
 project = 'Serveradmin'
-copyright = '2021, InnoGames GmbH'
+copyright = "{}, InnoGames GmbH".format(datetime.now().year)
 author = 'InnoGames GmbH'
 
 
