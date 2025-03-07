@@ -100,8 +100,9 @@ def is_ip_address(ip_interface: Union[IPv4Interface, IPv6Interface]) -> None:
 
 def is_unique_ip(
     ip_interface: Union[IPv4Interface, IPv6Interface],
-    object_id: int,
-    attribute_id: str = None,
+    server: "Server",
+    exclude_addr_types: list[str],
+    attribute_id: str | None = None,
 ) -> None:
     """Validate if IPv4/IPv6 address is unique
 
@@ -126,6 +127,9 @@ def is_unique_ip(
     # only withing the same attribute id. That means different hosts can have
     # the same IP address as long as it is in different attributes.
 
+    duplicates = []
+    object_id = server.server_id
+
     # TODO: Make "aid" mandatory when intern_ip is gone.
     if attribute_id:
         object_attribute_condition = Q(server_id=object_id) | ~Q(
@@ -134,20 +138,21 @@ def is_unique_ip(
     else:
         object_attribute_condition = Q(server_id=object_id)
 
-    has_duplicates = (
-        # TODO: Remove intern_ip.
-        Server.objects.filter(intern_ip=ip_interface)
-        .exclude(Q(servertype__ip_addr_type="network") | Q(server_id=object_id))
-        .exists()
-        or ServerInetAttribute.objects.filter(value=ip_interface)
-        .exclude(
-            Q(server__servertype__ip_addr_type="network") | object_attribute_condition
-        )
-        .exists()
-    )
-    if has_duplicates:
+    # TODO: Remove intern_ip.
+    for d in Server.objects.filter(intern_ip=ip_interface).exclude(
+        Q(servertype__ip_addr_type__in=exclude_addr_types) | Q(server_id=object_id)
+    ):
+        duplicates.append(f"{d.hostname} (intern_ip)")
+
+    for d in ServerInetAttribute.objects.filter(value=ip_interface).exclude(
+        Q(server__servertype__ip_addr_type__in=exclude_addr_types)
+        | object_attribute_condition
+    ):
+        duplicates.append(f"{d.server.hostname} ({d.attribute})")
+
+    if duplicates:
         raise ValidationError(
-            "An object with {0} already exists".format(str(ip_interface))
+            f"Can't set IP address {ip_interface} on {server.hostname}, conflicts with: {', '.join(duplicates)}"
         )
 
 
@@ -510,7 +515,7 @@ class Server(models.Model):
 
             if ip_addr_type == "host":
                 is_ip_address(self.intern_ip)
-                is_unique_ip(self.intern_ip, self.server_id)
+                is_unique_ip(self.intern_ip, self, ["network", "loadbalancer"])
             elif ip_addr_type == "loadbalancer":
                 is_ip_address(self.intern_ip)
             elif ip_addr_type == "network":
@@ -743,7 +748,9 @@ class ServerInetAttribute(ServerAttribute):
             )
         elif ip_addr_type == "host":
             is_ip_address(self.value)
-            is_unique_ip(self.value, self.server.server_id, self.attribute_id)
+            is_unique_ip(
+                self.value, self.server, ["network", "loadbalancer"], self.attribute_id
+            )
         elif ip_addr_type == "loadbalancer":
             is_ip_address(self.value)
         elif ip_addr_type == "network":
