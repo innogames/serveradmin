@@ -211,16 +211,17 @@ class TestIpAddrTypeHostForInetAttributes(TestIpAddrType):
         other_attribute["ip_config_new"] = "10.0.0.2/32"
         self.assertIsNone(other_attribute.commit(user=User.objects.first()))
 
-    def test_server_with_duplicate_inet_for_loadbalancer(self):
-        server = self._get_server("loadbalancer")
+    def test_server_with_duplicate_inet_ip(self):
+        server = self._get_server("host")
         server["intern_ip"] = "10.0.0.1/32"
+        server["ip_config"] = "10.0.0.2/32"
         server.commit(user=User.objects.first())
 
-        duplicate = self._get_server("host")
+        # Duplicate attribute is allowed because of different inet attribute type
+        duplicate = self._get_server("loadbalancer")
         duplicate["intern_ip"] = "10.0.0.2/32"
         duplicate["ip_config"] = "10.0.0.1/32"
-        with self.assertRaises(ValidationError):
-            duplicate.commit(user=User.objects.first())
+        self.assertIsNone(duplicate.commit(user=User.objects.first()))
 
     def test_change_server_hostname(self):
         server = self._get_server("host")
@@ -309,12 +310,11 @@ class TestIpAddrTypeLoadbalancerForInetAttributes(TestIpAddrType):
         first["ip_config"] = "10.0.0.2/32"
         first.commit(user=User.objects.first())
 
-        # Test "cross" duplicate attribute is denied
+        # Duplicate attribute is allowed because of different inet attribute type
         duplicate = self._get_server("host")
         duplicate["intern_ip"] = "10.0.0.2/32"
         duplicate["ip_config"] = "10.0.0.1/32"
-        with self.assertRaises(ValidationError):
-            duplicate.commit(user=User.objects.first())
+        self.assertIsNone(duplicate.commit(user=User.objects.first()))
 
     def test_server_with_duplicate_inet_different_attrs(self):
         server = self._get_server("loadbalancer")
@@ -511,18 +511,6 @@ class TestIpAddrTypeNetworkForInetAttributes(TestIpAddrType):
         overlaps["intern_ip"] = "10.0.0.0/28"
         overlaps["ip_config"] = "10.0.1.0/30"
         self.assertIsNone(overlaps.commit(user=User.objects.first()))
-
-    def test_server_with_duplicate_inet_different_attrs(self):
-        server = self._get_server("network")
-        server["intern_ip"] = "10.0.0.0/30"
-        server["ip_config"] = "10.0.1.0/30"
-        server.commit(user=User.objects.first())
-
-        duplicate = self._get_server("network")
-        duplicate["intern_ip"] = "10.0.2.0/30"
-        duplicate["ip_config_new"] = "10.0.1.0/30"
-        with self.assertRaises(ValidationError):
-            duplicate.commit(user=User.objects.first())
 
     def test_change_server_hostname(self):
         server = self._get_server("network")

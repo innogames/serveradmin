@@ -15,7 +15,7 @@ from ipaddress import (
     IPv4Network,
     IPv6Network,
 )
-from typing import Union
+from typing import Optional, Union
 
 import netfields
 from django.contrib.auth.models import User
@@ -100,23 +100,26 @@ def is_ip_address(ip_interface: Union[IPv4Interface, IPv6Interface]) -> None:
 
 def is_unique_ip(
     ip_interface: Union[IPv4Interface, IPv6Interface],
-    object_id: int,
-    attribute_id: str = None,
+    server: "Server",
+    addr_types: list[str],
+    attribute_id: Optional[int] = None,
 ) -> None:
-    """Validate if IPv4/IPv6 address is unique
+    """Validate if given IP address is unique
 
     Raises a ValidationError if intern_ip or any other attribute of type inet
     with this ip_address already exists.
 
-    :param ip_interface:
-    :param object_id:
-    :param attribute_id:
+    :param ip_interface:    The IP address to validate
+    :param server:          The current Server object to which the new IP address is
+                            to be assigned
+    :param addr_types:      Verify only against Servers of given IP_ADDR_TYPES.
+                            Allows for conflicting IP addresses, as long as they are on
+                            Servers with different IP_ADDR_TYPES.
+    :param attribute_id:    Verify only against this attribute. Allows for having
+                            conflicting IP addresses on different attributes, as long
+                            as they are on different Server objects.
     :return:
     """
-
-    # We avoid querying the duplicate hosts here and giving the user
-    # detailed information because checking with exists is cheaper than
-    # querying the server and this is a validation and should be fast.
 
     # Always exclude the current object_id from the query because we allow
     # duplication of data between the legacy (intern_ip, primary_ip6) and
@@ -126,28 +129,98 @@ def is_unique_ip(
     # only withing the same attribute id. That means different hosts can have
     # the same IP address as long as it is in different attributes.
 
-    # TODO: Make "aid" mandatory when intern_ip is gone.
+    duplicates = []
+
+    # TODO: Make attribute_id mandatory when intern_ip is gone.
     if attribute_id:
-        object_attribute_condition = Q(server_id=object_id) | ~Q(
+        object_attribute_q = Q(server_id=server.server_id) | ~Q(
             attribute_id=attribute_id
         )
     else:
-        object_attribute_condition = Q(server_id=object_id)
+        object_attribute_q = Q(server_id=server.server_id)
 
-    has_duplicates = (
-        # TODO: Remove intern_ip.
-        Server.objects.filter(intern_ip=ip_interface)
-        .exclude(Q(servertype__ip_addr_type="network") | Q(server_id=object_id))
-        .exists()
-        or ServerInetAttribute.objects.filter(value=ip_interface)
-        .exclude(
-            Q(server__servertype__ip_addr_type="network") | object_attribute_condition
+    # TODO: Remove intern_ip.
+    for d in Server.objects.filter(
+        Q(
+            Q(intern_ip=ip_interface)  # IP address
+            & Q(servertype__ip_addr_type__in=addr_types)  # IP address type
+            & ~Q(server_id=server.server_id)  # Self-server
         )
-        .exists()
-    )
-    if has_duplicates:
+    ):
+        duplicates.append(f"{d.hostname} (intern_ip)")
+
+    for d in ServerInetAttribute.objects.filter(
+        Q(
+            Q(value=ip_interface)  # IP address
+            & Q(server__servertype__ip_addr_type__in=addr_types)  # IP address type
+            & ~object_attribute_q  # Self-server
+        )
+    ):
+        duplicates.append(f"{d.server.hostname} ({d.attribute})")
+
+    if duplicates:
         raise ValidationError(
-            "An object with {0} already exists".format(str(ip_interface))
+            f"Can't set IP address {ip_interface} on {server.hostname}, conflicts with: {', '.join(duplicates)}"
+        )
+
+
+def network_overlaps(
+    ip_interface: Union[IPv4Interface, IPv6Interface],
+    server: "Server",
+    addr_types: list[str],
+    attribute_id: Optional[int] = None,
+) -> None:
+    """Validate if given IP prefix is unique
+
+    Raises a ValidationError if the IP prefix overlaps with any other existing
+    objects network of the given servertype.
+
+    :param ip_interface:    The IP address to validate
+    :param server:          The current Server object to which the new IP prefix is
+                            to be assigned
+    :param addr_types:      Verify only against Servers of given IP_ADDR_TYPES.
+                            Allows for overlapping IP prefixes, as long as they are on
+                            Servers with different IP_ADDR_TYPES.
+    :param attribute_id:    Verify only against this attribute. Allows for having
+                            overlapping IP prefixes on different attributes, as long
+                            as they are on different Server objects.
+    :return:
+    """
+
+    duplicates = []
+
+    # TODO: Make attribute_id mandatory when intern_ip is gone.
+    if attribute_id:
+        object_attribute_q = Q(server_id=server.server_id) | ~Q(
+            attribute_id=attribute_id
+        )
+    else:
+        object_attribute_q = Q(server_id=server.server_id)
+
+    # TODO: Remove intern_ip.
+    for d in Server.objects.filter(
+        Q(
+            Q(servertype=server.servertype_id)  # Servertype
+            & Q(intern_ip__net_overlaps=ip_interface)  # IP address
+            & Q(servertype__ip_addr_type__in=addr_types)  # IP address type
+            & ~Q(server_id=server.server_id)  # Self-server
+        )
+    ):
+        duplicates.append(f"{d.hostname} (intern_ip)")
+
+    for d in ServerInetAttribute.objects.filter(
+        Q(
+            Q(server__servertype=server.servertype_id)  # Servertype
+            & Q(value__net_overlaps=ip_interface)  # IP address
+            & Q(server__servertype__ip_addr_type__in=addr_types)  # IP address type
+            & ~object_attribute_q  # Self-server
+        )
+    ):
+        duplicates.append(f"{d.server.hostname} ({d.attribute})")
+
+    if duplicates:
+        raise ValidationError(
+            f"Can't set IP address {ip_interface} on {server.hostname}, conflicts with: {', '.join(duplicates)}"
         )
 
 
@@ -180,43 +253,6 @@ def inet_to_python(obj: object) -> Union[IPv4Interface, IPv6Interface]:
         return ip_interface(obj)
     except ValueError as error:
         raise ValidationError(str(error))
-
-
-def network_overlaps(
-    ip_interface: Union[IPv4Interface, IPv6Interface],
-    servertype_id: str,
-    object_id: int,
-) -> None:
-    """Validate if network overlaps with other objects of the servertype_id
-
-    Raises a ValidationError if the ip network overlaps with any other existing
-    objects network of the given servertype.
-
-    :param ip_interface:
-    :param servertype_id:
-    :param object_id:
-    :return:
-    """
-
-    overlaps = (
-        Server.objects.filter(
-            servertype=servertype_id, intern_ip__net_overlaps=ip_interface
-        )
-        .exclude(server_id=object_id)
-        .exists()
-        or
-        # TODO: We should filter for attribute id here as well to have
-        # consistent bebaviour with ip_addr_type: host and is_unique.
-        ServerInetAttribute.objects.filter(
-            server__servertype=servertype_id, value__net_overlaps=ip_interface
-        )
-        .exclude(server_id=object_id)
-        .exists()
-    )
-    if overlaps:
-        raise ValidationError(
-            "{0} overlaps with network of another object".format(str(ip_interface))
-        )
 
 
 class Servertype(models.Model):
@@ -510,14 +546,12 @@ class Server(models.Model):
 
             if ip_addr_type == "host":
                 is_ip_address(self.intern_ip)
-                is_unique_ip(self.intern_ip, self.server_id)
-            elif ip_addr_type == "loadbalancer":
-                is_ip_address(self.intern_ip)
+                is_unique_ip(self.intern_ip, self, ["host"])
             elif ip_addr_type == "network":
                 is_network(self.intern_ip)
-                network_overlaps(
-                    self.intern_ip, self.servertype.servertype_id, self.server_id
-                )
+                network_overlaps(self.intern_ip, self, ["network"])
+            elif ip_addr_type == "loadbalancer":
+                is_ip_address(self.intern_ip)
 
     def get_attributes(self, attribute):
         model = ServerAttribute.get_model(attribute.type)
@@ -743,14 +777,12 @@ class ServerInetAttribute(ServerAttribute):
             )
         elif ip_addr_type == "host":
             is_ip_address(self.value)
-            is_unique_ip(self.value, self.server.server_id, self.attribute_id)
-        elif ip_addr_type == "loadbalancer":
-            is_ip_address(self.value)
+            is_unique_ip(self.value, self.server, ["host"], self.attribute_id)
         elif ip_addr_type == "network":
             is_network(self.value)
-            network_overlaps(
-                self.value, self.server.servertype_id, self.server.server_id
-            )
+            network_overlaps(self.value, self.server, ["network"], self.attribute_id)
+        elif ip_addr_type == "loadbalancer":
+            is_ip_address(self.value)
 
 
 class ServerMACAddressAttribute(ServerAttribute):
