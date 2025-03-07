@@ -229,29 +229,33 @@ class QueryMaterializer:
                 ]
 
     def _add_supernet_attribute_intern_ip(self, attribute, servers):
-        """Merge-join networks to the servers
+        servers_in_1, servers_in_2 = itertools.tee(servers)
 
-        This function takes advantage of networks in the same servertype not
-        overlapping with each other.
-        """
-        target = None
-        for source in sorted(servers, key=lambda s: _sort_key(s.intern_ip)):
-            # Check the previous target
-            if target is not None:
-                network = target.intern_ip.network
-                if network.version != source.intern_ip.version:
-                    target = None
-                elif network.broadcast_address < source.intern_ip.ip:
-                    target = None
-                elif source.intern_ip not in network:
-                    continue
-            # Check for a new target
-            if target is None and source.intern_ip:
-                try:
-                    target = source.get_supernet(attribute.target_servertype)
-                except Server.DoesNotExist:
-                    continue
-            self._server_attributes[source][attribute] = target
+        supernet_id = Server.objects.filter(
+            intern_ip__net_contains=OuterRef("intern_ip"),
+            servertype_id=attribute.target_servertype_id,
+        ).values("server_id")
+
+        servers = Server.objects.filter(
+            server_id__in=[s.server_id for s in servers_in_1],
+        ).annotate(
+            supernet_id=Subquery(supernet_id, output_field=AutoField()),
+        )
+
+        supernets = Server.objects.filter(server_id__in=servers.values("supernet_id"))
+        supernets_by_id = {s.server_id: s for s in supernets}
+
+        supernets_by_server_hostname = {
+            s.hostname: supernets_by_id[s.supernet_id]
+            for s in servers
+            if s.supernet_id in supernets_by_id
+        }
+
+        for s in servers_in_2:
+            if s.hostname in supernets_by_server_hostname:
+                self._server_attributes[s][attribute] = supernets_by_server_hostname[
+                    s.hostname
+                ]
 
     def _add_related_attribute(self, attribute, servertype_attribute, servers_by_type):
         related_via_attribute = servertype_attribute.related_via_attribute
