@@ -8,7 +8,13 @@ Copyright (c) 2019 InnoGames GmbH
 # a good idea to refactor this by using more top level functions instead of
 # object methods.
 
+import itertools
+
 from ipaddress import IPv4Address, IPv6Address
+from django.contrib.postgres.expressions import ArraySubquery
+from django.db import models
+from django.db.models import OuterRef, Subquery, CharField, FilteredRelation, AutoField
+from netfields import InetAddressField
 
 from adminapi.dataset import DatasetObject
 from serveradmin.serverdb.models import (
@@ -18,6 +24,7 @@ from serveradmin.serverdb.models import (
     Server,
     ServerAttribute,
     ServerRelationAttribute,
+    ServerInetAttribute,
 )
 
 
@@ -192,7 +199,36 @@ class QueryMaterializer:
                 server.hostname.split(".", 1)[-1]
             )
 
-    def _add_supernet_attribute(self, attribute, servers):
+    def _add_supernet_attribute(self, attribute: Attribute, servers_in):
+        if attribute.inet_address_family:
+            self._add_supernet_attribute_af(attribute, servers_in)
+        else:
+            self._add_supernet_attribute_intern_ip(attribute, servers_in)
+
+    def _add_supernet_attribute_af(self, attribute, servers_in):
+        supernet_id = ServerInetAttribute.objects.filter(
+            value__net_contains=OuterRef("value"),
+            server__servertype_id=attribute.target_servertype_id,
+            attribute__inet_address_family=attribute.inet_address_family,
+        ).values("server__server_id")
+
+        attrs = ServerInetAttribute.objects.filter(
+            server_id__in=[s.server_id for s in servers_in],
+            attribute__inet_address_family=attribute.inet_address_family,
+        ).annotate(
+            supernet_id=Subquery(supernet_id, output_field=AutoField()),
+        )
+
+        supernets = Server.objects.filter(server_id__in=attrs.values("supernet_id"))
+        supernets_by_id = {s.server_id: s for s in supernets}
+
+        for a in attrs:
+            if a.supernet_id in supernets_by_id:
+                self._server_attributes[a.server][attribute] = supernets_by_id[
+                    a.supernet_id
+                ]
+
+    def _add_supernet_attribute_intern_ip(self, attribute, servers):
         """Merge-join networks to the servers
 
         This function takes advantage of networks in the same servertype not
