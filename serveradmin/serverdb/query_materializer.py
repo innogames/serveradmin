@@ -8,7 +8,10 @@ Copyright (c) 2019 InnoGames GmbH
 # a good idea to refactor this by using more top level functions instead of
 # object methods.
 
+import itertools
+
 from ipaddress import IPv4Address, IPv6Address
+from django.db.models import OuterRef, Subquery, AutoField
 
 from adminapi.dataset import DatasetObject
 from serveradmin.serverdb.models import (
@@ -18,6 +21,7 @@ from serveradmin.serverdb.models import (
     Server,
     ServerAttribute,
     ServerRelationAttribute,
+    ServerInetAttribute,
 )
 
 
@@ -192,30 +196,63 @@ class QueryMaterializer:
                 server.hostname.split(".", 1)[-1]
             )
 
-    def _add_supernet_attribute(self, attribute, servers):
-        """Merge-join networks to the servers
+    def _add_supernet_attribute(self, attribute: Attribute, servers_in):
+        if attribute.inet_address_family:
+            self._add_supernet_attribute_af(attribute, servers_in)
+        else:
+            self._add_supernet_attribute_intern_ip(attribute, servers_in)
 
-        This function takes advantage of networks in the same servertype not
-        overlapping with each other.
-        """
-        target = None
-        for source in sorted(servers, key=lambda s: _sort_key(s.intern_ip)):
-            # Check the previous target
-            if target is not None:
-                network = target.intern_ip.network
-                if network.version != source.intern_ip.version:
-                    target = None
-                elif network.broadcast_address < source.intern_ip.ip:
-                    target = None
-                elif source.intern_ip not in network:
-                    continue
-            # Check for a new target
-            if target is None and source.intern_ip:
-                try:
-                    target = source.get_supernet(attribute.target_servertype)
-                except Server.DoesNotExist:
-                    continue
-            self._server_attributes[source][attribute] = target
+    def _add_supernet_attribute_af(self, attribute, servers_in):
+        supernet_id = ServerInetAttribute.objects.filter(
+            value__net_contains=OuterRef("value"),
+            server__servertype_id=attribute.target_servertype_id,
+            attribute__inet_address_family=attribute.inet_address_family,
+        ).values("server__server_id")
+
+        attrs = ServerInetAttribute.objects.filter(
+            server_id__in=[s.server_id for s in servers_in],
+            attribute__inet_address_family=attribute.inet_address_family,
+        ).annotate(
+            supernet_id=Subquery(supernet_id, output_field=AutoField()),
+        )
+
+        supernets = Server.objects.filter(server_id__in=attrs.values("supernet_id"))
+        supernets_by_id = {s.server_id: s for s in supernets}
+
+        for a in attrs:
+            if a.supernet_id in supernets_by_id:
+                self._server_attributes[a.server][attribute] = supernets_by_id[
+                    a.supernet_id
+                ]
+
+    def _add_supernet_attribute_intern_ip(self, attribute, servers):
+        servers_in_1, servers_in_2 = itertools.tee(servers)
+
+        supernet_id = Server.objects.filter(
+            intern_ip__net_contains=OuterRef("intern_ip"),
+            servertype_id=attribute.target_servertype_id,
+        ).values("server_id")
+
+        servers = Server.objects.filter(
+            server_id__in=[s.server_id for s in servers_in_1],
+        ).annotate(
+            supernet_id=Subquery(supernet_id, output_field=AutoField()),
+        )
+
+        supernets = Server.objects.filter(server_id__in=servers.values("supernet_id"))
+        supernets_by_id = {s.server_id: s for s in supernets}
+
+        supernets_by_server_hostname = {
+            s.hostname: supernets_by_id[s.supernet_id]
+            for s in servers
+            if s.supernet_id in supernets_by_id
+        }
+
+        for s in servers_in_2:
+            if s.hostname in supernets_by_server_hostname:
+                self._server_attributes[s][attribute] = supernets_by_server_hostname[
+                    s.hostname
+                ]
 
     def _add_related_attribute(self, attribute, servertype_attribute, servers_by_type):
         related_via_attribute = servertype_attribute.related_via_attribute
