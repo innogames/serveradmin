@@ -61,10 +61,10 @@ class TestIpAddrTypeNullForInetAttributes(TestIpAddrType):
     """Most important tests for ip_addr_type null and inet attributes"""
 
     def test_add_inet_attribute_in_admin_panel(self):
-        attr = ServertypeAttribute(attribute_id="ip_config", servertype_id="null")
+        attr = ServertypeAttribute(attribute_id="ip_config_ipv4", servertype_id="null")
         form = ServertypeAttributeAdminForm(
             data={
-                "attribute": "ip_config",
+                "attribute": "ip_config_ipv4",
                 "servertype": "null",
             },
             instance=attr,
@@ -114,7 +114,7 @@ class TestIpAddrTypeHostForInternIp(TestIpAddrType):
     def test_server_with_duplicate_inet_ip(self):
         first = self._get_server("host")
         first["intern_ip"] = "10.0.0.1/32"
-        first["ip_config"] = "10.0.0.2/32"
+        first["ip_config_ipv4"] = "10.0.0.2/32"
         first.commit(user=User.objects.first())
 
         # Test "cross" duplicate attribute denial
@@ -144,20 +144,20 @@ class TestIpAddrTypeHostForInetAttributes(TestIpAddrType):
     def test_server_with_value(self):
         server = self._get_server("host")
         server["intern_ip"] = "10.0.0.1/32"
-        server["ip_config"] = "10.0.0.2/32"
+        server["ip_config_ipv4"] = "10.0.0.2/32"
         self.assertIsNone(server.commit(user=User.objects.first()))
 
     def test_server_with_invalid_value(self):
         server = self._get_server("host")
         server["intern_ip"] = "10.0.0.1/32"
-        server["ip_config"] = "nonsense"
+        server["ip_config_ipv4"] = "nonsense"
         with self.assertRaises(ValidationError):
             server.commit(user=User.objects.first())
 
     def test_server_with_ip_network(self):
         server = self._get_server("host")
         server["intern_ip"] = "10.0.0.1/32"
-        server["ip_config"] = "10.0.0.0/16"
+        server["ip_config_ipv4"] = "10.0.0.0/16"
 
         with self.assertRaises(ValidationError):
             server.commit(user=User.objects.first())
@@ -165,12 +165,12 @@ class TestIpAddrTypeHostForInetAttributes(TestIpAddrType):
     def test_server_with_duplicate_inet_attribute(self):
         first = self._get_server("host")
         first["intern_ip"] = "10.0.0.1/32"
-        first["ip_config"] = "10.0.0.2/32"
+        first["ip_config_ipv4"] = "10.0.0.2/32"
         first.commit(user=User.objects.first())
 
         second = self._get_server("host")
         second["intern_ip"] = "10.0.0.3/32"
-        second["ip_config"] = "10.0.0.2/32"
+        second["ip_config_ipv4"] = "10.0.0.2/32"
 
         with self.assertRaises(ValidationError):
             second.commit(user=User.objects.first())
@@ -178,32 +178,32 @@ class TestIpAddrTypeHostForInetAttributes(TestIpAddrType):
     def test_server_overlaps_with_network(self):
         network = self._get_server("network")
         network["intern_ip"] = "10.0.0.5/32"
-        network["ip_config"] = "10.0.1.5/32"
+        network["ip_config_ipv4"] = "10.0.1.5/32"
         network.commit(user=User.objects.first())
 
         # An ip_address must not collide with the smallest possible network
         server = self._get_server("host")
         server["intern_ip"] = "10.0.0.1/32"
-        server["ip_config"] = "10.0.1.5/32"
+        server["ip_config_ipv4"] = "10.0.1.5/32"
         self.assertIsNone(server.commit(user=User.objects.first()))
 
     def test_server_with_duplicate_intern_ip(self):
         first = self._get_server("host")
         first["intern_ip"] = "10.0.0.1/32"
-        first["ip_config"] = "10.0.0.2/32"
+        first["ip_config_ipv4"] = "10.0.0.2/32"
         first.commit(user=User.objects.first())
 
         # Test "cross" duplicate attribute denial
         duplicate = self._get_server("host")
         duplicate["intern_ip"] = "10.0.0.3/32"
-        duplicate["ip_config"] = "10.0.0.1/32"
+        duplicate["ip_config_ipv4"] = "10.0.0.1/32"
         with self.assertRaises(ValidationError):
             duplicate.commit(user=User.objects.first())
 
     def test_server_with_duplicate_inet_different_attrs(self):
         server = self._get_server("host")
         server["intern_ip"] = "10.0.0.1/32"
-        server["ip_config"] = "10.0.0.2/32"
+        server["ip_config_ipv4"] = "10.0.0.2/32"
         server.commit(user=User.objects.first())
 
         other_attribute = self._get_server("host")
@@ -214,19 +214,19 @@ class TestIpAddrTypeHostForInetAttributes(TestIpAddrType):
     def test_server_with_duplicate_inet_ip(self):
         server = self._get_server("host")
         server["intern_ip"] = "10.0.0.1/32"
-        server["ip_config"] = "10.0.0.2/32"
+        server["ip_config_ipv4"] = "10.0.0.2/32"
         server.commit(user=User.objects.first())
 
         # Duplicate attribute is allowed because of different inet attribute type
         duplicate = self._get_server("loadbalancer")
         duplicate["intern_ip"] = "10.0.0.2/32"
-        duplicate["ip_config"] = "10.0.0.1/32"
+        duplicate["ip_config_ipv4"] = "10.0.0.1/32"
         self.assertIsNone(duplicate.commit(user=User.objects.first()))
 
     def test_change_server_hostname(self):
         server = self._get_server("host")
         server["intern_ip"] = "10.0.0.1/32"
-        server["ip_config"] = "10.0.0.2/32"
+        server["ip_config_ipv4"] = "10.0.0.2/32"
         server.commit(user=User.objects.first())
 
         to_rename = Query({"hostname": server["hostname"]}, ["hostname"])
@@ -283,43 +283,43 @@ class TestIpAddrTypeLoadbalancerForInetAttributes(TestIpAddrType):
     def test_server_with_value(self):
         server = self._get_server("loadbalancer")
         server["intern_ip"] = "10.0.0.1/32"
-        server["ip_config"] = "10.0.0.2/32"
+        server["ip_config_ipv4"] = "10.0.0.2/32"
         self.assertIsNone(server.commit(user=User.objects.first()))
 
     def test_server_with_ip_network(self):
         server = self._get_server("loadbalancer")
         server["intern_ip"] = "10.0.0.1/32"
-        server["ip_config"] = "10.0.0.0/16"
+        server["ip_config_ipv4"] = "10.0.0.0/16"
         with self.assertRaises(ValidationError):
             server.commit(user=User.objects.first())
 
     def test_server_with_duplicate_inet_attribute(self):
         first = self._get_server("loadbalancer")
         first["intern_ip"] = "10.0.0.1/32"
-        first["ip_config"] = "10.0.0.2/32"
+        first["ip_config_ipv4"] = "10.0.0.2/32"
         first.commit(user=User.objects.first())
 
         second = self._get_server("loadbalancer")
         second["intern_ip"] = "10.0.0.1/32"
-        second["ip_config"] = "10.0.0.2/32"
+        second["ip_config_ipv4"] = "10.0.0.2/32"
         self.assertIsNone(second.commit(user=User.objects.first()))
 
     def test_server_with_duplicate_inet_ip(self):
         first = self._get_server("loadbalancer")
         first["intern_ip"] = "10.0.0.1/32"
-        first["ip_config"] = "10.0.0.2/32"
+        first["ip_config_ipv4"] = "10.0.0.2/32"
         first.commit(user=User.objects.first())
 
         # Duplicate attribute is allowed because of different inet attribute type
         duplicate = self._get_server("host")
         duplicate["intern_ip"] = "10.0.0.2/32"
-        duplicate["ip_config"] = "10.0.0.1/32"
+        duplicate["ip_config_ipv4"] = "10.0.0.1/32"
         self.assertIsNone(duplicate.commit(user=User.objects.first()))
 
     def test_server_with_duplicate_inet_different_attrs(self):
         server = self._get_server("loadbalancer")
         server["intern_ip"] = "10.0.0.1/32"
-        server["ip_config"] = "10.0.0.2/32"
+        server["ip_config_ipv4"] = "10.0.0.2/32"
         server.commit(user=User.objects.first())
 
         duplicate = self._get_server("loadbalancer")
@@ -330,7 +330,7 @@ class TestIpAddrTypeLoadbalancerForInetAttributes(TestIpAddrType):
     def test_change_server_hostname(self):
         server = self._get_server("loadbalancer")
         server["intern_ip"] = "10.0.0.1/32"
-        server["ip_config"] = "10.0.0.2/32"
+        server["ip_config_ipv4"] = "10.0.0.2/32"
         server.commit(user=User.objects.first())
 
         to_rename = Query({"hostname": server["hostname"]}, ["hostname"])
@@ -382,7 +382,7 @@ class TestIpAddrTypeNetworkForInternIp(TestIpAddrType):
     def test_change_server_network_overlaps(self):
         first = self._get_server("network")
         first["intern_ip"] = "10.0.0.0/30"
-        first["ip_config"] = "10.0.1.0/30"
+        first["ip_config_ipv4"] = "10.0.1.0/30"
         first.commit(user=User.objects.first())
 
         host = Query({"hostname": first["hostname"]}, ["intern_ip"])
@@ -392,7 +392,7 @@ class TestIpAddrTypeNetworkForInternIp(TestIpAddrType):
     def test_server_network_overlaps_inet(self):
         first = self._get_server("network")
         first["intern_ip"] = "10.0.0.0/30"
-        first["ip_config"] = "10.0.1.0/30"
+        first["ip_config_ipv4"] = "10.0.1.0/30"
         first.commit(user=User.objects.first())
 
         overlaps = self._get_server("network")
@@ -431,20 +431,20 @@ class TestIpAddrTypeNetworkForInetAttributes(TestIpAddrType):
     def test_server_with_value(self):
         server = self._get_server("network")
         server["intern_ip"] = "10.0.0.0/30"
-        server["ip_config"] = "10.0.1.0/30"
+        server["ip_config_ipv4"] = "10.0.1.0/30"
         self.assertIsNone(server.commit(user=User.objects.first()))
 
     def test_server_with_invalid_value(self):
         server = self._get_server("host")
         server["intern_ip"] = "10.0.0.0/30"
-        server["ip_config"] = "nonsense"
+        server["ip_config_ipv4"] = "nonsense"
         with self.assertRaises(ValidationError):
             server.commit(user=User.objects.first())
 
     def test_server_with_invalid_network(self):
         server = self._get_server("network")
         server["intern_ip"] = "10.0.0.0/16"
-        server["ip_config"] = "10.0.1.5/28"  # Invalid: Has host bits set
+        server["ip_config_ipv4"] = "10.0.1.5/28"  # Invalid: Has host bits set
 
         with self.assertRaises(ValidationError):
             server.commit(user=User.objects.first())
@@ -452,29 +452,29 @@ class TestIpAddrTypeNetworkForInetAttributes(TestIpAddrType):
     def test_server_with_ip_address(self):
         server = self._get_server("network")
         server["intern_ip"] = "10.0.0.1/32"  # Just a very small network
-        server["ip_config"] = "10.0.1.0/32"  # Just a very small network
+        server["ip_config_ipv4"] = "10.0.1.0/32"  # Just a very small network
         self.assertIsNone(server.commit(user=User.objects.first()))
 
     def test_server_network_overlaps(self):
         first = self._get_server("network")
         first["intern_ip"] = "10.0.0.0/30"
-        first["ip_config"] = "10.0.1.0/30"
+        first["ip_config_ipv4"] = "10.0.1.0/30"
         first.commit(user=User.objects.first())
 
         overlaps = self._get_server("network")
         overlaps["intern_ip"] = "10.0.3.0/30"
-        overlaps["ip_config"] = "10.0.1.0/28"
+        overlaps["ip_config_ipv4"] = "10.0.1.0/28"
         with self.assertRaises(ValidationError):
             overlaps.commit(user=User.objects.first())
 
     def test_change_server_network_overlaps(self):
         first = self._get_server("network")
         first["intern_ip"] = "10.0.0.0/30"
-        first["ip_config"] = "10.0.1.0/30"
+        first["ip_config_ipv4"] = "10.0.1.0/30"
         first.commit(user=User.objects.first())
 
-        host = Query({"hostname": first["hostname"]}, ["ip_config"])
-        host.update(ip_config=IPv4Network("10.0.1.0/28"))
+        host = Query({"hostname": first["hostname"]}, ["ip_config_ipv4"])
+        host.update(ip_config_ipv4=IPv4Network("10.0.1.0/28"))
         self.assertIsNone(host.commit(user=User.objects.first()))
 
     def test_server_network_overlaps_intern_ip(self):
@@ -484,40 +484,83 @@ class TestIpAddrTypeNetworkForInetAttributes(TestIpAddrType):
 
         overlaps = self._get_server("network")
         overlaps["intern_ip"] = "10.0.1.0/28"
-        overlaps["ip_config"] = "10.0.0.0/28"
+        overlaps["ip_config_ipv4"] = "10.0.0.0/28"
         with self.assertRaises(ValidationError):
             overlaps.commit(user=User.objects.first())
 
     def test_server_network_is_equal(self):
         first = self._get_server("network")
         first["intern_ip"] = "10.0.0.0/30"
-        first["ip_config"] = "10.0.1.0/30"
+        first["ip_config_ipv4"] = "10.0.1.0/30"
         first.commit(user=User.objects.first())
 
         equal = self._get_server("network")
         equal["intern_ip"] = "10.0.2.0/30"
-        equal["ip_config"] = "10.0.1.0/30"
+        equal["ip_config_ipv4"] = "10.0.1.0/30"
         with self.assertRaises(ValidationError):
             equal.commit(user=User.objects.first())
 
     def test_server_network_overlaps_other_servertype(self):
         first = self._get_server("network")
         first["intern_ip"] = "10.0.0.0/30"
-        first["ip_config"] = "10.0.1.0/30"
+        first["ip_config_ipv4"] = "10.0.1.0/30"
         first.commit(user=User.objects.first())
 
         # A network can overlap with networks of other servertypes
         overlaps = self._get_server("other_network")
         overlaps["intern_ip"] = "10.0.0.0/28"
-        overlaps["ip_config"] = "10.0.1.0/30"
+        overlaps["ip_config_ipv4"] = "10.0.1.0/30"
         self.assertIsNone(overlaps.commit(user=User.objects.first()))
 
     def test_change_server_hostname(self):
         server = self._get_server("network")
         server["intern_ip"] = "10.0.0.0/30"
-        server["ip_config"] = "10.0.1.0/30"
+        server["ip_config_ipv4"] = "10.0.1.0/30"
         server.commit(user=User.objects.first())
 
         to_rename = Query({"hostname": server["hostname"]}, ["hostname"])
         to_rename.update(hostname=self.faker.hostname())
         self.assertIsNone(to_rename.commit(user=User.objects.first()))
+
+
+class TestIpAddrTypeHostForSupernet(TestIpAddrType):
+    def test_intern_ip_supernet(self):
+        network = self._get_server("network")
+        network["intern_ip"] = "192.0.2.0/24"
+        network.commit(user=User.objects.first())
+
+        server = self._get_server("host")
+        server["intern_ip"] = "192.0.2.1"
+        server.commit(user=User.objects.first())
+
+        server_q = Query(
+            {"hostname": server["hostname"]},
+            ["supernet_no_af"],
+        ).get()
+
+        self.assertEqual(server_q["supernet_no_af"], network["hostname"])
+
+    def test_af_aware_supernet(self):
+        network_ipv4 = self._get_server("network")
+        network_ipv4["intern_ip"] = "192.0.2.0/24"
+        network_ipv4["ip_config_ipv4"] = "192.0.2.0/24"
+        network_ipv4.commit(user=User.objects.first())
+
+        network_ipv6 = self._get_server("network")
+        network_ipv6["intern_ip"] = "2001:db8::/64"
+        network_ipv6["ip_config_ipv6"] = "2001:db8::/64"
+        network_ipv6.commit(user=User.objects.first())
+
+        server = self._get_server("host")
+        server["intern_ip"] = "192.0.2.1"
+        server["ip_config_ipv4"] = "192.0.2.1"
+        server["ip_config_ipv6"] = "2001:db8::1"
+        server.commit(user=User.objects.first())
+
+        server_q = Query(
+            {"hostname": server["hostname"]},
+            ["supernet_ipv4", "supernet_ipv6"],
+        ).get()
+
+        self.assertEqual(server_q["supernet_ipv4"], network_ipv4["hostname"])
+        self.assertEqual(server_q["supernet_ipv6"], network_ipv6["hostname"])
