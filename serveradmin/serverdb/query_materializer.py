@@ -204,7 +204,7 @@ class QueryMaterializer:
 
     def _add_supernet_attribute_af(self, attribute, servers_in):
         supernet_id = ServerInetAttribute.objects.filter(
-            value__net_contains=OuterRef("value"),
+            value__net_contains_or_equals=OuterRef("value"),
             server__servertype_id=attribute.target_servertype_id,
             attribute__inet_address_family=attribute.inet_address_family,
         ).values("server__server_id")
@@ -229,7 +229,7 @@ class QueryMaterializer:
         servers_in_1, servers_in_2 = itertools.tee(servers)
 
         supernet_id = Server.objects.filter(
-            intern_ip__net_contains=OuterRef("intern_ip"),
+            intern_ip__net_contains_or_equals=OuterRef("intern_ip"),
             servertype_id=attribute.target_servertype_id,
         ).values("server_id")
 
