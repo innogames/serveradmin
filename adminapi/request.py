@@ -2,6 +2,7 @@
 
 Copyright (c) 2019 InnoGames GmbH
 """
+import gzip
 import logging
 import os
 from hashlib import sha1
@@ -138,8 +139,12 @@ def send_request(endpoint, get_params=None, post_params=None):
     else:
         assert False    # Cannot happen
 
-    return json.loads(response.read().decode())
+    content_encoding = response.info().get('Content-Encoding')
+    content = response.read()
+    if content_encoding == 'gzip':
+        content = gzip.decompress(content)
 
+    return json.loads(content)
 
 def _build_request(endpoint, get_params, post_params, retry=1):
     """Wrap request data in an urllib Request instance
@@ -157,6 +162,7 @@ def _build_request(endpoint, get_params, post_params, retry=1):
     timestamp = int(time.time())
     headers = {
         'Content-Encoding': 'application/x-json',
+        'Accept-Encoding': 'gzip',
         'X-Timestamp': str(timestamp),
         'X-API-Version': '.'.join(str(v) for v in VERSION),
     }
