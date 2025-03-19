@@ -517,12 +517,6 @@ class Server(models.Model):
     def __str__(self):
         return self.hostname
 
-    def get_supernet(self, servertype):
-        return Server.objects.get(
-            servertype=servertype,
-            intern_ip__net_contains_or_equals=self.intern_ip,
-        )
-
     def clean(self):
         super(Server, self).clean()
 
