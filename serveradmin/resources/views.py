@@ -3,6 +3,7 @@
 Copyright (c) 2019 InnoGames GmbH
 """
 
+import html
 from collections import OrderedDict
 
 from django.conf import settings
@@ -40,7 +41,7 @@ def index(request):
             current_collection = collection
             break
         else:
-            return HttpResponseBadRequest(f'Collection {current_collection_id} does not exist!')
+            return HttpResponseBadRequest(f'Collection {html.escape(current_collection_id)} does not exist!')
 
     # Save latest choice for collection
     request.session['current_collection'] = current_collection.id
