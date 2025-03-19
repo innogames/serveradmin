@@ -89,8 +89,8 @@ def validate_value(value, datatype=None):
     if isinstance(value, special_datatypes):
         raise DatatypeError('Value cannot be from {}'.format(type(value)))
 
-    assert datatype != object
-    if type(value) == object:
+    assert datatype is not object
+    if type(value) is object:
         raise DatatypeError('Value cannot be a generic object')
 
     newtype = type(value)
@@ -98,7 +98,7 @@ def validate_value(value, datatype=None):
         return newtype
 
     for supertype in datatype.mro():
-        if issubclass(newtype, supertype) and supertype != object:
+        if issubclass(newtype, supertype) and supertype is not object:
             return supertype
 
     raise DatatypeError('Value from {} is not compatible with existing value from {}'.format(type(value), datatype))

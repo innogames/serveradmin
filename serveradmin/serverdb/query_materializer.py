@@ -9,19 +9,19 @@ Copyright (c) 2019 InnoGames GmbH
 # object methods.
 
 import itertools
-
 from ipaddress import IPv4Address, IPv6Address
-from django.db.models import OuterRef, Subquery, AutoField
+
+from django.db.models import AutoField, OuterRef, Subquery
 
 from adminapi.dataset import DatasetObject
 from serveradmin.serverdb.models import (
-    Servertype,
     Attribute,
-    ServertypeAttribute,
     Server,
     ServerAttribute,
-    ServerRelationAttribute,
     ServerInetAttribute,
+    ServerRelationAttribute,
+    Servertype,
+    ServertypeAttribute,
 )
 
 

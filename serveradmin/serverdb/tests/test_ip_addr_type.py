@@ -12,7 +12,7 @@ from django.test import TransactionTestCase
 from faker import Faker
 from faker.providers import internet
 
-from serveradmin.dataset import Query, DatasetObject
+from serveradmin.dataset import DatasetObject, Query
 from serveradmin.serverdb.forms import ServertypeAttributeAdminForm
 from serveradmin.serverdb.models import ServertypeAttribute
 

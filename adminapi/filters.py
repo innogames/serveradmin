@@ -12,11 +12,8 @@ from adminapi.exceptions import FilterValueError
 
 class BaseFilter(object):
     def __init__(self, value):
-        if type(self) == BaseFilter and isinstance(value, bool):
-            pass
-        elif isinstance(value, (int, float)):
-            pass
-        elif isinstance(value, tuple(s[0] for s in STR_BASED_DATATYPES)):
+        ok_datatypes = tuple([bool, int, float] + [s[0] for s in STR_BASED_DATATYPES])
+        if type(self) is BaseFilter and isinstance(value, ok_datatypes):
             pass
         elif isinstance(value, str):
             for char in '\'"':
@@ -34,12 +31,12 @@ class BaseFilter(object):
         return Any(self, other)
 
     def __repr__(self):
-        if type(self) == BaseFilter:
+        if type(self) is BaseFilter:
             return repr(self.value)
         return '{}({!r})'.format(type(self).__name__, self.value)
 
     def serialize(self):
-        if type(self) == BaseFilter:
+        if type(self) is BaseFilter:
             return self.value
         return {type(self).__name__: self.value}
 
@@ -243,4 +240,4 @@ class Empty(BaseFilter):
 
 
 # Collect all classes that are subclass of BaseFilter (exclusive)
-filter_classes = [v for v in globals().values() if type(v) == type and BaseFilter in v.mro()[1:]]
+filter_classes = [v for v in globals().values() if type(v) is type and BaseFilter in v.mro()[1:]]

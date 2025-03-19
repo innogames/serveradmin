@@ -8,9 +8,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.db.models import Q, Subquery, OuterRef, Prefetch, CharField
+from django.db.models import CharField, OuterRef, Prefetch, Q, Subquery
 from django.db.models.fields.json import KeyTextTransform
-from django.db.models.functions import Coalesce, Cast
+from django.db.models.functions import Cast, Coalesce
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
@@ -19,10 +19,10 @@ from django.utils.functional import cached_property
 
 from serveradmin import settings
 from serveradmin.serverdb.models import (
+    Change,
     ChangeCommit,
     Server,
     ServertypeAttribute,
-    Change,
 )
 from serveradmin.serverdb.query_committer import CommitError, commit_query
 

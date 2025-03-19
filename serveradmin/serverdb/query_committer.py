@@ -15,20 +15,20 @@ from adminapi.dataset import DatasetCommit
 from adminapi.request import json_encode_extra
 from serveradmin.apps.models import Application
 from serveradmin.serverdb.models import (
-    Servertype,
     Attribute,
+    Change,
+    ChangeCommit,
     Server,
     ServerAttribute,
     ServerRelationAttribute,
-    ChangeCommit,
-    Change,
+    Servertype,
     ServertypeAttribute,
 )
 from serveradmin.serverdb.query_materializer import (
     QueryMaterializer,
     get_default_attribute_values,
 )
-from serveradmin.serverdb.signals import pre_commit, post_commit
+from serveradmin.serverdb.signals import post_commit, pre_commit
 
 logger = logging.getLogger(__name__)
 

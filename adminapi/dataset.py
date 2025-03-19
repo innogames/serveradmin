@@ -8,10 +8,10 @@ from itertools import chain
 from types import GeneratorType
 
 from adminapi import api
-from adminapi.datatype import validate_value, json_to_datatype
+from adminapi.datatype import json_to_datatype, validate_value
+from adminapi.exceptions import AdminapiException, DatasetError
 from adminapi.filters import Any, BaseFilter, ContainedOnlyBy
-from adminapi.request import send_request, json_encode_extra
-from adminapi.exceptions import DatasetError, AdminapiException
+from adminapi.request import json_encode_extra, send_request
 
 NEW_OBJECT_ENDPOINT = '/dataset/new_object'
 COMMIT_ENDPOINT = '/dataset/commit'

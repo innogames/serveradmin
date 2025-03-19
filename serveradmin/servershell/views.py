@@ -5,34 +5,35 @@ Copyright (c) 2024 InnoGames GmbH
 
 import json
 from distutils.util import strtobool
-from ipaddress import IPv6Address, IPv4Address, ip_interface
-from itertools import islice, chain
+from ipaddress import IPv4Address, IPv6Address, ip_interface
+from itertools import chain, islice
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied, ValidationError
 from django.http import (
-    HttpResponse,
-    HttpResponseRedirect,
     Http404,
-    JsonResponse,
+    HttpRequest,
+    HttpResponse,
     HttpResponseBadRequest,
     HttpResponseNotFound,
-    HttpRequest,
+    HttpResponseRedirect,
+    JsonResponse,
 )
 from django.shortcuts import redirect, render
 from django.template.response import TemplateResponse
 from django.urls import reverse
-from django.utils.html import mark_safe, escape as escape_html
+from django.utils.html import escape as escape_html
+from django.utils.html import mark_safe
 from django.views.decorators.http import require_http_methods
 from django.views.defaults import bad_request
 
 from adminapi.datatype import DatatypeError
-from adminapi.filters import Any, ContainedOnlyBy, filter_classes, Not
+from adminapi.filters import Any, ContainedOnlyBy, Not, filter_classes
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
 from serveradmin.dataset import Query
-from serveradmin.serverdb.models import Servertype, Attribute, ServertypeAttribute, Server
+from serveradmin.serverdb.models import Attribute, Server, Servertype, ServertypeAttribute
 from serveradmin.serverdb.query_committer import commit_query
 from serveradmin.servershell.helper import get_default_shown_attributes
 from serveradmin.servershell.merged_query_iterator import MergedQuery
