@@ -15,6 +15,7 @@ pub const NEW_OBJECT_ENDPOINT: &str = "/api/dataset/new_object";
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct QueryResponse<T = Dataset> {
+    #[serde(default)]
     pub status: String,
     pub result: Vec<Server<T>>,
 }
@@ -26,6 +27,7 @@ pub struct NewObjectResponse {
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct CommitResponse {
+    #[serde(default)]
     pub status: String,
     #[serde(default)]
     pub message: Option<String>,
