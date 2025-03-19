@@ -416,5 +416,5 @@ class ACLTestCase(TransactionTestCase):
         changed_object['servertype'] = 'test0'  # Attacker attempts to hijack object
         changed_objects = {changed_object['object_id']: changed_object}
 
-        with self.assertRaises(PermissionDenied) as error:
+        with self.assertRaises(PermissionDenied):
             query_committer._access_control(user, None, unchanged_objects, {}, changed_objects, {})

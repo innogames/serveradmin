@@ -4,46 +4,44 @@ Copyright (c) 2019 InnoGames GmbH
 """
 
 import gzip
+import hmac
+import json
 import logging
 import os
+import time
+from base64 import b64encode
+from datetime import datetime, timezone
 from hashlib import sha1
-import hmac
 from http.client import IncompleteRead
 from socket import timeout
 from ssl import SSLError
-import time
-import json
-from base64 import b64encode
-from datetime import datetime, timezone
-
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
-from urllib.request import urlopen, Request
+from urllib.request import Request, urlopen
 
 from paramiko.agent import Agent
 from paramiko.message import Message
-from paramiko.ssh_exception import SSHException, PasswordRequiredException
+from paramiko.ssh_exception import PasswordRequiredException, SSHException
 
 from adminapi import VERSION
 
 try:
-    from paramiko import RSAKey, ECDSAKey, Ed25519Key
+    from paramiko import ECDSAKey, Ed25519Key, RSAKey
 
     key_classes = (RSAKey, ECDSAKey, Ed25519Key)
 except ImportError:
     # Ed25519Key requires paramiko >= 2.2
-    from paramiko import RSAKey, ECDSAKey
+    from paramiko import ECDSAKey, RSAKey
 
     key_classes = (RSAKey, ECDSAKey)
 
 from adminapi.cmduser import get_auth_token
-from adminapi.filters import BaseFilter
 from adminapi.exceptions import (
     ApiError,
     AuthenticationError,
     ConfigurationError,
 )
-
+from adminapi.filters import BaseFilter
 
 logger = logging.getLogger(__name__)
 

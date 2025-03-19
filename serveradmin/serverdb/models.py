@@ -7,13 +7,13 @@ import re
 from distutils.util import strtobool
 from ipaddress import (
     IPv4Address,
-    IPv6Address,
-    ip_interface,
     IPv4Interface,
-    IPv6Interface,
-    ip_network,
     IPv4Network,
+    IPv6Address,
+    IPv6Interface,
     IPv6Network,
+    ip_interface,
+    ip_network,
 )
 from typing import Optional, Union
 

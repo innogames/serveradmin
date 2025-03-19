@@ -66,7 +66,7 @@ def _get_sql_condition(attribute, filt, related_vias):
     if attribute.type == 'boolean':
         # We have already dealt with the logical filters.  Other
         # complicated filters don't make any sense on booleans.
-        if type(filt) != BaseFilter:
+        if type(filt) is not BaseFilter:
             raise FilterValueError(
                 'Boolean attribute "{}" cannot be used with {}() filter'
                 .format(attribute, type(filt).__name__)
@@ -128,7 +128,7 @@ def _logical_filter_sql_condition(attribute, filt, related_vias):
     simple_values = []
     templates = []
     for value in filt.values:
-        if type(filt) == Any and type(value) == BaseFilter:
+        if type(filt) is Any and type(value) is BaseFilter:
             simple_values.append(value)
         else:
             templates.append(
