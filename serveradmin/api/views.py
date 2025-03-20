@@ -4,20 +4,18 @@ Copyright (c) 2019 InnoGames GmbH
 """
 
 from django.core.exceptions import (
-    SuspiciousOperation,
     PermissionDenied,
+    SuspiciousOperation,
     ValidationError,
 )
 from django.template.response import HttpResponse
 
 from adminapi.filters import BaseFilter, FilterValueError
-from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
+from serveradmin.api import AVAILABLE_API_FUNCTIONS, ApiError
 from serveradmin.api.decorators import api_view
 from serveradmin.serverdb.query_committer import commit_query
 from serveradmin.serverdb.query_executer import execute_query
-from serveradmin.serverdb.query_materializer import (
-    get_default_attribute_values
-)
+from serveradmin.serverdb.query_materializer import get_default_attribute_values
 
 
 class StringEncoder(object):
@@ -134,10 +132,7 @@ def _validate_commit_changed(changes):
             continue
 
         if not isinstance(change, dict) or 'action' not in change:
-            raise SuspiciousOperation(
-                'Invalid commit changed for attribute "{}"'
-                .format(attribute_id)
-            )
+            raise SuspiciousOperation('Invalid commit changed for attribute "{}"'.format(attribute_id))
 
         func = globals()['_validate_commit_changed_' + change['action']]
         func(change)
@@ -168,9 +163,7 @@ def _validate_commit_changed_multi(change):
 
 def _validate_commit_deleted(deleted):
     if not isinstance(deleted, int):
-        raise SuspiciousOperation(
-            'Invalid commit deleted "{}"'.format(deleted)
-        )
+        raise SuspiciousOperation('Invalid commit deleted "{}"'.format(deleted))
 
 
 @api_view
@@ -182,9 +175,7 @@ def api_call(request, app, data):
         allowed_methods = app.allowed_methods.splitlines()
         method_name = '{0}.{1}'.format(data['group'], data['name'])
         if not app.superuser and method_name not in allowed_methods:
-            raise PermissionDenied(
-                'Method {0} not allowed'.format(method_name)
-            )
+            raise PermissionDenied('Method {0} not allowed'.format(method_name))
 
         try:
             fn = AVAILABLE_API_FUNCTIONS[data['group']][data['name']]

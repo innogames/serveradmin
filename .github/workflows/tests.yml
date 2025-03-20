@@ -19,7 +19,7 @@ jobs:
 
     services:
       db:
-        image: 'postgres:15'
+        image: 'postgres:17'
         env:
           POSTGRES_USER: serveradmin
           POSTGRES_PASSWORD: serveradmin

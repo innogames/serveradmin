@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('serverdb', '0016_optional_servertype_for_relation'),
     ]
@@ -13,6 +12,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='attribute',
             name='inet_address_family',
-            field=models.CharField(blank=True, choices=[(None, 'none or any'), ('IPV4', 'IPv4'), ('IPV6', 'IPv6')], max_length=5),
+            field=models.CharField(
+                blank=True, choices=[(None, 'none or any'), ('IPV4', 'IPv4'), ('IPV6', 'IPv6')], max_length=5
+            ),
         ),
     ]

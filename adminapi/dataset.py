@@ -8,10 +8,10 @@ from itertools import chain
 from types import GeneratorType
 
 from adminapi import api
-from adminapi.datatype import validate_value, json_to_datatype
+from adminapi.datatype import json_to_datatype, validate_value
+from adminapi.exceptions import AdminapiException, DatasetError
 from adminapi.filters import Any, BaseFilter, ContainedOnlyBy
-from adminapi.request import send_request, json_encode_extra
-from adminapi.exceptions import DatasetError, AdminapiException
+from adminapi.request import json_encode_extra, send_request
 
 NEW_OBJECT_ENDPOINT = '/dataset/new_object'
 COMMIT_ENDPOINT = '/dataset/commit'
@@ -27,10 +27,7 @@ class BaseQuery(object):
             self._results = []
             return
 
-        self._filters = {
-            a: f if isinstance(f, BaseFilter) else BaseFilter(f)
-            for a, f in filters.items()
-        }
+        self._filters = {a: f if isinstance(f, BaseFilter) else BaseFilter(f) for a, f in filters.items()}
 
         self._restrict = restrict
         self._order_by = order_by
@@ -81,11 +78,7 @@ class BaseQuery(object):
                 restrict = restrict.copy()
                 restrict.append('object_id')
 
-            return [
-                i if not isinstance(i, dict) else
-                {k: _ensure_object_id(v) for k, v in i.items()}
-                for i in restrict
-            ]
+            return [i if not isinstance(i, dict) else {k: _ensure_object_id(v) for k, v in i.items()} for i in restrict]
 
         self.__restrict = _ensure_object_id(new_restrict)
 
@@ -105,14 +98,9 @@ class BaseQuery(object):
         if self._filters:
             for attribute, filt in self._filters:
                 if attribute not in obj:
-                    raise DatasetError(
-                        '"{}" is not on the new object'.format(attribute)
-                    )
+                    raise DatasetError('"{}" is not on the new object'.format(attribute))
                 if not filt.matches(obj[attribute]):
-                    raise DatasetError(
-                        '"{}" is not consistent with the query'
-                        .format(attribute)
-                    )
+                    raise DatasetError('"{}" is not consistent with the query'.format(attribute))
 
         self._get_results().append(obj)
 
@@ -145,10 +133,7 @@ class BaseQuery(object):
     def get(self):
         results = self._get_results()
         if len(results) != 1:
-            raise DatasetError(
-                'get() requires exactly 1 matched object, {} found'.format(
-                    len(results)
-                ))
+            raise DatasetError('get() requires exactly 1 matched object, {} found'.format(len(results)))
         return results[0]
 
     # XXX: Deprecated
@@ -216,9 +201,12 @@ class BaseQuery(object):
         # Index host and network addresses separately
         used_hosts = set()
         used_networks = list()
-        for obj in type(self)({
-            'intern_ip': Any(*(ContainedOnlyBy(n) for n in networks)),
-        }, ['intern_ip']):
+        for obj in type(self)(
+            {
+                'intern_ip': Any(*(ContainedOnlyBy(n) for n in networks)),
+            },
+            ['intern_ip'],
+        ):
             addr = obj['intern_ip']
             if isinstance(addr, (IPv4Address, IPv6Address)):
                 used_hosts.add(addr)
@@ -265,9 +253,7 @@ class BaseQuery(object):
 
 class Query(BaseQuery):
     def _fetch_new_object(self, servertype):
-        response = send_request(
-            NEW_OBJECT_ENDPOINT, [('servertype', servertype)]
-        )
+        response = send_request(NEW_OBJECT_ENDPOINT, [('servertype', servertype)])
         return _format_obj(response['result'])
 
     def commit(self):
@@ -336,10 +322,7 @@ class DatasetObject(dict):
         if self._deleted:
             return 'deleted'
         for attribute_id, old_value in self.old_values.items():
-            if (
-                json_encode_extra(self[attribute_id]) !=
-                json_encode_extra(old_value)
-            ):
+            if json_encode_extra(self[attribute_id]) != json_encode_extra(old_value):
                 return 'changed'
         return 'consistent'
 
@@ -366,10 +349,7 @@ class DatasetObject(dict):
         for key, old_value in self.old_values.items():
             new_value = self[key]
 
-            if (
-                json_encode_extra(old_value) ==
-                json_encode_extra(new_value)
-            ):
+            if json_encode_extra(old_value) == json_encode_extra(new_value):
                 continue
 
             if isinstance(old_value, MultiAttr):
@@ -430,9 +410,7 @@ class DatasetObject(dict):
         if self._deleted:
             raise DatasetError('Cannot set attributes to deleted object')
         if key not in self:
-            raise DatasetError(
-                'Cannot set nonexistent attribute "{}"'.format(key)
-            )
+            raise DatasetError('Cannot set nonexistent attribute "{}"'.format(key))
 
         self._save_old_value(key)
         self.validate(key, value)
@@ -611,4 +589,4 @@ def strtobool(val) -> bool:
     elif val in ('n', 'no', 'f', 'false', 'off', '0'):
         return False
     else:
-        raise ValueError(f"invalid truth value {val}")
+        raise ValueError(f'invalid truth value {val}')

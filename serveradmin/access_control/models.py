@@ -3,8 +3,8 @@
 Copyright (c) 2019 InnoGames GmbH
 """
 
-from django.db import models
 from django.contrib.auth.models import User
+from django.db import models
 
 from adminapi.parse import parse_query
 from serveradmin.apps.models import Application
@@ -31,8 +31,7 @@ class AccessControlGroup(models.Model):
         null=False,
         default=True,
         help_text=(
-            "If checked, the attribute list is treated as a whitelist, "
-            "otherwise it is treated as a blacklist."
+            'If checked, the attribute list is treated as a whitelist, ' 'otherwise it is treated as a blacklist.'
         ),
     )
     attributes = models.ManyToManyField(
@@ -41,7 +40,7 @@ class AccessControlGroup(models.Model):
         related_name='access_control_groups',
         help_text=(
             "Note that you currently can't select the special attributes "
-            "like object_id, hostname, servertype or intern_ip here."
+            'like object_id, hostname, servertype or intern_ip here.'
         ),
     )
 
@@ -69,10 +68,7 @@ class AccessControlGroup(models.Model):
 
         if self.is_whitelist is False:
             # Set of all attributes, excluding the blacklisted ones
-            return (
-                {a.pk for a in Attribute.objects.all()} |
-                set(Attribute.specials.keys())
-            ).difference(
+            return ({a.pk for a in Attribute.objects.all()} | set(Attribute.specials.keys())).difference(
                 {a.pk for a in self.attributes.all()}
             )
 
