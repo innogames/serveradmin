@@ -12,6 +12,7 @@ from django.test import TransactionTestCase
 from faker import Faker
 from faker.providers import internet
 
+from adminapi.exceptions import DatasetError
 from serveradmin.dataset import Query, DatasetObject
 from serveradmin.serverdb.forms import ServertypeAttributeAdminForm
 from serveradmin.serverdb.models import ServertypeAttribute
@@ -176,7 +177,7 @@ class TestIpAddrTypeHostForInetAttributes(TestIpAddrType):
             second.commit(user=User.objects.first())
 
     def test_server_overlaps_with_network(self):
-        network = self._get_server("network")
+        network = self._get_server("route_network")
         network["intern_ip"] = "10.0.0.5/32"
         network["ip_config_ipv4"] = "10.0.1.5/32"
         network.commit(user=User.objects.first())
@@ -208,7 +209,7 @@ class TestIpAddrTypeHostForInetAttributes(TestIpAddrType):
 
         other_attribute = self._get_server("host")
         other_attribute["intern_ip"] = "10.0.0.3/32"
-        other_attribute["ip_config_new"] = "10.0.0.2/32"
+        other_attribute["ip_config_ipv4_new"] = "10.0.0.2/32"
         self.assertIsNone(other_attribute.commit(user=User.objects.first()))
 
     def test_server_with_duplicate_inet_ip(self):
@@ -324,7 +325,7 @@ class TestIpAddrTypeLoadbalancerForInetAttributes(TestIpAddrType):
 
         duplicate = self._get_server("loadbalancer")
         duplicate["intern_ip"] = "10.0.0.3/32"
-        duplicate["ip_config_new"] = "10.0.0.2/32"
+        duplicate["ip_config_ipv4_new"] = "10.0.0.2/32"
         self.assertIsNone(duplicate.commit(user=User.objects.first()))
 
     def test_change_server_hostname(self):
@@ -342,12 +343,12 @@ class TestIpAddrTypeNetworkForInternIp(TestIpAddrType):
     """Most important tests for ip_addr_type network and intern_ip"""
 
     def test_server_without_value(self):
-        server = self._get_server("network")
+        server = self._get_server("route_network")
         with self.assertRaises(ValidationError):
             server.commit(user=User.objects.first())
 
     def test_server_with_value(self):
-        server = self._get_server("network")
+        server = self._get_server("route_network")
         server["intern_ip"] = "10.0.0.0/16"
         self.assertIsNone(server.commit(user=User.objects.first()))
 
@@ -358,29 +359,29 @@ class TestIpAddrTypeNetworkForInternIp(TestIpAddrType):
             server.commit(user=User.objects.first())
 
     def test_server_with_invalid_network(self):
-        server = self._get_server("network")
+        server = self._get_server("route_network")
         server["intern_ip"] = "10.0.0.5/16"  # Invalid: Has host bits set
 
         with self.assertRaises(ValidationError):
             server.commit(user=User.objects.first())
 
     def test_server_with_ip_address(self):
-        server = self._get_server("network")
+        server = self._get_server("route_network")
         server["intern_ip"] = "10.0.0.1/32"  # Just a very small network
         self.assertIsNone(server.commit(user=User.objects.first()))
 
     def test_server_network_overlaps(self):
-        first = self._get_server("network")
+        first = self._get_server("route_network")
         first["intern_ip"] = "10.0.0.0/30"
         first.commit(user=User.objects.first())
 
-        overlaps = self._get_server("network")
+        overlaps = self._get_server("route_network")
         overlaps["intern_ip"] = "10.0.0.0/28"
         with self.assertRaises(ValidationError):
             overlaps.commit(user=User.objects.first())
 
     def test_change_server_network_overlaps(self):
-        first = self._get_server("network")
+        first = self._get_server("route_network")
         first["intern_ip"] = "10.0.0.0/30"
         first["ip_config_ipv4"] = "10.0.1.0/30"
         first.commit(user=User.objects.first())
@@ -390,28 +391,28 @@ class TestIpAddrTypeNetworkForInternIp(TestIpAddrType):
         self.assertIsNone(host.commit(user=User.objects.first()))
 
     def test_server_network_overlaps_inet(self):
-        first = self._get_server("network")
+        first = self._get_server("route_network")
         first["intern_ip"] = "10.0.0.0/30"
         first["ip_config_ipv4"] = "10.0.1.0/30"
         first.commit(user=User.objects.first())
 
-        overlaps = self._get_server("network")
+        overlaps = self._get_server("route_network")
         overlaps["intern_ip"] = "10.0.1.0/28"
         with self.assertRaises(ValidationError):
             overlaps.commit(user=User.objects.first())
 
     def test_server_network_overlaps_other_servertype(self):
-        first = self._get_server("network")
+        first = self._get_server("route_network")
         first["intern_ip"] = "10.0.0.0/30"
         first.commit(user=User.objects.first())
 
         # A network can overlap with networks of other servertypes
-        overlaps = self._get_server("other_network")
+        overlaps = self._get_server("provider_network")
         overlaps["intern_ip"] = "10.0.0.0/28"
         self.assertIsNone(overlaps.commit(user=User.objects.first()))
 
     def test_change_server_hostname(self):
-        server = self._get_server("network")
+        server = self._get_server("route_network")
         server["intern_ip"] = "10.0.0.0/30"
         server.commit(user=User.objects.first())
 
@@ -424,12 +425,12 @@ class TestIpAddrTypeNetworkForInetAttributes(TestIpAddrType):
     """Most important tests for ip_addr_type network and inet attrs"""
 
     def test_server_without_value(self):
-        server = self._get_server("network")
+        server = self._get_server("route_network")
         server["intern_ip"] = "10.0.0.0/16"
         self.assertIsNone(server.commit(user=User.objects.first()))
 
     def test_server_with_value(self):
-        server = self._get_server("network")
+        server = self._get_server("route_network")
         server["intern_ip"] = "10.0.0.0/30"
         server["ip_config_ipv4"] = "10.0.1.0/30"
         self.assertIsNone(server.commit(user=User.objects.first()))
@@ -442,7 +443,7 @@ class TestIpAddrTypeNetworkForInetAttributes(TestIpAddrType):
             server.commit(user=User.objects.first())
 
     def test_server_with_invalid_network(self):
-        server = self._get_server("network")
+        server = self._get_server("route_network")
         server["intern_ip"] = "10.0.0.0/16"
         server["ip_config_ipv4"] = "10.0.1.5/28"  # Invalid: Has host bits set
 
@@ -450,25 +451,25 @@ class TestIpAddrTypeNetworkForInetAttributes(TestIpAddrType):
             server.commit(user=User.objects.first())
 
     def test_server_with_ip_address(self):
-        server = self._get_server("network")
+        server = self._get_server("route_network")
         server["intern_ip"] = "10.0.0.1/32"  # Just a very small network
         server["ip_config_ipv4"] = "10.0.1.0/32"  # Just a very small network
         self.assertIsNone(server.commit(user=User.objects.first()))
 
     def test_server_network_overlaps(self):
-        first = self._get_server("network")
+        first = self._get_server("route_network")
         first["intern_ip"] = "10.0.0.0/30"
         first["ip_config_ipv4"] = "10.0.1.0/30"
         first.commit(user=User.objects.first())
 
-        overlaps = self._get_server("network")
+        overlaps = self._get_server("route_network")
         overlaps["intern_ip"] = "10.0.3.0/30"
         overlaps["ip_config_ipv4"] = "10.0.1.0/28"
         with self.assertRaises(ValidationError):
             overlaps.commit(user=User.objects.first())
 
     def test_change_server_network_overlaps(self):
-        first = self._get_server("network")
+        first = self._get_server("route_network")
         first["intern_ip"] = "10.0.0.0/30"
         first["ip_config_ipv4"] = "10.0.1.0/30"
         first.commit(user=User.objects.first())
@@ -478,42 +479,42 @@ class TestIpAddrTypeNetworkForInetAttributes(TestIpAddrType):
         self.assertIsNone(host.commit(user=User.objects.first()))
 
     def test_server_network_overlaps_intern_ip(self):
-        first = self._get_server("network")
+        first = self._get_server("route_network")
         first["intern_ip"] = "10.0.0.0/30"
         first.commit(user=User.objects.first())
 
-        overlaps = self._get_server("network")
+        overlaps = self._get_server("route_network")
         overlaps["intern_ip"] = "10.0.1.0/28"
         overlaps["ip_config_ipv4"] = "10.0.0.0/28"
         with self.assertRaises(ValidationError):
             overlaps.commit(user=User.objects.first())
 
     def test_server_network_is_equal(self):
-        first = self._get_server("network")
+        first = self._get_server("route_network")
         first["intern_ip"] = "10.0.0.0/30"
         first["ip_config_ipv4"] = "10.0.1.0/30"
         first.commit(user=User.objects.first())
 
-        equal = self._get_server("network")
+        equal = self._get_server("route_network")
         equal["intern_ip"] = "10.0.2.0/30"
         equal["ip_config_ipv4"] = "10.0.1.0/30"
         with self.assertRaises(ValidationError):
             equal.commit(user=User.objects.first())
 
     def test_server_network_overlaps_other_servertype(self):
-        first = self._get_server("network")
+        first = self._get_server("route_network")
         first["intern_ip"] = "10.0.0.0/30"
         first["ip_config_ipv4"] = "10.0.1.0/30"
         first.commit(user=User.objects.first())
 
         # A network can overlap with networks of other servertypes
-        overlaps = self._get_server("other_network")
+        overlaps = self._get_server("provider_network")
         overlaps["intern_ip"] = "10.0.0.0/28"
         overlaps["ip_config_ipv4"] = "10.0.1.0/30"
         self.assertIsNone(overlaps.commit(user=User.objects.first()))
 
     def test_change_server_hostname(self):
-        server = self._get_server("network")
+        server = self._get_server("route_network")
         server["intern_ip"] = "10.0.0.0/30"
         server["ip_config_ipv4"] = "10.0.1.0/30"
         server.commit(user=User.objects.first())
@@ -524,13 +525,20 @@ class TestIpAddrTypeNetworkForInetAttributes(TestIpAddrType):
 
 
 class TestIpAddrTypeHostForSupernet(TestIpAddrType):
-    def test_intern_ip_supernet(self):
-        network = self._get_server("network")
+    def test_af_unaware_supernet_consistent(self):
+        # AF-unaware supernet attribute will be properly calculated when
+        # both IPv4 and IPv6 addresses belong to the same supernet.
+
+        network = self._get_server("route_network")
         network["intern_ip"] = "192.0.2.0/24"
+        network["ip_config_ipv4"] = "192.0.2.0/24"
+        network["ip_config_ipv6"] = "2001:db8::/64"
         network.commit(user=User.objects.first())
 
         server = self._get_server("host")
         server["intern_ip"] = "192.0.2.1"
+        server["ip_config_ipv4"] = "192.0.2.1"
+        server["ip_config_ipv6"] = "2001:db8::1"
         server.commit(user=User.objects.first())
 
         server_q = Query(
@@ -540,13 +548,100 @@ class TestIpAddrTypeHostForSupernet(TestIpAddrType):
 
         self.assertEqual(server_q["supernet_no_af"], network["hostname"])
 
+    def test_af_unaware_supernet_missing_ipv6(self):
+        # AF-unaware supernet attribute will be properly calculated when
+        # the IPv6 address does not belong to a supernet, even if it's present.
+
+        network = self._get_server("route_network")
+        network["intern_ip"] = "192.0.2.0/24"
+        network["ip_config_ipv4"] = "192.0.2.0/24"
+        network["ip_config_ipv6"] = "2001:db8::/64"
+        network.commit(user=User.objects.first())
+
+        server = self._get_server("host")
+        server["intern_ip"] = "192.0.2.1"
+        server["ip_config_ipv4"] = "192.0.2.1"
+        server["ip_config_ipv6"] = "2001:db8:2::1"
+        server.commit(user=User.objects.first())
+
+        server_q = Query(
+            {"hostname": server["hostname"]},
+            ["supernet_no_af"],
+        ).get()
+
+        self.assertEqual(server_q["supernet_no_af"], network["hostname"])
+
+    def test_af_unaware_supernet_missing_ipv4(self):
+        # AF-unaware supernet attribute will be properly calculated when
+        # the IPv4 address does not belong to a supernet, even if it's present.
+
+        network = self._get_server("route_network")
+        network["intern_ip"] = "192.0.2.0/24"
+        network["ip_config_ipv4"] = "192.0.2.0/24"
+        network["ip_config_ipv6"] = "2001:db8::/64"
+        network.commit(user=User.objects.first())
+
+        server = self._get_server("host")
+        server["intern_ip"] = "198.51.100.1"
+        server["ip_config_ipv4"] = "198.51.100.1"
+        server["ip_config_ipv6"] = "2001:db8::1"
+        server.commit(user=User.objects.first())
+
+        server_q = Query(
+            {"hostname": server["hostname"]},
+            ["supernet_no_af"],
+        ).get()
+
+        self.assertEqual(server_q["supernet_no_af"], network["hostname"])
+
+    def test_af_unaware_supernet_conflicting(self):
+        # AF-unaware supernet attribute will fail when
+        # IPv4 and IPv6 addresses belongs to different subnets.
+
+        network1 = self._get_server("route_network")
+        network1["intern_ip"] = "192.0.2.0/24"
+        network1["ip_config_ipv4"] = "192.0.2.0/24"
+        network1["ip_config_ipv6"] = "2001:db8:1::/64"
+        network1.commit(user=User.objects.first())
+
+        network2 = self._get_server("route_network")
+        network2["intern_ip"] = "198.51.100.0/24"
+        network2["ip_config_ipv4"] = "198.51.100.0/24"
+        network2["ip_config_ipv6"] = "2001:db8:2::/64"
+        network2.commit(user=User.objects.first())
+
+        server = self._get_server("host")
+        server["intern_ip"] = "192.0.2.1"
+        server["ip_config_ipv4"] = "192.0.2.1"
+        server["ip_config_ipv6"] = "2001:db8:2::1"
+
+        # TODO: Raise an exception once all data is cleaned up and conflicting
+        # AF-unaware attributes are removed.
+        # with self.assertRaises(DatasetError):
+        server.commit(user=User.objects.first())
+
+        server_q = Query(
+            {"hostname": server["hostname"]},
+            ["supernet_no_af"],
+        ).get()
+        self.assertIn(
+            server_q["supernet_no_af"],
+            [
+                network1["hostname"],
+                network2["hostname"],
+            ],
+        )
+
     def test_af_aware_supernet(self):
-        network_ipv4 = self._get_server("network")
+        # AF-aware supernet attributes can be calculated when
+        # IPv4 and IPv6 addresses belong to different subnets.
+
+        network_ipv4 = self._get_server("provider_network")
         network_ipv4["intern_ip"] = "192.0.2.0/24"
         network_ipv4["ip_config_ipv4"] = "192.0.2.0/24"
         network_ipv4.commit(user=User.objects.first())
 
-        network_ipv6 = self._get_server("network")
+        network_ipv6 = self._get_server("provider_network")
         network_ipv6["intern_ip"] = "2001:db8::/64"
         network_ipv6["ip_config_ipv6"] = "2001:db8::/64"
         network_ipv6.commit(user=User.objects.first())
@@ -564,3 +659,37 @@ class TestIpAddrTypeHostForSupernet(TestIpAddrType):
 
         self.assertEqual(server_q["supernet_ipv4"], network_ipv4["hostname"])
         self.assertEqual(server_q["supernet_ipv6"], network_ipv6["hostname"])
+
+    def test_af_aware_unaware_supernet(self):
+        # AF-aware and unaware supernets can be used together.
+
+        rn = self._get_server("route_network")
+        rn["intern_ip"] = "192.0.2.0/24"
+        rn["ip_config_ipv4"] = "192.0.2.0/24"
+        rn["ip_config_ipv6"] = "2001:db8::/64"
+        rn.commit(user=User.objects.first())
+
+        pn_ipv4 = self._get_server("provider_network")
+        pn_ipv4["intern_ip"] = "192.0.2.0/24"
+        pn_ipv4["ip_config_ipv4"] = "192.0.2.0/24"
+        pn_ipv4.commit(user=User.objects.first())
+
+        pn_ipv6 = self._get_server("provider_network")
+        pn_ipv6["intern_ip"] = "2001:db8::/64"
+        pn_ipv6["ip_config_ipv6"] = "2001:db8::/64"
+        pn_ipv6.commit(user=User.objects.first())
+
+        server = self._get_server("host")
+        server["intern_ip"] = "192.0.2.1"
+        server["ip_config_ipv4"] = "192.0.2.1"
+        server["ip_config_ipv6"] = "2001:db8::1"
+        server.commit(user=User.objects.first())
+
+        server_q = Query(
+            {"hostname": server["hostname"]},
+            ["supernet_no_af", "supernet_ipv4", "supernet_ipv6"],
+        ).get()
+
+        self.assertEqual(server_q["supernet_no_af"], rn["hostname"])
+        self.assertEqual(server_q["supernet_ipv4"], pn_ipv4["hostname"])
+        self.assertEqual(server_q["supernet_ipv6"], pn_ipv6["hostname"])
