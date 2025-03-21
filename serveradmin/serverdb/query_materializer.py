@@ -11,9 +11,10 @@ Copyright (c) 2019 InnoGames GmbH
 import itertools
 
 from ipaddress import IPv4Address, IPv6Address
-from django.db.models import OuterRef, Subquery, AutoField
+from django.db.models import OuterRef, Subquery, AutoField, Q
 
 from adminapi.dataset import DatasetObject
+from adminapi.exceptions import DatasetError
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
@@ -198,20 +199,19 @@ class QueryMaterializer:
 
     def _add_supernet_attribute(self, attribute: Attribute, servers_in):
         if attribute.inet_address_family:
-            self._add_supernet_attribute_af(attribute, servers_in)
+            af_q = Q(attribute__inet_address_family=attribute.inet_address_family)
         else:
-            self._add_supernet_attribute_intern_ip(attribute, servers_in)
+            af_q = Q()
 
-    def _add_supernet_attribute_af(self, attribute, servers_in):
         supernet_id = ServerInetAttribute.objects.filter(
+            af_q,
             value__net_contains_or_equals=OuterRef("value"),
             server__servertype_id=attribute.target_servertype_id,
-            attribute__inet_address_family=attribute.inet_address_family,
         ).values("server__server_id")
 
         attrs = ServerInetAttribute.objects.filter(
+            af_q,
             server_id__in=[s.server_id for s in servers_in],
-            attribute__inet_address_family=attribute.inet_address_family,
         ).annotate(
             supernet_id=Subquery(supernet_id, output_field=AutoField()),
         )
@@ -220,39 +220,18 @@ class QueryMaterializer:
         supernets_by_id = {s.server_id: s for s in supernets}
 
         for a in attrs:
-            if a.supernet_id in supernets_by_id:
-                self._server_attributes[a.server][attribute] = supernets_by_id[
-                    a.supernet_id
-                ]
+            cur_sn = supernets_by_id.get(a.supernet_id)
+            if not cur_sn:
+                continue
 
-    def _add_supernet_attribute_intern_ip(self, attribute, servers):
-        servers_in_1, servers_in_2 = itertools.tee(servers)
+            prev_sn = self._server_attributes[a.server].get(attribute)
 
-        supernet_id = Server.objects.filter(
-            intern_ip__net_contains_or_equals=OuterRef("intern_ip"),
-            servertype_id=attribute.target_servertype_id,
-        ).values("server_id")
+            if prev_sn and prev_sn != cur_sn and not attribute.inet_address_family:
+                raise DatasetError(
+                    f"Inconsistent supernets for {a.server}: {prev_sn} vs {cur_sn}!"
+                )
 
-        servers = Server.objects.filter(
-            server_id__in=[s.server_id for s in servers_in_1],
-        ).annotate(
-            supernet_id=Subquery(supernet_id, output_field=AutoField()),
-        )
-
-        supernets = Server.objects.filter(server_id__in=servers.values("supernet_id"))
-        supernets_by_id = {s.server_id: s for s in supernets}
-
-        supernets_by_server_hostname = {
-            s.hostname: supernets_by_id[s.supernet_id]
-            for s in servers
-            if s.supernet_id in supernets_by_id
-        }
-
-        for s in servers_in_2:
-            if s.hostname in supernets_by_server_hostname:
-                self._server_attributes[s][attribute] = supernets_by_server_hostname[
-                    s.hostname
-                ]
+            self._server_attributes[a.server][attribute] = cur_sn
 
     def _add_related_attribute(self, attribute, servertype_attribute, servers_by_type):
         related_via_attribute = servertype_attribute.related_via_attribute
