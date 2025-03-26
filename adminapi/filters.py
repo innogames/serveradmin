@@ -12,8 +12,10 @@ from adminapi.exceptions import FilterValueError
 
 class BaseFilter(object):
     def __init__(self, value):
-        ok_datatypes = tuple([bool, int, float] + [s[0] for s in STR_BASED_DATATYPES])
-        if type(self) is BaseFilter and isinstance(value, ok_datatypes):
+        ok_datatypes = tuple([int, float] + [s[0] for s in STR_BASED_DATATYPES])
+        if type(self) is BaseFilter and isinstance(value, bool):
+            pass
+        elif isinstance(value, ok_datatypes):
             pass
         elif isinstance(value, str):
             for char in '\'"':
