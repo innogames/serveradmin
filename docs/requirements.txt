@@ -1,5 +1,3 @@
 # Remove this once rtd merged Pipfile support:
 # https://github.com/readthedocs/readthedocs.org/pull/4783
-paramiko
-netaddr
-Sphinx==4.2.0
+Sphinx~=7.0.0
