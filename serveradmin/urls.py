@@ -13,7 +13,7 @@ from django.contrib.auth.models import update_last_login
 from django.contrib.auth.signals import user_logged_in
 from django.contrib.auth.views import logout_then_login
 from django.shortcuts import redirect
-from django.urls import path, include
+from django.urls import include, path
 
 user_logged_in.disconnect(update_last_login)
 
@@ -34,12 +34,10 @@ for app in apps.get_app_configs():
     module = module_spec.loader.load_module()
 
     if name.startswith('serveradmin.') or name.startswith('serveradmin_'):
-        url_path = name[(len('serveradmin') + 1):]
+        url_path = name[(len('serveradmin') + 1) :]
         urlpatterns.append(path('{}/'.format(url_path), include(module)))
     elif name == 'igrestlogin':
         urlpatterns.append(path('loginapi/', include(module)))
 
 if settings.DEBUG:
-    urlpatterns += static(
-        settings.MEDIA_URL, document_root=settings.MEDIA_ROOT
-    )
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

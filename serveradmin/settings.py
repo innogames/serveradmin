@@ -3,8 +3,9 @@
 Copyright (c) 2019 InnoGames GmbH
 """
 
-import environ
 import os
+
+import environ
 
 env = environ.Env()
 
@@ -115,7 +116,7 @@ MEDIA_URL = '/media/'
 STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-    'compressor.finders.CompressorFinder'
+    'compressor.finders.CompressorFinder',
 ]
 
 # Absolute path to the directory static files should be collected to.
@@ -148,10 +149,13 @@ TEMPLATES = [
             ],
             'debug': DEBUG,
             'loaders': [
-                ('django.template.loaders.cached.Loader', [
-                    'django.template.loaders.filesystem.Loader',
-                    'django.template.loaders.app_directories.Loader',
-                ]),
+                (
+                    'django.template.loaders.cached.Loader',
+                    [
+                        'django.template.loaders.filesystem.Loader',
+                        'django.template.loaders.app_directories.Loader',
+                    ],
+                ),
             ],
         },
     },
@@ -182,7 +186,7 @@ LOGGING = {
         },
         'serveradmin': {
             'level': 'INFO',
-        }
+        },
     },
 }
 
@@ -191,9 +195,7 @@ OBJECTS_PER_PAGE = 25
 GRAPHITE_SPRITE_WIDTH = 150
 GRAPHITE_SPRITE_HEIGHT = 100
 GRAPHITE_SPRITE_PARAMS = (
-    'width=' + str(GRAPHITE_SPRITE_WIDTH) + '&' +
-    'height=' + str(GRAPHITE_SPRITE_HEIGHT) + '&' +
-    'graphOnly=true'
+    'width=' + str(GRAPHITE_SPRITE_WIDTH) + '&' + 'height=' + str(GRAPHITE_SPRITE_HEIGHT) + '&' + 'graphOnly=true'
 )
 
 # Using exec certainly isn't an awesome solution but it's the best we've got.
@@ -218,7 +220,7 @@ for config_path in [
             code = compile(config.read(), config_path, 'exec')
             exec(code)
 
-        print("Serveradmin config loaded from " + config_path)
+        print('Serveradmin config loaded from ' + config_path)
         break
     except OSError:
         print("Couldn't load serveradmin config from " + config_path)

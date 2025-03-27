@@ -7,9 +7,9 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import DataError, connection, transaction
 
 from adminapi.filters import Any
-from serveradmin.serverdb.models import Attribute, ServertypeAttribute, Server
-from serveradmin.serverdb.sql_generator import get_server_query
+from serveradmin.serverdb.models import Attribute, Server, ServertypeAttribute
 from serveradmin.serverdb.query_materializer import QueryMaterializer
+from serveradmin.serverdb.sql_generator import get_server_query
 
 
 def execute_query(filters, restrict, order_by):
@@ -50,19 +50,12 @@ def execute_query(filters, restrict, order_by):
     related_vias = {}
     real_attribute_ids = [a for a in filters if a not in Attribute.specials]
     if real_attribute_ids:
-        servertype_attributes = list(ServertypeAttribute.objects.filter(
-            attribute_id__in=real_attribute_ids
-        ))
+        servertype_attributes = list(ServertypeAttribute.objects.filter(attribute_id__in=real_attribute_ids))
         servertype_ids = _get_possible_servertype_ids(servertype_attributes)
         filters = dict(filters)
         servertype_ids = _override_servertype_filter(filters, servertype_ids)
-        servertype_attributes = [
-            sa for sa in servertype_attributes
-            if sa.servertype_id in servertype_ids
-        ]
-        _update_related_vias(
-            related_vias, servertype_attributes, attribute_lookup
-        )
+        servertype_attributes = [sa for sa in servertype_attributes if sa.servertype_id in servertype_ids]
+        _update_related_vias(related_vias, servertype_attributes, attribute_lookup)
 
     # Here we prepare the join dictionary for the query materializer.
     # For None on the restrict argument, we just use the complete list of
@@ -70,11 +63,10 @@ def execute_query(filters, restrict, order_by):
     if restrict is None:
         materializer_args = [{a: None for a in attribute_lookup.values()}]
     else:
+
         def cast(join):
-            return {
-                attribute_lookup[a]: j if j is None else cast(j)
-                for a, j in join
-            }
+            return {attribute_lookup[a]: j if j is None else cast(j) for a, j in join}
+
         materializer_args = [cast(joins)]
 
     if order_by is not None:
@@ -85,9 +77,7 @@ def execute_query(filters, restrict, order_by):
     # is a query operation.  Perhaps this is also enabling some optimization
     # on the Postgres side.
     with transaction.atomic():
-        connection.cursor().execute(
-            'SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY'
-        )
+        connection.cursor().execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY')
 
         # The actual query execution procedure is 2 steps: first filtering
         # the objects, and then materializing the requested attributes.
@@ -184,9 +174,7 @@ def _override_servertype_filter(filters, servertype_ids):
     # it ourself.  This is an optimization.  We could not do this, but
     # then we wouldn't be able to override the same filter.
     if 'servertype' in filters:
-        servertype_ids = [
-            s for s in servertype_ids if filters['servertype'].matches(s)
-        ]
+        servertype_ids = [s for s in servertype_ids if filters['servertype'].matches(s)]
 
     # Here we add the servertype filter or override the existing one.
     filters['servertype'] = Any(*servertype_ids)
@@ -194,9 +182,7 @@ def _override_servertype_filter(filters, servertype_ids):
     return servertype_ids
 
 
-def _update_related_vias(
-    related_vias, servertype_attributes, attribute_lookup
-):
+def _update_related_vias(related_vias, servertype_attributes, attribute_lookup):
     """Prepare the related_vias dictionary for the SQL generator module
 
     It is lists in dictionaries of dictionaries indexed first by attribute_id
@@ -216,12 +202,7 @@ def _update_related_vias(
         else:
             related_via_attribute = attribute_lookup[related_via_attribute_id]
 
-        (
-            related_vias
-            .setdefault(sa.attribute_id, {})
-            .setdefault(related_via_attribute, [])
-            .append(sa.servertype_id)
-        )
+        (related_vias.setdefault(sa.attribute_id, {}).setdefault(related_via_attribute, []).append(sa.servertype_id))
 
     if to_be_looked_up:
         _update_attribute_lookup(
@@ -239,7 +220,6 @@ def _get_servers(filters, attribute_lookup, related_vias):
     # the properties of the attributes.
     attribute_filters = []
     for attribute_id, filt in filters.items():
-
         # Before we actually execute the query, we can check the destiny of
         # the filters.  If one is destined to fail, we can just return empty
         # result.  If some are destined to pass, we can just remove them.

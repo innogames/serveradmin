@@ -11,11 +11,11 @@ class PublicKeyInline(admin.TabularInline):
     inside the PublicKey form. This allows us to edit PublicKeys inside the
     Applications admin form.
     """
+
     model = PublicKey
 
 
 class ApplicationAdmin(admin.ModelAdmin):
-
     list_display = [
         'name',
         'owner',
@@ -25,18 +25,24 @@ class ApplicationAdmin(admin.ModelAdmin):
         'disabled',
         'last_login',
     ]
-    search_fields = ['name', 'owner__username', ]
-    list_filter = ['superuser', 'disabled', ]
-    list_select_related = ['owner', ]
+    search_fields = [
+        'name',
+        'owner__username',
+    ]
+    list_filter = [
+        'superuser',
+        'disabled',
+    ]
+    list_select_related = [
+        'owner',
+    ]
 
     readonly_fields = [
         'auth_token',
         'last_login',
     ]
     autocomplete_fields = ['owner']
-    inlines = [
-        PublicKeyInline
-    ]
+    inlines = [PublicKeyInline]
 
     @admin.display(description='Public Keys')
     def get_public_keys(self, obj):
