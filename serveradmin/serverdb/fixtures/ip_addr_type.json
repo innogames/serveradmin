@@ -17,7 +17,7 @@
     },
     {
         "model": "serverdb.servertype",
-        "pk": "network",
+        "pk": "route_network",
         "fields": {
             "description": "ip_addr_type network",
             "ip_addr_type": "network"
@@ -33,7 +33,7 @@
     },
     {
         "model": "serverdb.servertype",
-        "pk": "other_network",
+        "pk": "provider_network",
         "fields": {
             "description": "ip_addr_type network",
             "ip_addr_type": "network"
@@ -83,7 +83,7 @@
             "group": "other",
             "help_link": null,
             "readonly": true,
-            "target_servertype": "network",
+            "target_servertype": "route_network",
             "reversed_attribute": null,
             "clone": false,
             "regexp": "\\A.*\\Z"
@@ -100,7 +100,7 @@
             "group": "other",
             "help_link": null,
             "readonly": true,
-            "target_servertype": "network",
+            "target_servertype": "provider_network",
             "reversed_attribute": null,
             "clone": false,
             "regexp": "\\A.*\\Z"
@@ -117,7 +117,7 @@
             "group": "other",
             "help_link": null,
             "readonly": true,
-            "target_servertype": "network",
+            "target_servertype": "provider_network",
             "reversed_attribute": null,
             "clone": false,
             "regexp": "\\A.*\\Z"
@@ -125,7 +125,7 @@
     },
     {
         "model": "serverdb.attribute",
-        "pk": "ip_config_new",
+        "pk": "ip_config_ipv4_new",
         "fields": {
             "type": "inet",
             "multi": false,
@@ -156,7 +156,7 @@
         "model": "serverdb.servertypeattribute",
         "pk": 9,
         "fields": {
-            "servertype": "network",
+            "servertype": "route_network",
             "attribute": "ip_config_ipv4",
             "related_via_attribute": null,
             "consistent_via_attribute": null,
@@ -169,7 +169,20 @@
         "model": "serverdb.servertypeattribute",
         "pk": 10,
         "fields": {
-            "servertype": "network",
+            "servertype": "route_network",
+            "attribute": "ip_config_ipv6",
+            "related_via_attribute": null,
+            "consistent_via_attribute": null,
+            "required": false,
+            "default_value": null,
+            "default_visible": false
+        }
+    },
+    {
+        "model": "serverdb.servertypeattribute",
+        "pk": 11,
+        "fields": {
+            "servertype": "provider_network",
             "attribute": "ip_config_ipv6",
             "related_via_attribute": null,
             "consistent_via_attribute": null,
@@ -247,7 +260,7 @@
         "model": "serverdb.servertypeattribute",
         "pk": 17,
         "fields": {
-            "servertype": "other_network",
+            "servertype": "provider_network",
             "attribute": "ip_config_ipv4",
             "related_via_attribute": null,
             "consistent_via_attribute": null,
@@ -261,7 +274,7 @@
         "pk": 18,
         "fields": {
             "servertype": "host",
-            "attribute": "ip_config_new",
+            "attribute": "ip_config_ipv4_new",
             "related_via_attribute": null,
             "consistent_via_attribute": null,
             "required": false,
@@ -274,7 +287,7 @@
         "pk": 19,
         "fields": {
             "servertype": "loadbalancer",
-            "attribute": "ip_config_new",
+            "attribute": "ip_config_ipv4_new",
             "related_via_attribute": null,
             "consistent_via_attribute": null,
             "required": false,
@@ -286,8 +299,8 @@
         "model": "serverdb.servertypeattribute",
         "pk": 20,
         "fields": {
-            "servertype": "network",
-            "attribute": "ip_config_new",
+            "servertype": "route_network",
+            "attribute": "ip_config_ipv4_new",
             "related_via_attribute": null,
             "consistent_via_attribute": null,
             "required": false,
