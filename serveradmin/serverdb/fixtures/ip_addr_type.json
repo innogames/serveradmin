@@ -125,7 +125,7 @@
     },
     {
         "model": "serverdb.attribute",
-        "pk": "ip_config_ipv4_new",
+        "pk": "ip_config_new",
         "fields": {
             "type": "inet",
             "multi": false,
@@ -274,7 +274,7 @@
         "pk": 18,
         "fields": {
             "servertype": "host",
-            "attribute": "ip_config_ipv4_new",
+            "attribute": "ip_config_new",
             "related_via_attribute": null,
             "consistent_via_attribute": null,
             "required": false,
@@ -287,7 +287,7 @@
         "pk": 19,
         "fields": {
             "servertype": "loadbalancer",
-            "attribute": "ip_config_ipv4_new",
+            "attribute": "ip_config_new",
             "related_via_attribute": null,
             "consistent_via_attribute": null,
             "required": false,

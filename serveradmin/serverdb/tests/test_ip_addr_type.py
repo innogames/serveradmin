@@ -209,7 +209,7 @@ class TestIpAddrTypeHostForInetAttributes(TestIpAddrType):
 
         other_attribute = self._get_server("host")
         other_attribute["intern_ip"] = "10.0.0.3/32"
-        other_attribute["ip_config_ipv4_new"] = "10.0.0.2/32"
+        other_attribute["ip_config_new"] = "10.0.0.2/32"
         self.assertIsNone(other_attribute.commit(user=User.objects.first()))
 
     def test_server_with_duplicate_inet_ip(self):
@@ -325,7 +325,7 @@ class TestIpAddrTypeLoadbalancerForInetAttributes(TestIpAddrType):
 
         duplicate = self._get_server("loadbalancer")
         duplicate["intern_ip"] = "10.0.0.3/32"
-        duplicate["ip_config_ipv4_new"] = "10.0.0.2/32"
+        duplicate["ip_config_new"] = "10.0.0.2/32"
         self.assertIsNone(duplicate.commit(user=User.objects.first()))
 
     def test_change_server_hostname(self):
