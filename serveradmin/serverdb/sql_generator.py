@@ -28,7 +28,7 @@ from adminapi.filters import (
 from serveradmin.serverdb.models import (
     Server,
     ServerAttribute,
-    ServerRelationAttribute,
+    ServerRelationAttribute, ServerInetAttribute, Attribute,
 )
 
 
@@ -215,11 +215,34 @@ def _condition_sql(attribute, template, related_vias):
         return template.format('server.' + attribute.special.field)
 
     if attribute.type == 'supernet':
-        return _exists_sql(Server, 'sub', (
-            "sub.servertype_id = '{0}'".format(attribute.target_servertype_id),
-            'sub.intern_ip >>= server.intern_ip',
-            template.format('sub.server_id'),
-        ))
+        if attribute.inet_address_family:
+            af_join = (
+                (Attribute._meta.db_table, 'server_attr', ('server_attr.attribute_id = server_addr.attribute_id',)),
+                (Attribute._meta.db_table, 'net_attr', ('net_attr.attribute_id = net_addr.attribute_id',)),
+            )
+            af_where = (
+                f"net_attr.inet_address_family = '{attribute.inet_address_family}'",
+                f"server_attr.inet_address_family = '{attribute.inet_address_family}'",
+            )
+        else:
+            af_join = ()
+            af_where = ()
+
+        return _exists_sql_join(Server, 'net',
+            (
+                (ServerInetAttribute._meta.db_table, 'server_addr', ('server_addr.server_id = server.server_id',)),
+                (ServerInetAttribute._meta.db_table, 'net_addr', (
+                    'net_addr.value >>= server_addr.value',
+                    'net_addr.attribute_id = server_addr.attribute_id',
+                    'net_addr.server_id = net.server_id',
+                )),
+            ) + af_join,
+            (
+                f"net.servertype_id = '{attribute.target_servertype_id}'",
+                template.format('net.server_id'),
+            ) + af_where,
+        )
+
     if attribute.type == 'domain':
         return _exists_sql(Server, 'sub', (
             "sub.servertype_id = '{0}'".format(attribute.target_servertype_id),
@@ -260,13 +283,33 @@ def _real_condition_sql(attribute, template, related_vias):
             # The condition for directly attached attributes
             relation_condition = 'server.server_id = sub.server_id'
         elif related_via_attribute.type == 'supernet':
-            relation_condition = _exists_sql(Server, 'rel1', (
-                "rel1.servertype_id = '{0}'".format(
-                    related_via_attribute.target_servertype_id
-                ),
-                'rel1.intern_ip >>= server.intern_ip',
-                'rel1.server_id = sub.server_id',
-            ))
+            if related_via_attribute.inet_address_family:
+                af_join = (
+                    (Attribute._meta.db_table, 'server_attr', ('server_attr.attribute_id = server_addr.attribute_id',)),
+                    (Attribute._meta.db_table, 'net_attr', ('net_attr.attribute_id = net_addr.attribute_id',)),
+                )
+                af_where = (
+                    f"net_attr.inet_address_family = '{related_via_attribute.inet_address_family}'",
+                    f"server_attr.inet_address_family = '{related_via_attribute.inet_address_family}'",
+                )
+            else:
+                af_join = ()
+                af_where = ()
+
+            relation_condition = _exists_sql_join(Server, 'rel1',
+                (
+                    (ServerInetAttribute._meta.db_table, 'server_addr', ('server_addr.server_id = server.server_id',)),
+                    (ServerInetAttribute._meta.db_table, 'net_addr', (
+                        'net_addr.value >>= server_addr.value',
+                        'net_addr.attribute_id = server_addr.attribute_id',
+                        'net_addr.server_id = rel1.server_id',
+                    )),
+                ) + af_join,
+                (
+                    f"rel1.servertype_id = '{related_via_attribute.target_servertype_id}'",
+                    'rel1.server_id = sub.server_id'
+                ) + af_where,
+            )
         elif related_via_attribute.type == 'reverse':
             relation_condition = _exists_sql(ServerRelationAttribute, 'rel1', (
                 "rel1.attribute_id = '{0}'".format(
@@ -308,6 +351,14 @@ def _exists_sql(model, alias, conditions):
         model._meta.db_table, alias, ' AND '.join(c for c in conditions if c)
     )
 
+
+def _exists_sql_join(model, alias, joins, conditions):
+    return 'EXISTS (SELECT 1 FROM {0} AS {1} {2} WHERE {3})'.format(
+        model._meta.db_table,
+        alias,
+        ' '.join(f'JOIN {x[0]} AS {x[1]} ON ({" AND ".join(x[2])})' for x in joins),
+        ' AND '.join(c for c in conditions)
+    )
 
 def _raw_sql_escape(value):
     try:
