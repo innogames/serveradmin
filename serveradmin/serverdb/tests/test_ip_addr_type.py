@@ -524,7 +524,7 @@ class TestIpAddrTypeNetworkForInetAttributes(TestIpAddrType):
         self.assertIsNone(to_rename.commit(user=User.objects.first()))
 
 
-class TestIpAddrTypeHostForSupernet(TestIpAddrType):
+class TestIpAddrTypeHostForSupernetAttr(TestIpAddrType):
     def test_af_unaware_supernet_consistent(self):
         # AF-unaware supernet attribute will be properly calculated when
         # both IPv4 and IPv6 addresses belong to the same supernet.
@@ -693,3 +693,156 @@ class TestIpAddrTypeHostForSupernet(TestIpAddrType):
         self.assertEqual(server_q["supernet_no_af"], rn["hostname"])
         self.assertEqual(server_q["supernet_ipv4"], pn_ipv4["hostname"])
         self.assertEqual(server_q["supernet_ipv6"], pn_ipv6["hostname"])
+
+
+class TestIpAddrTypeHostForSupernetQuery(TestIpAddrType):
+    def setUp(self):
+        super().setUp()
+        self.pn_ipv4 = self._get_server("provider_network")
+        self.pn_ipv4["intern_ip"] = "192.0.2.0/24"
+        self.pn_ipv4["ip_config_ipv4"] = "192.0.2.0/24"
+        self.pn_ipv4["network_type_ipv4"] = "public_ipv4"
+        self.pn_ipv4.commit(user=User.objects.first())
+        
+        self.rn_ipv4 = self._get_server("route_network")
+        self.rn_ipv4["intern_ip"] = "192.0.2.0/28"
+        self.rn_ipv4["ip_config_ipv4"] = "192.0.2.0/28"
+        self.rn_ipv4["network_type"] = "internal_ipv4"
+        self.rn_ipv4.commit(user=User.objects.first())
+
+        self.pn_ipv6 = self._get_server("provider_network")
+        self.pn_ipv6["intern_ip"] = "2001:db8::/64"
+        self.pn_ipv6["ip_config_ipv6"] = "2001:db8::/64"
+        self.pn_ipv6["network_type_ipv6"] = "internal_ipv6"
+        self.pn_ipv6.commit(user=User.objects.first())
+
+        self.rn_ipv6 = self._get_server("route_network")
+        self.rn_ipv6["intern_ip"] = "2001:db8::0010/124"
+        self.rn_ipv6["ip_config_ipv6"] = "2001:db8::0010/124"
+        self.rn_ipv6["network_type"] = "internal_ipv6"
+        self.rn_ipv6.commit(user=User.objects.first())
+
+        self.server_pn = self._get_server("host")
+        self.server_pn["intern_ip"] = "192.0.2.17"
+        self.server_pn["ip_config_ipv4"] = "192.0.2.17"
+        self.server_pn["ip_config_ipv6"] = "2001:db8::0021"
+        self.server_pn.commit(user=User.objects.first())
+
+        self.server_rn = self._get_server("host")
+        self.server_rn["intern_ip"] = "192.0.2.1"
+        self.server_rn["ip_config_ipv4"] = "192.0.2.1"
+        self.server_rn["ip_config_ipv6"] = "2001:db8::0011"
+        self.server_rn.commit(user=User.objects.first())
+
+
+    def test_af_unaware_supernet(self):
+        # Query a related attribute over an AF-unaware supernet
+        #
+        # Warning:
+        # Since we're querying AF-unaware attribute, the server can belong to multiple
+        # networks over IPv4 and IPv6 inet attributes. But since the supernet attribute
+        # is a single-attribute, only one of those networks is returned.
+
+        server_q = Query(
+            {"supernet_no_af": self.rn_ipv4["hostname"], "servertype": "host"},
+            ["hostname", "supernet_no_af"],
+        ).get()
+        self.assertIn(
+            server_q["supernet_no_af"],
+            (self.rn_ipv4["hostname"], self.rn_ipv6["hostname"]),
+        )
+
+        server_q = Query(
+            {"supernet_no_af": self.rn_ipv6["hostname"], "servertype": "host"},
+            ["hostname", "supernet_no_af"],
+        ).get()
+        self.assertIn(
+            server_q["supernet_no_af"],
+            (self.rn_ipv4["hostname"], self.rn_ipv6["hostname"]),
+        )
+
+    def test_af_unaware_supernet_related(self):
+        # Query a related attribute over an AF-unaware supernet
+        #
+        # Warning:
+        # Since we're querying AF-unaware attribute, the server can belong to multiple
+        # networks over IPv4 and IPv6 inet attributes. But since the supernet attribute
+        # is a single-attribute, only one of those networks is returned.
+
+        server_q = Query(
+            {"network_type": "internal_ipv4", "servertype": "host"},
+            ["hostname", "supernet_no_af"],
+        ).get()
+        self.assertIn(
+            server_q["supernet_no_af"],
+            (self.rn_ipv4["hostname"], self.rn_ipv6["hostname"]),
+        )
+
+        server_q = Query(
+            {"network_type": "internal_ipv6", "servertype": "host"},
+            ["hostname", "supernet_no_af"],
+        ).get()
+        self.assertIn(
+            server_q["supernet_no_af"],
+            (self.rn_ipv4["hostname"], self.rn_ipv6["hostname"]),
+        )
+
+    def test_af_aware_supernet(self):
+        # Querying for AF-aware supernet attribute will find only objects
+        # matching the given address family.
+
+        server_q = list(Query(
+            {"supernet_ipv4": self.pn_ipv4["hostname"], "servertype": "host"},
+            ["hostname", "supernet_ipv4", "ip_config_ipv4"],
+            ["ip_config_ipv4"]
+        ))
+        self.assertEqual(len(server_q), 2)
+        self.assertEqual(server_q[0]["hostname"], self.server_rn["hostname"])
+        self.assertEqual(server_q[0]["supernet_ipv4"], self.pn_ipv4["hostname"])
+        self.assertEqual(server_q[1]["hostname"], self.server_pn["hostname"])
+        self.assertEqual(server_q[1]["supernet_ipv4"], self.pn_ipv4["hostname"])
+
+        # Test that af_q is correctly applied in _condition_sql
+        with self.assertRaises(DatasetError):
+            server_q = Query(
+                {"supernet_ipv4": self.pn_ipv6["hostname"], "servertype": "host"},
+                ["hostname", "supernet_ipv4"],
+            ).get()
+        with self.assertRaises(DatasetError):
+            server_q = Query(
+                {"supernet_ipv6": self.pn_ipv4["hostname"], "servertype": "host"},
+                ["hostname", "supernet_ipv6"],
+            ).get()
+
+    def test_af_aware_supernet_related(self):
+        # Query a related attribute over an AF-aware supernet
+
+        server_q = list(Query(
+            {"network_type_ipv4": "public_ipv4", "servertype": "host"},
+            ["hostname", "ip_config_ipv4", "network_type_ipv4", "network_type_ipv6"],
+            ["ip_config_ipv4"],
+        ))
+        self.assertEqual(len(server_q), 2)
+        self.assertEqual(server_q[0]["hostname"], self.server_rn["hostname"])
+        self.assertEqual(server_q[0]["network_type_ipv4"], self.pn_ipv4["network_type_ipv4"])
+        self.assertEqual(server_q[1]["hostname"], self.server_pn["hostname"])
+        self.assertEqual(server_q[1]["network_type_ipv4"], self.pn_ipv4["network_type_ipv4"])
+
+        with self.assertRaises(DatasetError):
+            server_q = Query(
+                {"supernet_ipv6": self.pn_ipv4["network_type_ipv4"], "servertype": "host"},
+                ["hostname", "supernet_ipv6", "ip_config_ipv6"],
+                ["ip_config_ipv6"]
+            ).get()
+
+        # Test that af_q is correctly applied in _real_condition_sql
+        with self.assertRaises(DatasetError):
+            server_q = Query(
+                {"network_type_ipv4": "public_ipv6", "servertype": "host"},
+                ["hostname", "network_type_ipv4", "network_type_ipv6"],
+            ).get()
+        with self.assertRaises(DatasetError):
+            server_q = Query(
+                {"network_type_ipv6": "public_ipv4", "servertype": "host"},
+                ["hostname", "network_type_ipv4", "network_type_ipv6"],
+            ).get()
