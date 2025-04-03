@@ -179,13 +179,31 @@ def _containment_filter_template(attribute, filt):
         elif isinstance(filt, Contains):
             template = "{{0}} >>= {0}"
         elif isinstance(filt, ContainedOnlyBy):
-            template = (
-                "{{0}} << {0} AND NOT EXISTS ("
-                '   SELECT 1 '
-                '   FROM server AS supernet '
-                '   WHERE {{0}} << supernet.intern_ip AND '
-                '       supernet.intern_ip << {0}'
-                ')'
+            if attribute.inet_address_family:
+                af_join = (
+                    (Attribute._meta.db_table, 'server_attr', ('server_attr.attribute_id = server_addr.attribute_id',)),
+                    (Attribute._meta.db_table, 'net_attr', ('net_attr.attribute_id = net_addr.attribute_id',)),
+                )
+                af_where = (
+                    f"net_attr.inet_address_family = '{attribute.inet_address_family}'",
+                    f"server_attr.inet_address_family = '{attribute.inet_address_family}'",
+                )
+            else:
+                af_join = ()
+                af_where = ()
+            template = "{{0}} << {0} AND NOT " + _exists_sql_join(
+                Server, 'supernet',
+                (
+                    (ServerInetAttribute._meta.db_table, 'server_addr', ('server_addr.server_id = server.server_id',)),
+                    (ServerInetAttribute._meta.db_table, 'net_addr', (
+                        'net_addr.value << {0}',
+                        'net_addr.attribute_id = server_addr.attribute_id',
+                        'net_addr.server_id = supernet.server_id',
+                    )),
+                ) + af_join,
+                (
+                    '{{0}} << supernet.intern_ip',
+                ) + af_where,
             )
         elif isinstance(filt, ContainedBy):
             template = "{{0}} <<= {0}"
