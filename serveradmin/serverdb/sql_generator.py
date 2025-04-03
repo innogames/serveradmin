@@ -179,31 +179,10 @@ def _containment_filter_template(attribute, filt):
         elif isinstance(filt, Contains):
             template = "{{0}} >>= {0}"
         elif isinstance(filt, ContainedOnlyBy):
-            if attribute.inet_address_family:
-                af_join = (
-                    (Attribute._meta.db_table, 'server_attr', ('server_attr.attribute_id = server_addr.attribute_id',)),
-                    (Attribute._meta.db_table, 'net_attr', ('net_attr.attribute_id = net_addr.attribute_id',)),
-                )
-                af_where = (
-                    f"net_attr.inet_address_family = '{attribute.inet_address_family}'",
-                    f"server_attr.inet_address_family = '{attribute.inet_address_family}'",
-                )
-            else:
-                af_join = ()
-                af_where = ()
-            template = "{{0}} << {0} AND NOT " + _exists_sql_join(
-                Server, 'supernet',
-                (
-                    (ServerInetAttribute._meta.db_table, 'server_addr', ('server_addr.server_id = server.server_id',)),
-                    (ServerInetAttribute._meta.db_table, 'net_addr', (
-                        'net_addr.value << {0}',
-                        'net_addr.attribute_id = server_addr.attribute_id',
-                        'net_addr.server_id = supernet.server_id',
-                    )),
-                ) + af_join,
-                (
-                    '{{0}} << supernet.intern_ip',
-                ) + af_where,
+            template = "{{0}} << {0} AND NOT " + _supernet_exists_sql(
+                attribute, 'supernet',
+                '<< {0}',
+                ('{{0}} << supernet.intern_ip',),
             )
         elif isinstance(filt, ContainedBy):
             template = "{{0}} <<= {0}"
@@ -233,34 +212,14 @@ def _condition_sql(attribute, template, related_vias):
         return template.format('server.' + attribute.special.field)
 
     if attribute.type == 'supernet':
-        if attribute.inet_address_family:
-            af_join = (
-                (Attribute._meta.db_table, 'server_attr', ('server_attr.attribute_id = server_addr.attribute_id',)),
-                (Attribute._meta.db_table, 'net_attr', ('net_attr.attribute_id = net_addr.attribute_id',)),
-            )
-            af_where = (
-                f"net_attr.inet_address_family = '{attribute.inet_address_family}'",
-                f"server_attr.inet_address_family = '{attribute.inet_address_family}'",
-            )
-        else:
-            af_join = ()
-            af_where = ()
-
-        return _exists_sql_join(Server, 'net',
+        return _supernet_exists_sql(
+            attribute, 'supernet',
+            '>>= server_addr.value',
             (
-                (ServerInetAttribute._meta.db_table, 'server_addr', ('server_addr.server_id = server.server_id',)),
-                (ServerInetAttribute._meta.db_table, 'net_addr', (
-                    'net_addr.value >>= server_addr.value',
-                    'net_addr.attribute_id = server_addr.attribute_id',
-                    'net_addr.server_id = net.server_id',
-                )),
-            ) + af_join,
-            (
-                f"net.servertype_id = '{attribute.target_servertype_id}'",
-                template.format('net.server_id'),
-            ) + af_where,
+                f"supernet.servertype_id = '{attribute.target_servertype_id}'",
+                template.format('supernet.server_id'),
+            )
         )
-
     if attribute.type == 'domain':
         return _exists_sql(Server, 'sub', (
             "sub.servertype_id = '{0}'".format(attribute.target_servertype_id),
@@ -301,32 +260,13 @@ def _real_condition_sql(attribute, template, related_vias):
             # The condition for directly attached attributes
             relation_condition = 'server.server_id = sub.server_id'
         elif related_via_attribute.type == 'supernet':
-            if related_via_attribute.inet_address_family:
-                af_join = (
-                    (Attribute._meta.db_table, 'server_attr', ('server_attr.attribute_id = server_addr.attribute_id',)),
-                    (Attribute._meta.db_table, 'net_attr', ('net_attr.attribute_id = net_addr.attribute_id',)),
-                )
-                af_where = (
-                    f"net_attr.inet_address_family = '{related_via_attribute.inet_address_family}'",
-                    f"server_attr.inet_address_family = '{related_via_attribute.inet_address_family}'",
-                )
-            else:
-                af_join = ()
-                af_where = ()
-
-            relation_condition = _exists_sql_join(Server, 'rel1',
+            relation_condition = _supernet_exists_sql(
+                related_via_attribute, 'supernet',
+                '>>= server_addr.value',
                 (
-                    (ServerInetAttribute._meta.db_table, 'server_addr', ('server_addr.server_id = server.server_id',)),
-                    (ServerInetAttribute._meta.db_table, 'net_addr', (
-                        'net_addr.value >>= server_addr.value',
-                        'net_addr.attribute_id = server_addr.attribute_id',
-                        'net_addr.server_id = rel1.server_id',
-                    )),
-                ) + af_join,
-                (
-                    f"rel1.servertype_id = '{related_via_attribute.target_servertype_id}'",
-                    'rel1.server_id = sub.server_id'
-                ) + af_where,
+                    f"supernet.servertype_id = '{related_via_attribute.target_servertype_id}'",
+                    'supernet.server_id = sub.server_id'
+                ),
             )
         elif related_via_attribute.type == 'reverse':
             relation_condition = _exists_sql(ServerRelationAttribute, 'rel1', (
@@ -377,6 +317,39 @@ def _exists_sql_join(model, alias, joins, conditions):
         ' '.join(f'JOIN {x[0]} AS {x[1]} ON ({" AND ".join(x[2])})' for x in joins),
         ' AND '.join(c for c in conditions)
     )
+
+def _supernet_exists_sql(attribute: Attribute, supernet_alias: str, addr_match: str, where: tuple[str, ...]):
+    if attribute.inet_address_family:
+        af_join = (
+            (Attribute._meta.db_table, 'server_attr', ('server_attr.attribute_id = server_addr.attribute_id',)),
+            (Attribute._meta.db_table, 'net_attr', ('net_attr.attribute_id = net_addr.attribute_id',)),
+        )
+        af_where = (
+            f"net_attr.inet_address_family = '{attribute.inet_address_family}'",
+            f"server_attr.inet_address_family = '{attribute.inet_address_family}'",
+        )
+    else:
+        af_join = ()
+        af_where = ()
+
+    joins = (
+        (ServerInetAttribute._meta.db_table, 'server_addr', ('server_addr.server_id = server.server_id',)),
+        (ServerInetAttribute._meta.db_table, 'net_addr', (
+            'net_addr.value ' + addr_match,
+            'net_addr.attribute_id = server_addr.attribute_id',
+            f'net_addr.server_id = {supernet_alias}.server_id',
+        )),
+    ) + af_join
+
+    wheres = where + af_where
+
+    return 'EXISTS (SELECT 1 FROM {0} AS {1} {2} WHERE {3})'.format(
+        Server._meta.db_table,
+        supernet_alias,
+        ' '.join(f'JOIN {x[0]} AS {x[1]} ON ({" AND ".join(x[2])})' for x in joins),
+        ' AND '.join(c for c in wheres)
+    )
+
 
 def _raw_sql_escape(value):
     try:
