@@ -12,6 +12,7 @@ from django.test import TransactionTestCase
 from faker import Faker
 from faker.providers import internet
 
+from adminapi import filters
 from adminapi.exceptions import DatasetError
 from serveradmin.dataset import Query, DatasetObject
 from serveradmin.serverdb.forms import ServertypeAttributeAdminForm
@@ -846,3 +847,63 @@ class TestIpAddrTypeHostForSupernetQuery(TestIpAddrType):
                 {"network_type_ipv6": "public_ipv4", "servertype": "host"},
                 ["hostname", "network_type_ipv4", "network_type_ipv6"],
             ).get()
+
+class TestIpAddrTypeContainment(TestIpAddrType):
+    def setUp(self):
+        super().setUp()
+        self.network_1 = self._get_server("provider_network")
+        self.network_1["intern_ip"] = "2001:db8::/64"
+        self.network_1["ip_config_ipv6"] = "2001:db8::/64"
+        self.network_1.commit(user=User.objects.first())
+
+        self.network_2 = self._get_server("route_network")
+        self.network_2["intern_ip"] = "2001:db8::0010/124"
+        self.network_2["ip_config_ipv6"] = "2001:db8::0010/124"
+        self.network_2.commit(user=User.objects.first())
+
+        self.server_1 = self._get_server("host")
+        self.server_1["intern_ip"] = "2001:db8::0011"
+        self.server_1["ip_config_ipv6"] = "2001:db8::0011"
+        self.server_1.commit(user=User.objects.first())
+
+        self.server_2 = self._get_server("host")
+        self.server_2["intern_ip"] = "2001:db8::0021"
+        self.server_2["ip_config_ipv6"] = "2001:db8::0021"
+        self.server_2.commit(user=User.objects.first())
+
+    # I honestly don't understand what inet.startswith() is supposed to do")
+    #def test_startswith(self):
+    #    pass
+    def test_contains(self):
+        network_q = list(Query(
+            {"ip_config_ipv6": filters.Contains("2001:db8::0021")},
+            ["hostname", "servertype", "ip_config_ipv6"],
+            ["ip_config_ipv6"],
+        ))
+        self.assertEqual(len(network_q), 2)
+        self.assertEqual(network_q[0]["hostname"], self.network_1["hostname"])
+        self.assertEqual(network_q[1]["hostname"], self.server_2["hostname"])
+
+    def test_containedby(self):
+        network_q = list(Query(
+            {"ip_config_ipv6": filters.ContainedBy("2001:db8::0000/120")},
+            ["hostname", "servertype", "ip_config_ipv6"],
+            ["ip_config_ipv6"],
+        ))
+
+        self.assertEqual(len(network_q), 3)
+        self.assertEqual(network_q[0]["hostname"], self.network_2["hostname"])
+        self.assertEqual(network_q[1]["hostname"], self.server_1["hostname"])
+        self.assertEqual(network_q[2]["hostname"], self.server_2["hostname"])
+
+    def test_containedonlyby(self):
+        # ContainedOnlyBy means find objects contained by given prefix
+        # apart from the ones contained by another object.
+        network_q = list(Query(
+            {"ip_config_ipv6": filters.ContainedOnlyBy("2001:db8::0000/120")},
+            ["hostname", "servertype", "ip_config_ipv6"],
+            ["ip_config_ipv6"],
+        ))
+        self.assertEqual(len(network_q), 2)
+        self.assertEqual(network_q[0]["hostname"], self.network_2["hostname"])
+        self.assertEqual(network_q[1]["hostname"], self.server_2["hostname"])
