@@ -310,14 +310,6 @@ def _exists_sql(model, alias, conditions):
     )
 
 
-def _exists_sql_join(model, alias, joins, conditions):
-    return 'EXISTS (SELECT 1 FROM {0} AS {1} {2} WHERE {3})'.format(
-        model._meta.db_table,
-        alias,
-        ' '.join(f'JOIN {x[0]} AS {x[1]} ON ({" AND ".join(x[2])})' for x in joins),
-        ' AND '.join(c for c in conditions)
-    )
-
 def _supernet_exists_sql(attribute: Attribute, supernet_alias: str, addr_match: str, where: tuple[str, ...]):
     if attribute.inet_address_family:
         af_join = (
