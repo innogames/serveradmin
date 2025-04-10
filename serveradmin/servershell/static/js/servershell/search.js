@@ -8,7 +8,7 @@
  */
 async function _search(url, search_term, pinned = [], focus_command_input = false) {
     let request_data = {
-        term: search_term.trim(), // Ensure trimmed value is sent to backend
+        term: search_term,
         shown_attributes: servershell.shown_attributes,
         deep_link: servershell.deep_link,
         offset: servershell.offset,
@@ -131,10 +131,7 @@ $(document).ready(function() {
     $('#search_form').submit(function(event) {
         event.preventDefault();
         // Trim the search term and update the input field
-        let searchInput = $('#term');
-        let trimmedValue = searchInput.val().trim();
-        searchInput.val(trimmedValue);
-        servershell.term = trimmedValue;
+        servershell.term = servershell.term.trim();
         servershell.submit_search(true);
     });
 
