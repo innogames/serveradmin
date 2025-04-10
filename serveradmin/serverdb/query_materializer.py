@@ -18,7 +18,7 @@ from serveradmin.serverdb.models import (
     ServertypeAttribute,
     Server,
     ServerAttribute,
-    ServerRelationAttribute,
+    ServerRelationAttribute, ServerInetAttribute,
 )
 
 logger = logging.getLogger(__package__)
@@ -204,7 +204,7 @@ class QueryMaterializer:
         the host's IP address or prefix fits within the net's IP address or prefix.
         """
 
-        q = """
+        q = f"""
             SELECT
                 net.server_id,
                 net.hostname,
@@ -215,11 +215,11 @@ class QueryMaterializer:
                 host.server_id AS host_server_id,
                 host_attr.attribute_id AS host_attr_name
             FROM server AS host
-            JOIN server_inet_attribute AS host_addr ON (host.server_id = host_addr.server_id)
-            JOIN server_inet_attribute AS net_addr ON (host_addr.value <<= net_addr.value AND host_addr.attribute_id = net_addr.attribute_id)
-            JOIN server AS net ON (net_addr.server_id = net.server_id)
-            JOIN attribute AS net_attr ON (net_attr.attribute_id = net_addr.attribute_id)
-            JOIN attribute AS host_attr ON (host_attr.attribute_id = host_addr.attribute_id)
+            JOIN {ServerInetAttribute._meta.db_table} AS host_addr ON (host.server_id = host_addr.server_id)
+            JOIN {ServerInetAttribute._meta.db_table} AS net_addr ON (host_addr.value <<= net_addr.value AND host_addr.attribute_id = net_addr.attribute_id)
+            JOIN {Server._meta.db_table} AS net ON (net_addr.server_id = net.server_id)
+            JOIN {Attribute._meta.db_table} AS net_attr ON (net_attr.attribute_id = net_addr.attribute_id)
+            JOIN {Attribute._meta.db_table} AS host_attr ON (host_attr.attribute_id = host_addr.attribute_id)
             WHERE
                 net.servertype_id = %(target_servertype)s
                 AND host.server_id = any(%(hosts)s)
