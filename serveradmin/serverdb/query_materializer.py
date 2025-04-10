@@ -18,7 +18,8 @@ from serveradmin.serverdb.models import (
     ServertypeAttribute,
     Server,
     ServerAttribute,
-    ServerRelationAttribute, ServerInetAttribute,
+    ServerRelationAttribute,
+    ServerInetAttribute,
 )
 
 logger = logging.getLogger(__package__)
@@ -30,19 +31,16 @@ class QueryMaterializer:
         self._joined_attributes = joined_attributes
         self._order_by_attributes = order_by_attributes
         # XXX: Optimize this query out
-        self._servertype_lookup = {
-            servertype.servertype_id: servertype
-            for servertype in Servertype.objects.all()
-        }
+        self._servertype_lookup = {servertype.servertype_id: servertype for servertype in Servertype.objects.all()}
 
         self._server_attributes = {}
         servers_by_type = {}
         for server in self._servers:
             self._server_attributes[server] = {
-                Attribute.specials["object_id"]: server.server_id,
-                Attribute.specials["hostname"]: server.hostname,
-                Attribute.specials["intern_ip"]: server.intern_ip,
-                Attribute.specials["servertype"]: server.servertype_id,
+                Attribute.specials['object_id']: server.server_id,
+                Attribute.specials['hostname']: server.hostname,
+                Attribute.specials['intern_ip']: server.intern_ip,
+                Attribute.specials['servertype']: server.servertype_id,
             }
             servers_by_type.setdefault(server.servertype_id, []).append(server)
 
@@ -56,18 +54,12 @@ class QueryMaterializer:
         if self._order_by_attributes:
 
             def order_by_key(key):
-                return tuple(
-                    self._get_order_by_attribute(key, a)
-                    for a in self._order_by_attributes
-                )
+                return tuple(self._get_order_by_attribute(key, a) for a in self._order_by_attributes)
 
             servers = sorted(servers, key=order_by_key)
 
         join_results = self._get_join_results()
-        return (
-            DatasetObject(self._get_attributes(s, join_results), s.server_id)
-            for s in servers
-        )
+        return (DatasetObject(self._get_attributes(s, join_results), s.server_id) for s in servers)
 
     def _select_attributes(self, servertype_ids):
         self._attributes_by_type = {}
@@ -83,9 +75,7 @@ class QueryMaterializer:
 
     def _select_servertype_attribute(self, attribute, sa):
         self._attributes_by_type.setdefault(attribute.type, set()).add(attribute)
-        self._servertype_ids_by_attribute.setdefault(attribute, []).append(
-            sa.servertype_id
-        )
+        self._servertype_ids_by_attribute.setdefault(attribute, []).append(sa.servertype_id)
 
         related_via_attribute_id = sa.related_via_attribute_id
         if related_via_attribute_id:
@@ -103,7 +93,7 @@ class QueryMaterializer:
                     servertype_id=sa.servertype_id,
                     attribute_id=related_via_attribute_id,
                 )
-                .prefetch_related("attribute")
+                .prefetch_related('attribute')
                 .get()
             )
             self._select_servertype_attribute(sa.attribute, sa)
@@ -118,37 +108,29 @@ class QueryMaterializer:
     def _add_attributes(self, servers_by_type):
         """Add the attributes to the results"""
         for key, attributes in self._attributes_by_type.items():
-            if key == "supernet":
+            if key == 'supernet':
                 for attribute in attributes:
                     self._add_supernet_attribute(
                         attribute,
-                        (
-                            s
-                            for st in self._servertype_ids_by_attribute[attribute]
-                            for s in servers_by_type[st]
-                        ),
+                        (s for st in self._servertype_ids_by_attribute[attribute] for s in servers_by_type[st]),
                     )
-            elif key == "domain":
+            elif key == 'domain':
                 for attribute in attributes:
                     self._add_domain_attribute(
                         attribute,
-                        [
-                            s
-                            for st in self._servertype_ids_by_attribute[attribute]
-                            for s in servers_by_type[st]
-                        ],
+                        [s for st in self._servertype_ids_by_attribute[attribute] for s in servers_by_type[st]],
                     )
-            elif key == "reverse":
+            elif key == 'reverse':
                 reversed_attributes = {a.reversed_attribute_id: a for a in attributes}
                 for sa in (
                     ServerRelationAttribute.objects.filter(
                         value_id__in=self._server_attributes.keys(),
                         attribute_id__in=reversed_attributes.keys(),
                     )
-                    .prefetch_related("server")
+                    .prefetch_related('server')
                     .defer(
-                        "server__intern_ip",
-                        "server__servertype",
+                        'server__intern_ip',
+                        'server__servertype',
                     )
                 ):
                     self._add_attribute_value(
@@ -164,10 +146,10 @@ class QueryMaterializer:
                         server__in=self._server_attributes.keys(),
                         attribute__in=attributes,
                     )
-                    .prefetch_related("server")
+                    .prefetch_related('server')
                     .defer(
-                        "server__intern_ip",
-                        "server__servertype",
+                        'server__intern_ip',
+                        'server__servertype',
                     )
                 ):
                     self._add_attribute_value(
@@ -181,7 +163,7 @@ class QueryMaterializer:
             self._add_related_attribute(attribute, sa, servers_by_type)
 
     def _add_domain_attribute(self, attribute, servers):
-        domain_names = {s.hostname.split(".", 1)[-1] for s in servers}
+        domain_names = {s.hostname.split('.', 1)[-1] for s in servers}
         domain_lookup = {
             domain.hostname: domain
             for domain in Server.objects.filter(
@@ -191,9 +173,7 @@ class QueryMaterializer:
         }
 
         for server in servers:
-            self._server_attributes[server][attribute] = domain_lookup.get(
-                server.hostname.split(".", 1)[-1]
-            )
+            self._server_attributes[server][attribute] = domain_lookup.get(server.hostname.split('.', 1)[-1])
 
     def _add_supernet_attribute(self, attribute: Attribute, servers_in):
         """Calculate the supernet attribute of given servers
@@ -236,15 +216,15 @@ class QueryMaterializer:
         supernets = Server.objects.raw(
             q,
             {
-                "target_servertype": attribute.target_servertype_id,
-                "address_family": attribute.inet_address_family,
-                "hosts": list(servers_by_id.keys()),
+                'target_servertype': attribute.target_servertype_id,
+                'address_family': attribute.inet_address_family,
+                'hosts': list(servers_by_id.keys()),
             },
             translations={
-                "net.server_id": "server_id",
-                "net.hostname": "hostname",
-                "net.intern_ip": "intern_ip",
-                "net.servertype_id": "servertype_id",
+                'net.server_id': 'server_id',
+                'net.hostname': 'hostname',
+                'net.intern_ip': 'intern_ip',
+                'net.servertype_id': 'servertype_id',
             },
         )
         for cur_supernet in supernets:
@@ -254,8 +234,8 @@ class QueryMaterializer:
                 # TODO: Raise an exception once all data is cleaned up and conflicting
                 # AF-unaware attributes are removed.
                 logger.warning(
-                    f"Conflicting supernet {attribute} for {cur_server.hostname}: "
-                    f"{prev_supernet.host_attr_name}->{prev_supernet} vs {cur_supernet.host_attr_name}->{cur_supernet}"
+                    f'Conflicting supernet {attribute} for {cur_server.hostname}: '
+                    f'{prev_supernet.host_attr_name}->{prev_supernet} vs {cur_supernet.host_attr_name}->{cur_supernet}'
                 )
             self._server_attributes[cur_server][attribute] = cur_supernet
 
@@ -281,10 +261,10 @@ class QueryMaterializer:
                 server__hostname__in=servers_by_related.keys(),
                 attribute=attribute,
             )
-            .prefetch_related("server")
+            .prefetch_related('server')
             .defer(
-                "server__intern_ip",
-                "server__servertype",
+                'server__intern_ip',
+                'server__servertype',
             )
         ):
             for target in servers_by_related[sa.server]:
@@ -327,28 +307,24 @@ class QueryMaterializer:
             if attribute not in self._joined_attributes:
                 continue
 
-            if attribute.type == "inet":
+            if attribute.type == 'inet':
                 if value is None:
                     yield attribute.attribute_id, None
                 else:
-                    if servertype.ip_addr_type in ("host", "loadbalancer"):
+                    if servertype.ip_addr_type in ('host', 'loadbalancer'):
                         yield attribute.attribute_id, value.ip
                     else:
-                        assert servertype.ip_addr_type == "network"
+                        assert servertype.ip_addr_type == 'network'
                         yield attribute.attribute_id, value.network
             elif value is None:
                 yield attribute.attribute_id, None
             elif attribute in join_results:
                 if attribute.multi:
-                    yield attribute.attribute_id, [
-                        join_results[attribute][v] for v in value
-                    ]
+                    yield attribute.attribute_id, [join_results[attribute][v] for v in value]
                 else:
                     yield (attribute.attribute_id, join_results[attribute][value])
             elif attribute.multi:
-                yield attribute.attribute_id, {
-                    v.hostname if isinstance(v, Server) else v for v in value
-                }
+                yield attribute.attribute_id, {v.hostname if isinstance(v, Server) else v for v in value}
             elif isinstance(value, Server):
                 yield attribute.attribute_id, value.hostname
             else:
@@ -396,7 +372,7 @@ def get_default_attribute_values(servertype_id):
     attribute_values = {}
 
     for attribute_id in Attribute.specials:
-        if attribute_id == "servertype":
+        if attribute_id == 'servertype':
             value = servertype_id
         else:
             value = None

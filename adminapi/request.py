@@ -2,45 +2,46 @@
 
 Copyright (c) 2019 InnoGames GmbH
 """
+
 import gzip
+import hmac
+import json
 import logging
 import os
+import time
+from base64 import b64encode
+from datetime import datetime, timezone
 from hashlib import sha1
-import hmac
 from http.client import IncompleteRead
 from socket import timeout
 from ssl import SSLError
-import time
-import json
-from base64 import b64encode
-from datetime import datetime, timezone
-
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
-from urllib.request import urlopen, Request
+from urllib.request import Request, urlopen
 
 from paramiko.agent import Agent
 from paramiko.message import Message
-from paramiko.ssh_exception import SSHException, PasswordRequiredException
+from paramiko.ssh_exception import PasswordRequiredException, SSHException
 
 from adminapi import VERSION
 
 try:
-    from paramiko import RSAKey, ECDSAKey, Ed25519Key
+    from paramiko import ECDSAKey, Ed25519Key, RSAKey
+
     key_classes = (RSAKey, ECDSAKey, Ed25519Key)
 except ImportError:
     # Ed25519Key requires paramiko >= 2.2
-    from paramiko import RSAKey, ECDSAKey
+    from paramiko import ECDSAKey, RSAKey
+
     key_classes = (RSAKey, ECDSAKey)
 
 from adminapi.cmduser import get_auth_token
-from adminapi.filters import BaseFilter
 from adminapi.exceptions import (
     ApiError,
     AuthenticationError,
     ConfigurationError,
 )
-
+from adminapi.filters import BaseFilter
 
 logger = logging.getLogger(__name__)
 
@@ -118,9 +119,7 @@ def calc_signatures(private_keys, timestamp, data=None):
 
 def calc_security_token(auth_token, timestamp, data=None):
     message = calc_message(timestamp, data)
-    return hmac.new(
-        auth_token.encode('utf8'), message.encode('utf8'), sha1
-    ).hexdigest()
+    return hmac.new(auth_token.encode('utf8'), message.encode('utf8'), sha1).hexdigest()
 
 
 def calc_app_id(auth_token):
@@ -137,7 +136,7 @@ def send_request(endpoint, get_params=None, post_params=None):
         # In case of an error, sleep before trying again
         time.sleep(Settings.sleep_interval)
     else:
-        assert False    # Cannot happen
+        assert False  # Cannot happen
 
     content_encoding = response.info().get('Content-Encoding')
     content = response.read()
@@ -145,6 +144,7 @@ def send_request(endpoint, get_params=None, post_params=None):
         content = gzip.decompress(content)
 
     return json.loads(content)
+
 
 def _build_request(endpoint, get_params, post_params, retry=1):
     """Wrap request data in an urllib Request instance
@@ -169,14 +169,10 @@ def _build_request(endpoint, get_params, post_params, retry=1):
 
     if Settings.auth_key:
         headers['X-PublicKeys'] = Settings.auth_key.get_base64()
-        headers['X-Signatures'] = calc_signature(
-            Settings.auth_key, timestamp, post_data
-        )
+        headers['X-Signatures'] = calc_signature(Settings.auth_key, timestamp, post_data)
     elif Settings.auth_token:
         headers['X-Application'] = calc_app_id(Settings.auth_token)
-        headers['X-SecurityToken'] = calc_security_token(
-            Settings.auth_token, timestamp, post_data
-        )
+        headers['X-SecurityToken'] = calc_security_token(Settings.auth_token, timestamp, post_data)
     else:
         try:
             agent = Agent()
@@ -200,13 +196,12 @@ def _build_request(endpoint, get_params, post_params, retry=1):
             logger.error(
                 f'Signing the requests took {time_spent_signing} seconds! '
                 'Serveradmin would reject this request. Maybe your signing '
-                f'soft-/hardware is congested ? Retry {retry}/{Settings.tries}.')
-            return _build_request(endpoint, get_params, post_params, retry+1)
+                f'soft-/hardware is congested ? Retry {retry}/{Settings.tries}.'
+            )
+            return _build_request(endpoint, get_params, post_params, retry + 1)
 
     if not Settings.base_url:
-        raise ConfigurationError(
-            'Environment variable SERVERADMIN_BASE_URL not set'
-        )
+        raise ConfigurationError('Environment variable SERVERADMIN_BASE_URL not set')
 
     url = Settings.base_url + endpoint
     if get_params:

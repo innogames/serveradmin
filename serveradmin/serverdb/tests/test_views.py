@@ -27,10 +27,8 @@ class RestoreViewTest(TransactionTestCase):
         vm.delete()
         vm.commit(user=User.objects.first())
 
-        change_id = Change.objects.filter(
-            object_id=object_id, change_type=Change.Type.DELETE).first().id
-        response = self.client.get(
-            f'/serverdb/recreate/{change_id}', follow=True)
+        change_id = Change.objects.filter(object_id=object_id, change_type=Change.Type.DELETE).first().id
+        response = self.client.get(f'/serverdb/recreate/{change_id}', follow=True)
 
         # recreate view should have created the object again and redirect us
         # to the history of it.
@@ -54,10 +52,8 @@ class RestoreViewTest(TransactionTestCase):
         vm['intern_ip'] = IPAddress('10.0.0.2')
         vm.commit(user=User.objects.first())
 
-        change_id = Change.objects.filter(
-            object_id=object_id, change_type=Change.Type.DELETE).first().id
-        response = self.client.get(
-            f'/serverdb/recreate/{change_id}', follow=True)
+        change_id = Change.objects.filter(object_id=object_id, change_type=Change.Type.DELETE).first().id
+        response = self.client.get(f'/serverdb/recreate/{change_id}', follow=True)
 
         # Restore should have failed as there is already an object with that
         # hostname (again) and redirect us to changes view and display an

@@ -3,16 +3,14 @@
 Copyright (c) 2019 InnoGames GmbH
 """
 
-from adminapi.dataset import BaseQuery, DatasetObject as ApiDatasetObject
+from adminapi.dataset import BaseQuery
+from adminapi.dataset import DatasetObject as ApiDatasetObject
 from serveradmin.serverdb.query_committer import commit_query
 from serveradmin.serverdb.query_executer import execute_query
-from serveradmin.serverdb.query_materializer import (
-    get_default_attribute_values
-)
+from serveradmin.serverdb.query_materializer import get_default_attribute_values
 
 
 class Query(BaseQuery):
-
     def _fetch_new_object(self, servertype):
         return DatasetObject(get_default_attribute_values(servertype))
 

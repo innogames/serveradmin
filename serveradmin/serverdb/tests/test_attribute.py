@@ -19,7 +19,7 @@ class TestAttributeHistory(TransactionTestCase):
     def test_attribute_history_is_logged(self):
         project = Query().new_object('project')
         project['hostname'] = self.faker.hostname()
-        project['owner'] = 'john.doe' # Attribute with history enabled
+        project['owner'] = 'john.doe'  # Attribute with history enabled
         project.commit(user=User.objects.first())
 
         projects = Query({'hostname': project['hostname']}, ['owner'])
@@ -28,7 +28,10 @@ class TestAttributeHistory(TransactionTestCase):
         oid = projects.get()['object_id']
 
         change = Change.objects.last()
-        self.assertEqual(change.change_json, {"owner": {"new": "max.mustermann", "old": "john.doe", "action": "update"}, "object_id": oid})
+        self.assertEqual(
+            change.change_json,
+            {'owner': {'new': 'max.mustermann', 'old': 'john.doe', 'action': 'update'}, 'object_id': oid},
+        )
 
     def test_attribute_history_is_not_logged(self):
         project = Query().new_object('project')
@@ -56,4 +59,7 @@ class TestAttributeHistory(TransactionTestCase):
         oid = projects.get()['object_id']
 
         change = Change.objects.last()
-        self.assertEqual(change.change_json, {"owner": {"new": "max.mustermann", "old": "john.doe", "action": "update"}, "object_id": oid})
+        self.assertEqual(
+            change.change_json,
+            {'owner': {'new': 'max.mustermann', 'old': 'john.doe', 'action': 'update'}, 'object_id': oid},
+        )

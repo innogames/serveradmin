@@ -22,14 +22,16 @@ def serversearch_js(search_id):
 
     return {
         'servertypes_json': dumps({s.servertype_id: {} for s in servertypes}),
-        'attributes_json': dumps({
-            a.attribute_id: {
-                'multi': a.multi,
-                'type': a.type,
-                'regexp': a.regexp,
+        'attributes_json': dumps(
+            {
+                a.attribute_id: {
+                    'multi': a.multi,
+                    'type': a.type,
+                    'regexp': a.regexp,
+                }
+                for a in attributes
             }
-            for a in attributes
-        }),
+        ),
         'filters_json': dumps([f.__name__ for f in filter_classes]),
         'search_id': search_id,
         'STATIC_URL': settings.STATIC_URL,

@@ -5,49 +5,37 @@ Copyright (c) 2024 InnoGames GmbH
 
 import json
 from distutils.util import strtobool
-from ipaddress import IPv6Address, IPv4Address, ip_interface
-from itertools import islice, chain
+from ipaddress import IPv4Address, IPv6Address, ip_interface
+from itertools import chain, islice
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import (
-    ObjectDoesNotExist,
-    PermissionDenied,
-    ValidationError
-)
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied, ValidationError
 from django.http import (
-    HttpResponse,
-    HttpResponseRedirect,
     Http404,
-    JsonResponse,
+    HttpRequest,
+    HttpResponse,
     HttpResponseBadRequest,
-    HttpResponseNotFound, HttpRequest
+    HttpResponseNotFound,
+    HttpResponseRedirect,
+    JsonResponse,
 )
-from django.shortcuts import redirect, render, get_object_or_404
+from django.shortcuts import redirect, render
 from django.template.response import TemplateResponse
 from django.urls import reverse
-from django.utils.html import mark_safe, escape as escape_html
+from django.utils.html import escape as escape_html
+from django.utils.html import mark_safe
 from django.views.decorators.http import require_http_methods
 from django.views.defaults import bad_request
 
 from adminapi.datatype import DatatypeError
-from adminapi.filters import Any, ContainedOnlyBy, filter_classes, Not
+from adminapi.filters import Any, ContainedOnlyBy, Not, filter_classes
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
-
 from serveradmin.dataset import Query
-from serveradmin.serverdb.models import (
-    Servertype,
-    Attribute,
-    ServertypeAttribute,
-    Server
-)
+from serveradmin.serverdb.models import Attribute, Server, Servertype, ServertypeAttribute
 from serveradmin.serverdb.query_committer import commit_query
 from serveradmin.servershell.helper import get_default_shown_attributes
-from serveradmin.servershell.helper.autocomplete import (
-    attribute_value_startswith,
-    attribute_startswith
-)
 from serveradmin.servershell.merged_query_iterator import MergedQuery
 from serveradmin.servershell.utils import servershell_plugins
 
@@ -69,19 +57,20 @@ def index(request):
     attributes.extend(Attribute.specials.values())
     attributes_json = list()
     for attribute in attributes:
-        attributes_json.append({
-            'attribute_id': attribute.attribute_id,
-            'type': attribute.type,
-            'multi': attribute.multi,
-            'hovertext': attribute.hovertext,
-            'help_link': attribute.help_link,
-            'group': attribute.group,
-            'regex': (
-                # XXX: HTML5 input patterns do not support these
-                None if not attribute.regexp else
-                attribute.regexp.replace('\\A', '^').replace('\\Z', '$')
-            ),
-        })
+        attributes_json.append(
+            {
+                'attribute_id': attribute.attribute_id,
+                'type': attribute.type,
+                'multi': attribute.multi,
+                'hovertext': attribute.hovertext,
+                'help_link': attribute.help_link,
+                'group': attribute.group,
+                'regex': (
+                    # XXX: HTML5 input patterns do not support these
+                    None if not attribute.regexp else attribute.regexp.replace('\\A', '^').replace('\\Z', '$')
+                ),
+            }
+        )
     attributes_json.sort(key=lambda attr: attr['group'])
 
     # Load user search settings or set default values
@@ -92,24 +81,27 @@ def index(request):
     shown_attributes = request.GET.getlist('shown_attributes[]')
     if not shown_attributes:
         if search_settings['save_attributes']:
-            shown_attributes = request.session.setdefault(
-                'shown_attributes', get_default_shown_attributes())
+            shown_attributes = request.session.setdefault('shown_attributes', get_default_shown_attributes())
         else:
             shown_attributes = get_default_shown_attributes()
 
-    return TemplateResponse(request, 'servershell/index.html', {
-        'term': request.GET.get('term', request.session.get('term')),
-        'shown_attributes': shown_attributes,
-        'deep_link': bool(strtobool(request.GET.get('deep_link', 'false'))),
-        'attributes': attributes_json,
-        'servertypes': list(Servertype.objects.values_list('servertype_id', flat=True)),
-        'offset': 0,
-        'limit': request.session.get('limit', NUM_SERVERS_DEFAULT),
-        'order_by': 'hostname',
-        'filters': sorted([(f.__name__, f.__doc__) for f in filter_classes]),
-        'search_settings': search_settings,
-        'servershell_plugins': servershell_plugins(),
-    })
+    return TemplateResponse(
+        request,
+        'servershell/index.html',
+        {
+            'term': request.GET.get('term', request.session.get('term')),
+            'shown_attributes': shown_attributes,
+            'deep_link': bool(strtobool(request.GET.get('deep_link', 'false'))),
+            'attributes': attributes_json,
+            'servertypes': list(Servertype.objects.values_list('servertype_id', flat=True)),
+            'offset': 0,
+            'limit': request.session.get('limit', NUM_SERVERS_DEFAULT),
+            'order_by': 'hostname',
+            'filters': sorted([(f.__name__, f.__doc__) for f in filter_classes]),
+            'search_settings': search_settings,
+            'servershell_plugins': servershell_plugins(),
+        },
+    )
 
 
 @login_required
@@ -118,18 +110,15 @@ def autocomplete(request):
 
     if hostname:
         try:
-            query = Server.objects.filter(hostname__startswith=hostname).only(
-                'hostname').order_by('hostname')
-            autocomplete_list = [server.hostname for server in
-                                 query[:AUTOCOMPLETE_LIMIT]]
+            query = Server.objects.filter(hostname__startswith=hostname).only('hostname').order_by('hostname')
+            autocomplete_list = [server.hostname for server in query[:AUTOCOMPLETE_LIMIT]]
         except (DatatypeError, ValidationError):
             # If there is no valid query, just don't auto-complete
             autocomplete_list = list()
     else:
         autocomplete_list = list()
 
-    return HttpResponse(json.dumps({'autocomplete': autocomplete_list}),
-                        content_type='application/x-json')
+    return HttpResponse(json.dumps({'autocomplete': autocomplete_list}), content_type='application/x-json')
 
 
 @login_required
@@ -163,20 +152,19 @@ def get_results(request):
             restrict.append('servertype')
         main_query = Query(parse_query(term), restrict, order_by)
 
-        merged_query = MergedQuery([
-            Query({'object_id': Any(*pinned)}, restrict),
-            main_query,
-        ])
+        merged_query = MergedQuery(
+            [
+                Query({'object_id': Any(*pinned)}, restrict),
+                main_query,
+            ]
+        )
 
         # TODO: Using len is terribly slow for large datasets because it has
         #  to query all objects but we cannot use count which is available on
         #  Django QuerySet
         num_servers = len(list(merged_query))
     except (DatatypeError, ObjectDoesNotExist, ValidationError) as error:
-        return HttpResponse(json.dumps({
-            'status': 'error',
-            'message': str(error)
-        }))
+        return HttpResponse(json.dumps({'status': 'error', 'message': str(error)}))
 
     # Query successful term must be valid here, so we can save it safely now.
     request.session['term'] = term
@@ -195,20 +183,26 @@ def get_results(request):
     for servertype_id in servertype_ids:
         editable_attributes[servertype_id] = default_editable.copy()
     for sa in ServertypeAttribute.objects.filter(
-            servertype_id__in=servertype_ids,
-            attribute_id__in=shown_attributes,
-            related_via_attribute_id__isnull=True,
-            attribute__readonly=False,
+        servertype_id__in=servertype_ids,
+        attribute_id__in=shown_attributes,
+        related_via_attribute_id__isnull=True,
+        attribute__readonly=False,
     ):
         editable_attributes[sa.servertype_id].append(sa.attribute_id)
 
-    return HttpResponse(json.dumps({
-        'status': 'success',
-        'understood': repr(main_query),
-        'servers': servers,
-        'num_servers': num_servers,
-        'editable_attributes': editable_attributes,
-    }, default=json_encode_extra), content_type='application/x-json')
+    return HttpResponse(
+        json.dumps(
+            {
+                'status': 'success',
+                'understood': repr(main_query),
+                'servers': servers,
+                'num_servers': num_servers,
+                'editable_attributes': editable_attributes,
+            },
+            default=json_encode_extra,
+        ),
+        content_type='application/x-json',
+    )
 
 
 @login_required
@@ -219,8 +213,7 @@ def inspect(request):
     elif 'hostname' in request.GET:
         query = Query({'hostname': request.GET['hostname']}, None)
     else:
-        return HttpResponseBadRequest(
-            'object_id or hostname parameter is mandatory')
+        return HttpResponseBadRequest('object_id or hostname parameter is mandatory')
 
     if not query:
         return HttpResponseNotFound('No such object exists')
@@ -245,20 +238,20 @@ def _edit(request: HttpRequest, server, edit_mode=False, template='edit'):  # NO
     # @TODO work with ServerAttribute models here and use Django forms
     invalid_attrs = set()
     if edit_mode and request.POST:
-        attribute_lookup = {a.pk: a for a in Attribute.objects.filter(
-            attribute_id__in=(k[len('attr_'):] for k in request.POST.keys()))}
+        attribute_lookup = {
+            a.pk: a for a in Attribute.objects.filter(attribute_id__in=(k[len('attr_') :] for k in request.POST.keys()))
+        }
         attribute_lookup.update(Attribute.specials)
 
         # Get current values to be able to submit only changes
         current = None
         if server['object_id']:
-            current = Query({'object_id': server['object_id']},
-                            list(attribute_lookup.keys())).get()
+            current = Query({'object_id': server['object_id']}, list(attribute_lookup.keys())).get()
 
         for key, value in request.POST.items():
             if not key.startswith('attr_'):
                 continue
-            attribute_id = key[len('attr_'):]
+            attribute_id = key[len('attr_') :]
             attribute = attribute_lookup[attribute_id]
             value = value.strip()
             if attribute.multi:
@@ -277,8 +270,7 @@ def _edit(request: HttpRequest, server, edit_mode=False, template='edit'):  # NO
                     invalid_attrs.add(attribute_id)
 
             if attribute_id not in server.keys():
-                messages.error(request,
-                               'Unknown attribute {}'.format(attribute_id))
+                messages.error(request, 'Unknown attribute {}'.format(attribute_id))
                 continue
 
             if current:
@@ -313,8 +305,7 @@ def _edit(request: HttpRequest, server, edit_mode=False, template='edit'):  # NO
                 messages.info(request, str('Nothing has changed.'))
             else:
                 try:
-                    commit_obj = commit_query(created, changed,
-                                              user=request.user)
+                    commit_obj = commit_query(created, changed, user=request.user)
                 except (PermissionDenied, ValidationError) as err:
                     messages.error(request, str(err))
                 else:
@@ -332,21 +323,16 @@ def _edit(request: HttpRequest, server, edit_mode=False, template='edit'):  # NO
             messages.error(request, 'Attributes contains invalid values')
 
     servertype = Servertype.objects.get(pk=server['servertype'])
-    attribute_lookup = {a.pk: a for a in Attribute.objects.filter(
-        attribute_id__in=(server.keys())
-    )}
+    attribute_lookup = {a.pk: a for a in Attribute.objects.filter(attribute_id__in=(server.keys()))}
     attribute_lookup.update(Attribute.specials)
-    servertype_attributes = {sa.attribute_id: sa for sa in (
-        ServertypeAttribute.objects.filter(servertype_id=server['servertype'])
-    )}
+    servertype_attributes = {
+        sa.attribute_id: sa for sa in (ServertypeAttribute.objects.filter(servertype_id=server['servertype']))
+    }
 
     fields = []
     fields_set = set()
     for key, value in server.items():
-        if (
-                key == 'object_id' or
-                key == 'intern_ip' and servertype.ip_addr_type == 'null'
-        ):
+        if key == 'object_id' or key == 'intern_ip' and servertype.ip_addr_type == 'null':
             continue
 
         # Apply pre-filled values from query string if submitted
@@ -355,44 +341,43 @@ def _edit(request: HttpRequest, server, edit_mode=False, template='edit'):  # NO
         is_related_attribute = False
         attribute = attribute_lookup[key]
         servertype_attribute = servertype_attributes.get(key)
-        if (
-            servertype_attribute and
-            servertype_attribute.related_via_attribute
-        ):
+        if servertype_attribute and servertype_attribute.related_via_attribute:
             is_related_attribute = True
 
         fields_set.add(key)
-        fields.append({
-            'key': key,
-            'value': value,
-            'type': attribute.type if not is_related_attribute else 'related',
-            'multi': attribute.multi,
-            'required': (
-                    servertype_attribute and servertype_attribute.required or
-                    key in Attribute.specials.keys()
-            ),
-            'regexp_display': _prepare_regexp_html(attribute.regexp),
-            'regexp': (
-                # XXX: HTML5 input patterns do not support these
-                None if not attribute.regexp else
-                attribute.regexp.replace('\\A', '^').replace('\\Z', '$')
-            ),
-            'default': (
-                    servertype_attribute and servertype_attribute.default_value
-            ),
-            'readonly': attribute.readonly,
-            'error': key in invalid_attrs,
-            'hovertext': attribute.hovertext,
-        })
+        fields.append(
+            {
+                'key': key,
+                'value': value,
+                'type': attribute.type if not is_related_attribute else 'related',
+                'multi': attribute.multi,
+                'required': (
+                    servertype_attribute and servertype_attribute.required or key in Attribute.specials.keys()
+                ),
+                'regexp_display': _prepare_regexp_html(attribute.regexp),
+                'regexp': (
+                    # XXX: HTML5 input patterns do not support these
+                    None if not attribute.regexp else attribute.regexp.replace('\\A', '^').replace('\\Z', '$')
+                ),
+                'default': (servertype_attribute and servertype_attribute.default_value),
+                'readonly': attribute.readonly,
+                'error': key in invalid_attrs,
+                'hovertext': attribute.hovertext,
+            }
+        )
 
     fields.sort(key=lambda k: (not k['required'], k['key']))
-    return TemplateResponse(request, 'servershell/{}.html'.format(template), {
-        'object_id': server.object_id,
-        'hostname': server['hostname'],
-        'fields': fields,
-        'base_template': 'base.html',
-        'link': request.get_full_path(),
-    })
+    return TemplateResponse(
+        request,
+        'servershell/{}.html'.format(template),
+        {
+            'object_id': server.object_id,
+            'hostname': server['hostname'],
+            'fields': fields,
+            'base_template': 'base.html',
+            'link': request.get_full_path(),
+        },
+    )
 
 
 @login_required
@@ -434,8 +419,7 @@ def new_object(request: HttpRequest):
     try:
         new_object = Query().new_object(servertype)
     except Servertype.DoesNotExist:
-        messages.error(request,
-                       'The servertype {} does not exist!'.format(servertype))
+        messages.error(request, 'The servertype {} does not exist!'.format(servertype))
         return redirect('servershell_index')
 
     return _edit(request, new_object)
@@ -448,13 +432,9 @@ def clone_object(request):
         # intern_ip is usually unique (except for loadbalancers) therefore it
         # makes sense to not clone it.
         cloned_attributes.remove('intern_ip')
-        cloned_attributes.extend(
-            list(Attribute.objects.filter(clone=True).values_list(
-                'attribute_id', flat=True)))
+        cloned_attributes.extend(list(Attribute.objects.filter(clone=True).values_list('attribute_id', flat=True)))
 
-        old_object = Query(
-            {'object_id': request.GET.get('object_id')}, cloned_attributes
-        ).get()
+        old_object = Query({'object_id': request.GET.get('object_id')}, cloned_attributes).get()
     except ValidationError as e:
         messages.error(request, e.message)
         return redirect('servershell_index')
@@ -469,37 +449,31 @@ def clone_object(request):
 @login_required
 def choose_ip_addr(request):
     if 'network' not in request.GET:
-        servers = list(
-            Query({'servertype': 'route_network'}, ['hostname', 'intern_ip'],
-                  ['hostname']))
+        servers = list(Query({'servertype': 'route_network'}, ['hostname', 'intern_ip'], ['hostname']))
 
-        return TemplateResponse(request, 'servershell/choose_ip_addr.html',
-                                {'servers': servers})
+        return TemplateResponse(request, 'servershell/choose_ip_addr.html', {'servers': servers})
 
     network = request.GET['network']
-    servers = list(Query(
-        {
-            'servertype': Any(*(
-                s.servertype_id
-                for s in Servertype.objects.filter(ip_addr_type='network')
-            )),
-            'intern_ip': ContainedOnlyBy(network),
-        },
-        ['hostname', 'intern_ip'],
-        ['hostname'],
-    ))
+    servers = list(
+        Query(
+            {
+                'servertype': Any(*(s.servertype_id for s in Servertype.objects.filter(ip_addr_type='network'))),
+                'intern_ip': ContainedOnlyBy(network),
+            },
+            ['hostname', 'intern_ip'],
+            ['hostname'],
+        )
+    )
 
     if servers:
-        return TemplateResponse(request, 'servershell/choose_ip_addr.html',
-                                {'servers': servers})
+        return TemplateResponse(request, 'servershell/choose_ip_addr.html', {'servers': servers})
 
     # TODO: This is specific to our data model, we should get it independent
-    network_query = Query(
-        {'intern_ip': network, 'servertype': Not('provider_network')},
-        ['intern_ip', 'servertype'])
+    network_query = Query({'intern_ip': network, 'servertype': Not('provider_network')}, ['intern_ip', 'servertype'])
 
-    return TemplateResponse(request, 'servershell/choose_ip_addr.html', {
-        'ip_addrs': islice(network_query.get_free_ip_addrs(), 50)})
+    return TemplateResponse(
+        request, 'servershell/choose_ip_addr.html', {'ip_addrs': islice(network_query.get_free_ip_addrs(), 50)}
+    )
 
 
 @login_required
@@ -519,8 +493,7 @@ def settings(request):
         else:
             request.session[setting] = int(value)
 
-    return JsonResponse(
-        {key: request.session.get(key) for key in SEARCH_SETTINGS})
+    return JsonResponse({key: request.session.get(key) for key in SEARCH_SETTINGS})
 
 
 def _prepare_regexp_html(regexp):
@@ -528,8 +501,7 @@ def _prepare_regexp_html(regexp):
     if not regexp:
         return ''
     else:
-        regexp_html = (escape_html(regexp).replace('|', '|&#8203;')
-                       .replace(']', ']&#8203;').replace(')', ')&#8203;'))
+        regexp_html = escape_html(regexp).replace('|', '|&#8203;').replace(']', ']&#8203;').replace(')', ')&#8203;')
         return mark_safe(regexp_html)
 
 

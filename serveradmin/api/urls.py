@@ -6,11 +6,11 @@ Copyright (c) 2020 InnoGames GmbH
 from django.urls import path
 
 from serveradmin.api.views import (
-    health_check,
-    dataset_query,
+    api_call,
     dataset_commit,
     dataset_new_object,
-    api_call,
+    dataset_query,
+    health_check,
 )
 
 urlpatterns = [

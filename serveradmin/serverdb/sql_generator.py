@@ -28,7 +28,9 @@ from adminapi.filters import (
 from serveradmin.serverdb.models import (
     Server,
     ServerAttribute,
-    ServerRelationAttribute, ServerInetAttribute, Attribute,
+    ServerRelationAttribute,
+    ServerInetAttribute,
+    Attribute,
 )
 
 
@@ -36,19 +38,9 @@ from serveradmin.serverdb.models import (
 # the functions to optimize related_via_attribute selection.  We should find
 # a nicer way to achieve this.
 def get_server_query(attribute_filters, related_vias):
-    sql = (
-        'SELECT'
-        ' server.server_id,'
-        ' server.hostname,'
-        ' server.intern_ip,'
-        ' server.servertype_id'
-        ' FROM server'
-    )
+    sql = 'SELECT' ' server.server_id,' ' server.hostname,' ' server.intern_ip,' ' server.servertype_id' ' FROM server'
     if attribute_filters:
-        sql += ' WHERE ' + ' AND '.join(
-            _get_sql_condition(a, f, related_vias)
-            for a, f in attribute_filters
-        )
+        sql += ' WHERE ' + ' AND '.join(_get_sql_condition(a, f, related_vias) for a, f in attribute_filters)
     sql += ' ORDER BY server.hostname'
 
     return sql
@@ -66,15 +58,13 @@ def _get_sql_condition(attribute, filt, related_vias):
     if attribute.type == 'boolean':
         # We have already dealt with the logical filters.  Other
         # complicated filters don't make any sense on booleans.
-        if type(filt) != BaseFilter:
+        if type(filt) is not BaseFilter:
             raise FilterValueError(
-                'Boolean attribute "{}" cannot be used with {}() filter'
-                .format(attribute, type(filt).__name__)
+                'Boolean attribute "{}" cannot be used with {}() filter'.format(attribute, type(filt).__name__)
             )
             if not isinstance(filt.value, bool):
                 raise FilterValueError(
-                    'Boolean attribute "{}" cannot be checked against {}'
-                    .format(attribute, type(filt.value).__name__)
+                    'Boolean attribute "{}" cannot be checked against {}'.format(attribute, type(filt.value).__name__)
                 )
 
         negate = not filt.value
@@ -96,26 +86,16 @@ def _get_sql_condition(attribute, filt, related_vias):
 
 def _covered_sql_condition(attribute, template, negate, related_vias):
     if attribute.type in ['relation', 'reverse', 'supernet', 'domain']:
-        template = (
-            '{{0}} IN ('
-            '   SELECT server_id'
-            '   FROM server'
-            '   WHERE {}'
-            ')'
-            .format(template.format('hostname'))
+        template = '{{0}} IN (' '   SELECT server_id' '   FROM server' '   WHERE {}' ')'.format(
+            template.format('hostname')
         )
 
-    return (
-        ('NOT ' if negate else '') +
-        _condition_sql(attribute, template, related_vias)
-    )
+    return ('NOT ' if negate else '') + _condition_sql(attribute, template, related_vias)
 
 
 def _logical_filter_sql_condition(attribute, filt, related_vias):
     if isinstance(filt, Not):
-        return 'NOT ({0})'.format(
-            _get_sql_condition(attribute, filt.value, related_vias)
-        )
+        return 'NOT ({0})'.format(_get_sql_condition(attribute, filt.value, related_vias))
 
     if isinstance(filt, All):
         joiner = ' AND '
@@ -128,24 +108,18 @@ def _logical_filter_sql_condition(attribute, filt, related_vias):
     simple_values = []
     templates = []
     for value in filt.values:
-        if type(filt) == Any and type(value) == BaseFilter:
+        if type(filt) is Any and type(value) is BaseFilter:
             simple_values.append(value)
         else:
-            templates.append(
-                _get_sql_condition(attribute, value, related_vias)
-            )
+            templates.append(_get_sql_condition(attribute, value, related_vias))
 
     if simple_values:
         if len(simple_values) == 1:
-            template = _get_sql_condition(
-                attribute, simple_values[0], related_vias
-            )
+            template = _get_sql_condition(attribute, simple_values[0], related_vias)
         else:
             template = _covered_sql_condition(
                 attribute,
-                '{{0}} IN ({0})'.format(', '.join(
-                    _raw_sql_escape(v.value) for v in simple_values
-                )),
+                '{{0}} IN ({0})'.format(', '.join(_raw_sql_escape(v.value) for v in simple_values)),
                 False,
                 related_vias,
             )
@@ -164,45 +138,39 @@ def _basic_comparison_filter_template(attribute, filt):
     else:
         operator = '<='
 
-    return '{{}} {} {}'.format(
-        operator, _raw_sql_escape(filt.value)
-    )
+    return '{{}} {} {}'.format(operator, _raw_sql_escape(filt.value))
 
 
 def _containment_filter_template(attribute, filt):
-    template = None     # To be formatted 2 times
+    template = None  # To be formatted 2 times
     value = filt.value
 
     if attribute.type == 'inet':
         if isinstance(filt, StartsWith):
-            template = "{{0}} >>= {0} AND host({{0}}) = host(0{})"
+            template = '{{0}} >>= {0} AND host({{0}}) = host(0{})'
         elif isinstance(filt, Contains):
-            template = "{{0}} >>= {0}"
+            template = '{{0}} >>= {0}'
         elif isinstance(filt, ContainedOnlyBy):
-            template = "{{0}} << {0} AND NOT " + _supernet_exists_sql(
-                attribute, 'supernet',
+            template = '{{0}} << {0} AND NOT ' + _supernet_exists_sql(
+                attribute,
+                'supernet',
                 '<< {0}',
                 ('{{0}} << supernet.intern_ip',),
             )
         elif isinstance(filt, ContainedBy):
-            template = "{{0}} <<= {0}"
+            template = '{{0}} <<= {0}'
         else:
-            template = "{{0}} && {0}"
+            template = '{{0}} && {0}'
 
     elif attribute.type == 'string':
         if isinstance(filt, Contains):
-            template = "{{0}} LIKE {0}"
-            value = '{}{}{}'.format(
-                '' if isinstance(filt, StartsWith) else '%', value, '%'
-            )
+            template = '{{0}} LIKE {0}'
+            value = '{}{}{}'.format('' if isinstance(filt, StartsWith) else '%', value, '%')
         elif isinstance(filt, ContainedBy):
             template = "{0} LIKE '%%' || {{0}} || '%%'"
 
     if not template:
-        raise FilterValueError(
-            'Cannot use {} filter on "{}"'
-            .format(type(filt).__name__, attribute)
-        )
+        raise FilterValueError('Cannot use {} filter on "{}"'.format(type(filt).__name__, attribute))
 
     return template.format(_raw_sql_escape(value))
 
@@ -213,26 +181,35 @@ def _condition_sql(attribute, template, related_vias):
 
     if attribute.type == 'supernet':
         return _supernet_exists_sql(
-            attribute, 'supernet',
+            attribute,
+            'supernet',
             '>>= server_addr.value',
             (
                 f"supernet.servertype_id = '{attribute.target_servertype_id}'",
                 template.format('supernet.server_id'),
-            )
+            ),
         )
     if attribute.type == 'domain':
-        return _exists_sql(Server, 'sub', (
-            "sub.servertype_id = '{0}'".format(attribute.target_servertype_id),
-            "server.hostname ~ ('\\A[^\.]+\.' || regexp_replace("
-            "sub.hostname, '(\*|\-|\.)', '\\\1', 'g') || '\\Z')",
-            template.format('sub.server_id'),
-        ))
+        return _exists_sql(
+            Server,
+            'sub',
+            (
+                "sub.servertype_id = '{0}'".format(attribute.target_servertype_id),
+                "server.hostname ~ ('\\A[^\.]+\.' || regexp_replace("
+                "sub.hostname, '(\*|\-|\.)', '\\\1', 'g') || '\\Z')",
+                template.format('sub.server_id'),
+            ),
+        )
     if attribute.type == 'reverse':
-        return _exists_sql(ServerRelationAttribute, 'sub', (
-            "sub.attribute_id = '{0}'".format(attribute.reversed_attribute_id),
-            'sub.value = server.server_id',
-            template.format('sub.server_id'),
-        ))
+        return _exists_sql(
+            ServerRelationAttribute,
+            'sub',
+            (
+                "sub.attribute_id = '{0}'".format(attribute.reversed_attribute_id),
+                'sub.value = server.server_id',
+                template.format('sub.server_id'),
+            ),
+        )
 
     return _real_condition_sql(attribute, template, related_vias)
 
@@ -261,47 +238,58 @@ def _real_condition_sql(attribute, template, related_vias):
             relation_condition = 'server.server_id = sub.server_id'
         elif related_via_attribute.type == 'supernet':
             relation_condition = _supernet_exists_sql(
-                related_via_attribute, 'supernet',
+                related_via_attribute,
+                'supernet',
                 '>>= server_addr.value',
                 (
                     f"supernet.servertype_id = '{related_via_attribute.target_servertype_id}'",
-                    'supernet.server_id = sub.server_id'
+                    'supernet.server_id = sub.server_id',
                 ),
             )
         elif related_via_attribute.type == 'reverse':
-            relation_condition = _exists_sql(ServerRelationAttribute, 'rel1', (
-                "rel1.attribute_id = '{0}'".format(
-                    related_via_attribute.reversed_attribute_id
+            relation_condition = _exists_sql(
+                ServerRelationAttribute,
+                'rel1',
+                (
+                    "rel1.attribute_id = '{0}'".format(related_via_attribute.reversed_attribute_id),
+                    'rel1.value = server.server_id',
+                    'rel1.server_id = sub.server_id',
                 ),
-                'rel1.value = server.server_id',
-                'rel1.server_id = sub.server_id',
-            ))
+            )
         else:
             assert related_via_attribute.type == 'relation'
-            relation_condition = _exists_sql(ServerRelationAttribute, 'rel1', (
-                "rel1.attribute_id = '{0}'"
-                .format(related_via_attribute.attribute_id),
-                'rel1.server_id = server.server_id',
-                'rel1.value = sub.server_id',
-            ))
+            relation_condition = _exists_sql(
+                ServerRelationAttribute,
+                'rel1',
+                (
+                    "rel1.attribute_id = '{0}'".format(related_via_attribute.attribute_id),
+                    'rel1.server_id = server.server_id',
+                    'rel1.value = sub.server_id',
+                ),
+            )
         relation_conditions.append((relation_condition, servertype_ids))
 
     if len(relation_conditions) == 1:
         mixed_relation_condition = relation_conditions[0][0]
     else:
-        mixed_relation_condition = '({0})'.format(' OR '.join(
-            '({0} AND server.servertype_id IN ({1}))'
-            .format(relation_condition, ', '.join(
-                "'{0}'".format(s) for s in servertype_ids)
+        mixed_relation_condition = '({0})'.format(
+            ' OR '.join(
+                '({0} AND server.servertype_id IN ({1}))'.format(
+                    relation_condition, ', '.join("'{0}'".format(s) for s in servertype_ids)
+                )
+                for relation_condition, servertype_ids in relation_conditions
             )
-            for relation_condition, servertype_ids in relation_conditions
-        ))
+        )
 
-    return _exists_sql(model, 'sub', (
-        mixed_relation_condition,
-        "sub.attribute_id = '{0}'".format(attribute.attribute_id),
-        template.format('sub.value'),
-    ))
+    return _exists_sql(
+        model,
+        'sub',
+        (
+            mixed_relation_condition,
+            "sub.attribute_id = '{0}'".format(attribute.attribute_id),
+            template.format('sub.value'),
+        ),
+    )
 
 
 def _exists_sql(model, alias, conditions):
@@ -326,11 +314,15 @@ def _supernet_exists_sql(attribute: Attribute, supernet_alias: str, addr_match: 
 
     joins = (
         (ServerInetAttribute._meta.db_table, 'server_addr', ('server_addr.server_id = server.server_id',)),
-        (ServerInetAttribute._meta.db_table, 'net_addr', (
-            'net_addr.value ' + addr_match,
-            'net_addr.attribute_id = server_addr.attribute_id',
-            f'net_addr.server_id = {supernet_alias}.server_id',
-        )),
+        (
+            ServerInetAttribute._meta.db_table,
+            'net_addr',
+            (
+                'net_addr.value ' + addr_match,
+                'net_addr.attribute_id = server_addr.attribute_id',
+                f'net_addr.server_id = {supernet_alias}.server_id',
+            ),
+        ),
     ) + af_join
 
     wheres = where + af_where
@@ -339,7 +331,7 @@ def _supernet_exists_sql(attribute: Attribute, supernet_alias: str, addr_match: 
         Server._meta.db_table,
         supernet_alias,
         ' '.join(f'JOIN {x[0]} AS {x[1]} ON ({" AND ".join(x[2])})' for x in joins),
-        ' AND '.join(c for c in wheres)
+        ' AND '.join(c for c in wheres),
     )
 
 
@@ -353,9 +345,7 @@ def _raw_sql_escape(value):
         raise FilterValueError('Single quote cannot be used')
 
     if value.endswith('\\'):
-        raise FilterValueError(
-            'Escape character cannot be used in the end'
-        )
+        raise FilterValueError('Escape character cannot be used in the end')
 
     value = value.replace('{', '{{').replace('}', '}}').replace('%', '%%')
 

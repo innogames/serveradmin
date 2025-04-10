@@ -3,8 +3,8 @@
 Copyright (c) 2019 InnoGames GmbH
 """
 
-from adminapi.request import send_request
 from adminapi.exceptions import ApiError
+from adminapi.request import send_request
 
 API_CALL_ENDPOINT = '/call'
 

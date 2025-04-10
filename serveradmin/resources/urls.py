@@ -5,7 +5,7 @@ Copyright (c) 2020 InnoGames GmbH
 
 from django.urls import path
 
-from serveradmin.resources.views import index, graph_popup
+from serveradmin.resources.views import graph_popup, index
 
 urlpatterns = [
     path('', index, name='resources_index'),

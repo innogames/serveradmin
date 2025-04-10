@@ -55,7 +55,7 @@ def group(items, number_of_groups):
         step = 1
 
     for counter in range(0, len(items), step):
-        groups.extend([items[counter:counter + step]])
+        groups.extend([items[counter : counter + step]])
 
     return groups
 
