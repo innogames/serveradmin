@@ -56,7 +56,7 @@
                                        size="70" {% if field.readonly or field.type == 'related' %}disabled="disabled" {% endif %}
                                        {% if field.regexp %}data-pattern="{{ field.regexp }}"{% endif %}
                                        {% if field.required %} required {% endif %}
-                                       {% if field.key == 'intern_ip' %}readonly onclick="servershell.choose_ip_address();"{% endif %}
+                                       {% if field.key == 'intern_ip' %}readonly onclick="servershell.choose_ip_address({servertype:'{{ servertype }}'});"{% endif %}
                                 />
                             {% endif %}
                         </td>

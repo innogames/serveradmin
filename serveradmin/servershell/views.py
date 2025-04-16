@@ -395,6 +395,7 @@ def _edit(request: HttpRequest, server, edit_mode=False, template='edit'):  # NO
         'base_template': 'base.html',
         'link': request.get_full_path(),
         'choose_ip_addr': django_settings.CHOOSE_IP_ADDR,
+        'servertype': server['servertype'],
     })
 
 
