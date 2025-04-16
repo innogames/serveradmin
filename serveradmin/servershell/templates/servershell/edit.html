@@ -83,17 +83,17 @@
     </div>
 </form>
 
-{% include "servershell/modals/choose_ip_address.html" %}
+{% include choose_ip_addr.include %}
 {% endblock %}
 
 {% block additional_scripts %}
 <script src="{{ STATIC_URL }}js/jquery-ui.min.js"></script>
 <script src="{{ STATIC_URL }}js/servershell.js"></script>
 <script src="{{ STATIC_URL }}js/servershell/validate.js"></script>
-<script src="{{ STATIC_URL }}js/servershell/choose_ip_address.js"></script>
+<script src="{{ STATIC_URL }}{{ choose_ip_addr.js }}"></script>
 <script>
 servershell.urls = {
-    choose_ip_address: "{% url 'servershell_choose_ip_addr' %}",
+    choose_ip_address: "{{ choose_ip_addr.url }}",
 };
 </script>
 {% endblock %}

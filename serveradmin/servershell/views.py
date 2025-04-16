@@ -8,6 +8,7 @@ from distutils.util import strtobool
 from ipaddress import IPv6Address, IPv4Address, ip_interface
 from itertools import islice, chain
 
+from django.conf import settings as django_settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import (
@@ -109,6 +110,7 @@ def index(request):
         'filters': sorted([(f.__name__, f.__doc__) for f in filter_classes]),
         'search_settings': search_settings,
         'servershell_plugins': servershell_plugins(),
+        'choose_ip_addr': django_settings.CHOOSE_IP_ADDR,
     })
 
 
@@ -392,6 +394,7 @@ def _edit(request: HttpRequest, server, edit_mode=False, template='edit'):  # NO
         'fields': fields,
         'base_template': 'base.html',
         'link': request.get_full_path(),
+        'choose_ip_addr': django_settings.CHOOSE_IP_ADDR,
     })
 
 
