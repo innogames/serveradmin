@@ -208,8 +208,9 @@ class BaseQuery(object):
             if isinstance(addr, (IPv4Network, IPv6Network)):
                 yield addr
 
-    def get_free_ip_addrs(self, attr='intern_ip'):
-        networks = list(self.get_network_ip_addrs(attr))
+    def get_free_ip_addrs(self, attr='intern_ip', networks=None):
+        if networks is None:
+            networks = list(self.get_network_ip_addrs(attr))
         if not networks:
             raise DatasetError('No networks')
 
