@@ -12,7 +12,7 @@
 {% endblock %}
 
 {% block content %}
-    {% include choose_ip_addr.include %}
+    {% include choose_ip_address.include %}
 
     <!-- Servershell JS alerts -->
     <div id="alerts">
@@ -193,7 +193,7 @@
 <script src="{{ STATIC_URL }}js/servershell/result.js"></script>
 <script src="{{ STATIC_URL }}js/servershell/command.js"></script>
 <script src="{{ STATIC_URL }}js/servershell/validate.js"></script>
-<script src="{{ STATIC_URL }}{{ choose_ip_addr.js }}"></script>
+<script src="{{ STATIC_URL }}{{ choose_ip_address.js }}"></script>
 <script src="{{ STATIC_URL }}js/servershell/autocomplete/search.js"></script>
 <script src="{{ STATIC_URL }}js/servershell/autocomplete/command.js"></script>
 <script>
@@ -222,7 +222,7 @@
         // We define the URLs once here so that we can render them with
         // template engine from the backend and can access them everywhere
         servershell.urls = {
-            choose_ip_address: "{{ choose_ip_addr.url }}",
+            choose_ip_address: "{{ choose_ip_address.url }}",
             inspect: "{% url 'servershell_inspect' %}",
             edit: "{% url 'servershell_edit' %}",
             graphite: "{% url 'graphite_graph_table' %}",

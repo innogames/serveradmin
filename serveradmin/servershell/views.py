@@ -110,7 +110,7 @@ def index(request):
         'filters': sorted([(f.__name__, f.__doc__) for f in filter_classes]),
         'search_settings': search_settings,
         'servershell_plugins': servershell_plugins(),
-        'choose_ip_addr': django_settings.CHOOSE_IP_ADDR,
+        'choose_ip_address': django_settings.CHOOSE_IP_ADDRESS,
     })
 
 
@@ -394,7 +394,7 @@ def _edit(request: HttpRequest, server, edit_mode=False, template='edit'):  # NO
         'fields': fields,
         'base_template': 'base.html',
         'link': request.get_full_path(),
-        'choose_ip_addr': django_settings.CHOOSE_IP_ADDR,
+        'choose_ip_address': django_settings.CHOOSE_IP_ADDRESS,
         'servertype': server['servertype'],
     })
 
@@ -471,13 +471,13 @@ def clone_object(request):
 
 
 @login_required
-def choose_ip_addr(request):
+def choose_ip_address(request):
     if 'network' not in request.GET:
         servers = list(
             Query({'servertype': 'route_network'}, ['hostname', 'intern_ip'],
                   ['hostname']))
 
-        return TemplateResponse(request, 'servershell/choose_ip_addr.html',
+        return TemplateResponse(request, 'servershell/choose_ip_address.html',
                                 {'servers': servers})
 
     network = request.GET['network']
@@ -494,12 +494,12 @@ def choose_ip_addr(request):
     ))
 
     if servers:
-        return TemplateResponse(request, 'servershell/choose_ip_addr.html',
+        return TemplateResponse(request, 'servershell/choose_ip_address.html',
                                 {'servers': servers})
 
     network_query = Query({'intern_ip': network}, ['intern_ip'])
 
-    return TemplateResponse(request, 'servershell/choose_ip_addr.html', {
+    return TemplateResponse(request, 'servershell/choose_ip_address.html', {
         'ip_addrs': islice(network_query.get_free_ip_addrs(), 50)})
 
 

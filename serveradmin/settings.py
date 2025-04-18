@@ -196,9 +196,9 @@ GRAPHITE_SPRITE_PARAMS = (
     'graphOnly=true'
 )
 
-CHOOSE_IP_ADDR = {
+CHOOSE_IP_ADDRESS = {
     'include': 'servershell/modals/choose_ip_address.html',
-    'url': '/servershell/choose_ip_addr',
+    'url': '/servershell/choose_ip_address',
     'js': 'js/servershell/choose_ip_address.js',
 }
 
