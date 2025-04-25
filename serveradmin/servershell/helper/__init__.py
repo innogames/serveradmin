@@ -9,6 +9,7 @@ def get_default_shown_attributes():
 
     shown_attributes = list(Attribute.specials.keys())
     shown_attributes.remove('object_id')
+    shown_attributes.remove('intern_ip')
     default_attributes = ServertypeAttribute.objects.filter(
         default_visible=True).only('attribute_id').order_by(
         'attribute_id').distinct('attribute_id')
