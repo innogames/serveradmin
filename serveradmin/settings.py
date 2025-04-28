@@ -196,6 +196,12 @@ GRAPHITE_SPRITE_PARAMS = (
     'graphOnly=true'
 )
 
+CHOOSE_IP_ADDRESS = {
+    'include': 'servershell/modals/choose_ip_address.html',
+    'url': '/servershell/choose_ip_address',
+    'js': 'js/servershell/choose_ip_address.js',
+}
+
 # Using exec certainly isn't an awesome solution but it's the best we've got.
 # The problem boils down to django configs being python files but python only
 # imports code from modules in its path.  One solution would be to generate a

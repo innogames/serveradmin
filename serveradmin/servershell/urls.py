@@ -15,7 +15,7 @@ from serveradmin.servershell.views import (
     commit,
     new_object,
     clone_object,
-    choose_ip_addr,
+    choose_ip_address,
     settings, diff,
 )
 
@@ -29,7 +29,7 @@ urlpatterns = [
     path('commit', commit, name='servershell_commit'),
     path('new', new_object, name='servershell_new'),
     path('clone', clone_object, name='servershell_clone'),
-    path('choose_ip_addr', choose_ip_addr, name='servershell_choose_ip_addr'),
+    path('choose_ip_address', choose_ip_address, name='servershell_choose_ip_address'),
     path('settings', settings, name='servershell_save_settings'),
     path('diff', diff, name='servershell_diff'),
     path('opensearch.xml', TemplateView.as_view(template_name='servershell/opensearch.xml'), name='opensearch.xml'),

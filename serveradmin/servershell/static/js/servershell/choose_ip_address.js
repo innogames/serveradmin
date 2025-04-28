@@ -5,14 +5,9 @@
  *
  * @param intern_ip e.g. 10.0.0.1
  */
-servershell.choose_ip_address = function(intern_ip) {
-    let data = {
-        network: intern_ip,
-        async: false,
-    };
-
+servershell.choose_ip_address = function(params) {
     spinner.enable('choose_ip_address');
-    $.get(servershell.urls.choose_ip_address, data, function(html) {
+    $.get(servershell.urls.choose_ip_address, params, function(html) {
         let modal = $('#modal_choose_ip_address');
 
         $('#modal_choose_ip_address .modal-body').html(html);

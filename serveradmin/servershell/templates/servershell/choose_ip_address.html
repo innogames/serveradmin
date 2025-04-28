@@ -30,7 +30,7 @@
             </thead>
             <tbody>
                 {% for server in servers %}
-                    <tr onclick="servershell.choose_ip_address('{{ server.intern_ip }}')"
+                    <tr onclick="servershell.choose_ip_address({network:'{{ server.intern_ip }}'})"
                         data-search-values="{{ server.hostname }}, {{ server.intern_ip }}">
                         <td>{{ server.hostname }}</td>
                         <td>{{ server.intern_ip }}</td>
