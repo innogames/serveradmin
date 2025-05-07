@@ -52,7 +52,7 @@ impl Config {
 
         let path = std::env::var(ENV_NAME_SSH_AGENT).unwrap_or_default();
         let client = ssh_agent_client_rs::Client::connect(Path::new(&path))
-            .map_err(|error| log::error!("Unable to connect to SSH agent: {error}"))
+            .map_err(|error| log::debug!("Unable to connect to SSH agent: {error}"))
             .ok();
 
         if let Some(mut client) = client {
