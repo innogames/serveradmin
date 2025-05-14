@@ -22,6 +22,7 @@ from django.utils import timezone, dateformat
 
 from paramiko.message import Message
 
+from adminapi.exceptions import ApiError
 from adminapi.request import (
     calc_message,
     calc_security_token,
@@ -77,12 +78,13 @@ def api_view(view):
             PermissionDenied,
             ObjectDoesNotExist,
             SuspiciousOperation,
+            ApiError
         ) as error:
             reason = ''
 
             if isinstance(
                 error,
-                (FilterValueError, ValidationError, SuspiciousOperation)
+                (FilterValueError, ValidationError, SuspiciousOperation, ApiError)
             ):
                 status_code = 400
                 reason = 'Bad Request'
