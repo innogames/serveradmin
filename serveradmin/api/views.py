@@ -45,32 +45,25 @@ def health_check(request):
 
 @api_view
 def dataset_query(request, app, data):
-    try:
-        if 'filters' not in data or not isinstance(data['filters'], dict):
-            raise SuspiciousOperation('Filters must be a dictionary')
-        filters = {}
-        for attr, filter_obj in data['filters'].items():
-            filters[attr] = BaseFilter.deserialize(filter_obj)
+    if 'filters' not in data or not isinstance(data['filters'], dict):
+        raise SuspiciousOperation('Filters must be a dictionary')
+    filters = {}
+    for attr, filter_obj in data['filters'].items():
+        filters[attr] = BaseFilter.deserialize(filter_obj)
 
-        # Empty list means query all attributes to the older versions of
-        # the adminapi.
-        if not data.get('restrict'):
-            restrict = None
-        else:
-            restrict = data['restrict']
+    # Empty list means query all attributes to the older versions of
+    # the adminapi.
+    if not data.get('restrict'):
+        restrict = None
+    else:
+        restrict = data['restrict']
 
-        order_by = data.get('order_by')
+    order_by = data.get('order_by')
 
-        return {
-            'status': 'success',
-            'result': execute_query(filters, restrict, order_by),
-        }
-    except (FilterValueError, ValidationError) as error:
-        return {
-            'status': 'error',
-            'type': 'ValueError',
-            'message': str(error),
-        }
+    return {
+        'status': 'success',
+        'result': execute_query(filters, restrict, order_by),
+    }
 
 
 @api_view
