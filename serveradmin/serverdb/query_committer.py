@@ -759,7 +759,7 @@ def _validate_real_attributes(servertype, real_attributes):     # NOQA: C901
 def _insert_server(hostname, intern_ip, servertype, attributes):
 
     if Server.objects.filter(hostname=hostname).exists():
-        raise CommitError('Server with that hostname already exists')
+        raise CommitError(f'Server with hostname "{hostname}" already exists')
 
     server = Server(
         hostname=hostname,
