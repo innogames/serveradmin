@@ -71,7 +71,7 @@ async fn main() -> anyhow::Result<()> {
         server.attributes.clear(name.to_string());
     }
 
-    let server = server.commit().await?;
+    server.commit().await?;
 
     log::info!("Server cloned");
 
