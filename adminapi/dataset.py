@@ -199,7 +199,7 @@ class BaseQuery(object):
 
         return commit
 
-    def get_network_ip_addrs(self, attr='intern_ip'):
+    def get_network_ip_addrs(self, attr: str):
         if self._restrict is not None and attr not in self._restrict:
             raise DatasetError(f'"{attr}" is not queried')
 
@@ -208,11 +208,8 @@ class BaseQuery(object):
             if isinstance(addr, (IPv4Network, IPv6Network)):
                 yield addr
 
-    def get_free_ip_addrs(self, attr='intern_ip', networks=None):
-        if networks is None:
-            networks = list(self.get_network_ip_addrs(attr))
-        if not networks:
-            raise DatasetError('No networks')
+    def get_free_ip_addrs(self, attr='intern_ip'):
+        networks = list(self.get_network_ip_addrs(attr))
 
         # Index host and network addresses separately
         used_hosts = set()
