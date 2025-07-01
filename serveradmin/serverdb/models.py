@@ -19,6 +19,7 @@ from typing import Optional, Union
 
 import netfields
 from django.contrib.auth.models import User
+from django.contrib.postgres.indexes import GistIndex
 from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.core.validators import RegexValidator
@@ -736,6 +737,9 @@ class ServerInetAttribute(ServerAttribute):
         db_table = "server_inet_attribute"
         unique_together = [["server", "attribute", "value"]]
         index_together = [["attribute", "value"]]
+        indexes = [
+            GistIndex(fields=["value"], opclasses=["inet_ops"], name="server_inet_attribute_value_idx"),
+        ]
 
     def clean(self):
         super(ServerAttribute, self).clean()
