@@ -27,7 +27,7 @@ from serveradmin.serverdb.query_materializer import (
     QueryMaterializer,
     get_default_attribute_values,
 )
-from serveradmin.serverdb.signals import pre_commit, post_commit
+from serveradmin.serverdb.signals import pre_commit_critical, pre_commit, post_commit
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +56,13 @@ class CommitNewerData(CommitError):
 def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
     """The main function to commit queries"""
 
+    # First send signals which failure means the commit can't be done.
+    # Exceptions raised in those signals will propagate to here
+    # and prevent the commit.
+    pre_commit_critical.send(
+        commit_query, created=created, changed=changed, deleted=deleted
+    )
+    # Then send signals which failure can be safely ignored.
     pre_commit.send_robust(
         commit_query, created=created, changed=changed, deleted=deleted
     )
