@@ -137,7 +137,7 @@ def send_request(endpoint, get_params=None, post_params=None):
         # In case of an error, sleep before trying again
         time.sleep(Settings.sleep_interval)
     else:
-        assert False    # Cannot happen
+        raise ApiError(f'Received no response after {Settings.tries} retries!')
 
     content_encoding = response.info().get('Content-Encoding')
     content = response.read()
