@@ -130,20 +130,16 @@ def calc_app_id(auth_token):
 def send_request(endpoint, get_params=None, post_params=None):
     for retry in reversed(range(Settings.tries)):
         request = _build_request(endpoint, get_params, post_params)
-        response = _try_request(request, retry)
+        response = _try_request(request, retry != 0)
         if response:
             break
 
         # In case of an error, sleep before trying again
         time.sleep(Settings.sleep_interval)
     else:
-        assert False    # Cannot happen
+        raise ApiError(f'Received no response after {Settings.tries} retries!')
 
-    content_encoding = response.info().get('Content-Encoding')
-    content = response.read()
-    if content_encoding == 'gzip':
-        content = gzip.decompress(content)
-
+    content = _decompress_gzip(response)
     return json.loads(content)
 
 def _build_request(endpoint, get_params, post_params, retry=1):
@@ -228,7 +224,8 @@ def _try_request(request, retry=False):
             content_type = error.info()['Content-Type']
             message = str(error)
             if content_type == 'application/x-json':
-                payload = json.loads(error.read().decode())
+                content = _decompress_gzip(error)
+                payload = json.loads(content)
                 message = payload['error']['message']
             raise ApiError(message, status_code=error.code)
         raise
@@ -236,6 +233,16 @@ def _try_request(request, retry=False):
         if retry:
             return None
         raise
+
+
+def _decompress_gzip(response):
+    content_encoding = response.info().get('Content-Encoding')
+    content = response.read()
+
+    if content_encoding == 'gzip':
+        return gzip.decompress(content)
+    else:
+        return content
 
 
 def json_encode_extra(obj):
