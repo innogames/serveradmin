@@ -102,7 +102,12 @@ servershell.submit_search = function(focus_command_input = false) {
             // We will use this on other components to react on changes ...
             $(document).trigger('servershell_search_finished');
         })
-        .catch(console.error)
+        .catch(function() {
+            servershell.alert(
+            'Request to Serveradmin failed!' +
+                 'You could try again or check the browser console for details.',
+                'danger');
+        })
         .finally(function() {
             spinner.disable('search');
 
