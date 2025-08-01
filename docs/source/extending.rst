@@ -8,23 +8,23 @@ Django applications would be useful.
 Running Serveradmin
 -------------------
 
-We provide a docker-compose setup that gives you a local development instance
+We provide a docker compose setup that gives you a local development instance
 with 2 commands.
 
-First make sure you have docker-compose installed as described
+First make sure you have docker compose plugin installed as described
 `here <https://docs.docker.com/compose/install/>`_.
 
 Then run these two commands::
 
     cp .env.dist .env
-    docker-compose up
+    docker compose up
 
 The default values in .env.dist are sufficient however feel free to adjust
 them to your needs.
 
 You can access the web service to execute Django commands and run scripts::
 
-    docker-compose exec web
+    docker compose exec web
 
     # Example: Run Django management commands
     pipenv run python -m serveradmin -h

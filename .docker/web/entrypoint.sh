@@ -25,7 +25,7 @@ echo -e "
 ********************************************************************************
 
 \e[32m[TIPS]\e[39m
-- Run 'docker-compose exec web /bin/bash' to access web service
+- Run 'docker compose exec web /bin/bash' to access web service
 - Run 'python3 -m pipenv run python -m serveradmin -h' in web service to access django commands
 - Run 'python3 -m pipenv run python -m adminapi example.com' in web service to make adminapi queries
 
