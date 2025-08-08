@@ -1,9 +1,10 @@
 /**
  * Send the search term to the backend, process and display the results or show errors if there are any.
  *
- * @param url
- * @param search_term
- * @param pinned
+ * @param url Serveradmin servershell query URL (e.g. /servershell/results)
+ * @param search_term Text based query (e.g. project=foo)
+ * @param pinned List ob object ids to query besides search_term
+ * @param focus_command_input Focus on command input when done or not
  * @returns {Promise<{}>}
  */
 async function _search(url, search_term, pinned = [], focus_command_input = false) {
@@ -93,23 +94,30 @@ servershell.submit_search = function(focus_command_input = false) {
 
     _search(url, servershell.term, touched_objects, focus_command_input)
         .then(data => {
-            servershell.editable_attributes = data.editable_attributes;
-            servershell.servers = data.servers;
-            servershell.num_servers = data.num_servers;
-            servershell.status = data.status;
-            servershell.understood = data.understood;
-
-            // We will use this on other components to react on changes ...
-            $(document).trigger('servershell_search_finished');
+            if (data) {
+                servershell.editable_attributes = data.editable_attributes;
+                servershell.servers = data.servers;
+                servershell.num_servers = data.num_servers;
+                servershell.status = data.status;
+                servershell.understood = data.understood;
+            }
         })
-        .catch(function() {
-            servershell.alert(
-            'Request to Serveradmin failed!' +
-                 'You could try again or check the browser console for details.',
-                'danger');
+        .catch(function(xhr) {
+            if (xhr.status === 0) {
+                servershell.alert('Network error while requesting Serveradmin!', 'danger');
+            }
+            else if (xhr.status in [500, 502, 503, 504]) {
+                servershell.alert(`HTTP error: ${xhr.status}! If retry does not help let us know.`)
+            }
+            else if (xhr.status === 401) {
+                servershell.alert('Session expired. You need to login again!');
+            }
         })
         .finally(function() {
             spinner.disable('search');
+
+            // We will use this on other components to react on changes ...
+            $(document).trigger('servershell_search_finished');
 
             // Reset running ajax call variable
             servershell._ajax = null;
