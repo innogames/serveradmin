@@ -1,9 +1,10 @@
 /**
  * Send the search term to the backend, process and display the results or show errors if there are any.
  *
- * @param url
- * @param search_term
- * @param pinned
+ * @param url Serveradmin servershell query URL (e.g. /servershell/results)
+ * @param search_term Text based query (e.g. project=foo)
+ * @param pinned List ob object ids to query besides search_term
+ * @param focus_command_input Focus on command input when done or not
  * @returns {Promise<{}>}
  */
 async function _search(url, search_term, pinned = [], focus_command_input = false) {
