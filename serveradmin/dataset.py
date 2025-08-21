@@ -18,8 +18,9 @@ class Query(BaseQuery):
 
     def commit(self, app=None, user=None):
         commit_obj = self._build_commit_object()
-        commit_query(app=app, user=user, **commit_obj)
+        _, commit_id = commit_query(app=app, user=user, **commit_obj)
         self._confirm_changes()
+        return commit_id
 
     def _fetch_results(self):
         return execute_query(self._filters, self._restrict, self._order_by)
@@ -28,5 +29,6 @@ class Query(BaseQuery):
 class DatasetObject(ApiDatasetObject):
     def commit(self, app=None, user=None):
         commit_obj = self._build_commit_object()
-        commit_query(app=app, user=user, **commit_obj)
+        _, commit_id = commit_query(app=app, user=user, **commit_obj)
         self._confirm_changes()
+        return commit_id

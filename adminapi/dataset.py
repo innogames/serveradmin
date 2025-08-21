@@ -282,6 +282,8 @@ class Query(BaseQuery):
         for obj in self:
             obj._confirm_changes()
 
+        return result['commit_id']
+
     def _fetch_results(self):
         request_data = {'filters': self._filters}
         if self._restrict is not None:
@@ -488,6 +490,8 @@ class DatasetObject(dict):
             _handle_exception(result)
 
         self._confirm_changes()
+
+        return result['commit_id']
 
 
 class MultiAttr(set):
