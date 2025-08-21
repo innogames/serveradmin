@@ -129,7 +129,7 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
             created_objects, changed_objects, deleted_objects
         )
 
-        _log_changes(user, app, changed, created_objects, deleted_objects)
+        commit_id = _log_changes(user, app, changed, created_objects, deleted_objects)
 
     post_commit.send_robust(
         commit_query, created=created, changed=changed, deleted=deleted
@@ -139,7 +139,7 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
         list(created_objects.values()),
         list(changed_objects.values()),
         list(deleted_objects.values()),
-    )
+    ), commit_id
 
 
 def _validate(attribute_lookup, changed, changed_objects):
@@ -467,7 +467,7 @@ def _acl_violations(touched_objects, pending_changes, acl):
     return violations or None
 
 
-def _log_changes(user, app, changed, created_objects, deleted_objects):
+def _log_changes(user, app, changed, created_objects, deleted_objects) -> int:
     changes = list()
     commit = ChangeCommit(user=user, app=app)
 
@@ -503,6 +503,8 @@ def _log_changes(user, app, changed, created_objects, deleted_objects):
     if changes:
         commit.save()
         Change.objects.bulk_create(changes)
+
+    return commit.id
 
 
 def _fetch_servers(object_ids):

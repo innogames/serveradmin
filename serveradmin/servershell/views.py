@@ -315,8 +315,7 @@ def _edit(request: HttpRequest, server, edit_mode=False, template='edit'):  # NO
                 messages.info(request, str('Nothing has changed.'))
             else:
                 try:
-                    commit_obj = commit_query(created, changed,
-                                              user=request.user)
+                    commit_obj, _ = commit_query(created, changed, user=request.user)
                 except (PermissionDenied, ValidationError) as err:
                     messages.error(request, str(err))
                 else:

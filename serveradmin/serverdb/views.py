@@ -183,8 +183,8 @@ def recreate(request, change_id):
             server_object.pop(attribute_id)
 
     try:
-        commit = commit_query([server_object], user=request.user)
-        object_id = str(commit.created[0]['object_id'])
+        changes_obj, _ = commit_query([server_object], user=request.user)
+        object_id = str(changes_obj.created[0]['object_id'])
     except (CommitError, ValidationError) as error:
         messages.error(request, str(error))
         return redirect(reverse('serverdb_changes'))
