@@ -8,7 +8,7 @@ from django.utils.html import format_html
 
 from serveradmin.serverdb.forms import (
     ServertypeAttributeAdminForm,
-    ServertypeAdminForm,
+    ServertypeAdminForm, AttributeAdminForm,
 )
 from serveradmin.serverdb.models import (
     Servertype,
@@ -68,6 +68,7 @@ class ServerAdmin(admin.ModelAdmin):
 
 
 class AttributeAdmin(admin.ModelAdmin):
+    form = AttributeAdminForm
     list_display = [
         'attribute_id',
         'type',
