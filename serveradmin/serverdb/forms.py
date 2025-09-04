@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
-from serveradmin.serverdb.models import ServertypeAttribute
+from serveradmin.serverdb.models import ServertypeAttribute, Attribute
 
 
 class ServertypeAdminForm(forms.ModelForm):
@@ -32,4 +32,15 @@ class ServertypeAttributeAdminForm(forms.ModelForm):
                 'Adding an attribute of type inet or supernet when '
                 'ip_addr_type is null is not possible!')
 
+        super().clean()
+
+
+class AttributeAdminForm(forms.ModelForm):
+    class Meta:
+        model = Attribute
+        fields = '__all__'
+
+    def clean(self):
+        if self.cleaned_data['type'] != 'relation' and self.cleaned_data['target_servertype'] is not None:
+            raise ValidationError('Attribute type must be relation when target servertype is selected!')
         super().clean()
