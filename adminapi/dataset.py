@@ -271,7 +271,7 @@ class Query(BaseQuery):
         )
         return _format_obj(response['result'])
 
-    def commit(self):
+    def commit(self) -> int:
         commit = self._build_commit_object()
         result = send_request(COMMIT_ENDPOINT, post_params=commit)
 
@@ -482,7 +482,7 @@ class DatasetObject(dict):
             self[key] = value
 
     # XXX: Deprecated
-    def commit(self):
+    def commit(self) -> int:
         commit = self._build_commit_object()
         result = send_request(COMMIT_ENDPOINT, post_params=commit)
 
