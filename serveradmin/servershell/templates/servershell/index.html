@@ -112,6 +112,16 @@
                     </div>
                     <div id="accordion-attributes-body" class="component collapsed collapse" data-parent="#accordion-attributes">
                         <div id="attributes" class="card-body">
+                            <br>
+                            <b>Bookmarks:</b>
+                            <ul class="list-group list-group-flush">
+                                {% for attribute_selection in attribute_selections %}
+                                <li class="list-group-item">
+                                    <a onclick="servershell.attribute_selection(this)" id="{{ attribute_selection.name }}"><i class="fa fa-book-bookmark">&nbsp;</i>{{ attribute_selection.name }}</a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            <hr>
                             <b>Legend:</b><br>
                             <span class="attribute-indicator">
                                 <b>R</b> Relation<br>
@@ -233,6 +243,7 @@
             history: "{% url 'serverdb_history' %}",
             settings: "{% url 'servershell_save_settings' %}",
             diff: "{% url 'servershell_diff' %}",
+            attribute_selection: "{% url 'servershell_attribute_selection' %}"
         };
 
         servershell.search_settings = {% autoescape off %}{{ search_settings|json }}{% endautoescape %};

@@ -51,14 +51,14 @@ th:hover .attr-headericons {
 
 #attributes-row {
     position: absolute;
-    top: 12.3rem;
+    top: 13.3rem;
     right: 1rem;
     min-width: 14rem;
     z-index: 1;
 }
 
 #accordion-attributes {
-    margin-bottom: 1rem;
+    #margin-bottom: 1rem;
 }
 
 #accordion-attributes .card-header {

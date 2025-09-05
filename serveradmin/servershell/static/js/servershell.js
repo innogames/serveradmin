@@ -273,3 +273,12 @@ servershell.sync_attrlist_visibility = function() {
         $("#accordion-attributes-body").collapse('show');
     };
 };
+
+servershell.attribute_selection = function(element) {
+    $.getJSON(servershell.urls.attribute_selection, {
+        name: element.id,
+        async: false,
+    }, function(data) {
+        servershell.shown_attributes = ['hostname', 'servertype'].concat(data.attributes);
+    });
+}

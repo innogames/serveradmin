@@ -16,7 +16,9 @@ from serveradmin.servershell.views import (
     new_object,
     clone_object,
     choose_ip_address,
-    settings, diff,
+    settings,
+    diff,
+    attribute_selection,
 )
 
 
@@ -32,5 +34,6 @@ urlpatterns = [
     path('choose_ip_address', choose_ip_address, name='servershell_choose_ip_address'),
     path('settings', settings, name='servershell_save_settings'),
     path('diff', diff, name='servershell_diff'),
+    path('selection', attribute_selection, name='servershell_attribute_selection'),
     path('opensearch.xml', TemplateView.as_view(template_name='servershell/opensearch.xml'), name='opensearch.xml'),
 ]

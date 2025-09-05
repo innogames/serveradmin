@@ -35,7 +35,6 @@ from adminapi.datatype import DatatypeError
 from adminapi.filters import Any, ContainedOnlyBy, filter_classes
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
-
 from serveradmin.dataset import Query
 from serveradmin.serverdb.models import (
     Servertype,
@@ -45,11 +44,8 @@ from serveradmin.serverdb.models import (
 )
 from serveradmin.serverdb.query_committer import commit_query
 from serveradmin.servershell.helper import get_default_shown_attributes
-from serveradmin.servershell.helper.autocomplete import (
-    attribute_value_startswith,
-    attribute_startswith
-)
 from serveradmin.servershell.merged_query_iterator import MergedQuery
+from serveradmin.servershell.models import AttributeSelection
 from serveradmin.servershell.utils import servershell_plugins
 
 MAX_DISTINGUISHED_VALUES = 50
@@ -103,6 +99,7 @@ def index(request):
         'shown_attributes': shown_attributes,
         'deep_link': bool(strtobool(request.GET.get('deep_link', 'false'))),
         'attributes': attributes_json,
+        'attribute_selections': AttributeSelection.objects.all().values('pk', 'name'),
         'servertypes': list(Servertype.objects.values_list('servertype_id', flat=True)),
         'offset': 0,
         'limit': request.session.get('limit', NUM_SERVERS_DEFAULT),
@@ -573,3 +570,13 @@ def diff(request: HttpRequest) -> HttpResponse:
         'diff_data': diff_data,
     }
     return render(request, 'servershell/diff.html', context)
+
+@login_required
+def attribute_selection(request: HttpRequest) -> HttpResponse:
+    if request.method == 'GET':
+        model = get_object_or_404(AttributeSelection, name=request.GET.get('name'))
+        return JsonResponse({
+            'attributes': list(model.attributes.all().values_list('attribute_id', flat=True)),
+        })
+
+    return HttpResponse(status=400)
