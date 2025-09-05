@@ -41,10 +41,12 @@ class AttributeAdminForm(forms.ModelForm):
         fields = '__all__'
 
     def clean(self):
-        if self.cleaned_data['type'] != 'relation' and self.cleaned_data['target_servertype'] is not None:
+        attr_type = self.cleaned_data.get('type') or self.instance.type # New or existing attribute ?
+
+        if attr_type != 'relation' and self.cleaned_data.get('target_servertype') is not None:
             raise ValidationError('Attribute type must be relation when target servertype is selected!')
 
-        if self.cleaned_data['type'] == 'inet' and self.cleaned_data['multi'] is True:
+        if attr_type == 'inet' and self.cleaned_data.get('multi') is True:
             raise ValidationError('Multi attributes of type inet are not supported!')
 
         super().clean()
