@@ -27,7 +27,7 @@ class TestAttributeRelatedViaPermissions(TransactionTestCase):
 
         vm = Query({"hostname": "vm-1"}, ["hostname", "hv"])
         vm.update(hv="hv-2")
-        self.assertIsNone(vm.commit(app=Application.objects.get(name="test")))
+        self.assertIsInstance(vm.commit(app=Application.objects.get(name="test")), int)
 
     # See https://github.com/innogames/serveradmin/pull/351
     def test_cannot_commit_related_via_attribute_target(self):

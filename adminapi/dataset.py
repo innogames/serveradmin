@@ -271,7 +271,7 @@ class Query(BaseQuery):
         )
         return _format_obj(response['result'])
 
-    def commit(self):
+    def commit(self) -> int:
         commit = self._build_commit_object()
         result = send_request(COMMIT_ENDPOINT, post_params=commit)
 
@@ -281,6 +281,8 @@ class Query(BaseQuery):
         self.num_dirty = 0
         for obj in self:
             obj._confirm_changes()
+
+        return result['commit_id']
 
     def _fetch_results(self):
         request_data = {'filters': self._filters}
@@ -480,7 +482,7 @@ class DatasetObject(dict):
             self[key] = value
 
     # XXX: Deprecated
-    def commit(self):
+    def commit(self) -> int:
         commit = self._build_commit_object()
         result = send_request(COMMIT_ENDPOINT, post_params=commit)
 
@@ -488,6 +490,8 @@ class DatasetObject(dict):
             _handle_exception(result)
 
         self._confirm_changes()
+
+        return result['commit_id']
 
 
 class MultiAttr(set):

@@ -99,7 +99,7 @@ def dataset_commit(request, app, data):
             kwargs[key] = value
 
     try:
-        commit_query(app=app, **kwargs)
+        _, commit_id = commit_query(app=app, **kwargs)
     except ValidationError as error:
         return {
             'status': 'error',
@@ -109,6 +109,7 @@ def dataset_commit(request, app, data):
 
     return {
         'status': 'success',
+        'commit_id': commit_id,
     }
 
 
