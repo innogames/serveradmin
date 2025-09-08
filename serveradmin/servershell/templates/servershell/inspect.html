@@ -12,7 +12,7 @@
 
 {% block content %}
 <div>
-<div class="row">
+<div class="row mb-3">
     <div class="col-md-2"></div>
     <div class="col-md-8">
         <h3>
@@ -21,7 +21,14 @@
         </h3>
     </div>
 </div>
-<div class="row">
+<div class="row mb-3">
+    <div class="col-md-2"></div>
+    <div class="col-md-8">
+        <a class="btn btn-success" data-edit-link href="{% url 'servershell_edit' %}?object_id={{ object_id }}">Edit</a>
+        <a href="{% url 'servershell_index' %}" class="btn btn-success">Goto Servershell</a>
+    </div>
+</div>
+<div class="row mb-3">
     <div class="col-md-2"></div>
     <div class="col-md-8">
         <table class="table table-bordered table-sm table-borderless table-striped table-flex">
@@ -63,9 +70,13 @@
 <div class="row">
     <div class="col-md-2"></div>
     <div class="col-md-8">
-        <a class="btn btn-success" href="{% url 'servershell_edit' %}?object_id={{ object_id }}">Edit</a>
+        <a class="btn btn-success" data-edit-link href="{% url 'servershell_edit' %}?object_id={{ object_id }}">Edit</a>
         <a href="{% url 'servershell_index' %}" class="btn btn-success">Goto Servershell</a>
     </div>
 </div>
 </div>
+{% endblock %}
+
+{% block additional_scripts %}
+    <script src="{{ STATIC_URL }}js/inspect.js"></script>
 {% endblock %}
