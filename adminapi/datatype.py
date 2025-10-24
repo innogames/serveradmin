@@ -3,10 +3,11 @@
 Copyright (c) 2019 InnoGames GmbH
 """
 from datetime import date, datetime
-from re import compile as re_compile
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
+from re import compile as re_compile
 
 from netaddr import EUI
+
 try:
     from netaddr import mac_unix_expanded
 except ImportError:
