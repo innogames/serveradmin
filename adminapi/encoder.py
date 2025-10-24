@@ -1,3 +1,8 @@
+"""Serveradmin - adminapi
+
+Copyright (c) 2025 InnoGames GmbH
+"""
+
 import json
 import datetime
 import ipaddress
@@ -20,5 +25,3 @@ class ServeradminJSONEncoder(json.JSONEncoder):
             return str(obj)
 
         return json.JSONEncoder.default(self, obj)
-
-

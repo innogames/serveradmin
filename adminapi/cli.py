@@ -1,7 +1,8 @@
 """Serveradmin - adminapi - Command Line Interface
 
-Copyright (c) 2019 InnoGames GmbH
+Copyright (c) 2025 InnoGames GmbH
 """
+
 import json
 import sys
 from argparse import ArgumentParser, ArgumentTypeError
@@ -71,10 +72,7 @@ def main():
     query = Query(filters, attribute_ids_to_fetch, args.order)
 
     if args.one and len(query) > 1:
-        raise Exception(
-            'Expecting exactly one server, found {} servers'
-            .format(len(query))
-        )
+        raise Exception('Expecting exactly one server, found {} servers'.format(len(query)))
 
     for server in query:
         if args.reset:
