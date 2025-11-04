@@ -7,6 +7,9 @@
 # just copy or link them under this repository on development environments.
 /serveradmin_*
 
+# Ignore our SSO app
+igrestlogin
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
