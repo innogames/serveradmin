@@ -91,7 +91,6 @@ class TestParseQuery(unittest.TestCase):
 
     def test_any_filter_with_duplicate_hostname(self):
         # Hostname shorthand triggers regex, but explicit attribute assignment doesn't
-        # Order: explicit assignment value comes first, then shorthand value
         result = parse_query("web.* hostname=db.*")
         expected = {"hostname": Any(BaseFilter("db.*"), Regexp("web.*"))}
         assert_filters_equal(self, result, expected)
@@ -99,7 +98,6 @@ class TestParseQuery(unittest.TestCase):
     def test_invalid_function(self):
         with self.assertRaisesRegex(DatatypeError, r"Invalid function InvalidFunc"):
             parse_query("hostname=InvalidFunc(test)")
-
 
     def test_top_level_literal_error(self):
         with self.assertRaisesRegex(
@@ -127,14 +125,11 @@ class TestParseFunctionString(unittest.TestCase):
         result = parse_function_string('hostname="web 01"')
         self.assertEqual(result, [("key", "hostname"), ("literal", "web 01")])
 
-    def test_single_quoted_string(self):
         result = parse_function_string("hostname='web 01'")
         self.assertEqual(result, [("key", "hostname"), ("literal", "web 01")])
 
-    def test_escaped_quote(self):
         result = parse_function_string('hostname="web\\"01"')
-        # Note: string_buf stores the actual chars, but the result is the original slice
-        self.assertEqual(result[1][0], "literal")
+        self.assertEqual(result[1], ("literal", 'web\\"01'))
 
     def test_function_call(self):
         result = parse_function_string("num_cores=GreaterThan(4)")
@@ -173,7 +168,6 @@ class TestParseFunctionString(unittest.TestCase):
         with self.assertRaisesRegex(DatatypeError, r"Invalid escape"):
             parse_function_string('hostname="web\\01"', strict=True)
 
-
     def test_empty_string(self):
         result = parse_function_string("")
         self.assertEqual(result, [])
@@ -191,7 +185,3 @@ class TestParseFunctionString(unittest.TestCase):
             ("endfunc", ""),
         ]
         self.assertEqual(result, expected)
-
-
-if __name__ == "__main__":
-    unittest.main()
