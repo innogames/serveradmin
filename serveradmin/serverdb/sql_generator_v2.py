@@ -512,23 +512,33 @@ def _build_related_via_condition(attribute, model, value_condition, related_via,
             attribute, model, base_filter, related_via
         )
     elif related_via.type == 'reverse':
-        # Join through reversed relation
+        # Join through reversed relation.
+        # We must use RawSQL to reference "server"."server_id" directly because
+        # OuterRef('server_id') in a nested Subquery would incorrectly reference
+        # the model's server_id (immediate outer query) instead of the Server table.
         exists_query = model.objects.filter(
-            server_id__in=Subquery(
-                ServerRelationAttribute.objects.filter(
-                    attribute_id=related_via.reversed_attribute_id,
-                    value=OuterRef('server_id'),
-                ).values('server_id')
+            server_id__in=RawSQL(
+                '''
+                SELECT rel.server_id FROM server_relation_attribute rel
+                WHERE rel.value = "server"."server_id"
+                AND rel.attribute_id = %s
+                ''',
+                [related_via.reversed_attribute_id]
             ),
         ).filter(base_filter)
     else:
-        # relation type: join through ServerRelationAttribute
+        # relation type: join through ServerRelationAttribute.
+        # We must use RawSQL to reference "server"."server_id" directly because
+        # OuterRef('server_id') in a nested Subquery would incorrectly reference
+        # the model's server_id (immediate outer query) instead of the Server table.
         exists_query = model.objects.filter(
-            server_id__in=Subquery(
-                ServerRelationAttribute.objects.filter(
-                    server_id=OuterRef('server_id'),
-                    attribute_id=related_via.attribute_id,
-                ).values('value')
+            server_id__in=RawSQL(
+                '''
+                SELECT rel.value FROM server_relation_attribute rel
+                WHERE rel.server_id = "server"."server_id"
+                AND rel.attribute_id = %s
+                ''',
+                [related_via.attribute_id]
             ),
         ).filter(base_filter)
 
