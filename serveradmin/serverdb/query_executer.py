@@ -260,10 +260,14 @@ def _get_servers(filters, attribute_lookup, related_vias):
     query_result = get_server_query(attribute_filters, related_vias)
     try:
         if isinstance(query_result, str):
-            # V1: Raw SQL string
+            # V1: Raw SQL string - defer() has no effect here since the raw
+            # SQL already selects intern_ip, but kept for backwards compatibility
             return list(Server.objects.defer('intern_ip').raw(query_result))
         else:
-            # V2: Django QuerySet - defer intern_ip for consistency
-            return list(query_result.defer('intern_ip'))
+            # V2: Django QuerySet - do NOT use defer('intern_ip') here because
+            # QueryMaterializer accesses intern_ip, which would cause N+1 queries
+            # (each server fetched individually to get the deferred field).
+            # The v1 raw SQL already includes intern_ip, so this matches behavior.
+            return list(query_result)
     except DataError as error:
         raise ValidationError(error)
