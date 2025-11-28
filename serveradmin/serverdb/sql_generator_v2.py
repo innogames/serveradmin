@@ -639,6 +639,10 @@ def _build_supernet_lookup(attribute, value_condition):
     the current server's inet, then filter those by the value_condition
     (which applies to the supernet server's hostname).
 
+    PERFORMANCE: The hostname filter must be a NON-CORRELATED subquery so it's
+    evaluated once, not per-row. This matches v1's efficient structure:
+      supernet.server_id IN (SELECT server_id FROM server WHERE hostname = ...)
+
     Args:
         attribute: Supernet attribute instance
         value_condition: Q object for value comparison (applied to hostname)
@@ -659,34 +663,93 @@ def _build_supernet_lookup(attribute, value_condition):
             'JOIN attribute AS net_attr ON net_attr.attribute_id = net_addr.attribute_id '
         )
 
-    # Find supernet servers whose inet contains the outer server's inet.
-    # The correlation to the outer query uses "server"."server_id" directly
-    # since Django uses "server" as the alias for the outer Server table.
-    #
-    # The value_condition filters supernets by hostname (for relation-like lookups).
-    hostname_condition = _transform_to_hostname(value_condition)
+    # Convert value_condition to SQL for the hostname filter.
+    # This will be embedded as a NON-CORRELATED subquery for efficiency.
+    hostname_filter_sql, hostname_params = _build_hostname_filter_sql(value_condition)
 
-    # Build subquery to find supernet server_ids
-    supernet_subquery = Server.objects.filter(
-        servertype_id=attribute.target_servertype_id,
-    ).filter(
-        pk__in=RawSQL(
+    # Build efficient EXISTS query matching v1's structure:
+    # - Single EXISTS with all conditions
+    # - Hostname filter as non-correlated subquery (evaluated once)
+    # - Inet containment as the correlated part
+    return Exists(
+        RawSQL(
             f'''
-            SELECT DISTINCT supernet.server_id
-            FROM server AS supernet
+            SELECT 1 FROM server AS supernet
             JOIN server_inet_attribute AS net_addr ON net_addr.server_id = supernet.server_id
             JOIN server_inet_attribute AS server_addr ON server_addr.server_id = "server"."server_id"
             {af_join}
             WHERE net_addr.value >>= server_addr.value
             AND net_addr.attribute_id = server_addr.attribute_id
             AND supernet.servertype_id = %s
+            AND supernet.server_id IN (
+                SELECT server_id FROM server WHERE {hostname_filter_sql}
+            )
             {af_condition}
             ''',
-            [attribute.target_servertype_id]
+            [attribute.target_servertype_id] + hostname_params
         )
-    ).filter(hostname_condition)
+    )
 
-    return Exists(supernet_subquery)
+
+def _build_hostname_filter_sql(value_condition):
+    """
+    Convert a value condition Q object to SQL for hostname filtering.
+
+    Args:
+        value_condition: Q object with value__* lookups
+
+    Returns:
+        tuple: (sql_string, params_list)
+    """
+    # Extract the filter from the Q object
+    if not hasattr(value_condition, 'children') or not value_condition.children:
+        # Empty condition - match all
+        return 'TRUE', []
+
+    for child in value_condition.children:
+        if isinstance(child, tuple):
+            key, val = child
+
+            # Handle common lookup types
+            if key in ('value', 'value__exact'):
+                return '"hostname" = %s', [val]
+            elif key == 'value__regex':
+                return '"hostname" ~ %s', [val]
+            elif key == 'value__iregex':
+                return '"hostname" ~* %s', [val]
+            elif key == 'value__contains':
+                return '"hostname" LIKE %s', [f'%{val}%']
+            elif key == 'value__icontains':
+                return '"hostname" ILIKE %s', [f'%{val}%']
+            elif key == 'value__startswith':
+                return '"hostname" LIKE %s', [f'{val}%']
+            elif key == 'value__istartswith':
+                return '"hostname" ILIKE %s', [f'{val}%']
+            elif key == 'value__endswith':
+                return '"hostname" LIKE %s', [f'%{val}']
+            elif key == 'value__iendswith':
+                return '"hostname" ILIKE %s', [f'%{val}']
+            elif key == 'value__gt':
+                return '"hostname" > %s', [val]
+            elif key == 'value__gte':
+                return '"hostname" >= %s', [val]
+            elif key == 'value__lt':
+                return '"hostname" < %s', [val]
+            elif key == 'value__lte':
+                return '"hostname" <= %s', [val]
+            elif key == 'value__in':
+                placeholders = ', '.join(['%s'] * len(val))
+                return f'"hostname" IN ({placeholders})', list(val)
+
+    # Fallback: try to handle negated conditions
+    if value_condition.negated and value_condition.children:
+        inner_sql, inner_params = _build_hostname_filter_sql(
+            Q(*value_condition.children, _connector=value_condition.connector)
+        )
+        return f'NOT ({inner_sql})', inner_params
+
+    # Last resort fallback - match all (shouldn't normally reach here)
+    return 'TRUE', []
 
 
 def _transform_to_server_id(value_condition):
