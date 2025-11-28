@@ -625,51 +625,58 @@ def _build_supernet_lookup(attribute, value_condition):
     """
     Build lookup for supernet attribute type.
 
+    For supernet attributes, we find servers whose inet attribute contains
+    the current server's inet, then filter those by the value_condition
+    (which applies to the supernet server's hostname).
+
     Args:
         attribute: Supernet attribute instance
-        value_condition: Q object for value comparison
+        value_condition: Q object for value comparison (applied to hostname)
 
     Returns:
         Q: EXISTS subquery for supernet matching
     """
-    # Supernet lookup requires complex inet containment join
-    # This matches networks that contain the server's IP addresses
-
-    inet_attrs = ServerInetAttribute.objects.filter(
-        server_id=OuterRef('server_id'),
-    )
-
+    # Build the inet address family filter if needed
+    af_condition = ''
+    af_join = ''
     if attribute.inet_address_family:
-        inet_attrs = inet_attrs.filter(
-            attribute__inet_address_family=attribute.inet_address_family,
+        af_condition = (
+            f"AND server_attr.inet_address_family = '{attribute.inet_address_family}' "
+            f"AND net_attr.inet_address_family = '{attribute.inet_address_family}' "
+        )
+        af_join = (
+            'JOIN attribute AS server_attr ON server_attr.attribute_id = server_addr.attribute_id '
+            'JOIN attribute AS net_attr ON net_attr.attribute_id = net_addr.attribute_id '
         )
 
-    # Find supernet servers whose inet contains our inet
-    supernet_query = Server.objects.filter(
+    # Find supernet servers whose inet contains the outer server's inet.
+    # The correlation to the outer query uses "server"."server_id" directly
+    # since Django uses "server" as the alias for the outer Server table.
+    #
+    # The value_condition filters supernets by hostname (for relation-like lookups).
+    hostname_condition = _transform_to_hostname(value_condition)
+
+    # Build subquery to find supernet server_ids
+    supernet_subquery = Server.objects.filter(
         servertype_id=attribute.target_servertype_id,
     ).filter(
-        # Join ServerInetAttribute for supernet to find containing networks
-        pk__in=Subquery(
-            ServerInetAttribute.objects.filter(
-                server__servertype_id=attribute.target_servertype_id,
-            ).annotate(
-                contains_server=RawSQL(
-                    'EXISTS (SELECT 1 FROM server_inet_attribute sia '
-                    'WHERE sia.server_id = %s AND server_inet_attribute.value >>= sia.value)',
-                    [OuterRef(OuterRef('server_id'))]
-                )
-            ).filter(
-                contains_server=True,
-            ).values('server_id')
+        pk__in=RawSQL(
+            f'''
+            SELECT DISTINCT supernet.server_id
+            FROM server AS supernet
+            JOIN server_inet_attribute AS net_addr ON net_addr.server_id = supernet.server_id
+            JOIN server_inet_attribute AS server_addr ON server_addr.server_id = "server"."server_id"
+            {af_join}
+            WHERE net_addr.value >>= server_addr.value
+            AND net_addr.attribute_id = server_addr.attribute_id
+            AND supernet.servertype_id = %s
+            {af_condition}
+            ''',
+            [attribute.target_servertype_id]
         )
-    )
+    ).filter(hostname_condition)
 
-    # Apply value condition (filtering on the supernet server)
-    supernet_query = supernet_query.filter(
-        _transform_to_server_id(value_condition)
-    )
-
-    return Exists(supernet_query)
+    return Exists(supernet_subquery)
 
 
 def _transform_to_server_id(value_condition):
@@ -752,6 +759,11 @@ def _build_supernet_related_query(attribute, model, base_filter, related_via):
     """
     Build query for attributes accessed through supernet relation.
 
+    This handles the case where an attribute is accessed via a supernet
+    relationship. For example, if server A has inet 10.0.0.1 and server B
+    (a network) has inet 10.0.0.0/24, then attributes on B can be accessed
+    from A via the supernet relation.
+
     Args:
         attribute: Target attribute
         model: ServerAttribute model class
@@ -761,29 +773,41 @@ def _build_supernet_related_query(attribute, model, base_filter, related_via):
     Returns:
         QuerySet: Query for EXISTS check
     """
-    # Find servers that are supernets of the current server
-    # then look up the attribute on those servers
-
-    supernet_servers = Server.objects.filter(
-        servertype_id=related_via.target_servertype_id,
-    ).filter(
-        pk__in=Subquery(
-            ServerInetAttribute.objects.annotate(
-                is_supernet=RawSQL(
-                    'EXISTS (SELECT 1 FROM server_inet_attribute sia '
-                    'JOIN server s ON s.server_id = sia.server_id '
-                    'WHERE s.server_id = %s '
-                    'AND server_inet_attribute.value >>= sia.value '
-                    'AND server_inet_attribute.attribute_id = sia.attribute_id)',
-                    [OuterRef(OuterRef('server_id'))]
-                )
-            ).filter(
-                is_supernet=True,
-                server__servertype_id=related_via.target_servertype_id,
-            ).values('server_id')
+    # Build inet address family filter if needed
+    af_condition = ''
+    af_join = ''
+    if related_via.inet_address_family:
+        af_condition = (
+            f"AND server_attr.inet_address_family = '{related_via.inet_address_family}' "
+            f"AND net_attr.inet_address_family = '{related_via.inet_address_family}' "
         )
+        af_join = (
+            'JOIN attribute AS server_attr ON server_attr.attribute_id = server_addr.attribute_id '
+            'JOIN attribute AS net_attr ON net_attr.attribute_id = net_addr.attribute_id '
+        )
+
+    # The query finds attribute values on supernet servers.
+    # A supernet server is one whose inet attribute contains the outer
+    # server's inet attribute.
+    #
+    # We reference "server"."server_id" directly in SQL to correlate with
+    # the outer query (Django uses "server" as the alias for the Server table).
+    supernet_server_ids_sql = RawSQL(
+        f'''
+        SELECT DISTINCT supernet.server_id
+        FROM server AS supernet
+        JOIN server_inet_attribute AS net_addr ON net_addr.server_id = supernet.server_id
+        JOIN server_inet_attribute AS server_addr ON server_addr.server_id = "server"."server_id"
+        {af_join}
+        WHERE net_addr.value >>= server_addr.value
+        AND net_addr.attribute_id = server_addr.attribute_id
+        AND supernet.servertype_id = %s
+        {af_condition}
+        ''',
+        [related_via.target_servertype_id]
     )
 
+    # Return query for the attribute model filtered to supernet servers
     return model.objects.filter(
-        server_id__in=Subquery(supernet_servers.values('server_id')),
+        server_id__in=supernet_server_ids_sql,
     ).filter(base_filter)
