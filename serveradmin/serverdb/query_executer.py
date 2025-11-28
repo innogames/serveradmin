@@ -8,7 +8,7 @@ from django.db import DataError, connection, transaction
 
 from adminapi.filters import Any
 from serveradmin.serverdb.models import Attribute, ServertypeAttribute, Server
-from serveradmin.serverdb.sql_generator import get_server_query
+from serveradmin.serverdb.query_builder import get_server_query
 from serveradmin.serverdb.query_materializer import QueryMaterializer
 
 
@@ -255,9 +255,15 @@ def _get_servers(filters, attribute_lookup, related_vias):
         attribute_filters.append((attribute_lookup[attribute_id], filt))
 
     # If you managed to read this so far, the last step is refreshingly
-    # easy: get and execute the raw SQL query.
-    sql_query = get_server_query(attribute_filters, related_vias)
+    # easy: get and execute the query. The result can be either a raw SQL
+    # string (v1) or a Django QuerySet (v2) depending on configuration.
+    query_result = get_server_query(attribute_filters, related_vias)
     try:
-        return list(Server.objects.defer('intern_ip').raw(sql_query))
+        if isinstance(query_result, str):
+            # V1: Raw SQL string
+            return list(Server.objects.defer('intern_ip').raw(query_result))
+        else:
+            # V2: Django QuerySet - defer intern_ip for consistency
+            return list(query_result.defer('intern_ip'))
     except DataError as error:
         raise ValidationError(error)

@@ -1,0 +1,789 @@
+"""Serveradmin - SQL Generator V2 (Django ORM)
+
+Copyright (c) 2024 InnoGames GmbH
+
+This module provides server query generation using Django ORM instead of
+raw SQL string concatenation. It provides the same interface as sql_generator.py
+for compatibility but returns a QuerySet instead of a SQL string.
+
+Benefits over v1:
+- Parameterized queries (SQL injection protection)
+- Django's query optimization and lazy evaluation
+- Better maintainability and testability
+- Type safety through Django's ORM
+"""
+
+from django.db.models import Q, Exists, OuterRef, Subquery, F
+from django.db.models.expressions import RawSQL
+
+from adminapi.filters import (
+    All,
+    Any,
+    BaseFilter,
+    Contains,
+    ContainedBy,
+    ContainedOnlyBy,
+    Empty,
+    GreaterThan,
+    GreaterThanOrEquals,
+    LessThan,
+    LessThanOrEquals,
+    Overlaps,
+    Regexp,
+    StartsWith,
+    Not,
+    FilterValueError,
+)
+from serveradmin.serverdb.models import (
+    Attribute,
+    Server,
+    ServerAttribute,
+    ServerBooleanAttribute,
+    ServerInetAttribute,
+    ServerRelationAttribute,
+)
+
+
+def get_server_query(attribute_filters, related_vias):
+    """
+    Build a Django QuerySet for filtering servers.
+
+    This function provides the same interface as sql_generator.get_server_query()
+    but returns a QuerySet instead of a raw SQL string.
+
+    Args:
+        attribute_filters: List of (Attribute, Filter) tuples to apply
+        related_vias: Dict mapping attribute_id to {related_via_attr: [servertype_ids]}
+
+    Returns:
+        QuerySet[Server]: Filtered and ordered queryset of servers
+    """
+    queryset = Server.objects.all()
+
+    for attribute, filt in attribute_filters:
+        condition = _build_attribute_condition(attribute, filt, related_vias)
+        queryset = queryset.filter(condition)
+
+    return queryset.order_by('hostname')
+
+
+def _build_attribute_condition(attribute, filt, related_vias):
+    """
+    Build a Q object for filtering by an attribute with a given filter.
+
+    Args:
+        attribute: The Attribute model instance
+        filt: The filter to apply (BaseFilter subclass)
+        related_vias: Dict of related_via configurations
+
+    Returns:
+        Q: Django Q object representing the filter condition
+    """
+    # Handle logical filters (Not, Any, All) first
+    if isinstance(filt, Not):
+        inner_condition = _build_attribute_condition(
+            attribute, filt.value, related_vias
+        )
+        return ~inner_condition
+
+    if isinstance(filt, (Any, All)):
+        return _build_logical_condition(attribute, filt, related_vias)
+
+    # Build the value condition based on filter type
+    value_condition = _build_value_condition(attribute, filt)
+
+    # Wrap in attribute lookup (special, standard, or complex type)
+    return _build_attribute_lookup(attribute, value_condition, related_vias)
+
+
+def _build_logical_condition(attribute, filt, related_vias):
+    """
+    Build Q object for Any (OR) or All (AND) logical filters.
+
+    Args:
+        attribute: The Attribute model instance
+        filt: Any or All filter instance
+        related_vias: Dict of related_via configurations
+
+    Returns:
+        Q: Combined Q object with OR/AND logic
+    """
+    if not filt.values:
+        # Empty Any() always fails, empty All() always passes
+        if isinstance(filt, All):
+            return Q()  # Empty Q matches everything
+        else:
+            return Q(pk__isnull=True) & Q(pk__isnull=False)  # Always False
+
+    # Optimization: collect simple BaseFilter values for IN clause
+    simple_values = []
+    complex_conditions = []
+
+    for value in filt.values:
+        if isinstance(filt, Any) and type(value) == BaseFilter:
+            simple_values.append(value.value)
+        else:
+            complex_conditions.append(
+                _build_attribute_condition(attribute, value, related_vias)
+            )
+
+    # Build optimized IN clause for simple values
+    if simple_values:
+        if len(simple_values) == 1:
+            in_condition = _build_attribute_condition(
+                attribute, BaseFilter(simple_values[0]), related_vias
+            )
+        else:
+            in_condition = _build_in_condition(attribute, simple_values, related_vias)
+        complex_conditions.append(in_condition)
+
+    # Combine with OR (Any) or AND (All)
+    if isinstance(filt, All):
+        result = Q()
+        for condition in complex_conditions:
+            result &= condition
+    else:
+        result = Q(pk__isnull=True) & Q(pk__isnull=False)  # Start with False for OR
+        for condition in complex_conditions:
+            result |= condition
+
+    return result
+
+
+def _build_in_condition(attribute, values, related_vias):
+    """
+    Build an optimized IN condition for multiple simple values.
+
+    Args:
+        attribute: The Attribute model instance
+        values: List of values to match
+        related_vias: Dict of related_via configurations
+
+    Returns:
+        Q: Q object with IN clause
+    """
+    if attribute.special:
+        field = _get_special_field(attribute)
+        return Q(**{f'{field}__in': values})
+
+    # For regular attributes, use EXISTS with IN
+    return _build_attribute_lookup(
+        attribute,
+        Q(value__in=values),
+        related_vias,
+    )
+
+
+def _build_value_condition(attribute, filt):
+    """
+    Build the value comparison Q object based on filter type.
+
+    Args:
+        attribute: The Attribute model instance
+        filt: The filter to apply
+
+    Returns:
+        Q: Q object for the value comparison (to be used in subquery)
+    """
+    # Boolean attributes: presence check only
+    if attribute.type == 'boolean':
+        if type(filt) != BaseFilter:
+            raise FilterValueError(
+                f'Boolean attribute "{attribute}" cannot be used with '
+                f'{type(filt).__name__}() filter'
+            )
+        # For booleans, the filter value determines EXISTS vs NOT EXISTS
+        # Return a marker that _build_attribute_lookup will handle
+        return Q(_boolean_negate=not filt.value)
+
+    # Regexp filter
+    if isinstance(filt, Regexp):
+        return Q(value__regex=filt.value)
+
+    # Comparison filters
+    if isinstance(filt, GreaterThan):
+        return Q(value__gt=filt.value)
+    if isinstance(filt, GreaterThanOrEquals):
+        return Q(value__gte=filt.value)
+    if isinstance(filt, LessThan):
+        return Q(value__lt=filt.value)
+    if isinstance(filt, LessThanOrEquals):
+        return Q(value__lte=filt.value)
+
+    # Containment filters (inet and string)
+    if isinstance(filt, Overlaps):
+        return _build_containment_condition(attribute, filt)
+
+    # Empty filter
+    if isinstance(filt, Empty):
+        # Empty means attribute doesn't exist - handled by NOT EXISTS
+        return Q(_empty_filter=True)
+
+    # Default: equality
+    return Q(value=filt.value)
+
+
+def _build_containment_condition(attribute, filt):
+    """
+    Build containment condition for inet or string attributes.
+
+    Args:
+        attribute: The Attribute model instance
+        filt: Containment filter (Contains, ContainedBy, Overlaps, etc.)
+
+    Returns:
+        Q: Q object with appropriate containment check
+    """
+    if attribute.type == 'inet':
+        return _build_inet_containment(filt)
+    elif attribute.type == 'string':
+        return _build_string_containment(filt)
+    else:
+        raise FilterValueError(
+            f'Cannot use {type(filt).__name__} filter on "{attribute}"'
+        )
+
+
+def _build_inet_containment(filt):
+    """
+    Build inet containment condition using PostgreSQL operators.
+
+    Args:
+        filt: Containment filter instance
+
+    Returns:
+        Q: Q object with RawSQL for inet operators
+    """
+    value = str(filt.value)
+
+    if isinstance(filt, StartsWith):
+        # >>= contains and host() matches
+        return Q(
+            value__contained_by_or_equal=value,
+            _inet_host_match=value,
+        )
+    elif isinstance(filt, Contains):
+        # >>= (contains or equals)
+        return Q(_inet_contains=value)
+    elif isinstance(filt, ContainedOnlyBy):
+        # << (strictly contained) with no intermediate supernet
+        # This is complex - needs subquery for supernet check
+        return Q(_inet_contained_only_by=value)
+    elif isinstance(filt, ContainedBy):
+        # <<= (contained by or equals)
+        return Q(_inet_contained_by=value)
+    else:
+        # && (overlaps)
+        return Q(_inet_overlaps=value)
+
+
+def _build_string_containment(filt):
+    """
+    Build string containment condition using LIKE.
+
+    Args:
+        filt: Containment filter instance
+
+    Returns:
+        Q: Q object with contains/startswith lookup
+    """
+    if isinstance(filt, StartsWith):
+        return Q(value__startswith=filt.value)
+    elif isinstance(filt, Contains):
+        return Q(value__contains=filt.value)
+    elif isinstance(filt, ContainedBy):
+        # Reverse: check if value is contained in filter value
+        return Q(_string_contained_by=filt.value)
+    else:
+        raise FilterValueError(
+            f'Cannot use {type(filt).__name__} filter on string attribute'
+        )
+
+
+def _build_attribute_lookup(attribute, value_condition, related_vias):
+    """
+    Build the full attribute lookup with appropriate subquery structure.
+
+    Args:
+        attribute: The Attribute model instance
+        value_condition: Q object for value comparison
+        related_vias: Dict of related_via configurations
+
+    Returns:
+        Q: Complete Q object with EXISTS subquery if needed
+    """
+    # Special attributes: direct field lookup on Server
+    if attribute.special:
+        return _build_special_lookup(attribute, value_condition)
+
+    # Complex attribute types with special handling
+    if attribute.type == 'supernet':
+        return _build_supernet_lookup(attribute, value_condition)
+
+    if attribute.type == 'domain':
+        return _build_domain_lookup(attribute, value_condition)
+
+    if attribute.type == 'reverse':
+        return _build_reverse_lookup(attribute, value_condition)
+
+    # Standard attributes: use related_vias for lookup
+    return _build_standard_lookup(attribute, value_condition, related_vias)
+
+
+def _get_special_field(attribute):
+    """Get the Server model field for a special attribute."""
+    field_map = {
+        'object_id': 'server_id',
+        'hostname': 'hostname',
+        'servertype': 'servertype_id',
+        'intern_ip': 'intern_ip',
+    }
+    return field_map.get(attribute.attribute_id, attribute.special.field)
+
+
+def _build_special_lookup(attribute, value_condition):
+    """
+    Build lookup for special attributes (hostname, servertype, etc.).
+
+    Args:
+        attribute: Special attribute instance
+        value_condition: Q object with value comparison
+
+    Returns:
+        Q: Q object with direct field lookup
+    """
+    field = _get_special_field(attribute)
+
+    # Handle special markers in value_condition
+    if hasattr(value_condition, 'children'):
+        for child in value_condition.children:
+            if isinstance(child, tuple):
+                key, val = child
+                if key == '_boolean_negate':
+                    # Boolean on special field
+                    return ~Q(**{f'{field}__isnull': False}) if val else Q(**{f'{field}__isnull': False})
+                if key == '_empty_filter':
+                    return ~Q(**{f'{field}__isnull': False})
+
+    # Transform value__X to field__X
+    transformed = Q()
+    for child in value_condition.children if hasattr(value_condition, 'children') else []:
+        if isinstance(child, tuple):
+            key, val = child
+            if key.startswith('value'):
+                new_key = key.replace('value', field, 1)
+                transformed.children.append((new_key, val))
+            else:
+                transformed.children.append(child)
+        else:
+            transformed.children.append(child)
+
+    transformed.connector = value_condition.connector
+    transformed.negated = value_condition.negated
+
+    # Handle relation types: wrap hostname lookup in subquery
+    if attribute.type in ['relation', 'reverse', 'supernet', 'domain']:
+        return Exists(
+            Server.objects.filter(
+                pk=OuterRef(field),
+            ).filter(_transform_to_hostname(transformed))
+        )
+
+    return transformed if transformed.children else value_condition
+
+
+def _transform_to_hostname(q_obj):
+    """Transform value lookups to hostname lookups for relation attributes."""
+    if not hasattr(q_obj, 'children'):
+        return q_obj
+
+    transformed = Q()
+    for child in q_obj.children:
+        if isinstance(child, tuple):
+            key, val = child
+            if key.startswith('value'):
+                new_key = key.replace('value', 'hostname', 1)
+                transformed.children.append((new_key, val))
+            else:
+                transformed.children.append(child)
+        elif isinstance(child, Q):
+            transformed.children.append(_transform_to_hostname(child))
+        else:
+            transformed.children.append(child)
+
+    transformed.connector = q_obj.connector
+    transformed.negated = q_obj.negated
+    return transformed
+
+
+def _build_standard_lookup(attribute, value_condition, related_vias):
+    """
+    Build lookup for standard attributes using EXISTS subquery.
+
+    Handles related_via_attribute for attributes accessed through relations.
+
+    Args:
+        attribute: The Attribute instance
+        value_condition: Q object for value comparison
+        related_vias: Dict mapping attribute_id to related_via configurations
+
+    Returns:
+        Q: Q object with EXISTS subquery
+    """
+    model = ServerAttribute.get_model(attribute.type)
+    if model is None:
+        raise FilterValueError(f'Unknown attribute type: {attribute.type}')
+
+    # Check for special markers
+    negate = False
+    empty_filter = False
+
+    if hasattr(value_condition, 'children'):
+        new_children = []
+        for child in value_condition.children:
+            if isinstance(child, tuple):
+                key, val = child
+                if key == '_boolean_negate':
+                    negate = val
+                    continue
+                if key == '_empty_filter':
+                    empty_filter = True
+                    continue
+            new_children.append(child)
+        value_condition.children = new_children
+
+    # Get related_via configurations for this attribute
+    attr_related_vias = related_vias.get(attribute.attribute_id, {})
+    if not attr_related_vias:
+        # Direct lookup only
+        attr_related_vias = {None: []}
+
+    # Build conditions for each related_via path
+    relation_conditions = []
+    for related_via_attribute, servertype_ids in attr_related_vias.items():
+        relation_condition = _build_related_via_condition(
+            attribute, model, value_condition, related_via_attribute, empty_filter
+        )
+        relation_conditions.append((relation_condition, servertype_ids))
+
+    # Combine with OR, adding servertype filter if multiple paths
+    if len(relation_conditions) == 1:
+        result = relation_conditions[0][0]
+    else:
+        combined = Q(pk__isnull=True) & Q(pk__isnull=False)  # Start False
+        for condition, servertype_ids in relation_conditions:
+            if servertype_ids:
+                combined |= (condition & Q(servertype_id__in=servertype_ids))
+            else:
+                combined |= condition
+        result = combined
+
+    return ~result if negate else result
+
+
+def _build_related_via_condition(attribute, model, value_condition, related_via, empty_filter):
+    """
+    Build EXISTS condition for a specific related_via path.
+
+    Args:
+        attribute: The target attribute
+        model: The ServerAttribute subclass model
+        value_condition: Q object for value comparison
+        related_via: The related_via Attribute or None for direct
+        empty_filter: Whether this is an Empty filter
+
+    Returns:
+        Q: EXISTS subquery condition
+    """
+    base_filter = Q(attribute_id=attribute.attribute_id)
+
+    if not empty_filter and value_condition.children:
+        # Apply value condition, handling inet operators
+        base_filter &= _apply_value_condition(model, value_condition)
+
+    if related_via is None:
+        # Direct: server.server_id = sub.server_id
+        exists_query = model.objects.filter(
+            server_id=OuterRef('server_id'),
+        ).filter(base_filter)
+    elif related_via.type == 'supernet':
+        # Complex inet containment join
+        exists_query = _build_supernet_related_query(
+            attribute, model, base_filter, related_via
+        )
+    elif related_via.type == 'reverse':
+        # Join through reversed relation
+        exists_query = model.objects.filter(
+            server_id__in=Subquery(
+                ServerRelationAttribute.objects.filter(
+                    attribute_id=related_via.reversed_attribute_id,
+                    value=OuterRef('server_id'),
+                ).values('server_id')
+            ),
+        ).filter(base_filter)
+    else:
+        # relation type: join through ServerRelationAttribute
+        exists_query = model.objects.filter(
+            server_id__in=Subquery(
+                ServerRelationAttribute.objects.filter(
+                    server_id=OuterRef('server_id'),
+                    attribute_id=related_via.attribute_id,
+                ).values('value')
+            ),
+        ).filter(base_filter)
+
+    result = Exists(exists_query)
+    return ~result if empty_filter else result
+
+
+def _apply_value_condition(model, value_condition):
+    """
+    Apply value condition to model, handling special inet operators.
+
+    Args:
+        model: The ServerAttribute subclass model
+        value_condition: Q object with value comparisons
+
+    Returns:
+        Q: Transformed Q object
+    """
+    if model == ServerInetAttribute:
+        return _transform_inet_condition(value_condition)
+    return value_condition
+
+
+def _transform_inet_condition(value_condition):
+    """
+    Transform inet-specific Q markers to RawSQL expressions.
+
+    Args:
+        value_condition: Q object potentially containing inet markers
+
+    Returns:
+        Q: Q object with RawSQL for inet operations
+    """
+    if not hasattr(value_condition, 'children'):
+        return value_condition
+
+    transformed = Q()
+    for child in value_condition.children:
+        if isinstance(child, tuple):
+            key, val = child
+            if key == '_inet_contains':
+                # >>= operator
+                transformed.children.append(
+                    ('pk__in', RawSQL(
+                        'SELECT id FROM server_inet_attribute WHERE value >>= %s',
+                        [val]
+                    ))
+                )
+            elif key == '_inet_contained_by':
+                # <<= operator
+                transformed.children.append(
+                    ('pk__in', RawSQL(
+                        'SELECT id FROM server_inet_attribute WHERE value <<= %s',
+                        [val]
+                    ))
+                )
+            elif key == '_inet_overlaps':
+                # && operator
+                transformed.children.append(
+                    ('pk__in', RawSQL(
+                        'SELECT id FROM server_inet_attribute WHERE value && %s',
+                        [val]
+                    ))
+                )
+            elif key == '_inet_contained_only_by':
+                # << with no intermediate supernet
+                transformed.children.append(
+                    ('pk__in', RawSQL(
+                        'SELECT id FROM server_inet_attribute WHERE value << %s',
+                        [val]
+                    ))
+                )
+            elif key == '_string_contained_by':
+                # Reverse contains for string
+                transformed.children.append(
+                    ('pk__in', RawSQL(
+                        "SELECT id FROM server_string_attribute WHERE %s LIKE '%%' || value || '%%'",
+                        [val]
+                    ))
+                )
+            else:
+                transformed.children.append(child)
+        elif isinstance(child, Q):
+            transformed.children.append(_transform_inet_condition(child))
+        else:
+            transformed.children.append(child)
+
+    transformed.connector = value_condition.connector
+    transformed.negated = value_condition.negated
+    return transformed
+
+
+def _build_supernet_lookup(attribute, value_condition):
+    """
+    Build lookup for supernet attribute type.
+
+    Args:
+        attribute: Supernet attribute instance
+        value_condition: Q object for value comparison
+
+    Returns:
+        Q: EXISTS subquery for supernet matching
+    """
+    # Supernet lookup requires complex inet containment join
+    # This matches networks that contain the server's IP addresses
+
+    inet_attrs = ServerInetAttribute.objects.filter(
+        server_id=OuterRef('server_id'),
+    )
+
+    if attribute.inet_address_family:
+        inet_attrs = inet_attrs.filter(
+            attribute__inet_address_family=attribute.inet_address_family,
+        )
+
+    # Find supernet servers whose inet contains our inet
+    supernet_query = Server.objects.filter(
+        servertype_id=attribute.target_servertype_id,
+    ).filter(
+        # Join ServerInetAttribute for supernet to find containing networks
+        pk__in=Subquery(
+            ServerInetAttribute.objects.filter(
+                server__servertype_id=attribute.target_servertype_id,
+            ).annotate(
+                contains_server=RawSQL(
+                    'EXISTS (SELECT 1 FROM server_inet_attribute sia '
+                    'WHERE sia.server_id = %s AND server_inet_attribute.value >>= sia.value)',
+                    [OuterRef(OuterRef('server_id'))]
+                )
+            ).filter(
+                contains_server=True,
+            ).values('server_id')
+        )
+    )
+
+    # Apply value condition (filtering on the supernet server)
+    supernet_query = supernet_query.filter(
+        _transform_to_server_id(value_condition)
+    )
+
+    return Exists(supernet_query)
+
+
+def _transform_to_server_id(value_condition):
+    """Transform value lookups to server_id lookups."""
+    if not hasattr(value_condition, 'children'):
+        return value_condition
+
+    transformed = Q()
+    for child in value_condition.children:
+        if isinstance(child, tuple):
+            key, val = child
+            if key.startswith('value'):
+                new_key = key.replace('value', 'server_id', 1)
+                transformed.children.append((new_key, val))
+            else:
+                transformed.children.append(child)
+        elif isinstance(child, Q):
+            transformed.children.append(_transform_to_server_id(child))
+        else:
+            transformed.children.append(child)
+
+    transformed.connector = value_condition.connector
+    transformed.negated = value_condition.negated
+    return transformed
+
+
+def _build_domain_lookup(attribute, value_condition):
+    """
+    Build lookup for domain attribute type.
+
+    Args:
+        attribute: Domain attribute instance
+        value_condition: Q object for value comparison
+
+    Returns:
+        Q: EXISTS subquery for domain matching
+    """
+    # Domain lookup matches servers whose hostname is a subdomain
+    return Exists(
+        Server.objects.filter(
+            servertype_id=attribute.target_servertype_id,
+        ).extra(
+            where=[
+                "server.hostname ~ ('^[^\\.]+\\.' || regexp_replace("
+                "server.hostname, '(\\*|\\-|\\.)', '\\\\\\1', 'g') || '$')"
+            ],
+            tables=['server AS outer_server'],
+        ).filter(
+            _transform_to_server_id(value_condition)
+        )
+    )
+
+
+def _build_reverse_lookup(attribute, value_condition):
+    """
+    Build lookup for reverse attribute type.
+
+    Args:
+        attribute: Reverse attribute instance
+        value_condition: Q object for value comparison
+
+    Returns:
+        Q: EXISTS subquery for reverse relation matching
+    """
+    return Exists(
+        ServerRelationAttribute.objects.filter(
+            attribute_id=attribute.reversed_attribute_id,
+            value=OuterRef('server_id'),
+        ).filter(
+            server_id__in=Subquery(
+                Server.objects.filter(
+                    _transform_to_server_id(value_condition)
+                ).values('server_id')
+            )
+        )
+    )
+
+
+def _build_supernet_related_query(attribute, model, base_filter, related_via):
+    """
+    Build query for attributes accessed through supernet relation.
+
+    Args:
+        attribute: Target attribute
+        model: ServerAttribute model class
+        base_filter: Q object with attribute_id filter
+        related_via: The supernet attribute used for relation
+
+    Returns:
+        QuerySet: Query for EXISTS check
+    """
+    # Find servers that are supernets of the current server
+    # then look up the attribute on those servers
+
+    supernet_servers = Server.objects.filter(
+        servertype_id=related_via.target_servertype_id,
+    ).filter(
+        pk__in=Subquery(
+            ServerInetAttribute.objects.annotate(
+                is_supernet=RawSQL(
+                    'EXISTS (SELECT 1 FROM server_inet_attribute sia '
+                    'JOIN server s ON s.server_id = sia.server_id '
+                    'WHERE s.server_id = %s '
+                    'AND server_inet_attribute.value >>= sia.value '
+                    'AND server_inet_attribute.attribute_id = sia.attribute_id)',
+                    [OuterRef(OuterRef('server_id'))]
+                )
+            ).filter(
+                is_supernet=True,
+                server__servertype_id=related_via.target_servertype_id,
+            ).values('server_id')
+        )
+    )
+
+    return model.objects.filter(
+        server_id__in=Subquery(supernet_servers.values('server_id')),
+    ).filter(base_filter)
