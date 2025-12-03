@@ -193,3 +193,88 @@ def parse_function_string(args, strict=True):   # NOQA C901
             parsed_args.append(('literal', args[string_start:]))
 
     return parsed_args
+
+
+def build_query(query_args):
+    """Build a text query from parsed query arguments.
+
+    This is the inverse of parse_query(). It takes a dictionary mapping
+    attribute names to filter values and returns a text query string.
+
+    Args:
+        query_args: A dictionary like {'hostname': BaseFilter('web.*'),
+                    'state': BaseFilter('online')}
+
+    Returns:
+        A text query string like 'hostname=Regexp(web.*) state=online'
+    """
+    if not query_args:
+        return ''
+
+    parts = []
+    for attr, filter_obj in query_args.items():
+        value_str = _format_filter_value(filter_obj)
+        parts.append(f'{attr}={value_str}')
+
+    return ' '.join(parts)
+
+
+def _format_filter_value(filter_obj):
+    """Format a filter object as a text query value.
+
+    Args:
+        filter_obj: A BaseFilter instance or subclass
+
+    Returns:
+        A string representation suitable for text queries
+    """
+    if not isinstance(filter_obj, BaseFilter):
+        # Plain value, format it directly
+        return _format_literal(filter_obj)
+
+    filter_type = type(filter_obj)
+
+    # BaseFilter with plain value - no function wrapper needed
+    if filter_type == BaseFilter:
+        return _format_literal(filter_obj.value)
+
+    # Empty filter - no arguments
+    if filter_type.__name__ == 'Empty':
+        return 'Empty()'
+
+    # Any/All filters - multiple values
+    if hasattr(filter_obj, 'values'):
+        inner_parts = [_format_filter_value(v) for v in filter_obj.values]
+        return '{}({})'.format(filter_type.__name__, ' '.join(inner_parts))
+
+    # Not filter - single nested filter
+    if filter_type.__name__ == 'Not':
+        inner = _format_filter_value(filter_obj.value)
+        return '{}({})'.format(filter_type.__name__, inner)
+
+    # Other filters (Regexp, GreaterThan, etc.) - single value
+    return '{}({})'.format(filter_type.__name__, _format_literal(filter_obj.value))
+
+
+def _format_literal(value):
+    """Format a literal value for text query output.
+
+    Args:
+        value: A Python value (str, int, bool, etc.)
+
+    Returns:
+        A string representation suitable for text queries
+    """
+    if isinstance(value, bool):
+        return 'true' if value else 'false'
+
+    if isinstance(value, str):
+        # Check if the string needs quoting (contains spaces or special chars)
+        if ' ' in value or '(' in value or ')' in value or '=' in value:
+            # Escape backslashes and quotes, then quote the string
+            escaped = value.replace('\\', '\\\\').replace('"', '\\"')
+            return '"{}"'.format(escaped)
+        return value
+
+    # For numbers, IP addresses, dates, etc. - use string representation
+    return str(value)
