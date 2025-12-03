@@ -143,9 +143,17 @@ def _build_logical_condition(attribute, filt, related_vias):
         for condition in complex_conditions:
             result &= condition
     else:
-        result = Q(pk__isnull=True) & Q(pk__isnull=False)  # Start with False for OR
+        # Build OR without starting with FALSE to avoid inefficient
+        # "(pk IS NULL AND pk IS NOT NULL) OR ..." SQL pattern
+        result = None
         for condition in complex_conditions:
-            result |= condition
+            if result is None:
+                result = condition
+            else:
+                result |= condition
+        # If no conditions, return always-false condition
+        if result is None:
+            result = Q(pk__isnull=True) & Q(pk__isnull=False)
 
     return result
 
@@ -470,13 +478,16 @@ def _build_standard_lookup(attribute, value_condition, related_vias):
     if len(relation_conditions) == 1:
         result = relation_conditions[0][0]
     else:
-        combined = Q(pk__isnull=True) & Q(pk__isnull=False)  # Start False
+        # Build OR combination without starting with FALSE
+        # This avoids the inefficient "(pk IS NULL AND pk IS NOT NULL) OR ..." pattern
+        combined = None
         for condition, servertype_ids in relation_conditions:
-            if servertype_ids:
-                combined |= (condition & Q(servertype_id__in=servertype_ids))
+            term = (condition & Q(servertype_id__in=servertype_ids)) if servertype_ids else condition
+            if combined is None:
+                combined = term
             else:
-                combined |= condition
-        result = combined
+                combined |= term
+        result = combined if combined is not None else Q(pk__in=[])  # Empty result if no conditions
 
     return ~result if negate else result
 
@@ -837,14 +848,25 @@ def _build_supernet_related_query(attribute, model, base_filter, related_via):
     (a network) has inet 10.0.0.0/24, then attributes on B can be accessed
     from A via the supernet relation.
 
+    PERFORMANCE: The query structure must put the attribute filter FIRST, then
+    check supernet containment with a link to the attribute row. This matches
+    v1's efficient structure:
+        SELECT 1 FROM attribute_table sub
+        WHERE sub.attribute_id = X AND sub.value = Y  -- Filter FIRST
+        AND EXISTS (supernet check WHERE supernet.server_id = sub.server_id)
+
+    This allows PostgreSQL to:
+    1. First filter to the small set of attribute rows matching the value
+    2. Only then check inet containment for those rows
+
     Args:
         attribute: Target attribute
         model: ServerAttribute model class
-        base_filter: Q object with attribute_id filter
+        base_filter: Q object with attribute_id and value filter
         related_via: The supernet attribute used for relation
 
     Returns:
-        QuerySet: Query for EXISTS check
+        QuerySet: Query for EXISTS check (with RawSQL for supernet correlation)
     """
     # Build inet address family filter if needed
     af_condition = ''
@@ -859,28 +881,37 @@ def _build_supernet_related_query(attribute, model, base_filter, related_via):
             'JOIN attribute AS net_attr ON net_attr.attribute_id = net_addr.attribute_id '
         )
 
-    # The query finds attribute values on supernet servers.
-    # A supernet server is one whose inet attribute contains the outer
-    # server's inet attribute.
+    # Build the inner EXISTS that checks supernet containment.
+    # The key is "supernet.server_id = {outer_alias}.server_id" which links the
+    # supernet to the attribute row, allowing the attribute filter to run first.
     #
-    # We reference "server"."server_id" directly in SQL to correlate with
-    # the outer query (Django uses "server" as the alias for the Server table).
-    supernet_server_ids_sql = RawSQL(
+    # We use the model's table name to reference the outer query in the EXISTS.
+    # Django aliases subquery tables, but we can use a correlated reference.
+    model_table = model._meta.db_table
+
+    # The supernet EXISTS checks:
+    # 1. supernet.server_id = sub.server_id (links supernet to attribute row)
+    # 2. supernet contains the outer server's inet
+    supernet_exists_sql = RawSQL(
         f'''
-        SELECT DISTINCT supernet.server_id
-        FROM server AS supernet
-        JOIN server_inet_attribute AS net_addr ON net_addr.server_id = supernet.server_id
-        JOIN server_inet_attribute AS server_addr ON server_addr.server_id = "server"."server_id"
-        {af_join}
-        WHERE net_addr.value >>= server_addr.value
-        AND net_addr.attribute_id = server_addr.attribute_id
-        AND supernet.servertype_id = %s
-        {af_condition}
+        EXISTS (
+            SELECT 1 FROM server AS supernet
+            JOIN server_inet_attribute AS net_addr ON net_addr.server_id = supernet.server_id
+            JOIN server_inet_attribute AS server_addr ON server_addr.server_id = "server"."server_id"
+            {af_join}
+            WHERE net_addr.value >>= server_addr.value
+            AND net_addr.attribute_id = server_addr.attribute_id
+            AND supernet.servertype_id = %s
+            AND supernet.server_id = "{model_table}"."server_id"
+            {af_condition}
+        )
         ''',
         [related_via.target_servertype_id]
     )
 
-    # Return query for the attribute model filtered to supernet servers
-    return model.objects.filter(
-        server_id__in=supernet_server_ids_sql,
-    ).filter(base_filter)
+    # Return query with attribute filter FIRST, then supernet EXISTS
+    # This allows PostgreSQL to filter by attribute value before checking containment
+    return model.objects.filter(base_filter).extra(
+        where=[supernet_exists_sql.sql],
+        params=supernet_exists_sql.params
+    )
