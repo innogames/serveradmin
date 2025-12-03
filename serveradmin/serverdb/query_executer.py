@@ -1,12 +1,16 @@
 """Serveradmin - Query Executer
 
-Copyright (c) 2019 InnoGames GmbH
+Copyright (c) 2025 InnoGames GmbH
 """
+
+import logging
+import time
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import DataError, connection, transaction
 
 from adminapi.filters import Any
+from adminapi.parse import build_query
 from serveradmin.serverdb.models import Attribute, ServertypeAttribute, Server
 from serveradmin.serverdb.sql_generator import get_server_query
 from serveradmin.serverdb.query_materializer import QueryMaterializer
@@ -14,6 +18,8 @@ from serveradmin.serverdb.query_materializer import QueryMaterializer
 
 def execute_query(filters, restrict, order_by):
     """The main function to execute queries"""
+
+    start = time.time()
 
     # We need the restrict argument in slightly different structure.
     if restrict is None:
@@ -98,7 +104,12 @@ def execute_query(filters, restrict, order_by):
         # materializer module for its details.  The functions on this module
         # continues with the filtering step.
         servers = _get_servers(filters, attribute_lookup, related_vias)
-        return list(QueryMaterializer(servers, *materializer_args))
+        result = list(QueryMaterializer(servers, *materializer_args))
+
+        duration = time.time() - start
+        logging.getLogger('queries').debug(f"{build_query(filters)};{duration:.3f}s")
+
+        return result
 
 
 def _get_joins(restrict):
