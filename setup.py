@@ -63,7 +63,7 @@ if __name__ == '__main__':
         },
         install_requires=[
             'paramiko>=2.7,<4',
-            'netaddr~=0.8.0',
+            'netaddr>=0.8.0,<1.4.0',
         ],
         author='InnoGames System Administration',
         author_email='it@innogames.com',
