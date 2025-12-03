@@ -12,7 +12,7 @@ netaddr = "<1.0.0"
 # Debian stretch version
 Django = "~=4.2"
 # postgres lib used by django
-psycopg2-binary = "<2.9"
+psycopg2-binary = "~=2.9"
 # Django support for network address fields on PostgreSQL
 django-netfields = "<2.0.0"
 # Required to generate sprites from Graphite
