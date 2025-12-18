@@ -49,7 +49,7 @@ $(document).ready(function() {
                 form = document.getElementById(formId);
             }
             else {
-                this.closest('form');
+                form = this.closest('form');
             }
 
             if (form) {

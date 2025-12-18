@@ -66,6 +66,10 @@ def changes(request):
         commits = commits.filter(
             Q(app__name=f_user_or_app) | Q(user__username=f_user_or_app))
 
+    f_attribute = request.GET.get('attribute')
+    if f_attribute:
+        commits = commits.filter(change__change_json__has_key=f_attribute)
+
     commits = commits.select_related('app', 'user')
 
     # This complex statement is just here to be able to prefetch the changes'
@@ -108,6 +112,7 @@ def changes(request):
         'object_id': f_object_id,
         'commit_id': f_commit,
         'user_or_app': f_user_or_app,
+        'attribute': f_attribute,
     })
 
 
