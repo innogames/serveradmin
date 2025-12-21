@@ -23,17 +23,6 @@ def hostname(object_id: int) -> Union[str, int]:
         return object_id
 
 
-def _format_value(value: Any) -> str:
-    """Format a value for display, handling None/empty as '-'."""
-    if value is None or value == '':
-        return '-'
-    if isinstance(value, list):
-        return ', '.join(str(v) for v in value)
-    if isinstance(value, set):
-        return ', '.join(str(v) for v in sorted(value))
-    return str(value)
-
-
 @register.filter
 def get_attribute_changes(change: Change) -> list:
     """Extract attribute changes from a Change object's change_json.
@@ -46,14 +35,14 @@ def get_attribute_changes(change: Change) -> list:
 
     changes_list = []
 
-    for attr_name, attr_change in change.change_json.items():
-        if attr_name == 'object_id' or not isinstance(attr_change, dict):
+    for attribute_id, attr_change in change.change_json.items():
+        if attribute_id == 'object_id' or not isinstance(attr_change, dict):
             continue
 
-        prefix = f'<strong>{escape(attr_name)}:</strong>'
+        prefix = f'<strong>{attribute_id}:</strong>'
         action = attr_change.get('action')
-        old_val = escape(_format_value(attr_change.get('old')))
-        new_val = escape(_format_value(attr_change.get('new')))
+        old_val = escape(attr_change.get('old'))
+        new_val = escape(attr_change.get('new'))
 
         if action == 'update':
             if attr_change.get('new') in (None, ''):

@@ -68,7 +68,11 @@ def changes(request):
 
     f_attribute = request.GET.get('attribute')
     if f_attribute:
-        commits = commits.filter(change__change_json__has_key=f_attribute)
+        # Only allow attribute filter if another filter is set (not fully index)
+        if f_hostname or f_object_id or f_user_or_app:
+            commits = commits.filter(change__change_json__has_key=f_attribute)
+        else:
+            f_attribute = None
 
     commits = commits.select_related('app', 'user')
 
