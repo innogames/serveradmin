@@ -4,6 +4,39 @@
 
 {% block title %}Changes{% endblock %}
 
+{% block additional_styles %}
+<style>
+    .change-toggle,
+    #toggle-all-changes {
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        margin-right: 4px;
+    }
+    .change-toggle .toggle-icon,
+    #toggle-all-changes .toggle-icon {
+        display: inline-block;
+        transition: transform 0.1s ease;
+        font-size: 0.7em;
+        color: #6c757d;
+    }
+    .change-toggle[aria-expanded="true"] .toggle-icon,
+    #toggle-all-changes.expanded .toggle-icon {
+        transform: rotate(90deg);
+    }
+    .change-details {
+        transition: none;
+    }
+    .change-details.collapsing {
+        transition: none;
+    }
+    .change-details ul {
+        list-style-type: none;
+        padding-left: 1em;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <form id="changes-form" method="get" action="{% url 'serverdb_changes' %}" onsubmit="spinner.enable();">
     <div class="row">
@@ -57,6 +90,13 @@
                     </div>
                 </div>
             </div>
+            <div class="form-group row input-controls">
+                <label for="attribute" class="col-sm-1 col-form-label">Attribute:</label>
+                <div class="col-md-4">
+                    <input name="attribute" id="attribute" type="text" value="{% if attribute %}{{ attribute }}{% endif %}" class="form-control form-control-sm" placeholder="responsible_admin" />
+                    <small class="form-text text-muted">Requires hostname, object ID, or user/app filter</small>
+                </div>
+            </div>
             <div class="form-group row input-controls buttons">
                 <input type="hidden" id="page" name="page" value="{{ commits.number }}" />
                 <button class="btn btn-success" type="submit">Filter</button>
@@ -75,7 +115,12 @@
                     <th>App</th>
                     <th>Owner</th>
                     <th>Created</th>
-                    <th>Changed</th>
+                    <th>
+                        <a id="toggle-all-changes" href="#" title="Show/hide all attribute changes">
+                            <span class="toggle-icon">&#9654;</span>
+                        </a>
+                        Changed
+                    </th>
                     <th>Deleted</th>
                 </tr>
                 </thead>
@@ -85,8 +130,18 @@
                         <td>{{ commit.id }}</td>
                         <td>{{ commit.change_on|date:"r" }}</td>
                         <td>{{ commit.change_on|timesince }}</td>
-                        <td>{{ commit.app|default:"Servershell" }}</td>
-                        <td>{{ commit.user }}</td>
+                        <td>
+                            {% if commit.app %}
+                                <a href="{% url 'serverdb_changes' %}?user_or_app={{ commit.app.name }}">{{ commit.app }}</a>
+                            {% else %}
+                                Servershell
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if commit.user %}
+                                <a href="{% url 'serverdb_changes' %}?user_or_app={{ commit.user.username }}">{{ commit.user }}</a>
+                            {% endif %}
+                        </td>
                         <td>
                             <ul>
                             {% for change in commit.change_set.get_queryset %}
@@ -100,7 +155,27 @@
                             <ul>
                             {% for change in commit.change_set.get_queryset %}
                                 {% if change.change_type == 'change' %}
-                                    <li><a href="{% url 'serverdb_history' %}?commit_id={{ commit.id }}&object_id={{ change.object_id }}">History for {{ change.hostname }}</a></li>
+                                    <li>
+                                        {% with attr_changes=change|get_attribute_changes %}
+                                        {% if attr_changes %}
+                                        <a class="change-toggle" data-toggle="collapse" href="#change-{{ change.id }}" role="button" aria-expanded="false" aria-controls="change-{{ change.id }}" title="Show/hide attribute changes">
+                                            <span class="toggle-icon">&#9654;</span>
+                                        </a>
+                                        {% endif %}
+                                        {% endwith %}
+                                        <a href="{% url 'serverdb_history' %}?commit_id={{ commit.id }}&object_id={{ change.object_id }}">History for {{ change.hostname }}</a>
+                                        {% with attr_changes=change|get_attribute_changes %}
+                                        {% if attr_changes %}
+                                        <div class="collapse change-details" id="change-{{ change.id }}">
+                                            <ul class="mb-0 mt-1">
+                                            {% for attr_change in attr_changes %}
+                                                <li><small class="text-muted">{{ attr_change }}</small></li>
+                                            {% endfor %}
+                                            </ul>
+                                        </div>
+                                        {% endif %}
+                                        {% endwith %}
+                                    </li>
                                 {% endif %}
                             {% endfor %}
                             </ul>
@@ -127,3 +202,27 @@
     </div>
 </form>
 {% endblock content %}
+
+{% block additional_scripts %}
+<script>
+$(document).ready(function() {
+    $('#toggle-all-changes').click(function(e) {
+        e.preventDefault();
+        var $this = $(this);
+        var isExpanded = $this.hasClass('expanded');
+
+        if (isExpanded) {
+            // Collapse all
+            $('.change-details.show').collapse('hide');
+            $('.change-toggle').attr('aria-expanded', 'false');
+            $this.removeClass('expanded');
+        } else {
+            // Expand all
+            $('.change-details:not(.show)').collapse('show');
+            $('.change-toggle').attr('aria-expanded', 'true');
+            $this.addClass('expanded');
+        }
+    });
+});
+</script>
+{% endblock %}

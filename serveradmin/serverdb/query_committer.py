@@ -178,7 +178,7 @@ def _validate(attribute_lookup, changed, changed_objects):
 
     newer = _validate_commit(changed, changed_objects)
     if newer:
-        raise CommitNewerData('Newer data available', newer)
+        raise CommitNewerData(f'Newer data available for attribute {newer}', newer)
 
 
 def _delete_attributes(attribute_lookup, changed, changed_servers, deleted):
