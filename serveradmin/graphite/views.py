@@ -68,8 +68,8 @@ def graph_table(request):
             assert isinstance(value, MultiAttr)
             if not any(collection.name == v for v in value):
                 break  # The server hasn't got this attribute value.
-            else:
-                collections.append(collection)
+        else:
+            collections.append(collection)
 
     # Prepare the graph descriptions
     descriptions = []
