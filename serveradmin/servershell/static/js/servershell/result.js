@@ -1,3 +1,6 @@
+// Track last clicked row checkbox index for shift-click range selection
+let _lastCheckedIndex = null;
+
 /**
  * Generate HTML for result table
  *
@@ -13,7 +16,11 @@ servershell.update_result = function() {
     // Recreate table header
     let header = table.find('thead tr');
     header.empty();
-    header.append('<th scope="col"></th>');
+    header.append(
+        $('<th scope="col">').append(
+            $('<input type="checkbox" id="select-all" tabindex="3" />')
+        )
+    );
     header.append('<th scope="col">#</th>');
     servershell.shown_attributes.forEach((attribute, index) => header.append(
         $('<th scope="col">').append(
@@ -36,10 +43,12 @@ servershell.update_result = function() {
     // Recreate table body
     let body = table.find('tbody');
     body.empty();
+    _lastCheckedIndex = null;
     servershell.servers.forEach((object, index) => body.append(get_row_html(object, index + 1)));
 
     // Restore previous selected objects
     servershell.set_selected(selected);
+    sync_select_all();
 
     // Update result information on top and bottom showing page etc.
     let info = `Results (${servershell.num_servers} servers, page ${servershell.page()}/${servershell.pages()}, ${servershell.limit} per page)`;
@@ -332,7 +341,45 @@ register_inline_editing = function(cell) {
     });
 };
 
+/**
+ * Sync the select-all header checkbox with the current row checkbox state.
+ */
+sync_select_all = function() {
+    let all = $('#result_table input[name=server]');
+    let checked = all.filter(':checked');
+    let selectAll = $('#select-all')[0];
+    if (selectAll) {
+        selectAll.checked = all.length > 0 && checked.length === all.length;
+        selectAll.indeterminate = checked.length > 0 && checked.length < all.length;
+    }
+};
+
 $(document).ready(function() {
     // Update result table as soon as we have new data ...
     $(document).on('servershell_search_finished', servershell.update_result);
+
+    // Toggle all row checkboxes when the select-all header checkbox is clicked
+    $('#result_table').on('click', '#select-all', function() {
+        let checked = this.checked;
+        $('#result_table input[name=server]').prop('checked', checked);
+    });
+
+    // Sync header checkbox when individual row checkboxes change
+    $('#result_table').on('change', 'tbody input[name=server]', sync_select_all);
+
+    // Shift-click to select a range of checkboxes
+    $('#result_table').on('click', 'tbody input[name=server]', function(e) {
+        let checkboxes = $('#result_table input[name=server]');
+        let currentIndex = checkboxes.index(this);
+
+        if (e.shiftKey && _lastCheckedIndex !== null) {
+            let start = Math.min(_lastCheckedIndex, currentIndex);
+            let end = Math.max(_lastCheckedIndex, currentIndex);
+            let state = this.checked;
+            checkboxes.slice(start, end + 1).prop('checked', state);
+            sync_select_all();
+        }
+
+        _lastCheckedIndex = currentIndex;
+    });
 });
