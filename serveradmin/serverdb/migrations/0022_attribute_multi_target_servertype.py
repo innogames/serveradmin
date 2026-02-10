@@ -1,11 +1,17 @@
 """Convert Attribute.target_servertype from ForeignKey to ManyToManyField.
 
-This migration:
-1. Creates the M2M join table
-2. Copies existing FK data into the join table
-3. Drops the old FK column and its constraints
+Uses SeparateDatabaseAndState so that:
+- Django's state tracker sees standard RemoveField + AddField operations
+- The actual DB operations are controlled manually to allow a data
+  migration between creating the M2M table and dropping the FK column
+
+Steps:
+1. Create the M2M join table
+2. Copy existing FK data into the join table
+3. Drop the old FK column and its custom CHECK constraints
 """
 
+import django.db.models
 from django.db import migrations, models
 
 
@@ -36,48 +42,84 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Step 1: Create the M2M join table manually so we can control
-        # the order of operations (data migration before dropping FK).
-        migrations.RunSQL(
-            sql=(
-                "CREATE TABLE attribute_target_servertype ("
-                "  id BIGSERIAL PRIMARY KEY,"
-                "  attribute_id VARCHAR(32) NOT NULL REFERENCES attribute(attribute_id) ON DELETE CASCADE,"
-                "  servertype_id VARCHAR(32) NOT NULL REFERENCES servertype(servertype_id) ON DELETE CASCADE,"
-                "  UNIQUE (attribute_id, servertype_id)"
-                ")"
-            ),
-            reverse_sql="DROP TABLE IF EXISTS attribute_target_servertype",
+        # Phase 1: Create the M2M join table (DB only, state updated later).
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunSQL(
+                    sql=(
+                        "CREATE TABLE attribute_target_servertype ("
+                        "  id BIGSERIAL PRIMARY KEY,"
+                        "  attribute_id VARCHAR(32) NOT NULL"
+                        "    REFERENCES attribute(attribute_id) ON DELETE CASCADE,"
+                        "  servertype_id VARCHAR(32) NOT NULL"
+                        "    REFERENCES servertype(servertype_id) ON DELETE CASCADE,"
+                        "  UNIQUE (attribute_id, servertype_id)"
+                        ")"
+                    ),
+                    reverse_sql="DROP TABLE IF EXISTS attribute_target_servertype",
+                ),
+            ],
+            state_operations=[],
         ),
 
-        # Step 2: Copy existing FK data into the M2M table.
+        # Phase 2: Copy existing FK data into the M2M table.
         migrations.RunPython(copy_fk_to_m2m, copy_m2m_to_fk),
 
-        # Step 3: Drop the old FK constraint and CHECK constraint, then
-        # drop the column.
-        migrations.RunSQL(
-            sql=(
-                "ALTER TABLE attribute "
-                "DROP CONSTRAINT IF EXISTS attribute_target_servertype_id_0eab2dcc_fk_servertyp"
-            ),
-            reverse_sql=migrations.RunSQL.noop,
-        ),
-        migrations.RunSQL(
-            sql=(
-                "ALTER TABLE attribute "
-                "DROP CONSTRAINT IF EXISTS attribute_target_servertype_id_check"
-            ),
-            reverse_sql=(
-                "ALTER TABLE attribute ADD CONSTRAINT attribute_target_servertype_id_check "
-                "CHECK((type IN ('domain', 'supernet', 'relation')) = "
-                "(target_servertype_id IS NOT NULL OR type = 'relation'))"
-            ),
-        ),
-        migrations.RunSQL(
-            sql="ALTER TABLE attribute DROP COLUMN IF EXISTS target_servertype_id",
-            reverse_sql=(
-                "ALTER TABLE attribute ADD COLUMN target_servertype_id "
-                "VARCHAR(32) REFERENCES servertype(servertype_id) ON DELETE CASCADE"
-            ),
+        # Phase 3: Drop old FK column + constraints; update Django state.
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunSQL(
+                    sql=(
+                        "ALTER TABLE attribute "
+                        "DROP CONSTRAINT IF EXISTS"
+                        "  attribute_target_servertype_id_0eab2dcc_fk_servertyp"
+                    ),
+                    reverse_sql=(
+                        "ALTER TABLE attribute ADD CONSTRAINT"
+                        "  attribute_target_servertype_id_0eab2dcc_fk_servertyp"
+                        "  FOREIGN KEY (target_servertype_id)"
+                        "  REFERENCES servertype(servertype_id)"
+                        "  DEFERRABLE INITIALLY DEFERRED"
+                    ),
+                ),
+                migrations.RunSQL(
+                    sql=(
+                        "ALTER TABLE attribute "
+                        "DROP CONSTRAINT IF EXISTS"
+                        "  attribute_target_servertype_id_check"
+                    ),
+                    reverse_sql=(
+                        "ALTER TABLE attribute ADD CONSTRAINT"
+                        "  attribute_target_servertype_id_check "
+                        "CHECK((type IN ('domain', 'supernet', 'relation')) = "
+                        "(target_servertype_id IS NOT NULL OR type = 'relation'))"
+                    ),
+                ),
+                migrations.RunSQL(
+                    sql=(
+                        "ALTER TABLE attribute "
+                        "DROP COLUMN IF EXISTS target_servertype_id"
+                    ),
+                    reverse_sql=(
+                        "ALTER TABLE attribute ADD COLUMN target_servertype_id "
+                        "VARCHAR(32)"
+                    ),
+                ),
+            ],
+            state_operations=[
+                migrations.RemoveField(
+                    model_name='attribute',
+                    name='target_servertype',
+                ),
+                migrations.AddField(
+                    model_name='attribute',
+                    name='target_servertype',
+                    field=models.ManyToManyField(
+                        blank=True,
+                        help_text='Selecting no servertype allows all servertypes.',
+                        to='serverdb.servertype',
+                    ),
+                ),
+            ],
         ),
     ]
