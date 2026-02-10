@@ -49,7 +49,7 @@
       "group": "other",
       "help_link": null,
       "readonly": false,
-      "target_servertype": null,
+      "target_servertype": [],
       "reversed_attribute": null,
       "clone": false,
       "regexp": "\\A.*\\Z"
@@ -65,7 +65,7 @@
       "group": "other",
       "help_link": null,
       "readonly": false,
-      "target_servertype": null,
+      "target_servertype": [],
       "reversed_attribute": null,
       "clone": false,
       "regexp": "\\A.*\\Z"
@@ -81,7 +81,7 @@
       "group": "other",
       "help_link": null,
       "readonly": false,
-      "target_servertype": null,
+      "target_servertype": [],
       "reversed_attribute": null,
       "clone": false,
       "regexp": "\\A.*\\Z"
@@ -97,7 +97,7 @@
       "group": "other",
       "help_link": null,
       "readonly": false,
-      "target_servertype": null,
+      "target_servertype": [],
       "reversed_attribute": null,
       "clone": false,
       "regexp": "\\A(0|[1-9][0-9]*)\\Z"
@@ -113,7 +113,7 @@
       "group": "other",
       "help_link": null,
       "readonly": false,
-      "target_servertype": null,
+      "target_servertype": [],
       "reversed_attribute": null,
       "clone": false,
       "regexp": "\\A.*\\Z"
@@ -129,7 +129,7 @@
       "group": "other",
       "help_link": null,
       "readonly": false,
-      "target_servertype": "hypervisor",
+      "target_servertype": ["hypervisor"],
       "reversed_attribute": null,
       "clone": false,
       "regexp": "\\A.*\\Z"
@@ -145,7 +145,7 @@
       "group": "other",
       "help_link": null,
       "readonly": false,
-      "target_servertype": null,
+      "target_servertype": [],
       "reversed_attribute": null,
       "clone": false,
       "regexp": "\\A.*\\Z"
@@ -161,7 +161,7 @@
       "group": "other",
       "help_link": null,
       "readonly": false,
-      "target_servertype": null,
+      "target_servertype": [],
       "reversed_attribute": null,
       "clone": false,
       "regexp": "\\A.*\\Z"
@@ -177,7 +177,7 @@
       "group": "other",
       "help_link": null,
       "readonly": false,
-      "target_servertype": null,
+      "target_servertype": [],
       "reversed_attribute": null,
       "clone": false,
       "regexp": "\\A.*\\Z"
@@ -193,7 +193,7 @@
       "group": "other",
       "help_link": null,
       "readonly": false,
-      "target_servertype": null,
+      "target_servertype": [],
       "reversed_attribute": null,
       "clone": false,
       "regexp": "\\A(wheezy|squeeze|jessie|buster|bullseye)\\Z"
@@ -209,7 +209,7 @@
       "group": "other",
       "help_link": null,
       "readonly": true,
-      "target_servertype": null,
+      "target_servertype": [],
       "reversed_attribute": "hypervisor",
       "clone": false,
       "regexp": "\\A.*\\Z"

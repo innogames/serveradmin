@@ -140,10 +140,15 @@ returning *;
 --
 
 delete from server_relation_attribute as extra
-using attribute, server as target
+using attribute
+join attribute_target_servertype as ats on ats.attribute_id = attribute.attribute_id,
+server as target
 where attribute.attribute_id = extra.attribute_id
 and target.server_id = extra.value
-and attribute.target_servertype_id != target.servertype_id
+and target.servertype_id not in (
+    select ats2.servertype_id from attribute_target_servertype as ats2
+    where ats2.attribute_id = attribute.attribute_id
+)
 returning attribute.attribute_id, target.hostname;
 
 commit;

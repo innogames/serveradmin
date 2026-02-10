@@ -185,7 +185,7 @@ class QueryMaterializer:
         domain_lookup = {
             domain.hostname: domain
             for domain in Server.objects.filter(
-                servertype=attribute.target_servertype,
+                servertype__in=attribute.target_servertype.all(),
                 hostname__in=domain_names,
             )
         }
@@ -221,7 +221,7 @@ class QueryMaterializer:
             JOIN {Attribute._meta.db_table} AS net_attr ON (net_attr.attribute_id = net_addr.attribute_id)
             JOIN {Attribute._meta.db_table} AS host_attr ON (host_attr.attribute_id = host_addr.attribute_id)
             WHERE
-                net.servertype_id = %(target_servertype)s
+                net.servertype_id = ANY(%(target_servertypes)s)
                 AND host.server_id = any(%(hosts)s)
         """
 
@@ -236,7 +236,11 @@ class QueryMaterializer:
         supernets = Server.objects.raw(
             q,
             {
-                "target_servertype": attribute.target_servertype_id,
+                "target_servertypes": list(
+                    attribute.target_servertype.values_list(
+                        'servertype_id', flat=True
+                    )
+                ),
                 "address_family": attribute.inet_address_family,
                 "hosts": list(servers_by_id.keys()),
             },
