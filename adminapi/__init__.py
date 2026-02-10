@@ -1,6 +1,6 @@
 """Serveradmin - adminapi
 
-Copyright (c) 2025 InnoGames GmbH
+Copyright (c) 2026 InnoGames GmbH
 """
 
-VERSION = (4, 23, 0)
+VERSION = (4, 24, 0)
