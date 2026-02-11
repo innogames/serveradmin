@@ -15,11 +15,11 @@ jobs:
       matrix:
         python:
           - "3.9"
-          - "3.10"
+          - "3.13"
 
     services:
       db:
-        image: 'postgres:15'
+        image: 'postgres:17'
         env:
           POSTGRES_USER: serveradmin
           POSTGRES_PASSWORD: serveradmin

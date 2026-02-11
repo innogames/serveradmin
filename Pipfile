@@ -46,7 +46,7 @@ faker = "<14.0.0"
 tblib = "*"
 
 [requires]
-python_version = "3.9"
+python_version = "3.13"
 
 [production]
 sentry-sdk = {version = "*", extras = ["django"]}
