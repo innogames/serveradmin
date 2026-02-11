@@ -1,10 +1,14 @@
 use adminapi::filter::{empty, not, regexp};
 use adminapi::new_object::NewObject;
 use adminapi::query::Query;
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
-    env_logger::init();
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
+
     let mut server = Query::builder()
         .filter("hostname", regexp(".*payment-staging.*"))
         .filter("os", not(empty()))

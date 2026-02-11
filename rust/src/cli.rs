@@ -5,7 +5,7 @@ use crate::filter::{AttributeFilter, FilterValue, IntoFilterValue};
 
 pub fn parse_filter_args(
     args: impl Iterator<Item = String> + 'static,
-) -> anyhow::Result<AttributeFilter> {
+) -> crate::Result<AttributeFilter> {
     let mut filter = AttributeFilter::default();
 
     for arg in args {
@@ -15,7 +15,9 @@ pub fn parse_filter_args(
         };
         let tail = split.collect::<String>();
         if tail.is_empty() {
-            return Err(anyhow::anyhow!("Attribute value is missing"));
+            return Err(crate::Error::MissingValueForAttribute(
+                attribute.to_string(),
+            ));
         }
 
         filter.insert(attribute.to_string(), parse_filter_arg(tail));

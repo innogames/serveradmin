@@ -1,10 +1,13 @@
 use adminapi::cli::parse_filter_args;
 use adminapi::commit::AttributeValue;
 use adminapi::query::Query;
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
-    env_logger::init();
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
 
     let clap = clap::Command::new("prepare_os_upgrade")
         .author("Yannik, yannik.schwieger@innogames.com")

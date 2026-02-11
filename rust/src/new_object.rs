@@ -24,7 +24,7 @@ impl NewObject {
         }
     }
 
-    pub async fn request_new(servertype: impl ToString) -> anyhow::Result<Self> {
+    pub async fn request_new(servertype: impl ToString) -> crate::Result<Self> {
         let servertype = servertype.to_string();
         let NewObjectResponse { result } = new_object(&servertype).await?;
 
@@ -42,7 +42,7 @@ impl NewObject {
     pub async fn get_or_create(
         servertype: impl ToString,
         hostname: impl ToString,
-    ) -> anyhow::Result<Self> {
+    ) -> crate::Result<Self> {
         let mut new_object = Self::request_new(servertype.to_string()).await?;
 
         if let Ok(server) = Query::builder()
@@ -78,9 +78,11 @@ impl NewObject {
     /// The changes done in [NewObject::deferred] will not be submitted yet, but the returned [Server]
     /// object is preloaded with them.
     ///
-    pub async fn commit(mut self) -> anyhow::Result<Server> {
+    pub async fn commit(mut self) -> crate::Result<Server> {
         let AttributeValue::String(hostname) = self.server.get("hostname") else {
-            return Err(anyhow::anyhow!("Required attribute 'hostname' is missing"));
+            return Err(crate::Error::RequiredAttributeMissing(
+                "hostname".to_string(),
+            ));
         };
 
         if self.is_new() {

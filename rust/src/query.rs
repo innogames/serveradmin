@@ -24,13 +24,13 @@ impl Query {
         Default::default()
     }
 
-    pub async fn request(&self) -> anyhow::Result<QueryResponse> {
+    pub async fn request(&self) -> crate::Result<QueryResponse> {
         query_objects(self).await
     }
 
     pub async fn request_typed<T: serde::de::DeserializeOwned>(
         &self,
-    ) -> anyhow::Result<QueryResponse<T>> {
+    ) -> crate::Result<QueryResponse<T>> {
         query_objects::<T>(self).await
     }
 }
@@ -82,7 +82,7 @@ impl QueryBuilder {
 }
 
 impl Server {
-    pub async fn commit(&mut self) -> anyhow::Result<CommitResponse> {
+    pub async fn commit(&mut self) -> crate::Result<CommitResponse> {
         let commit = Commit::new().update(self.changeset());
         self.changes = Changeset::default();
 

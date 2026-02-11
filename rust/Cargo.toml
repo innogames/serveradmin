@@ -9,23 +9,29 @@ authors = ["InnoGames System Administration <it@innogames.com>"]
 repository = "https://github.com/innogames/serveradmin/"
 
 [dependencies]
-anyhow = "1.0"
+thiserror = "2.0"
 hmac = "0.12"
-log = "0.4"
+tracing = "0.1"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha1 = "0.10"
 signature = "2.2"
-ssh-agent-client-rs = "0.9"
+ssh-agent-client-rs = "1.1"
 ssh-encoding = { version = "0.2", features = ["base64"] }
 ssh-key = { version = "0.6", features = ["serde", "ed25519", "dsa", "crypto", "rsa"] }
 
 [dev-dependencies]
-env_logger = "0.11"
+tracing-subscriber = { version = "0.3", features = [
+    "env-filter",
+    "json",
+    "fmt",
+    "std",
+] }
 tokio = { version = "1.38", features = ["full"] }
 clap = "4.5"
 futures = "0.3"
+anyhow = "1.0"
 
 [profile.release]
 lto = true

@@ -1,10 +1,14 @@
 use std::collections::HashSet;
 
 use adminapi::{new_object::NewObject, query::Query};
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    env_logger::init();
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
+
     let args = clap::Command::new("adminclone")
         .arg(clap::arg!(<from> "The origin object identified by it's hostname"))
         .arg(
@@ -73,7 +77,7 @@ async fn main() -> anyhow::Result<()> {
 
     server.commit().await?;
 
-    log::info!("Server cloned");
+    tracing::info!("Server cloned");
 
     Ok(())
 }

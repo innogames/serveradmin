@@ -1,8 +1,5 @@
 use std::fmt::Display;
 
-use signature::Signer;
-use ssh_encoding::Encode;
-
 use crate::commit::{
     AttributeChange, AttributeValue, Changeset, Commit, Dataset, IntoAttributeValue,
 };
@@ -35,7 +32,7 @@ pub struct CommitResponse {
 
 pub async fn query_objects<T: serde::de::DeserializeOwned>(
     query: &Query,
-) -> anyhow::Result<QueryResponse<T>> {
+) -> crate::Result<QueryResponse<T>> {
     let config = Config::build_from_environment()?;
     let response = request_api(QUERY_ENDPOINT, serde_json::to_value(query)?, config).await?;
     let response = response.error_for_status()?;
@@ -43,7 +40,7 @@ pub async fn query_objects<T: serde::de::DeserializeOwned>(
     Ok(response.json().await?)
 }
 
-pub async fn new_object(servertype: impl Display) -> anyhow::Result<NewObjectResponse> {
+pub async fn new_object(servertype: impl Display) -> crate::Result<NewObjectResponse> {
     let config = Config::build_from_environment()?;
     let response = request_api(
         format!("{NEW_OBJECT_ENDPOINT}?servertype={servertype}"),
@@ -56,21 +53,16 @@ pub async fn new_object(servertype: impl Display) -> anyhow::Result<NewObjectRes
     Ok(response.json().await?)
 }
 
-pub async fn commit_changes(commit: &Commit) -> anyhow::Result<CommitResponse> {
+pub async fn commit_changes(commit: &Commit) -> crate::Result<CommitResponse> {
     let config = Config::build_from_environment()?;
     let response = request_api(COMMIT_ENDPOINT, serde_json::to_value(commit)?, config).await?;
-    let status = response.status();
+    let response = response.error_for_status()?;
     let body = response.json::<CommitResponse>().await?;
 
-    if status.is_client_error() || status.is_server_error() {
-        return Err(anyhow::anyhow!("Unable to process request").context(format!("{:?}", body)));
-    }
-
     if body.status == "error" {
-        return Err(anyhow::anyhow!(
-            "Error while committing {}",
+        return Err(crate::Error::UnknownServerAdminError(
             body.message
-                .unwrap_or_else(|| String::from("Unknown commit error"))
+                .unwrap_or_else(|| String::from("Unknown commit error")),
         ));
     }
 
@@ -81,7 +73,7 @@ pub async fn request_api(
     endpoint: impl Display,
     data: serde_json::Value,
     config: Config,
-) -> anyhow::Result<reqwest::Response> {
+) -> crate::Result<reqwest::Response> {
     let client = reqwest::Client::new();
     let token = config.auth_token.unwrap_or_default();
     let body = serde_json::to_string(&data)?;
@@ -98,17 +90,11 @@ pub async fn request_api(
         .body(body.into_bytes());
 
     if let Some(signer) = &config.ssh_signer {
-        let signature = signer.try_sign(sign_body.as_bytes())?;
-        let len = Encode::encoded_len_prefixed(&signature)?;
-        let base64_len = (((len.saturating_mul(4)) / 3).saturating_add(3)) & !3;
-        let mut buf = vec![0; base64_len];
-        let mut writer = ssh_encoding::Base64Writer::new(&mut buf)?;
-        signature.encode(&mut writer)?;
-        let signature = writer.finish()?;
+        let signature = signer.sign_message(sign_body)?;
 
         request = request
-            .header("X-PublicKeys", signer.get_public_key())
-            .header("X-Signatures", signature.to_string());
+            .header("X-PublicKeys", signer.get_public_key()?)
+            .header("X-Signatures", signature);
     } else {
         request = request
             .header(
@@ -166,7 +152,7 @@ fn calculate_app_id(token: &String) -> String {
 }
 
 impl Server {
-    pub fn clear(&mut self, attribute: impl ToString) -> anyhow::Result<&mut Self> {
+    pub fn clear(&mut self, attribute: impl ToString) -> crate::Result<&mut Self> {
         self.attributes.clear(attribute.to_string());
 
         Ok(self)
@@ -176,13 +162,14 @@ impl Server {
         &mut self,
         attribute: impl ToString,
         value: impl IntoAttributeValue + 'static,
-    ) -> anyhow::Result<&mut Self> {
+    ) -> crate::Result<&mut Self> {
         let new = value.into_attribute_value();
         let attribute = attribute.to_string();
 
         if self.attributes.get(&attribute).is_array() {
-            return Err(anyhow::anyhow!(
-                "Attribute {attribute} is a multi attribute, set is not supported!"
+            return Err(crate::Error::UnsupportedOperation(
+                attribute.clone(),
+                "set is only supported on multi attributes",
             ));
         }
 
@@ -199,13 +186,14 @@ impl Server {
         &mut self,
         attribute: impl ToString,
         value: impl IntoAttributeValue + 'static,
-    ) -> anyhow::Result<&mut Self> {
+    ) -> crate::Result<&mut Self> {
         let value = value.into_attribute_value();
         let attribute = attribute.to_string();
 
         if !self.attributes.get(&attribute).is_array() {
-            return Err(anyhow::anyhow!(
-                "add is only supported with multi attributes"
+            return Err(crate::Error::UnsupportedOperation(
+                attribute.clone(),
+                "add is only supported with multi attributes",
             ));
         }
 
@@ -240,13 +228,14 @@ impl Server {
         &mut self,
         attribute: impl ToString,
         value: impl IntoAttributeValue + 'static,
-    ) -> anyhow::Result<&mut Self> {
+    ) -> crate::Result<&mut Self> {
         let value = value.into_attribute_value();
         let attribute = attribute.to_string();
 
         if !self.attributes.get(&attribute).is_array() {
-            return Err(anyhow::anyhow!(
-                "remove is only supported with multi attributes"
+            return Err(crate::Error::UnsupportedOperation(
+                attribute.clone(),
+                "remove is only supported with multi attributes",
             ));
         }
 
@@ -301,14 +290,12 @@ impl Server {
 }
 
 impl<T: serde::de::DeserializeOwned> QueryResponse<T> {
-    pub fn one(mut self) -> anyhow::Result<Server<T>> {
+    pub fn one(mut self) -> crate::Result<Server<T>> {
         if self.result.len() > 1 {
-            return Err(anyhow::anyhow!("Result has more then one item!"));
+            return Err(crate::Error::TooManyItems(self.result.len()));
         }
 
-        self.result
-            .pop()
-            .ok_or(anyhow::anyhow!("No result returned!"))
+        self.result.pop().ok_or(crate::Error::NotEnoughItems(1))
     }
 
     pub fn all(self) -> Vec<Server<T>> {
