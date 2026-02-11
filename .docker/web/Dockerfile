@@ -10,7 +10,7 @@ RUN echo "deb http://apt.postgresql.org/pub/repos/apt bullseye-pgdg main" > /etc
 RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 
 RUN apt update && \
-    apt install -y postgresql-client-15 && \
+    apt install -y postgresql-client-17 && \
     pip3 install --upgrade pip pipenv
 
 ENTRYPOINT ["/entrypoint.sh"]
