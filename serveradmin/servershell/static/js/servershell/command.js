@@ -555,6 +555,26 @@ servershell.commands = {
 
         [attribute_id, values] = attribute_values_string.split('=', 2).map(a => a.trim());
         let to_remove = values.split(',').map(v => v.trim());
+
+        // Parse values to separate exact matches from regex patterns
+        let exact_matches = [];
+        let regex_patterns = [];
+        const regexp_pattern = /^Regexp\((.+)\)$/i;
+
+        for (let v of to_remove) {
+            let match = v.match(regexp_pattern);
+            if (match) {
+                try {
+                    regex_patterns.push(new RegExp(match[1]));
+                } catch (e) {
+                    servershell.alert(`Invalid regex pattern: ${match[1]}`, 'warning');
+                    return;
+                }
+            } else {
+                exact_matches.push(v);
+            }
+        }
+
         let attribute = servershell.get_attribute(attribute_id);
         if (!attribute) {
             servershell.alert(`Attribute ${attribute_id} does not exist`, 'warning');
@@ -579,8 +599,12 @@ servershell.commands = {
                     values = values.concat(changes['add']);
                 }
 
-                // Now add values which should be added
-                values = values.filter(v => !to_remove.includes(v));
+                // Now remove values matching exact or regex patterns
+                values = values.filter(v => {
+                    if (exact_matches.includes(v)) return false;
+                    if (regex_patterns.some(re => re.test(v))) return false;
+                    return true;
+                });
 
                 servershell.update_attribute(object_id, attribute_id, values);
             });
