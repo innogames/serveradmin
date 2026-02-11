@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
+
 """Serveradmin and adminapi setup
 
-Copyright (c) 2021 InnoGames GmbH
+Copyright (c) 2026 InnoGames GmbH
 """
 
 from setuptools import setup, find_packages
@@ -65,6 +66,7 @@ if __name__ == '__main__':
             'paramiko>=2.7,<4',
             'netaddr>=0.8.0,<1.4.0',
         ],
+        python_requires=">=3.9,<3.14",
         author='InnoGames System Administration',
         author_email='it@innogames.com',
     )
