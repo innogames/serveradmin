@@ -50,7 +50,7 @@
             "group": "other",
             "help_link": null,
             "readonly": false,
-            "target_servertype": null,
+            "target_servertype": [],
             "reversed_attribute": null,
             "clone": false,
             "regexp": "\\A.*\\Z"
@@ -67,7 +67,7 @@
             "group": "other",
             "help_link": null,
             "readonly": false,
-            "target_servertype": null,
+            "target_servertype": [],
             "reversed_attribute": null,
             "clone": false,
             "regexp": "\\A.*\\Z"
@@ -83,7 +83,7 @@
             "group": "other",
             "help_link": null,
             "readonly": true,
-            "target_servertype": "route_network",
+            "target_servertype": ["route_network"],
             "reversed_attribute": null,
             "clone": false,
             "regexp": "\\A.*\\Z"
@@ -100,7 +100,7 @@
             "group": "other",
             "help_link": null,
             "readonly": true,
-            "target_servertype": "provider_network",
+            "target_servertype": ["provider_network"],
             "reversed_attribute": null,
             "clone": false,
             "regexp": "\\A.*\\Z"
@@ -117,7 +117,7 @@
             "group": "other",
             "help_link": null,
             "readonly": true,
-            "target_servertype": "provider_network",
+            "target_servertype": ["provider_network"],
             "reversed_attribute": null,
             "clone": false,
             "regexp": "\\A.*\\Z"
@@ -133,7 +133,7 @@
             "group": "other",
             "help_link": null,
             "readonly": false,
-            "target_servertype": null,
+            "target_servertype": [],
             "reversed_attribute": null,
             "clone": false,
             "regexp": "\\A.*\\Z"
@@ -149,7 +149,7 @@
             "group": "other",
             "help_link": null,
             "readonly": false,
-            "target_servertype": null,
+            "target_servertype": [],
             "reversed_attribute": null,
             "clone": false,
             "regexp": "\\A.*\\Z"
@@ -165,7 +165,7 @@
             "group": "other",
             "help_link": null,
             "readonly": false,
-            "target_servertype": null,
+            "target_servertype": [],
             "reversed_attribute": null,
             "clone": false,
             "regexp": "\\A.*\\Z"
@@ -181,7 +181,7 @@
             "group": "other",
             "help_link": null,
             "readonly": false,
-            "target_servertype": null,
+            "target_servertype": [],
             "reversed_attribute": null,
             "clone": false,
             "regexp": "\\A.*\\Z"

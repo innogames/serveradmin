@@ -207,6 +207,17 @@ def _containment_filter_template(attribute, filt):
     return template.format(_raw_sql_escape(value))
 
 
+def _target_servertype_sql(alias, attribute):
+    ids = list(
+        attribute.target_servertype.values_list('servertype_id', flat=True)
+    )
+    if len(ids) == 1:
+        return f"{alias}.servertype_id = '{ids[0]}'"
+    return "{}.servertype_id IN ({})".format(
+        alias, ', '.join("'{}'".format(i) for i in ids)
+    )
+
+
 def _condition_sql(attribute, template, related_vias):
     if attribute.special:
         return template.format('server.' + attribute.special.field)
@@ -216,13 +227,13 @@ def _condition_sql(attribute, template, related_vias):
             attribute, 'supernet',
             '>>= server_addr.value',
             (
-                f"supernet.servertype_id = '{attribute.target_servertype_id}'",
+                _target_servertype_sql('supernet', attribute),
                 template.format('supernet.server_id'),
             )
         )
     if attribute.type == 'domain':
         return _exists_sql(Server, 'sub', (
-            "sub.servertype_id = '{0}'".format(attribute.target_servertype_id),
+            _target_servertype_sql('sub', attribute),
             "server.hostname ~ ('\\A[^\.]+\.' || regexp_replace("
             "sub.hostname, '(\*|\-|\.)', '\\\1', 'g') || '\\Z')",
             template.format('sub.server_id'),
@@ -264,7 +275,7 @@ def _real_condition_sql(attribute, template, related_vias):
                 related_via_attribute, 'supernet',
                 '>>= server_addr.value',
                 (
-                    f"supernet.servertype_id = '{related_via_attribute.target_servertype_id}'",
+                    _target_servertype_sql('supernet', related_via_attribute),
                     'supernet.server_id = sub.server_id'
                 ),
             )
