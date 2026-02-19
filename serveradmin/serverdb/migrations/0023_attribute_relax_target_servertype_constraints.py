@@ -8,7 +8,7 @@ Uses SeparateDatabaseAndState so that:
 Steps:
 1. Create the M2M join table
 2. Copy existing FK data into the join table
-3. Drop the old FK column and its custom CHECK constraints
+3. Drop the old FK column
 """
 
 import django.db.models
@@ -38,7 +38,7 @@ def copy_m2m_to_fk(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('serverdb', '0021_serverinetattribute_server_inet_attribute_value_idx'),
+        ('serverdb', '0022_attribute_relax_target_servertype_constraints')
     ]
 
     operations = [
@@ -80,19 +80,6 @@ class Migration(migrations.Migration):
                         "  FOREIGN KEY (target_servertype_id)"
                         "  REFERENCES servertype(servertype_id)"
                         "  DEFERRABLE INITIALLY DEFERRED"
-                    ),
-                ),
-                migrations.RunSQL(
-                    sql=(
-                        "ALTER TABLE attribute "
-                        "DROP CONSTRAINT IF EXISTS"
-                        "  attribute_target_servertype_id_check"
-                    ),
-                    reverse_sql=(
-                        "ALTER TABLE attribute ADD CONSTRAINT"
-                        "  attribute_target_servertype_id_check "
-                        "CHECK((type IN ('domain', 'supernet', 'relation')) = "
-                        "(target_servertype_id IS NOT NULL OR type = 'relation'))"
                     ),
                 ),
                 migrations.RunSQL(
