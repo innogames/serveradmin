@@ -45,7 +45,9 @@ class AttributeAdminForm(forms.ModelForm):
         attr_type = self.cleaned_data.get('type') or self.instance.type  # New or existing attribute ?
 
         target_servertypes = self.cleaned_data.get('target_servertype')
-        if attr_type != 'relation' and target_servertypes and target_servertypes.exists():
+        if attr_type in ('domain', 'supernet') and not (target_servertypes and target_servertypes.exists()):
+            raise ValidationError('Attributes of type domain or supernet must have at least one target servertype!')
+        if attr_type not in ('domain', 'supernet', 'relation') and target_servertypes and target_servertypes.exists():
             raise ValidationError('Attribute type must be relation when target servertype is selected!')
 
         if attr_type == 'inet' and self.cleaned_data.get('multi') is True:
