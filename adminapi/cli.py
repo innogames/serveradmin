@@ -57,11 +57,34 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
+def _resolve_dot_notations(attribute_ids):
+    """Resolve dotted attribute notations, merging shared prefixes.
+
+    ["hostname"] -> ["hostname"]
+    ["vms.hostname"] -> [{"vms": ["hostname"]}]
+    ["loadbalancer.vms", "loadbalancer.route_network.hostname"]
+        -> [{"loadbalancer": ["vms", {"route_network": ["hostname"]}]}]
+    """
+    result = []
+    joins = {}
+    for attr in attribute_ids:
+        parts = attr.split('.')
+        if len(parts) == 1:
+            result.append(parts[0])
+        else:
+            joins.setdefault(parts[0], []).append('.'.join(parts[1:]))
+
+    for key, suffixes in joins.items():
+        result.append({key: _resolve_dot_notations(suffixes)})
+
+    return result
+
+
 def main():
     args = parse_args(sys.argv[1:])
 
     attribute_ids_to_print = args.attr if args.attr else ['hostname']
-    attribute_ids_to_fetch = list(attribute_ids_to_print)
+    attribute_ids_to_fetch = _resolve_dot_notations(attribute_ids_to_print)
     if args.reset:
         attribute_ids_to_fetch.extend(args.reset)
     if args.update:
