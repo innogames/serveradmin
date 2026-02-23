@@ -25,6 +25,7 @@ from adminapi.filters import (
     StartsWith,
     Not,
 )
+from serveradmin.serverdb import models
 from serveradmin.serverdb.models import (
     Server,
     ServerAttribute,
@@ -207,7 +208,7 @@ def _containment_filter_template(attribute, filt):
     return template.format(_raw_sql_escape(value))
 
 
-def _target_servertype_sql(alias, attribute):
+def _target_servertype_sql(alias: str, attribute: models.Attribute) -> str:
     ids = list(
         attribute.target_servertype.values_list('servertype_id', flat=True)
     )
