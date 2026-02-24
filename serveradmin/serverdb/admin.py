@@ -69,6 +69,7 @@ class ServerAdmin(admin.ModelAdmin):
 
 class AttributeAdmin(admin.ModelAdmin):
     form = AttributeAdminForm
+    filter_horizontal = ('target_servertype',)
     list_display = [
         'attribute_id',
         'type',
@@ -90,7 +91,7 @@ class AttributeAdmin(admin.ModelAdmin):
         # support it.
         if obj:
             fields += (
-                'type', 'attribute_id', 'target_servertype',
+                'type', 'attribute_id',
                 'reversed_attribute'
             )
 

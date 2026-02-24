@@ -310,8 +310,9 @@ class Attribute(models.Model):
         choices=InetAddressFamilyChoice.choices, max_length=5, blank=True
     )
     readonly = models.BooleanField(null=False, default=False)
-    target_servertype = models.ForeignKey(
-        Servertype, on_delete=models.CASCADE, db_index=False, null=True, blank=True
+    target_servertype = models.ManyToManyField(
+        Servertype, blank=True,
+        help_text="Selecting no servertype allows all servertypes.",
     )
     reversed_attribute = models.ForeignKey(
         "self",
@@ -666,11 +667,12 @@ class ServerRelationAttribute(ServerAttribute):
         except Server.DoesNotExist:
             raise ValidationError('No server with hostname "{0}" exist.'.format(value))
 
-        target_servertype = self.attribute.target_servertype
-        if target_servertype and target_server.servertype != target_servertype:
+        target_servertypes = self.attribute.target_servertype.all()
+        if target_servertypes.exists() and target_server.servertype not in target_servertypes:
             raise ValidationError(
                 'Attribute "{0}" has to be from servertype "{1}".'.format(
-                    self.attribute, self.attribute.target_servertype
+                    self.attribute,
+                    ', '.join(str(st) for st in target_servertypes),
                 )
             )
 
