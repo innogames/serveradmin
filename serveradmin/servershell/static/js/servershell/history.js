@@ -16,7 +16,7 @@ servershell.history = {
     storeEntry: function (entry) {
         const history = servershell.history.get();
 
-        const matching = servershell.history.findMatchingEntry(entry)
+        const matching = servershell.history.findMatchingEntry(entry.term)
         if (matching !== -1) {
             history.splice(matching, 1);
         }
@@ -35,8 +35,8 @@ servershell.history = {
         localStorage.setItem(storageKey, "[]");
     },
 
-    findMatchingEntry: function (entry) {
+    findMatchingEntry: function (term) {
         const history = servershell.history.get();
-        return history.findIndex((i) => entry.search === i.search);
+        return history.findIndex((i) => term === i.term);
     }
 }

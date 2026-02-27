@@ -23,8 +23,8 @@ servershell.open_history_autocomplete = function () {
             const search = request.term;
 
             const history = servershell.history.get()
-            const possibleChoices = history.filter((entry) => entry.search.toLowerCase().includes(search.toLowerCase()))
-                .map((entry) => entry.search);
+            const possibleChoices = history.filter((entry) => entry.term.toLowerCase().includes(search.toLowerCase()))
+                .map((entry) => entry.term);
             response(possibleChoices.slice(0, Math.min(displayLimit, possibleChoices.length)));
         },
 
