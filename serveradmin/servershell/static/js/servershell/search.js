@@ -100,6 +100,13 @@ servershell.submit_search = function(focus_command_input = false) {
                 servershell.num_servers = data.num_servers;
                 servershell.status = data.status;
                 servershell.understood = data.understood;
+
+                if (servershell.term) {
+                    servershell.history.storeEntry({
+                        term: servershell.term,
+                        shown_attributes: servershell.shown_attributes,
+                    });
+                }
             }
         })
         .catch(function(xhr) {

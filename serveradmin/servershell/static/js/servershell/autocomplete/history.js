@@ -29,7 +29,10 @@ servershell.open_history_autocomplete = function () {
         },
 
         select: function (_, ui) {
-            autocomplete_search_input.trigger('change', ui.item.value);
+            const term = ui.item.value
+            const [, entry] = servershell.history.findMatchingEntry(term)
+            servershell.shown_attributes = entry.shown_attributes
+            autocomplete_search_input.trigger('change', term);
             servershell.close_history_autocomplete()
         }
     });
