@@ -37,6 +37,28 @@ th:hover .attr-headericons {
     height: 29px;
 }
 
+#history-toggle img {
+    width: 16px;
+    height: 16px;
+}
+
+#history-toggle {
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #ced4da;
+}
+
+#history-toggle {
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #ced4da;
+}
+
+#history-toggle.active {
+    background: var(--background-primary);
+}
+
+
 .input-controls > div:last-of-type {
     padding-left: 0;
 }

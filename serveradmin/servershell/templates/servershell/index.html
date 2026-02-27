@@ -30,7 +30,14 @@
         <div class="col-sm-8">
             <form method="post" action="{% url 'servershell_results' %}" id="search_form" autocomplete="off">
                 {% csrf_token %}
-                <input tabindex="1" class="form-control form-control-sm autocomplete" type="text" id="term" data-servershell-property-bind="term" data-servershell-autocomplete-url="{% url 'servershell_autocomplete' %}" />
+                <div class="input-group input-group-sm">
+                    <input tabindex="1" class="form-control form-control-sm autocomplete" type="text" id="term" data-servershell-property-bind="term" data-servershell-autocomplete-url="{% url 'servershell_autocomplete' %}" />
+                    <div class="input-group-append">
+                        <button id="history-toggle" class="btn btn-sm" type="button" title="Search history (Ctrl+Shift+F)" onclick="servershell.autocomplete_history_enabled ? servershell.close_history_autocomplete() : servershell.open_history_autocomplete()">
+                            <img src="{{ STATIC_URL }}icons/clock-history.svg" alt="Search history"/>
+                        </button>
+                    </div>
+                </div>
             </form>
         </div>
         <div class="col-sm-3">
@@ -193,9 +200,11 @@
 <script src="{{ STATIC_URL }}js/servershell/result.js"></script>
 <script src="{{ STATIC_URL }}js/servershell/command.js"></script>
 <script src="{{ STATIC_URL }}js/servershell/validate.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/history.js"></script>
 <script src="{{ STATIC_URL }}{{ choose_ip_address.js }}"></script>
 <script src="{{ STATIC_URL }}js/servershell/autocomplete/search.js"></script>
 <script src="{{ STATIC_URL }}js/servershell/autocomplete/command.js"></script>
+<script src="{{ STATIC_URL }}js/servershell/autocomplete/history.js"></script>
 <script>
     $(document).ready(function() {
         // We want to allow the user to abort some queries such as search
