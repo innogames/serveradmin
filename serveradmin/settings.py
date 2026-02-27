@@ -17,7 +17,7 @@ SECRET_KEY = env('SECRET_KEY', default=None)
 
 DEBUG = env('DEBUG', default=False)
 
-ALLOWED_HOSTS = env('ALLOWED_HOSTS', default=[])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
 # Default model used for the implicit generate primary key when no attribute
 # of a model as primary_key = True.
