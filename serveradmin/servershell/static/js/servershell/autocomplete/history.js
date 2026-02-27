@@ -56,4 +56,11 @@ $(document).ready(function () {
             servershell.open_history_autocomplete();
         }
     });
+
+    $('#term').on('focusout', () => {
+        // If the user clicks away from the search box we want to return to normal mode
+        if (servershell.autocomplete_history_enabled) {
+            servershell.close_history_autocomplete();
+        }
+    })
 });
