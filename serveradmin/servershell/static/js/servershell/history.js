@@ -1,11 +1,11 @@
-const storageKey = "servershell_history"
+const historyStorageKey = "servershell_history"
 
 servershell.history = {
     /**
      * @returns {[]}
      */
     get: function () {
-        const history = localStorage.getItem(storageKey);
+        const history = localStorage.getItem(historyStorageKey);
         if (!history) {
             return []
         }
@@ -21,23 +21,27 @@ servershell.history = {
             history.splice(matching, 1);
         }
 
-        // TODO: Dynamic max length
-        while (history.length >= 20) {
+        const maxSize = parseInt($('#history_size').val())
+        while (history.length >= maxSize) {
             history.pop();
         }
 
         history.unshift(entry);
 
-        localStorage.setItem(storageKey, JSON.stringify(history))
+        localStorage.setItem(historyStorageKey, JSON.stringify(history))
     },
 
     clear: function () {
-        localStorage.setItem(storageKey, "[]");
+        localStorage.setItem(historyStorageKey, "[]");
     },
 
     findMatchingEntry: function (term) {
         const history = servershell.history.get();
         const index = history.findIndex((i) => term === i.term)
+        if (index === -1) {
+            return [-1, undefined]
+        }
+
         return [index, history[index]];
     }
 }

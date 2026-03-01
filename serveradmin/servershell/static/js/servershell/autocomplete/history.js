@@ -31,15 +31,24 @@ servershell.open_history_autocomplete = function () {
         select: function (_, ui) {
             const term = ui.item.value
             const [, entry] = servershell.history.findMatchingEntry(term)
-            servershell.shown_attributes = entry.shown_attributes
-            autocomplete_search_input.trigger('change', term);
+
+            servershell.term = term;
+
+            const manageAttributes = $('#history_attributes')[0].checked
+            if (manageAttributes && entry) {
+                servershell.shown_attributes = entry.shown_attributes
+            } else {
+                servershell.submit_search()
+            }
             servershell.close_history_autocomplete()
         }
     });
     autocomplete_search_input.autocomplete('enable');
     autocomplete_search_input.autocomplete('option', 'autoFocus', $('#autoselect')[0].checked);
     autocomplete_search_input.autocomplete('option', 'minLength', 0);
-    autocomplete_search_input.autocomplete('option', 'delay', 50); // Searching local storage is fast
+    autocomplete_search_input.autocomplete('option', 'delay', 50);
+
+    // When history is opened show all item, regardless of the current input text
     autocomplete_search_input.autocomplete('search', "");
     autocomplete_search_input.focus();
     servershell.autocomplete_history_enabled = true;
@@ -59,11 +68,4 @@ $(document).ready(function () {
             servershell.open_history_autocomplete();
         }
     });
-
-    $('#term').on('focusout', () => {
-        // If the user clicks away from the search box we want to return to normal mode
-        if (servershell.autocomplete_history_enabled) {
-            servershell.close_history_autocomplete();
-        }
-    })
 });

@@ -56,6 +56,9 @@ SEARCH_SETTINGS = {
     'autocomplete_delay_commands': 10,
     'autoselect': True,
     'save_attributes': False,
+    'history_attributes': True,
+    'history_size': 20,
+    'history_store_empty': True,
 }
 
 

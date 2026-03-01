@@ -54,7 +54,7 @@
             <!-- Advanced search options (hidden by default) -->
             <div class="collapse" id="search-options">
                 <div class="card card-body">
-                    <b>Your search settings are bound to your user and persistent.</b>
+                    <b>Your settings are bound to your user and persistent.</b>
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input" id="autocomplete" {% if search_settings.autocomplete %}checked="checked"{% endif %} onchange="this.checked ? $('.autocomplete').autocomplete('enable') : $('.autocomplete').autocomplete('disable');">
                         <label class="form-check-label" for="autocomplete">Autocomplete for Search & Command</label>
@@ -76,6 +76,23 @@
                         <label class="form-input-label" for="autocomplete_delay_commands">Delay in milliseconds before auto completion for commands kicks in.</label>
                     </div>
                     <hr>
+                    <b>Search History</b>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="history_attributes" {% if search_settings.history_attributes %}checked="checked"{% endif %}>
+                        <label class="form-check-label" for="history_attributes">When selecting a history entry also change displayed attributes</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="history_store_empty" {% if search_settings.history_store_empty %}checked="checked"{% endif %}>
+                        <label class="form-check-label" for="history_store_empty">Whether searches that yield no results should be stored</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="number" class="form-input" id="history_size" value="{{ search_settings.history_size }}" min="20">
+                        <label class="form-input-label" for="history_size">The maximum size of your history</label>
+                    </div>
+                    <div>
+                        <input value="Clear History" type="button" onclick="servershell.history.clear()">
+                    </div>
+                    <hr>
                     <b>Keyboard Shortcuts</b>
                     <ul>
                         <li><kbd>TAB</kbd> Goto next input</li>
@@ -85,6 +102,7 @@
                         <li><kbd>CTRL + &#8592;</kbd> Jump a word backward</li>
                         <li><kbd>CTRL + &#8594;</kbd> Jump a word forward</li>
                         <li><kbd>ALT + BACKSPACE</kbd> Delete one word (reverse)</li>
+                        <li><kbd>CTRL + SHIFT + F</kbd> Toggle search history</li>
                     </ul>
                 </div>
             </div>

@@ -102,6 +102,11 @@ servershell.submit_search = function(focus_command_input = false) {
                 servershell.understood = data.understood;
 
                 if (servershell.term) {
+                    const storeEmpty = $('#history_store_empty')[0].checked
+                    if (!storeEmpty && data.servers.length === 0) {
+                        return
+                    }
+
                     servershell.history.storeEntry({
                         term: servershell.term,
                         shown_attributes: servershell.shown_attributes,
@@ -173,6 +178,9 @@ $(document).ready(function() {
             'autocomplete_delay_commands': $('#autocomplete_delay_commands').val(),
             'autoselect': $('#autoselect')[0].checked,
             'save_attributes': $('#save_attributes')[0].checked,
+            'history_attributes': $('#history_attributes')[0].checked,
+            'history_size': $('#history_size').val(),
+            'history_store_empty': $('#history_store_empty')[0].checked,
             'timeout': 5000,
         }).done(function(data) {
             servershell.search_settings = data;
