@@ -29,18 +29,18 @@ servershell.open_history_autocomplete = function () {
         },
 
         select: function (_, ui) {
-            const term = ui.item.value
-            const [, entry] = servershell.history.findMatchingEntry(term)
+            const term = ui.item.value;
+            const [, entry] = servershell.history.findMatchingEntry(term);
 
             servershell.term = term;
 
-            const manageAttributes = $('#history_attributes')[0].checked
+            const manageAttributes = $('#history_attributes')[0].checked;
             if (manageAttributes && entry) {
-                servershell.shown_attributes = entry.shown_attributes
+                servershell.shown_attributes = entry.shown_attributes;
             } else {
-                servershell.submit_search()
+                servershell.submit_search();
             }
-            servershell.close_history_autocomplete()
+            servershell.close_history_autocomplete();
         }
     });
     autocomplete_search_input.autocomplete('enable');

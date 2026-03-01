@@ -1,13 +1,16 @@
+/*
+ * History - Copyright (c) 2026 InnoGames GmbH
+ *
+ * This module implements interactions with localstorage to serve the history array.
+ */
+
 const historyStorageKey = "servershell_history"
 
 servershell.history = {
-    /**
-     * @returns {[]}
-     */
     get: function () {
         const history = localStorage.getItem(historyStorageKey);
         if (!history) {
-            return []
+            return [];
         }
 
         return JSON.parse(history);
@@ -16,19 +19,19 @@ servershell.history = {
     storeEntry: function (entry) {
         const history = servershell.history.get();
 
-        const [matching] = servershell.history.findMatchingEntry(entry.term)
+        const [matching] = servershell.history.findMatchingEntry(entry.term);
         if (matching !== -1) {
             history.splice(matching, 1);
         }
 
-        const maxSize = parseInt($('#history_size').val())
+        const maxSize = parseInt($('#history_size').val());
         while (history.length >= maxSize) {
             history.pop();
         }
 
         history.unshift(entry);
 
-        localStorage.setItem(historyStorageKey, JSON.stringify(history))
+        localStorage.setItem(historyStorageKey, JSON.stringify(history));
     },
 
     clear: function () {
