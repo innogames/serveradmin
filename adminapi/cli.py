@@ -1,6 +1,6 @@
 """Serveradmin - adminapi - Command Line Interface
 
-Copyright (c) 2025 InnoGames GmbH
+Copyright (c) 2026 InnoGames GmbH
 """
 
 import json
@@ -57,11 +57,34 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
+def _resolve_dot_notations(attribute_ids):
+    """Resolve dotted attribute notations, merging shared prefixes.
+
+    ["hostname"] -> ["hostname"]
+    ["vms.hostname"] -> [{"vms": ["hostname"]}]
+    ["loadbalancer.vms", "loadbalancer.route_network.hostname"]
+        -> [{"loadbalancer": ["vms", {"route_network": ["hostname"]}]}]
+    """
+    result = []
+    joins = {}
+    for attr in attribute_ids:
+        parts = attr.split('.')
+        if len(parts) == 1:
+            result.append(parts[0])
+        else:
+            joins.setdefault(parts[0], []).append('.'.join(parts[1:]))
+
+    for key, suffixes in joins.items():
+        result.append({key: _resolve_dot_notations(suffixes)})
+
+    return result
+
+
 def main():
     args = parse_args(sys.argv[1:])
 
     attribute_ids_to_print = args.attr if args.attr else ['hostname']
-    attribute_ids_to_fetch = list(attribute_ids_to_print)
+    attribute_ids_to_fetch = _resolve_dot_notations(attribute_ids_to_print)
     if args.reset:
         attribute_ids_to_fetch.extend(args.reset)
     if args.update:
@@ -109,19 +132,42 @@ def apply_updates(server, attribute_values):
         server.set(attribute_id, value)
 
 
+def _resolve_value(obj, attribute_id):
+    """Resolve a possibly dot-notated attribute to its value."""
+    first, _, rest = attribute_id.partition('.')
+    value = obj[first]
+    if not rest:
+        return value
+    if isinstance(value, MultiAttr):
+        collected = []
+        for related in value:
+            v = _resolve_value(related, rest)
+            if isinstance(v, MultiAttr):
+                collected.extend(v)
+            else:
+                collected.append(v)
+        return MultiAttr(collected, obj, first)
+    return _resolve_value(value, rest)
+
+
 def print_server(query: Query, attribute_ids: list[str], output_format: str):
     if output_format == 'json':
-        values = [{key: value for key, value in server.items() if key in attribute_ids} for server in query]
+        top_level_keys = {attr.split('.')[0] for attr in attribute_ids}
+        values = [
+            {k: v for k, v in server.items() if k in top_level_keys}
+            for server in query
+        ]
         print(json.dumps(values, indent=2, cls=ServeradminJSONEncoder))
     else:
         for server in query:
             values = []
             for attribute_id in attribute_ids:
-                if attribute_id not in server:
+                try:
+                    value = _resolve_value(server, attribute_id)
+                except KeyError:
                     values.append('{N/A}')
                     continue
 
-                value = server[attribute_id]
                 if any(value is v for v in (None, True, False)):
                     value = '{{{}}}'.format(str(value).lower())
 

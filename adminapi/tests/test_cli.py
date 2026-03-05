@@ -2,7 +2,8 @@ import unittest
 from argparse import ArgumentParser
 from typing import Text, NoReturn
 
-from adminapi.cli import parse_args
+from adminapi.cli import parse_args, _resolve_value
+from adminapi.dataset import DatasetObject, MultiAttr
 
 
 # ArgumentParser exists on error, we cannot capture this so we override it
@@ -66,3 +67,23 @@ class TestCommandlineInterface(unittest.TestCase):
 
         args = parse_args(['project=adminapi', '--update', 'hostname=SomeNewHostname', '-u', 'state=maintenance'])
         self.assertEqual(args.update, [('hostname', 'SomeNewHostname'), ('state', 'maintenance')])
+
+
+class TestResolveValue(unittest.TestCase):
+    def test_resolve_dotted_multi_attr(self):
+        vm1 = DatasetObject({'hostname': 'vm-1'}, object_id=1)
+        vm2 = DatasetObject({'hostname': 'vm-2'}, object_id=2)
+        server = DatasetObject({'hostname': 'hv-1', 'vms': [vm1, vm2]})
+
+        result = _resolve_value(server, 'vms.hostname')
+
+        self.assertIsInstance(result, MultiAttr)
+        self.assertEqual(sorted(result), ['vm-1', 'vm-2'])
+
+    def test_resolve_dotted_single_relation(self):
+        related = DatasetObject({'hostname': 'lb-1'}, object_id=1)
+        server = DatasetObject({'loadbalancer': related})
+
+        result = _resolve_value(server, 'loadbalancer.hostname')
+
+        self.assertEqual(result, 'lb-1')
