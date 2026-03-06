@@ -418,7 +418,14 @@ def _acl_violations(touched_objects, pending_changes, acl):
             # Otherwise check if the ACL allows the "to be" object.
             to_compare = pending_changes
 
-        if not attribute_filter.matches(to_compare.get(attribute_id)):
+        attr_value = to_compare.get(attribute_id)
+        if isinstance(attr_value, (set, frozenset)):
+            matched = any(
+                attribute_filter.matches(v) for v in attr_value
+            )
+        else:
+            matched = attribute_filter.matches(attr_value)
+        if not matched:
             violations.append(
                 'Object is not covered by ACL "{}", Attribute "{}" '
                 'does not match the filter "{}".'.format(
