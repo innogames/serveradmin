@@ -46,7 +46,7 @@ servershell.open_history_autocomplete = function () {
     autocomplete_search_input.autocomplete('enable');
     autocomplete_search_input.autocomplete('option', 'autoFocus', $('#autoselect')[0].checked);
     autocomplete_search_input.autocomplete('option', 'minLength', 0);
-    autocomplete_search_input.autocomplete('option', 'delay', 50);
+    autocomplete_search_input.autocomplete('option', 'delay', $('#autocomplete_delay_search')[0].value);
 
     // When history is opened show all item, regardless of the current input text
     autocomplete_search_input.autocomplete('search', "");
