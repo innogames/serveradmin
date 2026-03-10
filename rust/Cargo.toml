@@ -1,0 +1,39 @@
+[package]
+name = "adminapi"
+version = "0.1.0"
+edition = "2021"
+description = "The ServerAdmin API available in Rust"
+license = "MIT"
+readme = "README.md"
+authors = ["InnoGames System Administration <it@innogames.com>"]
+repository = "https://github.com/innogames/serveradmin/"
+
+[dependencies]
+thiserror = "2.0"
+hmac = "0.12"
+tracing = "0.1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha1 = "0.10"
+signature = "2.2"
+ssh-agent-client-rs = "1.1"
+ssh-encoding = { version = "0.2", features = ["base64"] }
+ssh-key = { version = "0.6", features = ["serde", "ed25519", "dsa", "crypto", "rsa"] }
+
+[dev-dependencies]
+tracing-subscriber = { version = "0.3", features = [
+    "env-filter",
+    "json",
+    "fmt",
+    "std",
+] }
+tokio = { version = "1.38", features = ["full"] }
+clap = "4.5"
+futures = "0.3"
+anyhow = "1.0"
+
+[profile.release]
+lto = true
+opt-level = "z"
+strip = true
