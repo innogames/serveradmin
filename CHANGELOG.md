@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased
+## v4.25.0 (2026-03-10)
 
+- Fix access control groups for multi attributes (#435) (75185a02)
+- Implement Query history (#434) (7bfd73fc)
+- Add support to query related attribute from commandline (#431) (dbf6d356)
 - Allow a selection of target servertypes for attributes (#427) (dd50bb87)
 - Update test configuration and environment (#430) (85e603b4)
 - servershell: Add regexp() support to multidel command (#429) (81900f18)
