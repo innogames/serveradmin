@@ -5,7 +5,8 @@
  * autocomplete for hostnames, attributes, attribute values and filters by
  * now.
  */
-$(document).ready(function () {
+
+servershell.enable_search_autocomplete = function () {
     let _build_value = function (full_term, cur_term, attribute, value) {
         let cur_term_index = full_term.lastIndexOf(cur_term);
         let result = full_term.substring(0, cur_term_index) + attribute;
@@ -117,4 +118,8 @@ $(document).ready(function () {
     autocomplete_search_input.autocomplete($('#autocomplete')[0].checked ? 'enable' : 'disable');
     autocomplete_search_input.autocomplete('option', 'autoFocus', $('#autoselect')[0].checked);
     autocomplete_search_input.autocomplete('option', 'delay', $('#autocomplete_delay_search')[0].value);
+}
+
+$(document).ready(function () {
+    servershell.enable_search_autocomplete();
 });

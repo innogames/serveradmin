@@ -1,0 +1,71 @@
+/*
+ * Autocomplete History - Copyright (c) 2026 InnoGames GmbH
+ *
+ * This module ads auto complete while searching the query history
+ */
+
+servershell.autocomplete_history_enabled = false;
+
+servershell.close_history_autocomplete = function () {
+    const autocomplete_search_input = $('#term');
+    autocomplete_search_input.autocomplete('destroy');
+    servershell.autocomplete_history_enabled = false;
+    servershell.enable_search_autocomplete();
+    $('#history-toggle').removeClass('active');
+}
+
+servershell.open_history_autocomplete = function () {
+    const autocomplete_search_input = $('#term');
+    autocomplete_search_input.autocomplete('destroy');
+    autocomplete_search_input.autocomplete({
+        source: function (request, response) {
+            const displayLimit = 20;
+            const search = request.term;
+
+            const history = servershell.history.get()
+            const possibleChoices = history.filter((entry) => entry.term.toLowerCase().includes(search.toLowerCase()))
+                .map((entry) => entry.term);
+            response(possibleChoices.slice(0, Math.min(displayLimit, possibleChoices.length)));
+        },
+
+        select: function (_, ui) {
+            const term = ui.item.value;
+            const [, entry] = servershell.history.findMatchingEntry(term);
+
+            servershell.term = term;
+
+            const manageAttributes = $('#history_attributes')[0].checked;
+            if (manageAttributes && entry) {
+                servershell.shown_attributes = entry.shown_attributes;
+            } else {
+                servershell.submit_search();
+            }
+            servershell.close_history_autocomplete();
+        }
+    });
+    autocomplete_search_input.autocomplete('enable');
+    autocomplete_search_input.autocomplete('option', 'autoFocus', $('#autoselect')[0].checked);
+    autocomplete_search_input.autocomplete('option', 'minLength', 0);
+    autocomplete_search_input.autocomplete('option', 'delay', $('#autocomplete_delay_search')[0].value);
+
+    // When history is opened show all item, regardless of the current input text
+    autocomplete_search_input.autocomplete('search', "");
+    autocomplete_search_input.focus();
+    servershell.autocomplete_history_enabled = true;
+    $('#history-toggle').addClass('active');
+}
+
+$(document).ready(function () {
+    $(document).keydown(function (event) {
+        if (event.shiftKey && event.ctrlKey) {
+            if (event.key !== 'F') {
+                return;
+            }
+            if (servershell.autocomplete_history_enabled) {
+                servershell.close_history_autocomplete();
+                return;
+            }
+            servershell.open_history_autocomplete();
+        }
+    });
+});
