@@ -132,7 +132,9 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
         commit_id = _log_changes(user, app, changed, created_objects, deleted_objects)
 
     post_commit.send_robust(
-        commit_query, created=created, changed=changed, deleted=deleted
+        commit_query,
+        commit_id=commit_id,
+        created=created, changed=changed, deleted=deleted,
     )
 
     return DatasetCommit(
