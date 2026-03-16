@@ -42,6 +42,10 @@ DATABASES = {
     },
 }
 
+# SQL Generator version: 'v1' (raw SQL) or 'v2' (Django ORM)
+# Use 'v2' for improved security and query optimization
+SQL_GENERATOR_VERSION = env('SQL_GENERATOR_VERSION', default='v1')
+
 MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
