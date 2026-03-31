@@ -26,13 +26,13 @@ class Migration(migrations.Migration):
                 "ALTER TABLE server "
                 "DROP CONSTRAINT server_hostname_check, "
                 "ADD CONSTRAINT server_hostname_check "
-                "CHECK (hostname::text ~ '\A(\*\.)?([a-z0-9]+(\.|-+))*[a-z0-9]+\Z'::text);"
+                r"CHECK (hostname::text ~ '\A(\*\.)?([a-z0-9]+(\.|-+))*[a-z0-9]+\Z'::text);"
             ),
             reverse_sql=(
                 "ALTER TABLE server "
                 "DROP CONSTRAINT server_hostname_check, "
                 "ADD CONSTRAINT server_hostname_check "
-                "CHECK (hostname::text ~ '\A(\*\.)?([a-z0-9]+[\.\-])*[a-z0-9]+\Z'::text);"
+                r"CHECK (hostname::text ~ '\A(\*\.)?([a-z0-9]+[\.\-])*[a-z0-9]+\Z'::text);"
             )
         ),
     ]
