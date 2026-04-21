@@ -235,8 +235,8 @@ def _condition_sql(attribute, template, related_vias):
     if attribute.type == 'domain':
         return _exists_sql(Server, 'sub', (
             _target_servertype_sql('sub', attribute),
-            "server.hostname ~ ('\\A[^\.]+\.' || regexp_replace("
-            "sub.hostname, '(\*|\-|\.)', '\\\1', 'g') || '\\Z')",
+            r"server.hostname ~ ('\A[^\.]+\.' || regexp_replace("
+            r"sub.hostname, '(\*|\-|\.)', '\\\1', 'g') || '\Z')",
             template.format('sub.server_id'),
         ))
     if attribute.type == 'reverse':
