@@ -108,4 +108,3 @@ class AttributeAdmin(admin.ModelAdmin):
 
 admin.site.register(Servertype, ServertypeAdmin)
 admin.site.register(Attribute, AttributeAdmin)
-admin.site.register(Server, ServerAdmin)
