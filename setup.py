@@ -56,12 +56,10 @@ if __name__ == '__main__':
                 'templates/servershell/modals/*',
             ],
         },
-        entry_points={
-            'console_scripts': [
-                'serveradmin=serveradmin.__main__:main',
-                'adminapi=adminapi.__main__:main',
-            ],
-        },
+        scripts=[
+            'bin/adminapi',
+            'bin/serveradmin',
+        ],
         install_requires=[
             'paramiko>=2.7,<4',
             'netaddr>=0.8.0,<1.4.0',
