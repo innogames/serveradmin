@@ -1,19 +1,25 @@
 """Serveradmin - Query Executer
 
-Copyright (c) 2019 InnoGames GmbH
+Copyright (c) 2025 InnoGames GmbH
 """
+
+import logging
+import time
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import DataError, connection, transaction
 
 from adminapi.filters import Any
+from adminapi.parse import build_query
 from serveradmin.serverdb.models import Attribute, ServertypeAttribute, Server
-from serveradmin.serverdb.sql_generator import get_server_query
+from serveradmin.serverdb.query_builder import get_server_query
 from serveradmin.serverdb.query_materializer import QueryMaterializer
 
 
 def execute_query(filters, restrict, order_by):
     """The main function to execute queries"""
+
+    start = time.time()
 
     # We need the restrict argument in slightly different structure.
     if restrict is None:
@@ -98,7 +104,12 @@ def execute_query(filters, restrict, order_by):
         # materializer module for its details.  The functions on this module
         # continues with the filtering step.
         servers = _get_servers(filters, attribute_lookup, related_vias)
-        return list(QueryMaterializer(servers, *materializer_args))
+        result = list(QueryMaterializer(servers, *materializer_args))
+
+        duration = time.time() - start
+        logging.getLogger('queries').debug(f"{build_query(filters)};{duration:.3f}s;{len(result)}")
+
+        return result
 
 
 def _get_joins(restrict):
@@ -255,9 +266,19 @@ def _get_servers(filters, attribute_lookup, related_vias):
         attribute_filters.append((attribute_lookup[attribute_id], filt))
 
     # If you managed to read this so far, the last step is refreshingly
-    # easy: get and execute the raw SQL query.
-    sql_query = get_server_query(attribute_filters, related_vias)
+    # easy: get and execute the query. The result can be either a raw SQL
+    # string (v1) or a Django QuerySet (v2) depending on configuration.
+    query_result = get_server_query(attribute_filters, related_vias)
     try:
-        return list(Server.objects.defer('intern_ip').raw(sql_query))
+        if isinstance(query_result, str):
+            # V1: Raw SQL string - defer() has no effect here since the raw
+            # SQL already selects intern_ip, but kept for backwards compatibility
+            return list(Server.objects.defer('intern_ip').raw(query_result))
+        else:
+            # V2: Django QuerySet - do NOT use defer('intern_ip') here because
+            # QueryMaterializer accesses intern_ip, which would cause N+1 queries
+            # (each server fetched individually to get the deferred field).
+            # The v1 raw SQL already includes intern_ip, so this matches behavior.
+            return list(query_result)
     except DataError as error:
         raise ValidationError(error)
