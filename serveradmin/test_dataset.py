@@ -80,6 +80,66 @@ class TestQuery(TransactionTestCase):
         self.assertEqual(len(q), 5)
 
 
+class TestFilterBoolean(TransactionTestCase):
+    fixtures = ['test_dataset.json', 'auth_user.json']
+
+    def setUp(self):
+        """Set the boolean ``has_monitoring`` attribute on some servers
+
+        ``has_monitoring`` is the only boolean attribute in the fixture and is
+        attached to servertype ``test2`` (servers ``test1``, ``test2`` and
+        ``test3``).  Booleans are stored as the existence of a row, so there is
+        no "unset" state: a server is either True (row present) or False (row
+        absent).  We set ``test1`` -> True and leave ``test2`` and ``test3`` at
+        their implicit False.
+        """
+
+        q = Query({'hostname': 'test1'}, ['has_monitoring'])
+        q.get()['has_monitoring'] = True
+        q.commit(user=User.objects.first())
+
+    def test_filter_any_true_false(self):
+        """Any(True, False) matches every server of the servertype
+
+        Every boolean is either True or False, so this must return all three
+        ``test2``-servertype servers.  This used to raise a ProgrammingError
+        ("column sub.value does not exist") because the logical filter tried to
+        build an ``IN (...)`` comparison against the value-less boolean table.
+        """
+
+        hostnames = {
+            s['hostname']
+            for s in Query({'has_monitoring': Any(True, False)})
+        }
+
+        self.assertEqual(hostnames, {'test1', 'test2', 'test3'})
+
+    def test_filter_true(self):
+        """Filtering by True returns only servers with the row present"""
+
+        hostnames = {
+            s['hostname'] for s in Query({'has_monitoring': True})
+        }
+
+        self.assertEqual(hostnames, {'test1'})
+
+    def test_filter_false(self):
+        """Filtering by False returns every server that has the attribute
+
+        The query is automatically scoped to servertypes that define
+        ``has_monitoring`` (only ``test2``), so this returns the servers of
+        that servertype which are not True: ``test2`` and ``test3``.  Servers
+        of other servertypes, which don't have the attribute at all, are not
+        matched.
+        """
+
+        hostnames = {
+            s['hostname'] for s in Query({'has_monitoring': False})
+        }
+
+        self.assertEqual(hostnames, {'test2', 'test3'})
+
+
 class TestCommit(TransactionTestCase):
     fixtures = ['test_dataset.json', 'auth_user.json']
 
