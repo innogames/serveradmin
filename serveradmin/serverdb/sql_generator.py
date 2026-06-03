@@ -129,7 +129,15 @@ def _logical_filter_sql_condition(attribute, filt, related_vias):
     simple_values = []
     templates = []
     for value in filt.values:
-        if type(filt) == Any and type(value) == BaseFilter:
+        # Boolean attributes are stored as the mere existence of a row (no
+        # "value" column), so they cannot be collected into an "IN (...)"
+        # comparison.  Route them through _get_sql_condition() individually
+        # to produce the proper EXISTS / NOT EXISTS conditions instead.
+        if (
+            type(filt) == Any
+            and type(value) == BaseFilter
+            and attribute.type != 'boolean'
+        ):
             simple_values.append(value)
         else:
             templates.append(
