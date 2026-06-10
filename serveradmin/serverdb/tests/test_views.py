@@ -1,6 +1,7 @@
+from ipaddress import ip_address
+
 from django.contrib.auth.models import User
 from django.test import TransactionTestCase
-from netaddr import IPAddress
 
 from serveradmin.dataset import Query
 from serveradmin.serverdb.models import Change
@@ -19,7 +20,7 @@ class RestoreViewTest(TransactionTestCase):
     def test_recreate_succeeds(self):
         vm = Query().new_object('vm')
         vm['hostname'] = 'test-serverdb-recreate'
-        vm['intern_ip'] = IPAddress('10.0.0.1')
+        vm['intern_ip'] = ip_address('10.0.0.1')
         vm.commit(user=User.objects.first())
 
         vm = Query({'hostname': 'test-serverdb-recreate'})
@@ -41,7 +42,7 @@ class RestoreViewTest(TransactionTestCase):
     def test_recreate_fails_if_hostname_exists(self):
         vm = Query().new_object('vm')
         vm['hostname'] = 'test-serverdb-recreate'
-        vm['intern_ip'] = IPAddress('10.0.0.1')
+        vm['intern_ip'] = ip_address('10.0.0.1')
         vm.commit(user=User.objects.first())
 
         vm = Query({'hostname': 'test-serverdb-recreate'})
@@ -51,7 +52,7 @@ class RestoreViewTest(TransactionTestCase):
 
         vm = Query().new_object('vm')
         vm['hostname'] = 'test-serverdb-recreate'
-        vm['intern_ip'] = IPAddress('10.0.0.2')
+        vm['intern_ip'] = ip_address('10.0.0.2')
         vm.commit(user=User.objects.first())
 
         change_id = Change.objects.filter(
