@@ -24,7 +24,6 @@ django-environ = "<1.0.0"
 django_compressor = "~=4.4"
 # Serveradmin extras:
 paramiko = ">=2.7,<4"
-pexpect = "<5.0.0"
 rich = "*"
 typing-extensions = "*"
 
