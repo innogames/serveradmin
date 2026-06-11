@@ -3,7 +3,6 @@
 import math
 
 from django.db import migrations, transaction, connection
-from rich.progress import Progress
 
 BATCH_SIZE = 100000
 
@@ -13,27 +12,22 @@ def migrate_change_add(apps, schema_editor):
     total = change_add.objects.count()
     batches = math.ceil(total / BATCH_SIZE)
 
-    with Progress() as progress:
-        migration = progress.add_task("\t[green]Migrating ChangeAdd data...", total=batches)
-
-        with connection.cursor() as cursor:
-            while not progress.finished:
-                with transaction.atomic():
-                    cursor.execute("""
-                        WITH moved AS (
-                            DELETE FROM serverdb_changeadd
-                            WHERE id IN (SELECT id FROM serverdb_changeadd ORDER BY id DESC LIMIT %s FOR UPDATE)
-                            RETURNING 
-                                server_id as object_id,
-                                'create' as change_type,
-                                attributes_json::jsonb as change_json,
-                                commit_id
-                        )
-                        INSERT INTO serverdb_change (object_id, change_type, change_json, commit_id) 
-                        SELECT * FROM moved;
-                    """, [BATCH_SIZE])
-
-                progress.update(migration, advance=1)
+    with connection.cursor() as cursor:
+        for _ in range(batches):
+            with transaction.atomic():
+                cursor.execute("""
+                    WITH moved AS (
+                        DELETE FROM serverdb_changeadd
+                        WHERE id IN (SELECT id FROM serverdb_changeadd ORDER BY id DESC LIMIT %s FOR UPDATE)
+                        RETURNING
+                            server_id as object_id,
+                            'create' as change_type,
+                            attributes_json::jsonb as change_json,
+                            commit_id
+                    )
+                    INSERT INTO serverdb_change (object_id, change_type, change_json, commit_id)
+                    SELECT * FROM moved;
+                """, [BATCH_SIZE])
 
 
 def migrate_change_delete(apps, schema_editor):
@@ -41,27 +35,22 @@ def migrate_change_delete(apps, schema_editor):
     total = change_delete.objects.count()
     batches = math.ceil(total / BATCH_SIZE)
 
-    with Progress() as progress:
-        migration = progress.add_task("\t[green]Migrating ChangeDelete data...", total=batches)
-
-        with connection.cursor() as cursor:
-            while not progress.finished:
-                with transaction.atomic():
-                    cursor.execute("""
-                        WITH moved AS (
-                            DELETE FROM serverdb_changedelete
-                            WHERE id IN (SELECT id FROM serverdb_changedelete ORDER BY id DESC LIMIT %s FOR UPDATE)
-                            RETURNING 
-                                server_id as object_id,
-                                'delete' as change_type,
-                                attributes_json::jsonb as change_json,
-                                commit_id
-                        )
-                        INSERT INTO serverdb_change (object_id, change_type, change_json, commit_id)
-                        SELECT * FROM moved;
-                    """, [BATCH_SIZE])
-
-                progress.update(migration, advance=1)
+    with connection.cursor() as cursor:
+        for _ in range(batches):
+            with transaction.atomic():
+                cursor.execute("""
+                    WITH moved AS (
+                        DELETE FROM serverdb_changedelete
+                        WHERE id IN (SELECT id FROM serverdb_changedelete ORDER BY id DESC LIMIT %s FOR UPDATE)
+                        RETURNING
+                            server_id as object_id,
+                            'delete' as change_type,
+                            attributes_json::jsonb as change_json,
+                            commit_id
+                    )
+                    INSERT INTO serverdb_change (object_id, change_type, change_json, commit_id)
+                    SELECT * FROM moved;
+                """, [BATCH_SIZE])
 
 
 def migrate_change_update(apps, schema_editor):
@@ -69,27 +58,22 @@ def migrate_change_update(apps, schema_editor):
     total = change_update.objects.count()
     batches = math.ceil(total / BATCH_SIZE)
 
-    with Progress() as progress:
-        migration = progress.add_task("\t[green]Migrating ChangeUpdate data...", total=batches)
-
-        with connection.cursor() as cursor:
-            while not progress.finished:
-                with transaction.atomic():
-                    cursor.execute("""
-                        WITH moved AS (
-                            DELETE FROM serverdb_changeupdate
-                            WHERE id IN (SELECT id FROM serverdb_changeupdate ORDER BY id DESC LIMIT %s FOR UPDATE)
-                            RETURNING 
-                                server_id as object_id,
-                                'change' as change_type,
-                                updates_json::jsonb as change_json,
-                                commit_id
-                        )
-                        INSERT INTO serverdb_change (object_id, change_type, change_json, commit_id)
-                        SELECT * FROM moved;
-                    """, [BATCH_SIZE])
-
-                progress.update(migration, advance=1)
+    with connection.cursor() as cursor:
+        for _ in range(batches):
+            with transaction.atomic():
+                cursor.execute("""
+                    WITH moved AS (
+                        DELETE FROM serverdb_changeupdate
+                        WHERE id IN (SELECT id FROM serverdb_changeupdate ORDER BY id DESC LIMIT %s FOR UPDATE)
+                        RETURNING
+                            server_id as object_id,
+                            'change' as change_type,
+                            updates_json::jsonb as change_json,
+                            commit_id
+                    )
+                    INSERT INTO serverdb_change (object_id, change_type, change_json, commit_id)
+                    SELECT * FROM moved;
+                """, [BATCH_SIZE])
 
 
 class Migration(migrations.Migration):
