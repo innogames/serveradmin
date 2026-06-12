@@ -612,7 +612,7 @@ class ServerStringAttribute(ServerAttribute):
         app_label = "serverdb"
         db_table = "server_string_attribute"
         unique_together = [["server", "attribute", "value"]]
-        index_together = [["attribute", "value"]]
+        indexes = [models.Index(fields=["attribute", "value"])]
 
     def save_value(self, value):
         for char in "'\"":
@@ -659,7 +659,7 @@ class ServerRelationAttribute(ServerAttribute):
         app_label = "serverdb"
         db_table = "server_relation_attribute"
         unique_together = [["server", "attribute", "value"]]
-        index_together = [["attribute", "value"]]
+        indexes = [models.Index(fields=["attribute", "value"])]
 
     def save_value(self, value):
         try:
@@ -682,6 +682,7 @@ class ServerRelationAttribute(ServerAttribute):
 class ServerBooleanAttribute(ServerAttribute):
     attribute = models.ForeignKey(
         Attribute,
+        db_index=False,
         on_delete=models.CASCADE,
         limit_choices_to=dict(type="boolean"),
     )
@@ -690,7 +691,7 @@ class ServerBooleanAttribute(ServerAttribute):
         app_label = "serverdb"
         db_table = "server_boolean_attribute"
         unique_together = [["server", "attribute"]]
-        index_together = [["attribute"]]
+        indexes = [models.Index(fields=["attribute"])]
 
     def get_value(self):
         return True
@@ -715,7 +716,7 @@ class ServerNumberAttribute(ServerAttribute):
         app_label = "serverdb"
         db_table = "server_number_attribute"
         unique_together = [["server", "attribute", "value"]]
-        index_together = [["attribute", "value"]]
+        indexes = [models.Index(fields=["attribute", "value"])]
 
     def get_value(self):
         return (
@@ -738,8 +739,8 @@ class ServerInetAttribute(ServerAttribute):
         app_label = "serverdb"
         db_table = "server_inet_attribute"
         unique_together = [["server", "attribute", "value"]]
-        index_together = [["attribute", "value"]]
         indexes = [
+            models.Index(fields=["attribute", "value"]),
             GistIndex(fields=["value"], opclasses=["inet_ops"], name="server_inet_attribute_value_idx"),
         ]
 
@@ -798,7 +799,7 @@ class ServerMACAddressAttribute(ServerAttribute):
         app_label = "serverdb"
         db_table = "server_macaddr_attribute"
         unique_together = [["server", "attribute", "value"]]
-        index_together = [["attribute", "value"]]
+        indexes = [models.Index(fields=["attribute", "value"])]
 
 
 class ServerDateAttribute(ServerAttribute):
@@ -814,7 +815,7 @@ class ServerDateAttribute(ServerAttribute):
         app_label = "serverdb"
         db_table = "server_date_attribute"
         unique_together = [["server", "attribute", "value"]]
-        index_together = [["attribute", "value"]]
+        indexes = [models.Index(fields=["attribute", "value"])]
 
 
 class ServerDateTimeAttribute(ServerAttribute):
@@ -830,7 +831,7 @@ class ServerDateTimeAttribute(ServerAttribute):
         app_label = "serverdb"
         db_table = "server_datetime_attribute"
         unique_together = [["server", "attribute", "value"]]
-        index_together = [["attribute", "value"]]
+        indexes = [models.Index(fields=["attribute", "value"])]
 
 
 class ChangeCommit(models.Model):

@@ -10,7 +10,7 @@ name = "pypi"
 # Like ipaddress but for MACs
 netaddr = ">=0.8.0,<1.4.0"
 # Debian stretch version
-Django = "~=4.2"
+Django = "~=5.2"
 # postgres lib used by django
 psycopg2-binary = "~=2.9"
 # Django support for network address fields on PostgreSQL
@@ -21,7 +21,7 @@ Pillow = "~=10.0"
 dateparser = "~=1.1"
 # Use Twelve-factor methodology to configure environment variables
 django-environ = "<1.0.0"
-django_compressor = "~=4.4"
+django_compressor = "~=4.6"
 # Used for API access - adminapi
 paramiko = ">=2.7,<4"
 typing-extensions = "*"
@@ -31,7 +31,7 @@ typing-extensions = "*"
 sphinx = "~=7.0"
 sphinx-rtd-theme = "~=2.0"
 # Provides runserver_plus and other gadgets
-django-extensions = "<4.0.0"
+django-extensions = "<5.0.0"
 # Required for runserver_plus to work
 Werkzeug = "<4.0.0"
 # Used to package a single executable according to PEP 441
@@ -44,7 +44,7 @@ faker = "<14.0.0"
 tblib = "*"
 
 [requires]
-python_version = "3.13"
+python_version = ">=3.11,<3.14"
 
 [production]
 sentry-sdk = {version = "*", extras = ["django"]}
