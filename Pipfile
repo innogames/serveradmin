@@ -22,10 +22,9 @@ dateparser = "~=1.1"
 # Use Twelve-factor methodology to configure environment variables
 django-environ = "<1.0.0"
 django_compressor = "~=4.4"
-# Serveradmin extras:
+# Used for API access - adminapi
 paramiko = ">=2.7,<4"
 pexpect = "<5.0.0"
-rich = "*"
 typing-extensions = "*"
 
 [dev-packages]
