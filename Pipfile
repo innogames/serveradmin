@@ -24,7 +24,6 @@ django-environ = "<1.0.0"
 django_compressor = "~=4.4"
 # Used for API access - adminapi
 paramiko = ">=2.7,<4"
-pexpect = "<5.0.0"
 typing-extensions = "*"
 
 [dev-packages]
