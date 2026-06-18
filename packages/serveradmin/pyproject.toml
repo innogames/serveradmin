@@ -1,0 +1,42 @@
+[project]
+name = "serveradmin"
+description = "Serveradmin — Django server inventory backend"
+requires-python = ">=3.11,<3.14"
+dynamic = ["version"]
+authors = [
+    { name = "InnoGames System Administration", email = "it@innogames.com" },
+]
+license = { text = "MIT" }
+dependencies = [
+    "adminapi",
+    "Django~=5.2",
+    "psycopg2-binary~=2.9",
+    "django-netfields<2.0.0",
+    "Pillow~=10.0",
+    "dateparser~=1.1",
+    "django-environ<1.0.0",
+    "django-compressor~=4.6",
+    "typing-extensions",
+]
+
+[project.optional-dependencies]
+production = ["sentry-sdk[django]"]
+
+[project.urls]
+Homepage = "https://github.com/innogames/serveradmin"
+
+[project.scripts]
+serveradmin = "serveradmin.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "serveradmin/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["serveradmin"]
+
+[tool.uv.sources]
+adminapi = { workspace = true }

@@ -76,6 +76,7 @@ __pycache__/
 
 # Virtual Environment
 /venv/
+/.venv/
 /.env
 
 # Pipenv

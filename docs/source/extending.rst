@@ -27,16 +27,16 @@ You can access the web service to execute Django commands and run scripts::
     docker compose exec web
 
     # Example: Run Django management commands
-    pipenv run python -m serveradmin -h
+    uv run python -m serveradmin -h
 
     # Example: Use the Python Remote API
-    pipenv run python -m adminapi "hostname=example.com"
+    uv run python -m adminapi "hostname=example.com"
 
 
 **Tip**
 
 You may still want to have a virtual environment for Serveradmin on your
-host machines and run pipenv install -D to have all modules available for your
+host machines and run uv sync to have all modules available for your
 IDEs auto completion etc.
 
 
@@ -65,10 +65,10 @@ manual testing.
 You can execute the tests with the following commands
 
     # Tests for the commandline interface: adminapi
-    pipenv run python -m unittest discover adminapi -v
+    uv run python -m unittest discover -t packages/adminapi -s packages/adminapi/adminapi -v
 
     # Tests for the backend code
-    pipenv run python -Wall -m serveradmin test --noinput --parallel
+    uv run python -Wall -m serveradmin test serveradmin --noinput --parallel
 
 
 Bonus: Setting up a cool debugger

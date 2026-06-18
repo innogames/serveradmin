@@ -4,7 +4,6 @@ Copyright (c) 2021 InnoGames GmbH
 """
 
 import re
-from distutils.util import strtobool
 from ipaddress import (
     IPv4Address,
     IPv6Address,
@@ -29,6 +28,7 @@ from django.utils.timezone import now
 from django.utils.translation import gettext as _
 from netaddr import EUI
 
+from adminapi.dataset import strtobool
 from adminapi.datatype import STR_BASED_DATATYPES
 from serveradmin.apps.models import Application
 

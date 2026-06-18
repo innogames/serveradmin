@@ -3,7 +3,7 @@
 source .env
 
 # Install or update dependencies on every start in case something changed
-pipenv install --dev
+uv sync
 
 # Some users prefer to develop on their host rather than containers and have adjusted .env
 if [ $POSTGRES_HOST == "localhost" ]; then
@@ -17,22 +17,22 @@ until pg_isready -h "$POSTGRES_HOST" -U "$POSTGRES_USER" &> /dev/null; do
 done
 
 # Apply pending migrations on every start
-pipenv run python -m serveradmin migrate --no-input
+uv run python -m serveradmin migrate --no-input
 
 # Requires Django >= 3.x
-# pipenv run python -m serveradmin createsuper --no-input
-pipenv run python -m serveradmin createdefaultuser
+# uv run python -m serveradmin createsuper --no-input
+uv run python -m serveradmin createdefaultuser
 
 # Create default application
-pipenv run python -m serveradmin createapp --non-interactive
+uv run python -m serveradmin createapp --non-interactive
 
 echo -e "
 ********************************************************************************
 
 \e[32m[TIPS]\e[39m
 - Run 'docker compose exec web /bin/bash' to access web service
-- Run 'pipenv run python -m serveradmin -h' in web service to access django commands
-- Run 'pipenv run python -m adminapi example.com' in web service to make adminapi queries
+- Run 'uv run python -m serveradmin -h' in web service to access django commands
+- Run 'uv run python -m adminapi example.com' in web service to make adminapi queries
 
 \e[33mAccess serveradmin from your browser via:\e[39m
 - URL: http://127.0.0.1:8000
@@ -43,4 +43,4 @@ echo -e "
 "
 
 # Start development server reachable for host machine
-pipenv run python -m serveradmin runserver 0.0.0.0:8000
+uv run python -m serveradmin runserver 0.0.0.0:8000

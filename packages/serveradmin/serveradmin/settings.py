@@ -10,8 +10,12 @@ env = environ.Env()
 
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
+# Workspace root, where the .env file lives. The serveradmin package sits at
+# packages/serveradmin/serveradmin/, i.e. three levels below the workspace root.
+WORKSPACE_ROOT = os.path.abspath(os.path.join(ROOT_DIR, '..', '..', '..'))
+
 # Take environment variables from .env file
-environ.Env.read_env(os.path.join(ROOT_DIR, '../.env'))
+environ.Env.read_env(os.path.join(WORKSPACE_ROOT, '.env'))
 
 SECRET_KEY = env('SECRET_KEY', default=None)
 
