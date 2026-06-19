@@ -7,9 +7,11 @@ These tests build a small schema modelling physical location:
     rack  <--(rack)--  bladecenter  <--(bladecenter)--  hypervisor  <--(hv)--  vm
 
 The ``rack`` attribute is configured as related via ``bladecenter`` on the
-hypervisor servertype and related via ``hv`` on the vm servertype, and it is
-marked ``override_related_via`` so it can also be set directly (e.g. on a
-standalone hypervisor that is not installed in a bladecenter).
+hypervisor servertype and related via ``hv`` on the vm servertype.  Overriding
+is configured per servertype on the ``ServertypeAttribute``: the hypervisor's
+``rack`` is marked ``override_related_via`` so it can also be set directly
+(e.g. on a standalone hypervisor that is not installed in a bladecenter), while
+the vm's ``rack`` is not overridable and thus stays read-only.
 """
 
 from django.contrib.auth.models import User
@@ -70,11 +72,9 @@ class OverrideRelatedViaTestCase(TransactionTestCase):
                 ip_addr_type='null',
             )
 
-        # ``rack`` is overridable so it can be both inherited and set directly.
         regexp = r'\A.*\Z'
         Attribute.objects.create(
-            attribute_id='rack', type='relation', override_related_via=True,
-            regexp=regexp,
+            attribute_id='rack', type='relation', regexp=regexp,
         )
         Attribute.objects.create(
             attribute_id='bladecenter', type='relation', regexp=regexp,
@@ -87,15 +87,18 @@ class OverrideRelatedViaTestCase(TransactionTestCase):
         ServertypeAttribute.objects.create(
             servertype_id='bladecenter', attribute_id='rack',
         )
-        # hypervisor: bladecenter stored directly, rack related via bladecenter.
+        # hypervisor: bladecenter stored directly, rack related via bladecenter
+        # and overridable so it can also be set directly on a standalone host.
         ServertypeAttribute.objects.create(
             servertype_id='hypervisor', attribute_id='bladecenter',
         )
         ServertypeAttribute.objects.create(
             servertype_id='hypervisor', attribute_id='rack',
             related_via_attribute_id='bladecenter',
+            override_related_via=True,
         )
-        # vm: hv stored directly, rack related via hv.
+        # vm: hv stored directly, rack related via hv.  Not overridable here,
+        # so a vm's rack is always inherited and can never be set directly.
         ServertypeAttribute.objects.create(
             servertype_id='vm', attribute_id='hv',
         )
@@ -193,3 +196,55 @@ class OverrideRelatedViaTestCase(TransactionTestCase):
         query.commit(user=self.user)
 
         self.assertEqual(self._rack_of('hv-standalone'), 'rack2')
+
+    def test_cannot_set_direct_rack_on_vm_without_override(self):
+        # ``rack`` is related via ``hv`` on the vm servertype but, unlike on the
+        # hypervisor, it is not overridable there.  Setting it directly must be
+        # rejected even though the very same attribute is overridable elsewhere.
+        # The vm inherits rack1 from its hypervisor; we try to override it with
+        # rack2 so the commit actually stages a change rather than a no-op.
+        self._create('rack', 'rack1')
+        self._create('rack', 'rack2')
+        self._create('hypervisor', 'hv-standalone', rack='rack1')
+        self._create('vm', 'vm1', hv='hv-standalone')
+
+        query = Query({'hostname': 'vm1'}, ['rack'])
+        query.update(rack='rack2')
+        with self.assertRaises(ValidationError) as error:
+            query.commit(user=self.user)
+        self.assertIn('rack', str(error.exception))
+
+    # -- Model validation --------------------------------------------------
+
+    def test_clean_rejects_override_without_related_via(self):
+        # override_related_via only makes sense on a related-via row; the
+        # bladecenter stores rack directly, so marking it overridable is a
+        # misconfiguration that clean() must reject.
+        sa = ServertypeAttribute(
+            servertype_id='bladecenter', attribute_id='rack',
+            override_related_via=True,
+        )
+        with self.assertRaises(ValidationError):
+            sa.clean()
+
+    def test_clean_allows_override_with_related_via(self):
+        # The hypervisor's rack is related via bladecenter, so it may be
+        # marked overridable.
+        sa = ServertypeAttribute(
+            servertype_id='hypervisor', attribute_id='rack',
+            related_via_attribute_id='bladecenter',
+            override_related_via=True,
+        )
+        sa.clean()
+
+    def test_creating_vm_with_direct_rack_ignores_it_without_override(self):
+        # On the create path a non-overridable related-via value is dropped
+        # rather than stored, so the vm's rack stays inherited from its
+        # hypervisor regardless of the directly supplied value.
+        self._create('rack', 'rack1')
+        self._create('rack', 'rack2')
+        self._create('hypervisor', 'hv-standalone', rack='rack1')
+
+        self._create('vm', 'vm1', hv='hv-standalone', rack='rack2')
+
+        self.assertEqual(self._rack_of('vm1'), 'rack1')
