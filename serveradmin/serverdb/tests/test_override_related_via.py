@@ -18,6 +18,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.test import TransactionTestCase
 
+from adminapi.filters import Empty, Not
 from serveradmin.dataset import Query
 from serveradmin.serverdb import query_committer
 from serveradmin.serverdb.models import (
@@ -148,6 +149,39 @@ class OverrideRelatedViaTestCase(TransactionTestCase):
         self._create('vm', 'vm-on-standalone', hv='hv-standalone')
 
         self.assertEqual(self._rack_of('vm-on-standalone'), 'rack2')
+
+    # -- Filtering ---------------------------------------------------------
+
+    def test_filter_vms_by_related_via_rack(self):
+        # Filtering by a related-via attribute exercises the SQL related_vias
+        # path in query_executer, which is independent of the QueryMaterializer
+        # multi-hop resolution covered above.  Three vms: one on a directly
+        # racked hypervisor, one on a blade hypervisor that inherits its rack
+        # via a bladecenter, and one on a hypervisor with no rack at all.
+        # ``rack=not(empty())`` must return the first two and exclude the third.
+        self._create('rack', 'rack1')
+        self._create('rack', 'rack2')
+
+        # 1. vm on a hypervisor racked directly.
+        self._create('hypervisor', 'hv-standalone', rack='rack2')
+        self._create('vm', 'vm-on-standalone', hv='hv-standalone')
+
+        # 2. vm on a blade hypervisor inheriting its rack via the bladecenter.
+        self._create('bladecenter', 'bc1', rack='rack1')
+        self._create('hypervisor', 'hv-blade', bladecenter='bc1')
+        self._create('vm', 'vm-on-blade', hv='hv-blade')
+
+        # 3. vm on a hypervisor with neither a direct rack nor a bladecenter.
+        self._create('hypervisor', 'hv-norack')
+        self._create('vm', 'vm-no-rack', hv='hv-norack')
+
+        matched = {
+            obj['hostname']
+            for obj in Query(
+                {'servertype': 'vm', 'rack': Not(Empty())}, ['hostname']
+            )
+        }
+        self.assertEqual(matched, {'vm-on-standalone', 'vm-on-blade'})
 
     # -- Commit consistency ------------------------------------------------
 

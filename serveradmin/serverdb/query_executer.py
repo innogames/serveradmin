@@ -8,7 +8,11 @@ from django.db import DataError, connection, transaction
 
 from adminapi.filters import Any
 from serveradmin.serverdb.models import Attribute, ServertypeAttribute, Server
-from serveradmin.serverdb.sql_generator import get_server_query
+from serveradmin.serverdb.sql_generator import (
+    get_server_query,
+    RelatedVia,
+    RelatedViaServertype,
+)
 from serveradmin.serverdb.query_materializer import QueryMaterializer
 
 
@@ -56,12 +60,13 @@ def execute_query(filters, restrict, order_by):
         servertype_ids = _get_possible_servertype_ids(servertype_attributes)
         filters = dict(filters)
         servertype_ids = _override_servertype_filter(filters, servertype_ids)
-        servertype_attributes = [
-            sa for sa in servertype_attributes
-            if sa.servertype_id in servertype_ids
-        ]
-        _update_related_vias(
-            related_vias, servertype_attributes, attribute_lookup
+        # The query is restricted to "servertype_ids", but the resolution must
+        # keep the configuration of every servertype in the chain (e.g. the
+        # hypervisor and bladecenter behind a queried vm), so we do not drop the
+        # out-of-scope servertype attributes here.
+        _build_related_vias(
+            related_vias, servertype_attributes, set(servertype_ids),
+            attribute_lookup,
         )
 
     # Here we prepare the join dictionary for the query materializer.
@@ -194,41 +199,38 @@ def _override_servertype_filter(filters, servertype_ids):
     return servertype_ids
 
 
-def _update_related_vias(
-    related_vias, servertype_attributes, attribute_lookup
+def _build_related_vias(
+    related_vias, servertype_attributes, scope, attribute_lookup
 ):
-    """Prepare the related_vias dictionary for the SQL generator module
+    """Prepare the related_vias dictionary for the SQL generator module.
 
-    It is lists in dictionaries of dictionaries indexed first by attribute_id
-    and then by the related_via_attribute.  The attribute lookup dictionary
-    passed to here may not have all of the related via attributes we need.
-    In this case we recursively query them and repeat the process for
-    the remaining object.
+    It maps each attribute_id to a ``RelatedVia`` carrying the queried
+    ``scope`` and, for every servertype that has the attribute, how it resolves
+    it (stored directly, or related via another attribute, possibly
+    overridable).  The whole chain is kept -- not just the in-scope servertypes
+    -- so the generator can resolve multi-hop related-via attributes.  Related
+    via attributes missing from the lookup are queried in one go.
     """
-    to_be_looked_up = []
+    missing_ids = {
+        sa.related_via_attribute_id for sa in servertype_attributes
+        if sa.related_via_attribute_id
+        and sa.related_via_attribute_id not in attribute_lookup
+    }
+    if missing_ids:
+        _update_attribute_lookup(attribute_lookup, missing_ids)
+
     for sa in servertype_attributes:
-        related_via_attribute_id = sa.related_via_attribute_id
-        if not related_via_attribute_id:
-            related_via_attribute = None
-        elif related_via_attribute_id not in attribute_lookup:
-            to_be_looked_up.append(sa)
-            continue
-        else:
-            related_via_attribute = attribute_lookup[related_via_attribute_id]
-
-        (
-            related_vias
-            .setdefault(sa.attribute_id, {})
-            .setdefault(related_via_attribute, [])
-            .append(sa.servertype_id)
+        related_via_attribute = (
+            attribute_lookup[sa.related_via_attribute_id]
+            if sa.related_via_attribute_id else None
         )
-
-    if to_be_looked_up:
-        _update_attribute_lookup(
-            attribute_lookup,
-            {sa.related_via_attribute_id for sa in to_be_looked_up},
+        related_via = related_vias.setdefault(
+            sa.attribute_id, RelatedVia(scope=scope, config={}),
         )
-        _update_related_vias(related_vias, to_be_looked_up, attribute_lookup)
+        related_via.config[sa.servertype_id] = RelatedViaServertype(
+            related_via_attribute=related_via_attribute,
+            override=sa.override_related_via,
+        )
 
 
 def _get_servers(filters, attribute_lookup, related_vias):
