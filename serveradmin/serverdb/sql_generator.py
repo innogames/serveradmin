@@ -7,6 +7,9 @@ Copyright (c) 2019 InnoGames GmbH
 # XXX: The code in this module is almost randomly split into functions.  Do
 # not try to guess what they would do.
 
+import itertools
+from dataclasses import dataclass
+
 from adminapi.filters import (
     All,
     Any,
@@ -31,6 +34,34 @@ from serveradmin.serverdb.models import (
     ServerAttribute,
     ServerRelationAttribute, ServerInetAttribute, Attribute,
 )
+from serveradmin.serverdb.query_materializer import MAX_RELATED_DEPTH
+
+
+@dataclass
+class RelatedViaServertype:
+    """How a single servertype resolves a related-via attribute.
+
+    ``related_via_attribute`` is the relation the value is inherited through,
+    or ``None`` when the servertype stores the attribute directly.
+    ``override`` mirrors ``ServertypeAttribute.override_related_via``: when set,
+    a directly stored value takes precedence over the inherited one, so both
+    have to be considered.
+    """
+    related_via_attribute: object
+    override: bool
+
+
+@dataclass
+class RelatedVia:
+    """Related-via configuration of one attribute across all servertypes.
+
+    ``scope`` are the servertypes the query is restricted to (the top of the
+    resolution).  ``config`` maps every servertype that has the attribute to
+    its :class:`RelatedViaServertype`, including those only reachable deeper in
+    a related-via chain, so the resolution can recurse through multiple hops.
+    """
+    scope: set
+    config: dict
 
 
 # XXX: The "related_vias" argument is carried all the way through most of
@@ -258,69 +289,197 @@ def _condition_sql(attribute, template, related_vias):
 
 
 def _real_condition_sql(attribute, template, related_vias):
+    # If we come to this point, we must have the item for the entry existing
+    # in the related-vias dictionary.  It carries the per-servertype resolution
+    # configuration for the whole related-via chain.  If no servertype could
+    # have matched, the caller must have returned an empty result before calling
+    # this module.  No filter is optional in queries after all.
+    related_via = related_vias[attribute.attribute_id]
+    assert related_via.config
+
+    # Aliases must be unique because the resolution nests sub-queries (one per
+    # related-via hop) that would otherwise shadow each other.
+    aliases = itertools.count()
+    return _resolve_related_via_sql(
+        attribute, template, related_via.scope, related_via.config,
+        sid_sql='server.server_id', servertype_sql='server.servertype_id',
+        visited=frozenset(), depth=0, aliases=aliases,
+    )
+
+
+def _resolve_related_via_sql(
+    attribute, template, scope, config, sid_sql, servertype_sql, visited,
+    depth, aliases,
+):
+    """Build a condition true when the server identified by ``sid_sql``, whose
+    servertype is one of ``scope``, has ``attribute`` resolved -- directly or
+    through a related-via chain -- to a value matching ``template``.
+
+    The attribute may resolve differently per servertype, so the in-scope
+    servertypes are grouped by their configuration and each group contributes an
+    OR'ed branch gated to the servertypes it applies to.  Related-via groups
+    recurse into the source servers, following the relation one hop at a time.
+    """
+    # Group the in-scope servertypes by how they resolve the attribute so that
+    # servertypes sharing a configuration share a single branch.
+    groups = {}
+    for servertype_id in scope:
+        resolution = config.get(servertype_id)
+        if resolution is None:
+            continue
+        related_via_attribute = resolution.related_via_attribute
+        key = (
+            related_via_attribute.attribute_id if related_via_attribute
+            else None,
+            resolution.override,
+        )
+        groups.setdefault(key, (resolution, []))[1].append(servertype_id)
+
+    branches = []
+    for resolution, servertype_ids in groups.values():
+        conditions = []
+        related_via_attribute = resolution.related_via_attribute
+
+        # A directly stored value resolves the attribute when it is not related
+        # via another one, or when this servertype may override the inherited
+        # value with a direct one.
+        if related_via_attribute is None or resolution.override:
+            conditions.append(
+                _direct_value_sql(attribute, template, sid_sql, aliases)
+            )
+
+        # An inherited value resolves it by following the relation to the source
+        # server and resolving the attribute there in turn.
+        if related_via_attribute is not None and depth < MAX_RELATED_DEPTH:
+            hop = _related_hop_sql(
+                attribute, template, related_via_attribute, config, sid_sql,
+                visited, depth, aliases,
+            )
+            if hop is not None:
+                conditions.append(hop)
+
+        if not conditions:
+            continue
+        branch = (
+            conditions[0] if len(conditions) == 1
+            else '({0})'.format(' OR '.join(conditions))
+        )
+
+        # When several configurations coexist in the scope, each branch only
+        # applies to the servertypes that actually use it.
+        if len(groups) > 1:
+            branch = '({0} AND {1})'.format(branch, _servertype_in_sql(
+                sid_sql, servertype_sql, servertype_ids, aliases,
+            ))
+        branches.append(branch)
+
+    if not branches:
+        return 'false'
+    if len(branches) == 1:
+        return branches[0]
+    return '({0})'.format(' OR '.join(branches))
+
+
+def _direct_value_sql(attribute, template, sid_sql, aliases):
+    """Condition: the server ``sid_sql`` stores ``attribute`` directly with a
+    value matching ``template``."""
     model = ServerAttribute.get_model(attribute.type)
     assert model is not None
+    alias = 'sub{0}'.format(next(aliases))
+    return _exists_sql(model, alias, (
+        '{0}.server_id = {1}'.format(alias, sid_sql),
+        "{0}.attribute_id = '{1}'".format(alias, attribute.attribute_id),
+        template.format('{0}.value'.format(alias)),
+    ))
 
-    # If we come to this point, we must have the item for the entry existing
-    # in the related-vias dictionary.  Keep in mind that it also includes
-    # the directly attached servertype attribute combinations.  They would
-    # have None as the key of the inner dictionary.  If no servertype attribute
-    # combinations had been possible, the caller must have returned an empty
-    # result, before calling this module to get the SQL query.  No filter
-    # is optional in queries after all.
-    related_vias = related_vias[attribute.attribute_id]
-    assert related_vias
 
-    # We start with the condition for the attributes the server has on
-    # its own.  Then, add the conditions for all possible relations.  They
-    # are going to be OR'ed together.
-    relation_conditions = []
-    for related_via_attribute, servertype_ids in related_vias.items():
-        if related_via_attribute is None:
-            # The condition for directly attached attributes
-            relation_condition = 'server.server_id = sub.server_id'
-        elif related_via_attribute.type == 'supernet':
-            relation_condition = _supernet_exists_sql(
-                related_via_attribute, 'supernet',
-                '>>= server_addr.value',
-                (
-                    _target_servertype_sql('supernet', related_via_attribute),
-                    'supernet.server_id = sub.server_id'
-                ),
-            )
-        elif related_via_attribute.type == 'reverse':
-            relation_condition = _exists_sql(ServerRelationAttribute, 'rel1', (
-                "rel1.attribute_id = '{0}'".format(
-                    related_via_attribute.reversed_attribute_id
-                ),
-                'rel1.value = server.server_id',
-                'rel1.server_id = sub.server_id',
-            ))
-        else:
-            assert related_via_attribute.type == 'relation'
-            relation_condition = _exists_sql(ServerRelationAttribute, 'rel1', (
-                "rel1.attribute_id = '{0}'"
-                .format(related_via_attribute.attribute_id),
-                'rel1.server_id = server.server_id',
-                'rel1.value = sub.server_id',
-            ))
-        relation_conditions.append((relation_condition, servertype_ids))
+def _related_hop_sql(
+    attribute, template, related_via_attribute, config, sid_sql, visited,
+    depth, aliases,
+):
+    """Condition: the server ``sid_sql`` inherits ``attribute`` (matching
+    ``template``) through ``related_via_attribute``, resolved recursively on the
+    source server.
 
-    if len(relation_conditions) == 1:
-        mixed_relation_condition = relation_conditions[0][0]
-    else:
-        mixed_relation_condition = '({0})'.format(' OR '.join(
-            '({0} AND server.servertype_id IN ({1}))'
-            .format(relation_condition, ', '.join(
-                "'{0}'".format(s) for s in servertype_ids)
-            )
-            for relation_condition, servertype_ids in relation_conditions
+    Returns ``None`` to drop the branch when this exact (scope, relation) step
+    has already been taken on the current path, which bounds the recursion for
+    related-via configurations that would otherwise loop.
+    """
+    next_scope = _related_hop_scope(related_via_attribute, config)
+    signature = (frozenset(next_scope), related_via_attribute.attribute_id)
+    if signature in visited:
+        return None
+    next_visited = visited | {signature}
+
+    def inner(next_sid):
+        return _resolve_related_via_sql(
+            attribute, template, next_scope, config, next_sid,
+            servertype_sql=None, visited=next_visited, depth=depth + 1,
+            aliases=aliases,
+        )
+
+    if related_via_attribute.type == 'supernet':
+        alias = 'supernet{0}'.format(next(aliases))
+        addr_alias = 'server_addr{0}'.format(alias)
+        return _supernet_exists_sql(
+            related_via_attribute, alias,
+            '>>= {0}.value'.format(addr_alias),
+            (
+                _target_servertype_sql(alias, related_via_attribute),
+                inner('{0}.server_id'.format(alias)),
+            ),
+            base_server_id=sid_sql,
+            addr_alias=addr_alias,
+            net_alias='net_addr{0}'.format(alias),
+        )
+
+    alias = 'rel{0}'.format(next(aliases))
+    if related_via_attribute.type == 'reverse':
+        # A reverse relation is followed against its direction: the source
+        # server is the one whose forward relation points at ``sid_sql``.
+        return _exists_sql(ServerRelationAttribute, alias, (
+            "{0}.attribute_id = '{1}'".format(
+                alias, related_via_attribute.reversed_attribute_id),
+            '{0}.value = {1}'.format(alias, sid_sql),
+            inner('{0}.server_id'.format(alias)),
         ))
 
-    return _exists_sql(model, 'sub', (
-        mixed_relation_condition,
-        "sub.attribute_id = '{0}'".format(attribute.attribute_id),
-        template.format('sub.value'),
+    assert related_via_attribute.type == 'relation'
+    return _exists_sql(ServerRelationAttribute, alias, (
+        "{0}.attribute_id = '{1}'".format(
+            alias, related_via_attribute.attribute_id),
+        '{0}.server_id = {1}'.format(alias, sid_sql),
+        inner('{0}.value'.format(alias)),
+    ))
+
+
+def _related_hop_scope(related_via_attribute, config):
+    """Servertypes a related-via hop may resolve the attribute through: those
+    that have the attribute and, when the relation declares its targets, that
+    are among them."""
+    have_attribute = set(config)
+    target_ids = set(
+        related_via_attribute.target_servertype
+        .values_list('servertype_id', flat=True)
+    )
+    if target_ids:
+        return have_attribute & target_ids
+    return have_attribute
+
+
+def _servertype_in_sql(sid_sql, servertype_sql, servertype_ids, aliases):
+    """Condition restricting the server ``sid_sql`` to ``servertype_ids``.
+
+    The top of the resolution has the servertype column at hand
+    (``servertype_sql``); deeper hops reference the server by id only and look
+    its servertype up instead."""
+    in_list = ', '.join("'{0}'".format(s) for s in sorted(servertype_ids))
+    if servertype_sql is not None:
+        return '{0} IN ({1})'.format(servertype_sql, in_list)
+    alias = 'srv{0}'.format(next(aliases))
+    return _exists_sql(Server, alias, (
+        '{0}.server_id = {1}'.format(alias, sid_sql),
+        '{0}.servertype_id IN ({1})'.format(alias, in_list),
     ))
 
 
@@ -330,26 +489,35 @@ def _exists_sql(model, alias, conditions):
     )
 
 
-def _supernet_exists_sql(attribute: Attribute, supernet_alias: str, addr_match: str, where: tuple[str, ...]):
+def _supernet_exists_sql(
+    attribute: Attribute, supernet_alias: str, addr_match: str,
+    where: tuple[str, ...], base_server_id: str = 'server.server_id',
+    addr_alias: str = 'server_addr', net_alias: str = 'net_addr',
+):
+    # The address aliases are parameterized so the helper can be nested inside
+    # another related-via hop (resolving a supernet of a server other than the
+    # outer one) without its aliases colliding.
+    server_attr_alias = addr_alias + '_attr'
+    net_attr_alias = net_alias + '_attr'
     if attribute.inet_address_family:
         af_join = (
-            (Attribute._meta.db_table, 'server_attr', ('server_attr.attribute_id = server_addr.attribute_id',)),
-            (Attribute._meta.db_table, 'net_attr', ('net_attr.attribute_id = net_addr.attribute_id',)),
+            (Attribute._meta.db_table, server_attr_alias, (f'{server_attr_alias}.attribute_id = {addr_alias}.attribute_id',)),
+            (Attribute._meta.db_table, net_attr_alias, (f'{net_attr_alias}.attribute_id = {net_alias}.attribute_id',)),
         )
         af_where = (
-            f"net_attr.inet_address_family = '{attribute.inet_address_family}'",
-            f"server_attr.inet_address_family = '{attribute.inet_address_family}'",
+            f"{net_attr_alias}.inet_address_family = '{attribute.inet_address_family}'",
+            f"{server_attr_alias}.inet_address_family = '{attribute.inet_address_family}'",
         )
     else:
         af_join = ()
         af_where = ()
 
     joins = (
-        (ServerInetAttribute._meta.db_table, 'server_addr', ('server_addr.server_id = server.server_id',)),
-        (ServerInetAttribute._meta.db_table, 'net_addr', (
-            'net_addr.value ' + addr_match,
-            'net_addr.attribute_id = server_addr.attribute_id',
-            f'net_addr.server_id = {supernet_alias}.server_id',
+        (ServerInetAttribute._meta.db_table, addr_alias, (f'{addr_alias}.server_id = {base_server_id}',)),
+        (ServerInetAttribute._meta.db_table, net_alias, (
+            f'{net_alias}.value ' + addr_match,
+            f'{net_alias}.attribute_id = {addr_alias}.attribute_id',
+            f'{net_alias}.server_id = {supernet_alias}.server_id',
         )),
     ) + af_join
 
