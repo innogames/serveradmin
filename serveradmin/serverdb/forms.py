@@ -15,6 +15,7 @@ class ServertypeAttributeAdminForm(forms.ModelForm):
         fields = [
             'attribute',
             'related_via_attribute',
+            'override_related_via',
             'consistent_via_attribute',
             'required',
             'default_value',

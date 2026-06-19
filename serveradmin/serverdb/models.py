@@ -310,16 +310,6 @@ class Attribute(models.Model):
         choices=InetAddressFamilyChoice.choices, max_length=5, blank=True
     )
     readonly = models.BooleanField(null=False, default=False)
-    override_related_via = models.BooleanField(
-        null=False,
-        default=False,
-        help_text=(
-            "Allow this attribute to be set directly even on servertypes "
-            "where it is configured as related via another attribute.  "
-            "Consistency between the direct value and the related-via "
-            "relation is enforced on commit."
-        ),
-    )
     target_servertype = models.ManyToManyField(
         Servertype, blank=True,
         help_text="Selecting no servertype allows all servertypes.",
@@ -477,6 +467,17 @@ class ServertypeAttribute(models.Model):
         db_column="consistent_via_attribute_id",
         db_index=False,
     )
+    override_related_via = models.BooleanField(
+        null=False,
+        default=False,
+        help_text=(
+            "Allow this attribute to be set directly on this servertype even "
+            "though it is configured as related via another attribute.  "
+            "Consistency between the direct value and the related-via "
+            "relation is enforced on commit.  Only meaningful together with "
+            "a related via attribute."
+        ),
+    )
     required = models.BooleanField(null=False, default=False)
     default_value = models.CharField(max_length=255, null=True, blank=True)
     default_visible = models.BooleanField(null=False, default=False)
@@ -504,6 +505,11 @@ class ServertypeAttribute(models.Model):
     def clean(self):
         if self.default_value == "":
             self.default_value = None
+        if self.override_related_via and self.related_via_attribute_id is None:
+            raise ValidationError(
+                "override_related_via can only be set when the attribute is "
+                "related via another attribute."
+            )
         super(ServertypeAttribute, self).clean()
 
 

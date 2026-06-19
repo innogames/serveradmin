@@ -149,7 +149,7 @@ def _validate(attribute_lookup, changed, changed_objects):
 
     # Attributes must be always validated
     violations_attribs = _validate_attributes(
-        changed, changed_objects, servertype_attributes, attribute_lookup
+        changed, changed_objects, servertype_attributes
     )
     violations_readonly = _validate_readonly(
         attribute_lookup, changed, changed_objects
@@ -466,7 +466,7 @@ def _acl_violations(touched_objects, pending_changes, acl):
                 related_via_attribute__isnull=False,
                 # Overridable related-via attributes are written directly on
                 # this object, so they must be checked like any other.
-                attribute__override_related_via=False,
+                override_related_via=False,
             ).exists()
             if is_related_via:
                 # Attributes which are related via another servertype can be
@@ -555,8 +555,7 @@ def _get_servertype_attributes(servers):
     return servertype_attributes
 
 
-def _validate_attributes(changes, servers, servertype_attributes,
-                         attribute_lookup):
+def _validate_attributes(changes, servers, servertype_attributes):
     violations = []
     for attribute_changes in changes:
         object_id = attribute_changes['object_id']
@@ -582,7 +581,7 @@ def _validate_attributes(changes, servers, servertype_attributes,
                 # consistency is then verified by
                 # _validate_related_via_consistency().
                 attributes[attribute_id].related_via_attribute and
-                not attribute_lookup[attribute_id].override_related_via
+                not attributes[attribute_id].override_related_via
             ):
                 violations.append((object_id, attribute_id))
 
@@ -701,9 +700,9 @@ def _get_override_related_via_pairs(servertype_attributes, attribute_lookup):
         for attribute_id, sa in attributes.items():
             if not sa.related_via_attribute_id:
                 continue
-            attribute = attribute_lookup[attribute_id]
-            if not attribute.override_related_via:
+            if not sa.override_related_via:
                 continue
+            attribute = attribute_lookup[attribute_id]
             # Virtual attributes have no directly stored value and thus can
             # never conflict with their relation.
             if ServerAttribute.get_model(attribute.type) is None:
@@ -879,7 +878,7 @@ def _validate_real_attributes(servertype, real_attributes):     # NOQA: C901
 
         # Handle the related via attributes
         if sa.related_via_attribute:
-            if not attribute.override_related_via:
+            if not sa.override_related_via:
                 # Not overridable: it has no directly stored value.
                 if attribute in real_attributes:
                     del real_attributes[attribute]
