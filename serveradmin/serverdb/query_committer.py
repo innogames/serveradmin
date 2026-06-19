@@ -149,7 +149,7 @@ def _validate(attribute_lookup, changed, changed_objects):
 
     # Attributes must be always validated
     violations_attribs = _validate_attributes(
-        changed, changed_objects, servertype_attributes
+        changed, changed_objects, servertype_attributes, attribute_lookup
     )
     violations_readonly = _validate_readonly(
         attribute_lookup, changed, changed_objects
@@ -160,22 +160,27 @@ def _validate(attribute_lookup, changed, changed_objects):
     violations_required = _validate_required(
         changed, changed_objects, servertype_attributes
     )
+    violations_related = _validate_related_via_consistency(
+        changed, changed_objects, servertype_attributes, attribute_lookup
+    )
     if (
         violations_attribs or violations_readonly or
-        violations_regexp or violations_required
+        violations_regexp or violations_required or violations_related
     ):
         error_message = _build_error_message(
             violations_attribs,
             violations_readonly,
             violations_regexp,
             violations_required,
+            violations_related,
         )
         raise CommitValidationFailed(
             error_message,
             violations_attribs +
             violations_readonly +
             violations_regexp +
-            violations_required,
+            violations_required +
+            violations_related,
         )
 
     newer = _validate_commit(changed, changed_objects)
@@ -458,7 +463,10 @@ def _acl_violations(touched_objects, pending_changes, acl):
             is_related_via: bool = ServertypeAttribute.objects.filter(
                 servertype_id=pending_changes['servertype'],
                 attribute_id=attribute_id,
-                related_via_attribute__isnull=False
+                related_via_attribute__isnull=False,
+                # Overridable related-via attributes are written directly on
+                # this object, so they must be checked like any other.
+                attribute__override_related_via=False,
             ).exists()
             if is_related_via:
                 # Attributes which are related via another servertype can be
@@ -547,7 +555,8 @@ def _get_servertype_attributes(servers):
     return servertype_attributes
 
 
-def _validate_attributes(changes, servers, servertype_attributes):
+def _validate_attributes(changes, servers, servertype_attributes,
+                         attribute_lookup):
     violations = []
     for attribute_changes in changes:
         object_id = attribute_changes['object_id']
@@ -564,11 +573,16 @@ def _validate_attributes(changes, servers, servertype_attributes):
             if attribute_id in Attribute.specials:
                 continue
 
-            if (
+            if attribute_id not in attributes:
                 # No such attribute.
-                attribute_id not in attributes or
-                # Attributes related via another one, cannot be changed.
-                attributes[attribute_id].related_via_attribute
+                violations.append((object_id, attribute_id))
+            elif (
+                # Attributes related via another one cannot be changed,
+                # unless they are explicitly marked as overridable.  Their
+                # consistency is then verified by
+                # _validate_related_via_consistency().
+                attributes[attribute_id].related_via_attribute and
+                not attribute_lookup[attribute_id].override_related_via
             ):
                 violations.append((object_id, attribute_id))
 
@@ -630,6 +644,131 @@ def _validate_required(changes, servers, servertype_attributes):
     return violations
 
 
+def _validate_related_via_consistency(
+    changes, servers, servertype_attributes, attribute_lookup
+):
+    """Keep overridable related-via attributes consistent with their relation.
+
+    For an attribute ``X`` configured as related via relation ``R`` on the
+    object's servertype and marked ``override_related_via``, a commit must not
+    leave the object with both a directly stored ``X`` value and an ``R``
+    value.  This covers both directions: setting ``X`` directly while ``R`` is
+    present, and setting ``R`` while ``X`` is directly present.  The relation
+    only needs to be present -- it is irrelevant whether the related server has
+    a value for the attribute yet.
+    """
+    override_pairs = _get_override_related_via_pairs(
+        servertype_attributes, attribute_lookup
+    )
+    if not override_pairs:
+        return []
+
+    # The materialized value cannot be trusted to tell a directly stored value
+    # apart from an inherited one, so query the directly stored values.
+    direct_value_servers = _directly_stored_servers(
+        changes, servers, override_pairs, attribute_lookup
+    )
+
+    violations = []
+    for attribute_changes in changes:
+        object_id = attribute_changes['object_id']
+        server = servers[object_id]
+        for direct_id, related_id in override_pairs.get(
+            server['servertype'], []
+        ):
+            direct_present = _value_present_after(
+                direct_id,
+                attribute_changes,
+                object_id in direct_value_servers.get(direct_id, set()),
+            )
+            related_present = _value_present_after(
+                related_id,
+                attribute_changes,
+                bool(server.get(related_id)),
+            )
+            if direct_present and related_present:
+                violations.append((object_id, direct_id))
+
+    return violations
+
+
+def _get_override_related_via_pairs(servertype_attributes, attribute_lookup):
+    """Map servertype id to its ``(attribute_id, related_via_attribute_id)``
+    pairs that are overridable and can hold a directly stored value."""
+    pairs_by_servertype = {}
+    for servertype_id, attributes in servertype_attributes.items():
+        pairs = []
+        for attribute_id, sa in attributes.items():
+            if not sa.related_via_attribute_id:
+                continue
+            attribute = attribute_lookup[attribute_id]
+            if not attribute.override_related_via:
+                continue
+            # Virtual attributes have no directly stored value and thus can
+            # never conflict with their relation.
+            if ServerAttribute.get_model(attribute.type) is None:
+                continue
+            pairs.append((attribute_id, sa.related_via_attribute_id))
+        if pairs:
+            pairs_by_servertype[servertype_id] = pairs
+
+    return pairs_by_servertype
+
+
+def _directly_stored_servers(changes, servers, override_pairs, attribute_lookup):
+    """Return ``{attribute_id: {server_id, ...}}`` of objects that currently
+    have a directly stored value for each overridable related-via attribute."""
+    object_ids_by_attribute = {}
+    for attribute_changes in changes:
+        object_id = attribute_changes['object_id']
+        server = servers[object_id]
+        for direct_id, _related_id in override_pairs.get(
+            server['servertype'], []
+        ):
+            object_ids_by_attribute.setdefault(direct_id, set()).add(object_id)
+
+    result = {}
+    for attribute_id, object_ids in object_ids_by_attribute.items():
+        attribute = attribute_lookup[attribute_id]
+        model = ServerAttribute.get_model(attribute.type)
+        result[attribute_id] = set(
+            model.objects
+            .filter(server_id__in=object_ids, attribute=attribute)
+            .values_list('server_id', flat=True)
+        )
+
+    return result
+
+
+def _value_present_after(attribute_id, attribute_changes, baseline_present):
+    """Whether an attribute has a value after applying the given change.
+
+    ``baseline_present`` tells whether the attribute already has a value before
+    this commit, ignoring the change itself.
+    """
+    if attribute_id not in attribute_changes:
+        return baseline_present
+
+    change = attribute_changes[attribute_id]
+    action = change['action']
+    if action == 'delete':
+        return False
+    if action == 'multi':
+        if change.get('add'):
+            return True
+        # A pure removal cannot be reasoned about precisely without value
+        # counts, so fall back to the state before the commit.
+        return baseline_present
+
+    # 'update' or 'new'
+    new = change.get('new')
+    # A boolean False is stored as absent (ServerBooleanAttribute deletes the
+    # row), so it does not count as a present value.
+    if new is False:
+        return False
+    return new is not None and new != ''
+
+
 def _validate_commit(changes, servers):
     newer = []
     for attribute_changes in changes:
@@ -654,13 +793,19 @@ def _validate_commit(changes, servers):
 
 
 def _build_error_message(violations_attribs, violations_readonly,
-                         violations_regexp, violations_required):
+                         violations_regexp, violations_required,
+                         violations_related=None):
 
     violation_types = [
         (violations_attribs, 'Attribute not on servertype'),
         (violations_readonly, 'Attribute is read-only'),
         (violations_regexp, 'Regexp does not match'),
         (violations_required, 'Attribute is required'),
+        (
+            violations_related or [],
+            'Attribute cannot be set while the relation it is related via '
+            'is set',
+        ),
     ]
 
     message = []
@@ -724,16 +869,36 @@ def _get_real_attributes(attributes, attribute_lookup):
 def _validate_real_attributes(servertype, real_attributes):     # NOQA: C901
     violations_regexp = []
     violations_required = []
+    violations_related = []
     servertype_attributes = set()
-    for sa in servertype.attributes.all():
+    for sa in servertype.attributes.select_related(
+        'attribute', 'related_via_attribute'
+    ):
         attribute = sa.attribute
         servertype_attributes.add(attribute)
 
-        # Ignore the related via attributes
+        # Handle the related via attributes
         if sa.related_via_attribute:
-            if sa.attribute in real_attributes:
-                del real_attributes[attribute]
-            continue
+            if not attribute.override_related_via:
+                # Not overridable: it has no directly stored value.
+                if attribute in real_attributes:
+                    del real_attributes[attribute]
+                continue
+
+            # Overridable: a direct value may be given, but not together with
+            # the relation it is related via.
+            if (
+                attribute in real_attributes and
+                sa.related_via_attribute in real_attributes
+            ):
+                violations_related.append(str(attribute))
+                continue
+
+            # Without a direct value there is nothing to store directly.
+            if attribute not in real_attributes:
+                continue
+
+            # Otherwise fall through and validate the direct value normally.
 
         # Handle not existing attributes (fill defaults, validate require)
         if attribute not in real_attributes:
@@ -766,6 +931,13 @@ def _validate_real_attributes(servertype, real_attributes):     # NOQA: C901
     for attr in real_attributes:
         if attr not in servertype_attributes:
             violations_attribs.append(str(attr))
+
+    if violations_related:
+        raise CommitError(
+            'Attributes {0} cannot be set directly while the relation they '
+            'are related via is also set.'.format(', '.join(violations_related)),
+            violations_related,
+        )
 
     handle_violations(
         violations_regexp,
