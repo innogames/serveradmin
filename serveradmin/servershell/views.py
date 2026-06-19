@@ -16,6 +16,7 @@ from django.core.exceptions import (
     PermissionDenied,
     ValidationError
 )
+from django.db.models import Q
 from django.http import (
     HttpResponse,
     HttpResponseRedirect,
@@ -195,9 +196,12 @@ def get_results(request):
     for servertype_id in servertype_ids:
         editable_attributes[servertype_id] = default_editable.copy()
     for sa in ServertypeAttribute.objects.filter(
+            # Related-via attributes are read-only unless they are explicitly
+            # marked as overridable, in which case they can be edited directly.
+            Q(related_via_attribute_id__isnull=True) |
+            Q(attribute__override_related_via=True),
             servertype_id__in=servertype_ids,
             attribute_id__in=shown_attributes,
-            related_via_attribute_id__isnull=True,
             attribute__readonly=False,
     ):
         editable_attributes[sa.servertype_id].append(sa.attribute_id)
@@ -356,7 +360,8 @@ def _edit(request: HttpRequest, server, edit_mode=False, template='edit'):  # NO
         servertype_attribute = servertype_attributes.get(key)
         if (
             servertype_attribute and
-            servertype_attribute.related_via_attribute
+            servertype_attribute.related_via_attribute and
+            not attribute.override_related_via
         ):
             is_related_attribute = True
 

@@ -23,12 +23,22 @@ from serveradmin.serverdb.models import (
 
 logger = logging.getLogger(__package__)
 
+# Upper bound for the recursion depth when resolving related-via attributes.
+# A correctly configured chain (e.g. vm -> hypervisor -> bladecenter) is only
+# a few levels deep; this guard merely protects against cyclic mis-
+# configurations that would otherwise recurse forever.
+MAX_RELATED_DEPTH = 16
+
 
 class QueryMaterializer:
-    def __init__(self, servers, joined_attributes, order_by_attributes=[]):
+    def __init__(
+        self, servers, joined_attributes, order_by_attributes=[],
+        _related_depth=0,
+    ):
         self._servers = servers
         self._joined_attributes = joined_attributes
         self._order_by_attributes = order_by_attributes
+        self._related_depth = _related_depth
         # XXX: Optimize this query out
         self._servertype_lookup = {
             servertype.servertype_id: servertype
@@ -266,33 +276,73 @@ class QueryMaterializer:
     def _add_related_attribute(self, attribute, servertype_attribute, servers_by_type):
         related_via_attribute = servertype_attribute.related_via_attribute
 
-        # First, index the related servers for fast access later
+        # First, index the target servers by the hostname of the server they
+        # are related via (e.g. group hypervisors by their bladecenter).  The
+        # materialized value of the related-via attribute is a Server object.
         servers_by_related = {}
         for target in servers_by_type[servertype_attribute.servertype_id]:
             attributes = self._server_attributes[target]
             if related_via_attribute in attributes:
                 if related_via_attribute.multi:
-                    for source in attributes[related_via_attribute]:
-                        servers_by_related.setdefault(source, []).append(target)
+                    sources = attributes[related_via_attribute]
                 else:
-                    source = attributes[related_via_attribute]
-                    servers_by_related.setdefault(source, []).append(target)
+                    sources = [attributes[related_via_attribute]]
+                for source in sources:
+                    if source is None:
+                        continue
+                    servers_by_related.setdefault(
+                        source.hostname, []
+                    ).append(target)
 
-        # Then, query and set the related attributes
-        for sa in (
-            ServerAttribute.get_model(attribute.type)
-            .objects.filter(
-                server__hostname__in=servers_by_related.keys(),
-                attribute=attribute,
+        if not servers_by_related:
+            return
+
+        # Then, resolve the attribute on the related ("via") servers and copy
+        # the resulting value onto the targets.  We resolve it through a nested
+        # QueryMaterializer rather than reading the directly stored value so
+        # that the value is itself fully materialized: this supports a related
+        # server whose value is in turn related via another server (e.g. a vm
+        # whose rack comes from a hypervisor whose rack comes from a
+        # bladecenter), as well as a related server that directly overrides an
+        # otherwise related-via attribute.
+        for source_hostname, value in self._resolve_on_servers(
+            attribute, servers_by_related.keys()
+        ).items():
+            if value is None or (attribute.multi and not value):
+                continue
+            for target in servers_by_related[source_hostname]:
+                if attribute.multi:
+                    for single_value in value:
+                        self._add_attribute_value(target, attribute, single_value)
+                else:
+                    self._add_attribute_value(target, attribute, value)
+
+    def _resolve_on_servers(self, attribute, hostnames):
+        """Materialize a single attribute on the servers given by hostname.
+
+        Returns a mapping of hostname to the materialized attribute value.
+        Recursion is bounded by MAX_RELATED_DEPTH to guard against cyclic
+        related-via configurations.
+        """
+        if self._related_depth >= MAX_RELATED_DEPTH:
+            logger.warning(
+                "Aborting related attribute resolution for %s at depth %d; "
+                "check for a cyclic related-via configuration.",
+                attribute.attribute_id,
+                self._related_depth,
             )
-            .prefetch_related("server")
-            .defer(
-                "server__intern_ip",
-                "server__servertype",
-            )
-        ):
-            for target in servers_by_related[sa.server]:
-                self._add_attribute_value(target, attribute, sa.get_value())
+            return {}
+
+        source_servers = list(Server.objects.filter(hostname__in=hostnames))
+        materializer = QueryMaterializer(
+            source_servers,
+            [attribute],
+            _related_depth=self._related_depth + 1,
+        )
+        return {
+            server.hostname: materializer._server_attributes[server].get(attribute)
+            for server in source_servers
+        }
 
     def _add_attribute_value(self, server, attribute, value):
         if attribute.multi:

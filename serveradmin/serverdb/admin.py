@@ -77,11 +77,15 @@ class AttributeAdmin(admin.ModelAdmin):
         'get_hovertext',
         'multi',
         'readonly',
+        'override_related_via',
         'clone',
         'history',
     ]
     search_fields = ['attribute_id', ]
-    list_filter = ['type', 'group', 'multi', 'readonly', 'clone', 'history', ]
+    list_filter = [
+        'type', 'group', 'multi', 'readonly', 'override_related_via',
+        'clone', 'history',
+    ]
 
     def get_readonly_fields(self, request, obj=None):
         fields = super().get_readonly_fields(request, obj)

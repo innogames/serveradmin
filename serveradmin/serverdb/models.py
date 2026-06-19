@@ -310,6 +310,16 @@ class Attribute(models.Model):
         choices=InetAddressFamilyChoice.choices, max_length=5, blank=True
     )
     readonly = models.BooleanField(null=False, default=False)
+    override_related_via = models.BooleanField(
+        null=False,
+        default=False,
+        help_text=(
+            "Allow this attribute to be set directly even on servertypes "
+            "where it is configured as related via another attribute.  "
+            "Consistency between the direct value and the related-via "
+            "relation is enforced on commit."
+        ),
+    )
     target_servertype = models.ManyToManyField(
         Servertype, blank=True,
         help_text="Selecting no servertype allows all servertypes.",
