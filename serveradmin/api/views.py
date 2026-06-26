@@ -8,11 +8,13 @@ from django.core.exceptions import (
     PermissionDenied,
     ValidationError,
 )
+from django.http import JsonResponse
 from django.template.response import HttpResponse
 
 from adminapi.filters import BaseFilter, FilterValueError
 from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
 from serveradmin.api.decorators import api_view
+from serveradmin.serverdb.models import Attribute
 from serveradmin.serverdb.query_committer import commit_query
 from serveradmin.serverdb.query_executer import execute_query
 from serveradmin.serverdb.query_materializer import (
@@ -63,6 +65,48 @@ def dataset_query(request, app, data):
     return {
         'status': 'success',
         'result': execute_query(filters, restrict, order_by),
+    }
+
+
+@api_view
+def dataset_attributes(request, app, data):
+    """Return all available attributes
+
+    This includes the special attributes (e.g. hostname, servertype) that
+    are not stored in the attribute table but are queryable like any other
+    attribute.
+    """
+    attributes = list(Attribute.objects.all())
+    attributes.extend(Attribute.specials.values())
+
+    result = []
+    for attribute in attributes:
+        result.append({
+            'attribute_id': attribute.attribute_id,
+            'type': attribute.type,
+            'multi': attribute.multi,
+            'hovertext': attribute.hovertext,
+            'group': attribute.group,
+            'help_link': attribute.help_link,
+            'inet_address_family': attribute.inet_address_family,
+            'readonly': attribute.readonly,
+            'clone': attribute.clone,
+            'history': attribute.history,
+            'regexp': attribute.regexp,
+            'reversed_attribute': attribute.reversed_attribute_id,
+            # Special attributes are not saved to the database, so accessing
+            # their many-to-many target_servertype is not possible.
+            'target_servertypes': (
+                [] if attribute.special else
+                list(attribute.target_servertype.values_list(
+                    'servertype_id', flat=True
+                ))
+            ),
+        })
+
+    return {
+        'status': 'success',
+        'result': result,
     }
 
 
