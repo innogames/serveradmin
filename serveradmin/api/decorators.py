@@ -3,7 +3,7 @@
 Copyright (c) 2019 InnoGames GmbH
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone as dt_timezone
 from functools import update_wrapper
 from logging import getLogger
 from base64 import b64decode
@@ -55,7 +55,7 @@ def api_view(view):
         token = request.META.get('HTTP_X_SECURITYTOKEN')
         then = datetime.utcfromtimestamp(
             int(request.META['HTTP_X_TIMESTAMP'])
-        ).replace(tzinfo=timezone.utc)
+        ).replace(tzinfo=dt_timezone.utc)
         body_json = json.loads(body) if body else None
         status_code = 200
 

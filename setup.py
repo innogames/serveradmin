@@ -66,7 +66,7 @@ if __name__ == '__main__':
             'paramiko>=2.7,<4',
             'netaddr>=0.8.0,<1.4.0',
         ],
-        python_requires=">=3.9,<3.14",
+        python_requires=">=3.11,<3.14",
         author='InnoGames System Administration',
         author_email='it@innogames.com',
     )

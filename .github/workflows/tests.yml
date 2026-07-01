@@ -14,8 +14,8 @@ jobs:
     strategy:
       matrix:
         python:
-          - "3.9"
-          - "3.13"
+          - "3.11" # Debian Bookworm
+          - "3.13" # Debian Trixie
 
     services:
       db:
