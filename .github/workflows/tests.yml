@@ -33,18 +33,13 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: Setup python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python }}
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
       - name: Prepare
         run: |
-          pip install --upgrade pip
-          pip install pipenv
-          pipenv lock --python ${{ matrix.python }}
-          pipenv install --dev --python ${{ matrix.python }}
+          uv sync --python ${{ matrix.python }}
           echo "DATABASES = {
               'default': {
                   'ENGINE': 'django.db.backends.postgresql',
@@ -61,14 +56,14 @@ jobs:
           }
           SECRET_KEY = 'TEST'
           TIME_ZONE = 'Europe/Berlin'
-          LOGGING = {}" > serveradmin/local_settings.py          
-          cat serveradmin/local_settings.py
-          pipenv run python -m serveradmin migrate
+          LOGGING = {}" > packages/serveradmin/serveradmin/local_settings.py
+          cat packages/serveradmin/serveradmin/local_settings.py
+          uv run python -m serveradmin migrate
       - name: Tests
         run: |
           # This will use Python's standard unit test discovery feature.
-          pipenv run python -m unittest discover adminapi -v
-          pipenv run python -Wall -m serveradmin test --noinput --parallel=10
+          uv run python -m unittest discover -t packages/adminapi -s packages/adminapi/adminapi -v
+          uv run python -Wall -m serveradmin test serveradmin --noinput --parallel=10
           # Build sphinx docs, error on warning
           cd docs
-          SPHINXBUILD='pipenv run sphinx-build' SPHINXOPTS='-W' make html
+          SPHINXBUILD='uv run --group docs sphinx-build' SPHINXOPTS='-W' make html
