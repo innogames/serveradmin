@@ -144,6 +144,10 @@ get_row_html = function(object, number) {
                     cell.append(current);
                 }
             }
+            else if (attribute.type === 'relation' || attribute.type === 'reverse') {
+                // Render related objects as ctrl-clickable links to inspect
+                append_relation_links(cell, object[attribute_id]);
+            }
             else {
                 cell.text(get_string(object_id, attribute_id));
             }
@@ -152,8 +156,16 @@ get_row_html = function(object, number) {
             row.append(cell);
         }
         else {
+            let attribute = servershell.get_attribute(attribute_id);
             let cell = $('<td class="disabled">');
-            cell.text(get_string(object.object_id, attribute_id));
+            if (attribute.type === 'relation' || attribute.type === 'reverse') {
+                // Reverse attributes are readonly and land here, make them
+                // ctrl-clickable links to inspect the related objects.
+                append_relation_links(cell, object[attribute_id]);
+            }
+            else {
+                cell.text(get_string(object.object_id, attribute_id));
+            }
             row.append(cell);
         }
     });
@@ -221,6 +233,47 @@ get_string = function(object_id, attribute_id) {
     }
 
     return '';
+};
+
+/**
+ * Append relation/reverse attribute values as ctrl-clickable links
+ *
+ * Each related object is identified by its hostname. Ctrl-click (or cmd-click
+ * on macOS) opens the inspect page for that hostname in a new tab. Plain click
+ * is left untouched so row selection and inline editing (double click) on
+ * editable relations keep working as before.
+ *
+ * @param cell jQuery td element
+ * @param value hostname string (multi=false) or array of hostnames (multi=true)
+ */
+append_relation_links = function(cell, value) {
+    if (value === null || value === undefined) {
+        return;
+    }
+
+    // Normalize single relations and multi relations to a sorted list so the
+    // display matches get_string() ordering.
+    let hostnames = Array.isArray(value) ? value.slice().sort() : [value];
+
+    hostnames.forEach(function(hostname, index) {
+        if (index > 0) {
+            cell.append(', ');
+        }
+
+        let link = $('<span class="relation-link" title="Ctrl-click to inspect">').text(hostname);
+        link.click(function(event) {
+            // Only hijack ctrl/cmd-click, leave plain clicks alone.
+            if (!event.ctrlKey && !event.metaKey) {
+                return;
+            }
+            event.preventDefault();
+            window.open(
+                `${servershell.urls.inspect}?hostname=${encodeURIComponent(hostname)}`,
+                '_blank'
+            );
+        });
+        cell.append(link);
+    });
 };
 
 /**

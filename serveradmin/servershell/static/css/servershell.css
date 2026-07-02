@@ -158,3 +158,9 @@ th:hover .attr-headericons {
 #result_table textarea {
     resize: both;
 }
+
+/* Relation/reverse attribute values, ctrl-click opens inspect in new tab */
+.relation-link {
+    cursor: pointer;
+    text-decoration: underline dotted;
+}
