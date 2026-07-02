@@ -49,3 +49,6 @@ __pycache__/
 # The settings file
 /packages/serveradmin/serveradmin/local_settings.py
 
+# Local docker-compose overlay (e.g. to mount/install a private app bundle)
+/docker-compose.override.yml
+

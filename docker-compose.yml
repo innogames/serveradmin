@@ -16,6 +16,10 @@ services:
     build: .docker/web
     volumes:
       - ".:/code"
+      # Shadow the bind-mounted .venv with an anonymous volume so a virtualenv
+      # created on the host (different interpreter/paths) never leaks into the
+      # container. The container uses UV_PROJECT_ENVIRONMENT=/usr/local instead.
+      - "/code/.venv"
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
