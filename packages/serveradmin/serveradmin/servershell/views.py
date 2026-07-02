@@ -4,7 +4,6 @@ Copyright (c) 2025 InnoGames GmbH
 """
 
 import json
-from distutils.util import strtobool
 from ipaddress import IPv6Address, IPv4Address, ip_interface
 from itertools import islice, chain
 
@@ -31,6 +30,7 @@ from django.utils.html import mark_safe, escape as escape_html
 from django.views.decorators.http import require_http_methods
 from django.views.defaults import bad_request
 
+from adminapi.dataset import strtobool
 from adminapi.datatype import DatatypeError
 from adminapi.filters import Any, ContainedOnlyBy, filter_classes
 from adminapi.parse import parse_query

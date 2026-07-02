@@ -1,39 +1,18 @@
-# The settings file
-/serveradmin/local_settings.py
-
-# The additional modules
-#
-# We prefix the additional modules with serveradmin_.  It is practical to
-# just copy or link them under this repository on development environments.
-/serveradmin_*
-
-# Ignore our SSO app
-igrestlogin
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
-*.so
-
 # Distribution / packaging
-/.Python
-/env/
 /build/
-/develop-eggs/
 /dist/
 /downloads/
 /eggs/
-/.eggs/
 /lib/
 /lib64/
-/parts/
 /sdist/
 /var/
 /*.egg-info/
-/.installed.cfg
 /*.egg
 
 # PyInstaller
@@ -43,45 +22,30 @@ __pycache__/
 *.manifest
 *.spec
 
-# Installer logs
-/pip-log.txt
-/pip-delete-this-directory.txt
-
 # Unit test / coverage reports
 /htmlcov/
 /.tox/
 /.coverage
 /.coverage.*
 /.cache
-/nosetests.xml
 /coverage.xml
 /*,cover
 /.hypothesis/
 
-# Translations
-*.mo
-*.pot
+# Virtual Environment
+/.venv/
 
 # Django stuff
 *.log
+/.env
 
 # Sphinx documentation
 /docs/build/
 
-# PyBuilder
-/target/
-
-# Ipython Notebook
-/.ipynb_checkpoints
-
-# Virtual Environment
-/venv/
-/.env
-
-# Pipenv
-/requirements.txt
-
 # Static files (runtime)
-serveradmin/_static
-serveradmin/_media
+/packages/serveradmin/serveradmin/_static
+/packages/serveradmin/serveradmin/_media
+
+# The settings file
+/packages/serveradmin/serveradmin/local_settings.py
 

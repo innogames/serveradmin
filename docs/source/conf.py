@@ -14,7 +14,11 @@ import os
 import sys
 from datetime import datetime
 
-sys.path.insert(0, os.path.abspath('../..'))
+# Make the workspace packages importable for autodoc. They are normally
+# installed into the environment (uv sync); these paths also let a bare
+# `sphinx-build` work without an install.
+sys.path.insert(0, os.path.abspath('../../packages/adminapi'))
+sys.path.insert(0, os.path.abspath('../../packages/serveradmin'))
 
 # -- Project information -----------------------------------------------------
 

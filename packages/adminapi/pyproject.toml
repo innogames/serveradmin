@@ -1,0 +1,29 @@
+[project]
+name = "adminapi"
+description = "Serveradmin client library and CLI"
+requires-python = ">=3.11,<3.14"
+dynamic = ["version"]
+authors = [
+    { name = "InnoGames System Administration", email = "it@innogames.com" },
+]
+license = { text = "MIT" }
+dependencies = [
+    "paramiko>=2.7,<4",
+    "netaddr>=0.8.0,<1.4.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/innogames/serveradmin"
+
+[project.scripts]
+adminapi = "adminapi.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "adminapi/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["adminapi"]

@@ -1,0 +1,19 @@
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+adminapi = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "django-extensions<5.0.0",
+    "Werkzeug<4.0.0",
+    "requests<3.0.0",
+    "faker<14.0.0",
+    "tblib",
+    "flake8",
+]
+docs = [
+    "sphinx~=7.0",
+    "sphinx-rtd-theme~=2.0",
+]
