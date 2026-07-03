@@ -8,13 +8,12 @@ sql() {
 
 sql postgres "drop database if exists $POSTGRES_DB;"
 sql postgres "create database $POSTGRES_DB;"
+
+# We exclude some tables:
+#
+# - 'serverdb_*' because it is huge and usually not needed locally
+# - 'apps_application' because it contains access tokens for production
 ssh "$REMOTE_DB" \
-    "pg_dump -O -x --exclude-table-data='serverdb_*' -d serveradmin | gzip -9 -c " \
+    "pg_dump -O -x --exclude-table-data='serverdb_*' --exclude-table-data='apps_application' -d serveradmin | gzip -9 -c " \
     | gunzip -c \
     | psql -h localhost -U "$POSTGRES_USER" -d "$POSTGRES_DB"
-
-
-# To have less of a risk of accessing production and preventing token leaks
-# we better disable applications and change tokens
-sql "$POSTGRES_DB" 'update apps_application set disabled = true;'
-sql "$POSTGRES_DB" "update apps_application set auth_token = substr(md5(random()::text || id::text), 1, 25);"
