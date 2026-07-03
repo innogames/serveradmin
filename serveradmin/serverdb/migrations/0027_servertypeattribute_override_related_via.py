@@ -4,7 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('serverdb', '0024_attribute_override_related_via'),
+        ('serverdb', '0026_attribute_override_related_via'),
     ]
 
     operations = [
