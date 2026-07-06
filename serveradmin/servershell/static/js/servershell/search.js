@@ -5,9 +5,10 @@
  * @param search_term Text based query (e.g. project=foo)
  * @param pinned List ob object ids to query besides search_term
  * @param focus_command_input Focus on command input when done or not
+ * @param push_state Updates the URL's search params if true
  * @returns {Promise<{}>}
  */
-async function _search(url, search_term, pinned = [], focus_command_input = false) {
+async function _search(url, search_term, pinned = [], focus_command_input = false, push_state = true) {
     let request_data = {
         term: search_term,
         shown_attributes: servershell.shown_attributes,
@@ -34,9 +35,11 @@ async function _search(url, search_term, pinned = [], focus_command_input = fals
         'deep_link': true,
     });
 
-    // Replace the URL with the requested one from the Ajax request to
-    // avoid loosing the selection of attributes when using multiple tabs.
-    window.history.pushState(null, null, servershell.href);
+    if (push_state) {
+        // Replace the URL with the requested one from the Ajax request to
+        // avoid loosing the selection of attributes when using multiple tabs.
+        window.history.pushState(null, null, servershell.href);
+    }
 
     // If the search term changes and we exceed the available pages with
     // our current settings then go to page 1
@@ -67,7 +70,7 @@ async function _search(url, search_term, pinned = [], focus_command_input = fals
  * and submit the query to the Serveradmin backend. On success extract the
  * result to the corresponding servershell properties.
  */
-servershell.submit_search = function(focus_command_input = false) {
+servershell.submit_search = function(focus_command_input = false, push_state = true) {
     // Prevent somebody hitting enter like crazy
     if (servershell._ajax !== null) {
         return servershell.alert('Pending request, cancel it or wait for it to finish!', 'danger');
@@ -92,7 +95,7 @@ servershell.submit_search = function(focus_command_input = false) {
         ...(Object.keys((to_commit.changes ?? {})).map(val => Number.parseInt(val)))
     ];
 
-    _search(url, servershell.term, touched_objects, focus_command_input)
+    _search(url, servershell.term, touched_objects, focus_command_input, push_state)
         .then(data => {
             if (data) {
                 servershell.editable_attributes = data.editable_attributes;
@@ -186,4 +189,10 @@ $(document).ready(function() {
             servershell.search_settings = data;
         })
     });
+
+    $(window).on('popstate', () => {
+        const url = new URL(location.href);
+        servershell.term = url.searchParams.get('term');
+        servershell.submit_search(false, false);
+    })
 });
