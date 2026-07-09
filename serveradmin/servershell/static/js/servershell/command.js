@@ -445,9 +445,11 @@ servershell.commands = {
             // Avoid duplicate deletion ...
             if (!servershell.to_commit.deleted.includes(object_id)) {
                 servershell.to_commit.deleted.push(object_id);
-                servershell.update_result();
             }
         });
+
+        // Redraw once after marking all selected objects
+        servershell.update_result();
     },
     setattr: function(attribute_value_string) {
         if (!validate_selected()) {
