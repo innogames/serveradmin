@@ -1,5 +1,10 @@
 #!/bin/bash -e
 
+# Not everybody has a Shell extension to load .env files
+if [ -f .env ]; then
+  source .env
+fi
+
 export PGPASSWORD="$POSTGRES_PASSWORD"
 
 sql() {
