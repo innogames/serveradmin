@@ -5,13 +5,18 @@ Copyright (c) 2019 InnoGames GmbH
 
 import environ
 import os
+import pkgutil
 
 env = environ.Env()
 
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
+# Workspace root, where the .env file lives. The serveradmin package sits at
+# packages/serveradmin/serveradmin/, i.e. three levels below the workspace root.
+WORKSPACE_ROOT = os.path.abspath(os.path.join(ROOT_DIR, '..', '..', '..'))
+
 # Take environment variables from .env file
-environ.Env.read_env(os.path.join(ROOT_DIR, '../.env'))
+environ.Env.read_env(os.path.join(WORKSPACE_ROOT, '.env'))
 
 SECRET_KEY = env('SECRET_KEY', default=None)
 
@@ -70,6 +75,21 @@ INSTALLED_APPS = [
     'serveradmin.servershell',
     'compressor',
 ]
+
+# Automatically register optional serveradmin_* Django apps that happen to be
+# installed in the environment (for example the private serveradmin-extras
+# bundle). This follows the same naming convention already used to auto-wire
+# their URLs in urls.py and their servershell plugins in servershell/utils.py,
+# so simply installing such a package is enough to activate it - no manual
+# INSTALLED_APPS editing required. Open source setups without any such package
+# installed are unaffected.
+INSTALLED_APPS += sorted(
+    name
+    for _, name, is_package in pkgutil.iter_modules()
+    if is_package
+    and name.startswith('serveradmin_')
+    and name not in INSTALLED_APPS
+)
 
 MENU_TEMPLATES = [
     'servershell/menu.html',

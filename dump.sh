@@ -1,5 +1,10 @@
 #!/bin/bash -e
 
+# Not everybody has a Shell extension to load .env files
+if [ -f .env ]; then
+  source .env
+fi
+
 export PGPASSWORD="$POSTGRES_PASSWORD"
 
 sql() {
@@ -17,3 +22,6 @@ ssh "$REMOTE_DB" \
     "pg_dump -O -x --exclude-table-data='serverdb_*' --exclude-table-data='apps_application' -d serveradmin | gzip -9 -c " \
     | gunzip -c \
     | psql -h localhost -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+
+# Hint the user why access might not work after dumping the database
+echo -e '\e[33mYou must restart the docker compose web service to create the "serveradmin" user again or create it manually!\e[39m'

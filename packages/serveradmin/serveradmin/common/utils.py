@@ -10,6 +10,31 @@ import logging
 
 from base64 import b64encode
 
+from django.apps import apps
+
+
+def serveradmin_apps():
+    """Return the names of all registered optional serveradmin_* apps
+
+    These are the apps auto-registered in INSTALLED_APPS (see settings.py)
+    following the serveradmin_ naming convention. The result is sorted for
+    deterministic ordering and memoized because the app registry is fixed
+    after startup. A fresh list is returned on every call so callers can
+    safely mutate it without corrupting the cache.
+
+    @return: sorted list of app names
+    """
+    return list(_serveradmin_apps())
+
+
+@functools.lru_cache(maxsize=1)
+def _serveradmin_apps():
+    return tuple(sorted(
+        app.name
+        for app in apps.get_app_configs()
+        if app.name.startswith('serveradmin_')
+    ))
+
 _hostname_re = re.compile(
     r'^(?=.{1,255}$)[0-9A-Za-z](?:(?:[0-9A-Za-z]|-){0,61}'
     r'[0-9A-Za-z])?(?:\.[0-9A-Za-z](?:(?:[0-9A-Za-z]|-){0,61}'

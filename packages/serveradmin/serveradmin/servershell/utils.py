@@ -1,5 +1,6 @@
-from django.apps import apps
 from django.contrib.staticfiles import finders
+
+from serveradmin.common.utils import serveradmin_apps
 
 
 def servershell_plugins():
@@ -12,8 +13,7 @@ def servershell_plugins():
     @return:
     """
     js_files = list()
-    app_names = [app.name for app in apps.get_app_configs() if app.name.startswith("serveradmin_")]
-    for app_name in app_names:
+    for app_name in serveradmin_apps():
         path = f"js/{app_name}.servershell.plugin.js"
         js_file = finders.find(path)
         if js_file:
