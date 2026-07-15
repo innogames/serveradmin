@@ -5,6 +5,7 @@ Copyright (c) 2019 InnoGames GmbH
 
 import environ
 import os
+import pkgutil
 
 env = environ.Env()
 
@@ -82,8 +83,6 @@ INSTALLED_APPS = [
 # so simply installing such a package is enough to activate it - no manual
 # INSTALLED_APPS editing required. Open source setups without any such package
 # installed are unaffected.
-import pkgutil
-
 INSTALLED_APPS += sorted(
     name
     for _, name, is_package in pkgutil.iter_modules()
