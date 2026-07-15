@@ -1,5 +1,26 @@
 # Changelog
 
+## v4.26.0 (2026-07-15)
+
+- Switch to uv as package manager (#451) (cf8bfa79)
+- Fix "newer data available" in tests (#458) (03565fc9)
+- Improve security of DB dump script (#453) (e5ed53e9)
+- Add popstate to recall history on state change (#456) (a5f0bae9)
+- servershell: Make ctrl/cmd-click open reverse and relation attrs in new tab (#455) (3c92f3df)
+- serverdb: Fix false commit conflict on datetimes (#454) (b8ccf3d7)
+- Upgrade to Django 5.2 from 4.2 (#450) (a777f02d)
+- api: Add endpoint returning all available attributes (#452) (3742ded9)
+- Add migration for graphite models (#449) (2f5bede5)
+- Remove obsolete dependency pexpect (#448) (f987713c)
+- serverdb: Drop dependency to rich module (#447) (2269eb08)
+- fix deprecation warnings for trixie (#440) (edc69b85)
+- serverdb: Use native ipaddress module in test_views (#446) (0ff67461)
+- Update dependencies (3663ee19)
+- serverdb: Fix Any() filter on boolean attributes (#445) (a0f42838)
+- serverdb: Unregister Server model from admin interface (#442) (2c5f8245)
+- Update dependencies (9b30c74e)
+- Add commit id in commit_query signal (#436) (55bb4d1e)
+
 ## v4.25.0 (2026-03-10)
 
 - Fix access control groups for multi attributes (#435) (75185a02)
