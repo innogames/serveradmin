@@ -881,12 +881,12 @@ production = [
 [package.metadata]
 requires-dist = [
     { name = "adminapi", editable = "packages/adminapi" },
-    { name = "dateparser", specifier = "~=1.1" },
+    { name = "dateparser", specifier = ">=1,<2" },
     { name = "django", specifier = "~=5.2" },
-    { name = "django-compressor", specifier = "~=4.6" },
-    { name = "django-environ", specifier = "<1.0.0" },
-    { name = "django-netfields", specifier = "<2.0.0" },
-    { name = "pillow", specifier = "~=10.0" },
+    { name = "django-compressor", specifier = ">=4,<5" },
+    { name = "django-environ", specifier = "<1" },
+    { name = "django-netfields", specifier = ">=1,<2" },
+    { name = "pillow", specifier = ">=10,<11" },
     { name = "psycopg2-binary", specifier = "~=2.9" },
     { name = "sentry-sdk", extras = ["django"], marker = "extra == 'production'" },
     { name = "typing-extensions" },

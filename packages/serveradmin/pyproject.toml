@@ -11,11 +11,11 @@ dependencies = [
     "adminapi",
     "Django~=5.2",
     "psycopg2-binary~=2.9",
-    "django-netfields<2.0.0",
-    "Pillow~=10.0",
-    "dateparser~=1.1",
-    "django-environ<1.0.0",
-    "django-compressor~=4.6",
+    "django-netfields>=1,<2",
+    "Pillow>=10,<11",
+    "dateparser>=1,<2",
+    "django-environ<1",
+    "django-compressor>=4,<5",
     "typing-extensions",
 ]
 
@@ -34,6 +34,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.version]
 path = "serveradmin/__init__.py"
+
+[tool.hatch.build]
+exclude = ["serveradmin/local_settings.py"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["serveradmin"]
