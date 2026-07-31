@@ -160,7 +160,7 @@ def _build_request(endpoint, get_params, post_params, retry=1):
         'Content-Encoding': 'application/x-json',
         'Accept-Encoding': 'gzip',
         'X-Timestamp': str(timestamp),
-        'X-API-Version': '.'.join(str(v) for v in VERSION),
+        'X-API-Version': VERSION,
     }
 
     if Settings.auth_key:
