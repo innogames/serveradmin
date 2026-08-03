@@ -195,4 +195,16 @@ $(document).ready(function() {
         servershell.term = url.searchParams.get('term');
         servershell.submit_search(false, false);
     })
+
+    $(document).on('keypress', (event) => {
+        if (event.key === '/') {
+            // We want to skip the cases where a user is typing / inside a textfield
+            // But we still want it to work in cases where the user just ticked a checkbox
+            if ($('input:focus:not([type=checkbox]), textarea:focus').length !== 0) {
+                return;
+            }
+            event.preventDefault(); // Prevent i.e. Firefox's quick search
+            $('#term').focus();
+        }
+    });
 });
