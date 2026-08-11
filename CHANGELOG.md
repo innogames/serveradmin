@@ -1,5 +1,13 @@
 # Changelog
 
+## v4.26.2 (2026-08-11)
+
+- servershell: speed up result table rendering (#457) (06fd91d8)
+- Bump cryptography from 49.0.0 to 50.0.0 (#462) (8e8dafc0)
+- Add / keyboard shortcut to focus on search field (#459) (5b03e7b2)
+- Fix version still displayed based on adminapi (#461) (c149c4d7)
+- Allow range of known versions for dependencies (#460) (f4e478af)
+
 ## v4.26.0 (2026-07-15)
 
 - Switch to uv as package manager (#451) (cf8bfa79)
