@@ -25,13 +25,19 @@ def log_query(
     """Persist a QueryLog row if an active QueryLoggingRule matches
 
     This is a no-op (no DB write) when nothing is configured to log the
-    given application/user, which is the default and common case.
+    given application/user, which is the default and common case. Also
+    skips rules whose trigger_query does not match the query's actual
+    filters.
 
     Must never raise: a bug or outage in logging must not break the
     actual query response. Returns True if a row was written, else False.
     """
     try:
-        rule = QueryLoggingRule.objects.matching(application, user).first()
+        rule = None
+        for candidate in QueryLoggingRule.objects.matching(application, user):
+            if candidate.matches_query(filters):
+                rule = candidate
+                break
         if rule is None:
             return False
 

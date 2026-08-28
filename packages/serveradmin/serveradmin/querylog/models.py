@@ -9,7 +9,28 @@ from django.db import models
 from django.db.models import Q
 from django.utils.timezone import now
 
+from adminapi.exceptions import DatatypeError
+from adminapi.filters import Any, BaseFilter
+from adminapi.parse import parse_query
 from serveradmin.apps.models import Application
+
+
+def _extract_candidate_values(filter_obj):
+    """Best-effort extraction of concrete values from an incoming filter
+
+    Used to evaluate a QueryLoggingRule.trigger_query condition against
+    the actual filter object a query used for one attribute. Only two
+    incoming filter shapes are considered safely decidable; anything
+    else (Regexp, All, Not, GreaterThan, Contains, ...) conservatively
+    yields no candidates, meaning the trigger condition for that
+    attribute cannot be satisfied. This is a known, intentional
+    limitation - comparing two filter expressions isn't well-defined.
+    """
+    if type(filter_obj) is BaseFilter:
+        return [filter_obj.value]
+    if type(filter_obj) is Any:
+        return [v.value for v in filter_obj.values if type(v) is BaseFilter]
+    return []
 
 
 class QueryLoggingRuleManager(models.Manager):
@@ -34,7 +55,7 @@ class QueryLoggingRuleManager(models.Manager):
 
         return self.filter(
             is_active=True, enabled_until__gt=now(),
-        ).filter(clauses)
+        ).filter(clauses).order_by('pk')
 
 
 class QueryLoggingRule(models.Model):
@@ -68,6 +89,18 @@ class QueryLoggingRule(models.Model):
         blank=True,
         help_text='Reason for enabling logging, e.g. a ticket link.',
     )
+    trigger_query = models.CharField(
+        max_length=1000,
+        blank=True,
+        help_text=(
+            'Optional. Only log a query if its filters satisfy this '
+            'condition, e.g. "hostname=Regexp(\'web.*\') '
+            'environment=prod". Leave blank to log every query matched '
+            'by application/user above. Use attr=All() to match any '
+            'query that references "attr" at all, regardless of its '
+            'value.'
+        ),
+    )
     created_at = models.DateTimeField(default=now, editable=False)
     created_by = models.ForeignKey(
         User, null=True, on_delete=models.SET_NULL, editable=False,
@@ -94,6 +127,48 @@ class QueryLoggingRule(models.Model):
             raise ValidationError(
                 'At least one of application or user must be set.'
             )
+        if self.trigger_query:
+            try:
+                parse_query(self.trigger_query)
+            except DatatypeError as error:
+                raise ValidationError({
+                    'trigger_query': 'Invalid query syntax: {}'.format(
+                        error
+                    ),
+                })
+
+    def matches_query(self, filters):
+        """Does the actual query's filters dict satisfy trigger_query?
+
+        filters is the {attribute_id: BaseFilter-or-subclass} dict of the
+        actual ad-hoc query being considered for logging. Returns True
+        unconditionally if trigger_query is blank (unrestricted, the
+        default).
+        """
+        if not self.trigger_query:
+            return True
+
+        trigger_filters = parse_query(self.trigger_query)
+        for attribute_id, trigger_filter in trigger_filters.items():
+            destiny = trigger_filter.destiny()
+            if destiny is True:
+                # e.g. attr=All(): matches unconditionally, so only the
+                # attribute's presence in the query matters.
+                if attribute_id not in filters:
+                    return False
+                continue
+            if destiny is False:
+                # e.g. the degenerate attr=Any(): never matches.
+                return False
+
+            if attribute_id not in filters:
+                return False
+
+            candidates = _extract_candidate_values(filters[attribute_id])
+            if not any(trigger_filter.matches(v) for v in candidates):
+                return False
+
+        return True
 
     def __str__(self):
         target = self.application or self.user or 'nobody'

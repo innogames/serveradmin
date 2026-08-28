@@ -87,6 +87,39 @@ class LogQueryTest(TransactionTestCase):
         self.assertFalse(result)
         self.assertEqual(0, QueryLog.objects.count())
 
+    def test_content_mismatched_trigger_does_not_log(self):
+        QueryLoggingRule.objects.create(
+            application=self.app, enabled_until=now() + timedelta(hours=1),
+            trigger_query="hostname=Regexp('nomatch.*')",
+        )
+
+        self.assertFalse(self._log())
+        self.assertEqual(0, QueryLog.objects.count())
+
+    def test_content_matched_trigger_logs(self):
+        QueryLoggingRule.objects.create(
+            application=self.app, enabled_until=now() + timedelta(hours=1),
+            trigger_query='hostname=test0',
+        )
+
+        self.assertTrue(self._log())
+        self.assertEqual(1, QueryLog.objects.count())
+
+    def test_second_candidate_rule_matches_when_first_does_not(self):
+        non_matching = QueryLoggingRule.objects.create(
+            application=self.app, enabled_until=now() + timedelta(hours=1),
+            trigger_query="hostname=Regexp('nomatch.*')",
+        )
+        matching = QueryLoggingRule.objects.create(
+            application=self.app, enabled_until=now() + timedelta(hours=1),
+        )
+        self.assertLess(non_matching.pk, matching.pk)
+
+        self.assertTrue(self._log())
+
+        log = QueryLog.objects.get()
+        self.assertEqual(matching.pk, log.rule_id)
+
 
 class DatasetQueryLoggingTest(TransactionTestCase):
     fixtures = ['test_dataset.json']

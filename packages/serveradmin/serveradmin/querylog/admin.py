@@ -12,13 +12,19 @@ from serveradmin.querylog.models import QueryLog, QueryLoggingRule
 class QueryLoggingRuleAdmin(admin.ModelAdmin):
     list_display = [
         'application', 'user', 'is_active', 'enabled_until',
-        'note', 'created_by', 'created_at',
+        'short_trigger_query', 'note', 'created_by', 'created_at',
     ]
     list_filter = ['is_active', 'application']
     search_fields = ['application__name', 'user__username', 'note']
     autocomplete_fields = ['application', 'user']
     readonly_fields = ['created_at', 'created_by']
     list_select_related = ['application', 'user', 'created_by']
+
+    @admin.display(description='Trigger query')
+    def short_trigger_query(self, obj):
+        if len(obj.trigger_query) <= 60:
+            return obj.trigger_query
+        return obj.trigger_query[:57] + '...'
 
     def save_model(self, request, obj, form, change):
         if not change:
