@@ -13,6 +13,7 @@ from adminapi.exceptions import DatatypeError
 from adminapi.filters import Any, BaseFilter
 from adminapi.parse import parse_query
 from serveradmin.apps.models import Application
+from serveradmin.serverdb.models import Attribute
 
 
 def _extract_candidate_values(filter_obj):
@@ -101,6 +102,19 @@ class QueryLoggingRule(models.Model):
             'value.'
         ),
     )
+    trigger_attributes = models.JSONField(
+        default=list,
+        blank=True,
+        help_text=(
+            'Optional. Only log a query if its "restrict" (the list of '
+            'attributes it asked to have returned) includes at least one '
+            'of the attributes selected here. Leave empty to log every '
+            'query matched by application/user/trigger_query above. '
+            'Includes the special attributes object_id, hostname, '
+            'servertype and intern_ip, which are not real serverdb '
+            'attributes but are valid values for "restrict".'
+        ),
+    )
     created_at = models.DateTimeField(default=now, editable=False)
     created_by = models.ForeignKey(
         User, null=True, on_delete=models.SET_NULL, editable=False,
@@ -136,6 +150,16 @@ class QueryLoggingRule(models.Model):
                         error
                     ),
                 })
+        if self.trigger_attributes:
+            valid_ids = set(
+                Attribute.objects.values_list('attribute_id', flat=True)
+            ) | set(Attribute.specials.keys())
+            invalid_ids = sorted(set(self.trigger_attributes) - valid_ids)
+            if invalid_ids:
+                raise ValidationError({
+                    'trigger_attributes': 'Unknown attribute id(s): {}'
+                    .format(', '.join(invalid_ids)),
+                })
 
     def matches_query(self, filters):
         """Does the actual query's filters dict satisfy trigger_query?
@@ -169,6 +193,25 @@ class QueryLoggingRule(models.Model):
                 return False
 
         return True
+
+    def matches_restrict(self, restrict):
+        """Does the actual query's restrict list satisfy trigger_attributes?
+
+        restrict is either None (the query asked to have every attribute
+        returned) or a list of attribute_id strings the actual ad-hoc
+        query asked to have returned. Returns True unconditionally if
+        trigger_attributes is empty (unrestricted, the default). When
+        trigger_attributes is non-empty, restrict=None is treated as
+        satisfying it too, since "return everything" implicitly includes
+        any attribute this rule is watching for. Otherwise matches if
+        restrict contains at least one of the selected attributes (OR
+        semantics across the selection).
+        """
+        if not self.trigger_attributes:
+            return True
+        if restrict is None:
+            return True
+        return bool(set(self.trigger_attributes) & set(restrict))
 
     def __str__(self):
         target = self.application or self.user or 'nobody'

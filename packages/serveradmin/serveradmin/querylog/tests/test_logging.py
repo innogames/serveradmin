@@ -105,6 +105,38 @@ class LogQueryTest(TransactionTestCase):
         self.assertTrue(self._log())
         self.assertEqual(1, QueryLog.objects.count())
 
+    def test_and_combination_filters_match_but_restrict_does_not(self):
+        QueryLoggingRule.objects.create(
+            application=self.app, enabled_until=now() + timedelta(hours=1),
+            trigger_query='hostname=test0',
+            trigger_attributes=['environment'],
+        )
+
+        # _log()'s default restrict is ['hostname'], which does not
+        # intersect ['environment'].
+        self.assertFalse(self._log())
+        self.assertEqual(0, QueryLog.objects.count())
+
+    def test_and_combination_restrict_matches_but_filters_do_not(self):
+        QueryLoggingRule.objects.create(
+            application=self.app, enabled_until=now() + timedelta(hours=1),
+            trigger_query="hostname=Regexp('nomatch.*')",
+            trigger_attributes=['hostname'],
+        )
+
+        self.assertFalse(self._log())
+        self.assertEqual(0, QueryLog.objects.count())
+
+    def test_and_combination_both_match_logs(self):
+        QueryLoggingRule.objects.create(
+            application=self.app, enabled_until=now() + timedelta(hours=1),
+            trigger_query='hostname=test0',
+            trigger_attributes=['hostname'],
+        )
+
+        self.assertTrue(self._log())
+        self.assertEqual(1, QueryLog.objects.count())
+
     def test_second_candidate_rule_matches_when_first_does_not(self):
         non_matching = QueryLoggingRule.objects.create(
             application=self.app, enabled_until=now() + timedelta(hours=1),

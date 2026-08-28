@@ -9,6 +9,7 @@ from django.utils.timezone import now
 from adminapi.filters import All, Any, BaseFilter, Regexp
 from serveradmin.apps.models import Application
 from serveradmin.querylog.models import QueryLoggingRule
+from serveradmin.serverdb.models import Attribute
 
 
 class QueryLoggingRuleManagerTest(TransactionTestCase):
@@ -187,3 +188,69 @@ class QueryLoggingRuleMatchesQueryTest(TestCase):
 
         with self.assertRaises(ValidationError):
             rule.full_clean()
+
+
+class QueryLoggingRuleMatchesRestrictTest(TestCase):
+    def setUp(self):
+        self.future = now() + timedelta(hours=1)
+        self.user = User.objects.create_user('alice')
+
+    def _rule(self, trigger_attributes):
+        return QueryLoggingRule(
+            user=self.user, enabled_until=self.future,
+            trigger_attributes=trigger_attributes,
+        )
+
+    def test_empty_trigger_attributes_always_matches(self):
+        rule = self._rule([])
+
+        self.assertTrue(rule.matches_restrict(None))
+        self.assertTrue(rule.matches_restrict([]))
+        self.assertTrue(rule.matches_restrict(['hostname']))
+
+    def test_restrict_none_matches_any_non_empty_selection(self):
+        rule = self._rule(['hostname'])
+
+        self.assertTrue(rule.matches_restrict(None))
+
+    def test_intersecting_restrict_matches(self):
+        rule = self._rule(['hostname', 'object_id'])
+
+        self.assertTrue(rule.matches_restrict(['object_id']))
+
+    def test_non_intersecting_restrict_does_not_match(self):
+        rule = self._rule(['hostname'])
+
+        self.assertFalse(rule.matches_restrict(['environment']))
+
+    def test_or_semantics_across_multiple_selected_attributes(self):
+        rule = self._rule(['hostname', 'environment'])
+
+        self.assertTrue(rule.matches_restrict(['environment', 'object_id']))
+
+
+class QueryLoggingRuleCleanTriggerAttributesTest(TestCase):
+    def setUp(self):
+        self.future = now() + timedelta(hours=1)
+        self.user = User.objects.create_user('alice')
+        Attribute.objects.create(
+            attribute_id='test_attr', type='string', regexp=r'\A.*\Z',
+        )
+
+    def _rule(self, trigger_attributes):
+        return QueryLoggingRule(
+            user=self.user, enabled_until=self.future,
+            trigger_attributes=trigger_attributes,
+        )
+
+    def test_valid_mix_of_real_and_special_attributes_passes(self):
+        rule = self._rule(['test_attr', 'hostname', 'object_id'])
+
+        rule.full_clean()  # must not raise
+
+    def test_unknown_attribute_id_raises_field_scoped_error(self):
+        rule = self._rule(['not_a_real_attribute'])
+
+        with self.assertRaises(ValidationError) as ctx:
+            rule.full_clean()
+        self.assertIn('trigger_attributes', ctx.exception.message_dict)

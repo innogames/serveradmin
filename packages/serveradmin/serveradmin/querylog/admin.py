@@ -3,16 +3,50 @@
 Copyright (c) 2026 InnoGames GmbH
 """
 
+from django import forms
 from django.contrib import admin
+from django.contrib.admin.widgets import FilteredSelectMultiple
 
 from serveradmin.querylog.models import QueryLog, QueryLoggingRule
+from serveradmin.serverdb.models import Attribute
+
+
+def _attribute_choices():
+    """(value, label) choices for the trigger_attributes widget
+
+    Computed on demand (called from QueryLoggingRuleForm.__init__, not at
+    class-definition time) so newly added Attribute rows show up without
+    restarting the process, and so importing this module never queries
+    the DB.
+    """
+    real_ids = Attribute.objects.values_list('attribute_id', flat=True)
+    all_ids = set(real_ids) | set(Attribute.specials.keys())
+    return sorted((attribute_id, attribute_id) for attribute_id in all_ids)
+
+
+class QueryLoggingRuleForm(forms.ModelForm):
+    trigger_attributes = forms.MultipleChoiceField(
+        required=False,
+        choices=(),
+        widget=FilteredSelectMultiple('attributes', is_stacked=False),
+    )
+
+    class Meta:
+        model = QueryLoggingRule
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['trigger_attributes'].choices = _attribute_choices()
 
 
 @admin.register(QueryLoggingRule)
 class QueryLoggingRuleAdmin(admin.ModelAdmin):
+    form = QueryLoggingRuleForm
     list_display = [
         'application', 'user', 'is_active', 'enabled_until',
-        'short_trigger_query', 'note', 'created_by', 'created_at',
+        'short_trigger_query', 'short_trigger_attributes', 'note',
+        'created_by', 'created_at',
     ]
     list_filter = ['is_active', 'application']
     search_fields = ['application__name', 'user__username', 'note']
@@ -25,6 +59,13 @@ class QueryLoggingRuleAdmin(admin.ModelAdmin):
         if len(obj.trigger_query) <= 60:
             return obj.trigger_query
         return obj.trigger_query[:57] + '...'
+
+    @admin.display(description='Trigger attributes')
+    def short_trigger_attributes(self, obj):
+        joined = ', '.join(obj.trigger_attributes)
+        if len(joined) <= 60:
+            return joined
+        return joined[:57] + '...'
 
     def save_model(self, request, obj, form, change):
         if not change:

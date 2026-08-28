@@ -27,7 +27,8 @@ def log_query(
     This is a no-op (no DB write) when nothing is configured to log the
     given application/user, which is the default and common case. Also
     skips rules whose trigger_query does not match the query's actual
-    filters.
+    filters, or whose trigger_attributes does not intersect the query's
+    actual restrict list.
 
     Must never raise: a bug or outage in logging must not break the
     actual query response. Returns True if a row was written, else False.
@@ -35,7 +36,11 @@ def log_query(
     try:
         rule = None
         for candidate in QueryLoggingRule.objects.matching(application, user):
-            if candidate.matches_query(filters):
+            content_matches = (
+                candidate.matches_query(filters) and
+                candidate.matches_restrict(restrict)
+            )
+            if content_matches:
                 rule = candidate
                 break
         if rule is None:
