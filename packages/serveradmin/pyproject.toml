@@ -34,6 +34,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.version]
 path = "serveradmin/__init__.py"
+# This allows us to build dev versions on branches where the higher version
+# check might fail.
+validate-bump = false
 
 [tool.hatch.build]
 exclude = ["serveradmin/local_settings.py"]
