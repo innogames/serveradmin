@@ -11,6 +11,9 @@ Copyright (c) 2019 InnoGames GmbH
 import logging
 
 from ipaddress import IPv4Address, IPv6Address
+
+from django.db.models import Prefetch
+
 from adminapi.dataset import DatasetObject
 from serveradmin.serverdb.models import (
     Servertype,
@@ -22,6 +25,27 @@ from serveradmin.serverdb.models import (
 )
 
 logger = logging.getLogger(__package__)
+
+
+def _server_prefetch():
+    """Prefetch "server" without loading the expensive intern_ip column
+
+    prefetch_related() issues its own query, built from Server._base_manager
+    (see ForwardManyToOneDescriptor.get_prefetch_querysets), so a
+    defer("server__intern_ip") on the outer queryset never reaches it - that
+    spelling only takes effect for select_related() traversals.  Passing an
+    explicit queryset is the only way to actually defer the column here.
+
+    It is worth deferring because netfields runs every inet value through
+    ipaddress.ip_interface(), which is pure Python and showed up as roughly a
+    quarter of the profile of a large query - even though intern_ip is not a
+    real attribute and is never part of a restrict clause.
+
+    Only intern_ip is deferred.  servertype_id is a plain varchar with no
+    converter, so deferring it saves nothing while risking a query per object
+    for anything that reads it.
+    """
+    return Prefetch('server', queryset=Server._base_manager.defer('intern_ip'))
 
 
 class QueryMaterializer:
@@ -145,11 +169,12 @@ class QueryMaterializer:
                         value_id__in=self._server_attributes.keys(),
                         attribute_id__in=reversed_attributes.keys(),
                     )
+                    # Unlike the other branches, sa.server is stored as an
+                    # attribute *value* here, so it can escape into the
+                    # results and reach _get_servers_to_join(), which reads
+                    # intern_ip.  Deferring it would cost a query per object,
+                    # so this one deliberately keeps the whole row.
                     .prefetch_related("server")
-                    .defer(
-                        "server__intern_ip",
-                        "server__servertype",
-                    )
                 ):
                     self._add_attribute_value(
                         sa.value,
@@ -164,11 +189,7 @@ class QueryMaterializer:
                         server__in=self._server_attributes.keys(),
                         attribute__in=attributes,
                     )
-                    .prefetch_related("server")
-                    .defer(
-                        "server__intern_ip",
-                        "server__servertype",
-                    )
+                    .prefetch_related(_server_prefetch())
                 ):
                     self._add_attribute_value(
                         sa.server,
@@ -285,11 +306,7 @@ class QueryMaterializer:
                 server__hostname__in=servers_by_related.keys(),
                 attribute=attribute,
             )
-            .prefetch_related("server")
-            .defer(
-                "server__intern_ip",
-                "server__servertype",
-            )
+            .prefetch_related(_server_prefetch())
         ):
             for target in servers_by_related[sa.server]:
                 self._add_attribute_value(target, attribute, sa.get_value())
