@@ -12,6 +12,7 @@ import logging
 
 from ipaddress import IPv4Address, IPv6Address
 
+from django.db import connection
 from django.db.models import Prefetch
 
 from adminapi.dataset import DatasetObject
@@ -225,14 +226,16 @@ class QueryMaterializer:
         the host's IP address or prefix fits within the net's IP address or prefix.
         """
 
+        # Only ids are selected.  This join yields one row per (host, net)
+        # pair - tens of thousands of them on a large query - while the
+        # distinct nets they point at number far fewer.  Reading the net rows
+        # through Server.objects.raw() therefore built one model instance per
+        # row, each parsing net.intern_ip through netfields, rather than one
+        # per distinct net.  The two inet_address_family columns this used to
+        # select were never read at all.
         q = f"""
             SELECT
-                net.server_id,
-                net.hostname,
-                net.intern_ip,
-                net.servertype_id,
-                net_attr.inet_address_family,
-                host_attr.inet_address_family,
+                net.server_id AS net_server_id,
                 host.server_id AS host_server_id,
                 host_attr.attribute_id AS host_attr_name
             FROM server AS host
@@ -254,9 +257,8 @@ class QueryMaterializer:
 
         servers_by_id = {s.server_id: s for s in servers_in}
 
-        supernets = Server.objects.raw(
-            q,
-            {
+        with connection.cursor() as cursor:
+            cursor.execute(q, {
                 "target_servertypes": list(
                     attribute.target_servertype.values_list(
                         'servertype_id', flat=True
@@ -264,25 +266,38 @@ class QueryMaterializer:
                 ),
                 "address_family": attribute.inet_address_family,
                 "hosts": list(servers_by_id.keys()),
-            },
-            translations={
-                "net.server_id": "server_id",
-                "net.hostname": "hostname",
-                "net.intern_ip": "intern_ip",
-                "net.servertype_id": "servertype_id",
-            },
-        )
-        for cur_supernet in supernets:
-            cur_server = servers_by_id[cur_supernet.host_server_id]
+            })
+            rows = cursor.fetchall()
+
+        # The nets are fetched whole, intern_ip included: they are stored as
+        # attribute values and can reach a nested QueryMaterializer through
+        # _get_servers_to_join(), which reads it.
+        supernets = {
+            net.server_id: net
+            for net in Server.objects.filter(
+                server_id__in={r[0] for r in rows}
+            )
+        }
+
+        # Which host attribute produced the supernet currently stored for a
+        # host.  This used to be read back off the supernet object itself,
+        # which is no longer possible now that one net object is shared by
+        # every host sitting in it.
+        via_attribute_ids = {}
+        for net_server_id, host_server_id, host_attr_name in rows:
+            cur_server = servers_by_id[host_server_id]
+            cur_supernet = supernets[net_server_id]
             prev_supernet = self._server_attributes.get(cur_server, {}).get(attribute)
             if prev_supernet and prev_supernet != cur_supernet:
                 # TODO: Raise an exception once all data is cleaned up and conflicting
                 # AF-unaware attributes are removed.
                 logger.warning(
                     f"Conflicting supernet {attribute} for {cur_server.hostname}: "
-                    f"{prev_supernet.host_attr_name}->{prev_supernet} vs {cur_supernet.host_attr_name}->{cur_supernet}"
+                    f"{via_attribute_ids.get(host_server_id)}->{prev_supernet} vs "
+                    f"{host_attr_name}->{cur_supernet}"
                 )
             self._server_attributes[cur_server][attribute] = cur_supernet
+            via_attribute_ids[host_server_id] = host_attr_name
 
     def _add_related_attribute(self, attribute, servertype_attribute, servers_by_type):
         related_via_attribute = servertype_attribute.related_via_attribute
