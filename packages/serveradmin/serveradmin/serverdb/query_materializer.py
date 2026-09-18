@@ -187,19 +187,59 @@ class QueryMaterializer:
                         sa.server,
                     )
             else:
-                attribute_lookup = {a.attribute_id: a for a in attributes}
-                for sa in (
-                    ServerAttribute.get_model(key)
-                    .objects.filter(
-                        server_id__in=self._server_attributes.keys(),
-                        attribute__in=attributes,
-                    )
-                ):
-                    self._add_attribute_value(
-                        sa.server_id,
-                        attribute_lookup[sa.attribute_id],
-                        sa.get_value(),
-                    )
+                self._add_stored_attributes(key, attributes)
+
+    def _add_stored_attributes(self, key, attributes):
+        """Add the values of one attribute type kept in its own value table
+
+        The rows are read as tuples, not model instances.  An instance costs
+        Model.__init__() and the init signals for every row - over a hundred
+        thousand of them on a large query - only to read server_id,
+        attribute_id and value once each.  The conversion get_value() would
+        have applied lives on the models as convert_db_value(), so the
+        tuples end up holding the same values an instance would have given.
+        """
+        attribute_lookup = {a.attribute_id: a for a in attributes}
+        model = ServerAttribute.get_model(key)
+        # ServerRelationAttribute's manager prefetches "value" by default.
+        # That would run against the tuples and fail, and the targets are
+        # fetched in bulk below anyway.
+        rows = model.objects.filter(
+            server_id__in=self._server_attributes.keys(),
+            attribute__in=attributes,
+        ).prefetch_related(None)
+
+        if key == "boolean":
+            # No value column: a row's existence is the value.
+            rows = (
+                (server_id, attribute_id, None)
+                for server_id, attribute_id in rows.values_list(
+                    "server_id", "attribute_id"
+                )
+            )
+        else:
+            rows = rows.values_list("server_id", "attribute_id", "value")
+
+        if key == "relation":
+            # The value column holds a server_id.  Resolve the targets with
+            # one query rather than one per row.  They are stored as
+            # attribute values, so they are fetched whole:
+            # _get_servers_to_join() may read their intern_ip.
+            rows = list(rows)
+            targets = {
+                server.server_id: server
+                for server in Server.objects.filter(
+                    server_id__in={value for _, _, value in rows}
+                )
+            }
+            convert = targets.__getitem__
+        else:
+            convert = model.convert_db_value
+
+        for server_id, attribute_id, value in rows:
+            self._add_attribute_value(
+                server_id, attribute_lookup[attribute_id], convert(value)
+            )
 
     def _add_related_attributes(self, servers_by_type):
         for attribute, sa in self._related_servertype_attributes:

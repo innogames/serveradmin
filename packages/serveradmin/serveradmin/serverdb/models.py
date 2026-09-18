@@ -585,6 +585,21 @@ class ServerAttribute(models.Model):
     def get_value(self):
         return self.value
 
+    @classmethod
+    def convert_db_value(cls, value):
+        """Turn a raw "value" column into what get_value() would return
+
+        This exists for performance.  The query materializer reads attribute
+        rows with values_list() instead of as model instances: building an
+        instance costs Model.__init__() plus the init signals for every row,
+        and a large query reads over a hundred thousand rows only to look at
+        server_id, attribute_id and value once each.  Tuples have no
+        get_value() to call, so the per-type conversion it applies is kept
+        here, on the model, where it belongs.  Subclasses that override
+        get_value() must override this to match.
+        """
+        return value
+
     def save_value(self, value):
         # Normally, there shouldn't be any transformation necessary.
         self.value = value
@@ -673,6 +688,16 @@ class ServerRelationAttribute(ServerAttribute):
         unique_together = [["server", "attribute", "value"]]
         indexes = [models.Index(fields=["attribute", "value"])]
 
+    @classmethod
+    def convert_db_value(cls, value):
+        # The column holds a server_id.  Turning it into the Server that
+        # get_value() returns needs a query, which per row would be exactly
+        # the cost this method exists to avoid.  Callers reading relation
+        # rows as tuples resolve the targets in bulk instead.
+        raise NotImplementedError(
+            "relation targets must be resolved in bulk, not per value"
+        )
+
     def save_value(self, value):
         try:
             target_server = Server.objects.get(hostname=value)
@@ -708,6 +733,11 @@ class ServerBooleanAttribute(ServerAttribute):
     def get_value(self):
         return True
 
+    @classmethod
+    def convert_db_value(cls, value):
+        # There is no value column; the row's existence is the value.
+        return True
+
     def save_value(self, value):
         if value:
             self.save()
@@ -731,11 +761,11 @@ class ServerNumberAttribute(ServerAttribute):
         indexes = [models.Index(fields=["attribute", "value"])]
 
     def get_value(self):
-        return (
-            int(self.value)
-            if self.value.as_tuple().exponent == 0
-            else float(self.value)
-        )
+        return self.convert_db_value(self.value)
+
+    @classmethod
+    def convert_db_value(cls, value):
+        return int(value) if value.as_tuple().exponent == 0 else float(value)
 
 
 class ServerInetAttribute(ServerAttribute):
