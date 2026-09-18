@@ -306,21 +306,37 @@ def _real_condition_sql(attribute, template, related_vias):
             ))
         relation_conditions.append((relation_condition, servertype_ids))
 
-    if len(relation_conditions) == 1:
-        mixed_relation_condition = relation_conditions[0][0]
-    else:
-        mixed_relation_condition = '({0})'.format(' OR '.join(
-            '({0} AND server.servertype_id IN ({1}))'
-            .format(relation_condition, ', '.join(
-                "'{0}'".format(s) for s in servertype_ids)
-            )
-            for relation_condition, servertype_ids in relation_conditions
-        ))
-
-    return _exists_sql(model, 'sub', (
-        mixed_relation_condition,
+    attribute_conditions = (
         "sub.attribute_id = '{0}'".format(attribute.attribute_id),
         template.format('sub.value'),
+    )
+
+    if len(relation_conditions) == 1:
+        return _exists_sql(
+            model, 'sub', (relation_conditions[0][0],) + attribute_conditions
+        )
+
+    # One EXISTS per relation path, OR'ed together outside them, rather than
+    # a single EXISTS with the paths OR'ed inside its WHERE.  Postgres can
+    # turn a correlated EXISTS with one path into a hash semi join, but not
+    # one whose correlation to "server" is an OR of alternatives: that
+    # degrades to a nested loop over every (server, sub) pair, with the
+    # inherited paths evaluated as a sub plan per pair - millions of
+    # executions for a filter that matches a few hundred rows.
+    #
+    # The servertype guard comes first in each branch on purpose.  Postgres
+    # reorders AND clauses by cost at the top level only, not inside the
+    # branches of an OR, and otherwise evaluates left to right; the cheap
+    # test first lets it skip the EXISTS for servertypes that do not use
+    # that path at all.
+    return '({0})'.format(' OR '.join(
+        '(server.servertype_id IN ({0}) AND {1})'.format(
+            ', '.join("'{0}'".format(s) for s in servertype_ids),
+            _exists_sql(
+                model, 'sub', (relation_condition,) + attribute_conditions
+            ),
+        )
+        for relation_condition, servertype_ids in relation_conditions
     ))
 
 
