@@ -338,6 +338,18 @@ class Attribute(models.Model):
     def __str__(self):
         return self.attribute_id
 
+    def __hash__(self):
+        # Same value Model.__hash__() produces - the pk *is* attribute_id -
+        # without its _is_pk_set() call and pk property lookup.  Attribute
+        # instances key the per-server attribute dicts in the query
+        # materializer, which are hit once per server per attribute: close
+        # to a million hashes on a large query, where the two extra Python
+        # calls were most of the cost.  The one behavioural difference is
+        # that an unsaved Attribute without an attribute_id becomes hashable,
+        # which Django deliberately forbids; attribute_id is a natural key
+        # assigned before save, so that case does not arise here.
+        return hash(self.attribute_id)
+
     def initializer(self):
         if self.multi:
             return set
