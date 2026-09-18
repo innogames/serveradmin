@@ -25,5 +25,23 @@ services:
     depends_on:
       - db
 
+  # Processes asynchronous tasks (e.g. DNS pushes) enqueued by commits.
+  # The web entrypoint always starts runserver, so use our own.
+  worker:
+    build: .docker/web
+    volumes:
+      - ".:/code"
+      - "/code/.venv"
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        source .env
+        uv sync --frozen --inexact
+        until pg_isready -h "$$POSTGRES_HOST" -U "$$POSTGRES_USER" &> /dev/null; do sleep 5; done
+        exec uv run python -m serveradmin run_taskqueue
+    depends_on:
+      - web
+
 volumes:
   postgres-data:

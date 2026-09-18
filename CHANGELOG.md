@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- taskqueue: Add Postgres-backed task queue for asynchronous work after commits, with `run_taskqueue` worker, admin and `taskqueue.status` API function
+- serverdb: Pass materialized created/changed/unchanged/deleted objects, user and app to the post_commit signal
+- adminapi: Add `adminapi.taskqueue.wait_for_commit()` helper
+
 ## v4.26.2 (2026-08-11)
 
 - servershell: speed up result table rendering (#457) (06fd91d8)

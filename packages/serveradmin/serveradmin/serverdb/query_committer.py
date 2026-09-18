@@ -131,10 +131,19 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
 
         commit_id = _log_changes(user, app, changed, created_objects, deleted_objects)
 
+    # Besides the raw commit payloads, pass the materialized objects so that
+    # receivers don't have to query them again: created_objects and
+    # changed_objects as they are after the commit, unchanged_objects (the
+    # changed objects before the commit) and deleted_objects before deletion.
     post_commit.send_robust(
         commit_query,
         commit_id=commit_id,
         created=created, changed=changed, deleted=deleted,
+        created_objects=list(created_objects.values()),
+        changed_objects=list(changed_objects.values()),
+        unchanged_objects=list(unchanged_objects.values()),
+        deleted_objects=list(deleted_objects.values()),
+        user=user, app=app,
     )
 
     return DatasetCommit(

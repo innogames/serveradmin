@@ -277,6 +277,89 @@ Look at the following example::
            # it and reraise it as ApiError or subclass of ApiError
            raise ApiError(e.message)
 
+Running work asynchronously after commits
+-----------------------------------------
+
+Commit signal handlers run inside the request that commits the data.  They
+must not talk to external services (ssh to servers, HTTP APIs, Nagios, ...):
+a slow or broken service would slow down or break every commit.  Instead an
+application records what has to be done in the task queue and a worker does
+it later.  The task queue lives in ``serveradmin.taskqueue`` and stores tasks
+in the ``taskqueue_task`` table, one row per task type and commit.
+
+To take part, define a ``TaskType`` in your application, for example in a
+file ``tasks.py``::
+
+   from django.conf import settings
+   from serveradmin.taskqueue.registry import TaskType, register
+
+   @register
+   class HelloTask(TaskType):
+       name = 'example.hello'       # unique, by convention "<app>.<verb>"
+       max_attempts = 5             # retried with exponential backoff
+
+       def enabled(self):
+           # Only produce tasks when the app is configured
+           return hasattr(settings, 'EXAMPLE_URL')
+
+       def produce(self, event):
+           # Called from the post_commit signal, must not do network I/O.
+           # Return a JSON serializable payload (or a list of them) or None.
+           hostnames = [obj['hostname'] for obj in event.created_objects]
+           if hostnames:
+               return {'hostnames': hostnames}
+
+       def run(self, task):
+           # Called by the worker, may take its time and talk to the world.
+           # Raise to fail the task; return a small result dict or None.
+           say_hello(settings.EXAMPLE_URL, task.payload['hostnames'])
+           return {'greeted': len(task.payload['hostnames'])}
+
+Register it by importing the module in your ``AppConfig.ready()``::
+
+   def ready(self):
+       import example.tasks  # noqa: F401
+
+The ``event`` passed to ``produce()`` is a ``CommitEvent`` with the commit id
+and the raw commit payloads (``created``, ``changed``, ``deleted``) plus the
+materialized objects: ``created_objects`` and ``changed_objects`` after the
+commit, ``unchanged_objects`` (the changed objects before the commit) and
+``deleted_objects`` (the deleted objects before deletion), and the ``user``
+or ``app`` that committed.  This means you don't have to query the change
+history yourself to find out what a deleted object looked like.
+
+Payloads must be self-contained and ``run()`` must be idempotent: tasks are
+retried after failures, and several workers may run at the same time, so a
+task may run after a newer commit touched the same objects.  Derive the
+desired state from the database at run time instead of trusting the payload.
+
+Tasks are processed by the ``run_taskqueue`` management command.  Run at
+least one instance of it as a service on a host which has your application
+installed and configured::
+
+   python -m serveradmin run_taskqueue
+
+It exits cleanly on SIGTERM.  ``--task-type`` restricts a worker to some
+task types, ``--once`` processes what is there and exits.  Tasks of task
+types no installed application registered are left alone and logged.  For
+development or tests you can set ``TASKQUEUE_RUN_INLINE = True`` to run
+tasks right after the commit inside the request.  Further settings:
+``TASKQUEUE_LEASE_SECONDS`` (default 300, after which a task of a crashed
+worker is picked up again), ``TASKQUEUE_RETENTION_DAYS`` (default 30, how
+long finished tasks are kept), ``TASKQUEUE_DEFAULT_MAX_ATTEMPTS`` (5),
+``TASKQUEUE_RETRY_BACKOFF_SECONDS`` (30) and
+``TASKQUEUE_RETRY_BACKOFF_MAX_SECONDS`` (900).
+
+Tasks can be inspected, retried and cancelled in the admin interface.
+Clients query the status of all tasks of a commit with the remote API
+function ``taskqueue.status(commit_id)`` or wait for them with
+``adminapi.taskqueue.wait_for_commit()``, see :doc:`python-api`.
+
+Task types can override ``get_status(task)`` to add or replace keys in the
+status of their tasks, and set ``external = True`` for work that is done by
+external workers which report back on their own instead of the
+``run_taskqueue`` worker.
+
 Handling Permissions
 --------------------
 

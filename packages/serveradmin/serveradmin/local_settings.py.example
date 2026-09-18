@@ -60,3 +60,16 @@ Copyright (c) 2019 InnoGames GmbH
 #     'https://graphite.example.com/grafana'
 #     '/dashboard/db/system-overview'
 # )
+
+# # Task queue: asynchronous work after commits (e.g. DNS pushes) is stored
+# # in the database and processed by "python -m serveradmin run_taskqueue".
+# # Run tasks right after the commit instead, for development without a worker:
+# TASKQUEUE_RUN_INLINE = False
+# # Seconds until the task of a crashed worker is picked up again
+# TASKQUEUE_LEASE_SECONDS = 300
+# # Days to keep finished tasks
+# TASKQUEUE_RETENTION_DAYS = 30
+# # Retries and exponential backoff between attempts
+# TASKQUEUE_DEFAULT_MAX_ATTEMPTS = 5
+# TASKQUEUE_RETRY_BACKOFF_SECONDS = 30
+# TASKQUEUE_RETRY_BACKOFF_MAX_SECONDS = 900

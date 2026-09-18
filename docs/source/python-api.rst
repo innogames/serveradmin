@@ -255,3 +255,29 @@ group object first. See the following example for getting a free IP::
 
     nagios = api.get('nagios')
     nagios.commit('push', 'john.doe', project='techerror')
+
+Waiting for asynchronous work
+-----------------------------
+
+``Query.commit()`` returns as soon as the data is stored.  Follow-up work
+like pushing DNS records to PowerDNS is queued on the server and processed
+by a worker.  ``commit()`` returns the commit id, which you can use to check
+on that work::
+
+   from adminapi import taskqueue
+
+   commit_id = query.commit()
+   status = taskqueue.status(commit_id)
+   print(status['finished'], status['succeeded'], status['tasks'])
+
+   # or block until everything is done
+   taskqueue.wait_for_commit(commit_id, timeout=120)
+
+``status()`` returns a dict with ``finished`` (no task will change anymore),
+``succeeded`` (finished and every task is done), the number of tasks per
+state and a list of ``tasks``, each with its ``task_type``, ``state``,
+``attempts``, timestamps and ``last_error``.  A commit without tasks is
+finished and succeeded.  ``wait_for_commit()`` polls until finished and
+raises ``adminapi.taskqueue.TaskFailed`` if a task failed and
+``TimeoutError`` after ``timeout`` seconds.  The application needs the
+``taskqueue.status`` method in its allowed methods.
