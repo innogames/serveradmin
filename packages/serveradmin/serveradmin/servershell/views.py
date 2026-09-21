@@ -241,6 +241,20 @@ def edit(request):
     return _edit(request, server, True)
 
 
+def _sort_multi_values(values) -> list:
+    """Sort multi attribute values for display
+
+    Multi attribute values are sets and have no stable order. Sort them
+    by their natural order and fall back to the string representation for
+    values that can not be compared with each other, e.g. inet attributes
+    without an address family restriction holding IPv4 and IPv6 values.
+    """
+    try:
+        return sorted(values)
+    except TypeError:
+        return sorted(values, key=str)
+
+
 def _edit(request: HttpRequest, server, edit_mode=False, template='edit'):  # NOQA: C901
     # @TODO work with ServerAttribute models here and use Django forms
     invalid_attrs = set()
@@ -359,6 +373,9 @@ def _edit(request: HttpRequest, server, edit_mode=False, template='edit'):  # NO
             servertype_attribute.related_via_attribute
         ):
             is_related_attribute = True
+
+        if attribute.multi and value is not None:
+            value = _sort_multi_values(value)
 
         fields_set.add(key)
         fields.append({
