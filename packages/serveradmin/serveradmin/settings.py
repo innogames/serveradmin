@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     'serveradmin.apps',
     'serveradmin.common',
     'serveradmin.graphite',
+    'serveradmin.querylog',
     'serveradmin.resources',
     'serveradmin.serverdb',
     'serveradmin.servershell',

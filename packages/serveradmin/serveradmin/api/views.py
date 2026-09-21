@@ -3,6 +3,8 @@
 Copyright (c) 2019 InnoGames GmbH
 """
 
+from time import monotonic
+
 from django.core.exceptions import (
     SuspiciousOperation,
     PermissionDenied,
@@ -14,6 +16,8 @@ from django.template.response import HttpResponse
 from adminapi.filters import BaseFilter, FilterValueError
 from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
 from serveradmin.api.decorators import api_view
+from serveradmin.dataset import Query
+from serveradmin.querylog.utils import log_query
 from serveradmin.serverdb.models import Attribute
 from serveradmin.serverdb.query_committer import commit_query
 from serveradmin.serverdb.query_executer import execute_query
@@ -62,9 +66,28 @@ def dataset_query(request, app, data):
 
     order_by = data.get('order_by')
 
+    start = monotonic()
+    result = execute_query(filters, restrict, order_by)
+    duration_seconds = monotonic() - start
+
+    # Query(...) is instantiated here only for its repr(); it is never
+    # iterated, since that would trigger a second, redundant execution of
+    # the same query.
+    log_query(
+        application=app,
+        user=app.owner,
+        source='api',
+        filters=filters,
+        restrict=restrict,
+        order_by=order_by,
+        duration_seconds=duration_seconds,
+        query_text=repr(Query(filters, restrict, order_by)),
+        num_results=len(result),
+    )
+
     return {
         'status': 'success',
-        'result': execute_query(filters, restrict, order_by),
+        'result': result,
     }
 
 

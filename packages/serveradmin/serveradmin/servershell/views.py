@@ -6,6 +6,7 @@ Copyright (c) 2025 InnoGames GmbH
 import json
 from ipaddress import IPv6Address, IPv4Address, ip_interface
 from itertools import islice, chain
+from time import monotonic
 
 from django.conf import settings as django_settings
 from django.contrib import messages
@@ -36,6 +37,7 @@ from adminapi.filters import Any, ContainedOnlyBy, filter_classes
 from adminapi.parse import parse_query
 from adminapi.request import json_encode_extra
 from serveradmin.dataset import Query
+from serveradmin.querylog.utils import log_query
 from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
@@ -161,7 +163,8 @@ def get_results(request):
         restrict = shown_attributes.copy()
         if 'servertype' not in restrict:
             restrict.append('servertype')
-        main_query = Query(parse_query(term), restrict, order_by)
+        parsed_filters = parse_query(term)
+        main_query = Query(parsed_filters, restrict, order_by)
 
         merged_query = MergedQuery([
             Query({'object_id': Any(*pinned)}, restrict),
@@ -171,12 +174,26 @@ def get_results(request):
         # TODO: Using len is terribly slow for large datasets because it has
         #  to query all objects but we cannot use count which is available on
         #  Django QuerySet
+        start = monotonic()
         num_servers = len(list(merged_query))
+        duration_seconds = monotonic() - start
     except (DatatypeError, ObjectDoesNotExist, ValidationError) as error:
         return HttpResponse(json.dumps({
             'status': 'error',
             'message': str(error)
         }))
+
+    log_query(
+        application=None,
+        user=request.user,
+        source='servershell',
+        filters=parsed_filters,
+        restrict=restrict,
+        order_by=order_by,
+        duration_seconds=duration_seconds,
+        query_text=repr(main_query),
+        num_results=num_servers,
+    )
 
     # Query successful term must be valid here, so we can save it safely now.
     request.session['term'] = term
