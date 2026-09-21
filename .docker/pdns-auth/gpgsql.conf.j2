@@ -1,0 +1,11 @@
+# gpgsql connection settings for the pdns-auth service.
+#
+# Rendered at container start by the image entrypoint (TEMPLATE_FILES=gpgsql)
+# from the container environment into /etc/powerdns/pdns.d/gpgsql.conf, so
+# pdns_server and pdnsutil use the same settings. Values come from .env via
+# docker-compose.yml.
+gpgsql-host={{ GPGSQL_HOST }}
+gpgsql-port={{ GPGSQL_PORT }}
+gpgsql-dbname={{ GPGSQL_DBNAME }}
+gpgsql-user={{ GPGSQL_USER }}
+gpgsql-password={{ GPGSQL_PASSWORD }}

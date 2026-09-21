@@ -40,6 +40,39 @@ host machines and run uv sync to have all modules available for your
 IDEs auto completion etc.
 
 
+Optional: PowerDNS
+^^^^^^^^^^^^^^^^^^
+
+For developing DNS integrations (for example the ``serveradmin_powerdns``
+app) the compose file contains a PowerDNS Authoritative Server with a
+PostgreSQL backend under the compose profile ``powerdns``.  It is not started
+by default.  Enable it permanently in your ``.env``::
+
+    COMPOSE_PROFILES=powerdns
+
+or for a single run::
+
+    docker compose --profile powerdns up
+
+The profile adds two services:
+
+* ``pdns-db-init`` creates the database, role and schema for PowerDNS inside
+  the ``db`` service and exits.  It is idempotent and also works on an
+  existing ``postgres-data`` volume.
+* ``pdns-auth`` runs ``powerdns/pdns-auth-50`` with the gpgsql backend.  The
+  HTTP API listens on http://127.0.0.1:8081 (API key ``0815passwd``, see
+  ``.docker/pdns-auth/pdns.conf``), DNS on ``127.0.0.1:1053``.  Inside the
+  compose network the API is reachable as ``http://pdns-auth:8081``.
+
+The database connection is configured by the ``POSTGRES_POWERDNS_*`` variables
+in ``.env`` (see ``.env.dist``).  Useful commands::
+
+    alias pdns='docker compose exec pdns-auth pdnsutil'
+    pdns list-all-zones
+    curl -H 'X-API-Key: 0815passwd' http://127.0.0.1:8081/api/v1/servers/localhost/zones
+    dig @127.0.0.1 -p 1053 example.com SOA
+
+
 Database Dump
 -------------
 

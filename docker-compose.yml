@@ -11,6 +11,11 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     command: "-c config_file=/etc/postgresql/postgres.conf"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   web:
     build: .docker/web
@@ -24,6 +29,68 @@ services:
       - "127.0.0.1:8000:8000"
     depends_on:
       - db
+
+  # ---------------------------------------------------------------------------
+  # Optional: PowerDNS Authoritative Server for developing DNS integrations
+  # (e.g. the serveradmin_powerdns app). Not started by default; enable with
+  # COMPOSE_PROFILES=powerdns in .env or `docker compose --profile powerdns up`.
+  # See docs/source/extending.rst.
+
+  # Creates the separate PowerDNS database, role and gpgsql schema inside the
+  # db service. Idempotent, runs on every start, works with existing volumes.
+  pdns-db-init:
+    image: "postgres:17"
+    profiles: ["powerdns"]
+    environment:
+      - PGPASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - ".docker/db/pdns-db.sql:/pdns-db.sql:ro"
+    command:
+      - psql
+      - -v
+      - ON_ERROR_STOP=1
+      - -v
+      - pdns_db=${POSTGRES_POWERDNS_DB:-powerdns}
+      - -v
+      - pdns_user=${POSTGRES_POWERDNS_USER:-powerdns}
+      - -v
+      - pdns_password=${POSTGRES_POWERDNS_PASSWORD:-powerdns}
+      - -h
+      - ${POSTGRES_HOST:-db}
+      - -U
+      - ${POSTGRES_USER}
+      - -d
+      - postgres
+      - -f
+      - /pdns-db.sql
+    depends_on:
+      db:
+        condition: service_healthy
+
+  pdns-auth:
+    image: "powerdns/pdns-auth-50:latest"
+    profiles: ["powerdns"]
+    volumes:
+      - ".docker/pdns-auth/pdns.conf:/etc/powerdns/pdns.conf:ro"
+      - ".docker/pdns-auth/gpgsql.conf.j2:/etc/powerdns/templates.d/gpgsql.j2:ro"
+    # The image entrypoint renders templates.d/gpgsql.j2 with these variables
+    # into pdns.d/gpgsql.conf (read by pdns_server and pdnsutil alike).
+    environment:
+      - TEMPLATE_FILES=gpgsql
+      - GPGSQL_HOST=${POSTGRES_POWERDNS_HOST:-db}
+      - GPGSQL_PORT=${POSTGRES_POWERDNS_PORT:-5432}
+      - GPGSQL_DBNAME=${POSTGRES_POWERDNS_DB:-powerdns}
+      - GPGSQL_USER=${POSTGRES_POWERDNS_USER:-powerdns}
+      - GPGSQL_PASSWORD=${POSTGRES_POWERDNS_PASSWORD:-powerdns}
+    ports:
+      - "127.0.0.1:1053:53"
+      - "127.0.0.1:1053:53/udp"
+      - "127.0.0.1:8081:8081" # HTTP API, key in .docker/pdns-auth/pdns.conf
+    depends_on:
+      db:
+        condition: service_healthy
+      pdns-db-init:
+        condition: service_completed_successfully
 
 volumes:
   postgres-data:
