@@ -1,5 +1,15 @@
 # Changelog
 
+## v4.27.0 (2026-09-23)
+
+- Improve performance of query materializer (#470) (81a63732)
+- Improve SQL generator by grouping "exists" statements better (#471) (3c684f79)
+- Rule based logging of Queries based on conditions (#464) (b0ef3557)
+- inspect: order multi attributes (#467) (1f26746d)
+- db: faster ptr() as an inlinable SQL function (#469) (446ff9aa)
+- Disable strict check for higher version (#466) (125c7f99)
+- Update dependencies (#465) (d709031e)
+
 ## v4.26.2 (2026-08-11)
 
 - servershell: speed up result table rendering (#457) (06fd91d8)
