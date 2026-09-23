@@ -788,6 +788,33 @@ class TestIpAddrTypeHostForSupernetQuery(TestIpAddrType):
             (self.rn_ipv4["hostname"], self.rn_ipv6["hostname"]),
         )
 
+    def test_related_attribute_without_servertype_filter(self):
+        # Filtering on an attribute that some servertypes carry directly and
+        # others inherit, without narrowing the servertype, makes the SQL
+        # generator emit one EXISTS per relation path (see
+        # sql_generator._real_condition_sql).  Both paths have to deliver:
+        # the route networks match directly, server_rn through its
+        # AF-unaware supernet.  server_pn sits in no route network.
+        hostnames = {
+            server["hostname"]
+            for server in Query(
+                {
+                    "network_type": filters.Any(
+                        "internal_ipv4", "internal_ipv6"
+                    ),
+                },
+                ["hostname"],
+            )
+        }
+        self.assertEqual(
+            hostnames,
+            {
+                self.rn_ipv4["hostname"],
+                self.rn_ipv6["hostname"],
+                self.server_rn["hostname"],
+            },
+        )
+
     def test_af_aware_supernet(self):
         # Querying for AF-aware supernet attribute will find only objects
         # matching the given address family.
