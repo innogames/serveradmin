@@ -11,6 +11,10 @@ Copyright (c) 2019 InnoGames GmbH
 import logging
 
 from ipaddress import IPv4Address, IPv6Address
+
+from django.db import connection
+from django.db.models import Prefetch
+
 from adminapi.dataset import DatasetObject
 from serveradmin.serverdb.models import (
     Servertype,
@@ -24,6 +28,27 @@ from serveradmin.serverdb.models import (
 logger = logging.getLogger(__package__)
 
 
+def _server_prefetch():
+    """Prefetch "server" without loading the expensive intern_ip column
+
+    prefetch_related() issues its own query, built from Server._base_manager
+    (see ForwardManyToOneDescriptor.get_prefetch_querysets), so a
+    defer("server__intern_ip") on the outer queryset never reaches it - that
+    spelling only takes effect for select_related() traversals.  Passing an
+    explicit queryset is the only way to actually defer the column here.
+
+    It is worth deferring because netfields runs every inet value through
+    ipaddress.ip_interface(), which is pure Python and showed up as roughly a
+    quarter of the profile of a large query - even though intern_ip is not a
+    real attribute and is never part of a restrict clause.
+
+    Only intern_ip is deferred.  servertype_id is a plain varchar with no
+    converter, so deferring it saves nothing while risking a query per object
+    for anything that reads it.
+    """
+    return Prefetch('server', queryset=Server._base_manager.defer('intern_ip'))
+
+
 class QueryMaterializer:
     def __init__(self, servers, joined_attributes, order_by_attributes=[]):
         self._servers = servers
@@ -35,10 +60,14 @@ class QueryMaterializer:
             for servertype in Servertype.objects.all()
         }
 
+        # Keyed by server_id, not by the Server instance.  Model.__hash__()
+        # is a Python-level call that goes through _is_pk_set() and the pk
+        # property, and this map is looked up once per server per attribute -
+        # over a million times on a large query.  Plain ints hash in C.
         self._server_attributes = {}
         servers_by_type = {}
         for server in self._servers:
-            self._server_attributes[server] = {
+            self._server_attributes[server.server_id] = {
                 Attribute.specials["object_id"]: server.server_id,
                 Attribute.specials["hostname"]: server.hostname,
                 Attribute.specials["intern_ip"]: server.intern_ip,
@@ -113,7 +142,7 @@ class QueryMaterializer:
             init = attribute.initializer()
             for servertype_id in servertype_ids:
                 for server in servers_by_type[servertype_id]:
-                    self._server_attributes[server][attribute] = init()
+                    self._server_attributes[server.server_id][attribute] = init()
 
     def _add_attributes(self, servers_by_type):
         """Add the attributes to the results"""
@@ -145,36 +174,72 @@ class QueryMaterializer:
                         value_id__in=self._server_attributes.keys(),
                         attribute_id__in=reversed_attributes.keys(),
                     )
+                    # Unlike the other branches, sa.server is stored as an
+                    # attribute *value* here, so it can escape into the
+                    # results and reach _get_servers_to_join(), which reads
+                    # intern_ip.  Deferring it would cost a query per object,
+                    # so this one deliberately keeps the whole row.
                     .prefetch_related("server")
-                    .defer(
-                        "server__intern_ip",
-                        "server__servertype",
-                    )
                 ):
                     self._add_attribute_value(
-                        sa.value,
+                        sa.value_id,
                         reversed_attributes[sa.attribute_id],
                         sa.server,
                     )
             else:
-                attribute_lookup = {a.attribute_id: a for a in attributes}
-                for sa in (
-                    ServerAttribute.get_model(key)
-                    .objects.filter(
-                        server__in=self._server_attributes.keys(),
-                        attribute__in=attributes,
-                    )
-                    .prefetch_related("server")
-                    .defer(
-                        "server__intern_ip",
-                        "server__servertype",
-                    )
-                ):
-                    self._add_attribute_value(
-                        sa.server,
-                        attribute_lookup[sa.attribute_id],
-                        sa.get_value(),
-                    )
+                self._add_stored_attributes(key, attributes)
+
+    def _add_stored_attributes(self, key, attributes):
+        """Add the values of one attribute type kept in its own value table
+
+        The rows are read as tuples, not model instances.  An instance costs
+        Model.__init__() and the init signals for every row - over a hundred
+        thousand of them on a large query - only to read server_id,
+        attribute_id and value once each.  The conversion get_value() would
+        have applied lives on the models as convert_db_value(), so the
+        tuples end up holding the same values an instance would have given.
+        """
+        attribute_lookup = {a.attribute_id: a for a in attributes}
+        model = ServerAttribute.get_model(key)
+        # ServerRelationAttribute's manager prefetches "value" by default.
+        # That would run against the tuples and fail, and the targets are
+        # fetched in bulk below anyway.
+        rows = model.objects.filter(
+            server_id__in=self._server_attributes.keys(),
+            attribute__in=attributes,
+        ).prefetch_related(None)
+
+        if key == "boolean":
+            # No value column: a row's existence is the value.
+            rows = (
+                (server_id, attribute_id, None)
+                for server_id, attribute_id in rows.values_list(
+                    "server_id", "attribute_id"
+                )
+            )
+        else:
+            rows = rows.values_list("server_id", "attribute_id", "value")
+
+        if key == "relation":
+            # The value column holds a server_id.  Resolve the targets with
+            # one query rather than one per row.  They are stored as
+            # attribute values, so they are fetched whole:
+            # _get_servers_to_join() may read their intern_ip.
+            rows = list(rows)
+            targets = {
+                server.server_id: server
+                for server in Server.objects.filter(
+                    server_id__in={value for _, _, value in rows}
+                )
+            }
+            convert = targets.__getitem__
+        else:
+            convert = model.convert_db_value
+
+        for server_id, attribute_id, value in rows:
+            self._add_attribute_value(
+                server_id, attribute_lookup[attribute_id], convert(value)
+            )
 
     def _add_related_attributes(self, servers_by_type):
         for attribute, sa in self._related_servertype_attributes:
@@ -191,7 +256,7 @@ class QueryMaterializer:
         }
 
         for server in servers:
-            self._server_attributes[server][attribute] = domain_lookup.get(
+            self._server_attributes[server.server_id][attribute] = domain_lookup.get(
                 server.hostname.split(".", 1)[-1]
             )
 
@@ -204,14 +269,16 @@ class QueryMaterializer:
         the host's IP address or prefix fits within the net's IP address or prefix.
         """
 
+        # Only ids are selected.  This join yields one row per (host, net)
+        # pair - tens of thousands of them on a large query - while the
+        # distinct nets they point at number far fewer.  Reading the net rows
+        # through Server.objects.raw() therefore built one model instance per
+        # row, each parsing net.intern_ip through netfields, rather than one
+        # per distinct net.  The two inet_address_family columns this used to
+        # select were never read at all.
         q = f"""
             SELECT
-                net.server_id,
-                net.hostname,
-                net.intern_ip,
-                net.servertype_id,
-                net_attr.inet_address_family,
-                host_attr.inet_address_family,
+                net.server_id AS net_server_id,
                 host.server_id AS host_server_id,
                 host_attr.attribute_id AS host_attr_name
             FROM server AS host
@@ -233,9 +300,8 @@ class QueryMaterializer:
 
         servers_by_id = {s.server_id: s for s in servers_in}
 
-        supernets = Server.objects.raw(
-            q,
-            {
+        with connection.cursor() as cursor:
+            cursor.execute(q, {
                 "target_servertypes": list(
                     attribute.target_servertype.values_list(
                         'servertype_id', flat=True
@@ -243,25 +309,40 @@ class QueryMaterializer:
                 ),
                 "address_family": attribute.inet_address_family,
                 "hosts": list(servers_by_id.keys()),
-            },
-            translations={
-                "net.server_id": "server_id",
-                "net.hostname": "hostname",
-                "net.intern_ip": "intern_ip",
-                "net.servertype_id": "servertype_id",
-            },
-        )
-        for cur_supernet in supernets:
-            cur_server = servers_by_id[cur_supernet.host_server_id]
-            prev_supernet = self._server_attributes.get(cur_server, {}).get(attribute)
+            })
+            rows = cursor.fetchall()
+
+        # The nets are fetched whole, intern_ip included: they are stored as
+        # attribute values and can reach a nested QueryMaterializer through
+        # _get_servers_to_join(), which reads it.
+        supernets = {
+            net.server_id: net
+            for net in Server.objects.filter(
+                server_id__in={r[0] for r in rows}
+            )
+        }
+
+        # Which host attribute produced the supernet currently stored for a
+        # host.  This used to be read back off the supernet object itself,
+        # which is no longer possible now that one net object is shared by
+        # every host sitting in it.
+        via_attribute_ids = {}
+        for net_server_id, host_server_id, host_attr_name in rows:
+            cur_supernet = supernets[net_server_id]
+            prev_supernet = (
+                self._server_attributes.get(host_server_id, {}).get(attribute)
+            )
             if prev_supernet and prev_supernet != cur_supernet:
                 # TODO: Raise an exception once all data is cleaned up and conflicting
                 # AF-unaware attributes are removed.
                 logger.warning(
-                    f"Conflicting supernet {attribute} for {cur_server.hostname}: "
-                    f"{prev_supernet.host_attr_name}->{prev_supernet} vs {cur_supernet.host_attr_name}->{cur_supernet}"
+                    f"Conflicting supernet {attribute} for "
+                    f"{servers_by_id[host_server_id].hostname}: "
+                    f"{via_attribute_ids.get(host_server_id)}->{prev_supernet} vs "
+                    f"{host_attr_name}->{cur_supernet}"
                 )
-            self._server_attributes[cur_server][attribute] = cur_supernet
+            self._server_attributes[host_server_id][attribute] = cur_supernet
+            via_attribute_ids[host_server_id] = host_attr_name
 
     def _add_related_attribute(self, attribute, servertype_attribute, servers_by_type):
         related_via_attribute = servertype_attribute.related_via_attribute
@@ -269,7 +350,7 @@ class QueryMaterializer:
         # First, index the related servers for fast access later
         servers_by_related = {}
         for target in servers_by_type[servertype_attribute.servertype_id]:
-            attributes = self._server_attributes[target]
+            attributes = self._server_attributes[target.server_id]
             if related_via_attribute in attributes:
                 if related_via_attribute.multi:
                     for source in attributes[related_via_attribute]:
@@ -285,26 +366,24 @@ class QueryMaterializer:
                 server__hostname__in=servers_by_related.keys(),
                 attribute=attribute,
             )
-            .prefetch_related("server")
-            .defer(
-                "server__intern_ip",
-                "server__servertype",
-            )
+            .prefetch_related(_server_prefetch())
         ):
             for target in servers_by_related[sa.server]:
-                self._add_attribute_value(target, attribute, sa.get_value())
+                self._add_attribute_value(
+                    target.server_id, attribute, sa.get_value()
+                )
 
-    def _add_attribute_value(self, server, attribute, value):
+    def _add_attribute_value(self, server_id, attribute, value):
         if attribute.multi:
             try:
-                self._server_attributes[server][attribute].add(value)
+                self._server_attributes[server_id][attribute].add(value)
             except KeyError:
                 # If the attribute is removed from the servertype but
                 # left on the servers, this error would occur.  It is not
                 # really expected, but we don't want to crash either.
                 pass
         else:
-            self._server_attributes[server][attribute] = value
+            self._server_attributes[server_id][attribute] = value
 
     def _get_order_by_attribute(self, server, attribute):
         """Return a tuple to sort items by the key
@@ -315,9 +394,10 @@ class QueryMaterializer:
         mind that some datatypes are not sortable with each other, some
         not even with None, so we have to so something in here.
         """
-        if attribute not in self._server_attributes[server]:
+        server_attributes = self._server_attributes[server.server_id]
+        if attribute not in server_attributes:
             return 1, None
-        value = self._server_attributes[server][attribute]
+        value = server_attributes[attribute]
         if value is None:
             return -1, None
         if attribute.multi:
@@ -326,7 +406,7 @@ class QueryMaterializer:
 
     def _get_attributes(self, server, join_results):  # NOQA: C901
         servertype = self._servertype_lookup[server.servertype_id]
-        server_attributes = self._server_attributes[server]
+        server_attributes = self._server_attributes[server.server_id]
         for attribute, value in server_attributes.items():
             if attribute not in self._joined_attributes:
                 continue
