@@ -402,6 +402,49 @@ class Attribute(models.Model):
         super(Attribute, self).clean()
 
 
+class AttributeRedirect(models.Model):
+    """Redirect alias to an existing attribute
+
+    Purpose of this is to allow graceful renaming of attributes.
+
+    One can delete and attribute create a new one and set up a redirect
+    from the old name to the new name.
+    """
+
+    alias = models.CharField(
+        max_length=32,
+        help_text="The 'virtual' attribute name (e.g. old attribute)",
+        primary_key=True,
+    )
+    target = models.ForeignKey(Attribute, on_delete=models.CASCADE)
+
+    def clean(self):
+        super().clean()
+
+        if Attribute.objects.filter(attribute_id=self.alias).exists():
+            raise ValidationError({
+                "alias": "Creating a alias that matches an existing attribute not allowed!"
+            })
+
+    @classmethod
+    def resolve_aliases(cls, *objs):
+        """Resolve alias names in the given objects to real attribute_ids."""
+        mapping = dict(cls.objects.values_list('alias', 'target_id'))
+        return tuple(_apply_aliases(mapping, obj) for obj in objs)
+
+
+def _apply_aliases(mapping, obj):
+    if obj is None:
+        return None
+    if isinstance(obj, str):
+        return mapping.get(obj, obj)
+    if isinstance(obj, list):
+        return [mapping.get(item, item) for item in obj]
+    if isinstance(obj, dict):
+        return {mapping.get(key, key): value for key, value in obj.items()}
+    raise TypeError(f'Unsupported type {type(obj).__name__}')
+
+
 class ServerTableSpecial(object):
     def __init__(self, field, unique=False):
         self.field = field

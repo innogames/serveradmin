@@ -1,6 +1,6 @@
 """Serveradmin - Django Admin Setup
 
-Copyright (c) 2019 InnoGames GmbH
+Copyright (c) 2026 InnoGames GmbH
 """
 
 from django.contrib import admin
@@ -14,9 +14,8 @@ from serveradmin.serverdb.models import (
     Servertype,
     Attribute,
     ServertypeAttribute,
-    Server,
     ServerRelationAttribute,
-    ServerStringAttribute,
+    ServerStringAttribute, AttributeRedirect,
 )
 
 
@@ -106,5 +105,14 @@ class AttributeAdmin(admin.ModelAdmin):
         )
 
 
+class AttributeRedirectAdmin(admin.ModelAdmin):
+    model = AttributeRedirect
+
+    list_display = ['alias', 'target', ]
+    search_fields = ['alias', 'target', ]
+    list_filter = ['alias', 'target', ]
+
+
 admin.site.register(Servertype, ServertypeAdmin)
 admin.site.register(Attribute, AttributeAdmin)
+admin.site.register(AttributeRedirect, AttributeRedirectAdmin)
