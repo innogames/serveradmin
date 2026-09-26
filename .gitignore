@@ -52,3 +52,4 @@ __pycache__/
 # Local docker-compose overlay (e.g. to mount/install a private app bundle)
 /docker-compose.override.yml
 
+/Makefile

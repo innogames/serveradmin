@@ -23,13 +23,12 @@ except ImportError:
 
 
 from adminapi.request import calc_app_id
-from serveradmin.common.utils import random_alnum_string
 
 
 class Application(models.Model):
     name = models.CharField(max_length=80, unique=True)
-    app_id = models.CharField(max_length=64, unique=True, editable=False)
-    auth_token = models.CharField(max_length=64, unique=True, editable=False)
+    app_id = models.CharField(max_length=64, unique=True, editable=False, null=True, default=None)
+    auth_token = models.CharField(max_length=64, unique=True, editable=False, null=True, default=None)
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     location = models.CharField(max_length=150)
     disabled = models.BooleanField(default=False)
@@ -43,9 +42,7 @@ class Application(models.Model):
 
 @receiver(pre_save, sender=Application)
 def set_auth_token(sender, instance, **kwargs):
-    if not instance.auth_token:
-        instance.auth_token = random_alnum_string(24)
-    instance.app_id = calc_app_id(instance.auth_token)
+    instance.app_id = calc_app_id(instance.auth_token) if instance.auth_token else None
 
 
 @receiver(post_save, sender=User)
