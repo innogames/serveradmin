@@ -108,9 +108,9 @@ class AttributeAdmin(admin.ModelAdmin):
 class AttributeRedirectAdmin(admin.ModelAdmin):
     model = AttributeRedirect
 
-    list_display = ['alias', 'target', ]
-    search_fields = ['alias', 'target', ]
-    list_filter = ['alias', 'target', ]
+    list_display = ['alias', 'target__attribute_id', ]
+    search_fields = ['alias', 'target__attribute_id', ]
+    list_filter = ['alias', 'target__attribute_id', ]
 
 
 admin.site.register(Servertype, ServertypeAdmin)
