@@ -67,7 +67,14 @@ HOSTNAME_VALIDATORS = [
     RegexValidator(r"\A(\*\.)?([a-z0-9_]+(\.|-+))*[a-z0-9]+\Z", "Invalid hostname"),
 ]
 
+def validate_regex_syntax(regex):
+    try:
+        re.compile(regex)
+    except re.error as e:
+        raise ValidationError('%(regex)s is not a valid regular expression' % {'regex': regex}) from e
+
 REGEX_VALIDATORS = [
+    validate_regex_syntax,
     RegexValidator(
         r"\A\\A.*\\Z\Z",
         'You must wrap your pattern in "\\A" and "\\Z" to force line matching',
