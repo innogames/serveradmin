@@ -434,14 +434,35 @@ class AttributeRedirect(models.Model):
 
 
 def _apply_aliases(mapping, obj):
+    """Recursively replace alias attribute names in a query argument
+
+    Supported shapes are the ones passed to a query:
+
+    * ``filters``: ``{attribute_id: filter}``, only keys are attribute names,
+      the filter objects are left untouched.
+    * ``restrict``: ``[attribute_id, {attribute_id: [restrict, ...]}, ...]``,
+      where a dictionary item is a join into a related object whose value is
+      again a restrict clause.
+    * ``order_by``: ``[attribute_id, ...]``
+    """
     if obj is None:
         return None
     if isinstance(obj, str):
         return mapping.get(obj, obj)
     if isinstance(obj, list):
-        return [mapping.get(item, item) for item in obj]
+        return [
+            _apply_aliases(mapping, item)
+            if isinstance(item, (str, list, dict)) else item
+            for item in obj
+        ]
     if isinstance(obj, dict):
-        return {mapping.get(key, key): value for key, value in obj.items()}
+        # Only keys are attribute names.  A value is either a nested restrict
+        # clause of a join (list) or a filter value, which must stay as is.
+        return {
+            mapping.get(key, key): _apply_aliases(mapping, value)
+            if isinstance(value, (list, dict)) else value
+            for key, value in obj.items()
+        }
     raise TypeError(f'Unsupported type {type(obj).__name__}')
 
 
