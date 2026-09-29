@@ -68,10 +68,13 @@ def dataset_query(request, app, data):
 
     start = monotonic()
 
-    # Resolve alias attributes to real attributes
+    # Resolve alias attributes to real attributes.  The requested restrict
+    # is kept to rename the attributes in the results back to the aliases.
+    requested_restrict = restrict
     filters, restrict, order_by = AttributeRedirect.resolve_aliases(filters, restrict, order_by)
 
     result = execute_query(filters, restrict, order_by)
+    result = AttributeRedirect.restore_aliases(requested_restrict, result)
     duration_seconds = monotonic() - start
 
     # Query(...) is instantiated here only for its repr(); it is never
