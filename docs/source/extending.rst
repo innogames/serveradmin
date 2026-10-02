@@ -40,6 +40,21 @@ host machines and run uv sync to have all modules available for your
 IDEs auto completion etc.
 
 
+Loading additional apps (overlays)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Apps from other repositories, e.g. ``serveradmin_extras``, can ship a
+``docker-compose.override.yml`` (git-ignored here) that ``docker compose``
+merges automatically.  Symlink it into your checkout::
+
+    ln -s serveradmin_extras/docker-compose.override.yml .
+    docker compose up
+
+Relative paths in the overlay resolve against this directory.  The ``web``
+entrypoint installs ``$SERVERADMIN_EXTRA_INSTALL`` editable after the core
+``uv sync``, optionally from the package index ``$SERVERADMIN_EXTRA_INDEX``.
+
+
 Database Dump
 -------------
 
