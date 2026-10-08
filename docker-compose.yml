@@ -11,6 +11,9 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     command: "-c config_file=/etc/postgresql/postgres.conf"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
 
   web:
     build: .docker/web
@@ -22,8 +25,13 @@ services:
       - "/code/.venv"
     ports:
       - "127.0.0.1:8000:8000"
+    healthcheck:
+      # -f without -L: the login redirect on / counts as healthy
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8000/"]
+      interval: 10s
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 volumes:
   postgres-data:
