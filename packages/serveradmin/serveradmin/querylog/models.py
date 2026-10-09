@@ -69,11 +69,11 @@ class QueryLoggingRule(models.Model):
     """
 
     application = models.ForeignKey(
-        Application, null=True, blank=True, on_delete=models.SET_NULL,
+        Application, null=True, blank=True, on_delete=models.CASCADE,
         related_name='query_logging_rules',
     )
     user = models.ForeignKey(
-        User, null=True, blank=True, on_delete=models.SET_NULL,
+        User, null=True, blank=True, on_delete=models.CASCADE,
         related_name='query_logging_rules',
     )
     is_active = models.BooleanField(
@@ -230,15 +230,15 @@ class QueryLog(models.Model):
         SERVERSHELL = 'servershell', 'Servershell'
 
     rule = models.ForeignKey(
-        QueryLoggingRule, null=True, on_delete=models.SET_NULL,
+        QueryLoggingRule, null=True, on_delete=models.CASCADE,
         related_name='logs',
     )
     application = models.ForeignKey(
-        Application, null=True, on_delete=models.SET_NULL,
+        Application, null=True, on_delete=models.CASCADE,
         related_name='query_logs',
     )
     user = models.ForeignKey(
-        User, null=True, on_delete=models.SET_NULL,
+        User, null=True, on_delete=models.CASCADE,
         related_name='query_logs',
     )
     source = models.CharField(max_length=16, choices=Source.choices)
