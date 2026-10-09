@@ -11,6 +11,9 @@
     <div class="row">
         <div class="col-md-12">
             <h3>History for {{ name }}</h3>
+            {% if hostnames|length > 1 %}
+                <p>{{ hostnames|join:", " }}</p>
+            {% endif %}
         </div>
     </div>
     <div class="row">
@@ -22,7 +25,7 @@
             <div>
                 <ul class="attributes">
                     {% for attribute in no_history_attributes %}
-                        <li>{{ attribute.attribute_id }}</li>
+                        <li>{{ attribute }}</li>
                     {% endfor %}
                 </ul>
             </div>
@@ -34,7 +37,9 @@
                 </div>
             </div>
             <div class="form-group row input-controls buttons">
-                <input type="hidden" id="object_id" name="object_id" value="{{ object_id }}"/>
+                {% for object_id in object_ids %}
+                    <input type="hidden" name="object_id" value="{{ object_id }}"/>
+                {% endfor %}
                 <button class="btn btn-success" type="submit">Filter</button>
             </div>
         </div>
@@ -46,6 +51,7 @@
                 <thead>
                     <tr>
                         <th>Commit</th>
+                        <th>Hostname</th>
                         <th>Date</th>
                         <th>Time Since</th>
                         <th>App</th>
@@ -62,6 +68,7 @@
                                 {% if not attribute_filter or attribute_filter == key %}
                                 <tr>
                                     <td><a href="{% url 'serverdb_changes' %}?commit_id={{ change.commit.id }}">{{ change.commit.id }}</a></td>
+                                    <td><a href="{% url 'servershell_inspect' %}?object_id={{ change.object_id }}">{{ change.hostname|default:change.object_id }}</a></td>
                                     <td>{{ change.commit.change_on|date:"r" }}</td>
                                     <td>{{ change.commit.change_on|timesince }}</td>
                                     <td>{{ change.commit.app|default:"Servershell" }}</td>
@@ -88,6 +95,7 @@
                                     {% if not attribute_filter or attribute_filter == key %}
                                         <tr>
                                             <td><a href="{% url 'serverdb_changes' %}?commit_id={{ change.commit.id }}">{{ change.commit.id }}</a></td>
+                                            <td><a href="{% url 'servershell_inspect' %}?object_id={{ change.object_id }}">{{ change.hostname|default:change.object_id }}</a></td>
                                             <td>{{ change.commit.change_on|date:"r" }}</td>
                                             <td>{{ change.commit.change_on|timesince }}</td>
                                             <td>{{ change.commit.app|default:"Servershell" }}</td>
@@ -127,14 +135,15 @@
                         {% elif change.change_type == 'delete' %}
                             <tr class="">
                                 <td><a href="{% url 'serverdb_changes' %}?commit_id={{ change.commit.id }}">{{ change.commit.id }}</a></td>
+                                <td>{{ change.hostname|default:change.object_id }}</td>
                                 <td>{{ change.commit.change_on|date:"r" }}</td>
-                                <td>{{ change.channge_commit.change_on|timesince }}</td>
+                                <td>{{ change.commit.change_on|timesince }}</td>
                                 <td>{{ change.commit.app|default:"Servershell" }}</td>
                                 <td>{{ change.commit.user }}</td>
                                 <td>
                                     <form method="post" action="{% url 'serverdb_recreate' change.commit.id %}">
                                         {% csrf_token %}
-                                        <input type="hidden" name="object_id" value="{{ change.server_id }}" />
+                                        <input type="hidden" name="object_id" value="{{ change.object_id }}" />
                                         <input class="btn btn-sm btn-danger" type="submit" value="Re-create this server" />
                                     </form>
                                 </td>
@@ -146,7 +155,7 @@
                 </tbody>
             </table>
             {% if commit_id %}
-                <a href="{% url 'serverdb_history' %}?object_id={{ object_id }}">Show complete history</a>
+                <a href="{% url 'serverdb_history' %}?{{ object_ids_query }}">Show complete history</a>
             {% endif %}
         </div>
     </div>

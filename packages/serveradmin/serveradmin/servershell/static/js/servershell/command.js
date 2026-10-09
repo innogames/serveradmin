@@ -427,7 +427,7 @@ servershell.commands = {
         let url;
         let selection = servershell.get_selected();
         if (selection.length > 0) {
-            url = servershell.urls.changes + `?object_id=${selection[0]}`;
+            url = servershell.urls.changes + `?object_id=${selection.join(',')}`;
         }
         else {
             url = servershell.urls.changes;
@@ -653,12 +653,12 @@ servershell.commands = {
         }
     },
     history: function(attribute_id) {
-        if (!validate_selected(1, 1)) {
+        if (!validate_selected(1, 100)) {
             return;
         }
 
-        let object_id = servershell.get_selected()[0];
-        let url = servershell.urls.history + `?object_id=${object_id}`;
+        let selection = servershell.get_selected();
+        let url = servershell.urls.history + '?' + selection.map(o => `object_id=${o}`).join('&');
 
         if (attribute_id) {
             url += `&attribute_filter=${attribute_id}`;
@@ -666,7 +666,7 @@ servershell.commands = {
 
         window.open(url, '_blank');
 
-        servershell.alert(`History for ${object_id} opened in a new tab`, 'success');
+        servershell.alert(`History for ${selection.length} object(s) opened in a new tab`, 'success');
     },
     commit: function() {
         spinner.enable('commit');
