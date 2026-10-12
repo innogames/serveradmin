@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}History for {{ name }}{% endblock %}
+{% block title %}History for {% if hostnames|length == 1 %}{{ hostnames.0 }}{% else %}{{ hostnames|length }} objects{% endif %}{% endblock %}
 
 {% block additional_styles %}
     <link rel="stylesheet" href="{{ STATIC_URL }}css/history.css"/>
@@ -10,7 +10,7 @@
 <form id="changes-form" method="get" action="{% url 'serverdb_history' %}">
     <div class="row">
         <div class="col-md-12">
-            <h3>History for {{ name }}</h3>
+            <h3>History for {% if hostnames|length == 1 %}{{ hostnames.0 }}{% else %}{{ hostnames|length }} objects{% endif %}</h3>
             {% if hostnames|length > 1 %}
                 <p>{{ hostnames|join:", " }}</p>
             {% endif %}

@@ -100,7 +100,9 @@ class HistoryViewTest(TransactionTestCase):
         response = self.client.get(self._url(*self.object_ids))
 
         self.assertEqual(200, response.status_code)
-        self.assertEqual('2 objects', response.context['name'])
+        self.assertEqual(
+            ['test-serverdb-history-1', 'test-serverdb-history-2'],
+            response.context['hostnames'])
         changes = list(response.context['changes'])
         self.assertEqual(
             set(self.object_ids), {c.object_id for c in changes})
@@ -112,7 +114,8 @@ class HistoryViewTest(TransactionTestCase):
         response = self.client.get(self._url(self.object_ids[0]))
 
         self.assertEqual(200, response.status_code)
-        self.assertEqual('test-serverdb-history-1', response.context['name'])
+        self.assertEqual(
+            ['test-serverdb-history-1'], response.context['hostnames'])
         self.assertEqual(
             {self.object_ids[0]},
             {c.object_id for c in response.context['changes']})
@@ -147,13 +150,21 @@ class HistoryViewTest(TransactionTestCase):
         response = self.client.get('/serverdb/history')
         self.assertEqual(400, response.status_code)
 
+    def test_invalid_object_id(self):
+        response = self.client.get(self._url('foo'))
+        self.assertEqual(400, response.status_code)
+
     def test_changes_multiple_objects(self):
-        object_ids = ','.join(str(i) for i in self.object_ids)
-        response = self.client.get(
-            f'/serverdb/changes?object_id={object_ids}')
+        object_ids = '&'.join(f'object_id={i}' for i in self.object_ids)
+        response = self.client.get(f'/serverdb/changes?{object_ids}')
 
         self.assertEqual(200, response.status_code)
         commit_ids = [c.id for c in response.context['commits']]
         # Two creates and one shared update commit, without duplicates
         self.assertEqual(3, len(commit_ids))
         self.assertEqual(len(commit_ids), len(set(commit_ids)))
+
+    def test_changes_empty_object_id(self):
+        # The filter form submits an empty object_id if none is given
+        response = self.client.get('/serverdb/changes?object_id=')
+        self.assertEqual(200, response.status_code)

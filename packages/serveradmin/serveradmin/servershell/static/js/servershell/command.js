@@ -427,7 +427,7 @@ servershell.commands = {
         let url;
         let selection = servershell.get_selected();
         if (selection.length > 0) {
-            url = servershell.urls.changes + `?object_id=${selection.join(',')}`;
+            url = servershell.urls.changes + '?' + selection.map(o => `object_id=${o}`).join('&');
         }
         else {
             url = servershell.urls.changes;
