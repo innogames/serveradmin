@@ -41,7 +41,14 @@ class Application(models.Model):
 
 
 @receiver(pre_save, sender=Application)
-def set_auth_token(sender, instance, **kwargs):
+def set_app_id(sender, instance, **kwargs):
+    """Derive app_id from auth_token
+
+    The auth token is optional. Normalise an empty string to NULL so that
+    "no token" has exactly one representation and the unique constraint is
+    not hit by a second token-less application.
+    """
+    instance.auth_token = instance.auth_token or None
     instance.app_id = calc_app_id(instance.auth_token) if instance.auth_token else None
 
 
