@@ -21,8 +21,11 @@ password:
 * Possibility to revoke an authentication token without changing every script
 
 The API allows authentication of an application either via public-key
-cryptography (ssh-keys) or pre shared keys (passwords). Using the new
-public-key style authentication has even more benefits:
+cryptography (ssh-keys) or pre shared keys (passwords). A freshly created
+application has neither: add a public key to it, or select it in the admin
+list and run the action "Generate auth token for applications without one"
+to get a pre shared key. Using the new public-key style authentication has
+even more benefits:
 
 * An application can have multiple public keys, making it easier to change them
 * Adminapi can sign requests via keys in your local or forwarded ssh-agent
