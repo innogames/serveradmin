@@ -1,5 +1,15 @@
 # Changelog
 
+## v4.28.0 (2026-10-12)
+
+- feat(apps): Make auth_token optional to promote public keys (#474) (a76fe556)
+- feat(serverdb): Allow to redirect attributes via alias (#472) (87eb9cf6)
+- Delete cascade QueryLog models (#477) (d0f93089)
+- Bump werkzeug from 3.1.8 to 3.1.9 (#476) (fa3026a7)
+- docker: add healthchecks, document compose overlays (#468) (c51c8170)
+- Bump urllib3 from 2.7.0 to 2.8.0 (#475) (a13b50de)
+- fix(serverdb): Ensure regular expression syntax is correct (#473) (6d423d65)
+
 ## v4.27.0 (2026-09-23)
 
 - Improve performance of query materializer (#470) (81a63732)
