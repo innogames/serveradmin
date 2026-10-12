@@ -18,7 +18,7 @@ from serveradmin.api import ApiError, AVAILABLE_API_FUNCTIONS
 from serveradmin.api.decorators import api_view
 from serveradmin.dataset import Query
 from serveradmin.querylog.utils import log_query
-from serveradmin.serverdb.models import Attribute
+from serveradmin.serverdb.models import Attribute, AttributeRedirect
 from serveradmin.serverdb.query_committer import commit_query
 from serveradmin.serverdb.query_executer import execute_query
 from serveradmin.serverdb.query_materializer import (
@@ -67,7 +67,14 @@ def dataset_query(request, app, data):
     order_by = data.get('order_by')
 
     start = monotonic()
+
+    # Resolve alias attributes to real attributes.  The requested restrict
+    # is kept to rename the attributes in the results back to the aliases.
+    requested_restrict = restrict
+    filters, restrict, order_by = AttributeRedirect.resolve_aliases(filters, restrict, order_by)
+
     result = execute_query(filters, restrict, order_by)
+    result = AttributeRedirect.restore_aliases(requested_restrict, result)
     duration_seconds = monotonic() - start
 
     # Query(...) is instantiated here only for its repr(); it is never

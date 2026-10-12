@@ -409,6 +409,141 @@ class Attribute(models.Model):
         super(Attribute, self).clean()
 
 
+class AttributeRedirect(models.Model):
+    """Redirect alias to an existing attribute
+
+    Purpose of this is to allow graceful renaming of attributes.
+
+    One can delete and attribute create a new one and set up a redirect
+    from the old name to the new name.
+    """
+
+    alias = models.CharField(
+        max_length=32,
+        help_text="The 'virtual' attribute name (e.g. old attribute)",
+        primary_key=True,
+    )
+    target = models.ForeignKey(Attribute, on_delete=models.CASCADE)
+
+    def clean(self):
+        super().clean()
+
+        if Attribute.objects.filter(attribute_id=self.alias).exists():
+            raise ValidationError({
+                "alias": "Creating a alias that matches an existing attribute not allowed!"
+            })
+
+    @classmethod
+    def get_mapping(cls):
+        """Return a dictionary mapping alias names to real attribute_ids"""
+        return dict(cls.objects.values_list('alias', 'target_id'))
+
+    @classmethod
+    def resolve_aliases(cls, *objs):
+        """Resolve alias names in the given objects to real attribute_ids."""
+        mapping = cls.get_mapping()
+        return tuple(_apply_aliases(mapping, obj) for obj in objs)
+
+    @classmethod
+    def restore_aliases(cls, restrict, results):
+        """Rename attributes in query results back to the requested aliases
+
+        ``restrict`` must be the clause as the client sent it, before the
+        aliases were resolved.  ``results`` are modified in place and
+        returned for convenience.
+        """
+        if restrict is None:
+            return results
+
+        mapping = cls.get_mapping()
+        if mapping:
+            _restore_aliases(mapping, restrict, results)
+
+        return results
+
+
+def _apply_aliases(mapping, obj):
+    """Recursively replace alias attribute names in a query argument
+
+    Supported shapes are the ones passed to a query:
+
+    * ``filters``: ``{attribute_id: filter}``, only keys are attribute names,
+      the filter objects are left untouched.
+    * ``restrict``: ``[attribute_id, {attribute_id: [restrict, ...]}, ...]``,
+      where a dictionary item is a join into a related object whose value is
+      again a restrict clause.
+    * ``order_by``: ``[attribute_id, ...]``
+    """
+    if obj is None:
+        return None
+    if isinstance(obj, str):
+        return mapping.get(obj, obj)
+    if isinstance(obj, list):
+        return [
+            _apply_aliases(mapping, item)
+            if isinstance(item, (str, list, dict)) else item
+            for item in obj
+        ]
+    if isinstance(obj, dict):
+        # Only keys are attribute names.  A value is either a nested restrict
+        # clause of a join (list) or a filter value, which must stay as is.
+        return {
+            mapping.get(key, key): _apply_aliases(mapping, value)
+            if isinstance(value, (list, dict)) else value
+            for key, value in obj.items()
+        }
+    raise TypeError(f'Unsupported type {type(obj).__name__}')
+
+
+def _restore_aliases(mapping, restrict, results):
+    """Rename real attribute_ids in results back to the names in restrict
+
+    The query is executed with the resolved attribute_ids, so the results
+    are keyed by the real names.  The client however expects the names it
+    asked for.  Joins are followed recursively.  If both the alias and the
+    real attribute are requested, the value ends up under both names.
+
+    The results are dictionaries, usually DatasetObjects.  Their base dict
+    methods are used on purpose, so the objects are not marked as changed.
+    """
+    # real attribute_id -> [(requested name, sub restrict or None), ...]
+    requested = {}
+    for item in restrict:
+        if isinstance(item, dict):
+            for name, sub_restrict in item.items():
+                real_id = mapping.get(name, name)
+                requested.setdefault(real_id, []).append((name, sub_restrict))
+        else:
+            real_id = mapping.get(item, item)
+            requested.setdefault(real_id, []).append((item, None))
+
+    # Nothing to do for attributes requested by their real name without join
+    requested = {
+        real_id: names for real_id, names in requested.items()
+        if any(name != real_id or sub is not None for name, sub in names)
+    }
+    if not requested:
+        return
+
+    for obj in results:
+        for real_id, names in requested.items():
+            if real_id not in obj:
+                continue
+
+            if any(name == real_id for name, _ in names):
+                value = dict.__getitem__(obj, real_id)
+            else:
+                value = dict.pop(obj, real_id)
+
+            for name, sub_restrict in names:
+                if sub_restrict is not None and value is not None:
+                    if isinstance(value, (set, frozenset, list, tuple)):
+                        _restore_aliases(mapping, sub_restrict, value)
+                    else:
+                        _restore_aliases(mapping, sub_restrict, [value])
+                dict.__setitem__(obj, name, value)
+
+
 class ServerTableSpecial(object):
     def __init__(self, field, unique=False):
         self.field = field
