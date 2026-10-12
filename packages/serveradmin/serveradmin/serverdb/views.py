@@ -27,21 +27,6 @@ from serveradmin.serverdb.models import (
 from serveradmin.serverdb.query_committer import CommitError, commit_query
 
 
-def _parse_object_ids(values: list[str]) -> list[int]:
-    """Parse object ids from (possibly comma separated) request values
-
-    Invalid entries are silently ignored.
-    """
-    object_ids = []
-    for value in values:
-        for object_id in value.split(','):
-            object_id = object_id.strip()
-            if object_id.isdigit() and int(object_id) not in object_ids:
-                object_ids.append(int(object_id))
-
-    return object_ids
-
-
 def _annotate_hostname(changes: QuerySet) -> QuerySet:
     """Annotate changes with the hostname of their object
 
@@ -95,8 +80,10 @@ def changes(request):
             'change_json__object_id', flat=True))
         commits = commits.filter(change__object_id__in=object_ids)
 
-    f_object_ids = _parse_object_ids(request.GET.getlist('object_id'))
-    f_object_id = ','.join(str(i) for i in f_object_ids)
+    try:
+        f_object_ids = [int(i) for i in request.GET.getlist('object_id') if i]
+    except ValueError:
+        return HttpResponseBadRequest('object_id must be an integer')
     if f_object_ids:
         commits = commits.filter(
             change__object_id__in=f_object_ids).distinct()
@@ -109,7 +96,7 @@ def changes(request):
     f_attribute = request.GET.get('attribute')
     if f_attribute:
         # Only allow attribute filter if another filter is set (not fully index)
-        if f_hostname or f_object_id or f_user_or_app:
+        if f_hostname or f_object_ids or f_user_or_app:
             commits = commits.filter(change__change_json__has_key=f_attribute)
         else:
             f_attribute = None
@@ -135,7 +122,7 @@ def changes(request):
         'from': f_from,
         'until': f_until,
         'hostname': f_hostname,
-        'object_id': f_object_id,
+        'object_ids': f_object_ids,
         'commit_id': f_commit,
         'user_or_app': f_user_or_app,
         'attribute': f_attribute,
@@ -144,7 +131,10 @@ def changes(request):
 
 @login_required
 def history(request):
-    object_ids = _parse_object_ids(request.GET.getlist('object_id'))
+    try:
+        object_ids = [int(i) for i in request.GET.getlist('object_id') if i]
+    except ValueError:
+        return HttpResponseBadRequest('object_id must be an integer')
     hostnames = request.GET.getlist('hostname')
     if not object_ids and not hostnames:
         return HttpResponseBadRequest(
@@ -192,17 +182,11 @@ def history(request):
     ).order_by('attribute_id').values_list(
         'attribute_id', flat=True).distinct()
 
-    if len(servers) == 1:
-        name = servers[0].hostname
-    else:
-        name = f'{len(servers)} objects'
-
     return TemplateResponse(request, 'serverdb/history.html', {
         'changes': page_obj,
         'commit_id': commit_id,
         'object_ids': server_ids,
         'object_ids_query': '&'.join(f'object_id={i}' for i in server_ids),
-        'name': name,
         'hostnames': [s.hostname for s in servers],
         'attribute_filter': attribute_filter,
         'no_history_attributes': no_history_attributes,
