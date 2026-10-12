@@ -51,7 +51,7 @@
                 <thead>
                     <tr>
                         <th>Commit</th>
-                        <th>Hostname</th>
+                        {% if hostnames|length > 1 %}<th>Hostname</th>{% endif %}
                         <th>Date</th>
                         <th>Time Since</th>
                         <th>App</th>
@@ -68,7 +68,7 @@
                                 {% if not attribute_filter or attribute_filter == key %}
                                 <tr>
                                     <td><a href="{% url 'serverdb_changes' %}?commit_id={{ change.commit.id }}">{{ change.commit.id }}</a></td>
-                                    <td><a href="{% url 'servershell_inspect' %}?object_id={{ change.object_id }}">{{ change.hostname|default:change.object_id }}</a></td>
+                                    {% if hostnames|length > 1 %}<td><a href="{% url 'servershell_inspect' %}?object_id={{ change.object_id }}">{{ change.hostname|default:change.object_id }}</a></td>{% endif %}
                                     <td>{{ change.commit.change_on|date:"r" }}</td>
                                     <td>{{ change.commit.change_on|timesince }}</td>
                                     <td>{{ change.commit.app|default:"Servershell" }}</td>
@@ -95,7 +95,7 @@
                                     {% if not attribute_filter or attribute_filter == key %}
                                         <tr>
                                             <td><a href="{% url 'serverdb_changes' %}?commit_id={{ change.commit.id }}">{{ change.commit.id }}</a></td>
-                                            <td><a href="{% url 'servershell_inspect' %}?object_id={{ change.object_id }}">{{ change.hostname|default:change.object_id }}</a></td>
+                                            {% if hostnames|length > 1 %}<td><a href="{% url 'servershell_inspect' %}?object_id={{ change.object_id }}">{{ change.hostname|default:change.object_id }}</a></td>{% endif %}
                                             <td>{{ change.commit.change_on|date:"r" }}</td>
                                             <td>{{ change.commit.change_on|timesince }}</td>
                                             <td>{{ change.commit.app|default:"Servershell" }}</td>
@@ -135,7 +135,7 @@
                         {% elif change.change_type == 'delete' %}
                             <tr class="">
                                 <td><a href="{% url 'serverdb_changes' %}?commit_id={{ change.commit.id }}">{{ change.commit.id }}</a></td>
-                                <td>{{ change.hostname|default:change.object_id }}</td>
+                                {% if hostnames|length > 1 %}<td>{{ change.hostname|default:change.object_id }}</td>{% endif %}
                                 <td>{{ change.commit.change_on|date:"r" }}</td>
                                 <td>{{ change.commit.change_on|timesince }}</td>
                                 <td>{{ change.commit.app|default:"Servershell" }}</td>

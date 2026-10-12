@@ -16,6 +16,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.functional import cached_property
+from django.utils.html import escape
 
 from serveradmin import settings
 from serveradmin.serverdb.models import (
@@ -147,15 +148,13 @@ def history(request):
     missing = [str(i) for i in object_ids
                if i not in {s.server_id for s in servers}]
     missing += [h for h in hostnames if h not in {s.hostname for s in servers}]
+    missing_text = (f'Object(s) {escape(", ".join(missing))} do not or no '
+                    f'longer exist.')
     if not servers:
-        messages.error(
-            request,
-            f'Object(s) {", ".join(missing)} do not or no longer exist.')
+        messages.error(request, missing_text)
         return redirect(reverse('serverdb_changes'))
     if missing:
-        messages.warning(
-            request,
-            f'Object(s) {", ".join(missing)} do not or no longer exist.')
+        messages.warning(request, missing_text)
 
     server_ids = [s.server_id for s in servers]
     obj_history = Change.objects.filter(object_id__in=server_ids)

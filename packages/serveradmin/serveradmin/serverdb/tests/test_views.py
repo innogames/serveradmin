@@ -140,6 +140,14 @@ class HistoryViewTest(TransactionTestCase):
             '999999999',
             ' '.join(str(m) for m in response.context['messages']))
 
+    def test_missing_hostname_is_escaped(self):
+        response = self.client.get(self._url(
+            self.object_ids[0], hostname='<script>alert(1)</script>'))
+
+        self.assertEqual(200, response.status_code)
+        self.assertNotContains(response, '<script>alert(1)</script>')
+        self.assertContains(response, '&lt;script&gt;alert(1)&lt;/script&gt;')
+
     def test_only_missing_objects_redirects(self):
         response = self.client.get(self._url(999999999), follow=True)
 
