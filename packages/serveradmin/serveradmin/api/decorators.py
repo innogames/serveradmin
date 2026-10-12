@@ -178,6 +178,9 @@ def authenticate_app_psk(app_id, security_token, timestamp, body):
     except Application.DoesNotExist as error:
         raise PermissionDenied(error)
 
+    if not app.auth_token:
+        raise PermissionDenied('Application has no auth token')
+
     expected_proof = calc_security_token(app.auth_token, timestamp, body)
     if not constant_time_compare(expected_proof, security_token):
         raise PermissionDenied('Invalid security token')
