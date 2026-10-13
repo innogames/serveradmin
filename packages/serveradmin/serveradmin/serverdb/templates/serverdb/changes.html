@@ -70,7 +70,11 @@
             <div class="form-group row input-controls">
                 <label for="object_id" class="col-sm-1 col-form-label">Object ID:</label>
                 <div class="col-md-4">
-                    <input id="object_id" name="object_id" type="text" value="{% if object_id %}{{ object_id }}{% endif %}" class="form-control form-control-sm" placeholder="466880" />
+                    {% for object_id in object_ids %}
+                        <input {% if forloop.first %}id="object_id" {% endif %}name="object_id" type="text" value="{{ object_id }}" class="form-control form-control-sm" placeholder="466880" />
+                    {% empty %}
+                        <input id="object_id" name="object_id" type="text" value="" class="form-control form-control-sm" placeholder="466880" />
+                    {% endfor %}
                 </div>
             </div>
             <div class="form-group row input-controls">
