@@ -96,7 +96,11 @@ def _get_sql_condition(attribute, filt, related_vias):
 
 
 def _covered_sql_condition(attribute, template, negate, related_vias):
-    if attribute.type in ['relation', 'reverse', 'supernet', 'domain']:
+    # Supernet filters are left out on purpose: _condition_sql() applies the
+    # template straight to the hostname of the "supernet" alias, which is
+    # already a row of the server table.  Going through a sublink would be a
+    # needless self-join of the server table.
+    if attribute.type in ['relation', 'reverse', 'domain']:
         template = (
             '{{0}} IN ('
             '   SELECT server_id'
@@ -232,12 +236,11 @@ def _condition_sql(attribute, template, related_vias):
         return template.format('server.' + attribute.special.field)
 
     if attribute.type == 'supernet':
-        return _supernet_exists_sql(
-            attribute, 'supernet',
-            '>>= server_addr.value',
-            (
-                _target_servertype_sql('supernet', attribute),
-                template.format('supernet.server_id'),
+        # Uncorrelated on purpose, see _inherited_server_ids_sql() for why.
+        # The parentheses keep a "NOT " prefix from the caller unambiguous.
+        return '(server.server_id IN ({0}))'.format(
+            _supernet_server_ids_sql(
+                attribute, (template.format('supernet.hostname'),)
             )
         )
     if attribute.type == 'domain':
@@ -372,31 +375,55 @@ def _inherited_server_ids_sql(
     else:
         assert related_via_attribute.type == 'supernet'
         # The owner of the value is a network containing one of the
-        # server's addresses on the same inet attribute.  Same join graph
-        # as _supernet_exists_sql(), minus the correlation to "server".
-        af_join, af_where = _supernet_af_sql(related_via_attribute)
-        select = 'server_addr.server_id'
-        from_ = '{0} AS sub'.format(sub_table)
-        joins = [
-            'JOIN {0} AS supernet ON (supernet.server_id = sub.server_id)'
-            .format(Server._meta.db_table),
-            'JOIN {0} AS net_addr ON (net_addr.server_id = supernet.server_id)'
-            .format(ServerInetAttribute._meta.db_table),
-            'JOIN {0} AS server_addr ON ('
-            'server_addr.attribute_id = net_addr.attribute_id'
-            ' AND net_addr.value >>= server_addr.value)'
-            .format(ServerInetAttribute._meta.db_table),
-        ] + [
-            f'JOIN {x[0]} AS {x[1]} ON ({" AND ".join(x[2])})' for x in af_join
-        ]
-        conditions.insert(
-            0, _target_servertype_sql('supernet', related_via_attribute)
+        # server's addresses on the same inet attribute.
+        return _supernet_server_ids_sql(
+            related_via_attribute,
+            conditions,
+            ((sub_table, 'sub', ('sub.server_id = supernet.server_id',)),),
         )
-        conditions.extend(af_where)
 
     return 'SELECT {0} FROM {1} {2} WHERE {3}'.format(
         select, from_, ' '.join(joins),
         ' AND '.join(c for c in conditions if c),
+    )
+
+
+def _supernet_server_ids_sql(attribute, conditions, joins=()):
+    """SELECT the ids of servers with an address inside a matching supernet
+
+    "supernet" is the network object of the attribute's target servertype,
+    "net_addr" one of its addresses and "server_addr" an address on the same
+    inet attribute contained in it.  The conditions narrow the supernets;
+    extra joins may hang further tables off the "supernet" alias.
+
+    Nothing in here references the outer "server": the subquery is driven
+    from the matching networks' prefixes through the GiST index on
+    server_inet_attribute.value.  See _inherited_server_ids_sql() for why
+    that matters.  The selected column is a NOT NULL foreign key, so the
+    caller may negate the "IN (...)" test without NULLs leaking in.
+    """
+    af_join, af_where = _supernet_af_sql(attribute)
+
+    joins = (
+        (ServerInetAttribute._meta.db_table, 'net_addr', (
+            'net_addr.server_id = supernet.server_id',
+        )),
+        (ServerInetAttribute._meta.db_table, 'server_addr', (
+            'server_addr.attribute_id = net_addr.attribute_id',
+            'net_addr.value >>= server_addr.value',
+        )),
+    ) + tuple(joins) + af_join
+
+    wheres = (
+        (_target_servertype_sql('supernet', attribute),)
+        + tuple(conditions)
+        + af_where
+    )
+
+    return 'SELECT server_addr.server_id FROM {0} AS supernet {1} WHERE {2}'.format(
+        Server._meta.db_table,
+        ' '.join(f'JOIN {x[0]} AS {x[1]} ON ({" AND ".join(x[2])})' for x in joins),
+        ' AND '.join(c for c in wheres if c),
     )
 
 

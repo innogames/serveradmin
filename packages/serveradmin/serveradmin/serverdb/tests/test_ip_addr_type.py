@@ -16,7 +16,8 @@ from adminapi import filters
 from adminapi.exceptions import DatasetError
 from serveradmin.dataset import Query, DatasetObject
 from serveradmin.serverdb.forms import ServertypeAttributeAdminForm
-from serveradmin.serverdb.models import ServertypeAttribute
+from serveradmin.serverdb.models import Attribute, ServertypeAttribute
+from serveradmin.serverdb.sql_generator import get_server_query
 
 # TODO: Remove "InternIp" classes when intern_ip is gone.
 #
@@ -934,3 +935,111 @@ class TestIpAddrTypeContainment(TestIpAddrType):
         self.assertEqual(len(network_q), 2)
         self.assertEqual(network_q[0]["hostname"], self.network_2["hostname"])
         self.assertEqual(network_q[1]["hostname"], self.server_2["hostname"])
+
+class TestIpAddrTypeSupernetFilter(TestIpAddrType):
+    """Filter on a supernet attribute without narrowing the servertype
+
+    The SQL generator renders such a filter as an uncorrelated subquery that
+    matches the networks by hostname and selects the servers with an address
+    inside them (see sql_generator._supernet_server_ids_sql).  The networks
+    get deterministic hostnames so the regexp of a real-world query can be
+    used as is.  Route networks must not overlap, hence one /24 each.
+    """
+
+    NETWORKS = {
+        "servers1-officeh-int": "10.10.1.0/24",
+        "servers2-officeh-int": "10.10.2.0/24",
+        "servers3-officeb-int": "10.10.3.0/24",
+    }
+    HOSTS = {
+        "host-1": "10.10.1.1",
+        "host-2": "10.10.2.1",
+        "host-3": "10.10.3.1",
+        "host-9": "10.10.9.1",  # In no route network
+    }
+
+    def setUp(self):
+        super().setUp()
+        for hostname, network in self.NETWORKS.items():
+            server = Query().new_object("route_network")
+            server["hostname"] = hostname
+            server["intern_ip"] = network
+            server["ip_config_ipv4"] = network
+            server.commit(user=User.objects.first())
+
+        for hostname, address in self.HOSTS.items():
+            server = Query().new_object("host")
+            server["hostname"] = hostname
+            server["intern_ip"] = address
+            server["ip_config_ipv4"] = address
+            server.commit(user=User.objects.first())
+
+    def _hostnames(self, supernet_filter):
+        return {
+            server["hostname"]
+            for server in Query({"supernet_no_af": supernet_filter}, ["hostname"])
+        }
+
+    def test_regexp(self):
+        self.assertEqual(
+            self._hostnames(filters.Regexp("servers[0-9]+-officeh-int")),
+            {"host-1", "host-2"},
+        )
+
+    def test_not_regexp(self):
+        # The subquery selects a NOT NULL column, so NOT IN keeps set
+        # semantics: the servers inside a matching network drop out, the
+        # others stay in, including the one in no network at all.
+        hostnames = self._hostnames(
+            filters.Not(filters.Regexp("servers[0-9]+-officeh-int"))
+        )
+        self.assertNotIn("host-1", hostnames)
+        self.assertNotIn("host-2", hostnames)
+        self.assertIn("host-3", hostnames)
+        self.assertIn("host-9", hostnames)
+
+    def test_equals(self):
+        self.assertEqual(self._hostnames("servers2-officeh-int"), {"host-2"})
+
+    def test_any(self):
+        # Several plain values get collected into one "IN (...)" on the
+        # supernet hostname, see sql_generator._logical_filter_sql_condition.
+        self.assertEqual(
+            self._hostnames(
+                filters.Any("servers1-officeh-int", "servers3-officeb-int")
+            ),
+            {"host-1", "host-3"},
+        )
+
+    def test_empty(self):
+        hostnames = self._hostnames(filters.Empty())
+        self.assertIn("host-9", hostnames)
+        self.assertNotIn("host-1", hostnames)
+
+    def test_with_servertype_filter(self):
+        # The query from the field: a regexp on the supernet attribute
+        # combined with an explicit servertype restriction.
+        hostnames = {
+            server["hostname"]
+            for server in Query(
+                {
+                    "supernet_no_af": filters.Regexp("officeh-int"),
+                    "servertype": "host",
+                },
+                ["hostname"],
+            )
+        }
+        self.assertEqual(hostnames, {"host-1", "host-2"})
+
+    def test_generated_sql_shape(self):
+        # Guard the shape the tests above rely on: the hostname condition
+        # sits directly on the "supernet" alias instead of going through a
+        # sublink on the server table, and nothing correlates the subquery
+        # to the outer "server".
+        sql = get_server_query(
+            [(Attribute.objects.get(pk="supernet_no_af"), filters.Regexp("x"))],
+            {},
+        )
+        self.assertIn("supernet.hostname::text ~ E'x'", sql)
+        self.assertNotIn("SELECT server_id FROM server", sql)
+        self.assertNotIn("= server.server_id", sql)
