@@ -943,19 +943,19 @@ class TestIpAddrTypeSupernetFilter(TestIpAddrType):
     matches the networks by hostname and selects the servers with an address
     inside them (see sql_generator._supernet_server_ids_sql).  The networks
     get deterministic hostnames so the regexp of a real-world query can be
-    used as is.  Route networks must not overlap, hence one /24 each.
+    used as is.  Route networks must not overlap, hence one /64 each.
     """
 
     NETWORKS = {
-        "servers1-officeh-int": "10.10.1.0/24",
-        "servers2-officeh-int": "10.10.2.0/24",
-        "servers3-officeb-int": "10.10.3.0/24",
+        "servers1-officeh-int": "2001:db8:1::/64",
+        "servers2-officeh-int": "2001:db8:2::/64",
+        "servers3-officeb-int": "2001:db8:3::/64",
     }
     HOSTS = {
-        "host-1": "10.10.1.1",
-        "host-2": "10.10.2.1",
-        "host-3": "10.10.3.1",
-        "host-9": "10.10.9.1",  # In no route network
+        "host-1": "2001:db8:1::1",
+        "host-2": "2001:db8:2::1",
+        "host-3": "2001:db8:3::1",
+        "host-9": "2001:db8:9::1",  # In no route network
     }
 
     def setUp(self):
@@ -964,14 +964,14 @@ class TestIpAddrTypeSupernetFilter(TestIpAddrType):
             server = Query().new_object("route_network")
             server["hostname"] = hostname
             server["intern_ip"] = network
-            server["ip_config_ipv4"] = network
+            server["ip_config_ipv6"] = network
             server.commit(user=User.objects.first())
 
         for hostname, address in self.HOSTS.items():
             server = Query().new_object("host")
             server["hostname"] = hostname
             server["intern_ip"] = address
-            server["ip_config_ipv4"] = address
+            server["ip_config_ipv6"] = address
             server.commit(user=User.objects.first())
 
     def _hostnames(self, supernet_filter):
