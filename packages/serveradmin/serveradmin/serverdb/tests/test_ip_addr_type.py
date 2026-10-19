@@ -8,6 +8,7 @@ from ipaddress import IPv4Network
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.db import connection, transaction
 from django.test import TransactionTestCase
 from faker import Faker
 from faker.providers import internet
@@ -1043,6 +1044,28 @@ class TestIpAddrTypeSupernetFilter(TestIpAddrType):
         self.assertIn("supernet.hostname::text ~ E'x'", sql)
         self.assertNotIn("SELECT server_id FROM server", sql)
         self.assertNotIn("= server.server_id", sql)
+
+    def test_explain_uses_inet_gist_index(self):
+        # The point of the uncorrelated shape: Postgres can drive the
+        # containment join through the GiST index on
+        # server_inet_attribute.value.  On tables as small as the test
+        # fixture the planner prefers a sequential scan over any index, so
+        # rule that out for the EXPLAIN.  This does not prove the planner
+        # picks the index unaided, only that the query lets it, which the
+        # correlated EXISTS of before did not.
+        sql = get_server_query(
+            [(
+                Attribute.objects.get(pk="supernet_no_af"),
+                filters.Regexp("servers[0-9]+-officeh-int"),
+            )],
+            {},
+        )
+        with transaction.atomic(), connection.cursor() as cursor:
+            cursor.execute("SET LOCAL enable_seqscan = off")
+            cursor.execute("EXPLAIN " + sql)
+            plan = "\n".join(row[0] for row in cursor.fetchall())
+
+        self.assertIn("server_inet_attribute_value_idx", plan, plan)
 
 
 class TestIpAddrTypeTwoSupernetFilters(TestIpAddrType):
