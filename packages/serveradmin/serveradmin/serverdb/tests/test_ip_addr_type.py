@@ -1043,3 +1043,86 @@ class TestIpAddrTypeSupernetFilter(TestIpAddrType):
         self.assertIn("supernet.hostname::text ~ E'x'", sql)
         self.assertNotIn("SELECT server_id FROM server", sql)
         self.assertNotIn("= server.server_id", sql)
+
+
+class TestIpAddrTypeTwoSupernetFilters(TestIpAddrType):
+    """Filter on two supernet attributes of different target servertypes
+
+    Each supernet filter becomes its own "server_id IN (SELECT ...)"
+    subquery, so a query on both a provider network and a route network
+    has to intersect the two sets.  The supernet_filter fixture mirrors the
+    layout in the field: provider networks containing route networks
+    containing hosts.  One host sits in a provider network but in no route
+    network.
+    """
+
+    fixtures = TestIpAddrType.fixtures + ["supernet_filter.json"]
+
+    def _hostnames(self, **filters_):
+        # supernet_ipv6 targets provider_network, supernet_no_af targets
+        # route_network, see the ip_addr_type fixture.
+        return {
+            server["hostname"]
+            for server in Query(filters_, ["hostname"])
+        }
+
+    def test_provider_network_only(self):
+        self.assertEqual(
+            self._hostnames(supernet_ipv6="office1"),
+            {"host-net1-office1", "host-net2-office1", "host-office1"},
+        )
+
+    def test_route_network_only(self):
+        self.assertEqual(
+            self._hostnames(supernet_no_af="net1-office1-int"),
+            {"host-net1-office1"},
+        )
+
+    def test_both_matching(self):
+        self.assertEqual(
+            self._hostnames(
+                supernet_ipv6="office1", supernet_no_af="net1-office1-int"
+            ),
+            {"host-net1-office1"},
+        )
+
+    def test_contradicting(self):
+        # The route network lies in the other provider network, so the two
+        # subqueries have no server in common.
+        self.assertEqual(
+            self._hostnames(
+                supernet_ipv6="office2", supernet_no_af="net1-office1-int"
+            ),
+            set(),
+        )
+
+    def test_regexp_on_both(self):
+        self.assertEqual(
+            self._hostnames(
+                supernet_ipv6=filters.Regexp("^office[0-9]$"),
+                supernet_no_af=filters.Regexp("^net1-"),
+            ),
+            {"host-net1-office1", "host-net1-office2"},
+        )
+
+    def test_any_and_not(self):
+        # Narrow to office1 and drop one of its route networks.  The host in
+        # no route network stays, as the negated subquery keeps set
+        # semantics (see TestIpAddrTypeSupernetFilter.test_not_regexp).
+        self.assertEqual(
+            self._hostnames(
+                supernet_ipv6=filters.Any("office1"),
+                supernet_no_af=filters.Not("net1-office1-int"),
+            ),
+            {"host-net2-office1", "host-office1"},
+        )
+
+    def test_with_servertype_filter(self):
+        self.assertEqual(
+            self._hostnames(
+                supernet_ipv6="office2",
+                supernet_no_af="net2-office2-int",
+                servertype="host",
+            ),
+            {"host-net2-office2"},
+        )

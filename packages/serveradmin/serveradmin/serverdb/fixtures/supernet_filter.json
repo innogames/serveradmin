@@ -1,0 +1,200 @@
+[
+    {
+        "model": "serverdb.server",
+        "pk": 1,
+        "fields": {
+            "hostname": "office1",
+            "intern_ip": "2001:db8:1001::/48",
+            "servertype": "provider_network"
+        }
+    },
+    {
+        "model": "serverdb.server",
+        "pk": 2,
+        "fields": {
+            "hostname": "office2",
+            "intern_ip": "2001:db8:1002::/48",
+            "servertype": "provider_network"
+        }
+    },
+    {
+        "model": "serverdb.server",
+        "pk": 3,
+        "fields": {
+            "hostname": "net1-office1-int",
+            "intern_ip": "2001:db8:1001:1001::/64",
+            "servertype": "route_network"
+        }
+    },
+    {
+        "model": "serverdb.server",
+        "pk": 4,
+        "fields": {
+            "hostname": "net2-office1-int",
+            "intern_ip": "2001:db8:1001:1002::/64",
+            "servertype": "route_network"
+        }
+    },
+    {
+        "model": "serverdb.server",
+        "pk": 5,
+        "fields": {
+            "hostname": "net1-office2-int",
+            "intern_ip": "2001:db8:1002:1001::/64",
+            "servertype": "route_network"
+        }
+    },
+    {
+        "model": "serverdb.server",
+        "pk": 6,
+        "fields": {
+            "hostname": "net2-office2-int",
+            "intern_ip": "2001:db8:1002:1002::/64",
+            "servertype": "route_network"
+        }
+    },
+    {
+        "model": "serverdb.server",
+        "pk": 7,
+        "fields": {
+            "hostname": "host-net1-office1",
+            "intern_ip": "2001:db8:1001:1001::1",
+            "servertype": "host"
+        }
+    },
+    {
+        "model": "serverdb.server",
+        "pk": 8,
+        "fields": {
+            "hostname": "host-net2-office1",
+            "intern_ip": "2001:db8:1001:1002::1",
+            "servertype": "host"
+        }
+    },
+    {
+        "model": "serverdb.server",
+        "pk": 9,
+        "fields": {
+            "hostname": "host-net1-office2",
+            "intern_ip": "2001:db8:1002:1001::1",
+            "servertype": "host"
+        }
+    },
+    {
+        "model": "serverdb.server",
+        "pk": 10,
+        "fields": {
+            "hostname": "host-net2-office2",
+            "intern_ip": "2001:db8:1002:1002::1",
+            "servertype": "host"
+        }
+    },
+    {
+        "model": "serverdb.server",
+        "pk": 11,
+        "fields": {
+            "hostname": "host-office1",
+            "intern_ip": "2001:db8:1001:ffff::1",
+            "servertype": "host"
+        }
+    },
+    {
+        "model": "serverdb.serverinetattribute",
+        "pk": 1,
+        "fields": {
+            "server": 1,
+            "attribute": "ip_config_ipv6",
+            "value": "2001:db8:1001::/48"
+        }
+    },
+    {
+        "model": "serverdb.serverinetattribute",
+        "pk": 2,
+        "fields": {
+            "server": 2,
+            "attribute": "ip_config_ipv6",
+            "value": "2001:db8:1002::/48"
+        }
+    },
+    {
+        "model": "serverdb.serverinetattribute",
+        "pk": 3,
+        "fields": {
+            "server": 3,
+            "attribute": "ip_config_ipv6",
+            "value": "2001:db8:1001:1001::/64"
+        }
+    },
+    {
+        "model": "serverdb.serverinetattribute",
+        "pk": 4,
+        "fields": {
+            "server": 4,
+            "attribute": "ip_config_ipv6",
+            "value": "2001:db8:1001:1002::/64"
+        }
+    },
+    {
+        "model": "serverdb.serverinetattribute",
+        "pk": 5,
+        "fields": {
+            "server": 5,
+            "attribute": "ip_config_ipv6",
+            "value": "2001:db8:1002:1001::/64"
+        }
+    },
+    {
+        "model": "serverdb.serverinetattribute",
+        "pk": 6,
+        "fields": {
+            "server": 6,
+            "attribute": "ip_config_ipv6",
+            "value": "2001:db8:1002:1002::/64"
+        }
+    },
+    {
+        "model": "serverdb.serverinetattribute",
+        "pk": 7,
+        "fields": {
+            "server": 7,
+            "attribute": "ip_config_ipv6",
+            "value": "2001:db8:1001:1001::1"
+        }
+    },
+    {
+        "model": "serverdb.serverinetattribute",
+        "pk": 8,
+        "fields": {
+            "server": 8,
+            "attribute": "ip_config_ipv6",
+            "value": "2001:db8:1001:1002::1"
+        }
+    },
+    {
+        "model": "serverdb.serverinetattribute",
+        "pk": 9,
+        "fields": {
+            "server": 9,
+            "attribute": "ip_config_ipv6",
+            "value": "2001:db8:1002:1001::1"
+        }
+    },
+    {
+        "model": "serverdb.serverinetattribute",
+        "pk": 10,
+        "fields": {
+            "server": 10,
+            "attribute": "ip_config_ipv6",
+            "value": "2001:db8:1002:1002::1"
+        }
+    },
+    {
+        "model": "serverdb.serverinetattribute",
+        "pk": 11,
+        "fields": {
+            "server": 11,
+            "attribute": "ip_config_ipv6",
+            "value": "2001:db8:1001:ffff::1"
+        }
+    }
+]
