@@ -1,5 +1,9 @@
 # Changelog
 
+## v4.28.1 (2026-10-19)
+
+- perf(serverdb): render supernet filters as uncorrelated subqueries (#479) (7e678334)
+
 ## v4.28.0 (2026-10-12)
 
 - feat(apps): Make auth_token optional to promote public keys (#474) (a76fe556)
