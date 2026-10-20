@@ -113,6 +113,17 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
         # engine (Web API) which currently does not use forms at all.
         _validate(attribute_lookup, changed, unchanged_objects)
 
+        # Drop attribute changes that would not change anything, for example
+        # "memory: 8192 => 8192".  Clients are expected to filter those but
+        # the API accepts hand-built payloads.  _validate_commit has already
+        # verified that "old" matches the database, so a change whose "old"
+        # equals "new" is a no-op that must neither be written nor logged.
+        changed = _drop_unchanged(changed)
+        changed_servers = {
+            object_id: changed_servers[object_id]
+            for object_id in {c['object_id'] for c in changed}
+        }
+
         # Changes should be applied in order to prevent integrity errors.
         _delete_attributes(attribute_lookup, changed, changed_servers, deleted)
         _delete_servers(changed, deleted, deleted_servers)
@@ -651,6 +662,37 @@ def _validate_commit(changes, servers):
                     newer.append((object_id, attr, None))
 
     return newer
+
+
+def _drop_unchanged(changed):
+    """Remove attribute changes that would not change the stored value
+
+    Returns a new list of change dicts.  Objects that have no real change
+    left are dropped entirely, so nothing is written or logged for them.
+    """
+    result = []
+    for attribute_changes in changed:
+        kept = {'object_id': attribute_changes['object_id']}
+        for attr, change in attribute_changes.items():
+            if attr != 'object_id' and not _is_noop_change(change):
+                kept[attr] = change
+
+        # At least one attribute aside from object_id has changed.
+        if len(kept) > 1:
+            result.append(kept)
+
+    return result
+
+
+def _is_noop_change(change):
+    action = change['action']
+    if action == 'update':
+        old, new = change['old'], change['new']
+        return json_encode_extra(old) == json_encode_extra(new)
+    if action == 'multi':
+        return not change['add'] and not change['remove']
+
+    return False
 
 
 def _build_error_message(violations_attribs, violations_readonly,
