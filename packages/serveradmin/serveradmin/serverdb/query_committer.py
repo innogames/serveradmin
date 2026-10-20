@@ -11,10 +11,11 @@ from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
 
-from adminapi.dataset import DatasetCommit
+from adminapi.dataset import DatasetCommit, strtobool
 from adminapi.request import json_encode_extra
 from serveradmin.apps.models import Application
 from serveradmin.serverdb.models import (
+    ATTRIBUTE_TYPES,
     Servertype,
     Attribute,
     Server,
@@ -112,6 +113,11 @@ def commit_query(created=[], changed=[], deleted=[], app=None, user=None):
         # same logic/code for the Servershell (edit, new) page and the Query
         # engine (Web API) which currently does not use forms at all.
         _validate(attribute_lookup, changed, unchanged_objects)
+
+        # Cast incoming values to the attribute type first.  Clients may send
+        # numbers or booleans as strings; comparing, storing and logging
+        # them untyped produces bogus changelog entries like 8192 => "8192".
+        changed = _normalize_values(attribute_lookup, changed)
 
         # Drop attribute changes that would not change anything, for example
         # "memory: 8192 => 8192".  Clients are expected to filter those but
@@ -662,6 +668,58 @@ def _validate_commit(changes, servers):
                     newer.append((object_id, attr, None))
 
     return newer
+
+
+def _normalize_values(attribute_lookup, changed):
+    """Cast the values of all attribute changes to the attribute type
+
+    Returns a new list of change dicts, the input is left untouched.
+    """
+    result = []
+    for attribute_changes in changed:
+        normalized = {}
+        for attr, change in attribute_changes.items():
+            if attr == 'object_id' or attr in Attribute.specials:
+                normalized[attr] = change
+                continue
+
+            attribute = attribute_lookup[attr]
+            change = dict(change)
+            if change['action'] == 'multi':
+                for key in ('add', 'remove'):
+                    change[key] = [
+                        _cast_value(attribute, v) for v in change[key]
+                    ]
+            elif change['action'] in ('new', 'update'):
+                change['new'] = _cast_value(attribute, change['new'])
+            normalized[attr] = change
+
+        result.append(normalized)
+
+    return result
+
+
+def _cast_value(attribute, value):
+    """Cast a string to the attribute type, leave other values alone
+
+    Only number and boolean attributes need this.  All other types are
+    stored from their string form anyway and compare equal as strings.
+    """
+    if value is None or not isinstance(value, str):
+        return value
+    if attribute.type == 'number':
+        cast = ATTRIBUTE_TYPES['number']
+    elif attribute.type == 'boolean':
+        cast = strtobool
+    else:
+        return value
+
+    try:
+        return cast(value)
+    except ValueError:
+        raise ValidationError('Invalid value "{}" for attribute "{}"'.format(
+            value, attribute.attribute_id,
+        ))
 
 
 def _drop_unchanged(changed):

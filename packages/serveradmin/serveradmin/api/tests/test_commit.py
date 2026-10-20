@@ -9,7 +9,8 @@ from django.test import TransactionTestCase
 from serveradmin.api.views import dataset_commit
 from serveradmin.apps.models import Application
 from serveradmin.dataset import Query
-from serveradmin.serverdb.models import Change, ChangeCommit
+from serveradmin.serverdb.models import Attribute, Change, ChangeCommit
+from serveradmin.serverdb.query_committer import _normalize_values
 
 
 class DatasetCommitChangelogTestCase(TransactionTestCase):
@@ -102,3 +103,110 @@ class DatasetCommitChangelogTestCase(TransactionTestCase):
         )
         server = Query({'hostname': 'test1'}, ['os']).get()
         self.assertEqual(server['os'], 'wheezy')
+
+
+class DatasetCommitValueTypesTestCase(TransactionTestCase):
+    """Values sent as strings are cast to the attribute type
+
+    Otherwise a commit of memory: 8192 => "8192" is logged as a change and
+    the string "false" ends up as a true boolean.
+    """
+
+    fixtures = ['test_dataset.json']
+
+    def setUp(self):
+        super().setUp()
+        user = User.objects.create_user('alice')
+        self.app = Application.objects.create(
+            name='app', owner=user, location='', superuser=True,
+        )
+
+    def _commit(self, changed):
+        return dataset_commit.__wrapped__(
+            None, self.app, {'changed': changed},
+        )
+
+    def test_string_number_equal_to_stored_value_is_not_logged(self):
+        response = self._commit([{
+            'object_id': 2,
+            'game_world': {'action': 'update', 'old': 1, 'new': '1'},
+        }])
+
+        self.assertEqual(response['status'], 'success', response)
+        self.assertIsNone(response['commit_id'])
+        self.assertFalse(Change.objects.exists())
+        self.assertEqual(
+            Query({'hostname': 'test1'}, ['game_world']).get()['game_world'],
+            1,
+        )
+
+    def test_string_number_is_stored_and_logged_typed(self):
+        response = self._commit([{
+            'object_id': 2,
+            'game_world': {'action': 'update', 'old': 1, 'new': '2'},
+        }])
+
+        self.assertEqual(response['status'], 'success', response)
+        change = Change.objects.get()
+        self.assertEqual(change.change_json['game_world']['new'], 2)
+        self.assertEqual(
+            Query({'hostname': 'test1'}, ['game_world']).get()['game_world'],
+            2,
+        )
+
+    def test_boolean_string_false_is_stored_as_false(self):
+        response = self._commit([{
+            'object_id': 2,
+            'has_monitoring': {
+                'action': 'update', 'old': False, 'new': 'false',
+            },
+        }])
+
+        self.assertEqual(response['status'], 'success', response)
+        server = Query({'hostname': 'test1'}, ['has_monitoring']).get()
+        self.assertIs(server['has_monitoring'], False)
+        self.assertFalse(Change.objects.exists())
+
+    def test_boolean_string_true_is_stored_as_true(self):
+        response = self._commit([{
+            'object_id': 2,
+            'has_monitoring': {
+                'action': 'update', 'old': False, 'new': 'true',
+            },
+        }])
+
+        self.assertEqual(response['status'], 'success', response)
+        server = Query({'hostname': 'test1'}, ['has_monitoring']).get()
+        self.assertIs(server['has_monitoring'], True)
+        change = Change.objects.get()
+        self.assertIs(change.change_json['has_monitoring']['new'], True)
+
+    def test_invalid_boolean_string_is_rejected(self):
+        response = self._commit([{
+            'object_id': 2,
+            'has_monitoring': {
+                'action': 'update', 'old': False, 'new': 'maybe',
+            },
+        }])
+
+        self.assertEqual(response['status'], 'error')
+        self.assertEqual(response['type'], 'ValidationError')
+        self.assertIn('has_monitoring', response['message'])
+        self.assertFalse(Change.objects.exists())
+
+    def test_multi_values_are_cast(self):
+        # The fixture has no multi number attribute, so test the helper.
+        attribute = Attribute(attribute_id='ports', type='number', multi=True)
+        changed = [{
+            'object_id': 1,
+            'ports': {'action': 'multi', 'add': ['80', 443], 'remove': ['22']},
+        }]
+
+        normalized = _normalize_values({'ports': attribute}, changed)
+
+        self.assertEqual(
+            normalized[0]['ports'], {'action': 'multi', 'add': [80, 443],
+                                     'remove': [22]},
+        )
+        # The input must not be modified.
+        self.assertEqual(changed[0]['ports']['add'], ['80', 443])
