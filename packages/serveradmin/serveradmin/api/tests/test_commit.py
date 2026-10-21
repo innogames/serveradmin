@@ -66,6 +66,31 @@ class DatasetCommitChangelogTestCase(TransactionTestCase):
 
         self._assert_nothing_logged(commit_id)
 
+    def test_delete_of_unset_attribute_is_not_logged(self):
+        """Clearing an attribute that has no value, as the servershell does"""
+        commit_id = self._commit([{
+            'object_id': 1,
+            'mac_address': {'action': 'delete', 'old': None},
+        }])
+
+        self._assert_nothing_logged(commit_id)
+
+    def test_delete_of_set_attribute_is_logged(self):
+        """Control: deleting a real value is a change"""
+        commit_id = self._commit([{
+            'object_id': 2,
+            'game_world': {'action': 'delete', 'old': 1},
+        }])
+
+        self.assertIsNotNone(commit_id)
+        change = Change.objects.get()
+        self.assertEqual(change.object_id, 2)
+        self.assertEqual(
+            change.change_json['game_world'], {'action': 'delete', 'old': 1},
+        )
+        server = Query({'hostname': 'test1'}, ['game_world']).get()
+        self.assertIsNone(server['game_world'])
+
     def test_mixed_commit_logs_only_real_changes(self):
         """Unchanged attributes are dropped from an otherwise real change"""
         commit_id = self._commit([{

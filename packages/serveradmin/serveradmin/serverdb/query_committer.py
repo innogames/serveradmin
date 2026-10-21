@@ -749,6 +749,10 @@ def _is_noop_change(change):
         return json_encode_extra(old) == json_encode_extra(new)
     if action == 'multi':
         return not change['add'] and not change['remove']
+    if action == 'delete':
+        # _validate_commit has already matched "old" against the stored
+        # value, so None means the attribute is not set at all.
+        return change['old'] is None
 
     return False
 
