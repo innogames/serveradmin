@@ -1,5 +1,10 @@
 # Changelog
 
+## v4.29.0 (2026-10-22)
+
+- fix(serverdb): drop no-op attribute changes before applying a commit (#480) (5efb3a9a)
+- servershell: support multiple objects in history and changes (#478) (283c4af9)
+
 ## v4.28.1 (2026-10-19)
 
 - perf(serverdb): render supernet filters as uncorrelated subqueries (#479) (7e678334)
