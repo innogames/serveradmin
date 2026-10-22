@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.db.models import Q, Subquery, OuterRef, Prefetch, CharField
+from django.db.models import Q, Subquery, OuterRef, Prefetch, CharField, QuerySet
 from django.db.models.fields.json import KeyTextTransform
 from django.db.models.functions import Coalesce, Cast
 from django.http import HttpResponseBadRequest
@@ -16,6 +16,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.functional import cached_property
+from django.utils.html import escape
 
 from serveradmin import settings
 from serveradmin.serverdb.models import (
@@ -25,6 +26,29 @@ from serveradmin.serverdb.models import (
     Change,
 )
 from serveradmin.serverdb.query_committer import CommitError, commit_query
+
+
+def _annotate_hostname(changes: QuerySet) -> QuerySet:
+    """Annotate changes with the hostname of their object
+
+    The hostname is fetched either from the server table or from the change
+    entry where the object was deleted.
+    """
+    server_hostname = Server.objects.filter(
+        server_id=OuterRef('object_id')).values('hostname')
+    # Workaround: In previous versions of Serveradmin restoring objects with
+    # the same id was possible, so we can end up with objects being deleted
+    # multiple times. We only take the latest into account.
+    change_hostname = Change.objects.filter(
+        object_id=OuterRef('object_id'),
+        change_type=Change.Type.DELETE).values('change_json').order_by('-id')[:1]
+
+    return changes.annotate(hostname=Coalesce(
+        Subquery(server_hostname),
+        Cast(
+            KeyTextTransform('hostname', Subquery(change_hostname)),
+            output_field=CharField())
+    ))
 
 
 @login_required
@@ -57,9 +81,13 @@ def changes(request):
             'change_json__object_id', flat=True))
         commits = commits.filter(change__object_id__in=object_ids)
 
-    f_object_id = request.GET.get('object_id')
-    if f_object_id:
-        commits = commits.filter(change__object_id=f_object_id)
+    try:
+        f_object_ids = [int(i) for i in request.GET.getlist('object_id') if i]
+    except ValueError:
+        return HttpResponseBadRequest('object_id must be an integer')
+    if f_object_ids:
+        commits = commits.filter(
+            change__object_id__in=f_object_ids).distinct()
 
     f_user_or_app = request.GET.get('user_or_app')
     if f_user_or_app:
@@ -69,32 +97,14 @@ def changes(request):
     f_attribute = request.GET.get('attribute')
     if f_attribute:
         # Only allow attribute filter if another filter is set (not fully index)
-        if f_hostname or f_object_id or f_user_or_app:
+        if f_hostname or f_object_ids or f_user_or_app:
             commits = commits.filter(change__change_json__has_key=f_attribute)
         else:
             f_attribute = None
 
     commits = commits.select_related('app', 'user')
-
-    # This complex statement is just here to be able to prefetch the changes'
-    # relation including the hostname fetched either from the server table
-    # or from the change entry where the object was deleted.
-    server_hostname = Server.objects.filter(
-        server_id=OuterRef('object_id')).values('hostname')
-    # Workaround: In previous versions of Serveradmin restoring objects with
-    # the same id was possible, so we can end up with objects being deleted
-    # multiple times. We only take the latest into account.
-    change_hostname = Change.objects.filter(
-        object_id=OuterRef('object_id'),
-        change_type=Change.Type.DELETE).values('change_json').order_by('-id')[:1]
     commits = commits.prefetch_related(Prefetch(
-        'change_set',
-        queryset=Change.objects.all().annotate(hostname=Coalesce(
-            Subquery(server_hostname),
-            Cast(
-                KeyTextTransform('hostname', Subquery(change_hostname)),
-                output_field=CharField())
-    ))))
+        'change_set', queryset=_annotate_hostname(Change.objects.all())))
 
     class NoCountPaginator(Paginator):
         @cached_property
@@ -113,7 +123,7 @@ def changes(request):
         'from': f_from,
         'until': f_until,
         'hostname': f_hostname,
-        'object_id': f_object_id,
+        'object_ids': f_object_ids,
         'commit_id': f_commit,
         'user_or_app': f_user_or_app,
         'attribute': f_attribute,
@@ -122,25 +132,32 @@ def changes(request):
 
 @login_required
 def history(request):
-    if 'object_id' in request.GET:
-        query = Q(server_id=request.GET['object_id'])
-        error_text = f'object_id {request.GET["object_id"]}'
-    elif 'hostname' in request.GET:
-        query = Q(hostname=request.GET['hostname'])
-        error_text = f'hostname {request.GET["hostname"]}'
-    else:
+    try:
+        object_ids = [int(i) for i in request.GET.getlist('object_id') if i]
+    except ValueError:
+        return HttpResponseBadRequest('object_id must be an integer')
+    hostnames = request.GET.getlist('hostname')
+    if not object_ids and not hostnames:
         return HttpResponseBadRequest(
             'object_id or hostname parameter is mandatory')
 
-    try:
-        server = Server.objects.get(query)
-    except Server.DoesNotExist:
-        messages.error(
-            request,
-            f'Object with {error_text} does not or no longer exist.')
-        return redirect(reverse('serverdb_changes'))
+    servers = list(Server.objects.filter(
+        Q(server_id__in=object_ids) | Q(hostname__in=hostnames)
+    ).order_by('hostname'))
 
-    obj_history = Change.objects.filter(object_id=server.server_id)
+    missing = [str(i) for i in object_ids
+               if i not in {s.server_id for s in servers}]
+    missing += [h for h in hostnames if h not in {s.hostname for s in servers}]
+    missing_text = (f'Object(s) {escape(", ".join(missing))} do not or no '
+                    f'longer exist.')
+    if not servers:
+        messages.error(request, missing_text)
+        return redirect(reverse('serverdb_changes'))
+    if missing:
+        messages.warning(request, missing_text)
+
+    server_ids = [s.server_id for s in servers]
+    obj_history = Change.objects.filter(object_id__in=server_ids)
 
     commit_id = request.GET.get('commit_id')
     if commit_id:
@@ -150,24 +167,26 @@ def history(request):
     if attribute_filter:
         obj_history = obj_history.filter(change_json__has_key=attribute_filter)
 
-    obj_history = obj_history.order_by('-commit_id')
+    obj_history = obj_history.order_by('-commit_id', '-id')
     obj_history = obj_history.select_related('commit__app', 'commit__user')
+    obj_history = _annotate_hostname(obj_history)
 
     page = request.GET.get('page', 1)
     pager = Paginator(obj_history, 25)
     page_obj = pager.get_page(page)
 
     no_history_attributes = ServertypeAttribute.objects.filter(
-        servertype_id=server.servertype_id
-    ).select_related('attribute').filter(
-        attribute__history=False
-    ).only('attribute_id')
+        servertype_id__in={s.servertype_id for s in servers},
+        attribute__history=False,
+    ).order_by('attribute_id').values_list(
+        'attribute_id', flat=True).distinct()
 
     return TemplateResponse(request, 'serverdb/history.html', {
         'changes': page_obj,
         'commit_id': commit_id,
-        'object_id': server.server_id,
-        'name': server.hostname,
+        'object_ids': server_ids,
+        'object_ids_query': '&'.join(f'object_id={i}' for i in server_ids),
+        'hostnames': [s.hostname for s in servers],
         'attribute_filter': attribute_filter,
         'no_history_attributes': no_history_attributes,
     })
