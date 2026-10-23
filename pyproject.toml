@@ -9,7 +9,7 @@ dev = [
     "django-extensions<5.0.0",
     "Werkzeug<4.0.0",
     "requests<3.0.0",
-    "faker<14.0.0",
+    "faker>=40,<41",
     "tblib",
     "flake8",
 ]

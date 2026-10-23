@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11, <3.14"
 
 [manifest]
@@ -11,7 +11,7 @@ members = [
 [manifest.dependency-groups]
 dev = [
     { name = "django-extensions", specifier = "<5.0.0" },
-    { name = "faker", specifier = "<14.0.0" },
+    { name = "faker", specifier = ">=40,<41" },
     { name = "flake8" },
     { name = "requests", specifier = "<3.0.0" },
     { name = "tblib" },
@@ -410,14 +410,14 @@ wheels = [
 
 [[package]]
 name = "faker"
-version = "13.16.0"
+version = "40.43.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "python-dateutil" },
+    { name = "tzdata", marker = "sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/89/4c/e9d9b6d51f01a0f22b819a95e411a1790deda41fefc9f5e17909bb89c987/Faker-13.16.0.tar.gz", hash = "sha256:25c5be99bc5fd8676eea8c1490e0de87f6d9734651c7af2cefc99b322b2936f4", size = 1535813, upload-time = "2022-08-12T14:36:06.326Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/33/6c/b8793efc2f00a912ef17cf0b61b717cddf34607499efcb8a32238c119368/faker-40.43.0.tar.gz", hash = "sha256:02fae4327c03a4a6315e1b428a3878f435bfc276c93435ea349b95c0c9372361", size = 2032713, upload-time = "2026-10-09T20:06:29.652Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/86/5a/b60432d449c56458d31a54acb5ae5b855e45eb7a12894db448700116da16/Faker-13.16.0-py3-none-any.whl", hash = "sha256:920f94d5aa865fd922bc29f2cf75c75b4d86b30eec23e7174d7513241b759b05", size = 1583065, upload-time = "2022-08-12T14:36:01.827Z" },
+    { url = "https://files.pythonhosted.org/packages/81/ed/0d6d0d6467ae3d009fb82fb411867c7fcfeadbdd25602cab0d7a7963f400/faker-40.43.0-py3-none-any.whl", hash = "sha256:9dd7c0ddfaf30c842b05502d3cf641c135e0120a3a19047008ba8525b72953ed", size = 2069082, upload-time = "2026-10-09T20:06:27.166Z" },
 ]
 
 [[package]]
