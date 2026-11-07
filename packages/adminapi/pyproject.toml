@@ -8,7 +8,7 @@ authors = [
 ]
 license = { text = "MIT" }
 dependencies = [
-    "paramiko>=2.7,<4",
+    "paramiko>=5.0.0,<6",
     "netaddr>=0.8.0,<1.4.0",
 ]
 
