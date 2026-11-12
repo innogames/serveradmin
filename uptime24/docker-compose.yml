@@ -1,0 +1,15 @@
+services:
+  uptime24:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env (copy .env.example)}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+    volumes:
+      - data:/data
+
+volumes:
+  data:

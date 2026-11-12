@@ -1,0 +1,8 @@
+{
+  "name": "uptime24",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pixel-art news channel that reports status pages as a live broadcast",
+  "scripts": { "start": "node server.js", "test": "node --test" },
+  "engines": { "node": ">=20" }
+}

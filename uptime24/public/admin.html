@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Uptime 24 Control Room</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<style>
+/* Layout: one column of three work areas (on air, channels, settings); forms above the lists they feed. */
+:root{
+  color-scheme:dark;
+  --ink:#0d1028; --studio:#161b3f; --panel:#222a5e; --line:#3a4590; --paper:#f4f0e0; --muted:#a3abd6;
+  --alert:#e63946; --amber:#ffb703; --ok:#5ad67d; --sky:#58c4f6;
+  --display:"Press Start 2P","Courier New",monospace;
+  --text:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:var(--paper);font:16px/1.5 var(--text);padding:24px 16px 64px}
+main{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between}
+h1{font:400 18px/1.4 var(--display);margin:0}
+h1 b{background:var(--alert);padding:4px 8px;font-weight:400}
+h2{font:400 13px/1.4 var(--display);margin:0;color:var(--amber);letter-spacing:.04em}
+a{color:var(--sky)}
+section{display:flex;flex-direction:column;gap:14px}
+.lead{margin:0;color:var(--muted);max-width:65ch}
+form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 16px;background:var(--studio);border:2px solid var(--panel);padding:16px}
+label{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted);min-width:0}
+.wide,.actions{grid-column:1/-1}
+label.check{flex-direction:row;align-items:center;gap:8px;color:var(--paper)}
+input,select,textarea{font:inherit;color:var(--paper);background:var(--ink);border:2px solid var(--line);padding:8px 10px;width:100%;border-radius:0}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--amber);padding:0}
+textarea{min-height:88px;resize:vertical}
+:is(input,select,textarea,button,a):focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.actions{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+button{font:inherit;font-weight:600;color:var(--ink);background:var(--amber);border:0;padding:8px 16px;cursor:pointer;box-shadow:3px 3px 0 #05061a}
+button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #05061a}
+button.quiet{background:var(--panel);color:var(--paper);font-weight:400}
+button.danger{background:transparent;color:var(--alert);box-shadow:none;padding:8px 6px;text-decoration:underline}
+button:disabled{opacity:.5;cursor:default}
+.msg{font-size:14px;margin:0;min-height:1.5em}
+.msg.err{color:var(--alert)} .msg.ok{color:var(--ok)}
+ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+li{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;justify-content:space-between;background:var(--studio);border-left:6px solid var(--line);padding:10px 14px}
+li[data-tone=ok]{border-color:var(--ok)} li[data-tone=amber]{border-color:var(--amber)} li[data-tone=alert]{border-color:var(--alert)} li[data-tone=sky]{border-color:var(--sky)}
+li .body{flex:1 1 280px;min-width:0;overflow-wrap:anywhere}
+li .title{font-weight:600}
+li .meta{font-size:13px;color:var(--muted)}
+li .meta.err{color:var(--alert)}
+li .row{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.empty{color:var(--muted);margin:0}
+.pill{display:inline-block;font-size:12px;padding:1px 8px;background:var(--panel);margin-left:8px;vertical-align:1px}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1><b>UPTIME 24</b> Control room</h1>
+    <a href="./" target="_blank" rel="noopener">Open the broadcast</a>
+  </header>
+
+  <section aria-labelledby="h-air">
+    <h2 id="h-air">PUT SOMETHING ON AIR</h2>
+    <p class="lead">Type an announcement and the presenters read it out. It joins the news rotation until it expires or you remove it.</p>
+    <form id="itemForm">
+      <label class="wide">Headline (optional)
+        <input id="itTitle" maxlength="80" placeholder="Database upgrade tonight"></label>
+      <label class="wide">What the presenters say
+        <textarea id="itText" maxlength="600" required placeholder="The main database is upgraded tonight between 22:00 and 23:00. Expect short interruptions."></textarea></label>
+      <label>Kind
+        <select id="itSeverity">
+          <option value="info">Announcement</option><option value="good">Good news</option>
+          <option value="degraded">Notice (something is impaired)</option><option value="outage">Alert (something is down)</option>
+        </select></label>
+      <label>Stays on air for
+        <select id="itTtl">
+          <option value="15">15 minutes</option><option value="60" selected>1 hour</option><option value="240">4 hours</option>
+          <option value="1440">24 hours</option><option value="0">Until I remove it</option>
+        </select></label>
+      <label class="check wide"><input type="checkbox" id="itBreaking"> Interrupt the programme as breaking news</label>
+      <div class="actions"><button type="submit">Put on air</button><p class="msg" id="itMsg" role="status"></p></div>
+    </form>
+    <ul id="items"></ul>
+  </section>
+
+  <section aria-labelledby="h-ch">
+    <h2 id="h-ch">INFORMATION CHANNELS</h2>
+    <p class="lead">Channels are addresses the server pulls on a schedule. Status pages and website checks feed the incident reports and the forecast; feeds add news items.</p>
+    <ul id="channels"></ul>
+    <form id="chForm">
+      <label>Name
+        <input id="chName" maxlength="60" required placeholder="Game status page"></label>
+      <label>Type
+        <select id="chType"></select></label>
+      <label class="wide">Address
+        <input id="chUrl" type="url" required placeholder="https://status.example.com"></label>
+      <label>Check every
+        <select id="chInterval">
+          <option value="30">30 seconds</option><option value="60" selected>1 minute</option><option value="300">5 minutes</option>
+          <option value="900">15 minutes</option><option value="3600">1 hour</option>
+        </select></label>
+      <label>Read news no older than
+        <select id="chAge">
+          <option value="6">6 hours</option><option value="24" selected>24 hours</option><option value="72">3 days</option><option value="168">7 days</option>
+        </select></label>
+      <p class="hint wide" id="chHint"></p>
+      <div class="actions"><button type="submit">Add channel</button><p class="msg" id="chMsg" role="status"></p></div>
+    </form>
+  </section>
+
+  <section aria-labelledby="h-set">
+    <h2 id="h-set">SETTINGS</h2>
+    <form id="setForm">
+      <label class="check wide"><input type="checkbox" id="setDemo"> Show invented demo incidents while no channel is switched on</label>
+      <p class="hint wide" id="voiceInfo"></p>
+      <label>Max voice ID <input id="vMax" maxlength="40" placeholder="Default"></label>
+      <label>Ada voice ID <input id="vAda" maxlength="40" placeholder="Default"></label>
+      <label>Gus voice ID <input id="vGus" maxlength="40" placeholder="Default"></label>
+      <div class="actions"><button type="submit">Save settings</button><p class="msg" id="setMsg" role="status"></p></div>
+    </form>
+  </section>
+</main>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+async function api(method, url, body) {
+  const r = await fetch(url, { method, headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || 'The server answered ' + r.status);
+  return j;
+}
+const say = (id, text, ok) => { const m = $(id); m.textContent = text; m.className = 'msg ' + (ok ? 'ok' : 'err'); };
+const HINTS = {
+  statuspage: 'Enter the address of a status page that uses the Atlassian Statuspage format, for example https://status.example.com. Each component becomes a service on the forecast board.',
+  rss: 'Enter the address of an RSS or Atom feed. Recent entries are read out as news items.',
+  json: 'Enter an address that returns {"services":[{"name","status","note"}],"items":[{"title","text","severity"}]}. The README describes every field.',
+  http: 'Enter any web address. The channel becomes one service, reported as down when the address fails to answer or returns an error.',
+};
+const TONE = { info: 'sky', good: 'ok', degraded: 'amber', outage: 'alert' };
+const KIND = { info: 'Announcement', good: 'Good news', degraded: 'Notice', outage: 'Alert' };
+const when = t => { const s = Math.round((Date.now() - t) / 1000); return s < 90 ? s + ' s ago' : s < 5400 ? Math.round(s / 60) + ' min ago' : Math.round(s / 3600) + ' h ago'; };
+const left = t => { const m = Math.round((t - Date.now()) / 60000); return m < 1 ? 'under a minute' : m < 90 ? m + ' min' : Math.round(m / 60) + ' h'; };
+const every = s => (s < 120 ? s + ' s' : s < 7200 ? Math.round(s / 60) + ' min' : Math.round(s / 3600) + ' h');
+
+let types = {}, filled = false;
+function render(c) {
+  types = c.types;
+  if (!filled) {
+    filled = true;
+    for (const [k, v] of Object.entries(types)) { const o = el('option', '', v); o.value = k; $('chType').append(o); }
+    $('chHint').textContent = HINTS[$('chType').value];
+    $('setDemo').checked = c.settings.demo;
+    $('vMax').value = c.settings.voices.max; $('vAda').value = c.settings.voices.ada; $('vGus').value = c.settings.voices.gus;
+    $('voiceInfo').textContent = c.voice === 'elevenlabs'
+      ? 'ElevenLabs voice is switched on. Leave a voice ID empty to keep the default voice for that presenter.'
+      : 'ElevenLabs voice is off, so the broadcast falls back to the browser\'s own voice. Set ELEVENLABS_API_KEY in .env and restart to switch it on; the voice IDs below apply then.';
+  }
+  const items = $('items'); items.textContent = '';
+  if (!c.items.length) items.append(el('p', 'empty', 'Nothing typed in is on air right now.'));
+  for (const i of c.items) {
+    const li = el('li'), body = el('div', 'body'), del = el('button', 'danger', 'Remove');
+    li.dataset.tone = TONE[i.severity];
+    const title = el('div', 'title', i.title || i.text.slice(0, 80));
+    if (i.breaking) title.append(el('span', 'pill', 'breaking'));
+    body.append(title);
+    if (i.title) body.append(el('div', '', i.text));
+    body.append(el('div', 'meta', KIND[i.severity] + ', added ' + when(i.created) + (i.expires ? ', ' + left(i.expires) + ' left' : ', stays until removed')));
+    del.type = 'button';
+    del.onclick = async () => { del.disabled = true; try { await api('DELETE', 'api/admin/items/' + i.id); await load(); } catch (e) { say('itMsg', e.message); del.disabled = false; } };
+    li.append(body, del); items.append(li);
+  }
+  const list = $('channels'); list.textContent = '';
+  if (!c.channels.length) list.append(el('p', 'empty', c.settings.demo ? 'No channels yet, so the broadcast is showing the demo feed.' : 'No channels yet.'));
+  for (const ch of c.channels) {
+    const li = el('li'), body = el('div', 'body'), row = el('div', 'row');
+    li.dataset.tone = !ch.enabled ? '' : ch.lastError ? 'alert' : ch.lastOk ? 'ok' : 'amber';
+    const title = el('div', 'title', ch.name); title.append(el('span', 'pill', types[ch.type] || ch.type));
+    body.append(title, el('div', 'meta', ch.url));
+    body.append(el('div', 'meta' + (ch.enabled && ch.lastError ? ' err' : ''), !ch.enabled ? 'Switched off'
+      : ch.lastError ? 'Last pull failed ' + when(ch.lastFetch) + ': ' + ch.lastError
+      : ch.lastOk ? 'Pulled ' + when(ch.lastOk) + ', every ' + every(ch.interval) + ': ' + ch.services + ' services, ' + ch.news + ' news items'
+      : 'Waiting for the first pull'));
+    const act = async (btn, fn) => { btn.disabled = true; try { await fn(); } catch (e) { say('chMsg', e.message); } await load(); };
+    const pull = el('button', 'quiet', 'Pull now'), toggle = el('button', 'quiet', ch.enabled ? 'Switch off' : 'Switch on'), del = el('button', 'danger', 'Delete');
+    pull.type = toggle.type = del.type = 'button'; pull.hidden = !ch.enabled;
+    pull.onclick = () => act(pull, () => api('POST', 'api/admin/channels/' + ch.id + '/fetch', {}));
+    toggle.onclick = () => act(toggle, () => api('PUT', 'api/admin/channels/' + ch.id, { enabled: !ch.enabled }));
+    let armed = false; // two presses to delete: the page cannot show a confirm dialog everywhere
+    del.onclick = () => { if (!armed) { armed = true; del.textContent = 'Press again to delete'; return; } act(del, () => api('DELETE', 'api/admin/channels/' + ch.id)); };
+    row.append(pull, toggle, del); li.append(body, row); list.append(li);
+  }
+}
+let busy = false;
+async function load() {
+  if (busy) return; busy = true;
+  try { render(await api('GET', 'api/admin/config')); } catch (e) { say('chMsg', 'Could not load the current setup: ' + e.message); }
+  busy = false;
+}
+
+$('chType').onchange = () => { $('chHint').textContent = HINTS[$('chType').value]; };
+$('itemForm').onsubmit = async e => {
+  e.preventDefault();
+  try {
+    await api('POST', 'api/admin/items', { title: $('itTitle').value, text: $('itText').value, severity: $('itSeverity').value,
+      ttlMinutes: Number($('itTtl').value), breaking: $('itBreaking').checked });
+    $('itTitle').value = $('itText').value = ''; $('itBreaking').checked = false;
+    say('itMsg', 'On air. The presenters pick it up within a few seconds.', true); await load();
+  } catch (err) { say('itMsg', err.message); }
+};
+$('chForm').onsubmit = async e => {
+  e.preventDefault();
+  const btn = e.submitter; if (btn) btn.disabled = true;
+  say('chMsg', 'Adding and pulling once…', true);
+  try {
+    await api('POST', 'api/admin/channels', { name: $('chName').value, type: $('chType').value, url: $('chUrl').value,
+      interval: Number($('chInterval').value), maxAgeHours: Number($('chAge').value) });
+    $('chName').value = $('chUrl').value = '';
+    say('chMsg', 'Channel added.', true); await load();
+  } catch (err) { say('chMsg', err.message); }
+  if (btn) btn.disabled = false;
+};
+$('setForm').onsubmit = async e => {
+  e.preventDefault();
+  try {
+    await api('PUT', 'api/admin/settings', { demo: $('setDemo').checked, voices: { max: $('vMax').value.trim(), ada: $('vAda').value.trim(), gus: $('vGus').value.trim() } });
+    say('setMsg', 'Saved.', true); await load();
+  } catch (err) { say('setMsg', err.message); }
+};
+load(); setInterval(load, 5000);
+})();
+</script>
+</body>
+</html>

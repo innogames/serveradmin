@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Uptime 24 News</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
+<style>
+/* Layout: one 16:9 broadcast frame is the whole page; a slim control strip sits under it.
+   Single dark look on purpose: it is a TV studio at night. */
+:root{
+  color-scheme:dark;
+  --ink:#0d1028;      /* off-air black, navy biased */
+  --studio:#1b2250;   /* studio wall */
+  --panel:#2a3478;    /* raised surfaces */
+  --paper:#f4f0e0;    /* text, shirt white */
+  --muted:#9aa3d4;
+  --alert:#e63946;    /* breaking / outage */
+  --amber:#ffb703;    /* degraded / update */
+  --ok:#5ad67d;       /* operational / resolved */
+  --sky:#58c4f6;      /* maintenance / forecast */
+  --display:"Press Start 2P","Courier New",monospace;
+  --text:"VT323","Courier New",monospace;
+}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+.note a{color:var(--sky)}
+body{
+  background:var(--ink);color:var(--paper);font-family:var(--text);font-size:20px;
+  padding-block:16px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:12px;
+}
+.screen{width:100%;max-width:max(320px,min(1200px,calc((100vh - 150px) * 1.7778)))}
+.screen:fullscreen{max-width:none;display:grid;place-items:center;background:#000}
+.screen:fullscreen .stage{width:min(100vw,177.78vh)}
+.stage{
+  position:relative;width:100%;aspect-ratio:16/9;container-type:inline-size;overflow:hidden;
+  background:var(--studio);outline:4px solid var(--panel);
+}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
+
+/* on-screen graphics, all sized in cqw so the frame scales as one picture */
+.bug{position:absolute;left:1.6cqw;top:1.6cqw;font-family:var(--display);font-size:1.5cqw;
+  background:var(--alert);color:var(--paper);padding:.7cqw .9cqw;box-shadow:.4cqw .4cqw 0 var(--ink)}
+.bug b{color:var(--ink);background:var(--paper);padding:0 .4cqw;margin-left:.5cqw;font-weight:400}
+.live{position:absolute;right:1.6cqw;top:1.6cqw;display:flex;gap:.8cqw;align-items:center;
+  font-family:var(--display);font-size:1.2cqw}
+.live span{background:var(--ink);padding:.6cqw .8cqw}
+.live .dot::before{content:"";display:inline-block;width:1cqw;height:1cqw;background:var(--alert);margin-right:.6cqw;animation:blink 1s steps(2) infinite}
+.live .demo{color:var(--ink);background:var(--amber)}
+@keyframes blink{50%{opacity:.15}}
+
+.screenlabel{position:absolute;left:55%;top:42.5%;width:40.6%;text-align:center;line-height:1}
+.screenlabel .t{font-family:var(--display);font-size:1.35cqw;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.screenlabel .s{font-size:2.5cqw;display:block;margin-top:.5cqw}
+.tile{position:absolute;width:15%;text-align:center;line-height:.9}
+.tile .t{font-size:2.2cqw;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .s{font-size:2cqw;display:block}
+
+.lower{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column}
+.headline{display:flex;align-items:stretch;height:4cqw;background:var(--paper);color:var(--ink);font-family:var(--display)}
+.tag{display:flex;align-items:center;padding:0 1.2cqw;font-size:1.3cqw;background:var(--alert);color:var(--paper);white-space:nowrap}
+.tag[data-tone="amber"]{background:var(--amber);color:var(--ink)}
+.tag[data-tone="ok"]{background:var(--ok);color:var(--ink)}
+.tag[data-tone="sky"]{background:var(--sky);color:var(--ink)}
+.hl{display:flex;align-items:center;padding:0 1.2cqw;font-size:1.6cqw;white-space:nowrap;overflow:hidden;min-width:0}
+.caption{height:7.4cqw;box-sizing:border-box;padding:.5cqw 1.4cqw;background:var(--ink);font-size:3.1cqw;line-height:1.03;overflow:hidden}
+.caption::after{content:"\2588";color:var(--amber);animation:blink 1s steps(2) infinite}
+:root{--max:#8fb4e8;--ada:#3fd0a4;--gus:#d08be6}
+.who{font-family:var(--display);font-size:1.15cqw;padding:.45cqw .6cqw;margin-right:1cqw;vertical-align:.45cqw;color:var(--ink);background:var(--max)}
+.who[data-who="ada"]{background:var(--ada)}
+.who[data-who="gus"]{background:var(--gus)}
+.wipe{position:absolute;inset:0;display:grid;place-items:center;text-align:center;font-family:var(--display);font-size:3.4cqw;
+  color:var(--ink);background:var(--sky);
+  box-shadow:-3cqw 0 0 var(--paper),-6cqw 0 0 var(--amber),3cqw 0 0 var(--paper),6cqw 0 0 var(--amber);
+  animation:wipe .9s steps(18) both}
+.wipe[data-to="anchor"]{background:var(--alert);color:var(--paper)}
+@keyframes wipe{0%{transform:translateX(-110%)}40%,60%{transform:translateX(0)}100%{transform:translateX(110%)}}
+.ticker{display:flex;height:3.4cqw;background:var(--panel);font-size:2.5cqw;line-height:3.4cqw}
+.clock{background:var(--amber);color:var(--ink);padding:0 1cqw;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tape{position:relative;flex:1;overflow:hidden;min-width:0}
+.run{position:absolute;left:0;top:0;white-space:nowrap;will-change:transform}
+.run span{margin-right:3cqw}
+.run i{font-style:normal}
+
+.stinger{position:absolute;inset:0;display:grid;place-items:center;text-align:center;
+  background:repeating-linear-gradient(135deg,var(--alert) 0 6cqw,#b81d2c 6cqw 12cqw);
+  font-family:var(--display);font-size:5cqw;line-height:1.5;color:var(--paper);text-shadow:.5cqw .5cqw 0 var(--ink);
+  animation:slide .25s steps(5)}
+@keyframes slide{from{transform:translateX(-100%)}}
+
+.controls{display:flex;flex-wrap:wrap;gap:8px 10px;justify-content:center;align-items:center;max-width:1200px}
+button{font-family:var(--text);font-size:20px;color:var(--paper);background:var(--panel);border:0;
+  padding:4px 14px;box-shadow:3px 3px 0 #05061a;cursor:pointer}
+button:hover{background:#3a46a0}
+button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #05061a}
+button:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+button[aria-pressed="true"]{background:var(--ok);color:var(--ink)}
+.note{margin:0;color:var(--muted);text-align:center;max-width:70ch;text-wrap:balance}
+@media (prefers-reduced-motion:reduce){.stinger,.live .dot::before,.caption::after{animation:none}}
+</style>
+</head>
+<body>
+<div class="screen" id="screen">
+  <div class="stage" id="stage">
+    <canvas id="cv" width="320" height="180" aria-hidden="true"></canvas>
+    <div class="bug">UPTIME<b>24</b></div>
+    <div class="live"><span class="demo" id="demoBadge" hidden>DEMO FEED</span><span class="dot">LIVE</span></div>
+    <div class="screenlabel" id="screenlabel"><span class="t" id="scrT"></span><span class="s" id="scrS"></span></div>
+    <div id="board" hidden></div>
+    <div class="lower">
+      <div class="headline"><span class="tag" id="tag">LIVE</span><span class="hl" id="hl"></span></div>
+      <div class="caption" id="caption" aria-live="polite"><span class="who" id="who"></span><span id="line"></span></div>
+      <div class="ticker"><span class="clock" id="clock">00:00:00</span><div class="tape" id="tape"><div class="run" id="run"></div></div></div>
+    </div>
+    <div class="wipe" id="wipe" hidden><span id="wipeT"></span></div>
+    <div class="stinger" id="stinger" hidden>BREAKING<br>NEWS</div>
+  </div>
+</div>
+
+<div class="controls">
+  <button id="btnSound" aria-pressed="false">Sound: off</button>
+  <button id="btnVoice" aria-pressed="false">Voice: off</button>
+  <button id="btnFull">Fullscreen</button>
+  <button id="btnBreak" hidden>Start an incident</button>
+  <button id="btnFix" hidden>Resolve all incidents</button>
+</div>
+<p class="note" id="note" hidden>Demo feed: the services and incidents on air are invented. Add an information channel in the <a href="admin">admin interface</a> to report real ones.</p>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- status vocabulary ---------- */
+const ST = {
+  operational: { label: 'Operational',  icon: 'sun',   color: '#5ad67d', sev: 0 },
+  maintenance: { label: 'Maintenance',  icon: 'cone',  color: '#58c4f6', sev: 1 },
+  degraded:    { label: 'Degraded',     icon: 'rain',  color: '#ffb703', sev: 2 },
+  outage:      { label: 'Major outage', icon: 'storm', color: '#e63946', sev: 3 },
+};
+const SKY = { sun: '#1d4e89', cone: '#1f3f5c', rain: '#3d4466', storm: '#3a1020', news: '#2a3478' };
+const NOUN = { outage: 'a major outage', degraded: 'degraded performance', maintenance: 'planned maintenance' };
+const VERB = { outage: 'down', degraded: 'running slow', maintenance: 'under maintenance' };
+const ITEM = {
+  info:     { icon: 'news',  tag: 'NEWS',      tone: 'sky',   label: 'Announcement', color: '#f4f0e0' },
+  good:     { icon: 'sun',   tag: 'GOOD NEWS', tone: 'ok',    label: 'Good news',    color: '#5ad67d' },
+  degraded: { icon: 'rain',  tag: 'NOTICE',    tone: 'amber', label: 'Notice',       color: '#ffb703' },
+  outage:   { icon: 'storm', tag: 'ALERT',     tone: 'alert', label: 'Alert',        color: '#e63946' },
+};
+
+/* ---------- feed ----------
+   Polls api/state every 5 s. The server decides between real channels and the demo:
+   in demo mode the incidents below are invented in the browser; items typed into the
+   admin interface are read out in both modes. Subscribers get
+   { type: 'new' | 'update' | 'resolved' | 'item' | 'reset' | 'sync', svc, incident, item }. */
+function createFeed() {
+  const names = ['Game Servers EU', 'Game Servers US', 'Login', 'Payments', 'Forum', 'Website', 'Support Desk', 'Public API'];
+  const stories = [
+    ['elevated error rates', 'a bad configuration rollout'],
+    ['slow response times', 'an overloaded database replica'],
+    ['failed logins', 'an expired certificate'],
+    ['connection timeouts', 'a network fault at one data centre'],
+    ['delayed processing', 'a stuck message queue'],
+    ['intermittent errors', 'a full disk on a storage node'],
+  ];
+  const services = [], items = [], subs = [];
+  let demo = null, timer = 0, first = true, voice = 'browser', lastResolved = Date.now() - 47 * 60000;
+  const emit = (type, svc, incident, item) => subs.forEach(cb => cb({ type, svc, incident: incident ? { ...incident } : null, item }));
+  const gap = () => Date.now() + (40 + Math.random() * 30) * 1000;
+
+  function start(svc, kind, ageMin, phase, quiet) {
+    const [symptom, cause] = kind === 'maintenance' ? ['short interruptions', 'scheduled database maintenance'] : pick(stories);
+    svc.status = kind;
+    svc.incident = { kind, phase: phase || 0, phases: kind === 'maintenance' ? ['In progress'] : ['Investigating', 'Identified', 'Monitoring'],
+      started: Date.now() - (ageMin || 0) * 60000, symptom, cause, nextAt: gap() };
+    if (!quiet) emit('new', svc, svc.incident);
+  }
+  function resolve(svc) {
+    const inc = svc.incident; svc.incident = null; svc.status = 'operational'; lastResolved = Date.now();
+    emit('resolved', svc, inc);
+  }
+  function startRandom() {
+    const free = services.filter(s => !s.incident);
+    if (demo && free.length) start(pick(free), Math.random() < .45 ? 'outage' : 'degraded');
+  }
+  function tick() {
+    const now = Date.now();
+    for (const svc of services) {
+      const inc = svc.incident;
+      if (!inc || now < inc.nextAt) continue;
+      if (inc.phase + 1 >= inc.phases.length) { resolve(svc); continue; }
+      inc.phase++; inc.nextAt = gap();
+      if (inc.phase === 2 && svc.status === 'outage') svc.status = 'degraded';
+      emit('update', svc, inc);
+    }
+    if (services.filter(s => s.incident).length < 2 && Math.random() < .02) startRandom();
+  }
+  function startDemo() {
+    services.length = 0;
+    names.forEach((name, i) => services.push({ id: 'demo' + i, name, status: 'operational', incident: null }));
+    start(services[3], 'degraded', 14, 1, true);
+    start(services[4], 'maintenance', 32, 0, true);
+    timer = setInterval(tick, 1000);
+  }
+  function applyRemote(list, quiet) {
+    const prev = new Map(services.map(s => [s.id, s])), events = []; // announce only once the list is complete
+    services.length = 0;
+    for (const r of list) {
+      const p = prev.get(r.id), i = r.incident;
+      const s = { id: r.id, name: r.name, status: r.status,
+        incident: i ? { kind: r.status, phase: 0, phases: [i.phase || ''], started: i.started, title: i.title || '', note: i.note || '' } : null };
+      services.push(s);
+      if (quiet) continue;
+      if (s.incident && !(p && p.incident)) events.push(['new', s, s.incident]);
+      else if (s.incident && (p.status !== s.status || p.incident.phases[0] !== s.incident.phases[0] || p.incident.note !== s.incident.note)) events.push(['update', s, s.incident]);
+      else if (!s.incident && p && p.incident) { lastResolved = Date.now(); events.push(['resolved', s, p.incident]); }
+    }
+    events.forEach(e => emit(...e));
+  }
+  function applyItems(list, quiet) {
+    const had = new Set(items.map(i => i.id));
+    items.length = 0;
+    for (const i of list) { items.push(i); if (!quiet && !had.has(i.id)) emit('item', null, null, i); }
+  }
+  async function poll() {
+    let s = null;
+    try { const r = await fetch('api/state', { cache: 'no-store' }); if (r.ok) s = await r.json(); } catch (_) {}
+    if (!s) { if (demo !== null) return; s = { demo: true, services: [], items: [], voice: 'browser' }; } // no server: demo only
+    voice = s.voice;
+    if (s.demo !== demo) {
+      demo = s.demo; clearInterval(timer);
+      if (demo) startDemo(); else applyRemote(s.services, true);
+      applyItems(s.items, first); emit('reset');
+    } else { if (!demo) applyRemote(s.services, false); applyItems(s.items, false); emit('sync'); }
+    first = false;
+  }
+  return { services, items, on: cb => subs.push(cb), startRandom,
+    resolveAll: () => { if (demo) services.filter(s => s.incident).forEach(resolve); },
+    sinceLastResolved: () => Date.now() - lastResolved, isDemo: () => !!demo, voice: () => voice,
+    start: async () => { await poll(); setInterval(poll, 5000); } };
+}
+const feed = createFeed();
+
+/* ---------- pixel art ---------- */
+const cx = $('cv').getContext('2d');
+const R = (x, y, w, h, c) => { cx.fillStyle = c; cx.fillRect(x, y, w, h); };
+const ICON = {
+  sun: ['................', '.......Y........', '..Y....Y....Y...', '...Y.......Y....', '.....YYYYY......', '....YYYYYYY.....',
+        '....YYYYYYY.....', '.YY.YYYYYYY.YY..', '....YYYYYYY.....', '....YYYYYYY.....', '.....YYYYY......', '...Y.......Y....',
+        '..Y....Y....Y...', '.......Y........'],
+  rain: ['................', '................', '.....WWWW.......', '....WWWWWW.WW...', '...WWWWWWWWWWW..', '..WWWWWWWWWWWWW.',
+         '..WWWWWWWWWWWWW.', '...GGGGGGGGGGG..', '................', '...B...B...B....', '..B...B...B.....', '................',
+         '....B...B...B...', '...B...B...B....'],
+  storm: ['................', '.....DDDD.......', '....DDDDDD.DD...', '...DDDDDDDDDDD..', '..DDDDDDDDDDDDD.', '..DDDDDDDDDDDDD.',
+          '...HHHHHHHHHHH..', '.......LL.......', '......LL........', '.....LLLL.......', '.......LL.......', '......LL........',
+          '.....LL.........', '.....L..........'],
+  cone: ['................', '.......OO.......', '.......OO.......', '......OOOO......', '......WWWW......', '.....OOOOOO.....',
+         '.....OOOOOO.....', '....WWWWWWWW....', '....OOOOOOOO....', '...OOOOOOOOOO...', '...OOOOOOOOOO...', '.HHHHHHHHHHHHHH.',
+         '.HHHHHHHHHHHHHH.'],
+  news: ['................', '..WWWWWWWWWWWW..', '..WHHHHHHHHHHW..', '..WWWWWWWWWWWW..', '..WGGGGGWDDDDW..', '..WWWWWWWDDDDW..',
+         '..WGGGGGWDDDDW..', '..WWWWWWWWWWWW..', '..WGGGGGGGGGGW..', '..WWWWWWWWWWWW..', '..WGGGGGGGGGGW..', '..WWWWWWWWWWWW..'],
+};
+const INK = { Y: '#ffd23f', W: '#f4f0e0', G: '#aab0cf', D: '#6b7099', H: '#454a70', B: '#58c4f6', L: '#ffe45e', O: '#ff8c1a' };
+function sprite(name, x, y, s, f) {
+  ICON[name].forEach((row, j) => {
+    for (let i = 0; i < row.length; i++) {
+      const ch = row[i]; if (ch === '.') continue;
+      let dy = 0;
+      if (ch === 'B') dy = f % 2;                       // falling rain
+      if (ch === 'L' && f % 6 === 5) continue;          // lightning flicker
+      if (ch === 'Y' && (j < 4 || j > 10 || i < 4 || i > 10) && f % 4 > 1) continue; // sun rays pulse
+      R(x + i * s, y + (j + dy) * s, s, s, INK[ch]);
+    }
+  });
+}
+const ANCHOR = { suit: '#3d5a80', hi: '#5b7ba6', tie: '#e63946', skin: '#f2c49b', sh: '#d9a273', hair: '#4a2c2a' };
+const METEO  = { suit: '#7b2d8e', hi: '#a04fb5', tie: '#ffb703', skin: '#c68e62', sh: '#a87449', hair: '#1c1b2e' };
+const ADA = { suit: '#1f8a70', hi: '#3fb596', skin: '#e8b48c', sh: '#c9936b', hair: '#b5532a', lip: '#c2334d' };
+function person(x, top, p, o) {
+  if (o.legs) { R(x - 14, top + 80, 12, 40, '#1c1b2e'); R(x + 2, top + 80, 12, 40, '#1c1b2e'); }
+  R(x - 22, top + 32, 44, 50, p.suit); R(x - 22, top + 32, 44, 2, p.hi);
+  R(x - 28, top + 38, 8, 40, p.suit);
+  if (o.point) { R(x + 20, top + 36, 24, 7, p.suit); R(x + 44, top + 37, 6, 5, p.skin); }
+  else R(x + 20, top + 38, 8, 40, p.suit);
+  R(x - 4, top + 32, 8, o.long ? 9 : 14, '#f4f0e0'); if (!o.long) R(x - 2, top + 34, 4, 12, p.tie);
+  R(x - 4, top + 28, 8, 5, p.sh);
+  R(x - 10, top + 6, 20, 23, p.skin);
+  if (o.long) {
+    R(x - 13, top - 1, 26, 10, p.hair); R(x - 13, top + 8, 4, 28, p.hair); R(x + 9, top + 8, 4, 28, p.hair);
+    R(x - 9, top + 20, 1, 2, '#ffd23f'); R(x + 8, top + 20, 1, 2, '#ffd23f');
+  } else { R(x - 12, top, 24, 9, p.hair); R(x - 12, top + 8, 3, 10, p.hair); R(x + 9, top + 8, 3, 10, p.hair); }
+  const k = o.look || 0, lip = p.lip || '#7a1f2b';
+  if (o.blink) { R(x - 6 + k, top + 16, 3, 1, '#0d1028'); R(x + 3 + k, top + 16, 3, 1, '#0d1028'); }
+  else { R(x - 6 + k, top + 14, 3, 3, '#0d1028'); R(x + 3 + k, top + 14, 3, 3, '#0d1028'); }
+  const m = o.open || 0;
+  if (m === 0) R(x - 3, top + 23, 6, 1, lip);
+  else if (m === 1) { R(x - 3, top + 22, 6, 3, lip); R(x - 2, top + 23, 4, 1, '#3a0d16'); }
+  else {
+    const h = m === 3 ? 6 : 4;
+    R(x - 4, top + 21, 8, h, lip); R(x - 3, top + 22, 6, h - 2, '#3a0d16');
+    R(x - 3, top + 22, 6, 1, '#f4f0e0'); R(x - 2, top + 19 + h, 4, 1, '#e8718a');
+  }
+}
+
+const show = { scene: 'anchor', talking: false, icon: 'sun', focus: null, who: 'max' };
+const tileXY = i => [110 + (i % 4) * 50, 14 + Math.floor(i / 4) * 58];
+let onBoard = []; // the eight services the weather board shows, worst first
+
+function draw(t) {
+  const f = Math.floor(t / 180), blink = t % 4200 < 140;
+  const open = show.talking ? [2, 1, 3, 0, 2, 3, 1, 2, 0, 3][Math.floor(t / 95) % 10] : 0; // mouth shape: 0 shut .. 3 wide
+  const bob = show.talking && f % 4 === 0 ? 1 : 0;
+  if (show.scene === 'anchor') {
+    R(0, 0, 320, 180, '#1b2250');
+    for (let x = 0; x < 320; x += 32) R(x, 0, 1, 140, '#161c44');
+    R(0, 100, 320, 2, '#2a3478');
+    for (let i = 0; i < 5; i++) { R(20 + i * 64, 0, 24, 3, '#0d1028'); R(24 + i * 64, 3, 16, 2, '#ffd166'); }
+    R(172, 16, 138, 86, '#0d1028');
+    R(176, 20, 130, 78, show.icon === 'storm' && f % 6 === 5 ? '#7a2136' : SKY[show.icon]);
+    sprite(show.icon, 217, 22, 3, f);
+    R(176, 72, 130, 26, 'rgba(13,16,40,.72)');
+    for (let y = 20; y < 98; y += 3) R(176, y, 130, 1, 'rgba(0,0,0,.14)');
+    R(236, 102, 10, 10, '#0d1028');
+    const w = show.who; // the listener glances at whoever is talking
+    person(58, 34 + (w === 'max' ? bob : 0), ANCHOR, { blink, open: w === 'max' ? open : 0, look: w === 'ada' ? 1 : 0 });
+    person(126, 36 + (w === 'ada' ? bob : 0), ADA, { blink: (t + 1700) % 3600 < 140, open: w === 'ada' ? open : 0, look: w === 'max' ? -1 : 0, long: true });
+    R(16, 110, 170, 40, '#3a2f5b'); R(16, 110, 170, 3, '#5b4a8a'); R(24, 118, 154, 32, '#2c2347');
+    R(83, 121, 36, 9, '#e63946'); R(86, 124, 30, 3, '#f4f0e0');
+    R(88, 102, 7, 8, '#f4f0e0'); R(95, 104, 2, 4, '#f4f0e0'); R(88, 102, 7, 1, '#6b4a2b');
+    R(116, 107, 20, 3, '#f4f0e0'); R(118, 106, 20, 1, '#cfc9b4');
+    R(32, 106, 8, 5, ANCHOR.skin); R(76, 106, 8, 5, ANCHOR.skin);
+    R(100, 106, 8, 5, ADA.skin); R(144, 106, 8, 5, ADA.skin);
+  } else {
+    R(0, 0, 320, 180, '#24306e');
+    for (let y = 0; y < 140; y += 20) R(0, y, 320, 1, '#1e2860');
+    R(104, 8, 210, 126, '#0d1028');
+    onBoard.forEach((s, i) => {
+      const [x, y] = tileXY(i), st = ST[s.status];
+      R(x, y, 48, 56, SKY[st.icon]);
+      sprite(st.icon, x + 8, y + 2, 2, f + i);
+      R(x, y + 35, 48, 21, 'rgba(13,16,40,.78)');
+      if (s.id === show.focus && f % 2 === 0) {
+        R(x, y, 48, 2, '#f4f0e0'); R(x, y + 54, 48, 2, '#f4f0e0'); R(x, y, 2, 56, '#f4f0e0'); R(x + 46, y, 2, 56, '#f4f0e0');
+      }
+    });
+    person(50, 40 + bob, METEO, { blink, open, legs: true, point: true });
+  }
+}
+
+/* ---------- overlays ---------- */
+const board = $('board');
+const tiles = Array.from({ length: 8 }, (_, i) => {
+  const [x, y] = tileXY(i), d = document.createElement('div'), t = document.createElement('span'), u = document.createElement('span');
+  d.className = 'tile'; t.className = 't'; u.className = 's';
+  d.style.left = x / 3.2 + '%'; d.style.top = (y + 36) / 1.8 + '%';
+  d.append(t, u); board.append(d);
+  return { d, t, u };
+});
+const bySeverity = () => [...feed.services].sort((a, b) => ST[b.status].sev - ST[a.status].sev);
+const phaseOf = s => (s.incident && s.incident.phases[s.incident.phase]) || '';
+const run = $('run'), tape = $('tape');
+let tickX = 0;
+function paintTicker() {
+  run.textContent = '';
+  const add = (lead, text, color) => {
+    const sp = document.createElement('span'), st = document.createElement('i');
+    st.textContent = text; st.style.color = color; sp.append(lead, st); run.append(sp);
+  };
+  const all = bySeverity(), bad = all.filter(s => s.status !== 'operational'), fine = all.filter(s => s.status === 'operational');
+  bad.forEach(s => add(s.name.toUpperCase() + ': ', ST[s.status].label.toUpperCase() + (phaseOf(s) ? ' / ' + phaseOf(s).toUpperCase() : ''), ST[s.status].color));
+  fine.slice(0, 10).forEach(s => add(s.name.toUpperCase() + ': ', 'OPERATIONAL', ST.operational.color));
+  if (fine.length > 10) add('', '+' + (fine.length - 10) + ' MORE OPERATIONAL', ST.operational.color);
+  feed.items.forEach(i => add((ITEM[i.severity] || ITEM.info).tag + ': ', (i.title || i.text).toUpperCase().slice(0, 90), (ITEM[i.severity] || ITEM.info).color));
+  if (!run.childNodes.length) add('', 'UPTIME 24: STATUS AROUND THE CLOCK', '#f4f0e0');
+}
+function refresh() {
+  onBoard = bySeverity().slice(0, 8);
+  tiles.forEach((tile, i) => {
+    const s = onBoard[i]; tile.d.hidden = !s;
+    if (s) { tile.t.textContent = s.name; tile.u.textContent = ST[s.status].label; tile.u.style.color = ST[s.status].color; }
+  });
+  paintTicker();
+  const demo = feed.isDemo();
+  $('demoBadge').hidden = $('btnBreak').hidden = $('btnFix').hidden = $('note').hidden = !demo;
+}
+
+/* ---------- sound and voice (both off until the viewer turns them on) ---------- */
+let ac = null;
+function blip(freq, dur, vol) {
+  if (!ac) return;
+  const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+  o.type = 'square'; o.frequency.value = freq; g.gain.setValueAtTime(vol || .03, t);
+  g.gain.exponentialRampToValueAtTime(.0001, t + dur); o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + dur);
+}
+function jingle() { [523, 659, 784, 1047].forEach((n, i) => setTimeout(() => blip(n, .16, .05), i * 110)); }
+
+let voiceOn = false, clip = null;
+const BROWSER_PITCH = { max: .7, ada: 1.35, gus: 1 };
+function say(b) { // resolves when the line has been spoken, or at once when it cannot be
+  if (!voiceOn) return Promise.resolve();
+  return new Promise(done => {
+    const giveUp = setTimeout(done, 25000);
+    const end = () => { clearTimeout(giveUp); done(); };
+    if (feed.voice() === 'elevenlabs') {
+      clip = new Audio('api/tts?who=' + b.who + '&text=' + encodeURIComponent(b.text));
+      clip.onended = clip.onerror = end;
+      clip.play().catch(end);
+    } else if (window.speechSynthesis) {
+      const u = new SpeechSynthesisUtterance(b.text);
+      u.lang = 'en-GB'; u.pitch = BROWSER_PITCH[b.who]; u.rate = 1.05; u.onend = u.onerror = end;
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    } else end();
+  });
+}
+
+/* ---------- script writing ---------- */
+const NAME = { max: 'MAX', ada: 'ADA', gus: 'GUS' }, PITCH = { max: 300, ada: 520, gus: 400 };
+let turn = 0, quipN = 0, gusN = 0, jokeN = 0, itemN = 0;
+const nextHost = () => (turn++ % 2 ? 'ada' : 'max');
+const other = w => (w === 'max' ? 'ada' : 'max');
+const QUIPS = [ // [co-host interrupts, reader answers]
+  ['Have they tried turning it off and on again?', 'That is how this one started.'],
+  ['So it is not DNS this time?', 'Give it a minute.'],
+  ['I blame the intern.', 'We do not have an intern. We have a deploy pipeline.'],
+  ['At least it is not Friday afternoon.', 'It is always Friday afternoon somewhere in the cluster.'],
+];
+const TO_GUS = [ // [desk host, hand-off, Gus answers]
+  ['ada', 'Time for the systems forecast. Gus, did you bring an umbrella or a rollback plan?', 'Both, Ada. One of them even works.'],
+  ['max', 'Over to Gus at the weather board. Gus, will my deploy survive Friday?', 'Max, nobody\'s deploy survives Friday.'],
+  ['ada', 'Gus has the forecast. Is the cloud still up there, Gus?', 'Still up there, Ada. I checked twice. The first time it was DNS.'],
+  ['max', 'Now to the man who has never once been wrong about yesterday. Gus?', 'Hindsight has perfect uptime, Max.'],
+];
+const TO_DESK = [ // [Gus signs off, desk host, answer]
+  ['Back to the desk, where I hear the coffee machine is the only thing with five nines.', 'max', 'It went down this morning, Gus. We are still writing the postmortem.'],
+  ['That is the forecast. Back to you two, and remember: it is always DNS.', 'ada', 'Thanks, Gus. Except when it is the certificate.'],
+  ['Back to the desk. I am off to turn the weather off and on again.', 'max', 'Bold fix, Gus. Try it in staging first.'],
+  ['That is all from me. Pack a jumper, and a second region.', 'ada', 'Gus keeps his jumper in a second region. Very resilient man.'],
+];
+const JOKES = [
+  [['max', 'Ada, why did the server go to therapy?'], ['ada', 'Too many unresolved requests, Max. You tell that one every hour.'], ['max', 'It has excellent uptime.']],
+  [['ada', 'Max, I would tell you a UDP joke.'], ['max', 'Go on, then.'], ['ada', 'I just did. You did not get it.']],
+  [['max', 'Viewers are reminded that "it works on my machine" is not a status.'], ['ada', 'And yet, Max, it did work on your machine.'], ['max', 'We do not talk about my machine.']],
+  [['ada', 'Max, how many engineers does it take to change a light bulb?'], ['max', 'None. That is a hardware problem.'], ['ada', 'And the light bulb is now a ticket.']],
+  [['max', 'Ada, there are only two hard problems in this newsroom.'], ['ada', 'Naming things, cache invalidation, and off-by-one errors.'], ['max', 'Exactly. Two.']],
+];
+function ago(ms) {
+  const m = Math.round(ms / 60000);
+  if (m < 1) return 'under a minute';
+  if (m < 60) return m + (m === 1 ? ' minute' : ' minutes');
+  const h = Math.floor(m / 60), r = m % 60;
+  if (h < 48) return h + (h === 1 ? ' hour' : ' hours') + (r ? ' ' + r + ' min' : '');
+  return Math.round(h / 24) + ' days';
+}
+const dot = s => (/[.!?…]$/.test(s) ? s : s + '.');
+/** Cut free text into caption-sized lines (two rows of the caption box), at most `limit` of them. */
+function chunks(text, limit) {
+  const out = []; let cur = '';
+  const flush = () => { if (cur) out.push(cur); cur = ''; };
+  for (const sent of String(text || '').replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s+/)) {
+    if (!sent) continue;
+    if ((cur + ' ' + sent).trim().length <= 140) { cur = (cur + ' ' + sent).trim(); continue; }
+    flush();
+    for (const w of sent.split(' ')) { if ((cur + ' ' + w).trim().length > 140) flush(); cur = (cur + ' ' + w).trim().slice(0, 140); }
+  }
+  flush();
+  if (out.length > limit) { out.length = limit; out[limit - 1] = out[limit - 1].replace(/[.!?…]*$/, '…'); }
+  return out;
+}
+function deskBase() {
+  const n = feed.services.filter(s => s.incident).length, any = feed.services.length;
+  return { scene: 'anchor', icon: n ? 'rain' : any ? 'sun' : 'news', scrT: any ? 'All services' : 'Newsroom',
+    scrS: n ? n + (n === 1 ? ' open incident' : ' open incidents') : any ? 'All operational' : 'On air', scrC: n ? ST.degraded.color : ST.operational.color };
+}
+function incidentBeats(svc, mode, inc) {
+  const kind = ST[inc.kind] ? inc.kind : 'degraded', st = ST[kind], dur = ago(Date.now() - inc.started);
+  const phase = inc.phases[inc.phase] || '', scripted = !!inc.symptom; // demo incidents carry a symptom and a cause
+  const notes = scripted ? [] : chunks(inc.note, 2), title = scripted || !inc.title ? '' : chunks(dot(inc.title), 1)[0];
+  const say = (b, lines) => lines.filter(Boolean).map(text => ({ ...b, text }));
+  const base = { who: nextHost(), scene: 'anchor', icon: st.icon, scrT: svc.name, scrS: st.label + (phase ? ' / ' + phase : ''), scrC: st.color };
+  const head = st.label.toUpperCase() + ': ' + svc.name.toUpperCase();
+  if (mode === 'resolved') {
+    const b = { ...base, icon: 'sun', scrS: 'Resolved', scrC: ST.operational.color, tag: 'RESOLVED', tone: 'ok', headline: svc.name.toUpperCase() + ' IS BACK' };
+    return say(b, [kind === 'maintenance' ? `Maintenance on ${svc.name} is complete after ${dur}. Everything is back in service.`
+      : scripted ? `${svc.name} is back to normal after ${dur}. The cause was ${inc.cause}.` : `${svc.name} is back to normal after ${dur}.`]);
+  }
+  if (mode === 'new') {
+    const b = { ...base, tag: 'BREAKING', tone: 'alert', headline: head };
+    const beats = say(b, [`We interrupt this broadcast. ${svc.name} has just reported ${NOUN[kind]}.`,
+      scripted ? `Users are seeing ${inc.symptom}. Engineers are investigating, and we will stay on this story.`
+        : title ? `The report reads: ${title}` : notes.length ? '' : 'Details are still coming in. We will stay on this story.',
+      notes[0]]);
+    beats[0].stinger = true;
+    return beats;
+  }
+  if (mode === 'update') {
+    const b = { ...base, tag: 'UPDATE', tone: 'amber', headline: svc.name.toUpperCase() + (phase ? ': ' + phase.toUpperCase() : ': UPDATE') };
+    if (scripted) return say(b, [inc.phase === 1
+      ? `An update on ${svc.name}. Engineers have identified the cause: ${inc.cause}. A fix is on its way.`
+      : `Better news from ${svc.name}. A fix is in place and engineers are monitoring the recovery.`]);
+    return say(b, [`An update on ${svc.name}${phase ? ', now marked as ' + phase.toLowerCase() : ''}.`, ...notes]);
+  }
+  const b = { ...base, tag: 'DEVELOPING', tone: kind === 'maintenance' ? 'sky' : 'amber', headline: head };
+  if (kind === 'maintenance') return say(b, scripted
+    ? [`Planned maintenance on ${svc.name} has been running for ${dur}. Expect ${inc.symptom} until it wraps up.`]
+    : [`Maintenance on ${svc.name} has been running for ${dur}.`, title && `It is listed as: ${title}`, ...notes]);
+  const q = QUIPS[quipN++ % QUIPS.length];
+  const body = scripted
+    ? [`${svc.name} has been ${VERB[kind]} for ${dur}, with users reporting ${inc.symptom}.`,
+       [`Engineers are still investigating. No cause has been named yet.`,
+        `The cause has been identified as ${inc.cause}. A fix is being rolled out.`,
+        `A fix is in place. Engineers are monitoring before they call it resolved.`][inc.phase]]
+    : [`${svc.name} has been ${VERB[kind]} for ${dur}${phase ? ', and the incident is marked as ' + phase.toLowerCase() : ''}.`,
+       title && `The report reads: ${title}`, ...notes, !title && !notes.length && 'No further details have been published.'];
+  return [...say(b, body), { ...b, who: other(b.who), text: q[0] }, { ...b, text: q[1] }];
+}
+function itemBeats(item, breaking) {
+  const k = ITEM[item.severity] || ITEM.info;
+  const b = { who: nextHost(), scene: 'anchor', icon: k.icon, scrT: item.source || 'Newsroom', scrS: k.label, scrC: k.color,
+    tag: breaking ? 'BREAKING' : k.tag, tone: breaking ? 'alert' : k.tone, headline: (item.title || 'From the newsroom').toUpperCase().slice(0, 44) };
+  const same = item.title && item.text.startsWith(item.title);
+  const beats = chunks((item.title && !same ? dot(item.title) + ' ' : '') + item.text, 4).map(text => ({ ...b, text }));
+  if (breaking && beats.length) beats[0].stinger = true;
+  return beats;
+}
+function weatherBeats() {
+  const all = feed.services, bad = bySeverity().filter(s => s.status !== 'operational');
+  const b = { who: 'gus', scene: 'weather', tag: 'FORECAST', tone: 'sky', headline: 'THE SYSTEMS FORECAST', focus: null };
+  const h = TO_GUS[gusN % TO_GUS.length], back = TO_DESK[gusN++ % TO_DESK.length];
+  const lead = { outage: 'Storm warning over', degraded: 'Showers over', maintenance: 'Roadworks on' };
+  const out = [
+    { ...deskBase(), who: h[0], tag: 'COMING UP', tone: 'sky', headline: 'NEXT: THE SYSTEMS FORECAST', text: h[1] },
+    { ...b, text: h[2] },
+    { ...b, text: bad.length
+      ? `Now the systems forecast. Clear skies over ${all.length - bad.length} of ${all.length} services, with trouble elsewhere.`
+      : `Now the systems forecast. Clear skies over all ${all.length} services. A lovely day to deploy nothing.` }];
+  bad.slice(0, 3).forEach(s => out.push({ ...b, focus: s.id,
+    text: `${lead[s.status]} ${s.name}: ${ST[s.status].label.toLowerCase()}${phaseOf(s) ? ', currently ' + phaseOf(s).toLowerCase() : ''}.` }));
+  out.push({ ...b, text: back[0] },
+    { ...deskBase(), who: back[1], tag: 'LIVE', tone: 'alert', headline: 'UPTIME 24: STATUS AROUND THE CLOCK', text: back[2] });
+  return out;
+}
+function deskBeats() {
+  const b = { ...deskBase(), tag: 'NEWSROOM', tone: 'sky', headline: 'MEANWHILE, AT THE DESK' };
+  return [...headlineBeats(), ...JOKES[jokeN++ % JOKES.length].map(([who, text]) => ({ ...b, who, text }))];
+}
+function headlineBeats() {
+  const open = feed.services.filter(s => s.incident), n = feed.services.length;
+  const b = { ...deskBase(), who: nextHost(), tag: 'LIVE', tone: 'alert', headline: 'UPTIME 24: STATUS AROUND THE CLOCK' };
+  if (!n) return [{ ...b, text: feed.items.length ? 'No status reports have come in yet. We will keep reading the news as it arrives.'
+    : 'No status reports have come in yet. Stay tuned.' }];
+  if (!open.length) return [
+    { ...b, text: `Good news from the newsroom: all ${n} services are operational.` },
+    { ...b, text: `It has been ${ago(feed.sinceLastResolved())} since the last incident closed. If anything breaks, you will hear it here first.` },
+  ];
+  const oldest = open.reduce((a, s) => s.incident.started < a.incident.started ? s : a);
+  return [{ ...b, text: `The headlines again: ${open.length} ${open.length === 1 ? 'incident' : 'incidents'} open. The longest running is ${oldest.name}, at ${ago(Date.now() - oldest.incident.started)}.` }];
+}
+
+/* ---------- director ---------- */
+const queue = [];
+const urgent = ev => ev.type === 'new' || (ev.type === 'item' && ev.item.breaking);
+feed.on(ev => {
+  refresh();
+  if (ev.type === 'reset') { queue.length = 0; return; }
+  if (ev.type === 'sync') return;
+  if (urgent(ev)) queue.unshift(ev); else queue.push(ev);
+  if (queue.length > 4) queue.length = 4;
+});
+async function play(b) {
+  const cap = $('line');
+  const apply = () => {
+    show.scene = b.scene; show.focus = b.focus == null ? null : b.focus; show.who = b.who;
+    if (b.scene === 'anchor') { show.icon = b.icon; $('scrT').textContent = b.scrT; $('scrS').textContent = b.scrS; $('scrS').style.color = b.scrC; }
+    $('screenlabel').hidden = b.scene !== 'anchor'; board.hidden = b.scene !== 'weather';
+    $('tag').textContent = b.tag; $('tag').dataset.tone = b.tone; $('hl').textContent = b.headline;
+    $('who').textContent = NAME[b.who]; $('who').dataset.who = b.who; cap.textContent = '';
+  };
+  if (b.stinger) {
+    $('stinger').hidden = false; jingle(); await sleep(calm ? 450 : 1000); apply(); await sleep(calm ? 450 : 1000); $('stinger').hidden = true;
+  } else if (b.scene !== show.scene && !calm) { // camera cut between desk and weather board
+    const w = $('wipe');
+    $('wipeT').textContent = b.scene === 'weather' ? 'THE FORECAST' : 'BACK TO THE DESK'; w.dataset.to = b.scene; w.hidden = false;
+    blip(880, .22, .04); setTimeout(() => blip(587, .22, .04), 180);
+    await sleep(450); apply(); await sleep(450); w.hidden = true;
+  } else apply();
+  const voiced = voiceOn, speech = say(b), per = voiced ? 60 : 30; // type slower when the line is spoken
+  show.talking = true;
+  if (calm) { cap.textContent = b.text; await (voiced ? speech : sleep(Math.min(4000, b.text.length * 30))); }
+  else {
+    const t0 = performance.now();
+    for (let n = 0; n < b.text.length;) {
+      await sleep(per);
+      const m = Math.min(b.text.length, Math.floor((performance.now() - t0) / per));
+      if (m > n) { n = m; cap.textContent = b.text.slice(0, n); if (!voiced && n % 3 === 0 && b.text[n - 1] !== ' ') blip(PITCH[b.who] + (n % 5) * 25, .04); }
+    }
+    if (voiced) await speech;
+  }
+  show.talking = false;
+  await sleep(voiced ? 500 : 1500 + b.text.length * 22);
+}
+async function direct() {
+  const order = ['incidents', 'items', 'weather', 'desk'];
+  for (let seg = 0, bulletin = false; ;) {
+    let beats;
+    // at most one bulletin between programme segments, so the forecast and the banter still get airtime
+    if (queue.length && (!bulletin || urgent(queue[0]))) {
+      const ev = queue.shift(); bulletin = true;
+      beats = ev.type === 'item' ? itemBeats(ev.item, ev.item.breaking) : incidentBeats(ev.svc, ev.type, ev.incident);
+    } else {
+      bulletin = false;
+      const kind = order[seg++ % order.length];
+      if (kind === 'incidents') beats = bySeverity().filter(s => s.incident).slice(0, 4).flatMap(s => incidentBeats(s, 'rundown', s.incident));
+      else if (kind === 'items') { beats = []; for (let k = 0; k < Math.min(3, feed.items.length); k++) beats.push(...itemBeats(feed.items[itemN++ % feed.items.length], false)); }
+      else if (kind === 'weather') beats = feed.services.length ? weatherBeats() : [];
+      else beats = deskBeats();
+    }
+    for (let i = 0; i < beats.length; i++) {
+      await play(beats[i]);
+      if (queue.length && urgent(queue[0]) && !beats[i].stinger) { // breaking news cuts in
+        if (!bulletin && i < beats.length - 1) seg--;                // and the cut segment restarts afterwards
+        break;
+      }
+    }
+  }
+}
+
+/* ---------- frame loop ---------- */
+let last = performance.now();
+function frame(t) {
+  const dt = Math.min(100, t - last); last = t;
+  draw(t);
+  if (!calm) {
+    tickX -= dt * tape.clientWidth * .00009;
+    if (tickX < -run.offsetWidth) { tickX = tape.clientWidth; paintTicker(); }
+    run.style.transform = 'translateX(' + Math.round(tickX) + 'px)';
+  }
+  requestAnimationFrame(frame);
+}
+setInterval(() => { $('clock').textContent = new Date().toLocaleTimeString('en-GB'); }, 500);
+
+/* ---------- controls ---------- */
+const press = (b, on, text) => { b.setAttribute('aria-pressed', String(on)); b.textContent = text + (on ? 'on' : 'off'); };
+$('btnSound').onclick = e => {
+  if (ac) { ac.close(); ac = null; }
+  else { try { ac = new (window.AudioContext || window.webkitAudioContext)(); jingle(); } catch (_) { ac = null; } }
+  press(e.currentTarget, !!ac, 'Sound: ');
+};
+$('btnVoice').onclick = e => {
+  voiceOn = !voiceOn;
+  if (!voiceOn) { if (clip) clip.pause(); if (window.speechSynthesis) speechSynthesis.cancel(); }
+  press(e.currentTarget, voiceOn, 'Voice: ');
+};
+$('btnFull').onclick = () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else { const p = $('screen').requestFullscreen && $('screen').requestFullscreen(); if (p && p.catch) p.catch(() => {}); }
+};
+$('btnBreak').onclick = () => feed.startRandom();
+$('btnFix').onclick = () => feed.resolveAll();
+
+draw(0);
+requestAnimationFrame(frame);
+feed.start().then(() => { refresh(); direct(); });
+})();
+</script>
+</body>
+</html>
