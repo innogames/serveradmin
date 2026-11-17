@@ -117,18 +117,45 @@
     color: #888888;
 }
 
-/* states.css paints whole rows in bright pastels with !important and the diff
-   view does the same per cell, so the text goes back to dark there instead of
-   fighting the background. */
-[data-theme="dark"] tr[class*="state-"] td,
-[data-theme="dark"] tr[class*="state-"] td a,
+/* Dark counterparts of the A100 pastels in states.css, same hues so the
+   colour still maps to the same state at a glance. states.css uses
+   !important, so these need it too and win on specificity. Rows keep the
+   regular light text and link colours. */
+[data-theme="dark"] tr.state-online_reserved {
+    background-color: #5a5420 !important; /* yellow */
+}
+
+[data-theme="dark"] tr.state-deploy_online {
+    background-color: #5c2a66 !important; /* purple */
+}
+
+[data-theme="dark"] tr.state-deploy_offline {
+    background-color: #24406e !important; /* blue */
+}
+
+[data-theme="dark"] tr.state-maintenance {
+    background-color: #6b4618 !important; /* orange */
+}
+
+[data-theme="dark"] tr.state-retired {
+    background-color: #6e2622 !important; /* red */
+}
+
+[data-theme="dark"] tr.state-cold_standby {
+    background-color: #3c474d !important; /* blue grey */
+}
+
+/* Rows marked for deletion carry their state class as well and must stay
+   red. Same specificity as the state rules above, so this wins by order. */
+[data-theme="dark"] tr.delete {
+    background-color: var(--remove) !important;
+}
+
+/* The diff view paints cells in bright pastels, dark text stays readable
+   there instead of fighting the background. */
 [data-theme="dark"] td.diff,
 [data-theme="dark"] td.equal {
     color: #212529;
-}
-
-[data-theme="dark"] tr[class*="state-"] td a {
-    text-decoration: underline;
 }
 
 /*
