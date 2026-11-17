@@ -1,0 +1,287 @@
+/*
+ * Dark mode is implemented by re-pointing the palette variables declared in
+ * serveradmin.css. Every rule that already consumes them (table striping,
+ * .controls, .component, ...) follows automatically, so only Bootstrap
+ * components and the few hard coded colours need explicit overrides below.
+ */
+[data-theme="dark"] {
+    /* Lets the browser render its own widgets (checkboxes, scrollbars, date
+       pickers) for a dark page, those are not reachable via CSS */
+    color-scheme: dark;
+
+    --bg-color: #1a1a1a;
+    --text-color: #e0e0e0;
+    --text-muted-color: #9a9a9a;
+    --link-color: #66b3ff;
+    --border-color: #404040;
+    --header-bg: #2d2d2d;
+    --input-bg: #333;
+    --input-border: #505050;
+    --hover-bg: #353535;
+    /* Clearly brighter than --input-bg, the autocomplete menu is drawn right
+       below the input it belongs to and --hover-bg is too close to tell apart */
+    --selected-bg: #4f4f4f;
+
+    /* Palette of serveradmin.css, kept at the same semantic meaning */
+    --background-primary: #252525;
+    --background-secondary: #202020;
+    --disabled-primary: #383838;
+    --disabled-secondary: #2f2f2f;
+}
+
+[data-theme="dark"] body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+/*
+ * Anchors styled as a solid button (.btn-success and friends on the inspect
+ * page) bring their own text colour, so they are excluded here. Without the
+ * :not() the link colour wins by specificity and paints blue text on a green
+ * button.
+ */
+[data-theme="dark"] a:not(.btn),
+[data-theme="dark"] .btn-link,
+[data-theme="dark"] .btn-link:hover,
+[data-theme="dark"] .btn-link:focus {
+    color: var(--link-color);
+}
+
+[data-theme="dark"] hr {
+    border-top-color: var(--border-color);
+}
+
+[data-theme="dark"] .text-muted,
+[data-theme="dark"] .text-secondary {
+    color: var(--text-muted-color) !important;
+}
+
+/* Navigation */
+[data-theme="dark"] .navbar.bg-light {
+    background-color: var(--header-bg) !important;
+    border-bottom: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .navbar-brand,
+[data-theme="dark"] .navbar-light .navbar-nav .nav-link,
+[data-theme="dark"] .navbar-text {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .navbar-light .navbar-toggler {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .dropdown-menu {
+    background-color: var(--header-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .dropdown-item {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .dropdown-item:hover,
+[data-theme="dark"] .dropdown-item:focus {
+    background-color: var(--hover-bg);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .dropdown-divider {
+    border-top-color: var(--border-color);
+}
+
+/* Tables. Row striping comes from the palette variables, only the chrome
+   (borders, hover, disabled cells) has to be restated. */
+[data-theme="dark"] .table,
+[data-theme="dark"] .table-sm {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .table th,
+[data-theme="dark"] .table td,
+[data-theme="dark"] .table thead th,
+[data-theme="dark"] .table-bordered,
+[data-theme="dark"] .table-bordered th,
+[data-theme="dark"] .table-bordered td {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] #result_table tbody tr:hover,
+[data-theme="dark"] .table-hover tbody tr:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] table tr td.disabled {
+    color: #888888;
+}
+
+/* states.css paints whole rows in bright pastels with !important and the diff
+   view does the same per cell, so the text goes back to dark there instead of
+   fighting the background. */
+[data-theme="dark"] tr[class*="state-"] td,
+[data-theme="dark"] tr[class*="state-"] td a,
+[data-theme="dark"] td.diff,
+[data-theme="dark"] td.equal {
+    color: #212529;
+}
+
+[data-theme="dark"] tr[class*="state-"] td a {
+    text-decoration: underline;
+}
+
+/*
+ * Forms. The object edit page builds its fields as plain <input>/<textarea>
+ * elements (class "edit_value") instead of Bootstrap's .form-control, so they
+ * are matched by element name here to end up with the same look as the search
+ * and command inputs. Checkboxes, radios and submit buttons are excluded, they
+ * carry their own styling.
+ */
+[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not(.btn),
+[data-theme="dark"] select,
+[data-theme="dark"] textarea,
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .custom-select,
+[data-theme="dark"] .input-group-text {
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--text-color);
+}
+
+/* Read only attributes of the edit page are rendered as disabled inputs */
+[data-theme="dark"] input:disabled,
+[data-theme="dark"] textarea:disabled,
+[data-theme="dark"] select:disabled {
+    background-color: var(--background-primary);
+    color: var(--text-muted-color);
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .custom-select:focus {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+}
+
+/* Read only inputs like the "Understood" box keep Bootstrap's light grey */
+[data-theme="dark"] .form-control[readonly] {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .form-control::placeholder {
+    color: var(--text-muted-color);
+}
+
+/* Buttons */
+[data-theme="dark"] .btn-light,
+[data-theme="dark"] .btn-sm.btn-light,
+[data-theme="dark"] .btn-outline-secondary {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .btn-light:hover,
+[data-theme="dark"] .btn-outline-secondary:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--input-border);
+    color: var(--text-color);
+}
+
+/* servershell.css hard codes a white background for the history toggle */
+[data-theme="dark"] #history-toggle {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+}
+
+[data-theme="dark"] #history-toggle.active {
+    background: var(--hover-bg);
+}
+
+/*
+ * The bootstrap icon set is drawn with fill="currentColor", but it is embedded
+ * through <img> tags so it cannot inherit the page colour and always renders
+ * black. Invert it instead of shipping a second set of light assets.
+ */
+[data-theme="dark"] img[src$=".svg"] {
+    filter: invert(0.85);
+}
+
+/* Cards, list groups and modals */
+[data-theme="dark"] .card {
+    background-color: var(--bg-color);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .card-header {
+    background-color: var(--header-bg);
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .card-body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .list-group-item {
+    background-color: var(--bg-color);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .modal-content {
+    background-color: var(--bg-color);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .modal-header,
+[data-theme="dark"] .modal-footer {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .close,
+[data-theme="dark"] .close:hover {
+    color: var(--text-color);
+    text-shadow: none;
+}
+
+/* jQuery UI autocomplete is themed independently of Bootstrap */
+[data-theme="dark"] .ui-autocomplete {
+    background-color: var(--bg-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .ui-menu-item,
+[data-theme="dark"] .ui-menu-item .ui-menu-item-wrapper {
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .ui-menu-item .ui-menu-item-wrapper.ui-state-active {
+    background-color: var(--selected-bg) !important;
+    border-color: var(--border-color) !important;
+    color: #ffffff !important;
+}
+
+/* serveradmin.css pins the active state to dark text for the light palette */
+[data-theme="dark"] .ui-state-active,
+[data-theme="dark"] .ui-widget-content .ui-state-active,
+[data-theme="dark"] .ui-widget-header .ui-state-active {
+    color: var(--text-color) !important;
+}
+
+/* Servershell attribute panel */
+[data-theme="dark"] #attributes,
+[data-theme="dark"] .component,
+[data-theme="dark"] .component * {
+    background-color: var(--bg-color) !important;
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .attr-tooltip,
+[data-theme="dark"] #attributes b,
+[data-theme="dark"] #attributes .list-group b {
+    color: var(--text-color);
+}

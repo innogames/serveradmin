@@ -75,6 +75,10 @@
                         <input type="number" class="form-input" id="autocomplete_delay_commands" value="{{ search_settings.autocomplete_delay_commands }}" onchange="$('#command').autocomplete('option', 'delay', this.value);">
                         <label class="form-input-label" for="autocomplete_delay_commands">Delay in milliseconds before auto completion for commands kicks in.</label>
                     </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="dark_mode" onchange="darkMode.toggle()">
+                        <label class="form-check-label" for="dark_mode">Dark Mode</label>
+                    </div>
                     <hr>
                     <b>Search History</b>
                     <div class="form-check">
