@@ -14,16 +14,18 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.css">
     <link rel="stylesheet" href="{{ STATIC_URL }}css/serveradmin.css">
-    {% block additional_styles %}{% endblock %}
-    <!-- Must stay last to override the per page styles above -->
     <link rel="stylesheet" href="{{ STATIC_URL }}css/dark-mode.css">
+    {% block additional_styles %}{% endblock %}
     {% endcompress %}
 
     <!-- Applies the stored theme before the body is painted to avoid a flash
-         of the light theme. Not part of the compressed block at the bottom
-         because that one is loaded after rendering. -->
+         of the light theme. Needs its own compress block in the head, the one
+         at the bottom of the body is only executed after the first render. -->
+    {% compress js %}
     <script src="{{ STATIC_URL }}js/dark-mode.js"></script>
     <script>darkMode.init();</script>
+    {% endcompress %}
+
     <link rel="search" type="application/opensearchdescription+xml" title="Serveradmin Search" href="{% url 'opensearch.xml' %}" />
 
     <title>{% block title %}{% endblock %} &middot; Serveradmin</title>
