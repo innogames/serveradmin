@@ -1,5 +1,17 @@
 # Changelog
 
+## v4.31.0 (2026-11-27)
+
+- Paramiko 5 support (#487) (98ccef0c)
+- Fix dark mode not compressed (#486) (0e8c809d)
+- dark-mode: tint host state rows instead of forcing dark text (#485) (7260d4ab)
+
+## v4.30.0 (2026-11-17)
+
+- Dark mode support (#484) (a0392e81)
+- Bump certifi from 2026.7.22 to 2026.10.18 (#482) (85b8df41)
+- chore(deps): bump faker to 40.x (#481) (b7517d9d)
+
 ## v4.29.0 (2026-10-22)
 
 - fix(serverdb): drop no-op attribute changes before applying a commit (#480) (5efb3a9a)
