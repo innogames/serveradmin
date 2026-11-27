@@ -33,7 +33,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "netaddr", specifier = ">=0.8.0,<1.4.0" },
-    { name = "paramiko", specifier = ">=2.7,<4" },
+    { name = "paramiko", specifier = ">=2.9,<6" },
 ]
 
 [[package]]
