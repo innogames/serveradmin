@@ -19,20 +19,12 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import urlopen, Request
 
+from paramiko import RSAKey, ECDSAKey, Ed25519Key
 from paramiko.agent import Agent
 from paramiko.message import Message
 from paramiko.ssh_exception import SSHException, PasswordRequiredException
 
 from adminapi import VERSION
-
-try:
-    from paramiko import RSAKey, ECDSAKey, Ed25519Key
-    key_classes = (RSAKey, ECDSAKey, Ed25519Key)
-except ImportError:
-    # Ed25519Key requires paramiko >= 2.2
-    from paramiko import RSAKey, ECDSAKey
-    key_classes = (RSAKey, ECDSAKey)
-
 from adminapi.cmduser import get_auth_token
 from adminapi.filters import BaseFilter
 from adminapi.exceptions import (
@@ -51,10 +43,10 @@ def load_private_key_file(private_key_path):
     We support RSA, ECDSA and Ed25519 keys and return instances of:
     * paramiko.rsakey.RSAKey
     * paramiko.ecdsakey.ECDSAKey
-    * paramiko.ed25519key.Ed25519Key (requires paramiko >= 2.2)
+    * paramiko.ed25519key.Ed25519Key
     """
     # I don't think there is a key type independent way of doing this
-    for key_class in key_classes:
+    for key_class in (RSAKey, ECDSAKey, Ed25519Key):
         try:
             return key_class.from_private_key_file(private_key_path)
         except PasswordRequiredException as e:

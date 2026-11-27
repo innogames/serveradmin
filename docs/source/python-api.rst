@@ -45,9 +45,6 @@ of the private key::
     # Use environment vairable, passwords protected keys are _not_ supported
     export SERVERADMIN_KEY_PATH=~/.ssh/id_rsa
 
-Note that for ed25519 key support both adminapi and serveradmin must have
-paramiko 2.2 or newer installed.
-
 To authenticate yourself via a pre shared key you need to set the
 SERVERADMIN_TOKEN environment variable or create a file called .adminapi in the
 home folder of your user::
