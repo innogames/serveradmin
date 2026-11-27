@@ -96,7 +96,11 @@ def calc_signature(private_key, timestamp, data=None):
     Returns the signature as base64 encoded unicode, ready for transport.
     """
     message = calc_message(timestamp, data)
-    sig = private_key.sign_ssh_data(message.encode())
+    # Paramiko's default RSA signature algorithm depends on its version and
+    # the SHA-1 based ssh-rsa can't be verified by paramiko >= 5 anymore.
+    is_rsa = private_key.get_name().startswith('ssh-rsa')
+    algorithm = 'rsa-sha2-512' if is_rsa else None
+    sig = private_key.sign_ssh_data(message.encode(), algorithm)
     if isinstance(sig, Message):
         # sign_ssh_data returns bytes for agent keys but a Message instance
         # for keys loaded from a file. Fix the file loaded once:
